@@ -1,0 +1,43 @@
+/* ==========================================================================
+   Aircas · el-tag 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-tag class="aircas-tag">` 即生效。
+   覆盖默认外框，各 type 颜色由 --aircas-color-{type} 派生。
+   ========================================================================== */
+
+.aircas-tag {
+  &.el-tag {
+    background-color: var(--aircas-color-accent-cyan-fill, var(--aircas-color-panel-background));
+    border: 1px solid var(--aircas-color-border);
+    border-radius: 4px;
+    color: var(--aircas-color-text-primary);
+
+    &.el-tag--success {
+      background-color: var(--aircas-color-success-background);
+      border-color: var(--aircas-color-success);
+      color: var(--aircas-color-success);
+    }
+
+    &.el-tag--warning {
+      background-color: var(--aircas-color-warning-background);
+      border-color: var(--aircas-color-warning);
+      color: var(--aircas-color-warning);
+    }
+
+    &.el-tag--danger {
+      background-color: var(--aircas-color-danger-background);
+      border-color: var(--aircas-color-danger);
+      color: var(--aircas-color-danger);
+    }
+
+    &.el-tag--info {
+      background-color: var(--aircas-color-info-background);
+      border-color: var(--aircas-color-info);
+      color: var(--aircas-color-info);
+    }
+
+    &.is-hit {
+      border-color: var(--aircas-color-border-highlight);
+    }
+  }
+}

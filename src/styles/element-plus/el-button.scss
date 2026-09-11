@@ -1,0 +1,159 @@
+/* ==========================================================================
+   Aircas · el-button 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-button class="aircas-button">` 即生效。
+   覆盖默认 / primary / success / warning / danger / info 各 type，
+   并处理 hover / active / disabled / plain / link / text 等形态。
+   全部取色自 --aircas-color-button-* 与 --aircas-color-state-*。
+   ========================================================================== */
+
+.aircas-button {
+  /* --------------------- 基础 ------------------------------------------- */
+  &.el-button {
+    // background & border 由 type 分别控制，这里只统一骨架
+    border-radius: 4px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: background-color var(--el-transition-duration),
+      border-color var(--el-transition-duration),
+      color var(--el-transition-duration);
+
+    &:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info) {
+      // default
+      background-color: var(--aircas-color-button-background);
+      border-color: var(--aircas-color-border);
+      color: var(--aircas-color-button-text);
+
+      &:hover {
+        background-color: var(--aircas-color-button-hover-background);
+        border-color: var(--aircas-color-border-highlight);
+      }
+
+      &:active {
+        background-color: var(--aircas-color-button-active-background);
+      }
+    }
+  }
+
+  /* --------------------- primary ---------------------------------------- */
+  &.el-button--primary {
+    background-color: var(--aircas-color-button-primary-background);
+    border-color: var(--aircas-color-button-primary-background);
+    color: var(--aircas-color-button-text);
+
+    &:hover {
+      background-color: var(--aircas-color-button-primary-hover-background);
+      border-color: var(--aircas-color-button-primary-hover-background);
+    }
+
+    &:active {
+      background-color: var(--aircas-color-button-primary-active-background);
+      border-color: var(--aircas-color-button-primary-active-background);
+    }
+  }
+
+  /* --------------------- success ---------------------------------------- */
+  &.el-button--success {
+    background-color: var(--aircas-color-button-success-background);
+    border-color: var(--aircas-color-button-success-background);
+    color: var(--aircas-color-button-text);
+
+    &:hover {
+      background-color: var(--aircas-color-button-success-hover-background);
+      border-color: var(--aircas-color-button-success-hover-background);
+    }
+
+    &:active {
+      background-color: var(--aircas-color-button-success-active-background);
+      border-color: var(--aircas-color-button-success-active-background);
+    }
+  }
+
+  /* --------------------- warning ---------------------------------------- */
+  &.el-button--warning {
+    background-color: var(--aircas-color-button-warning-background);
+    border-color: var(--aircas-color-button-warning-background);
+    color: var(--aircas-color-button-text);
+
+    &:hover {
+      background-color: var(--aircas-color-button-warning-hover-background);
+      border-color: var(--aircas-color-button-warning-hover-background);
+    }
+
+    &:active {
+      background-color: var(--aircas-color-button-warning-active-background);
+      border-color: var(--aircas-color-button-warning-active-background);
+    }
+  }
+
+  /* --------------------- danger ----------------------------------------- */
+  &.el-button--danger {
+    background-color: var(--aircas-color-button-danger-background);
+    border-color: var(--aircas-color-button-danger-background);
+    color: var(--aircas-color-button-text);
+
+    &:hover {
+      background-color: var(--aircas-color-button-danger-hover-background);
+      border-color: var(--aircas-color-button-danger-hover-background);
+    }
+
+    &:active {
+      background-color: var(--aircas-color-button-danger-active-background);
+      border-color: var(--aircas-color-button-danger-active-background);
+    }
+  }
+
+  /* --------------------- info ------------------------------------------- */
+  &.el-button--info {
+    background-color: var(--aircas-color-button-info-background);
+    border-color: var(--aircas-color-button-info-background);
+    color: var(--aircas-color-button-text);
+
+    &:hover {
+      background-color: var(--aircas-color-button-info-hover-background);
+      border-color: var(--aircas-color-button-info-hover-background);
+    }
+
+    &:active {
+      background-color: var(--aircas-color-button-info-active-background);
+      border-color: var(--aircas-color-button-info-active-background);
+    }
+  }
+
+  /* --------------------- plain（幽灵按钮）------------------------------- */
+  &.is-plain {
+    --aircas-plain-bg: var(--aircas-color-accent-cyan-fill, var(--aircas-color-button-background));
+    background-color: var(--aircas-color-transparent);
+    border-color: var(--aircas-color-border);
+    color: var(--aircas-color-accent-cyan, var(--aircas-color-title));
+
+    &:hover {
+      background-color: var(--aircas-plain-bg);
+      border-color: var(--aircas-color-border-highlight);
+    }
+  }
+
+  /* --------------------- disabled --------------------------------------- */
+  &.is-disabled,
+  &.is-disabled:focus,
+  &.is-disabled:hover {
+    background-color: var(--el-fill-color-lighter, var(--aircas-color-input-background));
+    border-color: var(--el-border-color-lighter, var(--aircas-color-border-soft));
+    color: var(--el-text-color-placeholder, var(--aircas-color-text-disabled));
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* --------------------- link / text ------------------------------------ */
+  &.is-link,
+  &.is-text {
+    background-color: var(--aircas-color-transparent);
+    border-color: var(--aircas-color-transparent);
+    color: var(--aircas-color-accent-cyan, var(--aircas-color-title));
+
+    &:hover {
+      background-color: var(--aircas-color-hover-background);
+      color: var(--aircas-color-title);
+    }
+  }
+}

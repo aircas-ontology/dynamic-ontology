@@ -1,0 +1,39 @@
+/* ==========================================================================
+   Aircas · el-checkbox 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-checkbox class="aircas-checkbox">` 即生效。
+   ========================================================================== */
+
+.aircas-checkbox {
+  &.el-checkbox {
+    color: var(--aircas-color-text-secondary);
+
+    .el-checkbox__inner {
+      border: 1px solid var(--aircas-color-border);
+      background-color: var(--aircas-color-input-background);
+
+      &:hover {
+        border-color: var(--aircas-color-border-highlight);
+      }
+    }
+
+    // 选中态
+    .el-checkbox__input.is-checked .el-checkbox__inner,
+    .el-checkbox__input.is-indeterminate .el-checkbox__inner {
+      background-color: var(--aircas-color-selected-background);
+      border-color: var(--aircas-color-border-highlight);
+    }
+
+    .el-checkbox__input.is-checked + .el-checkbox__label {
+      color: var(--aircas-color-title);
+    }
+
+    .el-checkbox__label {
+      color: var(--aircas-color-text-secondary);
+    }
+
+    &.is-disabled .el-checkbox__label {
+      color: var(--aircas-color-text-disabled);
+    }
+  }
+}

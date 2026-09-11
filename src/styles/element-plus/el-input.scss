@@ -1,0 +1,52 @@
+/* ==========================================================================
+   Aircas · el-input / el-textarea 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-input class="aircas-input">` 即生效。
+   通过覆盖 --el-input-* 局部变量实现，读写一体的可输入控件统一深色/浅色底。
+   ========================================================================== */
+
+.aircas-input {
+  &.el-input,
+  &.el-textarea {
+    --el-input-text-color: var(--aircas-color-text-primary);
+    --el-input-bg-color: var(--aircas-color-input-background);
+    --el-input-border-color: var(--aircas-color-border);
+    --el-input-hover-border-color: var(--aircas-color-border-highlight);
+    --el-input-focus-border-color: var(--aircas-color-focus-border);
+    --el-input-placeholder-color: var(--aircas-color-text-placeholder);
+    --el-input-icon-color: var(--aircas-color-text-muted);
+    --el-input-clear-hover-color: var(--aircas-color-title);
+    --el-input-border-radius: 4px;
+
+    .el-input__wrapper,
+    .el-textarea__inner {
+      background-color: var(--aircas-color-input-background);
+      box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+    }
+
+    .el-input__wrapper:hover,
+    .el-textarea__inner:hover {
+      box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
+    }
+
+    .el-input__wrapper.is-focus,
+    .el-textarea__inner:focus {
+      box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
+    }
+
+    .el-input__inner,
+    .el-textarea__inner {
+      color: var(--aircas-color-text-primary);
+    }
+
+    .el-input__inner::placeholder,
+    .el-textarea__inner::placeholder {
+      color: var(--aircas-color-text-placeholder);
+    }
+
+    .el-input__prefix,
+    .el-input__suffix {
+      color: var(--aircas-color-text-muted);
+    }
+  }
+}

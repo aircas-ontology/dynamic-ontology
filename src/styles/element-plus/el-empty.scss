@@ -1,0 +1,25 @@
+/* ==========================================================================
+   Aircas · el-empty 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-empty class="aircas-empty">` 即生效。
+   空状态颜色随主题 --aircas-* 令牌。
+   ========================================================================== */
+
+.aircas-empty {
+  &.el-empty {
+    --el-empty-fill-color-0: var(--aircas-color-border-soft);
+    --el-empty-fill-color-1: var(--aircas-color-panel-background-deep);
+    --el-empty-fill-color-2: var(--aircas-color-panel-background);
+    --el-empty-fill-color-3: var(--aircas-color-background);
+    --el-empty-fill-color-4: var(--aircas-color-panel-background-deep);
+    --el-empty-fill-color-5: var(--aircas-color-panel-background);
+    --el-empty-fill-color-6: var(--aircas-color-panel-background);
+    --el-empty-fill-color-7: var(--aircas-color-panel-background-deep);
+    --el-empty-fill-color-8: var(--aircas-color-panel-background-deep);
+    --el-empty-fill-color-9: var(--aircas-color-background);
+
+    .el-empty__description p {
+      color: var(--aircas-color-text-muted);
+    }
+  }
+}

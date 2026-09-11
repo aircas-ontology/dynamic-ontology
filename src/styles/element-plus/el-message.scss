@@ -1,0 +1,67 @@
+/* ==========================================================================
+   Aircas · el-message / el-message-box 覆盖
+   --------------------------------------------------------------------------
+   el-message 挂载于 body，通过全局 .aircas-message 类（ElMessage options
+   `customClass: 'aircas-message'`）生效；el-message-box 同理使用
+   `customClass: 'aircas-message-box'`。
+   ========================================================================== */
+
+.aircas-message {
+  &.el-message {
+    background-color: var(--aircas-color-menu-background);
+    border: 1px solid var(--aircas-color-border);
+    border-radius: 4px;
+    color: var(--aircas-color-text-primary);
+
+    .el-message__icon {
+      color: inherit;
+    }
+  }
+}
+
+.aircas-message-box {
+  &.el-message-box {
+    background-color: var(--aircas-color-menu-background);
+    border: 1px solid var(--aircas-color-border);
+    border-radius: 4px;
+    color: var(--aircas-color-text-primary);
+    box-shadow: var(--el-box-shadow-light);
+
+    .el-message-box__header {
+      background-color: var(--aircas-color-button-background);
+      padding: 0 16px;
+      height: 40px;
+      line-height: 40px;
+
+      .el-message-box__title {
+        color: var(--aircas-color-title);
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .el-message-box__headerbtn {
+        top: 0;
+
+        .el-message-box__close {
+          color: var(--aircas-color-text-primary);
+
+          &:hover {
+            color: var(--aircas-color-button-close-active-background);
+          }
+        }
+      }
+    }
+
+    .el-message-box__content {
+      color: var(--aircas-color-text-primary);
+    }
+
+    .el-message-box__btns {
+      .el-button {
+        height: 30px;
+        line-height: 30px;
+        padding: 0 16px;
+      }
+    }
+  }
+}

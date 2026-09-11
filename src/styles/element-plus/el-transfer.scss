@@ -1,0 +1,79 @@
+/* ==========================================================================
+   Aircas · el-transfer 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-transfer class="aircas-transfer">` 即生效。
+   深色科技风穿梭框：左右面板 / 表头 / 列表项 / 按钮统一取色。
+   ========================================================================== */
+
+.aircas-transfer {
+  &.el-transfer {
+    .el-transfer-panel {
+      background-color: var(--aircas-color-panel-background);
+      border: 1px solid var(--aircas-color-border);
+
+      .el-transfer-panel__header {
+        background-color: var(--aircas-color-panel-background-deep);
+        border-bottom: 1px solid var(--aircas-color-border);
+
+        .el-checkbox__label {
+          color: var(--aircas-color-text-primary);
+        }
+      }
+
+      .el-transfer-panel__body,
+      .el-transfer-panel__list {
+        background-color: var(--aircas-color-transparent);
+      }
+
+      .el-transfer-panel__item {
+        color: var(--aircas-color-text-secondary);
+
+        &:hover {
+          background-color: var(--aircas-color-hover-background);
+        }
+      }
+
+      .el-transfer-panel__item.is-checked {
+        color: var(--aircas-color-title);
+      }
+
+      .el-transfer-panel__filter {
+        .el-input__wrapper {
+          background-color: var(--aircas-color-input-background);
+          box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+        }
+      }
+
+      .el-transfer-panel__empty {
+        color: var(--aircas-color-text-empty);
+      }
+
+      .el-transfer-panel__footer {
+        background-color: var(--aircas-color-panel-background-deep);
+        border-top: 1px solid var(--aircas-color-border);
+
+        .el-checkbox__label {
+          color: var(--aircas-color-text-secondary);
+        }
+      }
+    }
+
+    .el-transfer__buttons {
+      .el-button {
+        background-color: var(--aircas-color-button-background);
+        border-color: var(--aircas-color-border);
+        color: var(--aircas-color-button-text);
+
+        &:hover {
+          background-color: var(--aircas-color-button-hover-background);
+        }
+
+        &.is-disabled {
+          background-color: var(--el-fill-color-lighter, var(--aircas-color-input-background));
+          border-color: var(--el-border-color-lighter, var(--aircas-color-border-soft));
+          color: var(--aircas-color-text-disabled);
+        }
+      }
+    }
+  }
+}

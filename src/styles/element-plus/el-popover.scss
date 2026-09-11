@@ -1,0 +1,23 @@
+/* ==========================================================================
+   Aircas · el-popover 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-popover popper-class="aircas-popover">`（或复用 aircas-popper）即生效。
+   ========================================================================== */
+
+.aircas-popover,
+.aircas-popover.el-popper {
+  background-color: var(--aircas-color-menu-background);
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 4px;
+  color: var(--aircas-color-text-primary);
+
+  .el-popover__title {
+    color: var(--aircas-color-title);
+    font-weight: 700;
+  }
+
+  .el-popper__arrow::before {
+    background-color: var(--aircas-color-menu-background);
+    border: 1px solid var(--aircas-color-border);
+  }
+}

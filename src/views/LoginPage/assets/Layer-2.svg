@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1500 1049.43">
+  <defs>
+    <style>
+      .cls-1 {
+        filter: url(#drop-shadow-1);
+      }
+
+      .cls-1, .cls-2 {
+        fill: #0D2840;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke: #66E3FF;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: .5px;
+      }
+
+      .cls-4 {
+        clip-path: url(#clippath);
+      }
+
+      .cls-5 {
+        stroke-width: 0px;
+      }
+
+      .cls-5, .cls-3 {
+        fill: none;
+      }
+
+      .cls-3 {
+        stroke-dasharray: 0 0 2 4;
+      }
+    </style>
+    <clipPath id="clippath">
+      <rect id="Clipping_Mask" data-name="Clipping Mask" class="cls-5" y="0" width="1500" height="1048.2"/>
+    </clipPath>
+    <filter id="drop-shadow-1" filterUnits="userSpaceOnUse">
+      <feOffset dx="0" dy="40"/>
+      <feGaussianBlur result="blur" stdDeviation="10"/>
+      <feFlood flood-color="#000" flood-opacity=".5"/>
+      <feComposite in2="blur" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="No_Labels" data-name="No Labels">
+    <g class="cls-4">
+      <g id="Ontology_Layers" data-name="Ontology Layers">
+        <g id="_3-Engine" data-name="3-Engine">
+          <polygon class="cls-1" points="337.41 685 750.06 446.75 1162.71 685 750.06 923.24 337.41 685"/>
+          <polygon class="cls-2" points="1162.6 684.98 749.97 923.22 749.97 961.42 1162.6 723.19 1162.6 684.98"/>
+          <polygon class="cls-2" points="337.29 684.94 749.92 923.17 749.92 961.37 337.29 723.14 337.29 684.94"/>
+          <g>
+            <polygon class="cls-3" points="1139.7 684.93 750.05 909.9 360.41 684.94 750.06 459.98 1139.7 684.93"/>
+            <polygon class="cls-3" points="1116.15 684.93 750.05 896.3 383.97 684.94 750.06 473.57 1116.15 684.93"/>
+            <polygon class="cls-3" points="1092.6 684.93 750.05 882.7 407.52 684.94 750.06 487.17 1092.6 684.93"/>
+            <polygon class="cls-3" points="1069.05 684.93 750.05 869.11 431.07 684.94 750.06 500.77 1069.05 684.93"/>
+            <polygon class="cls-3" points="1045.5 684.93 750.05 855.51 454.62 684.94 750.06 514.37 1045.5 684.93"/>
+            <polygon class="cls-3" points="1021.94 684.94 750.05 841.91 478.17 684.94 750.06 527.96 1021.94 684.94"/>
+            <polygon class="cls-3" points="998.39 684.94 750.05 828.31 501.73 684.94 750.06 541.56 998.39 684.94"/>
+            <polygon class="cls-3" points="974.84 684.94 750.06 814.71 525.28 684.94 750.06 555.16 974.84 684.94"/>
+            <polygon class="cls-3" points="951.29 684.94 750.06 801.12 548.83 684.94 750.06 568.76 951.29 684.94"/>
+            <polygon class="cls-3" points="927.73 684.94 750.06 787.52 572.38 684.94 750.06 582.36 927.73 684.94"/>
+            <polygon class="cls-3" points="904.18 684.94 750.06 773.92 595.93 684.94 750.06 595.95 904.18 684.94"/>
+            <polygon class="cls-3" points="880.63 684.94 750.06 760.32 619.49 684.94 750.06 609.55 880.63 684.94"/>
+            <polygon class="cls-3" points="857.08 684.94 750.06 746.73 643.04 684.94 750.06 623.15 857.08 684.94"/>
+            <polygon class="cls-3" points="833.53 684.94 750.06 733.13 666.59 684.94 750.06 636.75 833.53 684.94"/>
+            <polygon class="cls-3" points="809.97 684.94 750.06 719.53 690.14 684.94 750.06 650.35 809.97 684.94"/>
+            <polygon class="cls-3" points="786.42 684.94 750.06 705.93 713.7 684.94 750.06 663.94 786.42 684.94"/>
+            <polygon class="cls-3" points="762.87 684.94 750.06 692.33 737.25 684.94 750.06 677.54 762.87 684.94"/>
+          </g>
+          <rect id="Export_Bounding_Box" data-name="Export Bounding Box" class="cls-5" y="0" width="1500" height="1049.43"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

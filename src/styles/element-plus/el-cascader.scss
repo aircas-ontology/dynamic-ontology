@@ -1,0 +1,50 @@
+/* ==========================================================================
+   Aircas · el-cascader 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-cascader class="aircas-cascader">` 即生效，下拉菜单配合
+   `popper-class="aircas-popper"`。
+   ========================================================================== */
+
+.aircas-cascader {
+  &.el-cascader {
+    // 触发器复用 el-input 局部变量
+    .el-cascader__dropdown {
+      background-color: var(--aircas-color-menu-background);
+      border: 1px solid var(--aircas-color-border);
+      border-radius: 4px;
+    }
+
+    .el-cascader-node {
+      color: var(--aircas-color-text-primary);
+
+      &:not(.is-disabled):focus,
+      &:not(.is-disabled):hover {
+        background-color: var(--aircas-color-hover-background);
+      }
+
+      &.in-active-path,
+      &.is-active,
+      &.is-selectable.in-checked-path {
+        background-color: var(--aircas-color-selected-background);
+        color: var(--aircas-color-title);
+      }
+
+      &.is-disabled {
+        color: var(--aircas-color-text-disabled);
+      }
+    }
+
+    .el-cascader-menu {
+      border-right: 1px solid var(--aircas-color-divider);
+    }
+
+    .el-cascader__empty-text {
+      color: var(--aircas-color-text-empty);
+    }
+
+    .el-cascader__search-input {
+      background-color: var(--aircas-color-input-background);
+      color: var(--aircas-color-text-primary);
+    }
+  }
+}

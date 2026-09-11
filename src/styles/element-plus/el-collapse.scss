@@ -1,0 +1,30 @@
+/* ==========================================================================
+   Aircas · el-collapse 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-collapse class="aircas-collapse">` 即生效。
+   ========================================================================== */
+
+.aircas-collapse {
+  &.el-collapse {
+    border-color: var(--aircas-color-border);
+
+    .el-collapse-item__header {
+      background-color: var(--aircas-color-panel-background);
+      border-bottom: 1px solid var(--aircas-color-border);
+      color: var(--aircas-color-text-primary);
+
+      &.is-active {
+        color: var(--aircas-color-title);
+      }
+    }
+
+    .el-collapse-item__wrap {
+      background-color: var(--aircas-color-background);
+      border-bottom: 1px solid var(--aircas-color-border);
+    }
+
+    .el-collapse-item__content {
+      color: var(--aircas-color-text-secondary);
+    }
+  }
+}

@@ -1,0 +1,55 @@
+/* ==========================================================================
+   Aircas · el-date-picker / el-picker-panel 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-date-picker popper-class="aircas-picker">` 或复用 aircas-popper。
+   面板一般经 el-popper 弹出，使用 popper-class 生效。
+   ========================================================================== */
+
+.aircas-picker,
+.aircas-picker.el-picker-panel {
+  background-color: var(--aircas-color-menu-background);
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 4px;
+  color: var(--aircas-color-text-primary);
+  box-shadow: var(--el-box-shadow-light);
+
+  // 表头 / 分隔
+  .el-date-table th,
+  .el-date-range-picker__time-header,
+  .el-date-range-picker__content.is-left {
+    border-color: var(--aircas-color-border);
+  }
+
+  .el-date-picker__header-label,
+  .el-picker-panel__icon-btn {
+    color: var(--aircas-color-text-secondary);
+  }
+
+  // 日期单元格
+  .el-date-table td .el-date-table-cell div,
+  .el-date-table td.in-range div,
+  .el-date-table.is-week-mode .el-date-table__row:hover div {
+    background-color: var(--aircas-color-hover-background);
+  }
+
+  .el-date-table td.current:not(.disabled) .el-date-table-cell div {
+    background-color: var(--aircas-color-selected-background);
+    color: var(--aircas-color-title);
+  }
+
+  .el-date-table td.today .el-date-table-cell div {
+    color: var(--aircas-color-title);
+  }
+
+  .el-date-table td.disabled div,
+  .el-year-table td.disabled .cell,
+  .el-month-table td.disabled .cell {
+    background-color: var(--aircas-color-transparent);
+    color: var(--aircas-color-text-disabled);
+  }
+
+  .el-picker-panel__footer {
+    background-color: var(--aircas-color-panel-background-deep);
+    border-top: none;
+  }
+}

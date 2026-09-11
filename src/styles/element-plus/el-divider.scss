@@ -1,0 +1,17 @@
+/* ==========================================================================
+   Aircas · el-divider 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-divider class="aircas-divider">` 即生效。
+   ========================================================================== */
+
+.aircas-divider {
+  &.el-divider {
+    background-color: var(--aircas-color-border);
+
+    .el-divider__text,
+    &.el-divider--horizontal .el-divider__text {
+      background-color: var(--aircas-color-background);
+      color: var(--aircas-color-text-muted);
+    }
+  }
+}

@@ -1,0 +1,22 @@
+/* ==========================================================================
+   Aircas · el-tooltip / el-popper 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-tooltip popper-class="aircas-popper">` 即生效。
+   同时作用于 select / date-picker 等由 el-popper 承载的下拉。
+   ========================================================================== */
+
+.aircas-popper {
+  &.el-popper {
+    background-color: var(--aircas-color-menu-background);
+    border: 1px solid var(--aircas-color-border);
+    border-radius: 4px;
+    color: var(--aircas-color-text-primary);
+    box-shadow: var(--el-box-shadow-lighter, var(--el-box-shadow-light));
+
+    // 箭头
+    .el-popper__arrow::before {
+      background-color: var(--aircas-color-menu-background);
+      border: 1px solid var(--aircas-color-border);
+    }
+  }
+}

@@ -1,0 +1,43 @@
+/* ==========================================================================
+   Aircas · el-select 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-select class="aircas-select">` 即生效。
+   覆盖下拉面板 / 选项 hover / 选中态配色。
+   ========================================================================== */
+
+.aircas-select,
+.aircas-select-popper {
+  &.el-select {
+    // 触发器跟随 el-input 局部变量，此处仅处理面板
+  }
+
+  // 下拉面板挂载在 body 下，需单独以 aircas-select 命名空间约束面板类，
+  // 方案：结合 el-popper 选择器。更稳做法是配合 popper-class="aircas-popper" 使用。
+  &.el-select-dropdown,
+  .el-select-dropdown,
+  &.el-popper {
+    border: 1px solid var(--aircas-color-border);
+    border-radius: 4px;
+    background-color: var(--aircas-color-menu-background);
+    box-shadow: var(--el-box-shadow-lighter, var(--el-box-shadow-light));
+
+    .el-select-dropdown__item {
+      color: var(--aircas-color-text-primary);
+
+      &:hover,
+      &.hover {
+        background-color: var(--aircas-color-hover-background);
+      }
+
+      &.selected {
+        color: var(--aircas-color-title);
+        background-color: var(--aircas-color-selected-background);
+        font-weight: 700;
+      }
+
+      &.is-disabled {
+        color: var(--aircas-color-text-disabled);
+      }
+    }
+  }
+}

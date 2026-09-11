@@ -1,0 +1,44 @@
+/* ==========================================================================
+   Aircas · el-tabs 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-tabs class="aircas-tabs">` 即生效。
+   ========================================================================== */
+
+.aircas-tabs {
+  &.el-tabs {
+    .el-tabs__header {
+      border-bottom: 1px solid var(--aircas-color-border);
+    }
+
+    .el-tabs__item {
+      color: var(--aircas-color-text-secondary);
+
+      &:hover {
+        color: var(--aircas-color-title);
+      }
+
+      &.is-active {
+        color: var(--aircas-color-title);
+        font-weight: 700;
+      }
+
+      &.is-disabled {
+        color: var(--aircas-color-text-disabled);
+      }
+    }
+
+    .el-tabs__active-bar {
+      background-color: var(--aircas-color-focus-border);
+    }
+
+    // card 型
+    &.el-tabs--card > .el-tabs__header .el-tabs__item {
+      background-color: var(--aircas-color-panel-background);
+      border-color: var(--aircas-color-border);
+
+      &.is-active {
+        background-color: var(--aircas-color-selected-background);
+      }
+    }
+  }
+}

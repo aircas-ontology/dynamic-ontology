@@ -1,0 +1,39 @@
+/* ==========================================================================
+   Aircas · el-loading / 全局滚动条
+   --------------------------------------------------------------------------
+   el-loading 由服务方式挂载到任意容器，无需 class；直接覆盖全局。
+   ========================================================================== */
+
+.aircas-loading,
+.el-loading-mask {
+  background-color: var(--aircas-color-loading-mask);
+
+  .el-loading-spinner .el-loading-text {
+    color: var(--aircas-color-title);
+  }
+
+  .el-loading-spinner .circular .path {
+    stroke: var(--aircas-color-title);
+  }
+}
+
+/* 全局滚动条样式（随主题取色） */
+.aircas-scrollbar,
+.aircas-scrollbar::-webkit-scrollbar {
+  scrollbar-width: thin;
+}
+
+.aircas-scrollbar::-webkit-scrollbar {
+  width: 3px;
+  height: 8px;
+  background-color: var(--aircas-color-transparent);
+}
+
+.aircas-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background-color: var(--aircas-color-scrollbar);
+}
+
+.aircas-scrollbar::-webkit-scrollbar-track {
+  background-color: var(--aircas-color-transparent);
+}

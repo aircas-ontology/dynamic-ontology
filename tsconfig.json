@@ -1,0 +1,19 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": ["vite/client", "element-plus/global"]
+  },
+  "vueCompilerOptions": {
+    "target": 3.5,
+    "strictTemplates": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
+  "exclude": ["html", "node_modules"]
+}

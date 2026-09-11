@@ -1,0 +1,40 @@
+/* ==========================================================================
+   Aircas · el-switch 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-switch class="aircas-switch">` 即生效。
+   ========================================================================== */
+
+.aircas-switch {
+  &.el-switch {
+    .el-switch__label {
+      color: var(--aircas-color-text-secondary);
+
+      &.is-active {
+        color: var(--aircas-color-title);
+      }
+    }
+
+    .el-switch__core {
+      border-color: var(--aircas-color-border);
+      background-color: var(--aircas-color-panel-background);
+    }
+
+    .el-switch__core .el-switch__action {
+      background-color: var(--aircas-color-text-secondary);
+    }
+
+    &.is-checked .el-switch__core {
+      border-color: var(--aircas-color-focus-border);
+      background-color: var(--aircas-color-focus-border);
+    }
+
+    &.is-checked .el-switch__core .el-switch__action {
+      background-color: var(--aircas-color-button-text);
+    }
+
+    &.is-disabled .el-switch__core {
+      background-color: var(--el-fill-color-lighter, var(--aircas-color-input-background));
+      border-color: var(--el-border-color-lighter, var(--aircas-color-border-soft));
+    }
+  }
+}

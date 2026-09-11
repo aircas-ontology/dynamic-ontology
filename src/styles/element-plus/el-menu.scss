@@ -1,0 +1,50 @@
+/* ==========================================================================
+   Aircas · el-menu 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-menu class="aircas-menu">` 即生效。
+   深色科技感导航：菜单底色 + hover/active 青色高亮。
+   ========================================================================== */
+
+.aircas-menu {
+  &.el-menu {
+    background-color: var(--aircas-color-menu-background);
+    border-right: 1px solid var(--aircas-color-border);
+
+    .el-menu-item {
+      color: var(--aircas-color-text-secondary);
+
+      &:hover {
+        background-color: var(--aircas-color-hover-background);
+        color: var(--aircas-color-title);
+      }
+
+      &.is-active {
+        background-color: var(--aircas-color-selected-background);
+        color: var(--aircas-color-title);
+      }
+
+      &::before {
+        background-color: var(--aircas-color-title);
+      }
+
+      &.is-disabled {
+        color: var(--aircas-color-text-disabled);
+      }
+    }
+
+    .el-sub-menu__title {
+      color: var(--aircas-color-text-secondary);
+
+      &:hover {
+        background-color: var(--aircas-color-hover-background);
+        color: var(--aircas-color-title);
+      }
+    }
+
+    // 折叠弹出子菜单
+    &.el-menu--popup {
+      background-color: var(--aircas-color-menu-background);
+      border: 1px solid var(--aircas-color-border);
+    }
+  }
+}

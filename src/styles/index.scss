@@ -1,0 +1,155 @@
+/* ==========================================================================
+   Aircas · Element Plus 公共 UI  标准规范 · 聚合入口
+   --------------------------------------------------------------------------
+   目录结构
+     common-ui/
+     ├── index.scss                  ← 本文件（对外统一入口，只需引入它）
+     ├── theme-light.css             ← 亮色主题令牌（--aircas-*）
+     ├── theme-dark.css              ← 暗色主题令牌（--aircas-*）
+     └── element-plus/               ← 各组件覆盖（.aircas-* 命名，随类名生效）
+         ├── el-button.scss
+         ├── el-input.scss
+         ├── el-table.scss
+         ├── el-select.scss
+         ├── el-pagination.scss
+         ├── el-dialog.scss
+         ├── el-drawer.scss
+         ├── el-message.scss
+         ├── el-tooltip.scss
+         ├── el-popover.scss
+         ├── el-checkbox.scss
+         ├── el-radio.scss
+         ├── el-switch.scss
+         ├── el-date-picker.scss
+         ├── el-tree.scss
+         ├── el-upload.scss
+         ├── el-transfer.scss
+         ├── el-cascader.scss
+         ├── el-empty.scss
+         ├── el-timeline.scss
+         ├── el-collapse.scss
+         ├── el-dropdown.scss
+         ├── el-divider.scss
+         ├── el-card.scss
+         ├── el-descriptions.scss
+         ├── el-tag.scss
+         ├── el-tabs.scss
+         ├── el-menu.scss
+         ├── el-form.scss
+         └── el-loading.scss
+
+   --------------------------------------------------------------------------
+   使用方式（三选一）
+
+   ① 主题切换：在项目入口给 <html> 设置 theme 属性
+        <html theme="dark">     → 引入 theme-dark.css
+        <html theme="light">    → 引入 theme-light.css
+      或在 main.js 中动态：
+        document.documentElement.setAttribute('theme', 'dark')
+
+   ② 组件覆盖：给需要的 element-plus 组件添加对应 .aircas-* 类即生效
+        <el-button class="aircas-button" type="primary">确认</el-button>
+        <el-table  class="aircas-table">...</el-table>
+        <el-input  class="aircas-input">...</el-input>
+      下拉类组件（select/date-picker/tooltip）使用 popper-class：
+        <el-select popper-class="aircas-popper">
+        <el-tooltip popper-class="aircas-popper">
+
+   ③ Vue3 scoped 场景：在 <style lang="scss" scoped> 中用 :deep 穿透
+        :deep(.aircas-button) { ... }
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1. 主题令牌
+   用 @use ... 引入 CSS 主题（编译后保留原样变量）。
+   若项目用 JS 控制 <html theme>，亦可直接在 HTML 中按需 <link> 主题文件。
+   --------------------------------------------------------------------------- */
+@use "./theme-dark.css";
+@use "./theme-light.css";
+
+/* ---------------------------------------------------------------------------
+   2. element-plus 组件覆盖
+   按组件拆分，均以 .aircas-* 命名，仅在使用对应类名时生效。
+   --------------------------------------------------------------------------- */
+@use "./element-plus/el-button.scss" as *;
+@use "./element-plus/el-input.scss" as *;
+@use "./element-plus/el-table.scss" as *;
+@use "./element-plus/el-select.scss" as *;
+@use "./element-plus/el-pagination.scss" as *;
+@use "./element-plus/el-dialog.scss" as *;
+@use "./element-plus/el-drawer.scss" as *;
+@use "./element-plus/el-message.scss" as *;
+@use "./element-plus/el-tooltip.scss" as *;
+@use "./element-plus/el-popover.scss" as *;
+@use "./element-plus/el-checkbox.scss" as *;
+@use "./element-plus/el-radio.scss" as *;
+@use "./element-plus/el-switch.scss" as *;
+@use "./element-plus/el-date-picker.scss" as *;
+@use "./element-plus/el-tree.scss" as *;
+@use "./element-plus/el-upload.scss" as *;
+@use "./element-plus/el-transfer.scss" as *;
+@use "./element-plus/el-cascader.scss" as *;
+@use "./element-plus/el-empty.scss" as *;
+@use "./element-plus/el-timeline.scss" as *;
+@use "./element-plus/el-collapse.scss" as *;
+@use "./element-plus/el-dropdown.scss" as *;
+@use "./element-plus/el-divider.scss" as *;
+@use "./element-plus/el-card.scss" as *;
+@use "./element-plus/el-descriptions.scss" as *;
+@use "./element-plus/el-tag.scss" as *;
+@use "./element-plus/el-tabs.scss" as *;
+@use "./element-plus/el-menu.scss" as *;
+@use "./element-plus/el-form.scss" as *;
+@use "./element-plus/el-loading.scss" as *;
+
+/* ---------------------------------------------------------------------------
+   3. 备注
+   - 所有颜色均取自主题令牌 --aircas-*，更换主题即自动换肤。
+   - --aircas-* 与 --el-* 的映射在 theme-*.css 尾部，让 element-plus 原生组件跟随。
+   --------------------------------------------------------------------------- */
+
+:root {
+  font-family: "Microsoft YaHei", Helvetica, Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  margin: 8px 0;
+  background: var(--aircas-color-transparent);
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--aircas-color-scrollbar);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--aircas-color-accent-cyan);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--aircas-color-transparent);
+}

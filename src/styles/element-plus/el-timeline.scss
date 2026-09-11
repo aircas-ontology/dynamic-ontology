@@ -1,0 +1,26 @@
+/* ==========================================================================
+   Aircas · el-timeline 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-timeline class="aircas-timeline">` 即生效。
+   ========================================================================== */
+
+.aircas-timeline {
+  &.el-timeline {
+    .el-timeline-item__tail {
+      border-left: 1px solid var(--aircas-color-border);
+    }
+
+    .el-timeline-item__node {
+      background-color: var(--aircas-color-button-background);
+      border-color: var(--aircas-color-border-highlight);
+    }
+
+    .el-timeline-item__content {
+      color: var(--aircas-color-text-primary);
+    }
+
+    .el-timeline-item__timestamp {
+      color: var(--aircas-color-text-muted);
+    }
+  }
+}

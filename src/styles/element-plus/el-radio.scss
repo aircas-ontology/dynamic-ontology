@@ -1,0 +1,55 @@
+/* ==========================================================================
+   Aircas · el-radio / el-radio-button 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-radio class="aircas-radio">` 或
+   `<el-radio-group class="aircas-radio-group">` 即生效。
+   ========================================================================== */
+
+.aircas-radio {
+  &.el-radio {
+    color: var(--aircas-color-text-secondary);
+
+    .el-radio__inner {
+      border: 1px solid var(--aircas-color-border);
+      background-color: var(--aircas-color-input-background);
+
+      &:hover {
+        border-color: var(--aircas-color-border-highlight);
+      }
+    }
+
+    .el-radio__input.is-checked .el-radio__inner {
+      border-color: var(--aircas-color-focus-border);
+      background: var(--aircas-color-focus-border);
+    }
+
+    .el-radio__input.is-checked + .el-radio__label {
+      color: var(--aircas-color-title);
+    }
+
+    .el-radio__label {
+      color: var(--aircas-color-text-secondary);
+    }
+  }
+}
+
+.aircas-radio-group {
+  &.el-radio-group {
+    .el-radio-button__inner {
+      background-color: var(--aircas-color-panel-background);
+      border: 1px solid var(--aircas-color-border);
+      color: var(--aircas-color-text-secondary);
+
+      &:hover {
+        color: var(--aircas-color-title);
+      }
+    }
+
+    .el-radio-button__orig-radio:checked + .el-radio-button__inner {
+      background-color: var(--aircas-color-button-background);
+      border-color: var(--aircas-color-border-highlight);
+      color: var(--aircas-color-button-text);
+      box-shadow: -1px 0 0 0 var(--aircas-color-border-highlight);
+    }
+  }
+}

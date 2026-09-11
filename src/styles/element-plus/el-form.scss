@@ -1,0 +1,30 @@
+/* ==========================================================================
+   Aircas · el-form 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-form class="aircas-form">`、`<el-form-item>` 即生效。
+   ========================================================================== */
+
+.aircas-form {
+  &.el-form {
+    .el-form-item__label {
+      color: var(--aircas-color-text-secondary);
+    }
+
+    .el-form-item__content {
+      color: var(--aircas-color-text-primary);
+    }
+
+    .el-form-item.is-required .el-form-item__label::before,
+    .el-form-item.is-error .el-form-item__label {
+      color: var(--aircas-color-danger);
+    }
+
+    .el-form-item__error {
+      color: var(--aircas-color-danger);
+    }
+
+    .el-form-item.is-disabled .el-form-item__label {
+      color: var(--aircas-color-text-disabled);
+    }
+  }
+}

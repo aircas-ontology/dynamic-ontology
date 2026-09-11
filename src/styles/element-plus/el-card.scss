@@ -1,0 +1,33 @@
+/* ==========================================================================
+   Aircas · el-card / el-descriptions 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-card class="aircas-card">`、`<el-descriptions class="aircas-descriptions">`。
+   ========================================================================== */
+
+.aircas-card {
+  &.el-card {
+    background-color: var(--aircas-color-card-background);
+    border: 1px solid var(--aircas-color-border);
+    border-radius: 4px;
+    color: var(--aircas-color-text-primary);
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+
+    &:hover {
+      border-color: var(--aircas-color-border-highlight);
+      box-shadow: var(--aircas-color-page-glow) 0 0 12px;
+    }
+
+    .el-card__header {
+      border-bottom: 1px solid var(--aircas-color-border);
+      color: var(--aircas-color-title);
+      font-weight: 700;
+      font-size: 16px;
+      padding: 14px 16px;
+    }
+
+    .el-card__body {
+      color: var(--aircas-color-text-primary);
+    }
+  }
+}

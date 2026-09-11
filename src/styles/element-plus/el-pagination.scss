@@ -1,0 +1,61 @@
+/* ==========================================================================
+   Aircas · el-pagination 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-pagination class="aircas-pagination">` 即生效。
+   深色科技风分页：青色数字方块 / 激活高亮 / 透明输入框。
+   ========================================================================== */
+
+.aircas-pagination {
+  &.el-pagination {
+    color: var(--aircas-color-text-secondary);
+
+    button {
+      background-color: var(--aircas-color-panel-background) !important;
+      border: 1px solid var(--aircas-color-border) !important;
+      border-radius: 4px;
+      color: var(--aircas-color-text-primary) !important;
+
+      &:hover {
+        border-color: var(--aircas-color-border-highlight);
+        color: var(--aircas-color-title) !important;
+      }
+
+      &.is-disabled {
+        color: var(--aircas-color-text-disabled) !important;
+      }
+    }
+
+    .el-pager li {
+      background-color: var(--aircas-color-panel-background) !important;
+      border: 1px solid var(--aircas-color-border);
+      border-radius: 4px;
+      color: var(--aircas-color-text-primary) !important;
+
+      &:hover {
+        border-color: var(--aircas-color-border-highlight);
+      }
+
+      &.is-active {
+        background-color: var(--aircas-color-selected-background) !important;
+        border-color: var(--aircas-color-border-highlight) !important;
+        color: var(--aircas-color-title) !important;
+      }
+    }
+
+    .el-input__inner {
+      background-color: var(--aircas-color-transparent) !important;
+      color: var(--aircas-color-text-primary);
+    }
+
+    .el-pagination__total,
+    .el-pagination__jump {
+      color: var(--aircas-color-text-secondary);
+    }
+  }
+}
+
+/* 分页内会使用 el-select 选择每页条数，复用 select 面板命名空间 */
+.aircas-pagination .el-select__wrapper {
+  background-color: var(--aircas-color-panel-background);
+  box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+}

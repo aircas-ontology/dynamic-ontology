@@ -1,0 +1,62 @@
+{
+  "name": "ontology",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --open",
+    "test": "node --test --experimental-strip-types tests/*.test.mjs",
+    "test:coverage": "node --test --experimental-strip-types --experimental-test-coverage --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80 tests/*.test.mjs",
+    "type-check": "vue-tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@microsoft/fetch-event-source": "^2.0.1",
+    "@turf/turf": "^7.4.0",
+    "@vueuse/components": "^14.3.0",
+    "@vueuse/core": "^14.3.0",
+    "@wangeditor/editor": "^5.1.23",
+    "@wangeditor/editor-for-vue": "^5.1.12",
+    "axios": "^1.19.0",
+    "d3": "^7.9.0",
+    "dayjs": "^1.11.21",
+    "echarts": "^6.1.0",
+    "element-plus": "^2.14.3",
+    "font-awesome": "^4.7.0",
+    "h3-js": "^4.5.0",
+    "lodash-es": "^4.18.1",
+    "marked": "^18.0.7",
+    "mars3d": "^3.11.6",
+    "mars3d-cesium": "^1.144.0",
+    "mars3d-heatmap": "^3.11.6",
+    "mars3d-mapv": "^3.11.6",
+    "mars3d-space": "^3.11.6",
+    "mars3d-wind": "^3.11.6",
+    "monaco-editor": "^0.53.0",
+    "ol": "^10.10.0",
+    "pinia": "^4.0.2",
+    "satellite.js": "^6.0.2",
+    "three": "^0.185.1",
+    "uuid": "^14.0.1",
+    "vue": "^3.5.40",
+    "vue-router": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/d3": "^7.4.3",
+    "@types/node": "^22.20.1",
+    "@types/three": "^0.185.4",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/tsconfig": "^0.9.1",
+    "sass": "^1.101.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.5",
+    "vite-plugin-mars3d": "^4.2.2",
+    "vite-plugin-vue-devtools": "^8.1.5",
+    "vue-tsc": "^3.3.9"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.12.0"
+  }
+}

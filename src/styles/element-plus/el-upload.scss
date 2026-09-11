@@ -1,0 +1,52 @@
+/* ==========================================================================
+   Aircas · el-upload 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-upload class="aircas-upload">` 即生效。
+   深色科技风上传：拖拽区透明、文件列表 hover 高亮、提示文字随主题。
+   ========================================================================== */
+
+.aircas-upload {
+  &.el-upload,
+  .el-upload {
+    background-color: var(--aircas-color-transparent);
+  }
+
+  &.el-upload-dragger {
+    background-color: var(--aircas-color-input-background);
+    border: 1px dashed var(--aircas-color-border);
+
+    &:hover {
+      border-color: var(--aircas-color-border-highlight);
+    }
+
+    .el-icon {
+      color: var(--aircas-color-title);
+    }
+  }
+
+  .el-upload__tip {
+    color: var(--aircas-color-text-muted);
+  }
+
+  .el-upload-list__item {
+    background-color: var(--aircas-color-panel-background);
+    border-radius: 4px;
+
+    &:hover {
+      background-color: var(--aircas-color-hover-background);
+    }
+
+    .el-upload-list__item-name {
+      color: var(--aircas-color-text-primary);
+    }
+
+    .el-upload-list__item-status-icon {
+      color: var(--aircas-color-success);
+    }
+  }
+
+  .el-upload-list--picture-card .el-upload-list__item {
+    background-color: var(--aircas-color-panel-background-deep);
+    border-color: var(--aircas-color-border);
+  }
+}

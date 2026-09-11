@@ -1,0 +1,140 @@
+/* ==========================================================================
+   Aircas · Theme Light（明亮科技风）
+   --------------------------------------------------------------------------
+   所有变量统一以 --aircas-* 命名，与 theme-dark.css 保持【同名同分类】，
+   仅数值不同。按使用场景分类：
+     1. 基础色    2. 背景体系    3. 文本体系    4. 边框与分隔
+     5. 强调色    6. 状态色     7. 按钮色彩   8. 交互状态
+     9. 效果与装饰
+   最后将业务令牌映射回 --el-*，让 element-plus 原生组件跟随主题。
+   ========================================================================== */
+
+:root[theme="light"] {
+  /* ---------------------------------------------------------------------
+     1. 基础色
+     --------------------------------------------------------------------- */
+  --aircas-color-white: #ffffff;
+  --aircas-color-black: #000000;
+  --aircas-color-transparent: transparent;
+
+  /* ---------------------------------------------------------------------
+     2. 背景体系
+     --------------------------------------------------------------------- */
+  --aircas-color-page-background: #f0f4f8;
+  --aircas-color-background: #ffffff;
+  --aircas-color-panel-background: #f7fafc;
+  --aircas-color-panel-background-deep: #e9eef4;
+  --aircas-color-card-background: #ffffff;
+  --aircas-color-card-background-active: #dbeafe;
+  --aircas-color-section-background: rgba(255, 255, 255, 0.85);
+  --aircas-color-section-header: rgba(6, 182, 212, 0.18);
+  --aircas-color-input-background: #ffffff;
+  --aircas-color-menu-background: #ffffff;
+  --aircas-color-overlay: rgba(15, 23, 42, 0.96);
+  --aircas-color-overlay-deep: rgba(2, 8, 23, 0.94);
+
+  /* ---------------------------------------------------------------------
+     3. 文本体系
+     --------------------------------------------------------------------- */
+  --aircas-color-text-primary: #1f2d3d;
+  --aircas-color-text-secondary: #48566a;
+  --aircas-color-text-muted: #7a8ba0;
+  --aircas-color-text-placeholder: #a0aebe;
+  --aircas-color-text-disabled: #c0c8d2;
+  --aircas-color-text-empty: rgba(64, 88, 112, 0.55);
+  --aircas-color-text-inverse: #ffffff;
+
+  /* ---------------------------------------------------------------------
+     4. 边框与分隔
+     --------------------------------------------------------------------- */
+  --aircas-color-border: #0e7f9e;
+  --aircas-color-border-soft: rgba(14, 127, 158, 0.35);
+  --aircas-color-border-highlight: rgba(8, 178, 202, 0.6);
+  --aircas-color-divider: rgba(14, 127, 158, 0.16);
+
+  /* ---------------------------------------------------------------------
+     5. 强调色
+     --------------------------------------------------------------------- */
+  --aircas-color-title: #0891b2;
+  --aircas-color-accent-cyan: #0891b2;
+  --aircas-color-accent-blue: #2563eb;
+  --aircas-color-accent-green: #16a34a;
+  --aircas-color-accent-purple: #7c3aed;
+  --aircas-color-accent-orange: #ea7a1a;
+
+  /* 强调色·柔和 / 边框 / 填充 / 辉光 */
+  --aircas-color-accent-cyan-soft: rgba(8, 178, 202, 0.1);
+  --aircas-color-accent-cyan-border: rgba(8, 178, 202, 0.28);
+  --aircas-color-accent-cyan-fill: rgba(8, 178, 202, 0.12);
+  --aircas-color-accent-cyan-shadow: rgba(8, 178, 202, 0.32);
+  --aircas-color-accent-blue-soft: rgba(37, 99, 235, 0.1);
+  --aircas-color-accent-blue-border: rgba(37, 99, 235, 0.28);
+  --aircas-color-accent-blue-fill: rgba(37, 99, 235, 0.12);
+  --aircas-color-accent-blue-shadow: rgba(37, 99, 235, 0.32);
+  --aircas-color-accent-green-soft: rgba(22, 163, 74, 0.1);
+  --aircas-color-accent-green-border: rgba(22, 163, 74, 0.28);
+  --aircas-color-accent-green-fill: rgba(22, 163, 74, 0.12);
+  --aircas-color-accent-green-shadow: rgba(22, 163, 74, 0.32);
+  --aircas-color-accent-purple-soft: rgba(124, 58, 237, 0.1);
+  --aircas-color-accent-purple-border: rgba(124, 58, 237, 0.28);
+  --aircas-color-accent-purple-fill: rgba(124, 58, 237, 0.12);
+  --aircas-color-accent-purple-shadow: rgba(124, 58, 237, 0.32);
+  --aircas-color-accent-orange-soft: rgba(234, 122, 26, 0.1);
+  --aircas-color-accent-orange-border: rgba(234, 122, 26, 0.28);
+  --aircas-color-accent-orange-fill: rgba(234, 122, 26, 0.12);
+  --aircas-color-accent-orange-shadow: rgba(234, 122, 26, 0.32);
+
+  /* ---------------------------------------------------------------------
+     6. 状态色
+     --------------------------------------------------------------------- */
+  --aircas-color-success: #16a34a;
+  --aircas-color-success-background: rgba(22, 163, 74, 0.12);
+  --aircas-color-warning: #d97706;
+  --aircas-color-warning-background: rgba(217, 119, 6, 0.12);
+  --aircas-color-danger: #dc2626;
+  --aircas-color-danger-background: rgba(220, 38, 38, 0.12);
+  --aircas-color-info: #64748b;
+  --aircas-color-info-background: rgba(100, 116, 139, 0.12);
+  --aircas-color-neutral: #64748b;
+  --aircas-color-neutral-background: rgba(100, 116, 139, 0.12);
+
+  /* ---------------------------------------------------------------------
+     7. 按钮色彩（--aircas-color-button-*）
+     --------------------------------------------------------------------- */
+  --aircas-color-button-background: #0e7f9e;
+  --aircas-color-button-hover-background: #0b94ba;
+  --aircas-color-button-active-background: #0a6b84;
+  --aircas-color-button-primary-background: #0e7f9e;
+  --aircas-color-button-primary-hover-background: #0b94ba;
+  --aircas-color-button-primary-active-background: #0a6b84;
+  --aircas-color-button-success-background: #16a34a;
+  --aircas-color-button-success-hover-background: #22c55e;
+  --aircas-color-button-success-active-background: #12773a;
+  --aircas-color-button-warning-background: #d97706;
+  --aircas-color-button-warning-hover-background: #f59e0b;
+  --aircas-color-button-warning-active-background: #a86205;
+  --aircas-color-button-danger-background: #dc2626;
+  --aircas-color-button-danger-hover-background: #ef4444;
+  --aircas-color-button-danger-active-background: #b91c1c;
+  --aircas-color-button-info-background: #64748b;
+  --aircas-color-button-info-hover-background: #7b8aa0;
+  --aircas-color-button-info-active-background: #4b5668;
+  --aircas-color-button-text: #ffffff;
+  --aircas-color-button-close-active-background: #e81123;
+
+  /* ---------------------------------------------------------------------
+     8. 交互状态
+     --------------------------------------------------------------------- */
+  --aircas-color-hover-background: rgba(14, 127, 158, 0.1);
+  --aircas-color-active-background: rgba(8, 156, 184, 0.2);
+  --aircas-color-selected-background: rgba(14, 127, 158, 0.16);
+  --aircas-color-focus-border: #0b94ba;
+
+  /* ---------------------------------------------------------------------
+     9. 效果与装饰
+     --------------------------------------------------------------------- */
+  --aircas-color-grid-line: rgba(8, 178, 202, 0.06);
+  --aircas-color-page-glow: rgba(0, 145, 190, 0.1);
+  --aircas-color-scrollbar: rgba(0, 80, 120, 0.3);
+  --aircas-color-loading-mask: rgba(240, 244, 248, 0.7);
+}

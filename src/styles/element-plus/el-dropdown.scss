@@ -1,0 +1,53 @@
+/* ==========================================================================
+   Aircas · el-dropdown 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-dropdown class="aircas-dropdown">`，下拉菜单挂载 body 下，
+   配合 `popper-class="aircas-popper"` 生效。
+   ========================================================================== */
+
+.aircas-dropdown,
+.aircas-dropdown-popper {
+  &.el-dropdown {
+    &.el-dropdown--default {
+      color: var(--aircas-color-text-primary);
+    }
+  }
+
+  // 下拉菜单面板
+  .el-dropdown-menu,
+  &.el-dropdown-menu,
+  &.el-popper {
+    background-color: var(--aircas-color-menu-background);
+    border: 1px solid var(--aircas-color-border);
+    border-radius: 4px;
+    padding: 4px;
+
+    .el-dropdown-menu__item {
+      color: var(--aircas-color-text-primary);
+      border-radius: 4px;
+
+      &:hover,
+      &:focus {
+        background-color: var(--aircas-color-hover-background);
+        color: var(--aircas-color-title);
+      }
+
+      &.is-disabled {
+        color: var(--aircas-color-text-disabled);
+
+        &:hover {
+          background-color: var(--aircas-color-transparent);
+        }
+      }
+
+      &:not(.is-disabled):focus {
+        background-color: var(--aircas-color-hover-background);
+        color: var(--aircas-color-title);
+      }
+    }
+
+    .el-dropdown-menu__item--divided {
+      border-top: 1px solid var(--aircas-color-divider);
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"]
+  },
+  "include": ["vite.config.ts"]
+}
