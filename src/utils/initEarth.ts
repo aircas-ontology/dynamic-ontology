@@ -3,7 +3,7 @@ import "mars3d-space";
 import "mars3d-cesium/Build/Cesium/Widgets/widgets.css";
 import "mars3d/mars3d.css";
 import { isEmpty } from "lodash-es";
-import type { MapConfig } from "@/types/map";
+import type { MapConfig } from "@/types";
 
 let globalViewer: mars3d.Map | null = null;
 

@@ -1,4 +1,4 @@
-import type { StorageGuard } from "@/types/shared";
+import type { StorageGuard } from "@/types";
 
 export function setStorage(name: string, value: unknown): void {
   window.localStorage.setItem(name, JSON.stringify(value));

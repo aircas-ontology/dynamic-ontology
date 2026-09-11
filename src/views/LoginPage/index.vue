@@ -138,7 +138,7 @@ import layer2 from "./assets/layer-2.svg";
 import layer3 from "./assets/layer-3.svg";
 import layer4 from "./assets/layer-4.svg";
 import logoImage from "./assets/logo.png";
-import type { LoginCredentials } from "@/types/login";
+import type { LoginCredentials } from "@/types";
 
 const showPassword = ref(false);
 const rememberMe = ref(false);

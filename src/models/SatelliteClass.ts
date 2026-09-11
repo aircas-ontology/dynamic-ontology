@@ -6,7 +6,7 @@ import type {
 } from "satellite.js";
 import dayjs from "dayjs";
 import { earthRadiusKm, jdUnixEpoch, msPerDay, mu } from "@/utils/constants";
-import type { EcefState, EciState, SatelliteState } from "@/types/entitySatellite";
+import type { EcefState, EciState, SatelliteState } from "@/types";
 
 class SatelliteClass {
   name: string;
