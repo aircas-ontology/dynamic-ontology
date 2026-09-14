@@ -1,0 +1,6 @@
+interface:
+  display_name: "项目变更规划"
+  short_description: "检查修改范围、识别低风险小改并生成可确认的项目实施计划"
+  default_prompt: "Use $project-change-planning to inspect and plan this repository change."
+policy:
+  allow_implicit_invocation: true
