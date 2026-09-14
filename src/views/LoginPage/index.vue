@@ -42,7 +42,7 @@
         <h3>欢迎登录</h3>
         <!-- <p class="sub-title">动态本体平台</p> -->
 
-        <form class="login-form" @submit.prevent="onSubmit">
+        <form class="login-form" novalidate @submit.prevent="onSubmit">
           <label class="field">
             <span class="field-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
@@ -50,7 +50,14 @@
                 <path d="M5.5 20c.7-3.2 3-5 6.5-5s5.8 1.8 6.5 5" />
               </svg>
             </span>
-            <input v-model="formData.username" type="text" placeholder="请输入用户名" autocomplete="username" />
+            <input
+              v-model="formData.username"
+              type="text"
+              aria-label="用户名"
+              placeholder="请输入用户名"
+              autocomplete="username"
+              required
+            />
           </label>
 
           <label class="field">
@@ -64,8 +71,10 @@
               v-model="formData.password"
               class="password-input"
               :type="showPassword ? 'text' : 'password'"
+              aria-label="密码"
               placeholder="请输入密码"
               autocomplete="current-password"
+              required
             />
             <button class="eye" type="button" :aria-label="showPassword ? '隐藏密码' : '显示密码'" @click="togglePasswordVisibility">
               <svg v-if="showPassword" viewBox="0 0 24 24" aria-hidden="true">
@@ -80,11 +89,6 @@
               </svg>
             </button>
           </label>
-
-          <div class="row">
-            <label class="remember"><input v-model="rememberMe" type="checkbox" /> 记住我</label>
-            <a href="#" @click.prevent>忘记密码?</a>
-          </div>
 
           <button class="submit" type="submit">登 录</button>
         </form>
@@ -128,27 +132,23 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { getStorage, removeStorage, setStorage } from "@/utils/storage";
-import { useRouter } from "vue-router";
-import layer01 from "./assets/layer-0-1.svg";
-import layer02 from "./assets/layer-0-2.svg";
-import layer1 from "./assets/layer-1.svg";
-import layer2 from "./assets/layer-2.svg";
-import layer3 from "./assets/layer-3.svg";
-import layer4 from "./assets/layer-4.svg";
-import logoImage from "./assets/logo.png";
+import { ref } from "vue";
+import { ElMessage } from "element-plus";
+
+import layer01 from "@/assets/pages/loginPage/images/layer01.svg";
+import layer02 from "@/assets/pages/loginPage/images/layer02.svg";
+import layer1 from "@/assets/pages/loginPage/images/layer1.svg";
+import layer2 from "@/assets/pages/loginPage/images/layer2.svg";
+import layer3 from "@/assets/pages/loginPage/images/layer3.svg";
+import layer4 from "@/assets/pages/loginPage/images/layer4.svg";
+import logoImage from "@/assets/pages/loginPage/images/loginLogo.png";
 import type { LoginCredentials } from "@/types";
 
 const showPassword = ref(false);
-const rememberMe = ref(false);
 const formData = ref<LoginCredentials>({
-  username: "admin",
-  password: "123456",
+  username: "",
+  password: "",
 });
-const isString = (value: unknown): value is string => typeof value === "string";
-
-const router = useRouter();
 
 function togglePasswordVisibility() {
   showPassword.value = !showPassword.value;
@@ -159,33 +159,12 @@ function onSubmit() {
   const password = formData.value.password.trim();
 
   if (!username || !password) {
-    alert("请输入账号密码！");
+    ElMessage.warning("请输入用户名和密码。");
     return;
   }
 
-  setStorage("token", true);
-
-  if (rememberMe.value) {
-    setStorage("username", username);
-    setStorage("password", password);
-  } else {
-    removeStorage("username");
-    removeStorage("password");
-  }
-
-  router.push({ name: "OntologyDomain" });
+  ElMessage.info("认证服务尚未接入，请联系管理员。");
 }
-
-onMounted(() => {
-  const savedUsername = getStorage("username", isString);
-  const savedPassword = getStorage("password", isString);
-
-  if (savedUsername && savedPassword) {
-    formData.value.username = savedUsername;
-    formData.value.password = savedPassword;
-    rememberMe.value = true;
-  }
-});
 </script>
 
 <style scoped lang="scss">
@@ -456,39 +435,6 @@ onMounted(() => {
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 1.9;
-  }
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--aircas-color-text-muted);
-  font-size: 13px;
-
-  a {
-    color: var(--aircas-color-accent-cyan);
-    text-decoration: none;
-
-    &:focus-visible {
-      outline: 2px solid var(--aircas-color-accent-cyan);
-      outline-offset: 3px;
-      border-radius: 2px;
-    }
-  }
-}
-
-.remember {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-
-  input {
-    width: 15px;
-    height: 15px;
-    margin: 0;
-    accent-color: var(--aircas-color-accent-cyan);
   }
 }
 

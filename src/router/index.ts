@@ -1,9 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import type { RouteRecordRaw } from "vue-router";
 
-import Layout from "@/layout/index.vue";
-// import ontologyRouter from "./modules/ontologyRoutes";
-
 const routes: RouteRecordRaw[] = [
   {
     path: "/",
@@ -11,24 +8,14 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/views/LoginPage/index.vue"),
   },
   {
-    path: "/layout",
-    component: Layout,
-    // children: [...ontologyRouter],
+    path: "/:pathMatch(.*)*",
+    redirect: { name: "Login" },
   },
 ];
 
 const router = createRouter({
   history: createWebHashHistory(),
-  routes: routes,
-});
-
-router.beforeEach((to, from) => {
-  // console.log(to, from);
-  return true;
-});
-
-router.afterEach((to, from) => {
-  // console.log(to, from);
+  routes,
 });
 
 export default router;

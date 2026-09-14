@@ -27,6 +27,7 @@ export class TimeEngine {
   private rafId = 0;
   private lastRealTime = 0;
   private listeners = new Set<TickCallback>();
+  private isDisposed = false;
 
   constructor(options: TimeEngineOptions) {
     this.startTime = options.startTime;
@@ -41,6 +42,10 @@ export class TimeEngine {
    * 注册时钟回调，返回取消订阅函数
    */
   onTick(callback: TickCallback): () => void {
+    if (this.isDisposed) {
+      return () => {};
+    }
+
     this.listeners.add(callback);
     return () => this.offTick(callback);
   }
@@ -54,7 +59,7 @@ export class TimeEngine {
   }
 
   play() {
-    if (this.isPlaying) return;
+    if (this.isPlaying || this.isDisposed) return;
     this.isPlaying = true;
     this.lastRealTime = performance.now();
     this.tick();
@@ -62,19 +67,33 @@ export class TimeEngine {
 
   pause() {
     this.isPlaying = false;
-    cancelAnimationFrame(this.rafId);
+    if (this.rafId !== 0) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = 0;
+    }
+  }
+
+  dispose() {
+    if (this.isDisposed) return;
+
+    this.pause();
+    this.listeners.clear();
+    this.isDisposed = true;
   }
 
   reset() {
+    if (this.isDisposed) return;
     this.speed = 1;
     this.setTime(Date.now());
   }
 
   setSpeed(speed: number) {
+    if (this.isDisposed) return;
     this.speed = speed;
   }
 
   setTime(time: number) {
+    if (this.isDisposed) return;
     this.currentTime = this.clamp(time);
     this.emit();
   }

@@ -3,16 +3,21 @@
     <!-- 顶部区域 -->
     <div class="panel-head" v-show="isTitle" ref="panelHeadRef" @click.stop="handlerChangeIndex">
       <div class="head-left">
-        <img v-show="!isMin" src="@/assets/title-img.png" style="transform: rotatey(180deg)" />
+        <img v-show="!isMin" :src="titleDecoration" class="title-decoration is-reversed" alt="" aria-hidden="true" />
         <span :title="title">{{ titleStr }}</span>
-        <img v-show="!isMin" src="@/assets/title-img.png" />
+        <img v-show="!isMin" :src="titleDecoration" class="title-decoration" alt="" aria-hidden="true" />
       </div>
 
-      <!-- 顶部右侧关闭按钮（图标组件类型未声明 emits，用 v-on 对象绑定） -->
       <div class="head-right" v-show="isFunc">
-        <FullScreen class="primary-btn" v-show="isMin" v-on="{ click: handleFullScreen }" />
-        <Minus class="primary-btn" v-show="!isMin" v-on="{ click: handleMinimize }" />
-        <Close class="close-btn" v-on="{ click: handlerCloseAircasPanel }" />
+        <button v-show="isMin" class="panel-action" type="button" title="恢复面板" aria-label="恢复面板" @click.stop="handleFullScreen">
+          <FullScreen />
+        </button>
+        <button v-show="!isMin" class="panel-action" type="button" title="最小化面板" aria-label="最小化面板" @click.stop="handleMinimize">
+          <Minus />
+        </button>
+        <button class="panel-action panel-action-close" type="button" title="关闭面板" aria-label="关闭面板" @click.stop="handlerCloseAircasPanel">
+          <Close />
+        </button>
       </div>
     </div>
 
@@ -23,10 +28,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { FullScreen, Minus, Close } from "@element-plus/icons-vue";
-import { useAircasPanelStore } from "@/stores/useAircasPanelStore";
+import { computed, ref } from "vue";
+import { Close, FullScreen, Minus } from "@element-plus/icons-vue";
 import { useDraggable } from "@vueuse/core";
+
+import titleDecoration from "@/assets/components/aircasPanel/images/titleDecoration.png";
+import { useAircasPanelStore } from "@/stores/useAircasPanelStore";
 
 const props = withDefaults(
   defineProps<{
@@ -134,18 +141,15 @@ function handlerChangeIndex() {
   store.updatePanelIndex(currentPanelIndex.value);
 }
 
-function handleFullScreen(e: MouseEvent) {
-  e.stopPropagation();
+function handleFullScreen() {
   isMin.value = false;
 }
 
-function handleMinimize(e: MouseEvent) {
-  e.stopPropagation();
+function handleMinimize() {
   isMin.value = true;
 }
 
-function handlerCloseAircasPanel(e: MouseEvent) {
-  e.stopPropagation();
+function handlerCloseAircasPanel() {
   emit("close");
 }
 </script>
@@ -176,41 +180,54 @@ function handlerCloseAircasPanel(e: MouseEvent) {
       display: flex;
       align-items: center;
 
+      .title-decoration {
+        display: block;
+      }
+
+      .title-decoration.is-reversed {
+        transform: rotateY(180deg);
+      }
+
       span {
         font-size: 16px;
         padding: 0 5px;
         font-weight: bolder;
-        color: #00ffff;
+        color: var(--aircas-color-title);
       }
     }
 
-    // TODO 按钮的颜色以及hover颜色可以重新设计
     .head-right {
       display: flex;
       align-items: center;
 
-      .primary-btn,
-      .close-btn {
+      .panel-action {
+        display: grid;
+        place-items: center;
         font-size: 16px;
         font-weight: bold;
         width: 24px;
         height: 24px;
         padding: 2px;
-        text-align: center;
+        border: 0;
         border-radius: 2px;
-        color: #e1e1e1;
-        background: rgba($color: #ffffff, $alpha: 0.2);
+        color: var(--aircas-color-text-primary);
+        background: var(--aircas-color-selected-background);
         margin-left: 3px;
-        transition: all 0.3s;
+        transition: background-color 0.3s;
         cursor: pointer;
       }
 
-      .primary-btn:hover {
-        background: var(--aircas-color-background-active);
+      .panel-action:hover {
+        background: var(--aircas-color-active-background);
       }
 
-      .close-btn:hover {
+      .panel-action-close:hover {
         background: var(--aircas-color-danger);
+      }
+
+      .panel-action:focus-visible {
+        outline: 2px solid var(--aircas-color-focus-border);
+        outline-offset: 2px;
       }
     }
   }

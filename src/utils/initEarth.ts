@@ -5,7 +5,10 @@ import "mars3d/mars3d.css";
 import { isEmpty } from "lodash-es";
 import type { MapConfig } from "@/types";
 
-let globalViewer: mars3d.Map | null = null;
+export interface ViewerHandle {
+  readonly viewer: mars3d.Map;
+  dispose: () => void;
+}
 
 // 加载天空盒
 function skyShow(viewer: mars3d.Map): void {
@@ -22,11 +25,21 @@ function skyShow(viewer: mars3d.Map): void {
 }
 
 // 初始化地球
-function initViewer(el: string | mars3d.Cesium.Viewer, mapConfig: MapConfig = {}): mars3d.Map {
+function initViewer(el: string | mars3d.Cesium.Viewer, mapConfig: MapConfig = {}): ViewerHandle {
   const viewer = new mars3d.Map(el, isEmpty(mapConfig) ? MAP_CONFIG : mapConfig);
-  globalViewer = viewer;
+  let isDisposed = false;
+
   skyShow(viewer);
-  return viewer;
+
+  return {
+    viewer,
+    dispose: () => {
+      if (isDisposed) return;
+
+      viewer.destroy();
+      isDisposed = true;
+    },
+  };
 }
 
-export { globalViewer, initViewer };
+export { initViewer };

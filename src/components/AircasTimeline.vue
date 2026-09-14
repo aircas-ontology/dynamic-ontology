@@ -3,20 +3,20 @@
     <div class="aircas-timeline">
       <header>
         <div class="state-controls">
-          <button :class="{ active: stepIndex === 3 }" @click="setStep(3)">日制</button>
-          <button :class="{ active: stepIndex === 2 }" @click="setStep(2)">时制</button>
-          <button :class="{ active: stepIndex === 1 }" @click="setStep(1)">分制</button>
-          <button :class="{ active: stepIndex === 0 }" @click="setStep(0)">秒制</button>
+          <button type="button" :class="{ active: stepIndex === 3 }" :aria-pressed="stepIndex === 3" @click="setStep(3)">日制</button>
+          <button type="button" :class="{ active: stepIndex === 2 }" :aria-pressed="stepIndex === 2" @click="setStep(2)">时制</button>
+          <button type="button" :class="{ active: stepIndex === 1 }" :aria-pressed="stepIndex === 1" @click="setStep(1)">分制</button>
+          <button type="button" :class="{ active: stepIndex === 0 }" :aria-pressed="stepIndex === 0" @click="setStep(0)">秒制</button>
         </div>
 
         <div class="time-controls">
-          <div class="start-and-stop" v-show="!isPlaying" @click="handleToggleTimeline(1)">
-            <img src="/assets/svg/start-btn.svg" />
-          </div>
+          <button v-show="!isPlaying" class="icon-control" type="button" title="播放时间轴" aria-label="播放时间轴" @click="handleToggleTimeline(true)">
+            <VideoPlay />
+          </button>
 
-          <div class="start-and-stop" v-show="isPlaying" @click="handleToggleTimeline(0)">
-            <img src="/assets/svg/pause-btn.svg" />
-          </div>
+          <button v-show="isPlaying" class="icon-control" type="button" title="暂停时间轴" aria-label="暂停时间轴" @click="handleToggleTimeline(false)">
+            <VideoPause />
+          </button>
 
           <!-- el-date-picker 类型未声明 emits，用 v-on 对象语法绑定事件 -->
           <el-date-picker
@@ -28,30 +28,32 @@
             v-on="{ 'visible-change': handleToggleDatePicker, change: handleSetCurrentTime }"
           />
 
-          <div class="start-and-stop" @click="timelineInstance.reset()">
-            <img src="/assets/svg/reset-btn.svg" />
-          </div>
+          <button class="icon-control" type="button" title="重置时间轴" aria-label="重置时间轴" @click="handleResetTimeline">
+            <RefreshRight />
+          </button>
         </div>
 
         <div class="speed-controls">
           <span class="speed-label">{{ speed.valueOf() }}&nbsp;x</span>
-          <button @click="setSpeed(-1)">减速</button>
-          <button @click="setSpeed(0)">常速</button>
-          <button @click="setSpeed(1)">加速</button>
+          <button type="button" @click="setSpeed(-1)">减速</button>
+          <button type="button" @click="setSpeed(0)">常速</button>
+          <button type="button" @click="setSpeed(1)">加速</button>
         </div>
       </header>
 
       <footer>
-        <canvas ref="aircasTimelineRef"></canvas>
+        <canvas ref="aircasTimelineRef" role="img" aria-label="当前时间轴刻度"></canvas>
       </footer>
     </div>
   </AircasPanel>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import { timeEngineInstance as timelineInstance } from "@/utils/initTimeEngine";
+import { onMounted, onUnmounted, ref } from "vue";
+import { RefreshRight, VideoPause, VideoPlay } from "@element-plus/icons-vue";
 import dayjs from "dayjs";
+
+import { createTimeEngine } from "@/utils/initTimeEngine";
 import AircasPanel from "./AircasPanel.vue";
 
 const emit = defineEmits<{ close: [] }>();
@@ -61,15 +63,17 @@ const stepScales = [1000, 60 * 1000, 60 * 60 * 1000, 24 * 60 * 60 * 1000];
 const offsetX = 60; // 每个刻度线间距 60 像素
 const width = 1168;
 const height = 80;
+const timelineInstance = createTimeEngine();
 
-const isPlaying = ref(true);
+const isPlaying = ref(false);
 const speed = ref(1);
 const stepIndex = ref(0);
-const timeShow = ref<number>(timelineInstance.currentTime);
+const timeShow = ref<number>(timelineInstance.getTime());
 
 let ctx: CanvasRenderingContext2D | null = null;
 let offDraw = () => {};
 let stopInteraction = () => {};
+let resumeAfterDatePicker = false;
 
 onMounted(() => {
   const canvas = aircasTimelineRef.value;
@@ -80,25 +84,32 @@ onMounted(() => {
   canvas.height = height;
 
   offDraw = timelineInstance.onTick(draw);
-  draw(timelineInstance.currentTime);
+  draw(timelineInstance.getTime());
   stopInteraction = enableInteraction(canvas);
+  timelineInstance.play();
+  isPlaying.value = true;
 });
 
 onUnmounted(() => {
   offDraw();
   stopInteraction();
+  timelineInstance.dispose();
 });
+
+function getThemeColor(variableName: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+}
 
 function draw(currentTime: number) {
   if (!ctx) return;
 
   ctx.clearRect(0, 0, width, height);
 
-  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+  ctx.fillStyle = getThemeColor("--aircas-color-overlay-deep");
   ctx.fillRect(0, 0, width, height);
 
-  ctx.strokeStyle = "#ffffff";
-  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = getThemeColor("--aircas-color-text-primary");
+  ctx.fillStyle = getThemeColor("--aircas-color-text-primary");
   ctx.font = "700 16px Arial";
   ctx.textAlign = "center";
 
@@ -128,7 +139,7 @@ function draw(currentTime: number) {
   ctx.stroke();
 
   ctx.lineWidth = 4;
-  ctx.strokeStyle = "red";
+  ctx.strokeStyle = getThemeColor("--aircas-color-danger");
   ctx.beginPath();
   ctx.moveTo(centerX, 10);
   ctx.lineTo(centerX, 70);
@@ -162,24 +173,30 @@ function handleSetCurrentTime() {
   timelineInstance.setTime(setTimeNow);
 }
 
-function handleToggleDatePicker() {
-  if (isPlaying.value === true) {
+function handleToggleDatePicker(isVisible: boolean) {
+  if (isVisible) {
+    resumeAfterDatePicker = isPlaying.value;
     timelineInstance.pause();
     isPlaying.value = false;
-  } else {
+  } else if (resumeAfterDatePicker) {
     timelineInstance.play();
     isPlaying.value = true;
+    resumeAfterDatePicker = false;
   }
 }
 
-function handleToggleTimeline(tag: number) {
-  if (tag === 0) {
-    timelineInstance.pause();
-    isPlaying.value = false;
-  } else {
+function handleToggleTimeline(shouldPlay: boolean) {
+  if (shouldPlay) {
     timelineInstance.play();
     isPlaying.value = true;
+  } else {
+    timelineInstance.pause();
+    isPlaying.value = false;
   }
+}
+
+function handleResetTimeline() {
+  timelineInstance.reset();
 }
 
 function formatTime(d: number) {
@@ -219,7 +236,7 @@ function enableInteraction(canvas: HTMLCanvasElement): () => void {
     const dx = e.clientX - lastX;
     lastX = e.clientX;
 
-    timelineInstance.setTime(timelineInstance.currentTime - (dx / offsetX) * step);
+    timelineInstance.setTime(timelineInstance.getTime() - (dx / offsetX) * step);
   };
 
   canvas.addEventListener("mousedown", handleMouseDown);
@@ -241,33 +258,38 @@ function handlePanelClose() {
 <style lang="scss" scoped>
 .aircas-timeline {
   font-size: 14px;
-  color: #ffffff;
+  color: var(--aircas-color-text-primary);
 
   button {
     font-size: 14px;
-    background: rgba(33, 135, 168, 0.4);
+    background: var(--aircas-color-selected-background);
     width: 60px;
     height: 28px;
     outline: none;
     border: 1px solid var(--aircas-color-border);
     border-radius: 3px;
-    color: #ffffff;
+    color: var(--aircas-color-text-primary);
     cursor: pointer;
     transition: all 0.3s;
 
     &:hover {
-      background: rgba(33, 135, 168, 0.8);
+      background: var(--aircas-color-hover-background);
     }
 
     &.active {
-      background: rgba(33, 135, 168, 1);
+      background: var(--aircas-color-active-background);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--aircas-color-focus-border);
+      outline-offset: 2px;
     }
   }
 
   .speed-label {
     font-weight: bolder;
     font-size: 16px;
-    color: #ffffff;
+    color: var(--aircas-color-text-primary);
     width: 60px;
     text-align: right;
   }
@@ -275,7 +297,7 @@ function handlePanelClose() {
   .current-time {
     font-weight: bolder;
     font-size: 18px;
-    color: #ffffff;
+    color: var(--aircas-color-text-primary);
   }
 }
 
@@ -305,13 +327,14 @@ header {
     justify-content: space-between;
     align-items: center;
 
-    .start-and-stop {
+    .icon-control {
       font-size: 14px;
       width: 40px;
       height: 28px;
-      outline: none;
+      border: 0;
       border-radius: 3px;
-      color: #ffffff;
+      color: var(--aircas-color-text-primary);
+      background: var(--aircas-color-transparent);
       cursor: pointer;
       transition: all 0.3s;
       display: flex;
@@ -320,10 +343,15 @@ header {
       user-select: none;
 
       &:hover {
-        background: rgba(33, 135, 168, 0.8);
+        background: var(--aircas-color-hover-background);
       }
 
-      img {
+      &:focus-visible {
+        outline: 2px solid var(--aircas-color-focus-border);
+        outline-offset: 2px;
+      }
+
+      svg {
         width: 22px;
         height: 22px;
       }
@@ -359,7 +387,7 @@ footer {
         padding-left: 15px;
         font-weight: bolder;
         font-size: 18px;
-        color: #ffffff;
+        color: var(--aircas-color-text-primary);
       }
     }
   }

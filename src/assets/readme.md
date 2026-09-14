@@ -76,12 +76,3 @@ common/icons/searchIcon.svg
 5. SVG、安全信息和图片替代文本是否已检查。
 6. 删除功能时是否同步检查专属资源。
 
-## 7. 现状差异与后续整改
-
-- `src/assets/png`、`src/assets/svg` 仍按格式分层，后续应迁移到对应归属目录。
-- `src/assets/title-img.png` 与 `src/assets/png/title-img.png` 存在重复或职责不清问题。
-- 现有连字符文件名不符合小驼峰要求。
-- `src/views/LoginPage/assets` 后续应迁移到 `src/assets/pages/loginPage`。
-- 当前存在 `.DS_Store`，后续应清理并通过忽略规则防止再次提交。
-- 部分资源文件名与 import 路径大小写不一致，后续应统一并在大小写敏感环境验证。
-

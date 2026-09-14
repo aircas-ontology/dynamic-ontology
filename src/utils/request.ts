@@ -1,5 +1,4 @@
 import axios from "axios";
-import { setStorage, getStorage, removeStorage } from "@/utils/storage";
 
 /** 通用API响应结构 */
 export interface ApiResponse<T = unknown> {
@@ -7,6 +6,16 @@ export interface ApiResponse<T = unknown> {
   data: T;
   message: string;
   success: boolean;
+}
+
+export class RequestError extends Error {
+  readonly status: number | null;
+
+  constructor(message: string, status: number | null = null) {
+    super(message);
+    this.name = "RequestError";
+    this.status = status;
+  }
 }
 
 const instance = axios.create({
@@ -31,46 +40,26 @@ const httpCode: Record<number, string> = {
   504: "网关超时",
 };
 
-instance.interceptors.request.use(
-  (config) => {
-    const userId = getStorage("userId");
-    const token = getStorage("token");
+export function normalizeRequestError(error: unknown): RequestError {
+  if (!axios.isAxiosError(error)) {
+    return new RequestError("请求失败，请稍后重试。");
+  }
 
-    if (userId) config.headers.userId = userId;
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+  const status = error.response?.status ?? null;
+  if (status !== null) {
+    return new RequestError(httpCode[status] ?? "请求失败，请稍后重试。", status);
+  }
 
-    return config;
-  },
-  (error) => {
-    console.error("请求错误：", error);
-    return Promise.reject(error);
-  },
-);
+  if (error.code === "ECONNABORTED") {
+    return new RequestError("请求超时，请稍后重试。");
+  }
+
+  return new RequestError("网络连接失败，请检查网络后重试。");
+}
 
 instance.interceptors.response.use(
-  (response) => {
-    if (response.status === 200) {
-      return response.data;
-    }
-  },
-  (error) => {
-    console.log(error.response?.status);
-
-    if (error && error.response) {
-      const status: number = error.response.status;
-      const tips =
-        status in httpCode
-          ? httpCode[status]
-          : error.response.data.message;
-
-      console.log(tips);
-
-      return Promise.reject(error.response.data);
-    } else {
-      console.log("请求超时，请刷新重试");
-      return Promise.reject(new Error("请求超时，连接服务器失败"));
-    }
-  },
+  (response) => response.data,
+  (error: unknown) => Promise.reject(normalizeRequestError(error)),
 );
 
 /** 类型化的 request，返回 ApiResponse<T> 而非 AxiosResponse */

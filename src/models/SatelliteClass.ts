@@ -9,37 +9,52 @@ import { earthRadiusKm, jdUnixEpoch, msPerDay, mu } from "@/utils/constants";
 import type { EcefState, EciState, SatelliteState } from "@/types";
 
 class SatelliteClass {
-  name: string;
-  tle1: string;
-  tle2: string;
-  satrec: SatRec | null = null;
-  noradID: string | null = null;
-  inclination: number | null = null;
-  eccentricity: number | null = null;
-  raan: number | null = null;
-  argOfPerigee: number | null = null;
-  meanAnomaly: number | null = null;
-  meanMotion: number | null = null;
-  meanMotionSec: number | null = null;
-  a: number | null = null;
-  perigee: number | null = null;
-  apogee: number | null = null;
-  jdsatepoch: number | null = null;
-  epochDate: string | null = null;
-  epochTimeMs: number | null = null;
+  readonly name: string;
+  readonly tle1: string;
+  readonly tle2: string;
+  readonly noradID: string;
+  readonly inclination: number;
+  readonly eccentricity: number;
+  readonly raan: number;
+  readonly argOfPerigee: number;
+  readonly meanAnomaly: number;
+  readonly meanMotion: number;
+  readonly meanMotionSec: number;
+  readonly a: number;
+  readonly perigee: number;
+  readonly apogee: number;
+  readonly jdsatepoch: number;
+  readonly epochDate: string;
+  readonly epochTimeMs: number;
+
+  private readonly satrec: SatRec;
 
   constructor(tle1: string, tle2: string, name = "") {
-    this.name = name;
-    this.tle1 = tle1;
-    this.tle2 = tle2;
-    this.initSatellite();
-  }
+    const normalizedTle1 = tle1.trim();
+    const normalizedTle2 = tle2.trim();
+    const catalogNumber1 = normalizedTle1.slice(2, 7).trim();
+    const catalogNumber2 = normalizedTle2.slice(2, 7).trim();
 
-  private initSatellite(): void {
-    const satrec = satellite.twoline2satrec(this.tle1, this.tle2);
+    if (!normalizedTle1.startsWith("1 ") || !normalizedTle2.startsWith("2 ")) {
+      throw new Error("TLE 必须包含以 ‘1 ’ 和 ‘2 ’ 开头的两行数据。");
+    }
+
+    if (!catalogNumber1 || catalogNumber1 !== catalogNumber2) {
+      throw new Error("TLE 两行的卫星编号必须一致。");
+    }
+
+    const satrec = satellite.twoline2satrec(normalizedTle1, normalizedTle2);
+
+    if (satrec.error !== satellite.SatRecError.None || !Number.isFinite(satrec.no) || satrec.no <= 0) {
+      throw new Error(`TLE 解析失败，错误代码：${satrec.error}。`);
+    }
+
     const meanMotionSec = satrec.no / 60;
     const semiMajorAxis = Math.pow(mu / Math.pow(meanMotionSec, 2), 1 / 3);
 
+    this.name = name.trim();
+    this.tle1 = normalizedTle1;
+    this.tle2 = normalizedTle2;
     this.satrec = satrec;
     this.noradID = satrec.satnum;
     this.inclination = satrec.inclo;
@@ -58,10 +73,6 @@ class SatelliteClass {
   }
 
   getEciState(date: Date): EciState | null {
-    if (!this.satrec) {
-      return null;
-    }
-
     const positionAndVelocity = satellite.propagate(this.satrec, date);
 
     if (!positionAndVelocity) {
@@ -75,10 +86,6 @@ class SatelliteClass {
   }
 
   getEcefState(date: Date): EcefState | null {
-    if (!this.satrec) {
-      return null;
-    }
-
     const positionAndVelocity = satellite.propagate(this.satrec, date);
 
     if (!positionAndVelocity) {
@@ -94,10 +101,6 @@ class SatelliteClass {
   }
 
   getState(date: Date): SatelliteState | null {
-    if (!this.satrec) {
-      return null;
-    }
-
     const positionAndVelocity = satellite.propagate(this.satrec, date);
 
     if (!positionAndVelocity) {
@@ -161,10 +164,6 @@ class SatelliteClass {
   }
 
   getLLAsByPeriod(startTime: Date, step = 60_000): SatelliteState[] {
-    if (!this.meanMotion) {
-      return [];
-    }
-
     const minutesPerOrbit = (2 * Math.PI) / this.meanMotion;
     const totalMinutes = Math.ceil(minutesPerOrbit) + 1;
     const endTime = dayjs(startTime).add(totalMinutes, "minutes").toDate();
