@@ -1,3 +1,7 @@
+/**
+ * @description 当前文件定义的是本项目的后端服务接口地址【domain】
+ * 当前文件已经在 `index.html` 文件中引入到项目中，可以直接通过`DOMAIN_CONFIG.**`使用
+ * */
 const DOMAIN_CONFIG = {
   ontology_server: "http://101.32.194.190:38002",
   // MAP_SERVER_WMTS_URL: "http://192.168.2.201:8310",
