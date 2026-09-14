@@ -15,8 +15,6 @@ dist
 dist-ssr
 coverage
 html
-docs
-plans
 *.local
 
 # Editor directories and files

@@ -4,7 +4,9 @@
  */
 import type { App } from "vue";
 import AircasPanel from "./AircasPanel.vue";
+import AircasTimeline from "./AircasTimeline.vue";
 
 export default (app: App) => {
   app.component("AircasPanel", AircasPanel);
+  app.component("AircasTimeline", AircasTimeline);
 };

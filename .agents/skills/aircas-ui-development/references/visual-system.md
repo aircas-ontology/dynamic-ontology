@@ -2,16 +2,16 @@
 
 ## 真实来源
 
-修改样式前以仓库当前文件为准，不依赖本说明猜测可用变量或组件类：
+技术约束以 `src/styles/readme.md` 和目标页面、布局或组件目录的 `readme.md` 为准。修改样式前以仓库当前文件为准，不依赖本说明猜测可用变量或组件类：
 
 - 全局聚合入口：`src/styles/index.scss`
 - 暗色主题变量：`src/styles/theme-dark.css`
 - 亮色主题变量：`src/styles/theme-light.css`
 - Element Plus 覆盖：`src/styles/element-plus/`
 - 公共组件注册：`src/components/register.ts`
-- 图标与图片资源：`src/assets/` 及目标页面自身的 `assets/`
+- 图标与图片资源：`src/assets/pages/`、`src/assets/layouts/`、`src/assets/components/` 和 `src/assets/common/`
 
-先搜索已有 `--aircas-*` 变量和 `.aircas-*` Class，再决定是否需要新增。Element Plus 下拉、弹层等脱离组件 DOM 的内容，优先使用对应 `popper-class`。
+先搜索已有 `--aircas-*` 变量和 `.aircas-*` Class，再决定是否需要新增。现有变量无法表达明确需求时，按规划流程确认功能域限定变量，并在暗色、亮色主题中同名定义。Element Plus 下拉、弹层等脱离组件 DOM 的内容，优先使用对应 `popper-class`。
 
 ## 视觉基准
 

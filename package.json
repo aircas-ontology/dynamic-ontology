@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "npm@11.17.0",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --open",
     "test": "node --test --experimental-strip-types tests/*.test.mjs",
@@ -10,6 +11,7 @@
     "check:types-conventions": "node scripts/check-types-conventions.mjs",
     "type-check": "vue-tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "build": "vite build",
+    "build:verify": "node scripts/verify-build.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -46,7 +48,7 @@
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
-    "@types/node": "^22.20.1",
+    "@types/node": "^24.0.0",
     "@types/three": "^0.185.4",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/tsconfig": "^0.9.1",
@@ -58,6 +60,7 @@
     "vue-tsc": "^3.3.9"
   },
   "engines": {
-    "node": "^22.18.0 || >=24.12.0"
+    "node": ">=24.12.0",
+    "npm": ">=11.0.0"
   }
 }

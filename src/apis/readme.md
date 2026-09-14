@@ -44,12 +44,12 @@ deleteExampleInterface
 - 【必须】API 业务类型文件遵循 `src/types/readme.md`，使用“小驼峰概念名 + `Type.ts`”命名。
 - 【必须】API 文件通过 `@/types` 公共出口导入业务类型，不得绕过出口引用 `@/types/apis/*`。
 - 【必须】仅作为类型使用的符号通过 `import type` 导入。
-- 【必须】`ApiResponse` 从 `@/utils/request` 导入；与运行时使用的 `request` 可写在同一条导入语句中。
+- 【必须】`ApiResponse` 与 API 业务类型统一通过 `@/types` 导入；运行时 `request` 从 `@/utils/request` 导入。
 - 【优先】导入语句按类型、请求工具和其他依赖分组，保持顺序稳定。
 
 ```ts
-import type { ExampleData, ExampleParams } from "@/types";
-import { request, type ApiResponse } from "@/utils/request";
+import type { ApiResponse, ExampleData, ExampleParams } from "@/types";
+import { request } from "@/utils/request";
 ```
 
 ## 4. 接口定义
@@ -122,4 +122,4 @@ export { getExampleInterface };
 6. 请求路径、方法及 `params` 或 `data` 是否与后端契约一致。
 7. 每个导出接口是否具有完整、准确的 JSDoc。
 8. 接口是否已按排序规则加入 `src/apis/index.ts` 的导入区和导出区。
-9. 是否已执行与变更相匹配的类型检查、测试和构建验证。
+9. 是否已执行与变更相匹配的测试、类型检查和 `npm run build:verify`。

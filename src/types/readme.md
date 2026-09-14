@@ -2,11 +2,11 @@
 
 ## 1. 目录职责
 
-`src/types` 集中定义项目中的 TypeScript 类型。类型必须按使用范围和业务职责归类，禁止将不同职责的类型长期堆放在同一目录或同一文件中。
+`src/types` 集中定义项目中的公共业务类型和 API 契约。与单一实现紧密耦合的内部类型可就近定义；跨模块使用的类型必须按使用范围和业务职责归类，禁止将不同职责长期堆放在同一目录或同一文件中。
 
 ```text
 src/types/
-├─ apis/                    # 接口请求参数、响应数据等 API 类型
+├─ apis/                    # 统一响应、请求参数、响应数据等 API 类型
 ├─ pages/                   # 页面专属类型，每个页面一个 TypeScript 文件
 │  └─ <page>Type.ts
 ├─ <domain>/                # 可跨页面复用的业务领域类型，例如 auth、map、satellite
@@ -17,7 +17,7 @@ src/types/
 
 目录规则：
 
-- 【必须】`apis/` 作为所有 `src/apis` 接口类型的唯一存放位置，接口文件不得在 `src/apis` 内直接定义业务数据类型。
+- 【必须】`apis/` 作为所有 `src/apis` 接口类型的唯一存放位置，包括公共 `ApiResponse<T>`；接口文件不得在 `src/apis` 内直接定义业务数据类型。
 - 【必须】`pages/` 仅存放页面专属类型，每个页面定义一个直接位于 `pages/` 下的 `<page>Type.ts`；【禁止】再创建页面子目录。
 - 【必须】可被多个页面复用的类型提升到对应业务领域目录。
 - 【必须】`<domain>/` 存放跨页面复用且属于明确业务领域的类型，目录名使用小写或 kebab-case。
@@ -83,14 +83,14 @@ import type { ExampleData, ExampleParams } from "@/types";
 ```bash
 npm run check:types-conventions
 npm run type-check
-npm run build
+npm run build:verify
 ```
 
 其中：
 
 - `check:types-conventions` 检查 `*Type.ts` 命名、目录归类、普通类型是否由 `index.ts` 导出、出口排序以及是否绕过统一出口导入。
 - `type-check` 检查 TypeScript、Vue 类型和声明文件是否正确。
-- `build` 用于确认类型路径和公共出口调整不会破坏生产构建。
+- `build:verify` 用于在系统临时目录确认类型路径和公共出口调整不会破坏生产构建，禁止用默认构建覆盖 `html/`。
 
 校验失败时必须先修复类型目录、命名、导出或导入问题，不得通过关闭类型检查或规避类型系统解决。
 

@@ -23,6 +23,7 @@ export default defineConfig({
   },
   build: {
     outDir: "html",
+    target: "chrome130",
     assetsDir: "assets",
     assetsInlineLimit: 4096,
     sourcemap: false,

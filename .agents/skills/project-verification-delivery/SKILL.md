@@ -13,13 +13,13 @@ description: Verify completed repository changes and produce an evidence-based h
 2. 查看工作区状态和当前任务 diff，区分本次修改与用户已有变更。
 3. 对照已确认 Plan；没有完整 Plan 的低风险小改，则对照用户明确要求。
 4. 根据修改类型选择验证：
-   - 应用代码、类型、配置、依赖或构建相关修改必须执行现有 TypeScript 类型检查和 Production Build；
-   - 有相关测试或新增行为时执行对应测试；存在适用的覆盖率脚本和测试源时执行覆盖率检查；
+   - 应用代码、类型、配置、依赖或构建相关修改执行 `npm run type-check` 和 `npm run build:verify`；
+   - 新功能、缺陷修复和行为变更核对 TDD 的 RED/GREEN 证据，并执行 `npm test` 和 `npm run test:coverage`；
    - 仅文档或 Skill 变更优先执行格式、链接、frontmatter 或专用校验器，除非用户或已确认 Plan 要求应用级检查。
 
 ## 安全执行
 
-- 如果构建配置把产物写入禁止修改或提交的目录，使用构建工具支持的参数将本次验证输出重定向到临时目录；不得通过删除或覆盖受保护产物完成验证。
+- Codex 不得运行会写入 `html/` 的 `npm run build`；统一使用将产物写入系统临时目录的 `npm run build:verify`。
 - 不恢复、覆盖或格式化用户已有的无关修改。
 - 命令失败时先记录失败命令和原因。只修复当前任务范围内的问题；修复需要扩大范围时停止并重新走规划确认。
 - 不得将未运行的检查描述为通过，也不得用静态阅读代替已要求的真实执行。

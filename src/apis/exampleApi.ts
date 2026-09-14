@@ -1,5 +1,5 @@
-import type { ExampleData, ExampleParams } from "@/types";
-import { request, type ApiResponse } from "@/utils/request";
+import type { ApiResponse, ExampleData, ExampleParams } from "@/types";
+import { request } from "@/utils/request";
 
 /**
  * 查询示例数据列表。

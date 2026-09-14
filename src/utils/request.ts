@@ -1,12 +1,6 @@
 import axios from "axios";
 
-/** 通用API响应结构 */
-export interface ApiResponse<T = unknown> {
-  code: number;
-  data: T;
-  message: string;
-  success: boolean;
-}
+import type { ApiResponse } from "@/types";
 
 export class RequestError extends Error {
   readonly status: number | null;

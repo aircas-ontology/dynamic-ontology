@@ -5,24 +5,19 @@ description: Integrate, manage, or review ECharts, Three.js, Cesium, Mars3D, and
 
 # Third-Party Instance Management
 
-在 Vue 组件中集成或维护第三方可视化、地图及图形实例时，确保实例只初始化一次，并在组件生命周期结束时完整释放资源。
+在 Vue 组件中集成或维护第三方可视化、地图及图形实例时，先读取目标目录 `readme.md`；实例存储方式和生命周期约束以相关页面、组件、Store、模型或工具目录规范为准。
 
 ## Cesium 工具选择
 
-- 涉及 Cesium 时，优先使用当前环境可用的 `cesium-mcp-dev` 服务。
-- 开始 CesiumJS 开发前使用 `using-cesiumjs-skills`，再根据任务选择对应的 CesiumJS 专项 Skill。
+- 涉及 Cesium 时，如果当前环境提供 `cesium-mcp-dev`，优先用于查证 Cesium API。
+- 如果已安装公共 Skill `using-cesiumjs-skills`，先用它选择对应 CesiumJS 专项 Skill；不可用时直接依据仓库现有封装、类型和官方 API 完成同等只读检查，不中断项目流程。
 
-## 实例与响应式边界
+## 工作流程
 
-- 禁止使用 `reactive()` 深度代理 Cesium Viewer、Map、Chart、Layer、Graphic 等第三方复杂实例。
-- 实例需要响应式容器时使用 `shallowRef()`；仅供组件内部使用时优先保存为普通变量。实例必须放入其他响应式对象时使用 `markRaw()` 明确排除深度代理。
-- 初始化前检查已有实例，避免重复创建实例、Canvas、Overlay 或 GPU 资源。
-
-## 生命周期清理
-
-- 组件销毁时释放第三方实例及其创建的资源。
-- 同时移除事件监听器，停止定时器和 `requestAnimationFrame`，断开 Observer，并清理实例附加的 Canvas、Overlay 或其他 DOM 资源。
-- 重建实例前先执行与组件销毁一致的清理，避免热更新、条件渲染或参数变化造成残留。
+1. 确认实例所有者、初始化入口和允许的重建条件。
+2. 按目标目录规范选择普通变量、`shallowRef()` 或 `markRaw()`，避免深度代理。
+3. 将实例资源、事件、定时器、动画、Observer 和附加 DOM 纳入同一幂等清理边界。
+4. 重建前执行与卸载一致的清理，并验证重复进入和离开。
 
 ## 完成标准
 
