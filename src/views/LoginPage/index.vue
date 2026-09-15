@@ -57,7 +57,6 @@
               aria-label="用户名"
               placeholder="请输入用户名"
               autocomplete="username"
-              required
               @input="resetLoginStatus"
             />
           </label>
@@ -77,7 +76,6 @@
               aria-label="密码"
               placeholder="请输入密码"
               autocomplete="current-password"
-              required
               @input="resetLoginStatus"
             />
             <button
@@ -88,19 +86,27 @@
               @click="togglePasswordVisibility"
             >
               <svg v-if="showPassword" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12z" />
+                <path
+                  d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12z"
+                />
                 <circle cx="12" cy="12" r="3.2" />
               </svg>
               <svg v-else viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M3.2 3.2l17.6 17.6" />
-                <path d="M9.8 5.9A11.2 11.2 0 0 1 12 5.5C19.2 5.5 23 12 23 12a18.6 18.6 0 0 1-4.2 4.9" />
-                <path d="M14.2 18.1c-.7.2-1.4.4-2.2.4C4.8 18.5 1 12 1 12a18.8 18.8 0 0 1 5.4-5.6" />
+                <path
+                  d="M9.8 5.9A11.2 11.2 0 0 1 12 5.5C19.2 5.5 23 12 23 12a18.6 18.6 0 0 1-4.2 4.9"
+                />
+                <path
+                  d="M14.2 18.1c-.7.2-1.4.4-2.2.4C4.8 18.5 1 12 1 12a18.8 18.8 0 0 1 5.4-5.6"
+                />
                 <path d="M10 10a2.8 2.8 0 0 0 4 4" />
               </svg>
             </button>
           </label>
 
-          <p v-if="loginStatus === 'error'" class="login-error" role="alert">{{ loginError }}</p>
+          <p v-if="loginStatus === 'error'" class="login-error" role="alert">
+            {{ loginError }}
+          </p>
 
           <button
             class="submit"
@@ -121,7 +127,11 @@
         <ul class="core-grid">
           <li>
             <span class="core-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2L12 3Z" /></svg>
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2L12 3Z"
+                />
+              </svg>
             </span>
             <strong>动态感知</strong>
             <small>感知行为变化</small>
@@ -135,7 +145,12 @@
           </li>
           <li>
             <span class="core-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3" /><circle cx="16" cy="8" r="3" /><circle cx="8" cy="16" r="3" /><circle cx="16" cy="16" r="3" /></svg>
+              <svg viewBox="0 0 24 24">
+                <circle cx="8" cy="8" r="3" />
+                <circle cx="16" cy="8" r="3" />
+                <circle cx="8" cy="16" r="3" />
+                <circle cx="16" cy="16" r="3" />
+              </svg>
             </span>
             <strong>智能融合</strong>
             <small>融合异构知识</small>
@@ -146,12 +161,15 @@
       </aside>
     </main>
 
-    <footer class="copyright">© 2026 动态本体平台 · 中国科学院空天信息创新研究院</footer>
+    <footer class="copyright">
+      © 2026 动态本体平台 · 中国科学院空天信息创新研究院
+    </footer>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 
 import layer01 from "@/assets/pages/loginPage/images/layer01.svg";
@@ -166,6 +184,7 @@ import type { LoginCredentials } from "@/types";
 type LoginCommandStatus = "idle" | "submitting" | "success" | "error";
 
 const showPassword = ref(false);
+const router = useRouter();
 const loginStatus = ref<LoginCommandStatus>("idle");
 const loginError = ref("");
 const formData = ref<LoginCredentials>({
@@ -186,24 +205,18 @@ function resetLoginStatus() {
 async function onSubmit() {
   if (loginStatus.value === "submitting") return;
 
-  const username = formData.value.username.trim();
-  const password = formData.value.password.trim();
-
-  if (!username || !password) {
-    loginStatus.value = "error";
-    loginError.value = "请输入用户名和密码。";
-    ElMessage.warning("请输入用户名和密码。");
-    return;
-  }
-
   loginStatus.value = "submitting";
   loginError.value = "";
 
-  await Promise.resolve();
-
-  loginStatus.value = "error";
-  loginError.value = "认证服务尚未接入，请联系管理员。";
-  ElMessage.error(loginError.value);
+  try {
+    const failure = await router.push({ name: "Workspace" });
+    if (failure) throw new Error("Navigation failed");
+    loginStatus.value = "success";
+  } catch {
+    loginStatus.value = "error";
+    loginError.value = "进入系统失败，请重试。";
+    ElMessage.error(loginError.value);
+  }
 }
 </script>
 
@@ -216,19 +229,36 @@ async function onSubmit() {
   display: flex;
   flex-direction: column;
   color: var(--aircas-color-text-primary);
-  background:
-    radial-gradient(circle at 12% 18%, var(--aircas-color-accent-blue-soft), transparent 32%),
-    radial-gradient(circle at 82% 78%, var(--aircas-color-accent-cyan-soft), transparent 34%),
-    linear-gradient(135deg, var(--aircas-color-page-background), var(--aircas-color-panel-background-deep));
+  background: radial-gradient(
+      circle at 12% 18%,
+      var(--aircas-color-accent-blue-soft),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 82% 78%,
+      var(--aircas-color-accent-cyan-soft),
+      transparent 34%
+    ),
+    linear-gradient(
+      135deg,
+      var(--aircas-color-page-background),
+      var(--aircas-color-panel-background-deep)
+    );
 }
 
 .bg-pattern {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image:
-    radial-gradient(var(--aircas-color-accent-cyan-soft) 1px, transparent 1px),
-    linear-gradient(145deg, var(--aircas-color-accent-blue-soft), transparent 58%);
+  background-image: radial-gradient(
+      var(--aircas-color-accent-cyan-soft) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      145deg,
+      var(--aircas-color-accent-blue-soft),
+      transparent 58%
+    );
   background-size: 30px 30px, auto;
   opacity: 0.68;
 }
@@ -347,11 +377,21 @@ async function onSubmit() {
   bottom: 10%;
 }
 
-.layer-3 { z-index: 2; }
-.layer-2 { z-index: 3; }
-.layer-1 { z-index: 4; }
-.layer-01 { z-index: 5; }
-.layer-02 { z-index: 6; }
+.layer-3 {
+  z-index: 2;
+}
+.layer-2 {
+  z-index: 3;
+}
+.layer-1 {
+  z-index: 4;
+}
+.layer-01 {
+  z-index: 5;
+}
+.layer-02 {
+  z-index: 6;
+}
 
 .login-card {
   width: 100%;
@@ -360,9 +400,12 @@ async function onSubmit() {
   padding: 34px 32px 28px;
   border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 20px;
-  background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
-  box-shadow:
-    0 24px 60px var(--aircas-color-accent-blue-shadow),
+  background: linear-gradient(
+    160deg,
+    var(--aircas-color-card-background),
+    var(--aircas-color-panel-background-deep)
+  );
+  box-shadow: 0 24px 60px var(--aircas-color-accent-blue-shadow),
     inset 0 1px 0 var(--aircas-color-accent-cyan-soft);
 
   h3 {
@@ -400,7 +443,8 @@ async function onSubmit() {
     color: var(--aircas-color-text-primary);
     font-size: 15px;
     background: var(--aircas-color-input-background);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease,
+      background-color 0.2s ease;
 
     &::placeholder {
       color: var(--aircas-color-text-placeholder);
@@ -494,7 +538,11 @@ async function onSubmit() {
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.28em;
-  background: linear-gradient(100deg, var(--aircas-color-accent-cyan), var(--aircas-color-accent-blue));
+  background: linear-gradient(
+    100deg,
+    var(--aircas-color-accent-cyan),
+    var(--aircas-color-accent-blue)
+  );
   box-shadow: 0 10px 24px var(--aircas-color-accent-blue-shadow);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
@@ -536,10 +584,17 @@ async function onSubmit() {
 
   span {
     height: 1px;
-    background: linear-gradient(90deg, transparent, var(--aircas-color-accent-cyan), transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--aircas-color-accent-cyan),
+      transparent
+    );
   }
 
-  p { margin: 0; }
+  p {
+    margin: 0;
+  }
 }
 
 .core-grid {
@@ -598,3 +653,4 @@ async function onSubmit() {
   text-align: center;
 }
 </style>
+
