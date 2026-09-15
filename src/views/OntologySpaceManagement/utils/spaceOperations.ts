@@ -1,7 +1,7 @@
 import type { OntologySpaceDraft, OntologySpaceItem, OntologySpaceSortOrder } from "@/types";
 
 /** 查询展示数据，排序和分页均不修改数据源。 */
-export function filterSpaces(spaces: OntologySpaceItem[], keyword: string, order: OntologySpaceSortOrder, page: number, pageSize: number) {
+export function filterSpaces(spaces: OntologySpaceItem[], keyword: string, order: OntologySpaceSortOrder, page: number, pageSize = 10) {
   const query = keyword.trim().toLocaleLowerCase();
   const matches = spaces.filter(space => `${space.displayName} ${space.apiName}`.toLocaleLowerCase().includes(query));
   matches.sort((a, b) => (order === "asc" ? 1 : -1) * a.displayName.localeCompare(b.displayName, "zh-CN"));

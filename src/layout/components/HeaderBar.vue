@@ -36,11 +36,11 @@ function toggleTheme() {
   align-items: center;
   justify-content: space-between;
   min-width: 0;
-  height: 50px;
+  height: 56px;
   gap: 20px;
   padding: 0 16px;
   color: var(--aircas-color-text-primary);
-  background: linear-gradient(90deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  background: var(--aircas-color-panel-background-deep);
   border-bottom: 1px solid var(--aircas-color-border-soft);
 }
 .header-bar__brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -54,13 +54,15 @@ function toggleTheme() {
   color: var(--aircas-color-title);
   background: var(--aircas-color-background);
 }
-.header-bar__search { flex: 0 1 560px; min-width: 180px; }
+.header-bar__search { flex: 0 1 640px; min-width: 180px; }
+.header-bar__search .aircas-input { --el-input-border-radius: 20px; }
 .header-bar__tools { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
 .header-bar__tool { display: inline-flex; padding: 4px; border: 0; background: var(--aircas-color-transparent); color: inherit; cursor: pointer; }
 .header-bar__tool:hover { background: var(--aircas-color-hover-background); }
 .header-bar__tool:disabled { color: var(--aircas-color-text-disabled); cursor: not-allowed; }
 .header-bar__tool:focus-visible { outline: 2px solid var(--aircas-color-accent-cyan); outline-offset: 2px; }
 .header-bar__user { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.header-bar__user .el-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--aircas-color-selected-background); }
 @media (max-width: 900px) {
   .header-bar { gap: 12px; padding: 0 12px; }
   .header-bar h1 { font-size: 20px; }

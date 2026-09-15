@@ -4,7 +4,6 @@
       <WelcomePanel @create="openForm()" />
       <div class="ontology-space-management__stats"><StatCard v-for="stat in summaryStats" :key="stat.id" :stat="stat" /></div>
     </section>
-    <p class="ontology-space-management__notice">当前使用演示数据，刷新页面后恢复初始内容。</p>
     <SectionToolbar v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
     <div v-if="status === 'loading'" class="ontology-space-management__state" role="status">正在加载本体空间…</div>
     <div v-else-if="status === 'error'" class="ontology-space-management__state" role="alert"><span>{{ error }}</span><el-button class="aircas-button" type="primary" @click="load">重试</el-button></div>
@@ -93,16 +92,17 @@ function confirmExport() {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 100%;
-  padding: 12px;
+  height: 100%;
+  min-height: 760px;
+  padding: 16px;
   color: var(--aircas-color-text-primary);
   background: var(--aircas-color-page-background);
 }
-.ontology-space-management__overview { display: grid; grid-template-columns: minmax(320px, 1.3fr) minmax(560px, 2fr); gap: 12px; }
+.ontology-space-management__overview { display: grid; grid-template-columns: minmax(360px, 1.3fr) minmax(600px, 2fr); gap: 12px; }
 .ontology-space-management__stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .ontology-space-management__notice { margin-top: 12px; font-size: 12px; color: var(--aircas-color-text-muted); }
 .ontology-space-management__state { display: flex; justify-content: center; align-items: center; min-height: 300px; gap: 12px; }
 .ontology-space-management__error { color: var(--aircas-color-danger); margin-top: 12px; }
 @media (max-width: 1200px) { .ontology-space-management__overview { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 700px) { .ontology-space-management__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .ontology-space-management { height: auto; padding: 12px; } .ontology-space-management__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>

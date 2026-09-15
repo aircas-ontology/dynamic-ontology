@@ -7,10 +7,6 @@
       </button>
     </div>
     <el-menu class="aircas-menu navigation-menu__list" :default-active="route.path" :collapse="collapsed" :collapse-transition="false" router>
-      <el-menu-item index="/workspace">
-        <el-icon><HomeFilled /></el-icon>
-        <template #title>首页</template>
-      </el-menu-item>
       <el-menu-item index="/workspace/ontology-space-management" :route="{ name: 'OntologySpaceManagement' }">
         <el-icon><Box /></el-icon>
         <template #title>本体空间管理</template>
@@ -21,7 +17,7 @@
 
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import { Box, Expand, Fold, HomeFilled } from "@element-plus/icons-vue";
+import { Box, Expand, Fold } from "@element-plus/icons-vue";
 const collapsed = defineModel<boolean>("collapsed", { default: true });
 const route = useRoute();
 </script>
@@ -61,7 +57,7 @@ const route = useRoute();
   outline-offset: -2px;
 }
 .navigation-menu__list {
-  --el-menu-item-height: 40px;
+  --el-menu-item-height: 48px;
   --el-menu-base-level-padding: 18px;
   flex: 1;
   width: 100%;

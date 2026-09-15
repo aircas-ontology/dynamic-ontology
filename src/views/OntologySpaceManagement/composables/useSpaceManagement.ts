@@ -10,7 +10,7 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
   const order = ref<OntologySpaceSortOrder>("asc");
   const viewMode = ref<OntologyViewMode>("table");
   const page = ref(1);
-  const pageSize = ref(5);
+  const pageSize = ref(10);
   const status = ref<"loading" | "success" | "empty" | "error">("loading");
   const error = ref("");
   let disposed = false;

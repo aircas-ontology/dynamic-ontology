@@ -157,3 +157,25 @@
     }
   }
 }
+
+.aircas-button--edit.el-button {
+  background-color: var(--aircas-color-button-background);
+  border-color: var(--aircas-color-border);
+  color: var(--aircas-color-accent-cyan);
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--aircas-color-button-hover-background);
+    border-color: var(--aircas-color-border-highlight);
+    color: var(--aircas-color-title);
+  }
+
+  &:active { background-color: var(--aircas-color-button-active-background); }
+
+  &.is-disabled,
+  &.is-disabled:hover {
+    background-color: var(--aircas-color-input-background);
+    border-color: var(--aircas-color-border-soft);
+    color: var(--aircas-color-text-disabled);
+  }
+}

@@ -5,6 +5,11 @@ import { createMemoryHistory, createRouter } from 'vue-router';
 import { workspaceRoutes } from '../src/router/modules/workspaceRoutes.ts';
 
 const draft = { apiName: 'demo_space', displayName: '演示空间', description: '示例', iconUrl: '' };
+test('default pagination displays ten spaces and keeps the remainder on page two', () => {
+  const spaces = Array.from({ length: 12 }, (_, index) => saveSpace([], { ...draft, apiName: `space_${index}` })[0]);
+  assert.equal(filterSpaces(spaces, '', 'asc', 1).items.length, 10);
+  assert.equal(filterSpaces(spaces, '', 'asc', 2).items.length, 2);
+});
 test('create, update, duplicate API validation and deletion preserve input', () => {
   const spaces = saveSpace([], draft);
   assert.equal(spaces.length, 1);

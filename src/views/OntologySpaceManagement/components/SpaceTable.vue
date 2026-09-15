@@ -1,8 +1,8 @@
 <template>
   <section class="space-list" aria-label="本体空间列表">
     <el-empty v-if="!spaces.length" class="aircas-empty" description="暂无本体空间，请创建空间或调整搜索条件" />
-    <el-table v-else-if="viewMode === 'table'" class="aircas-table" :data="spaces" stripe row-key="id">
-      <el-table-column label="空间名称" min-width="220">
+    <el-table v-else-if="viewMode === 'table'" class="aircas-table aircas-table--flat space-list__table" height="100%" :data="spaces" stripe row-key="id">
+      <el-table-column label="空间名称" min-width="280">
         <template #default="{ row }">
           <div class="space-list__name">
             <img v-if="spaceRow(row).iconUrl" :src="spaceRow(row).iconUrl" alt="" />
@@ -13,7 +13,14 @@
       </el-table-column>
       <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
       <el-table-column prop="createdAt" label="创建时间" width="160" />
-      <el-table-column prop="createdBy" label="创建用户" width="100" />
+      <el-table-column label="创建用户" width="140">
+        <template #default="{ row }">
+          <span class="space-list__user">
+            <span class="space-list__avatar"><el-icon :size="20"><UserFilled /></el-icon></span>
+            {{ spaceRow(row).createdBy }}
+          </span>
+        </template>
+      </el-table-column>
       <el-table-column prop="updatedAt" label="更新时间" width="160" />
       <el-table-column label="操作" width="230" fixed="right">
         <template #default="{ row }"><SpaceActions :space="spaceRow(row)" @action="forward" /></template>
@@ -40,7 +47,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { Box } from "@element-plus/icons-vue";
+import { Box, UserFilled } from "@element-plus/icons-vue";
 import type { OntologySpaceItem, OntologyViewMode } from "@/types";
 import SpaceActions from "./SpaceActions.vue";
 const props = defineProps<{ spaces: OntologySpaceItem[]; viewMode: OntologyViewMode; total: number; page: number; pageSize: number }>();
@@ -55,19 +62,22 @@ function spaceRow(row: unknown): OntologySpaceItem {
 function forward(action: string, space: OntologySpaceItem) { emit("action", action, space); }
 </script>
 <style scoped lang="scss">
-.space-list { min-width: 0; flex: 1; }
+.space-list { display: flex; flex-direction: column; min-width: 0; min-height: 400px; flex: 1; }
+.space-list__table { --aircas-table-cell-padding: 20px 0; flex: 1; min-height: 320px; }
+.space-list__user { display: flex; align-items: center; gap: 8px; }
+.space-list__avatar { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: var(--aircas-color-accent-cyan); background: var(--aircas-color-accent-cyan-fill); }
 .space-list__name { display: flex; gap: 12px; align-items: center; min-width: 0; }
-.space-list__name img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.space-list__name img { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
 .space-list__name div { min-width: 0; }
-.space-list__name strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
-.space-list__name small { display: block; color: var(--aircas-color-text-muted); overflow-wrap: anywhere; }
-.space-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+.space-list__name strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
+.space-list__name small { display: block; margin-top: 4px; font-size: 14px; color: var(--aircas-color-text-muted); overflow-wrap: anywhere; }
+.space-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; padding-bottom: 16px; }
 .space-card { display: flex; flex-direction: column; gap: 16px; padding: 16px; border: 1px solid var(--aircas-color-border); border-radius: 8px; background: var(--aircas-color-card-background); min-width: 0; }
 .space-card__description { color: var(--aircas-color-text-secondary); font-size: 14px; overflow-wrap: anywhere; }
 dl { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; gap: 8px; }
 dt { font-size: 12px; color: var(--aircas-color-text-muted); }
 dd { margin-top: 8px; color: var(--aircas-color-accent-cyan); font-weight: 700; }
 .space-card__meta { font-size: 12px; color: var(--aircas-color-text-muted); }
-.space-list__pagination { display: flex; justify-content: flex-end; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 16px; font-size: 12px; color: var(--aircas-color-text-secondary); }
+.space-list__pagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 16px; padding-bottom: 4px; margin-top: auto; font-size: 12px; color: var(--aircas-color-text-secondary); }
+.space-list__pagination .aircas-pagination { max-width: 100%; flex-wrap: wrap; row-gap: 8px; }
 </style>
-

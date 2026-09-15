@@ -33,7 +33,7 @@
 
   /* --------------------- 单元格 / 斑马纹 --------------------------------- */
   &.el-table .el-table__cell {
-    padding: 6px 0;
+    padding: var(--aircas-table-cell-padding, 6px 0);
     border: none;
   }
 
@@ -79,5 +79,25 @@
 
   &.el-table .el-table__empty-text {
     color: var(--aircas-color-text-empty);
+  }
+}
+
+/* 可选纯色表格：与 aircas-table 同时使用，保留公共交互和双主题配色。 */
+.aircas-table.aircas-table--flat {
+  &.el-table {
+    border: 1px solid var(--aircas-color-border);
+    border-radius: 8px;
+  }
+
+  &.el-table th.el-table__cell {
+    padding: 12px 0;
+    background-image: none;
+    background-color: var(--aircas-color-panel-background);
+    border-bottom: 2px solid var(--aircas-color-accent-cyan);
+  }
+
+  &.el-table td.el-table__cell {
+    border-bottom: 1px solid var(--aircas-color-border-soft);
+    color: var(--aircas-color-text-primary);
   }
 }

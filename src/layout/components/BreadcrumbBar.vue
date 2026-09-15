@@ -14,10 +14,11 @@ const route = useRoute();
 </script>
 <style scoped lang="scss">
 .breadcrumb-bar {
-  height: 30px;
+  height: 36px;
   padding: 0 12px;
   display: flex;
   align-items: center;
   background: var(--aircas-color-panel-background-deep);
+  border-bottom: 1px solid var(--aircas-color-border-soft);
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <div class="space-actions">
-    <el-button class="aircas-button" size="small" @click="$emit('action', 'enter', space)">进入</el-button>
-    <el-button class="aircas-button" size="small" @click="$emit('action', 'edit', space)">编辑</el-button>
+    <el-button class="aircas-button" type="primary" plain size="small" :icon="Right" @click="$emit('action', 'enter', space)">进入</el-button>
+    <el-button class="aircas-button aircas-button--edit" size="small" :icon="Edit" @click="$emit('action', 'edit', space)">编辑</el-button>
     <el-dropdown class="aircas-dropdown" popper-class="aircas-dropdown-popper" trigger="click" @command="command">
       <el-button class="aircas-button" size="small">更多<el-icon><ArrowDown /></el-icon></el-button>
       <template #dropdown>
@@ -15,7 +15,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ArrowDown } from "@element-plus/icons-vue";
+import { ArrowDown, Edit, Right } from "@element-plus/icons-vue";
 import type { OntologySpaceItem } from "@/types";
 const props = defineProps<{ space: OntologySpaceItem }>();
 const emit = defineEmits<{ action: [action: string, space: OntologySpaceItem] }>();
