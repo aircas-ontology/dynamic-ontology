@@ -7,6 +7,8 @@
 
 .aircas-table {
   &.el-table {
+    --el-table-tr-bg-color: var(--aircas-color-background);
+    --el-table-row-hover-bg-color: color-mix(in srgb, var(--aircas-color-button-background) 30%, transparent);
     background-color: var(--aircas-color-background);
     color: var(--aircas-color-text-primary);
 
@@ -51,8 +53,9 @@
   }
 
   /* --------------------- hover / current -------------------------------- */
-  &.el-table .el-table__body tr:hover > td.el-table__cell {
-    background-color: var(--aircas-color-hover-background) !important;
+  &.el-table .el-table__body tr:hover > td.el-table__cell,
+  &.el-table .el-table__body tr.hover-row > td.el-table__cell {
+    background-color: var(--el-table-row-hover-bg-color) !important;
     color: var(--aircas-color-text-primary);
   }
 

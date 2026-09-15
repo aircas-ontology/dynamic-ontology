@@ -12,3 +12,9 @@ test('menu supports collapse and shows space management without a home entry', (
   assert.match(source, /index="\/workspace\/ontology-space-management"/);
   assert.match(source, /aircas-menu/);
 });
+
+test('menu includes full text search entry with named route', () => {
+  const source = readFileSync(new URL('../src/layout/components/NavigationMenu.vue', import.meta.url), 'utf8');
+  assert.match(source, /全文检索/);
+  assert.match(source, /name:\s*['"]FullTextSearch['"]/);
+});

@@ -45,11 +45,11 @@
       }
     }
 
-    .el-radio-button__orig-radio:checked + .el-radio-button__inner {
+    .el-radio-button__original-radio:checked + .el-radio-button__inner {
       background-color: var(--aircas-color-button-background);
-      border-color: var(--aircas-color-border-highlight);
+      border-color: var(--aircas-color-button-background);
       color: var(--aircas-color-button-text);
-      box-shadow: -1px 0 0 0 var(--aircas-color-button-primary-background);
+      box-shadow: -1px 0 0 0 var(--aircas-color-button-background);
     }
   }
 }
