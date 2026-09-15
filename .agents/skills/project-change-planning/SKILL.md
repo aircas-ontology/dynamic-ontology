@@ -26,10 +26,10 @@ description: Inspect, scope, and plan changes in this repository before implemen
 1. 读取根 `AGENTS.md` 和任务涉及目录的 `readme.md`，再只读检查相关文件、现有实现和仓库状态；不得读取 `html/`。
 2. 优先复用现有目录、类型、组件、样式、工具和依赖，不为未提出的未来需求设计抽象。
 3. 根据检查结果向用户提交 Plan，并等待明确确认。用户调整需求后，更新 Plan 并重新确认。
-4. 确认后、实施前，将最终 Plan 保存到 `plans/YYYYMMDD/HHmmss-<topic>.md`。
+4. 确认后、实施前，将最终 Plan 保存到 `plans/YYYYMMDD/HHmmss-<topic>-<git-user>.md`。
 5. 严格在确认范围内实施。
 
-日期和时间使用 `Asia/Shanghai`，`topic` 使用小写 kebab-case。Plan 是已确认方案和历史记录，不是长期项目规范；已有历史 Plan 不因命名规则变化而批量重命名。
+日期和时间使用 `Asia/Shanghai`，`topic` 使用小写 kebab-case。`git-user` 读取当前仓库的 `git config user.name` 并转换为适合文件名的小写 kebab-case；未配置时停止保存并提示用户先配置。Plan 是已确认方案和历史记录，不是长期项目规范；已有历史 Plan 不因命名规则变化而批量重命名。
 
 Plan 至少包含：
 
