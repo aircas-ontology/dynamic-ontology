@@ -15,6 +15,7 @@ description: Verify completed repository changes and produce an evidence-based h
 4. 根据修改类型选择验证：
    - 应用代码、类型、配置、依赖或构建相关修改执行 `npm run type-check` 和 `npm run build:verify`；
    - 新功能、缺陷修复和行为变更核对 TDD 的 RED/GREEN 证据，并执行 `npm test` 和 `npm run test:coverage`；
+   - 规范、Skill、主题变量或项目结构变更执行 `npm run check:project-conventions`；类型目录变更另执行 `npm run check:types-conventions`；
    - 仅文档或 Skill 变更优先执行格式、链接、frontmatter 或专用校验器，除非用户或已确认 Plan 要求应用级检查。
 
 ## 安全执行

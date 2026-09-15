@@ -8,6 +8,7 @@
     "dev": "vite --host 0.0.0.0 --open",
     "test": "node --test --experimental-strip-types tests/*.test.mjs",
     "test:coverage": "node --test --experimental-strip-types --experimental-test-coverage --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80 tests/*.test.mjs",
+    "check:project-conventions": "node scripts/check-project-conventions.mjs",
     "check:types-conventions": "node scripts/check-types-conventions.mjs",
     "type-check": "vue-tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "build": "vite build",

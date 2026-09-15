@@ -148,9 +148,11 @@ class SatelliteClass {
   }
 
   getLLAs(startTime: Date, endTime: Date, step = 60_000): SatelliteState[] {
-    const states: SatelliteState[] = [];
     const startTimestamp = dayjs(startTime).valueOf();
     const endTimestamp = dayjs(endTime).valueOf();
+    this.validateSamplingRange(startTimestamp, endTimestamp, step);
+
+    const states: SatelliteState[] = [];
 
     for (let timestamp = startTimestamp; timestamp <= endTimestamp; timestamp += step) {
       const state = this.getState(new Date(timestamp));
@@ -164,11 +166,26 @@ class SatelliteClass {
   }
 
   getLLAsByPeriod(startTime: Date, step = 60_000): SatelliteState[] {
+    const startTimestamp = dayjs(startTime).valueOf();
+    this.validateSamplingRange(startTimestamp, startTimestamp, step);
+
     const minutesPerOrbit = (2 * Math.PI) / this.meanMotion;
     const totalMinutes = Math.ceil(minutesPerOrbit) + 1;
     const endTime = dayjs(startTime).add(totalMinutes, "minutes").toDate();
 
     return this.getLLAs(startTime, endTime, step);
+  }
+
+  private validateSamplingRange(startTimestamp: number, endTimestamp: number, step: number): void {
+    if (!Number.isFinite(startTimestamp) || !Number.isFinite(endTimestamp)) {
+      throw new RangeError("轨道采样的起止时间必须是有效日期。");
+    }
+    if (startTimestamp > endTimestamp) {
+      throw new RangeError("轨道采样的起始时间不能晚于结束时间。");
+    }
+    if (!Number.isFinite(step) || step <= 0) {
+      throw new RangeError("轨道采样步长必须是正有限数值。");
+    }
   }
 }
 

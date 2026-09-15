@@ -7,7 +7,7 @@
 .aircas-drawer {
   &.el-drawer {
     background-color: var(--aircas-color-panel-background);
-    box-shadow: var(--aircas-shadow-default), var(--aircas-color-page-glow) 0 0 12px;
+    box-shadow: var(--el-box-shadow-light), var(--aircas-color-page-glow) 0 0 12px;
     color: var(--aircas-color-text-primary);
 
     .el-drawer__header {

@@ -7,6 +7,32 @@ import { pathToFileURL } from "node:url";
 
 import { TimeEngine } from "../src/models/TimeEngine.ts";
 
+test("time engine rejects invalid construction bounds and numeric values", () => {
+  assert.throws(
+    () => new TimeEngine({ startTime: 2, endTime: 1 }),
+    /起始时间不能晚于结束时间/,
+  );
+  assert.throws(
+    () => new TimeEngine({ startTime: Number.NaN, endTime: 1 }),
+    /有限数值/,
+  );
+  assert.throws(
+    () => new TimeEngine({ startTime: 0, endTime: 1, currentTime: 2 }),
+    /当前时间必须位于起止时间范围内/,
+  );
+  assert.throws(
+    () => new TimeEngine({ startTime: 0, endTime: 1, speed: Number.POSITIVE_INFINITY }),
+    /有限数值/,
+  );
+});
+
+test("time engine rejects non-finite setter values", () => {
+  const engine = new TimeEngine({ startTime: 0, endTime: 10, currentTime: 5 });
+
+  assert.throws(() => engine.setSpeed(Number.NaN), /有限数值/);
+  assert.throws(() => engine.setTime(Number.POSITIVE_INFINITY), /有限数值/);
+});
+
 test("dispose cancels animation and permanently clears tick listeners", () => {
   const scheduledCallbacks = new Map();
   const cancelledIds = [];

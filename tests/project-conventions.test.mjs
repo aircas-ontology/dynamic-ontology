@@ -83,3 +83,42 @@ test("developer prompts and plans are not ignored", async () => {
   assert.doesNotMatch(gitignore, /^docs\/?$/m);
   assert.doesNotMatch(gitignore, /^plans\/?$/m);
 });
+
+test("root rules own navigation and prohibit model changes to public", async () => {
+  const agentsSource = await readFile("AGENTS.md", "utf8");
+
+  assert.equal(await pathExists(".agents/CODEX-NAVIGATION-GUIDE.md"), false);
+  assert.match(agentsSource, /【禁止】大模型.*修改.*删除.*提交.*public\//s);
+  assert.doesNotMatch(agentsSource, /CODEX-NAVIGATION-GUIDE/);
+});
+
+test("router rules keep login and fallback routes as index exceptions", async () => {
+  const routerGuide = await readFile("src/router/readme.md", "utf8");
+
+  assert.match(routerGuide, /登录入口.*兜底路由.*index\.ts/s);
+});
+
+test("login exposes command states and blocks repeated submission", async () => {
+  const loginSource = await readFile("src/views/LoginPage/index.vue", "utf8");
+
+  assert.match(loginSource, /"idle"\s*\|\s*"submitting"\s*\|\s*"success"\s*\|\s*"error"/);
+  assert.match(loginSource, /:disabled="loginStatus === 'submitting'"/);
+  assert.match(loginSource, /if \(loginStatus\.value === "submitting"\) return/);
+  assert.match(loginSource, /role="alert"/);
+});
+
+test("drawer uses only defined public shadow variables", async () => {
+  const drawerSource = await readFile("src/styles/element-plus/el-drawer.scss", "utf8");
+
+  assert.doesNotMatch(drawerSource, /--aircas-shadow-default/);
+  assert.match(drawerSource, /--el-box-shadow-light/);
+});
+
+test("API implementation skill remains a single-contract orchestrator", async () => {
+  const skillSource = await readFile(".agents/skills/backend-api-implementation/SKILL.md", "utf8");
+
+  assert.doesNotMatch(skillSource, /CODEX-NAVIGATION-GUIDE/);
+  assert.match(skillSource, /单份 Api\.md/);
+  assert.match(skillSource, /src\/apis\/readme\.md/);
+  assert.match(skillSource, /不得自行补造/);
+});

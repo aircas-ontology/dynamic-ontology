@@ -9,7 +9,7 @@
 | Skill | 入口 | 使用时机 | 不适用场景 |
 | --- | --- | --- | --- |
 | `project-change-planning` | [`skills/project-change-planning/SKILL.md`](skills/project-change-planning/SKILL.md) | 新增、修改或删除代码、组件、样式、配置、依赖、Mock 或其他项目文件时，先判断是否需要完整 Plan | 纯只读分析、问题定位、代码解释和修改建议 |
-| `backend-api-implementation` | [`skills/backend-api-implementation/SKILL.md`](skills/backend-api-implementation/SKILL.md) | 用户明确指定一份 `docs/YYYYMMDD/*Api.md`，需要据此实现 API、类型和 Mock 时 | 未指定准确 Api.md、一次处理多份文档或仅讨论接口设计 |
+| `backend-api-implementation` | [`skills/backend-api-implementation/SKILL.md`](skills/backend-api-implementation/SKILL.md) | 用户明确指定一份 `docs/YYYYMMDD/*Api.md`，需要据此自动生成 API、类型和 Mock 时 | 未指定准确 Api.md、一次处理多份文档或仅讨论接口设计 |
 | `aircas-ui-development` | [`skills/aircas-ui-development/SKILL.md`](skills/aircas-ui-development/SKILL.md) | 设计、实现、审查或调整 Vue 页面、组件、SCSS、主题和 Element Plus 外观时 | 不涉及界面的纯业务逻辑修改 |
 | `third-party-instance-management` | [`skills/third-party-instance-management/SKILL.md`](skills/third-party-instance-management/SKILL.md) | 集成、维护或审查 ECharts、Three.js、Cesium、Mars3D、OpenLayers 等第三方实例时 | 不涉及第三方复杂实例的普通 Vue 状态管理 |
 | `project-verification-delivery` | [`skills/project-verification-delivery/SKILL.md`](skills/project-verification-delivery/SKILL.md) | 项目文件修改完成、准备声明完成或交付结果时 | 尚未产生修改的只读任务 |

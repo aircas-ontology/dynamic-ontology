@@ -23,7 +23,7 @@ description: Inspect, scope, and plan changes in this repository before implemen
 
 ## 完整 Plan 流程
 
-1. 读取根 `AGENTS.md`、导航指南、任务涉及目录的 `readme.md`，再只读检查相关文件、现有实现和仓库状态；不得读取 `html/`。
+1. 读取根 `AGENTS.md` 和任务涉及目录的 `readme.md`，再只读检查相关文件、现有实现和仓库状态；不得读取 `html/`。
 2. 优先复用现有目录、类型、组件、样式、工具和依赖，不为未提出的未来需求设计抽象。
 3. 根据检查结果向用户提交 Plan，并等待明确确认。用户调整需求后，更新 Plan 并重新确认。
 4. 确认后、实施前，将最终 Plan 保存到 `plans/YYYYMMDD/HHmmss-<topic>.md`。

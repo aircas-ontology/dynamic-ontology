@@ -15,6 +15,12 @@ interface TimeEngineOptions {
   autoPauseAtStart?: boolean;
 }
 
+function assertFiniteNumber(value: number, label: string): void {
+  if (!Number.isFinite(value)) {
+    throw new RangeError(`${label}必须是有限数值。`);
+  }
+}
+
 export class TimeEngine {
   readonly startTime: number;
   readonly endTime: number;
@@ -30,10 +36,24 @@ export class TimeEngine {
   private isDisposed = false;
 
   constructor(options: TimeEngineOptions) {
+    assertFiniteNumber(options.startTime, "起始时间");
+    assertFiniteNumber(options.endTime, "结束时间");
+    if (options.startTime > options.endTime) {
+      throw new RangeError("起始时间不能晚于结束时间。");
+    }
+
+    const currentTime = options.currentTime ?? options.startTime;
+    const speed = options.speed ?? 1;
+    assertFiniteNumber(currentTime, "当前时间");
+    assertFiniteNumber(speed, "播放速度");
+    if (currentTime < options.startTime || currentTime > options.endTime) {
+      throw new RangeError("当前时间必须位于起止时间范围内。");
+    }
+
     this.startTime = options.startTime;
     this.endTime = options.endTime;
-    this.currentTime = options.currentTime ?? options.startTime;
-    this.speed = options.speed ?? 1;
+    this.currentTime = currentTime;
+    this.speed = speed;
     this.loop = options.loop ?? true;
     this.autoPauseAtStart = options.autoPauseAtStart ?? true;
   }
@@ -89,11 +109,13 @@ export class TimeEngine {
 
   setSpeed(speed: number) {
     if (this.isDisposed) return;
+    assertFiniteNumber(speed, "播放速度");
     this.speed = speed;
   }
 
   setTime(time: number) {
     if (this.isDisposed) return;
+    assertFiniteNumber(time, "当前时间");
     this.currentTime = this.clamp(time);
     this.emit();
   }

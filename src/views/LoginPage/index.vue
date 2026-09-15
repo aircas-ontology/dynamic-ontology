@@ -52,11 +52,13 @@
             </span>
             <input
               v-model="formData.username"
+              :disabled="loginStatus === 'submitting'"
               type="text"
               aria-label="用户名"
               placeholder="请输入用户名"
               autocomplete="username"
               required
+              @input="resetLoginStatus"
             />
           </label>
 
@@ -70,13 +72,21 @@
             <input
               v-model="formData.password"
               class="password-input"
+              :disabled="loginStatus === 'submitting'"
               :type="showPassword ? 'text' : 'password'"
               aria-label="密码"
               placeholder="请输入密码"
               autocomplete="current-password"
               required
+              @input="resetLoginStatus"
             />
-            <button class="eye" type="button" :aria-label="showPassword ? '隐藏密码' : '显示密码'" @click="togglePasswordVisibility">
+            <button
+              class="eye"
+              type="button"
+              :disabled="loginStatus === 'submitting'"
+              :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+              @click="togglePasswordVisibility"
+            >
               <svg v-if="showPassword" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12z" />
                 <circle cx="12" cy="12" r="3.2" />
@@ -90,7 +100,16 @@
             </button>
           </label>
 
-          <button class="submit" type="submit">登 录</button>
+          <p v-if="loginStatus === 'error'" class="login-error" role="alert">{{ loginError }}</p>
+
+          <button
+            class="submit"
+            type="submit"
+            :disabled="loginStatus === 'submitting'"
+            :aria-busy="loginStatus === 'submitting'"
+          >
+            {{ loginStatus === "submitting" ? "提交中..." : "登 录" }}
+          </button>
         </form>
 
         <div class="core-title">
@@ -144,7 +163,11 @@ import layer4 from "@/assets/pages/loginPage/images/layer4.svg";
 import logoImage from "@/assets/pages/loginPage/images/loginLogo.png";
 import type { LoginCredentials } from "@/types";
 
+type LoginCommandStatus = "idle" | "submitting" | "success" | "error";
+
 const showPassword = ref(false);
+const loginStatus = ref<LoginCommandStatus>("idle");
+const loginError = ref("");
 const formData = ref<LoginCredentials>({
   username: "",
   password: "",
@@ -154,16 +177,33 @@ function togglePasswordVisibility() {
   showPassword.value = !showPassword.value;
 }
 
-function onSubmit() {
+function resetLoginStatus() {
+  if (loginStatus.value === "submitting") return;
+  loginStatus.value = "idle";
+  loginError.value = "";
+}
+
+async function onSubmit() {
+  if (loginStatus.value === "submitting") return;
+
   const username = formData.value.username.trim();
   const password = formData.value.password.trim();
 
   if (!username || !password) {
+    loginStatus.value = "error";
+    loginError.value = "请输入用户名和密码。";
     ElMessage.warning("请输入用户名和密码。");
     return;
   }
 
-  ElMessage.info("认证服务尚未接入，请联系管理员。");
+  loginStatus.value = "submitting";
+  loginError.value = "";
+
+  await Promise.resolve();
+
+  loginStatus.value = "error";
+  loginError.value = "认证服务尚未接入，请联系管理员。";
+  ElMessage.error(loginError.value);
 }
 </script>
 
@@ -340,6 +380,13 @@ function onSubmit() {
   gap: 14px;
 }
 
+.login-error {
+  margin: 0;
+  color: var(--aircas-color-danger);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .field {
   position: relative;
 
@@ -466,6 +513,14 @@ function onSubmit() {
   &:focus-visible {
     outline: 2px solid var(--aircas-color-accent-cyan);
     outline-offset: 3px;
+  }
+
+  &:disabled {
+    color: var(--aircas-color-text-disabled);
+    background: var(--aircas-color-selected-background);
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
   }
 }
 
