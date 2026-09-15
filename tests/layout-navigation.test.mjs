@@ -11,3 +11,9 @@ test('menu supports collapsed binding and targets the existing workspace', () =>
   assert.match(source, /index="\/workspace"/);
   assert.match(source, /aircas-menu/);
 });
+
+test('menu includes full text search entry with named route', () => {
+  const source = readFileSync(new URL('../src/layout/components/NavigationMenu.vue', import.meta.url), 'utf8');
+  assert.match(source, /全文检索/);
+  assert.match(source, /name:\s*['"]FullTextSearch['"]/);
+});

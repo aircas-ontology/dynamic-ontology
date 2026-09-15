@@ -16,7 +16,7 @@
 2. 本文件维护全项目硬边界和跨目录规则。
 3. `src/<directory>/readme.md` 维护对应目录的技术规范。
 4. `.agents/skills/` 维护项目工作流程，不重复定义目录技术规范。
-5. `docs/` 中的文件是待执行开发 Prompt；只有用户明确指定后才进入当前任务范围。
+5. `docs/` 中的文件是已执行任务的 Prompt 归档；只有用户明确指定后才进入当前任务范围。
 6. `plans/` 中的文件是已确认实施方案和历史记录，不作为长期规范。
 7. 通用最佳实践优先级最低。
 
@@ -109,7 +109,7 @@ public/             部署后静态资源与运行时配置，大模型只读
 ├─ configs/         部署后可调整的运行时配置
 └─ data/            部署后可调整的运行时数据
 
-docs/                开发人员编写的待执行 Prompt
+docs/                已执行任务的 Prompt 归档
 plans/               已确认的实施 Plan 和历史记录
 html/                生产构建产物，Codex 禁止读取、修改、删除或提交
 .agents/            项目级 Agent 导航与 Skills
@@ -175,3 +175,13 @@ npm run build:verify
 
 - 【必须】执行命令前以 `package.json` 当前 scripts 为准，不臆造命令。
 - 【必须】交付前检查 `git diff --check`、任务相关 diff 和 `git status --short`，确认没有计划外文件、调试代码、硬编码秘密或意外生成物。
+
+---
+
+## 8. Prompt 归档
+
+- 【必须】每执行完一个任务后，将该任务的用户 Prompt 归档到 `docs/YYYYMMDD/<user>.md`。
+- 【必须】`YYYYMMDD` 使用 `Asia/Shanghai` 时区的执行日期。
+- 【必须】`<user>` 使用当前仓库 `git config user.name` 转换后的小写 kebab-case，与 `plans/` 命名一致；未配置时停止归档并提示用户先配置。
+- 【必须】同日同用户文件已存在时，将 Prompt 按执行顺序追加到文件末尾，不覆盖已有内容。
+- 【禁止】已有归档文件不因命名规则变化而批量重命名。

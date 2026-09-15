@@ -15,13 +15,17 @@
         <el-icon><Box /></el-icon>
         <template #title>本体空间管理</template>
       </el-menu-item>
+      <el-menu-item index="/workspace/full-text-search" :route="{ name: 'FullTextSearch' }">
+        <el-icon><Search /></el-icon>
+        <template #title>全文检索</template>
+      </el-menu-item>
     </el-menu>
   </aside>
 </template>
 
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import { Box, Expand, Fold, HomeFilled } from "@element-plus/icons-vue";
+import { Box, Expand, Fold, HomeFilled, Search } from "@element-plus/icons-vue";
 const collapsed = defineModel<boolean>("collapsed", { default: true });
 const route = useRoute();
 </script>
