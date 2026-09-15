@@ -55,6 +55,13 @@ test("ApiResponse is owned and exported by src/types", async () => {
   assert.doesNotMatch(exampleApiSource, /type ApiResponse.*@\/utils\/request/);
 });
 
+test("runtime domain configuration has a global type declaration", async () => {
+  const runtimeConfigSource = await readFile("src/types/global/runtimeConfigType.ts", "utf8");
+
+  assert.match(runtimeConfigSource, /interface DomainConfig/);
+  assert.match(runtimeConfigSource, /const DOMAIN_CONFIG: DomainConfig/);
+});
+
 test("verification builds use a fresh operating-system temporary directory", async () => {
   const scriptPath = path.resolve("scripts/verify-build.mjs");
   assert.equal(await pathExists(scriptPath), true);

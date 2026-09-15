@@ -19,7 +19,7 @@ import { request } from "@/utils/request";
  */
 export function getExampleInterface(params: ExampleParams): Promise<ApiResponse<ExampleData>> {
   return request<ExampleData>({
-    url: "/example",
+    url: DOMAIN_CONFIG.OCEAN_SERVER_URL + "/example",
     method: "get",
     params,
   });
