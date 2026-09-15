@@ -72,6 +72,7 @@
 | 新增或调整页面 | `src/views/`、`src/router/`、`src/assets/pages/`、`src/types/pages/` |
 | 新增后端接口 | `src/apis/`、`src/types/apis/`、`src/utils/request.ts` |
 | 调整共享状态 | `src/stores/`、相关领域类型和调用页面 |
+| 新增或调整全局 composable | `src/composables/`、相关 Store、工具、类型和调用方 |
 | 修改公共组件 | `src/components/`、`src/assets/components/`、`src/styles/` |
 | 修改主题或 Element Plus 外观 | `src/styles/theme-*.css`、`src/styles/element-plus/`、组件局部样式 |
 | 修改地图或三维能力 | `src/utils/initEarth.ts`、相关模型、组件或页面，并核对实例生命周期 |
@@ -90,6 +91,7 @@ src/
 ├─ apis/             HTTP 接口定义，按页面 / 业务域分类
 ├─ assets/          构建期静态资源，按页面 / 业务域分类
 ├─ components/      公共组件，由 register 统一注册
+├─ composables/     项目级全局 Vue composables，按共享范围或业务领域分类
 ├─ example/         参考资料目录，不作为正式业务依赖
 ├─ layout/          公共布局
 ├─ mocks/           样例数据，按页面 / 业务域分类，符合正式业务类型定义

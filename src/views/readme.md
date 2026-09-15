@@ -39,6 +39,7 @@ src/views/
 - 【必须】页面路由定义在 [`src/router`](../router/readme.md)，业务路由放入其 `modules` 并由入口显式装配。
 - 【必须】页面或组件私有样式使用 `<style scoped lang="scss">` 就近维护；只有主题令牌、全局基础样式和公共覆盖放入 [`src/styles`](../styles/readme.md)。
 - 【必须】跨页面复用的全局工具函数放入 [`src/utils`](../utils/readme.md)，并通过 `@/utils/...` 引用；页面专属工具不得提升或供其他页面直接引用。
+- 【必须】项目级全局 composables 放入 [`src/composables`](../composables/readme.md)，页面可通过 `@/composables/<category>/use<Name>` 直接引用；页面专属 composables 仍保留在页面目录中。
 - 【必须】已由 [`src/components/register.ts`](../components/readme.md) 注册的全局组件可在页面模板中直接使用；未经用户明确决定，不得自行将页面组件提取为全局组件。
 
 ## 4. Vue 与导入
@@ -72,7 +73,7 @@ src/views/
 
 1. 页面目录、`index.vue` 入口、私有组件、composables 和工具函数位置是否正确。
 2. 页面之间是否不存在私有组件、函数或其他内部实现的直接引用。
-3. 类型、Store、API、资源、Mock、路由、样式和全局工具是否遵守对应目录规范。
+3. 类型、Store、API、资源、Mock、路由、样式、全局工具和全局 composables 是否遵守对应目录规范。
 4. 页面是否只做流程编排；全局组件是否仅在用户明确决定后提取并统一注册。
 5. 异步状态语义、请求并发、错误反馈和卸载取消是否处理。
 6. 路由名称和跳转目标是否存在且一致。
