@@ -23,3 +23,29 @@
 ## 功能要求
 1.界面风格与原型尽量保持一致，参考原型系统的样式及功能，但代码规范要遵循现有开发系统的各项开发规范
 2.该功能目前不需要对接后端接口，先试用mock数据
+## 4. 确认完整迁移并实施
+
+- 执行时间：2026-09-16 13:00（Asia/Shanghai）
+
+1
+
+Plan：本体关系页面完整迁移（含三维图） Implement the plan as specified
+
+## 5 本体关系删选对象下拉框样式调整
+
+## 功能要求
+修改element-ul下拉框组件样式，增加适配系统的深色风格样式，按照现有系统的样式规范编写样式文件
+
+## 6. 确认实施 Plan
+
+- 执行时间：2026-09-16 16:05（Asia/Shanghai）
+
+确认
+
+## 7. 完善本体空间添加关系中的 el-tree-select 组件样式，同样的方式在`\dynamic-ontology\src\styles\element-plus`下添加对应的scss文件，规范与其他组件的样式文件一致，支持在深色风格下的样式协调性
+
+## 8. 完善本体空间添加关系中的 el-table 组件样式，规范与其他组件的样式文件一致，支持在深色风格下的样式协调性
+
+## 9. 完善本体空间中编辑关系弹框中表单的label字体样式，在深色模式下字体颜色看不清
+代码位置：`\dynamic-ontology\src\views\OntologySpaceManagementDetail\relationComponents\SpaceRelationFormDialog.vue`
+在`\dynamic-ontology\src\styles\element-plus`下合适的位置创建一个公用的样式类，以便以后每个相同的表单label都可以使用该样式类

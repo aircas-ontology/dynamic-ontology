@@ -22,6 +22,7 @@
          ├── el-switch.scss
          ├── el-date-picker.scss
          ├── el-tree.scss
+         ├── el-tree-select.scss
          ├── el-upload.scss
          ├── el-transfer.scss
          ├── el-cascader.scss
@@ -86,6 +87,7 @@
 @use "./element-plus/el-switch.scss" as *;
 @use "./element-plus/el-date-picker.scss" as *;
 @use "./element-plus/el-tree.scss" as *;
+@use "./element-plus/el-tree-select.scss" as *;
 @use "./element-plus/el-upload.scss" as *;
 @use "./element-plus/el-transfer.scss" as *;
 @use "./element-plus/el-cascader.scss" as *;

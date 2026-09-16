@@ -16,12 +16,14 @@ description: Verify completed repository changes and produce an evidence-based h
    - 应用代码、类型、配置、依赖或构建相关修改执行 `npm run type-check` 和 `npm run build:verify`；
    - 新功能、缺陷修复和行为变更核对 TDD 的 RED/GREEN 证据，并执行 `npm test` 和 `npm run test:coverage`；
    - 规范、Skill、主题变量或项目结构变更执行 `npm run check:project-conventions`；类型目录变更另执行 `npm run check:types-conventions`；
+   - 受 Prettier 支持的文本文件发生修改时，读取仓库格式化配置，并对当前任务文件的明确列表执行 `npm run format:check -- <文件列表>`；
    - 仅文档或 Skill 变更优先执行格式、链接、frontmatter 或专用校验器，除非用户或已确认 Plan 要求应用级检查。
 
 ## 安全执行
 
 - Codex 不得运行会写入 `html/` 的 `npm run build`；统一使用将产物写入系统临时目录的 `npm run build:verify`。
 - 不恢复、覆盖或格式化用户已有的无关修改。
+- 不使用无范围的写入式全仓格式化；格式化动作统一交由 `code-formatting` 并限制到当前任务文件。
 - 命令失败时先记录失败命令和原因。只修复当前任务范围内的问题；修复需要扩大范围时停止并重新走规划确认。
 - 不得将未运行的检查描述为通过，也不得用静态阅读代替已要求的真实执行。
 

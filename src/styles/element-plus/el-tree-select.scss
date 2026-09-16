@@ -1,13 +1,20 @@
 /* ==========================================================================
-   Aircas · el-select 覆盖
+   Aircas · el-tree-select 覆盖
    --------------------------------------------------------------------------
    用法：
-     <el-select class="aircas-select" popper-class="aircas-select-popper">
-   覆盖触发器与挂载到 body 的下拉面板（hover / 选中 / 禁用）。
+     <el-tree-select
+       class="aircas-tree-select"
+       popper-class="aircas-tree-select-popper"
+     >
+   覆盖触发器与挂载到 body 的树选择面板。
    ========================================================================== */
 
-.aircas-select {
+.aircas-tree-select {
+  &.el-tree-select,
   &.el-select {
+    --el-tree-node-hover-bg-color: var(--aircas-color-hover-background);
+    --el-tree-text-color: var(--aircas-color-text-primary);
+    --el-tree-expand-icon-color: var(--aircas-color-title);
     --el-select-border-color-hover: var(--aircas-color-border-highlight);
     --el-select-disabled-color: var(--aircas-color-text-disabled);
     --el-select-disabled-border: var(--aircas-color-border);
@@ -70,10 +77,11 @@
   }
 }
 
-/* 下拉面板挂载在 body，须通过 popper-class="aircas-select-popper" 启用 */
-.aircas-select-popper {
+/* 下拉面板挂载在 body，须通过 popper-class="aircas-tree-select-popper" 启用 */
+.aircas-tree-select-popper {
   &.el-popper,
-  &.el-select__popper {
+  &.el-select__popper,
+  &.el-tree-select__popper {
     border: 1px solid var(--aircas-color-border);
     border-radius: 4px;
     background-color: var(--aircas-color-menu-background);
@@ -91,27 +99,49 @@
     color: var(--aircas-color-text-secondary);
   }
 
-  .el-select-dropdown__item {
+  .el-tree {
+    background-color: var(--aircas-color-transparent);
+    color: var(--aircas-color-text-primary);
+    --el-tree-node-hover-bg-color: var(--aircas-color-hover-background);
+    --el-tree-text-color: var(--aircas-color-text-primary);
+    --el-tree-expand-icon-color: var(--aircas-color-title);
+  }
+
+  .el-tree-node__content {
     color: var(--aircas-color-text-primary);
 
-    &:hover,
-    &.hover,
-    &.is-hovering {
+    &:hover {
       background-color: var(--aircas-color-hover-background);
     }
+  }
 
-    &.selected,
-    &.is-selected {
-      color: var(--aircas-color-title);
-      background-color: var(--aircas-color-selected-background);
-      font-weight: 700;
-    }
+  .el-tree-node__expand-icon {
+    color: var(--aircas-color-title);
+  }
 
-    &.is-disabled {
-      color: var(--aircas-color-text-disabled);
-      background-color: var(--aircas-color-transparent);
-      cursor: not-allowed;
-    }
+  .el-tree-node:focus > .el-tree-node__content {
+    background-color: var(--aircas-color-hover-background);
+  }
+
+  .el-tree-node.is-current > .el-tree-node__content,
+  .el-tree--highlight-current .el-tree-node.is-current > .el-tree-node__content {
+    background-color: var(--aircas-color-selected-background);
+    color: var(--aircas-color-title);
+  }
+
+  .el-tree-node.is-checked > .el-tree-node__content .el-select-dropdown__item,
+  .el-select-dropdown__item.is-selected {
+    color: var(--aircas-color-title);
+    font-weight: 700;
+  }
+
+  .el-select-dropdown__item {
+    color: var(--aircas-color-text-primary);
+    background-color: var(--aircas-color-transparent);
+  }
+
+  .el-select-dropdown__item.is-disabled {
+    color: var(--aircas-color-text-disabled);
   }
 
   .el-popper__arrow::before {

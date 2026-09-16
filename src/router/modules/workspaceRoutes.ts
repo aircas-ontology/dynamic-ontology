@@ -37,7 +37,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "relation",
             name: "OntologySpaceManagementDetailRelation",
-            component: emptyWorkspacePanel,
+            component: () => import("@/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue"),
             meta: { title: "空间内管理", workspaceTab: "relation" },
           },
           {

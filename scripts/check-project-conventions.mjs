@@ -4,6 +4,8 @@ import { pathToFileURL } from "node:url";
 
 const SKIPPED_DIRECTORIES = new Set([".git", "html", "node_modules", "public"]);
 const AIRCAS_SOURCE_PATTERN = /\.(?:css|scss|vue)$/;
+const PRETTIER_FORMATTER = "esbenp.prettier-vscode";
+const PRETTIER_LANGUAGES = ["vue", "css", "scss", "javascript", "typescript", "json", "jsonc"];
 
 async function pathExists(filePath) {
   try {
@@ -15,21 +17,37 @@ async function pathExists(filePath) {
 }
 
 async function listFiles(directory) {
-  if (!await pathExists(directory)) return [];
+  if (!(await pathExists(directory))) return [];
 
   const entries = await readdir(directory, { withFileTypes: true });
-  const nestedFiles = await Promise.all(entries.flatMap((entry) => {
-    if (entry.isDirectory() && SKIPPED_DIRECTORIES.has(entry.name)) return [];
+  const nestedFiles = await Promise.all(
+    entries.flatMap((entry) => {
+      if (entry.isDirectory() && SKIPPED_DIRECTORIES.has(entry.name)) return [];
 
-    const entryPath = path.join(directory, entry.name);
-    return entry.isDirectory() ? [listFiles(entryPath)] : [[entryPath]];
-  }));
+      const entryPath = path.join(directory, entry.name);
+      return entry.isDirectory() ? [listFiles(entryPath)] : [[entryPath]];
+    }),
+  );
 
   return nestedFiles.flat(2);
 }
 
 function relativePath(root, filePath) {
   return path.relative(root, filePath).split(path.sep).join("/");
+}
+
+async function readJson(filePath, root, errors) {
+  if (!(await pathExists(filePath))) {
+    errors.push(`${relativePath(root, filePath)} is required.`);
+    return null;
+  }
+
+  try {
+    return JSON.parse(await readFile(filePath, "utf8"));
+  } catch {
+    errors.push(`${relativePath(root, filePath)} must contain valid JSON.`);
+    return null;
+  }
 }
 
 function markdownTargets(source) {
@@ -42,16 +60,14 @@ async function checkMarkdownLinks(root, errors) {
   for (const filePath of markdownFiles) {
     const source = await readFile(filePath, "utf8");
     for (const rawTarget of markdownTargets(source)) {
-      let target = rawTarget.startsWith("<") && rawTarget.endsWith(">")
-        ? rawTarget.slice(1, -1)
-        : rawTarget;
+      let target = rawTarget.startsWith("<") && rawTarget.endsWith(">") ? rawTarget.slice(1, -1) : rawTarget;
       if (/^(?:https?:|mailto:|#)/.test(target)) continue;
 
       target = decodeURIComponent(target.split("#")[0]);
       if (!target) continue;
 
       const resolvedTarget = path.resolve(path.dirname(filePath), target);
-      if (!await pathExists(resolvedTarget)) {
+      if (!(await pathExists(resolvedTarget))) {
         errors.push(`${relativePath(root, filePath)} has missing Markdown target ${rawTarget}.`);
       }
     }
@@ -61,11 +77,11 @@ async function checkMarkdownLinks(root, errors) {
 async function checkSkills(root, errors) {
   const skillsRoot = path.join(root, ".agents/skills");
   const indexPath = path.join(root, ".agents/README.md");
-  if (!await pathExists(skillsRoot)) {
+  if (!(await pathExists(skillsRoot))) {
     errors.push(".agents/skills is required.");
     return;
   }
-  if (!await pathExists(indexPath)) {
+  if (!(await pathExists(indexPath))) {
     errors.push(".agents/README.md is required.");
     return;
   }
@@ -82,7 +98,7 @@ async function checkSkills(root, errors) {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(skillName)) {
       errors.push(`${relativePath(root, path.join(skillsRoot, skillName))} has an invalid skill directory name.`);
     }
-    if (!await pathExists(skillPath) || !await pathExists(metadataPath)) {
+    if (!(await pathExists(skillPath)) || !(await pathExists(metadataPath))) {
       errors.push(`${skillName} must provide SKILL.md and agents/openai.yaml.`);
       continue;
     }
@@ -110,18 +126,18 @@ function declaredAircasVariables(source) {
 
 async function checkAircasVariables(root, errors) {
   const stylesRoot = path.join(root, "src/styles");
-  if (!await pathExists(stylesRoot)) {
+  if (!(await pathExists(stylesRoot))) {
     errors.push("src/styles is required.");
     return;
   }
 
-  const sourceFiles = (await listFiles(path.join(root, "src"))).filter((filePath) =>
-    AIRCAS_SOURCE_PATTERN.test(filePath),
+  const sourceFiles = (await listFiles(path.join(root, "src"))).filter((filePath) => AIRCAS_SOURCE_PATTERN.test(filePath));
+  const sources = await Promise.all(
+    sourceFiles.map(async (filePath) => ({
+      filePath,
+      source: await readFile(filePath, "utf8"),
+    })),
   );
-  const sources = await Promise.all(sourceFiles.map(async (filePath) => ({
-    filePath,
-    source: await readFile(filePath, "utf8"),
-  })));
   const declaredVariables = new Set(sources.flatMap(({ source }) => [...declaredAircasVariables(source)]));
 
   for (const { filePath, source } of sources) {
@@ -134,7 +150,7 @@ async function checkAircasVariables(root, errors) {
 
   const darkThemePath = path.join(stylesRoot, "theme-dark.css");
   const lightThemePath = path.join(stylesRoot, "theme-light.css");
-  if (!await pathExists(darkThemePath) || !await pathExists(lightThemePath)) {
+  if (!(await pathExists(darkThemePath)) || !(await pathExists(lightThemePath))) {
     errors.push("Both Aircas theme files are required.");
     return;
   }
@@ -148,9 +164,47 @@ async function checkAircasVariables(root, errors) {
   }
 }
 
+async function checkFormattingConventions(root, errors) {
+  const settings = await readJson(path.join(root, ".vscode/settings.json"), root, errors);
+  const prettier = await readJson(path.join(root, ".prettierrc.json"), root, errors);
+  const packageJson = await readJson(path.join(root, "package.json"), root, errors);
+  const ignorePath = path.join(root, ".prettierignore");
+  const ignoreSource = (await pathExists(ignorePath)) ? await readFile(ignorePath, "utf8") : "";
+
+  if (!(await pathExists(ignorePath))) errors.push(".prettierignore is required.");
+  if (settings && prettier) {
+    if (settings["editor.tabSize"] !== prettier.tabWidth) {
+      errors.push("editor.tabSize must match Prettier tabWidth.");
+    }
+    if (settings["prettier.printWidth"] !== prettier.printWidth) {
+      errors.push("prettier.printWidth must match Prettier printWidth.");
+    }
+    if (settings["editor.formatOnSave"] !== true) errors.push("editor.formatOnSave must be enabled.");
+    if (settings["prettier.requireConfig"] !== true) errors.push("prettier.requireConfig must be enabled.");
+    if (prettier.useTabs !== false) errors.push("Prettier useTabs must be false.");
+    for (const language of PRETTIER_LANGUAGES) {
+      if (settings[`[${language}]`]?.["editor.defaultFormatter"] !== PRETTIER_FORMATTER) {
+        errors.push(`${language} must use ${PRETTIER_FORMATTER}.`);
+      }
+    }
+  }
+
+  if (!/^html\/$/m.test(ignoreSource)) errors.push("html/ must be excluded from Prettier.");
+  if (!/^public\/$/m.test(ignoreSource)) errors.push("public/ must be excluded from Prettier.");
+  if (packageJson) {
+    const scripts = packageJson.scripts ?? {};
+    if (scripts.format !== "prettier --write --ignore-unknown" || scripts["format:check"] !== "prettier --check --ignore-unknown") {
+      errors.push("package.json must provide format and format:check scripts.");
+    }
+    if (typeof packageJson.devDependencies?.prettier !== "string") {
+      errors.push("Prettier must be a development dependency.");
+    }
+  }
+}
+
 async function checkRootPolicy(root, errors) {
   const agentsPath = path.join(root, "AGENTS.md");
-  if (!await pathExists(agentsPath)) {
+  if (!(await pathExists(agentsPath))) {
     errors.push("AGENTS.md is required.");
     return;
   }
@@ -158,6 +212,9 @@ async function checkRootPolicy(root, errors) {
   const source = await readFile(agentsPath, "utf8");
   if (!/【禁止】大模型修改、删除或提交 `public\/`/.test(source)) {
     errors.push("AGENTS.md must prohibit models from changing public/.");
+  }
+  if (!/【必须】.*\.vscode\/settings\.json/.test(source)) {
+    errors.push("AGENTS.md must require .vscode/settings.json formatting rules.");
   }
   if (await pathExists(path.join(root, ".agents/CODEX-NAVIGATION-GUIDE.md"))) {
     errors.push("Codex navigation guidance must be maintained in AGENTS.md only.");
@@ -169,6 +226,7 @@ export async function validateProjectConventions(root = process.cwd()) {
   await checkMarkdownLinks(root, errors);
   await checkSkills(root, errors);
   await checkAircasVariables(root, errors);
+  await checkFormattingConventions(root, errors);
   await checkRootPolicy(root, errors);
   return errors.sort((left, right) => left.localeCompare(right));
 }
