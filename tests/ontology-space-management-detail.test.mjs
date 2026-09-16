@@ -74,7 +74,10 @@ test('ontology space detail store keeps and clears the breadcrumb space name', (
 });
 
 test('space management enter action navigates to the overview route', () => {
-  const source = readFileSync(new URL('../src/views/OntologySpaceManagement/index.vue', import.meta.url), 'utf8');
+  const source = readFileSync(
+    new URL('../src/views/OntologySpaceManagement/composables/useSpaceManagementActions.ts', import.meta.url),
+    'utf8',
+  );
   assert.match(source, /action === ["']enter["']/);
   assert.match(source, /OntologySpaceManagementDetailOverview/);
 });

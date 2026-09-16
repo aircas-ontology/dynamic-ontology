@@ -25,13 +25,13 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "overview",
             name: "OntologySpaceManagementDetailOverview",
-            component: emptyWorkspacePanel,
+            component: () => import("@/views/OntologySpaceManagementDetail/components/SpaceOverviewPanel.vue"),
             meta: { title: "空间内管理", workspaceTab: "overview" },
           },
           {
             path: "object",
             name: "OntologySpaceManagementDetailObject",
-            component: emptyWorkspacePanel,
+            component: () => import("@/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue"),
             meta: { title: "空间内管理", workspaceTab: "object" },
           },
           {

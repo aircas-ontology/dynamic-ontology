@@ -1,5 +1,12 @@
 import { computed, onScopeDispose, ref, watch } from "vue";
-import type { OntologySpaceDraft, OntologySpaceItem, OntologySpaceSortOrder, OntologySpaceSummary, OntologyViewMode } from "@/types";
+import type {
+  OntologySpaceDraft,
+  OntologySpaceItem,
+  OntologySpaceLoadStatus,
+  OntologySpaceSortOrder,
+  OntologySpaceSummary,
+  OntologyViewMode,
+} from "@/types";
 import { ontologySpaceManagementMock } from "@/mocks/ontologySpaceManagementMock/ontologySpaceManagementMock";
 import { filterSpaces, removeSpace, saveSpace } from "../utils/spaceOperations";
 
@@ -11,7 +18,7 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
   const viewMode = ref<OntologyViewMode>("table");
   const page = ref(1);
   const pageSize = ref(10);
-  const status = ref<"loading" | "success" | "empty" | "error">("loading");
+  const status = ref<OntologySpaceLoadStatus>("loading");
   const error = ref("");
   let disposed = false;
   let pending = false;

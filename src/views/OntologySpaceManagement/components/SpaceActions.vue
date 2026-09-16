@@ -16,11 +16,11 @@
 </template>
 <script setup lang="ts">
 import { ArrowDown, Edit, Right } from "@element-plus/icons-vue";
-import type { OntologySpaceItem } from "@/types";
+import type { OntologySpaceAction, OntologySpaceItem } from "@/types";
 const props = defineProps<{ space: OntologySpaceItem }>();
-const emit = defineEmits<{ action: [action: string, space: OntologySpaceItem] }>();
+const emit = defineEmits<{ action: [action: OntologySpaceAction, space: OntologySpaceItem] }>();
 function command(value: unknown) {
-  if (typeof value === "string") emit("action", value, props.space);
+  if (value === "subspace" || value === "export" || value === "delete") emit("action", value, props.space);
 }
 </script>
 <style scoped lang="scss">

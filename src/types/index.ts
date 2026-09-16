@@ -4,9 +4,26 @@ export type { LoginCredentials } from "./auth/credentialsType";
 export type { MapConfig } from "./map/configType";
 export type {
   ManagementWorkspaceTab,
+  OntologyConceptNode,
+  OntologyObjectItem,
+  OntologyObjectLocationTarget,
+  OntologyObjectMetrics,
+  OntologyObjectSection,
+  OntologyObjectViewMode,
+  OntologyObjectWorkspace,
   OntologySpaceDetailLoadStatus,
   OntologySpaceDetailRouteName,
+  OntologySpaceOverview,
 } from "./pages/ontologySpaceManagementDetailType";
-export type { OntologySpaceDraft, OntologySpaceItem, OntologySpaceSortOrder, OntologySpaceSummary, OntologyViewMode } from "./pages/ontologySpaceManagementType";
+export type {
+  OntologySpaceAction,
+  OntologySpaceCommandStatus,
+  OntologySpaceDraft,
+  OntologySpaceItem,
+  OntologySpaceLoadStatus,
+  OntologySpaceSortOrder,
+  OntologySpaceSummary,
+  OntologyViewMode,
+} from "./pages/ontologySpaceManagementType";
 export type { EcefState, EciState, SatelliteState } from "./satellite/stateType";
 export type { StorageGuard } from "./shared/guardsType";
