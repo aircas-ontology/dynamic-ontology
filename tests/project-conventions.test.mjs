@@ -29,6 +29,46 @@ test("toolchain constraints require Node 24, npm 11, and Chrome 130", async () =
   assert.match(viteConfig, /target:\s*["']chrome130["']/);
 });
 
+test("editor and CLI formatting configuration stay aligned", async () => {
+  assert.equal(await pathExists(".prettierrc.json"), true);
+  assert.equal(await pathExists(".prettierignore"), true);
+
+  const editorSettings = JSON.parse(await readFile(".vscode/settings.json", "utf8"));
+  const prettierConfig = JSON.parse(await readFile(".prettierrc.json", "utf8"));
+  const prettierIgnore = await readFile(".prettierignore", "utf8");
+
+  assert.equal(editorSettings["editor.tabSize"], prettierConfig.tabWidth);
+  assert.equal(editorSettings["prettier.printWidth"], prettierConfig.printWidth);
+  assert.equal(editorSettings["editor.formatOnSave"], true);
+  assert.equal(editorSettings["prettier.requireConfig"], true);
+  assert.equal(prettierConfig.useTabs, false);
+  assert.match(prettierIgnore, /^html\/$/m);
+  assert.match(prettierIgnore, /^public\/$/m);
+});
+
+test("package scripts format only explicitly supplied paths", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8"));
+
+  assert.equal(packageJson.scripts.format, "prettier --write --ignore-unknown");
+  assert.equal(packageJson.scripts["format:check"], "prettier --check --ignore-unknown");
+  assert.equal(typeof packageJson.devDependencies.prettier, "string");
+});
+
+test("project formatting skill uses repository configuration and scoped paths", async () => {
+  const skillPath = ".agents/skills/code-formatting/SKILL.md";
+  assert.equal(await pathExists(skillPath), true);
+
+  const skillSource = await readFile(skillPath, "utf8");
+  const agentsSource = await readFile("AGENTS.md", "utf8");
+
+  assert.match(skillSource, /\.vscode\/settings\.json/);
+  assert.match(skillSource, /\.prettierrc\.json/);
+  assert.match(skillSource, /当前任务.*文件/s);
+  assert.match(skillSource, /html\//);
+  assert.match(skillSource, /public\//);
+  assert.match(agentsSource, /【必须】.*\.vscode\/settings\.json/s);
+});
+
 test("all components in src/components are globally registered", async () => {
   const registerSource = await readFile("src/components/register.ts", "utf8");
 
