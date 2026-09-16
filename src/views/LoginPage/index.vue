@@ -179,6 +179,7 @@ import layer2 from "@/assets/pages/loginPage/images/layer2.svg";
 import layer3 from "@/assets/pages/loginPage/images/layer3.svg";
 import layer4 from "@/assets/pages/loginPage/images/layer4.svg";
 import logoImage from "@/assets/pages/loginPage/images/loginLogo.png";
+import { postLoginInterface } from "@/apis";
 import type { LoginCredentials } from "@/types";
 
 type LoginCommandStatus = "idle" | "submitting" | "success" | "error";
@@ -209,12 +210,19 @@ async function onSubmit() {
   loginError.value = "";
 
   try {
-    const failure = await router.push({ name: "Workspace" });
-    if (failure) throw new Error("Navigation failed");
+    const response = await postLoginInterface(formData.value);
+    if (response.code !== 200) {
+      throw new Error(response.message || "登录失败，请检查账号密码后重试。");
+    }
+    const failure = await router.push({ name: "OntologySpaceManagement" });
+    if (failure) throw new Error("进入系统失败，请稍后重试。");
     loginStatus.value = "success";
-  } catch {
+  } catch (error) {
     loginStatus.value = "error";
-    loginError.value = "进入系统失败，请重试。";
+    loginError.value =
+      error instanceof Error && error.message
+        ? error.message
+        : "登录失败，请稍后重试。";
     ElMessage.error(loginError.value);
   }
 }
@@ -653,4 +661,3 @@ async function onSubmit() {
   text-align: center;
 }
 </style>
-

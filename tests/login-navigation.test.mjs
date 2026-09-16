@@ -6,34 +6,124 @@ import vm from 'node:vm';
 const source = readFileSync(new URL('../src/views/LoginPage/index.vue', import.meta.url), 'utf8');
 const handler = source.match(/async function onSubmit\(\) \{[\s\S]*?(?=\n<\/script>)/)[0];
 
-test('empty credentials enter workspace and duplicate submissions are ignored', async () => {
-  let calls = 0;
-  let finish;
+function runHandler(setupCode) {
   const state = {
-    formData: { value: { username: '', password: '' } },
-    loginStatus: { value: 'idle' }, loginError: { value: '' },
+    formData: { value: { username: 'admin', password: 'a123456' } },
+    loginStatus: { value: 'idle' },
+    loginError: { value: '' },
     ElMessage: { warning() {}, error() {} },
-    router: { push(target) { assert.equal(target.name, 'Workspace'); calls++; return new Promise(resolve => { finish = resolve; }); } },
   };
   vm.createContext(state);
+  vm.runInContext(setupCode, state);
   vm.runInContext(handler, state);
+  return state;
+}
+
+test('successful login posts credentials and enters ontology space management', async () => {
+  const state = runHandler(`
+    var requests = [];
+    var pushes = [];
+    var postLoginInterface = async (params) => {
+      requests.push(params);
+      return { code: 200, success: true, message: '登录成功', data: {} };
+    };
+    var router = {
+      push: async (target) => {
+        pushes.push(target);
+        return undefined;
+      },
+    };
+  `);
+
+  await state.onSubmit();
+
+  assert.equal(state.requests.length, 1);
+  assert.equal(state.requests[0].username, 'admin');
+  assert.equal(state.requests[0].password, 'a123456');
+  assert.equal(state.pushes.length, 1);
+  assert.equal(state.pushes[0].name, 'OntologySpaceManagement');
+  assert.equal(state.loginStatus.value, 'success');
+  assert.equal(state.loginError.value, '');
+});
+
+test('duplicate submissions while pending send only one login request', async () => {
+  const state = runHandler(`
+    var requests = [];
+    var resolveLogin;
+    var postLoginInterface = (params) => {
+      requests.push(params);
+      return new Promise((resolve) => {
+        resolveLogin = resolve;
+      });
+    };
+    var router = { push: async () => undefined };
+  `);
+
   const pending = state.onSubmit();
   await state.onSubmit();
-  assert.equal(calls, 1);
-  finish();
+  assert.equal(state.requests.length, 1);
+  state.resolveLogin({ code: 200, success: true, message: '登录成功', data: {} });
   await pending;
   assert.equal(state.loginStatus.value, 'success');
 });
 
+test('business failure shows the server message without navigating', async () => {
+  const state = runHandler(`
+    var pushes = [];
+    var postLoginInterface = async () => ({
+      code: 401,
+      success: false,
+      message: '用户名或密码错误',
+      data: {},
+    });
+    var router = {
+      push: async (target) => {
+        pushes.push(target);
+      },
+    };
+  `);
+
+  await state.onSubmit();
+
+  assert.equal(state.pushes.length, 0);
+  assert.equal(state.loginStatus.value, 'error');
+  assert.equal(state.loginError.value, '用户名或密码错误');
+});
+
+test('network errors are visible and allow retry', async () => {
+  const state = runHandler(`
+    var postLoginInterface = async () => {
+      throw new Error('网络连接失败，请检查网络后重试。');
+    };
+    var router = { push: async () => undefined };
+  `);
+
+  await state.onSubmit();
+  assert.equal(state.loginStatus.value, 'error');
+  assert.match(state.loginError.value, /网络连接失败/);
+
+  vm.runInContext(`
+    postLoginInterface = async () => ({ code: 200, success: true, message: '登录成功', data: {} });
+  `, state);
+  await state.onSubmit();
+  assert.equal(state.loginStatus.value, 'success');
+});
+
 test('navigation errors are visible and allow retry', async () => {
-  const state = {
-    formData: { value: { username: '', password: '' } },
-    loginStatus: { value: 'idle' }, loginError: { value: '' },
-    ElMessage: { warning() {}, error() {} },
-    router: { async push() { throw new Error('unavailable'); } },
-  };
-  vm.createContext(state);
-  vm.runInContext(handler, state);
+  const state = runHandler(`
+    var postLoginInterface = async () => ({
+      code: 200,
+      success: true,
+      message: '登录成功',
+      data: {},
+    });
+    var router = {
+      async push() {
+        throw new Error('进入系统失败，请稍后重试。');
+      },
+    };
+  `);
+
   await state.onSubmit();
   assert.equal(state.loginStatus.value, 'error');
   assert.match(state.loginError.value, /进入系统失败/);

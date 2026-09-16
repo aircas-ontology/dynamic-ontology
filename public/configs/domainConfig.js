@@ -9,4 +9,10 @@ const DOMAIN_CONFIG = {
   MAP_SERVER_TMS_URL: "http://192.168.2.201:8310",
   OCEAN_SERVER_URL: "http://192.168.53.45:5000", // 南海先导
   OCEAN_ANALYSIS_SERVER_URL: "http://192.168.53.42:16411", // 南海先导-软件所分析模型
+
+
+
+  //接口地址
+  LOGIN_URL:"http://172.16.18.58:37002",//登录
+
 };
