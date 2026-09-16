@@ -67,7 +67,7 @@ export function normalizeRequestError(error: unknown): RequestError {
 export function authorizeRequest(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
   const authorization = getAuthorizationHeader();
   if (authorization) {
-    config.headers.set("Authorization", authorization);
+    config.headers.set("access-token", authorization);
   }
   return config;
 }

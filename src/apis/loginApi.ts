@@ -13,7 +13,7 @@ const LOGIN_REQUEST_TIMEOUT = 10000;
  * @returns 去除首尾空白的 Authorization 值；缺失或为非字符串时返回 null。
  */
 export function extractAuthorizationHeader(headers: AxiosResponse<LoginData>["headers"]): string | null {
-  const rawHeader = headers["authorization"] ?? headers["Authorization"];
+  const rawHeader = headers["access-token"] ?? headers["AccessToken"];
   const normalizedHeader = typeof rawHeader === "string" ? rawHeader.trim() : "";
   return normalizedHeader.length > 0 ? normalizedHeader : null;
 }
