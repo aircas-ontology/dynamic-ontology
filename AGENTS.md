@@ -121,6 +121,14 @@ html/                生产构建产物，Codex 禁止读取、修改、删除�
 - 【必须】Vue 使用 Vue 3、Composition API、`<script setup lang="ts">`。
 - 【优先】项目内部模块引用使用 `@/` 路径别名。
 
+### 函数规范
+
+- 【必须】新增或修改的 JavaScript、TypeScript 和 Vue 具名函数及方法使用 JSDoc；简短的匿名内联回调除外。
+- 【必须】JSDoc 至少包含 `@description`，业务函数需说明业务逻辑；有参数时写 `@param`，有返回值时写 `@returns`。
+- 【必须】JavaScript 在 JSDoc 中标注类型；TypeScript 和 Vue 不重复函数签名中的类型。
+- 【必须】函数名使用 camelCase，并准确表达“动作 + 对象”。
+- 【禁止】使用 `load`、`submit`、`save` 等缺少对象的单独动词；使用 `loadOntologyData`、`submitLoginForm`、`saveDomainConfig` 等完整名称。
+
 ### 环境与依赖管理
 
 - 【必须】Node.js 使用 `24.12.0` 及以上版本。
