@@ -45,3 +45,7 @@ Plan：本体关系页面完整迁移（含三维图） Implement the plan as sp
 ## 7. 完善本体空间添加关系中的 el-tree-select 组件样式，同样的方式在`\dynamic-ontology\src\styles\element-plus`下添加对应的scss文件，规范与其他组件的样式文件一致，支持在深色风格下的样式协调性
 
 ## 8. 完善本体空间添加关系中的 el-table 组件样式，规范与其他组件的样式文件一致，支持在深色风格下的样式协调性
+
+## 9. 完善本体空间中编辑关系弹框中表单的label字体样式，在深色模式下字体颜色看不清
+代码位置：`\dynamic-ontology\src\views\OntologySpaceManagementDetail\relationComponents\SpaceRelationFormDialog.vue`
+在`\dynamic-ontology\src\styles\element-plus`下合适的位置创建一个公用的样式类，以便以后每个相同的表单label都可以使用该样式类

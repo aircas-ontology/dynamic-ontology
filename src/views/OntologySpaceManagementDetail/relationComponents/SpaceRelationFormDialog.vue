@@ -8,7 +8,7 @@
     destroy-on-close
     @close="emit('update:modelValue', false)"
   >
-    <el-form label-position="top">
+    <el-form class="aircas-form" label-position="top">
       <el-form-item label="关系名称" required>
         <el-input v-model="displayName" class="aircas-input" maxlength="64" placeholder="请输入关系名称" />
       </el-form-item>
