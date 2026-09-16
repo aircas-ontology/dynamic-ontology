@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "cesium": {
+      "command": "npx",
+      "args": ["cesium-mcp-runtime", "cesium-mcp-dev"]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest", "--slim", "--headless"]
+    }
+  }
+}
