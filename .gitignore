@@ -9,12 +9,12 @@ lerna-debug.log*
 
 node_modules
 node_modules*
+html
 html*
 .DS_Store
 dist
 dist-ssr
 coverage
-html
 *.local
 
 # Editor directories and files
