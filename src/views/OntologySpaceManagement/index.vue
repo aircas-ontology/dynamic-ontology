@@ -24,6 +24,7 @@
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import type { OntologySpaceDraft, OntologySpaceItem } from "@/types";
 import WelcomePanel from "./components/WelcomePanel.vue";
@@ -34,6 +35,7 @@ import SpaceFormDialog from "./components/SpaceFormDialog.vue";
 import { useSpaceManagement } from "./composables/useSpaceManagement";
 import { serializeSpace } from "./utils/spaceOperations";
 import { downloadSpaceJson } from "./utils/downloadSpaceJson";
+const router = useRouter();
 const { keyword, order, viewMode, page, pageSize, status, error, result, summaryStats, load, save, remove } = useSpaceManagement();
 const activeSpace = ref<OntologySpaceItem | null>(null);
 const formVisible = ref(false);
@@ -50,10 +52,12 @@ function openForm(space: OntologySpaceItem | null = null) {
 function handleAction(action: string, space: OntologySpaceItem) {
   activeSpace.value = space;
   actionError.value = "";
-  if (action === "edit") openForm(space);
+  if (action === "enter") {
+    void router.push({ name: "OntologySpaceManagementDetailOverview", params: { spaceId: space.id } });
+  } else if (action === "edit") openForm(space);
   else if (action === "delete") deleteVisible.value = true;
   else if (action === "export") exportVisible.value = true;
-  else ElMessage.info(action === "subspace" ? "子空间创建页面尚未接入。" : "空间详情页面尚未接入。");
+  else ElMessage.info(action === "subspace" ? "子空间创建页面尚未接入。" : "该操作尚未接入。");
 }
 function handleSave(draft: OntologySpaceDraft) {
   if (actionBusy.value) return;

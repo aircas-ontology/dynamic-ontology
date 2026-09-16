@@ -4,7 +4,7 @@
       v-model="keyword"
       class="aircas-input full-text-search__input"
       ariaLabel="全文检索"
-      placeholder="检索空间，对象，实例，属性.."
+      placeholder="检索空间、对象、实例、属性..."
       :prefix-icon="Search"
       clearable
     />
