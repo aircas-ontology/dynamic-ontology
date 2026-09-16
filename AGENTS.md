@@ -29,6 +29,8 @@
 - 【必须】只修改当前任务明确涉及的内容。
 - 【禁止】顺带重构、批量格式化或调整与当前任务无关的内容。
 - 【必须】保持类型安全，不通过 `any`、无依据的类型断言或关闭检查规避类型问题。
+- 【必须】修改受 Prettier 支持的文本文件前读取并遵守 `.vscode/settings.json`、`.prettierrc.json` 和 `.prettierignore`。
+- 【必须】格式化只覆盖当前任务明确涉及的文件；禁止无范围的写入式全仓格式化。
 - 【禁止】Codex 读取、修改、删除或提交 `html/` 生产构建目录。
 - 【禁止】大模型修改、删除或提交 `public/` 中的任何文件；只允许读取和检查，开发或发布人员自行维护该目录。
 - 【必须】使用 Subagent 前获得用户确认。
@@ -53,32 +55,32 @@
 
 ### 仓库入口
 
-| 路径 | 职责 |
-| --- | --- |
-| `README.md` | 项目简介、运行方式和推荐 Skill 来源 |
-| `package.json` | 依赖、Node.js 版本和可执行脚本 |
-| `src/main.ts` | Vue 应用启动入口 |
-| `src/App.vue` | 根组件 |
-| `src/router/index.ts` | 路由装配入口 |
-| `src/styles/index.scss` | 全局样式聚合入口 |
-| `vite.config.ts` | Vite 与构建配置 |
-| `tests/` | Node 测试套件 |
-| `scripts/` | 项目约定检查与构建验证脚本 |
+| 路径                    | 职责                                |
+| ----------------------- | ----------------------------------- |
+| `README.md`             | 项目简介、运行方式和推荐 Skill 来源 |
+| `package.json`          | 依赖、Node.js 版本和可执行脚本      |
+| `src/main.ts`           | Vue 应用启动入口                    |
+| `src/App.vue`           | 根组件                              |
+| `src/router/index.ts`   | 路由装配入口                        |
+| `src/styles/index.scss` | 全局样式聚合入口                    |
+| `vite.config.ts`        | Vite 与构建配置                     |
+| `tests/`                | Node 测试套件                       |
+| `scripts/`              | 项目约定检查与构建验证脚本          |
 
 ### 常见任务定位
 
-| 任务 | 优先检查 |
-| --- | --- |
-| 新增或调整页面 | `src/views/`、`src/router/`、`src/assets/pages/`、`src/types/pages/` |
-| 新增后端接口 | `src/apis/`、`src/types/apis/`、`src/utils/request.ts` |
-| 调整共享状态 | `src/stores/`、相关领域类型和调用页面 |
-| 新增或调整全局 composable | `src/composables/`、相关 Store、工具、类型和调用方 |
-| 修改公共组件 | `src/components/`、`src/assets/components/`、`src/styles/` |
-| 修改主题或 Element Plus 外观 | `src/styles/theme-*.css`、`src/styles/element-plus/`、组件局部样式 |
-| 修改地图或三维能力 | `src/utils/initEarth.ts`、相关模型、组件或页面，并核对实例生命周期 |
-| 修改类型 | `src/types/`、`src/types/index.ts`、`scripts/check-types-conventions.mjs` |
-| 修改构建配置 | `vite.config.ts`、`tsconfig*.json`、`package.json` |
-| 增加或调整测试 | `tests/`、对应实现和 `package.json` scripts |
+| 任务                         | 优先检查                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| 新增或调整页面               | `src/views/`、`src/router/`、`src/assets/pages/`、`src/types/pages/`      |
+| 新增后端接口                 | `src/apis/`、`src/types/apis/`、`src/utils/request.ts`                    |
+| 调整共享状态                 | `src/stores/`、相关领域类型和调用页面                                     |
+| 新增或调整全局 composable    | `src/composables/`、相关 Store、工具、类型和调用方                        |
+| 修改公共组件                 | `src/components/`、`src/assets/components/`、`src/styles/`                |
+| 修改主题或 Element Plus 外观 | `src/styles/theme-*.css`、`src/styles/element-plus/`、组件局部样式        |
+| 修改地图或三维能力           | `src/utils/initEarth.ts`、相关模型、组件或页面，并核对实例生命周期        |
+| 修改类型                     | `src/types/`、`src/types/index.ts`、`scripts/check-types-conventions.mjs` |
+| 修改构建配置                 | `vite.config.ts`、`tsconfig*.json`、`package.json`                        |
+| 增加或调整测试               | `tests/`、对应实现和 `package.json` scripts                               |
 
 ---
 
@@ -119,6 +121,14 @@ html/                生产构建产物，Codex 禁止读取、修改、删除�
 - 【必须】Vue 使用 Vue 3、Composition API、`<script setup lang="ts">`。
 - 【优先】项目内部模块引用使用 `@/` 路径别名。
 
+### 函数规范
+
+- 【必须】新增或修改的 JavaScript、TypeScript 和 Vue 具名函数及方法使用 JSDoc；简短的匿名内联回调除外。
+- 【必须】JSDoc 至少包含 `@description`，业务函数需说明业务逻辑；有参数时写 `@param`，有返回值时写 `@returns`。
+- 【必须】JavaScript 在 JSDoc 中标注类型；TypeScript 和 Vue 不重复函数签名中的类型。
+- 【必须】函数名使用 camelCase，并准确表达“动作 + 对象”。
+- 【禁止】使用 `load`、`submit`、`save` 等缺少对象的单独动词；使用 `loadOntologyData`、`submitLoginForm`、`saveDomainConfig` 等完整名称。
+
 ### 环境与依赖管理
 
 - 【必须】Node.js 使用 `24.12.0` 及以上版本。
@@ -158,6 +168,7 @@ html/                生产构建产物，Codex 禁止读取、修改、删除�
 - 【必须】有可执行测试的代码变更运行 `npm test` 和 `npm run test:coverage`，覆盖率不得低于项目现有 80% 门槛。
 - 【必须】应用代码、类型、配置或依赖变更执行 `npm run type-check` 和 `npm run build:verify`。
 - 【必须】规范、Skill、主题变量或项目结构变更执行 `npm run check:project-conventions`；类型目录变更另执行 `npm run check:types-conventions`。
+- 【必须】修改受 Prettier 支持的文本文件后，对当前任务文件执行 `npm run format:check -- <明确文件列表>`；需要自动格式化时仅执行 `npm run format -- <同一文件列表>`。
 - 【禁止】Codex 使用会写入 `html/` 的 `npm run build` 进行验证；该命令只供开发或发布人员明确执行正式发布构建。
 - 【优先】关键用户流程或交互行为变更增加或更新 E2E 测试。
 - 【必须】纯文档、Skill、静态资源整理及不改变行为的样式修改可免除单元测试和覆盖率；无法合理自动化测试的行为变更必须在 Plan 中说明并获得确认。
