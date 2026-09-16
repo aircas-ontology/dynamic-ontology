@@ -8,5 +8,25 @@ export type {
   OntologySpaceDetailRouteName,
 } from "./pages/ontologySpaceManagementDetailType";
 export type { OntologySpaceDraft, OntologySpaceItem, OntologySpaceSortOrder, OntologySpaceSummary, OntologyViewMode } from "./pages/ontologySpaceManagementType";
+export type {
+  OntologyRelationCardinality,
+  OntologyRelationCategoryNode,
+  OntologyRelationClass,
+  OntologySpaceRelationLoadStatus,
+  RelationCategoryUpdatePayload,
+  RelationCategoryWritePayload,
+  RelationClassUpdatePayload,
+  RelationClassWritePayload,
+  RelationGraphLayoutMode,
+  RelationViewMode,
+  SpaceRelationFilterState,
+  SpaceRelationHopLevel,
+  SpaceRelationObjectOption,
+  SpaceRelationWorkspaceData,
+} from "./pages/ontologySpaceRelationType";
+export {
+  RELATION_CARDINALITIES,
+  ROOT_RELATION_CATEGORY_ID,
+} from "./pages/ontologySpaceRelationType";
 export type { EcefState, EciState, SatelliteState } from "./satellite/stateType";
 export type { StorageGuard } from "./shared/guardsType";
