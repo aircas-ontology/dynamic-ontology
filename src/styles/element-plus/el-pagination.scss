@@ -58,6 +58,14 @@
 .aircas-pagination .el-select__wrapper {
   background-color: var(--aircas-color-panel-background);
   box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+
+  .el-select__selected-item {
+    color: var(--aircas-color-text-primary);
+  }
+
+  .el-select__caret {
+    color: var(--aircas-color-text-secondary);
+  }
 }
 
 /* 每页条数选择器挂载到 body 时，使用独立公共命名空间继承主题。 */
@@ -85,8 +93,8 @@
     }
 
     &.is-disabled {
-      background-color: var(--aircas-color-menu-background);
-      color: var(--aircas-color-text-disabled);
+      background-color: var(--aircas-color-menu-background) !important;
+      color: var(--aircas-color-text-disabled) !important;
       cursor: not-allowed;
     }
   }
