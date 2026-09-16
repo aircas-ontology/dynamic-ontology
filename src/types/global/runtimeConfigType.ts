@@ -8,6 +8,7 @@ declare global {
     readonly OCEAN_SERVER_URL: string;
     readonly OCEAN_ANALYSIS_SERVER_URL: string;
     readonly LOGIN_URL: string;
+    readonly ONTOLOGYMANAGE_URL: string;
   }
 
   /** 部署时由 `/configs/domainConfig.js` 注入的后端服务地址配置。 */

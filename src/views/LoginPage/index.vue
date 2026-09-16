@@ -86,19 +86,13 @@
               @click="togglePasswordVisibility"
             >
               <svg v-if="showPassword" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12z"
-                />
+                <path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12z" />
                 <circle cx="12" cy="12" r="3.2" />
               </svg>
               <svg v-else viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M3.2 3.2l17.6 17.6" />
-                <path
-                  d="M9.8 5.9A11.2 11.2 0 0 1 12 5.5C19.2 5.5 23 12 23 12a18.6 18.6 0 0 1-4.2 4.9"
-                />
-                <path
-                  d="M14.2 18.1c-.7.2-1.4.4-2.2.4C4.8 18.5 1 12 1 12a18.8 18.8 0 0 1 5.4-5.6"
-                />
+                <path d="M9.8 5.9A11.2 11.2 0 0 1 12 5.5C19.2 5.5 23 12 23 12a18.6 18.6 0 0 1-4.2 4.9" />
+                <path d="M14.2 18.1c-.7.2-1.4.4-2.2.4C4.8 18.5 1 12 1 12a18.8 18.8 0 0 1 5.4-5.6" />
                 <path d="M10 10a2.8 2.8 0 0 0 4 4" />
               </svg>
             </button>
@@ -108,12 +102,7 @@
             {{ loginError }}
           </p>
 
-          <button
-            class="submit"
-            type="submit"
-            :disabled="loginStatus === 'submitting'"
-            :aria-busy="loginStatus === 'submitting'"
-          >
+          <button class="submit" type="submit" :disabled="loginStatus === 'submitting'" :aria-busy="loginStatus === 'submitting'">
             {{ loginStatus === "submitting" ? "提交中..." : "登 录" }}
           </button>
         </form>
@@ -128,9 +117,7 @@
           <li>
             <span class="core-mark" aria-hidden="true">
               <svg viewBox="0 0 24 24">
-                <path
-                  d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2L12 3Z"
-                />
+                <path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2L12 3Z" />
               </svg>
             </span>
             <strong>动态感知</strong>
@@ -161,9 +148,7 @@
       </aside>
     </main>
 
-    <footer class="copyright">
-      © 2026 动态本体平台 · 中国科学院空天信息创新研究院
-    </footer>
+    <footer class="copyright">© 2026 动态本体平台 · 中国科学院空天信息创新研究院</footer>
   </section>
 </template>
 
@@ -179,8 +164,9 @@ import layer2 from "@/assets/pages/loginPage/images/layer2.svg";
 import layer3 from "@/assets/pages/loginPage/images/layer3.svg";
 import layer4 from "@/assets/pages/loginPage/images/layer4.svg";
 import logoImage from "@/assets/pages/loginPage/images/loginLogo.png";
-import { postLoginInterface } from "@/apis";
 import type { LoginCredentials } from "@/types";
+
+import { useLoginCommand } from "./composables/useLoginCommand";
 
 type LoginCommandStatus = "idle" | "submitting" | "success" | "error";
 
@@ -188,6 +174,7 @@ const showPassword = ref(false);
 const router = useRouter();
 const loginStatus = ref<LoginCommandStatus>("idle");
 const loginError = ref("");
+const { submitLogin } = useLoginCommand();
 const formData = ref<LoginCredentials>({
   username: "",
   password: "",
@@ -210,7 +197,7 @@ async function onSubmit() {
   loginError.value = "";
 
   try {
-    const response = await postLoginInterface(formData.value);
+    const response = await submitLogin(formData.value);
     if (response.code !== 200) {
       throw new Error(response.message || "登录失败，请检查账号密码后重试。");
     }
@@ -219,10 +206,7 @@ async function onSubmit() {
     loginStatus.value = "success";
   } catch (error) {
     loginStatus.value = "error";
-    loginError.value =
-      error instanceof Error && error.message
-        ? error.message
-        : "登录失败，请稍后重试。";
+    loginError.value = error instanceof Error && error.message ? error.message : "登录失败，请稍后重试。";
     ElMessage.error(loginError.value);
   }
 }
@@ -237,37 +221,21 @@ async function onSubmit() {
   display: flex;
   flex-direction: column;
   color: var(--aircas-color-text-primary);
-  background: radial-gradient(
-      circle at 12% 18%,
-      var(--aircas-color-accent-blue-soft),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at 82% 78%,
-      var(--aircas-color-accent-cyan-soft),
-      transparent 34%
-    ),
-    linear-gradient(
-      135deg,
-      var(--aircas-color-page-background),
-      var(--aircas-color-panel-background-deep)
-    );
+  background:
+    radial-gradient(circle at 12% 18%, var(--aircas-color-accent-blue-soft), transparent 32%),
+    radial-gradient(circle at 82% 78%, var(--aircas-color-accent-cyan-soft), transparent 34%),
+    linear-gradient(135deg, var(--aircas-color-page-background), var(--aircas-color-panel-background-deep));
 }
 
 .bg-pattern {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(
-      var(--aircas-color-accent-cyan-soft) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      145deg,
-      var(--aircas-color-accent-blue-soft),
-      transparent 58%
-    );
-  background-size: 30px 30px, auto;
+  background-image:
+    radial-gradient(var(--aircas-color-accent-cyan-soft) 1px, transparent 1px), linear-gradient(145deg, var(--aircas-color-accent-blue-soft), transparent 58%);
+  background-size:
+    30px 30px,
+    auto;
   opacity: 0.68;
 }
 
@@ -408,12 +376,9 @@ async function onSubmit() {
   padding: 34px 32px 28px;
   border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 20px;
-  background: linear-gradient(
-    160deg,
-    var(--aircas-color-card-background),
-    var(--aircas-color-panel-background-deep)
-  );
-  box-shadow: 0 24px 60px var(--aircas-color-accent-blue-shadow),
+  background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+  box-shadow:
+    0 24px 60px var(--aircas-color-accent-blue-shadow),
     inset 0 1px 0 var(--aircas-color-accent-cyan-soft);
 
   h3 {
@@ -451,7 +416,9 @@ async function onSubmit() {
     color: var(--aircas-color-text-primary);
     font-size: 15px;
     background: var(--aircas-color-input-background);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease,
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
       background-color 0.2s ease;
 
     &::placeholder {
@@ -513,7 +480,9 @@ async function onSubmit() {
   background: transparent;
   cursor: pointer;
   transform: translateY(-50%);
-  transition: color 0.2s ease, background-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
 
   &:hover,
   &:focus-visible {
@@ -546,14 +515,13 @@ async function onSubmit() {
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.28em;
-  background: linear-gradient(
-    100deg,
-    var(--aircas-color-accent-cyan),
-    var(--aircas-color-accent-blue)
-  );
+  background: linear-gradient(100deg, var(--aircas-color-accent-cyan), var(--aircas-color-accent-blue));
   box-shadow: 0 10px 24px var(--aircas-color-accent-blue-shadow);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 
   &:hover {
     filter: brightness(1.08);
@@ -592,12 +560,7 @@ async function onSubmit() {
 
   span {
     height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--aircas-color-accent-cyan),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, var(--aircas-color-accent-cyan), transparent);
   }
 
   p {

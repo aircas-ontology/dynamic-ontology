@@ -1,7 +1,7 @@
 export type { ApiResponse } from "./apis/apiResponseType";
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
 export type { LoginData, LoginParams } from "./apis/loginType";
-export type { OntologyListData } from "./apis/ontologyManageType";
+export type { OntologySpaceListData } from "./apis/ontologyManageType";
 export type { LoginCredentials } from "./auth/credentialsType";
 export type { MapConfig } from "./map/configType";
 export type {
@@ -43,9 +43,6 @@ export type {
   SpaceRelationObjectOption,
   SpaceRelationWorkspaceData,
 } from "./pages/ontologySpaceRelationType";
-export {
-  RELATION_CARDINALITIES,
-  ROOT_RELATION_CATEGORY_ID,
-} from "./pages/ontologySpaceRelationType";
+export { RELATION_CARDINALITIES, ROOT_RELATION_CATEGORY_ID } from "./pages/ontologySpaceRelationType";
 export type { EcefState, EciState, SatelliteState } from "./satellite/stateType";
 export type { StorageGuard } from "./shared/guardsType";

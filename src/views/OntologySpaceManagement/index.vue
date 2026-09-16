@@ -6,27 +6,11 @@
         <StatCard v-for="stat in summaryStats" :key="stat.id" :stat="stat" />
       </div>
     </section>
-    <SectionToolbar
-      v-model:keyword="keyword"
-      v-model:order="order"
-      v-model:view-mode="viewMode"
-    />
-    <div
-      v-if="status === 'loading'"
-      class="ontology-space-management__state"
-      role="status"
-    >
-      正在加载本体空间…
-    </div>
-    <div
-      v-else-if="status === 'error'"
-      class="ontology-space-management__state"
-      role="alert"
-    >
+    <SectionToolbar v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
+    <div v-if="status === 'loading'" class="ontology-space-management__state" role="status">正在加载本体空间…</div>
+    <div v-else-if="status === 'error'" class="ontology-space-management__state" role="alert">
       <span>{{ error }}</span
-      ><el-button class="aircas-button" type="primary" @click="load"
-        >重试</el-button
-      >
+      ><el-button class="aircas-button" type="primary" @click="load">重试</el-button>
     </div>
     <SpaceCollection
       v-else
@@ -38,12 +22,7 @@
       @update:page="page = $event"
       @action="handleAction"
     />
-    <SpaceFormDialog
-      v-model="formVisible"
-      :space="activeSpace"
-      :external-error="actionError"
-      @save="handleSave"
-    />
+    <SpaceFormDialog v-model="formVisible" :space="activeSpace" :external-error="actionError" @save="handleSave" />
     <SpaceCommandDialogs
       v-model:delete-visible="deleteVisible"
       v-model:export-visible="exportVisible"
@@ -67,40 +46,11 @@ import WelcomePanel from "./components/WelcomePanel.vue";
 import { useSpaceManagement } from "./composables/useSpaceManagement";
 import { useSpaceManagementActions } from "./composables/useSpaceManagementActions";
 
-import { getOntologyListInterface } from "@/apis";
+const { keyword, order, viewMode, page, pageSize, status, error, result, summaryStats, load, save, remove } = useSpaceManagement();
+const { activeSpace, formVisible, deleteVisible, exportVisible, actionBusy, actionError, openForm, handleAction, handleSave, confirmDelete, confirmExport } =
+  useSpaceManagementActions({ keyword, save, remove });
 
-const {
-  keyword,
-  order,
-  viewMode,
-  page,
-  pageSize,
-  status,
-  error,
-  result,
-  summaryStats,
-  load,
-  save,
-  remove,
-} = useSpaceManagement();
-const {
-  activeSpace,
-  formVisible,
-  deleteVisible,
-  exportVisible,
-  actionBusy,
-  actionError,
-  openForm,
-  handleAction,
-  handleSave,
-  confirmDelete,
-  confirmExport,
-} = useSpaceManagementActions({ keyword, save, remove });
-
-// onMounted(load);
-onMounted(async () => {
-  const response = await getOntologyListInterface();
-});
+onMounted(load);
 </script>
 
 <style scoped lang="scss">

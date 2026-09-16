@@ -1,7 +1,7 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import type { OntologySpaceDetailLoadStatus, OntologySpaceItem } from "@/types";
-import { ontologySpaceManagementMock } from "@/mocks/ontologySpaceManagementMock/ontologySpaceManagementMock";
+import { ontologySpaceListMock } from "@/mocks/ontologySpaceListMock/ontologySpaceListMock";
 import { useOntologySpaceDetailStore } from "@/stores/useOntologySpaceDetailStore";
 import { findSpaceById } from "../utils/spaceLookup";
 import { AVAILABLE_WORKSPACE_TABS, tabFromRouteName } from "../utils/workspaceTabs";
@@ -21,7 +21,7 @@ export function useSpaceWorkspace() {
   function load() {
     status.value = "loading";
     error.value = "";
-    const next = findSpaceById(ontologySpaceManagementMock, spaceId.value);
+    const next = findSpaceById(ontologySpaceListMock.data, spaceId.value);
     if (!spaceId.value || !next) {
       space.value = null;
       detailStore.clearCurrentSpace();

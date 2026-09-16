@@ -14,5 +14,6 @@ const DOMAIN_CONFIG = {
 
   //接口地址
   LOGIN_URL:"http://172.16.18.58:37002",//登录
+  ONTOLOGYMANAGE_URL:"http://172.16.18.58:37002",//本体管理
 
 };
