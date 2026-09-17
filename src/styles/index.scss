@@ -37,6 +37,7 @@
          ├── el-tabs.scss
          ├── el-menu.scss
          ├── el-form.scss
+         ├── el-breadcrumb.scss
          └── el-loading.scss
 
    --------------------------------------------------------------------------
@@ -102,6 +103,7 @@
 @use "./element-plus/el-tabs.scss" as *;
 @use "./element-plus/el-menu.scss" as *;
 @use "./element-plus/el-form.scss" as *;
+@use "./element-plus/el-breadcrumb.scss" as *;
 @use "./element-plus/el-loading.scss" as *;
 
 /* ---------------------------------------------------------------------------

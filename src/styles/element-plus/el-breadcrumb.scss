@@ -1,0 +1,35 @@
+/* ==========================================================================
+   Aircas · el-breadcrumb 覆盖
+   --------------------------------------------------------------------------
+   用法：`<el-breadcrumb class="aircas-breadcrumb">` 即生效。
+   ========================================================================== */
+
+.aircas-breadcrumb {
+  &.el-breadcrumb {
+    .el-breadcrumb__inner {
+      color: var(--aircas-color-text-primary);
+    }
+
+    .el-breadcrumb__inner.is-link,
+    .el-breadcrumb__inner a {
+      color: var(--aircas-color-text-secondary);
+      font-weight: 400;
+    }
+
+    .el-breadcrumb__inner.is-link:hover,
+    .el-breadcrumb__inner a:hover {
+      color: var(--aircas-color-title);
+    }
+
+    .el-breadcrumb__item:last-child .el-breadcrumb__inner,
+    .el-breadcrumb__item:last-child .el-breadcrumb__inner:hover,
+    .el-breadcrumb__item:last-child .el-breadcrumb__inner a,
+    .el-breadcrumb__item:last-child .el-breadcrumb__inner a:hover {
+      color: var(--aircas-color-text-primary);
+    }
+
+    .el-breadcrumb__separator {
+      color: var(--aircas-color-text-muted);
+    }
+  }
+}

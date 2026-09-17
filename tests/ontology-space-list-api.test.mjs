@@ -73,7 +73,7 @@ test("api contract mock lives beside the page sample and mirrors the response sa
 });
 
 test("mapper converts contract list items into page ontology space items", async () => {
-  const mapperUrl = new URL("../src/views/OntologySpaceManagement/utils/mapOntologySpaceList.ts", import.meta.url);
+  const mapperUrl = new URL("../src/utils/mapOntologySpaceList.ts", import.meta.url);
   assert.equal(existsSync(mapperUrl), true, "missing mapper file");
   const { mapOntologySpaceListItem } = await import(mapperUrl.href);
   const mapped = mapOntologySpaceListItem({
@@ -112,9 +112,13 @@ test("space management page maps successful list responses and falls back to pag
   assert.doesNotMatch(managementSource, /ontologySpaceManagementMock/);
 });
 
-test("space workspace detail reads samples from the page list mock envelope", () => {
+test("space workspace detail resolves the current space from the list api", () => {
   const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useSpaceWorkspace.ts");
-  assert.match(workspaceSource, /import \{ ontologySpaceListMock \} from "@\/mocks\/ontologySpaceListMock\/ontologySpaceListMock";/);
-  assert.match(workspaceSource, /findSpaceById\(ontologySpaceListMock\.data, spaceId\.value\)/);
+  assert.match(workspaceSource, /import \{ getOntologySpaceListInterface \} from "@\/apis";/);
+  assert.match(workspaceSource, /import \{ mapOntologySpaceList \} from "@\/utils\/mapOntologySpaceList";/);
+  assert.match(workspaceSource, /findSpaceById/);
+  assert.match(workspaceSource, /getOntologySpaceListInterface\(\)/);
+  assert.match(workspaceSource, /response\.code === 200/);
+  assert.doesNotMatch(workspaceSource, /ontologySpaceListMock/);
   assert.doesNotMatch(workspaceSource, /ontologySpaceManagementMock/);
 });

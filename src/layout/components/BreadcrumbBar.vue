@@ -1,6 +1,6 @@
 <template>
   <nav class="breadcrumb-bar" aria-label="页面路径">
-    <el-breadcrumb>
+    <el-breadcrumb class="aircas-breadcrumb">
       <el-breadcrumb-item v-if="route.name !== 'Workspace'" :to="{ name: 'Workspace' }">首页</el-breadcrumb-item>
       <template v-if="isObjectDetail">
         <el-breadcrumb-item :to="{ name: 'OntologySpaceManagement' }">本体空间管理</el-breadcrumb-item>

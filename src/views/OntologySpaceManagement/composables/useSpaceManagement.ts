@@ -2,7 +2,7 @@ import { computed, onScopeDispose, ref, watch } from "vue";
 import type { OntologySpaceDraft, OntologySpaceItem, OntologySpaceLoadStatus, OntologySpaceSortOrder, OntologySpaceSummary, OntologyViewMode } from "@/types";
 import { getOntologySpaceListInterface } from "@/apis";
 import { ontologySpaceListMock } from "@/mocks/ontologySpaceListMock/ontologySpaceListMock";
-import { mapOntologySpaceList } from "../utils/mapOntologySpaceList";
+import { mapOntologySpaceList } from "@/utils/mapOntologySpaceList";
 import { filterSpaces, removeSpace, saveSpace } from "../utils/spaceOperations";
 
 /**
