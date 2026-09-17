@@ -61,6 +61,39 @@ export const workspaceRoutes: RouteRecordRaw[] = [
         ],
       },
       {
+        path: "ontology-object/:objectId",
+        name: "OntologyObjectDetail",
+        component: () => import("@/views/OntologyObjectDetail/index.vue"),
+        meta: { title: "本体对象详情" },
+        redirect: { name: "OntologyObjectDetailObject" },
+        children: [
+          {
+            path: "object",
+            name: "OntologyObjectDetailObject",
+            component: () => import("@/views/OntologyObjectDetail/components/OntologyObjectOverviewPanel.vue"),
+            meta: { title: "本体对象详情", objectDetailTab: "object" },
+          },
+          {
+            path: "attribute",
+            name: "OntologyObjectDetailAttribute",
+            component: emptyWorkspacePanel,
+            meta: { title: "本体对象详情", objectDetailTab: "attribute" },
+          },
+          {
+            path: "relation",
+            name: "OntologyObjectDetailRelation",
+            component: emptyWorkspacePanel,
+            meta: { title: "本体对象详情", objectDetailTab: "relation" },
+          },
+          {
+            path: "behavior",
+            name: "OntologyObjectDetailBehavior",
+            component: emptyWorkspacePanel,
+            meta: { title: "本体对象详情", objectDetailTab: "behavior" },
+          },
+        ],
+      },
+      {
         path: "full-text-search",
         name: "FullTextSearch",
         component: () => import("@/views/FullTextSearch/index.vue"),
