@@ -4,6 +4,7 @@ export type { LoginData, LoginParams } from "./apis/loginType";
 export type { OntologySpaceListData } from "./apis/ontologyManageType";
 export type { LoginCredentials } from "./auth/credentialsType";
 export type { MapConfig } from "./map/configType";
+export type { OntologyObjectDetailRouteName, OntologyObjectDetailTab } from "./pages/ontologyObjectDetailType";
 export type {
   ManagementWorkspaceTab,
   OntologyConceptNode,
