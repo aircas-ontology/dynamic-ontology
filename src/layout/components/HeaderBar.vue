@@ -3,7 +3,7 @@
     <div class="header-bar__brand">
       <span class="header-bar__logo" aria-hidden="true"></span>
       <h1>空天 · 灵枢</h1>
-      <span class="header-bar__version">v{{ version }}</span>
+      <span class="header-bar__version">{{ version }}</span>
     </div>
     <div class="header-bar__search" title="全局搜索暂未开放">
       <el-input class="aircas-input" placeholder="检索空间、对象、实例、属性..." :prefix-icon="Search" ariaLabel="全局搜索（暂未开放）" disabled />
@@ -22,7 +22,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { Bell, Moon, QuestionFilled, Search, Sunny, UserFilled } from "@element-plus/icons-vue";
-import { version } from "../../../package.json";
+
+const version = SYSTEM_CONFIG.version;
 const dark = ref(document.documentElement.getAttribute("theme") !== "light");
 function toggleTheme() {
   dark.value = !dark.value;
