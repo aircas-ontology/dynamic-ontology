@@ -30,7 +30,6 @@ function toggleTheme() {
   document.documentElement.setAttribute("theme", dark.value ? "dark" : "light");
 }
 </script>
-
 <style scoped lang="scss">
 .header-bar {
   display: flex;
