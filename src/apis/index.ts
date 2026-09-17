@@ -1,5 +1,5 @@
 import { getExampleInterface } from "./exampleApi";
 import { postLoginInterface } from "./loginApi";
-import { getOntologySpaceListInterface } from "./ontologyManageApi";
+import { getOntologyCategoryTreeInterface, getOntologySpaceListInterface } from "./ontologyManageApi";
 
-export { getExampleInterface, getOntologySpaceListInterface, postLoginInterface };
+export { getExampleInterface, getOntologyCategoryTreeInterface, getOntologySpaceListInterface, postLoginInterface };

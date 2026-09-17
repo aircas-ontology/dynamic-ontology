@@ -69,13 +69,13 @@ test("concept tree search retains matching ancestors and category anchor request
   assert.deepEqual(makeCategoryLocationTarget("carrier", 3), { categoryId: "carrier", requestId: 3 });
 });
 
-test("object workspace composable uses an empty shell and no longer depends on navy mock data", () => {
+test("object workspace composable loads the category tree api instead of navy mock data", () => {
   const source = readFileSync(
     new URL("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts", import.meta.url),
     "utf8",
   );
-  assert.match(source, /tree:\s*\[\]/);
+  assert.match(source, /getOntologyCategoryTreeInterface/);
+  assert.match(source, /mapOntologyCategoryTree/);
   assert.match(source, /sections:\s*\[\]/);
-  assert.match(source, /status\.value = result \? "success" : "empty"/);
   assert.doesNotMatch(source, /ontologySpaceObjectMock/);
 });

@@ -16,7 +16,7 @@ test("ontology space list api issues a GET to the manage domain space uri with t
   assert.match(apiSource, /method:\s*"get"/);
   assert.match(apiSource, /timeout: ONTOLOGY_SPACE_LIST_TIMEOUT,/);
   assert.match(apiSource, /const ONTOLOGY_SPACE_LIST_TIMEOUT = 10000;/);
-  assert.match(apiSource, /import type \{ ApiResponse, OntologySpaceListData \} from "@\/types"/);
+  assert.match(apiSource, /import type \{[\s\S]*OntologySpaceListData[\s\S]*\} from "@\/types"/);
   assert.match(apiSource, /@description/);
   assert.doesNotMatch(apiSource, /LOGIN_URL/);
   assert.doesNotMatch(apiSource, /\/ontology\/user\/login/);
@@ -25,8 +25,11 @@ test("ontology space list api issues a GET to the manage domain space uri with t
 
 test("apis barrel exports the renamed interface in dictionary order without stale aliases", () => {
   const apiBarrelSource = readSource("../src/apis/index.ts");
-  assert.match(apiBarrelSource, /import \{ getOntologySpaceListInterface \} from "\.\/ontologyManageApi";/);
-  assert.match(apiBarrelSource, /export \{ getExampleInterface, getOntologySpaceListInterface, postLoginInterface \};/);
+  assert.match(apiBarrelSource, /import \{ getOntologyCategoryTreeInterface, getOntologySpaceListInterface \} from "\.\/ontologyManageApi";/);
+  assert.match(
+    apiBarrelSource,
+    /export \{ getExampleInterface, getOntologyCategoryTreeInterface, getOntologySpaceListInterface, postLoginInterface \};/,
+  );
   assert.doesNotMatch(apiBarrelSource, /getOntologyListInterface/);
 });
 
