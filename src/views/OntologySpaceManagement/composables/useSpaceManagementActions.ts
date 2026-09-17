@@ -12,10 +12,15 @@ import { serializeSpace } from "../utils/spaceOperations";
 
 interface SpaceManagementActionOptions {
   keyword: Ref<string>;
-  save: (draft: OntologySpaceDraft, id?: string) => void;
-  remove: (id: string) => void;
+  saveOntologySpace: (draft: OntologySpaceDraft, id?: string) => void;
+  removeOntologySpace: (id: string) => void;
 }
 
+/**
+ * @description 编排本体空间页的进入、表单、删除与导出等命令操作。
+ * @param options 关键词与空间增删回调。
+ * @returns 弹窗状态与命令处理方法。
+ */
 export function useSpaceManagementActions(options: SpaceManagementActionOptions) {
   const router = useRouter();
   const activeSpace = ref<OntologySpaceItem | null>(null);
@@ -26,24 +31,36 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   const actionError = ref("");
   const actionBusy = computed(() => actionStatus.value === "submitting");
 
-  function resetCommandState() {
+  /**
+   * @description 重置命令操作状态为 idle，并清空错误信息。
+   */
+  function resetOntologySpaceCommandState() {
     actionStatus.value = "idle";
     actionError.value = "";
   }
 
-  function openForm(space: OntologySpaceItem | null = null) {
+  /**
+   * @description 打开新建或编辑本体空间表单；传入 space 为编辑，缺省为新建。
+   * @param space 待编辑空间；新建时传 null。
+   */
+  function openOntologySpaceForm(space: OntologySpaceItem | null = null) {
     activeSpace.value = space;
-    resetCommandState();
+    resetOntologySpaceCommandState();
     formVisible.value = true;
   }
 
-  function handleAction(action: OntologySpaceAction, space: OntologySpaceItem) {
+  /**
+   * @description 处理空间列表行操作：进入、编辑、删除、导出或子空间提示。
+   * @param action 操作类型。
+   * @param space 目标空间。
+   */
+  function handleOntologySpaceAction(action: OntologySpaceAction, space: OntologySpaceItem) {
     activeSpace.value = space;
-    resetCommandState();
+    resetOntologySpaceCommandState();
     if (action === "enter") {
       void router.push({ name: "OntologySpaceManagementDetailOverview", params: { spaceId: space.id } });
     } else if (action === "edit") {
-      openForm(space);
+      openOntologySpaceForm(space);
     } else if (action === "delete") {
       deleteVisible.value = true;
     } else if (action === "export") {
@@ -53,12 +70,16 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
     }
   }
 
-  function handleSave(draft: OntologySpaceDraft) {
+  /**
+   * @description 提交本体空间表单草稿并关闭弹窗；失败时写入错误状态。
+   * @param draft 表单草稿。
+   */
+  function submitOntologySpaceForm(draft: OntologySpaceDraft) {
     if (actionBusy.value) return;
     actionStatus.value = "submitting";
     actionError.value = "";
     try {
-      options.save(draft, activeSpace.value?.id);
+      options.saveOntologySpace(draft, activeSpace.value?.id);
       formVisible.value = false;
       options.keyword.value = "";
       actionStatus.value = "success";
@@ -69,12 +90,15 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
     }
   }
 
-  function confirmDelete() {
+  /**
+   * @description 确认删除当前选中的本体空间。
+   */
+  function confirmDeleteOntologySpace() {
     if (!activeSpace.value || actionBusy.value) return;
     actionStatus.value = "submitting";
     actionError.value = "";
     try {
-      options.remove(activeSpace.value.id);
+      options.removeOntologySpace(activeSpace.value.id);
       deleteVisible.value = false;
       actionStatus.value = "success";
       ElMessage.success("空间已删除");
@@ -84,7 +108,10 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
     }
   }
 
-  function confirmExport() {
+  /**
+   * @description 确认导出当前选中本体空间的 JSON 文件。
+   */
+  function confirmExportOntologySpace() {
     if (!activeSpace.value || actionBusy.value) return;
     actionStatus.value = "submitting";
     actionError.value = "";
@@ -106,10 +133,10 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
     exportVisible,
     actionBusy,
     actionError,
-    openForm,
-    handleAction,
-    handleSave,
-    confirmDelete,
-    confirmExport,
+    openOntologySpaceForm,
+    handleOntologySpaceAction,
+    submitOntologySpaceForm,
+    confirmDeleteOntologySpace,
+    confirmExportOntologySpace,
   };
 }

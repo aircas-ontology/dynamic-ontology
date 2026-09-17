@@ -9,7 +9,7 @@ import { filterSpaces, removeSpace, saveSpace } from "../utils/spaceOperations";
  * @description 查询本体空间列表并映射为页面模型；远程不可用期间回退到本地页面样例数据。
  * @returns 本体空间数组的深拷贝，避免页面编辑污染样例数据。
  */
-async function loadOntologySpaces(): Promise<OntologySpaceItem[]> {
+async function fetchOntologySpaces(): Promise<OntologySpaceItem[]> {
   try {
     const response = await getOntologySpaceListInterface();
     if (response.code === 200) {
@@ -22,7 +22,7 @@ async function loadOntologySpaces(): Promise<OntologySpaceItem[]> {
 }
 
 /** 本页独占的演示状态，离开页面后释放，数据不写入浏览器存储。 */
-export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = loadOntologySpaces) {
+export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = fetchOntologySpaces) {
   const spaces = ref<OntologySpaceItem[]>([]);
   const keyword = ref("");
   const order = ref<OntologySpaceSortOrder>("asc");
@@ -56,7 +56,11 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
     { id: "behavior", label: "行为数量", value: spaces.value.reduce((sum, space) => sum + space.metrics.behavior, 0), icon: "Share" },
     { id: "relation", label: "关系", value: spaces.value.reduce((sum, space) => sum + space.metrics.relation, 0), icon: "Link" },
   ]);
-  async function load() {
+
+  /**
+   * @description 加载本体空间列表并更新页面状态；防止重复请求与卸载后回写。
+   */
+  async function loadOntologySpaces() {
     if (pending || disposed) return;
     pending = true;
     status.value = "loading";
@@ -75,13 +79,39 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
       pending = false;
     }
   }
-  function save(draft: OntologySpaceDraft, id?: string) {
+
+  /**
+   * @description 创建或更新内存中的本体空间项。
+   * @param draft 表单草稿。
+   * @param id 编辑时的空间 id；缺省为新建。
+   */
+  function saveOntologySpace(draft: OntologySpaceDraft, id?: string) {
     spaces.value = saveSpace(spaces.value, draft, id);
     status.value = "success";
   }
-  function remove(id: string) {
+
+  /**
+   * @description 按 id 从内存列表移除本体空间。
+   * @param id 空间 id。
+   */
+  function removeOntologySpace(id: string) {
     spaces.value = removeSpace(spaces.value, id);
     status.value = spaces.value.length ? "success" : "empty";
   }
-  return { spaces, keyword, order, viewMode, page, pageSize, status, error, result, summaryStats, load, save, remove };
+
+  return {
+    spaces,
+    keyword,
+    order,
+    viewMode,
+    page,
+    pageSize,
+    status,
+    error,
+    result,
+    summaryStats,
+    loadOntologySpaces,
+    saveOntologySpace,
+    removeOntologySpace,
+  };
 }

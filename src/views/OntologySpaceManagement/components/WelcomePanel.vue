@@ -17,6 +17,7 @@ defineEmits<{ create: [] }>();
   border-radius: 8px;
   background: var(--aircas-color-card-background);
 }
+
 .welcome-panel::before {
   position: absolute;
   top: 0;
@@ -26,6 +27,7 @@ defineEmits<{ create: [] }>();
   background: var(--aircas-color-accent-cyan);
   content: "";
 }
+
 :deep(.welcome-panel__body) {
   display: flex;
   flex-direction: column;
@@ -35,7 +37,20 @@ defineEmits<{ create: [] }>();
   height: 100%;
   padding: 20px;
 }
-h1 { font-size: 24px; font-weight: 500; }
-h1 span { margin-left: 20px; color: var(--aircas-color-text-primary); }
-p { color: var(--aircas-color-text-secondary); font-size: 14px; line-height: 1.6; }
+
+h1 {
+  font-size: 24px;
+  font-weight: 500;
+}
+
+h1 span {
+  margin-left: 20px;
+  color: var(--aircas-color-text-primary);
+}
+
+p {
+  color: var(--aircas-color-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
 </style>

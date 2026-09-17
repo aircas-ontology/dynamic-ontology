@@ -30,6 +30,7 @@ export type {
   OntologySpaceDraft,
   OntologySpaceItem,
   OntologySpaceLoadStatus,
+  OntologySpaceMetrics,
   OntologySpaceSortOrder,
   OntologySpaceSummary,
   OntologyViewMode,

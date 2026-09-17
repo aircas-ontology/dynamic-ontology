@@ -1,7 +1,7 @@
 <template>
   <div class="ontology-space-management">
     <section class="ontology-space-management__overview">
-      <WelcomePanel @create="openForm()" />
+      <WelcomePanel @create="openOntologySpaceForm()" />
       <div class="ontology-space-management__stats">
         <StatCard v-for="stat in summaryStats" :key="stat.id" :stat="stat" />
       </div>
@@ -9,8 +9,7 @@
     <SectionToolbar v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
     <div v-if="status === 'loading'" class="ontology-space-management__state" role="status">正在加载本体空间…</div>
     <div v-else-if="status === 'error'" class="ontology-space-management__state" role="alert">
-      <span>{{ error }}</span
-      ><el-button class="aircas-button" type="primary" @click="load">重试</el-button>
+      <span>{{ error }}</span><el-button class="aircas-button" type="primary" @click="loadOntologySpaces">重试</el-button>
     </div>
     <SpaceCollection
       v-else
@@ -20,17 +19,17 @@
       v-model:page-size="pageSize"
       :view-mode="viewMode"
       @update:page="page = $event"
-      @action="handleAction"
+      @action="handleOntologySpaceAction"
     />
-    <SpaceFormDialog v-model="formVisible" :space="activeSpace" :external-error="actionError" @save="handleSave" />
+    <SpaceFormDialog v-model="formVisible" :space="activeSpace" :external-error="actionError" @save="submitOntologySpaceForm" />
     <SpaceCommandDialogs
       v-model:delete-visible="deleteVisible"
       v-model:export-visible="exportVisible"
       :space="activeSpace"
       :busy="actionBusy"
       :error="actionError"
-      @confirm-delete="confirmDelete"
-      @confirm-export="confirmExport"
+      @confirm-delete="confirmDeleteOntologySpace"
+      @confirm-export="confirmExportOntologySpace"
     />
   </div>
 </template>
@@ -46,11 +45,23 @@ import WelcomePanel from "./components/WelcomePanel.vue";
 import { useSpaceManagement } from "./composables/useSpaceManagement";
 import { useSpaceManagementActions } from "./composables/useSpaceManagementActions";
 
-const { keyword, order, viewMode, page, pageSize, status, error, result, summaryStats, load, save, remove } = useSpaceManagement();
-const { activeSpace, formVisible, deleteVisible, exportVisible, actionBusy, actionError, openForm, handleAction, handleSave, confirmDelete, confirmExport } =
-  useSpaceManagementActions({ keyword, save, remove });
+const { keyword, order, viewMode, page, pageSize, status, error, result, summaryStats, loadOntologySpaces, saveOntologySpace, removeOntologySpace } =
+  useSpaceManagement();
+const {
+  activeSpace,
+  formVisible,
+  deleteVisible,
+  exportVisible,
+  actionBusy,
+  actionError,
+  openOntologySpaceForm,
+  handleOntologySpaceAction,
+  submitOntologySpaceForm,
+  confirmDeleteOntologySpace,
+  confirmExportOntologySpace,
+} = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace });
 
-onMounted(load);
+onMounted(loadOntologySpaces);
 </script>
 
 <style scoped lang="scss">
@@ -67,17 +78,20 @@ onMounted(load);
   color: var(--aircas-color-text-primary);
   background: var(--aircas-color-page-background);
 }
+
 .ontology-space-management__overview {
   display: grid;
   grid-template-columns: minmax(520px, 1.42fr) minmax(760px, 2.25fr);
   gap: 10px;
   min-height: 150px;
 }
+
 .ontology-space-management__stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
+
 .ontology-space-management__state {
   display: flex;
   justify-content: center;
@@ -89,24 +103,29 @@ onMounted(load);
   color: var(--aircas-color-text-muted);
   background-color: var(--aircas-color-panel-background);
 }
+
 @media (max-width: 1440px) {
   .ontology-space-management__overview {
     grid-template-columns: minmax(430px, 1.2fr) minmax(700px, 2.2fr);
   }
 }
+
 @media (max-width: 1200px) {
   .ontology-space-management__overview {
     grid-template-columns: 1fr;
   }
 }
+
 @media (max-width: 700px) {
   .ontology-space-management {
     height: auto;
   }
+
   .ontology-space-management__stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
 @media (max-width: 480px) {
   .ontology-space-management__stats {
     grid-template-columns: 1fr;

@@ -6,10 +6,19 @@ export interface OntologySpaceDraft {
   iconUrl: string;
 }
 
+/** 本体空间指标统计。 */
+export interface OntologySpaceMetrics {
+  ontology: number;
+  behavior: number;
+  relation: number;
+  rule: number;
+  source: number;
+}
+
 export interface OntologySpaceItem extends OntologySpaceDraft {
   id: string;
   category: string;
-  metrics: { ontology: number; behavior: number; relation: number; rule: number; source: number };
+  metrics: OntologySpaceMetrics;
   createdAt: string;
   createdBy: string;
   updatedAt: string;

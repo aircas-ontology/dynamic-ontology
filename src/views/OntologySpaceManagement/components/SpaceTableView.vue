@@ -4,7 +4,9 @@
       <template #default="{ row }">
         <div class="space-table-view__name">
           <img v-if="spaceRow(row).iconUrl" :src="spaceRow(row).iconUrl" alt="" />
-          <el-icon v-else :size="32"><Box /></el-icon>
+          <el-icon v-else :size="32">
+            <Box />
+          </el-icon>
           <div><strong>{{ spaceRow(row).displayName }}</strong><small>{{ spaceRow(row).apiName }}</small></div>
         </div>
       </template>
@@ -14,14 +16,18 @@
     <el-table-column label="创建用户" width="140">
       <template #default="{ row }">
         <span class="space-table-view__user">
-          <span class="space-table-view__avatar"><el-icon :size="20"><UserFilled /></el-icon></span>
+          <span class="space-table-view__avatar"><el-icon :size="20">
+              <UserFilled />
+            </el-icon></span>
           {{ spaceRow(row).createdBy }}
         </span>
       </template>
     </el-table-column>
     <el-table-column prop="updatedAt" label="更新时间" width="160" />
     <el-table-column label="操作" width="230" fixed="right">
-      <template #default="{ row }"><SpaceActions :space="spaceRow(row)" @action="emit('action', $event, spaceRow(row))" /></template>
+      <template #default="{ row }">
+        <SpaceActions :space="spaceRow(row)" @action="emit('action', $event, spaceRow(row))" />
+      </template>
     </el-table-column>
   </el-table>
 </template>
@@ -44,12 +50,60 @@ function spaceRow(row: unknown): OntologySpaceItem {
 </script>
 
 <style scoped lang="scss">
-.space-table-view { --aircas-table-cell-padding: 20px 0; flex: 1; min-height: 320px; }
-.space-table-view__user { display: flex; align-items: center; gap: 8px; }
-.space-table-view__avatar { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: var(--aircas-color-accent-cyan); background: var(--aircas-color-accent-cyan-fill); }
-.space-table-view__name { display: flex; min-width: 0; align-items: center; gap: 12px; }
-.space-table-view__name img { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
-.space-table-view__name div { min-width: 0; }
-.space-table-view__name strong { display: block; overflow: hidden; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
-.space-table-view__name small { display: block; margin-top: 4px; overflow-wrap: anywhere; color: var(--aircas-color-text-muted); font-size: 14px; }
+.space-table-view {
+  --aircas-table-cell-padding: 20px 0;
+  flex: 1;
+  min-height: 320px;
+}
+
+.space-table-view__user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.space-table-view__avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--aircas-color-accent-cyan);
+  background: var(--aircas-color-accent-cyan-fill);
+}
+
+.space-table-view__name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.space-table-view__name img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.space-table-view__name div {
+  min-width: 0;
+}
+
+.space-table-view__name strong {
+  display: block;
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.space-table-view__name small {
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  color: var(--aircas-color-text-muted);
+  font-size: 14px;
+}
 </style>
