@@ -1,7 +1,7 @@
 export type { ApiResponse } from "./apis/apiResponseType";
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
 export type { LoginData, LoginParams } from "./apis/loginType";
-export type { OntologySpaceListData } from "./apis/ontologyManageType";
+export type { OntologySpaceListData, OntologySpaceListItem } from "./apis/ontologyManageType";
 export type { LoginCredentials } from "./auth/credentialsType";
 export type { MapConfig } from "./map/configType";
 export type {

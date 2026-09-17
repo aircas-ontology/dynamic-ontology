@@ -1,6 +1,6 @@
 # 接口名称
 
-- 登录接口
+- 查询本体空间列表
 
 ## 编译位置
 
@@ -28,13 +28,25 @@
 
 无
 
-## 输出参数
+## 输出结果
 
 ```JSON
 {
-	"code": 200,
-	"data": {},
-	"message": ""
+  "code": 200,
+  "message": "SUCCESS",
+  "data": [
+    {
+      "iconUrl": "",
+      "displayName": "xxx战场",
+      "apiName": "space_a",
+      "description": "这是空间描述",
+      "spaceId": 1,
+      "ontologyCount": 2,
+      "actionCount": 0,
+      "propertyCount": 7,
+      "linkCount": 0
+    }
+  ]
 }
 ```
 

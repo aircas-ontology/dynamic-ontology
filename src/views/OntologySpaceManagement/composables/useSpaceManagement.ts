@@ -2,17 +2,18 @@ import { computed, onScopeDispose, ref, watch } from "vue";
 import type { OntologySpaceDraft, OntologySpaceItem, OntologySpaceLoadStatus, OntologySpaceSortOrder, OntologySpaceSummary, OntologyViewMode } from "@/types";
 import { getOntologySpaceListInterface } from "@/apis";
 import { ontologySpaceListMock } from "@/mocks/ontologySpaceListMock/ontologySpaceListMock";
+import { mapOntologySpaceList } from "../utils/mapOntologySpaceList";
 import { filterSpaces, removeSpace, saveSpace } from "../utils/spaceOperations";
 
 /**
- * @description 查询本体空间列表；远程服务暂不可用期间回退到本地样例数据，接口恢复后可移除此回退。
+ * @description 查询本体空间列表并映射为页面模型；远程不可用期间回退到本地页面样例数据。
  * @returns 本体空间数组的深拷贝，避免页面编辑污染样例数据。
  */
 async function loadOntologySpaces(): Promise<OntologySpaceItem[]> {
   try {
     const response = await getOntologySpaceListInterface();
     if (response.code === 200) {
-      return structuredClone(response.data);
+      return structuredClone(mapOntologySpaceList(response.data));
     }
     throw new Error(`本体空间列表查询失败：${response.message}`);
   } catch {

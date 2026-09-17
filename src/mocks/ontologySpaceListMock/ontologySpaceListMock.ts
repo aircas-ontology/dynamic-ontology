@@ -1,4 +1,4 @@
-import type { ApiResponse, OntologySpaceItem, OntologySpaceListData } from "@/types";
+import type { ApiResponse, OntologySpaceItem } from "@/types";
 import airForceImage from "@/assets/pages/ontologySpaceManagement/images/airForce.webp";
 import armyImage from "@/assets/pages/ontologySpaceManagement/images/army.webp";
 import environmentImage from "@/assets/pages/ontologySpaceManagement/images/environment.webp";
@@ -105,8 +105,8 @@ const ontologySpaces: OntologySpaceItem[] = [
   },
 ];
 
-/** 本体空间列表接口成功响应样例；远程服务不可用期间作为页面数据回退。 */
-export const ontologySpaceListMock: ApiResponse<OntologySpaceListData> = {
+/** 页面演示/详情与接口失败回退用的本体空间样例（页面模型，非接口契约）。 */
+export const ontologySpaceListMock: ApiResponse<OntologySpaceItem[]> = {
   code: 200,
   message: "列表查询成功",
   success: true,

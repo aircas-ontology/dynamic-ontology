@@ -20,12 +20,12 @@ export default defineConfig({
     port: 36000,
     strictPort: false,
     open: true,
-    proxy: {
-      "/serviceApi": {
-        target: "http://172.16.18.58:37002",
-        changeOrigin: true,
-      },
-    },
+    // proxy: {
+    //   "/serviceApi": {
+    //     target: "http://172.16.18.58:37002",
+    //     changeOrigin: true,
+    //   },
+    // },
   },
   build: {
     outDir: "html",
