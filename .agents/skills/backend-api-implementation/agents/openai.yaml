@@ -1,6 +1,6 @@
 interface:
   display_name: "后端 API 契约实现"
   short_description: "根据指定 Api.md 同步生成请求函数、类型契约和 Mock 样例"
-  default_prompt: "Use $backend-api-implementation to implement the API contract in docs/YYYYMMDD/1.exampleApi.md."
+  default_prompt: "Use $backend-api-implementation to implement the API contract in docs/YYYYMMDD/****Api****.md."
 policy:
   allow_implicit_invocation: true
