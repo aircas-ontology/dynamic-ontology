@@ -25,10 +25,13 @@ test("ontology space list api issues a GET to the manage domain space uri with t
 
 test("apis barrel exports the renamed interface in dictionary order without stale aliases", () => {
   const apiBarrelSource = readSource("../src/apis/index.ts");
-  assert.match(apiBarrelSource, /import \{ getOntologyCategoryTreeInterface, getOntologySpaceListInterface \} from "\.\/ontologyManageApi";/);
   assert.match(
     apiBarrelSource,
-    /export \{ getExampleInterface, getOntologyCategoryTreeInterface, getOntologySpaceListInterface, postLoginInterface \};/,
+    /import\s*\{[\s\S]*deleteOntologyCategoryTreeInterface,[\s\S]*getOntologyCategoryTreeInterface,[\s\S]*getOntologySpaceListInterface,[\s\S]*postCreateOntologyCategoryTreeInterface,[\s\S]*\}\s*from "\.\/ontologyManageApi";/,
+  );
+  assert.match(
+    apiBarrelSource,
+    /export\s*\{[\s\S]*deleteOntologyCategoryTreeInterface,[\s\S]*getExampleInterface,[\s\S]*getOntologyCategoryTreeInterface,[\s\S]*getOntologySpaceListInterface,[\s\S]*postCreateOntologyCategoryTreeInterface,[\s\S]*postLoginInterface,[\s\S]*\};/,
   );
   assert.doesNotMatch(apiBarrelSource, /getOntologyListInterface/);
 });

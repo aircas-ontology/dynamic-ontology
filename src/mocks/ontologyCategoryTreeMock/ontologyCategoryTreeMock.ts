@@ -80,3 +80,27 @@ export const ontologyCategoryTreeMock: ApiResponse<OntologyCategoryTreeData> = {
     ],
   },
 };
+
+/** 创建本体分类体系树成功响应样例（契约输出仅含 code 与 message）。 */
+export const createOntologyCategoryTreeMock: ApiResponse<undefined> = {
+  code: 200,
+  message: "SUCCESS",
+  success: true,
+  data: undefined,
+};
+
+/** 删除本体分类体系树成功响应样例（契约输出仅含 code 与 message）。 */
+export const deleteOntologyCategoryTreeMock: ApiResponse<undefined> = {
+  code: 200,
+  message: "SUCCESS",
+  success: true,
+  data: undefined,
+};
+
+/** 修改本体分类名称成功响应样例（契约输出仅含 code 与 message）。 */
+export const updateOntologyCategoryNameMock: ApiResponse<undefined> = {
+  code: 200,
+  message: "SUCCESS",
+  success: true,
+  data: undefined,
+};

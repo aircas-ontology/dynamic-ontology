@@ -3,11 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { workspaceRoutes } from "../src/router/modules/workspaceRoutes.ts";
-import {
-  filterConceptTree,
-  findObjectWorkspace,
-  makeCategoryLocationTarget,
-} from "../src/views/OntologySpaceManagementDetail/utils/objectWorkspace.ts";
+import { filterConceptTree, findObjectWorkspace, makeCategoryLocationTarget } from "../src/views/OntologySpaceManagementDetail/utils/objectWorkspace.ts";
 
 const sampleWorkspaces = [
   {
@@ -69,11 +65,43 @@ test("concept tree search retains matching ancestors and category anchor request
   assert.deepEqual(makeCategoryLocationTarget("carrier", 3), { categoryId: "carrier", requestId: 3 });
 });
 
-test("object workspace composable loads the category tree api instead of navy mock data", () => {
-  const source = readFileSync(
+test("missing category tree data opens an add dialog instead of a load error", () => {
+  const workspaceSource = readFileSync(
     new URL("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts", import.meta.url),
     "utf8",
   );
+  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue", import.meta.url), "utf8");
+  const treeSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue", import.meta.url), "utf8");
+  const dialogSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/CategoryTreeCreateDialog.vue", import.meta.url), "utf8");
+  assert.match(workspaceSource, /isMissingOntologyCategoryTreeData/);
+  assert.match(workspaceSource, /createEmptyObjectWorkspace\(id\)/);
+  assert.match(treeSource, /添加分类树/);
+  assert.match(dialogSource, /主分类名称/);
+  assert.match(dialogSource, /class="aircas-dialog"/);
+  assert.doesNotMatch(dialogSource, /getOntology/);
+});
+
+test("root concept node opens a child category name dialog", () => {
+  const treeSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue", import.meta.url), "utf8");
+  const dialogSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/CategoryTreeChildDialog.vue", import.meta.url), "utf8");
+  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue", import.meta.url), "utf8");
+  assert.doesNotMatch(treeSource, /isRootConceptNode/);
+  assert.match(treeSource, /openChildCategoryDialog\(data\)/);
+  assert.match(treeSource, /aria-label="新建子分类"/);
+  assert.match(treeSource, /aria-label="修改分类名称"/);
+  assert.match(treeSource, /aria-label="删除分类"/);
+  assert.match(treeSource, /\.concept-hierarchy__create-child-wrap\s*\{[^}]*opacity:\s*0/);
+  assert.match(treeSource, /el-tree-node__content:hover[\s\S]*concept-hierarchy__create-child-wrap/);
+  assert.match(treeSource, /emit\("createChild", categoryId\)/);
+  assert.match(dialogSource, /输入子分类名称/);
+  assert.match(dialogSource, /emit\("submit", name\)/);
+  assert.doesNotMatch(dialogSource, /postCreateOntologyCategoryTreeInterface/);
+  assert.match(panelSource, /submitCreateOntologyCategoryChild/);
+  assert.match(panelSource, /parentId: numericParentId/);
+});
+
+test("object workspace composable loads the category tree api instead of navy mock data", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts", import.meta.url), "utf8");
   assert.match(source, /getOntologyCategoryTreeInterface/);
   assert.match(source, /mapOntologyCategoryTree/);
   assert.match(source, /sections:\s*\[\]/);

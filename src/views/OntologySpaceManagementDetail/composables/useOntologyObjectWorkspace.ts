@@ -6,6 +6,15 @@ import { mapOntologyCategoryTree } from "../utils/mapOntologyCategoryTree";
 export type OntologyObjectWorkspaceStatus = "loading" | "success" | "empty" | "error";
 
 /**
+ * @description 判断分类体系树响应是否缺少 data，对应后端仅返回 code 与 message 的空树。
+ * @param data 接口响应中的 data 字段。
+ * @returns 没有分类树数据时为 true。
+ */
+function isMissingOntologyCategoryTreeData(data: unknown): boolean {
+  return data == null;
+}
+
+/**
  * @description 创建空的本体对象工作区壳。
  * @param spaceId 当前空间 id。
  * @returns 无概念树、无分区列表的工作区。
@@ -15,16 +24,17 @@ function createEmptyObjectWorkspace(spaceId: string): OntologyObjectWorkspace {
 }
 
 /**
- * @description 按空间 id 请求分类体系树并组装对象工作区；右侧分区暂留空。
+ * @description 按空间 id 请求分类体系树并组装对象工作区；无 data 时返回空树工作区，保留左右布局。
  * @param spaceId 路由空间 id。
- * @returns 映射后的工作区；无 spaceId 时返回空壳。
+ * @returns 映射后的工作区；无 spaceId 或接口无 data 时返回空壳。
  */
-async function loadObjectWorkspaceFromCategoryTree(spaceId: string): Promise<OntologyObjectWorkspace> {
+async function loadObjectWorkspaceFromCategoryTree(spaceId: string): Promise<OntologyObjectWorkspace | undefined> {
   const id = spaceId.trim();
   if (!id) return createEmptyObjectWorkspace(spaceId);
 
   const response = await getOntologyCategoryTreeInterface({ spaceId: id });
   if (response.code === 200) {
+    if (isMissingOntologyCategoryTreeData(response.data)) return createEmptyObjectWorkspace(id);
     return {
       spaceId: id,
       tree: mapOntologyCategoryTree(response.data),

@@ -2,10 +2,13 @@ export type { ApiResponse } from "./apis/apiResponseType";
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
 export type { LoginData, LoginParams } from "./apis/loginType";
 export type {
+  CreateOntologyCategoryTreeParams,
+  DeleteOntologyCategoryTreeParams,
   OntologyCategoryMetaInfo,
   OntologyCategoryTreeData,
   OntologyCategoryTreeNode,
   OntologyCategoryTreeParams,
+  UpdateOntologyCategoryNameParams,
 } from "./apis/ontologyCategoryTreeType";
 export type { OntologySpaceListData, OntologySpaceListItem } from "./apis/ontologyManageType";
 export type { LoginCredentials } from "./auth/credentialsType";

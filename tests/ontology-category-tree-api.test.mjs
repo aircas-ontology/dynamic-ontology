@@ -14,7 +14,7 @@ test("ontology category tree api issues a GET to the manage domain ontology uri 
   assert.match(apiSource, /params: OntologyCategoryTreeParams/);
   assert.match(apiSource, /Promise<ApiResponse<OntologyCategoryTreeData>>/);
   assert.match(apiSource, /request<OntologyCategoryTreeData>\(\{/);
-  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology"/);
+  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/category\/tree"/);
   assert.match(apiSource, /method:\s*"get"/);
   assert.match(apiSource, /params,/);
   assert.match(apiSource, /@description/);
@@ -22,10 +22,13 @@ test("ontology category tree api issues a GET to the manage domain ontology uri 
 
 test("apis barrel exports category tree interface in dictionary order", () => {
   const apiBarrelSource = readSource("../src/apis/index.ts");
-  assert.match(apiBarrelSource, /import \{ getOntologyCategoryTreeInterface, getOntologySpaceListInterface \} from "\.\/ontologyManageApi";/);
   assert.match(
     apiBarrelSource,
-    /export \{ getExampleInterface, getOntologyCategoryTreeInterface, getOntologySpaceListInterface, postLoginInterface \};/,
+    /import\s*\{[\s\S]*deleteOntologyCategoryTreeInterface,[\s\S]*getOntologyCategoryTreeInterface,[\s\S]*getOntologySpaceListInterface,[\s\S]*postCreateOntologyCategoryTreeInterface,[\s\S]*\}\s*from "\.\/ontologyManageApi";/,
+  );
+  assert.match(
+    apiBarrelSource,
+    /export\s*\{[\s\S]*deleteOntologyCategoryTreeInterface,[\s\S]*getExampleInterface,[\s\S]*getOntologyCategoryTreeInterface,[\s\S]*getOntologySpaceListInterface,[\s\S]*postCreateOntologyCategoryTreeInterface,[\s\S]*postLoginInterface,[\s\S]*\};/,
   );
 });
 
@@ -62,10 +65,7 @@ test("category tree mock mirrors the contract sample with success message", () =
 });
 
 test("category tree mapper builds concept nodes with empty name and local meta count", async () => {
-  const mapperUrl = new URL(
-    "../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts",
-    import.meta.url,
-  );
+  const mapperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts", import.meta.url);
   assert.equal(existsSync(mapperUrl), true, "missing mapper file");
   const { mapOntologyCategoryTree } = await import(mapperUrl.href);
   const tree = mapOntologyCategoryTree({
@@ -85,11 +85,67 @@ test("category tree mapper builds concept nodes with empty name and local meta c
 });
 
 test("object workspace loads category tree api into the left tree and keeps sections empty", () => {
-  const workspaceSource = readSource(
-    "../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts",
-  );
+  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts");
   assert.match(workspaceSource, /getOntologyCategoryTreeInterface/);
   assert.match(workspaceSource, /mapOntologyCategoryTree/);
   assert.match(workspaceSource, /sections:\s*\[\]/);
   assert.doesNotMatch(workspaceSource, /ontologySpaceObjectMock/);
+});
+
+test("create category tree api posts name, parentId and spaceId to the category uri", () => {
+  const apiSource = readSource("../src/apis/ontologyManageApi.ts");
+  const typeSource = readSource("../src/types/apis/ontologyCategoryTreeType.ts");
+  const mockSource = readSource("../src/mocks/ontologyCategoryTreeMock/ontologyCategoryTreeMock.ts");
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  assert.match(
+    apiSource,
+    /export function postCreateOntologyCategoryTreeInterface\(payload: CreateOntologyCategoryTreeParams\): Promise<ApiResponse<undefined>>/,
+  );
+  assert.match(apiSource, /method:\s*"post"/);
+  assert.match(apiSource, /data: payload/);
+  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/category"/);
+  assert.match(typeSource, /export interface CreateOntologyCategoryTreeParams[\s\S]*spaceId:\s*number;[\s\S]*parentId:\s*number;/);
+  assert.match(panelSource, /const numericSpaceId = Number\(space\)/);
+  assert.match(panelSource, /spaceId:\s*numericSpaceId/);
+  assert.match(mockSource, /export const createOntologyCategoryTreeMock: ApiResponse<undefined>/);
+  assert.match(mockSource, /message: "SUCCESS"/);
+  assert.match(panelSource, /postCreateOntologyCategoryTreeInterface/);
+  assert.match(panelSource, /parentId:\s*0/);
+});
+
+test("delete category tree api sends spaceId and categoryId with delete", () => {
+  const apiSource = readSource("../src/apis/ontologyManageApi.ts");
+  const typeSource = readSource("../src/types/apis/ontologyCategoryTreeType.ts");
+  const mockSource = readSource("../src/mocks/ontologyCategoryTreeMock/ontologyCategoryTreeMock.ts");
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  assert.match(apiSource, /export function deleteOntologyCategoryTreeInterface\(payload: DeleteOntologyCategoryTreeParams\): Promise<ApiResponse<undefined>>/);
+  assert.match(apiSource, /method:\s*"delete"/);
+  assert.match(apiSource, /data: payload/);
+  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/category"/);
+  assert.match(typeSource, /export interface DeleteOntologyCategoryTreeParams[\s\S]*spaceId:\s*number;[\s\S]*categoryId:\s*number;/);
+  assert.match(mockSource, /export const deleteOntologyCategoryTreeMock: ApiResponse<undefined>/);
+  assert.match(mockSource, /message: "SUCCESS"/);
+  assert.match(panelSource, /deleteOntologyCategoryTreeInterface/);
+  assert.match(panelSource, /categoryId: numericCategoryId/);
+});
+
+test("update category name api puts spaceId, categoryId and name to the category uri", () => {
+  const apiSource = readSource("../src/apis/ontologyManageApi.ts");
+  const typeSource = readSource("../src/types/apis/ontologyCategoryTreeType.ts");
+  const mockSource = readSource("../src/mocks/ontologyCategoryTreeMock/ontologyCategoryTreeMock.ts");
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const barrelSource = readSource("../src/apis/index.ts");
+  assert.match(
+    apiSource,
+    /export function putUpdateOntologyCategoryNameInterface\(payload: UpdateOntologyCategoryNameParams\): Promise<ApiResponse<undefined>>/,
+  );
+  assert.match(apiSource, /method:\s*"put"/);
+  assert.match(apiSource, /data: payload/);
+  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/category"/);
+  assert.match(typeSource, /export interface UpdateOntologyCategoryNameParams[\s\S]*spaceId:\s*number;[\s\S]*categoryId:\s*number;[\s\S]*name:\s*string;/);
+  assert.match(mockSource, /export const updateOntologyCategoryNameMock: ApiResponse<undefined>/);
+  assert.match(mockSource, /message: "SUCCESS"/);
+  assert.match(panelSource, /putUpdateOntologyCategoryNameInterface/);
+  assert.match(panelSource, /name,/);
+  assert.match(barrelSource, /putUpdateOntologyCategoryNameInterface/);
 });

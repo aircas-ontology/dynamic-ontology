@@ -1,17 +1,17 @@
 # 接口名称
 
-- 查询本体分类体系树
+- 删除本体分类体系树
 
 ## 编译位置
 
-文件名自行语义化命名
-- apis：`src/apis/`
+mocks与types文件名自行语义化命名
+- apis：`src/apis/ontologyManageApi.ts`
 - mocks：`src/mocks/`
 - types：`src/types/apis/`
 
 ## 接口描述
 
-- 查询本体分类体系树
+- 删除本体分类体系树
 
 ## 接口domain
 
@@ -19,20 +19,23 @@
 
 ## 接口uri
 
-- `/ontology/category/tree`
+- `/ontology/category`
 
 ## 请求方式
 
-- get
+- delete
 
 ## 输入参数
 
 - ```JSON
   {
-    "spaceId": "1",
+    "spaceId": "10",
+    "categoryId": 0,
   }
   ```
-- `spaceId`：【string，必填】 空间id
+
+- `spaceId`：【string，必填】 空间Id
+- `categoryId`：【string，必填】目录分类id
 
 
 ## 输出参数
@@ -40,88 +43,13 @@
 ```JSON
 {
   "code": 200,
-  "message": "SUCCESS",
-  "data": {
-    "categoryId": 1,
-    "name": "舰船",
-    "ontologyMetaInfos": [
-      {
-        "uniqueIdentifier": "d3e1b0c27f29452eb7cadd1f51eac535",
-        "createTime": "2026-09-17 11:15:13",
-        "updateTime": "2026-09-17 11:15:13",
-        "latestQueryTime": "2026-09-17 11:15:13",
-        "displayName": "舰船",
-        "description": "我方舰船",
-        "apiName": "ship",
-        "metaGroupId": [],
-        "spaceId": 1,
-        "ontologyCategoryId": 1,
-        "entityCount": 0,
-        "relationCount": 1,
-        "propertyCount": 4,
-        "actionCount": 0
-      },
-      {
-        "uniqueIdentifier": "17829f55e64e4efba9fdcee03eb46675",
-        "createTime": "2026-09-17 11:46:31",
-        "updateTime": "2026-09-17 11:46:31",
-        "latestQueryTime": "2026-09-17 11:46:31",
-        "displayName": "舰船1",
-        "description": "我方舰船",
-        "apiName": "ship1",
-        "metaGroupId": [],
-        "spaceId": 1,
-        "ontologyCategoryId": 1,
-        "parentOntologyUniqueIdentifier": "d3e1b0c27f29452eb7cadd1f51eac535",
-        "parentOntologyDisplayName": "舰船",
-        "entityCount": 0,
-        "relationCount": 2,
-        "propertyCount": 2,
-        "actionCount": 0
-      },
-      {
-        "uniqueIdentifier": "d58eecff239c4c7f908d9c640a95d68e",
-        "createTime": "2026-09-16 15:51:55",
-        "updateTime": "2026-09-16 15:51:55",
-        "latestQueryTime": "2026-09-16 15:51:55",
-        "icon": "",
-        "displayName": "飞机",
-        "description": "这是一架我方战斗机",
-        "apiName": "airplane",
-        "metaGroupId": [],
-        "spaceId": 1,
-        "ontologyCategoryId": 1,
-        "entityCount": 0,
-        "relationCount": 1,
-        "propertyCount": 6,
-        "actionCount": 0
-      }
-    ],
-    "children": [
-      {
-        "categoryId": 2,
-        "name": "航空母舰",
-        "children": [
-          {
-            "categoryId": 3,
-            "name": "航空母舰",
-            "children": [
-              {
-                "categoryId": 4
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
+  "message": "SUCCESS"
 }
 ```
 
 - `code`：【number】响应码
 - `message`：【string】消息描述
-- `success`：【boolean】请求是否成功
-- `data`：【object】响应数据
+
 
 
 ## code
