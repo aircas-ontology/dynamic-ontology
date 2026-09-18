@@ -1,12 +1,8 @@
 import { computed, ref, type Ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import type {
-  OntologySpaceAction,
-  OntologySpaceCommandStatus,
-  OntologySpaceDraft,
-  OntologySpaceItem,
-} from "@/types";
+import type { OntologySpaceAction, OntologySpaceCommandStatus, OntologySpaceDraft, OntologySpaceItem } from "@/types";
+import { createOntologySpaceInterface, deleteOntologySpaceInterface, updateOntologySpaceInterface } from "@/apis";
 import { downloadSpaceJson } from "../utils/downloadSpaceJson";
 import { serializeSpace } from "../utils/spaceOperations";
 
@@ -14,6 +10,7 @@ interface SpaceManagementActionOptions {
   keyword: Ref<string>;
   saveOntologySpace: (draft: OntologySpaceDraft, id?: string) => void;
   removeOntologySpace: (id: string) => void;
+  loadOntologySpaces: () => Promise<void> | void;
 }
 
 /**
@@ -71,37 +68,81 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   }
 
   /**
-   * @description 提交本体空间表单草稿并关闭弹窗；失败时写入错误状态。
+   * @description 提交本体空间表单草稿：新建走创建接口，编辑走编辑接口；失败时保留弹窗并展示错误。
    * @param draft 表单草稿。
    */
-  function submitOntologySpaceForm(draft: OntologySpaceDraft) {
+  async function submitOntologySpaceForm(draft: OntologySpaceDraft) {
     if (actionBusy.value) return;
     actionStatus.value = "submitting";
     actionError.value = "";
+    if (activeSpace.value == null) {
+      try {
+        const response = await createOntologySpaceInterface({
+          displayName: draft.displayName,
+          apiName: draft.apiName,
+          icon: draft.iconUrl,
+          description: draft.description,
+        });
+        if (response.code === 200) {
+          formVisible.value = false;
+          actionError.value = "";
+          actionStatus.value = "success";
+          ElMessage.success("创建成功");
+          await options.loadOntologySpaces();
+          options.keyword.value = "";
+          return;
+        }
+        actionStatus.value = "error";
+        actionError.value = response.message;
+      } catch (cause) {
+        actionStatus.value = "error";
+        actionError.value = cause instanceof Error ? cause.message : "创建失败，请重试。";
+      }
+      return;
+    }
     try {
-      options.saveOntologySpace(draft, activeSpace.value?.id);
-      formVisible.value = false;
-      options.keyword.value = "";
-      actionStatus.value = "success";
-      ElMessage.success(activeSpace.value ? "空间已更新" : "空间已创建");
+      const response = await updateOntologySpaceInterface({
+        spaceId: Number(activeSpace.value!.id),
+        displayName: draft.displayName,
+        icon: draft.iconUrl,
+        description: draft.description,
+      });
+      if (response.code === 200) {
+        formVisible.value = false;
+        actionError.value = "";
+        actionStatus.value = "success";
+        ElMessage.success("更新成功");
+        await options.loadOntologySpaces();
+        options.keyword.value = "";
+        return;
+      }
+      actionStatus.value = "error";
+      actionError.value = response.message;
     } catch (cause) {
       actionStatus.value = "error";
-      actionError.value = cause instanceof Error ? cause.message : "保存失败，请重试。";
+      actionError.value = cause instanceof Error ? cause.message : "更新失败，请重试。";
     }
   }
 
   /**
    * @description 确认删除当前选中的本体空间。
    */
-  function confirmDeleteOntologySpace() {
+  async function confirmDeleteOntologySpace() {
     if (!activeSpace.value || actionBusy.value) return;
     actionStatus.value = "submitting";
     actionError.value = "";
     try {
-      options.removeOntologySpace(activeSpace.value.id);
-      deleteVisible.value = false;
-      actionStatus.value = "success";
-      ElMessage.success("空间已删除");
+      const response = await deleteOntologySpaceInterface({ spaceId: Number(activeSpace.value.id) });
+      if (response.code === 200) {
+        deleteVisible.value = false;
+        actionError.value = "";
+        actionStatus.value = "success";
+        ElMessage.success("删除成功");
+        await options.loadOntologySpaces();
+        return;
+      }
+      actionStatus.value = "error";
+      actionError.value = response.message;
     } catch (cause) {
       actionStatus.value = "error";
       actionError.value = cause instanceof Error ? cause.message : "删除失败，请重试。";

@@ -3,7 +3,7 @@ import type { OntologySpaceDraft, OntologySpaceItem, OntologySpaceSortOrder } fr
 /** 查询展示数据，排序和分页均不修改数据源。 */
 export function filterSpaces(spaces: OntologySpaceItem[], keyword: string, order: OntologySpaceSortOrder, page: number, pageSize = 10) {
   const query = keyword.trim().toLocaleLowerCase();
-  const matches = spaces.filter(space => `${space.displayName} ${space.apiName}`.toLocaleLowerCase().includes(query));
+  const matches = spaces.filter((space) => `${space.displayName} ${space.apiName}`.toLocaleLowerCase().includes(query));
   matches.sort((a, b) => (order === "asc" ? 1 : -1) * a.displayName.localeCompare(b.displayName, "zh-CN"));
   const size = Math.max(1, Math.floor(pageSize));
   const current = Math.max(1, Math.min(page, Math.ceil(matches.length / size) || 1));
@@ -24,24 +24,28 @@ export function validateSpace(draft: OntologySpaceDraft): OntologySpaceDraft {
 /** 演示数据只驻留内存，使用固定时间保证可重复。 */
 export function saveSpace(spaces: OntologySpaceItem[], draft: OntologySpaceDraft, id?: string): OntologySpaceItem[] {
   // 原有打包资源地址来自受控 Mock，可在编辑时保留。
-  const existing = spaces.find(space => space.id === id);
+  const existing = spaces.find((space) => space.id === id);
   const value = validateSpace({ ...draft, iconUrl: existing?.iconUrl === draft.iconUrl ? "" : draft.iconUrl });
   value.iconUrl = draft.iconUrl;
   if (id && !existing) throw new Error("空间不存在，请刷新后重试。");
-  if (spaces.some(space => space.apiName === value.apiName && space.id !== id)) throw new Error("API 名称已存在。");
-  if (existing) return spaces.map(space => space.id === id ? { ...space, ...value, updatedAt: "2026-09-15 12:00" } : space);
+  if (spaces.some((space) => space.apiName === value.apiName && space.id !== id)) throw new Error("API 名称已存在。");
+  if (existing) return spaces.map((space) => (space.id === id ? { ...space, ...value, updatedTime: "2026-09-15 12:00" } : space));
   const item: OntologySpaceItem = {
-    ...value, id: `mock-${value.apiName}`, category: "自定义", createdBy: "访客",
-    createdAt: "2026-09-15 12:00", updatedAt: "2026-09-15 12:00",
+    ...value,
+    id: `mock-${value.apiName}`,
+    category: "自定义",
+    createdTime: "2026-09-15 12:00",
+    updatedTime: "2026-09-15 12:00",
     metrics: { ontology: 0, behavior: 0, relation: 0, rule: 0, source: 0 },
-    isSubspace: false, parentSpaceDisplayName: "",
+    isSubspace: false,
+    parentSpaceDisplayName: "",
   };
   return [...spaces, item];
 }
 
 export function removeSpace(spaces: OntologySpaceItem[], id: string): OntologySpaceItem[] {
-  if (!spaces.some(space => space.id === id)) throw new Error("空间不存在。");
-  return spaces.filter(space => space.id !== id);
+  if (!spaces.some((space) => space.id === id)) throw new Error("空间不存在。");
+  return spaces.filter((space) => space.id !== id);
 }
 
 /** JSON 输入在边界按 unknown 校验，避免直接信任导入文件。 */
@@ -49,7 +53,15 @@ export function parseSpaceImport(text: string): OntologySpaceDraft {
   const data: unknown = JSON.parse(text);
   if (!data || typeof data !== "object" || !("ontologySpace" in data)) throw new Error("JSON 缺少 ontologySpace。");
   const space = data.ontologySpace;
-  if (!space || typeof space !== "object" || !("apiName" in space) || typeof space.apiName !== "string" || !("displayName" in space) || typeof space.displayName !== "string") throw new Error("JSON 空间名称或 API 名称无效。");
+  if (
+    !space ||
+    typeof space !== "object" ||
+    !("apiName" in space) ||
+    typeof space.apiName !== "string" ||
+    !("displayName" in space) ||
+    typeof space.displayName !== "string"
+  )
+    throw new Error("JSON 空间名称或 API 名称无效。");
   const description = "description" in space ? space.description : "";
   const iconUrl = "iconUrl" in space ? space.iconUrl : "";
   if (typeof description !== "string" || typeof iconUrl !== "string") throw new Error("JSON 描述或图标格式无效。");
@@ -58,5 +70,16 @@ export function parseSpaceImport(text: string): OntologySpaceDraft {
 
 /** 导出演示空间基本信息；不声称包含尚未接入的对象和实体。 */
 export function serializeSpace(space: OntologySpaceDraft): string {
-  return JSON.stringify({ ontologySpace: { apiName: space.apiName, displayName: space.displayName, description: space.description, iconUrl: space.iconUrl.startsWith("data:") ? space.iconUrl : "" } }, null, 2);
+  return JSON.stringify(
+    {
+      ontologySpace: {
+        apiName: space.apiName,
+        displayName: space.displayName,
+        description: space.description,
+        iconUrl: space.iconUrl.startsWith("data:") ? space.iconUrl : "",
+      },
+    },
+    null,
+    2,
+  );
 }

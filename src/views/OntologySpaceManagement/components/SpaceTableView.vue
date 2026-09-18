@@ -12,18 +12,8 @@
       </template>
     </el-table-column>
     <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
-    <el-table-column prop="createdAt" label="创建时间" width="160" />
-    <el-table-column label="创建用户" width="140">
-      <template #default="{ row }">
-        <span class="space-table-view__user">
-          <span class="space-table-view__avatar"><el-icon :size="20">
-              <UserFilled />
-            </el-icon></span>
-          {{ spaceRow(row).createdBy }}
-        </span>
-      </template>
-    </el-table-column>
-    <el-table-column prop="updatedAt" label="更新时间" width="160" />
+    <el-table-column prop="createdTime" label="创建时间" width="160" />
+    <el-table-column prop="updatedTime" label="更新时间" width="160" />
     <el-table-column label="操作" width="230" fixed="right">
       <template #default="{ row }">
         <SpaceActions :space="spaceRow(row)" @action="emit('action', $event, spaceRow(row))" />

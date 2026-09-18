@@ -27,11 +27,11 @@ test("apis barrel exports the renamed interface in dictionary order without stal
   const apiBarrelSource = readSource("../src/apis/index.ts");
   assert.match(
     apiBarrelSource,
-    /import\s*\{[\s\S]*deleteOntologyCategoryTreeInterface,[\s\S]*getOntologyCategoryTreeInterface,[\s\S]*getOntologySpaceListInterface,[\s\S]*postCreateOntologyCategoryTreeInterface,[\s\S]*\}\s*from "\.\/ontologyManageApi";/,
+    /import\s*\{[\s\S]*createOntologySpaceInterface,[\s\S]*deleteOntologyCategoryTreeInterface,[\s\S]*deleteOntologySpaceInterface,[\s\S]*getOntologyCategoryTreeInterface,[\s\S]*getOntologySpaceListInterface,[\s\S]*postCreateOntologyCategoryTreeInterface,[\s\S]*updateOntologySpaceInterface[\s\S]*\}\s*from "\.\/ontologyManageApi";/,
   );
   assert.match(
     apiBarrelSource,
-    /export\s*\{[\s\S]*deleteOntologyCategoryTreeInterface,[\s\S]*getExampleInterface,[\s\S]*getOntologyCategoryTreeInterface,[\s\S]*getOntologySpaceListInterface,[\s\S]*postCreateOntologyCategoryTreeInterface,[\s\S]*postLoginInterface,[\s\S]*\};/,
+    /export\s*\{[\s\S]*createOntologySpaceInterface,[\s\S]*deleteOntologyCategoryTreeInterface,[\s\S]*deleteOntologySpaceInterface,[\s\S]*getExampleInterface,[\s\S]*getOntologyCategoryTreeInterface,[\s\S]*getOntologySpaceListInterface,[\s\S]*postCreateOntologyCategoryTreeInterface,[\s\S]*postLoginInterface,[\s\S]*updateOntologySpaceInterface[\s\S]*\};/,
   );
   assert.doesNotMatch(apiBarrelSource, /getOntologyListInterface/);
 });
@@ -99,9 +99,8 @@ test("mapper converts contract list items into page ontology space items", async
   assert.equal(mapped.metrics.relation, 0);
   assert.equal(mapped.metrics.rule, 7);
   assert.equal(mapped.metrics.source, 0);
-  assert.equal(mapped.createdAt, "");
-  assert.equal(mapped.createdBy, "");
-  assert.equal(mapped.updatedAt, "");
+  assert.equal(mapped.createdTime, "");
+  assert.equal(mapped.updatedTime, "");
   assert.equal(mapped.category, "");
   assert.equal(mapped.isSubspace, false);
   assert.equal(mapped.parentSpaceDisplayName, "");

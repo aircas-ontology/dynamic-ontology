@@ -9,6 +9,8 @@ export interface OntologySpaceListItem {
   actionCount: number;
   propertyCount: number;
   linkCount: number;
+  createTime: string;
+  updateTime: string;
 }
 
 /** 本体空间列表接口响应 data：空间数组。 */

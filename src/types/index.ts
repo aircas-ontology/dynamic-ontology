@@ -1,4 +1,6 @@
 export type { ApiResponse } from "./apis/apiResponseType";
+export type { CreateOntologySpaceData, CreateOntologySpaceParams } from "./apis/createOntologySpaceType";
+export type { DeleteOntologySpaceData, DeleteOntologySpaceParams } from "./apis/deleteOntologySpaceType";
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
 export type { LoginData, LoginParams } from "./apis/loginType";
 export type {
@@ -11,6 +13,7 @@ export type {
   UpdateOntologyCategoryNameParams,
 } from "./apis/ontologyCategoryTreeType";
 export type { OntologySpaceListData, OntologySpaceListItem } from "./apis/ontologyManageType";
+export type { UpdateOntologySpaceData, UpdateOntologySpaceParams } from "./apis/updateOntologySpaceType";
 export type { LoginCredentials } from "./auth/credentialsType";
 export type { MapConfig } from "./map/configType";
 export type { OntologyObjectDetailRouteName, OntologyObjectDetailTab } from "./pages/ontologyObjectDetailType";

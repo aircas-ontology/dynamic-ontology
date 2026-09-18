@@ -16,9 +16,8 @@ export function mapOntologySpaceListItem(item: OntologySpaceListItem): OntologyS
       rule: item.propertyCount,
       source: 0,
     },
-    createdAt: "",
-    createdBy: "",
-    updatedAt: "",
+    createdTime: "",
+    updatedTime: "",
     isSubspace: false,
     parentSpaceDisplayName: "",
   };
