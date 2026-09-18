@@ -22,10 +22,13 @@ test("ontology category tree api issues a GET to the manage domain ontology uri 
 
 test("apis barrel exports category tree interface in dictionary order", () => {
   const apiBarrelSource = readSource("../src/apis/index.ts");
-  assert.match(apiBarrelSource, /import \{ getOntologyCategoryTreeInterface, getOntologySpaceListInterface \} from "\.\/ontologyManageApi";/);
   assert.match(
     apiBarrelSource,
-    /export \{ getExampleInterface, getOntologyCategoryTreeInterface, getOntologySpaceListInterface, postLoginInterface \};/,
+    /import \{[\s\S]*?createOntologySpaceInterface,[\s\S]*?deleteOntologySpaceInterface,[\s\S]*?getOntologyCategoryTreeInterface,[\s\S]*?getOntologySpaceListInterface,[\s\S]*?updateOntologySpaceInterface[\s\S]*?\} from "\.\/ontologyManageApi";/,
+  );
+  assert.match(
+    apiBarrelSource,
+    /export \{[\s\S]*?createOntologySpaceInterface,[\s\S]*?deleteOntologySpaceInterface,[\s\S]*?getExampleInterface,[\s\S]*?getOntologyCategoryTreeInterface,[\s\S]*?getOntologySpaceListInterface,[\s\S]*?postLoginInterface,[\s\S]*?updateOntologySpaceInterface[\s\S]*?\};/,
   );
 });
 
@@ -62,10 +65,7 @@ test("category tree mock mirrors the contract sample with success message", () =
 });
 
 test("category tree mapper builds concept nodes with empty name and local meta count", async () => {
-  const mapperUrl = new URL(
-    "../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts",
-    import.meta.url,
-  );
+  const mapperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts", import.meta.url);
   assert.equal(existsSync(mapperUrl), true, "missing mapper file");
   const { mapOntologyCategoryTree } = await import(mapperUrl.href);
   const tree = mapOntologyCategoryTree({
@@ -85,9 +85,7 @@ test("category tree mapper builds concept nodes with empty name and local meta c
 });
 
 test("object workspace loads category tree api into the left tree and keeps sections empty", () => {
-  const workspaceSource = readSource(
-    "../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts",
-  );
+  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts");
   assert.match(workspaceSource, /getOntologyCategoryTreeInterface/);
   assert.match(workspaceSource, /mapOntologyCategoryTree/);
   assert.match(workspaceSource, /sections:\s*\[\]/);

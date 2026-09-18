@@ -19,9 +19,8 @@ export interface OntologySpaceItem extends OntologySpaceDraft {
   id: string;
   category: string;
   metrics: OntologySpaceMetrics;
-  createdAt: string;
-  createdBy: string;
-  updatedAt: string;
+  createdTime: string;
+  updatedTime: string;
   isSubspace: boolean;
   parentSpaceDisplayName: string;
 }

@@ -1,5 +1,19 @@
 import { getExampleInterface } from "./exampleApi";
 import { postLoginInterface } from "./loginApi";
-import { getOntologyCategoryTreeInterface, getOntologySpaceListInterface } from "./ontologyManageApi";
+import {
+  createOntologySpaceInterface,
+  deleteOntologySpaceInterface,
+  getOntologyCategoryTreeInterface,
+  getOntologySpaceListInterface,
+  updateOntologySpaceInterface,
+} from "./ontologyManageApi";
 
-export { getExampleInterface, getOntologyCategoryTreeInterface, getOntologySpaceListInterface, postLoginInterface };
+export {
+  createOntologySpaceInterface,
+  deleteOntologySpaceInterface,
+  getExampleInterface,
+  getOntologyCategoryTreeInterface,
+  getOntologySpaceListInterface,
+  postLoginInterface,
+  updateOntologySpaceInterface,
+};

@@ -25,10 +25,13 @@ test("ontology space list api issues a GET to the manage domain space uri with t
 
 test("apis barrel exports the renamed interface in dictionary order without stale aliases", () => {
   const apiBarrelSource = readSource("../src/apis/index.ts");
-  assert.match(apiBarrelSource, /import \{ getOntologyCategoryTreeInterface, getOntologySpaceListInterface \} from "\.\/ontologyManageApi";/);
   assert.match(
     apiBarrelSource,
-    /export \{ getExampleInterface, getOntologyCategoryTreeInterface, getOntologySpaceListInterface, postLoginInterface \};/,
+    /import \{[\s\S]*?createOntologySpaceInterface,[\s\S]*?deleteOntologySpaceInterface,[\s\S]*?getOntologyCategoryTreeInterface,[\s\S]*?getOntologySpaceListInterface,[\s\S]*?updateOntologySpaceInterface[\s\S]*?\} from "\.\/ontologyManageApi";/,
+  );
+  assert.match(
+    apiBarrelSource,
+    /export \{[\s\S]*?createOntologySpaceInterface,[\s\S]*?deleteOntologySpaceInterface,[\s\S]*?getExampleInterface,[\s\S]*?getOntologyCategoryTreeInterface,[\s\S]*?getOntologySpaceListInterface,[\s\S]*?postLoginInterface,[\s\S]*?updateOntologySpaceInterface[\s\S]*?\};/,
   );
   assert.doesNotMatch(apiBarrelSource, /getOntologyListInterface/);
 });
@@ -96,9 +99,8 @@ test("mapper converts contract list items into page ontology space items", async
   assert.equal(mapped.metrics.relation, 0);
   assert.equal(mapped.metrics.rule, 7);
   assert.equal(mapped.metrics.source, 0);
-  assert.equal(mapped.createdAt, "");
-  assert.equal(mapped.createdBy, "");
-  assert.equal(mapped.updatedAt, "");
+  assert.equal(mapped.createdTime, "");
+  assert.equal(mapped.updatedTime, "");
   assert.equal(mapped.category, "");
   assert.equal(mapped.isSubspace, false);
   assert.equal(mapped.parentSpaceDisplayName, "");

@@ -9,7 +9,8 @@
     <SectionToolbar v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
     <div v-if="status === 'loading'" class="ontology-space-management__state" role="status">正在加载本体空间…</div>
     <div v-else-if="status === 'error'" class="ontology-space-management__state" role="alert">
-      <span>{{ error }}</span><el-button class="aircas-button" type="primary" @click="loadOntologySpaces">重试</el-button>
+      <span>{{ error }}</span
+      ><el-button class="aircas-button" type="primary" @click="loadOntologySpaces">重试</el-button>
     </div>
     <SpaceCollection
       v-else
@@ -59,7 +60,7 @@ const {
   submitOntologySpaceForm,
   confirmDeleteOntologySpace,
   confirmExportOntologySpace,
-} = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace });
+} = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace, loadOntologySpaces });
 
 onMounted(loadOntologySpaces);
 </script>

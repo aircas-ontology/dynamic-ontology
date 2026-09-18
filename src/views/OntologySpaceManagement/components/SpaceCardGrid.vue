@@ -35,7 +35,7 @@
           <dd>{{ space.metrics.rule }}</dd>
         </div>
       </dl>
-      <p class="space-card__meta">创建：{{ space.createdAt }} · 更新：{{ space.updatedAt }}</p>
+      <p class="space-card__meta">创建：{{ space.createdTime }} · 更新：{{ space.updatedTime }}</p>
       <SpaceActions :space="space" @action="emit('action', $event, space)" />
     </article>
   </div>
