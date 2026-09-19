@@ -57,7 +57,6 @@
               aria-label="用户名"
               placeholder="请输入用户名"
               autocomplete="username"
-              required
               @input="resetLoginStatus"
             />
           </label>
@@ -77,7 +76,6 @@
               aria-label="密码"
               placeholder="请输入密码"
               autocomplete="current-password"
-              required
               @input="resetLoginStatus"
             />
             <button
@@ -100,14 +98,11 @@
             </button>
           </label>
 
-          <p v-if="loginStatus === 'error'" class="login-error" role="alert">{{ loginError }}</p>
+          <p v-if="loginStatus === 'error'" class="login-error" role="alert">
+            {{ loginError }}
+          </p>
 
-          <button
-            class="submit"
-            type="submit"
-            :disabled="loginStatus === 'submitting'"
-            :aria-busy="loginStatus === 'submitting'"
-          >
+          <button class="submit" type="submit" :disabled="loginStatus === 'submitting'" :aria-busy="loginStatus === 'submitting'">
             {{ loginStatus === "submitting" ? "提交中..." : "登 录" }}
           </button>
         </form>
@@ -121,7 +116,9 @@
         <ul class="core-grid">
           <li>
             <span class="core-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2L12 3Z" /></svg>
+              <svg viewBox="0 0 24 24">
+                <path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2L12 3Z" />
+              </svg>
             </span>
             <strong>动态感知</strong>
             <small>感知行为变化</small>
@@ -135,7 +132,12 @@
           </li>
           <li>
             <span class="core-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3" /><circle cx="16" cy="8" r="3" /><circle cx="8" cy="16" r="3" /><circle cx="16" cy="16" r="3" /></svg>
+              <svg viewBox="0 0 24 24">
+                <circle cx="8" cy="8" r="3" />
+                <circle cx="16" cy="8" r="3" />
+                <circle cx="8" cy="16" r="3" />
+                <circle cx="16" cy="16" r="3" />
+              </svg>
             </span>
             <strong>智能融合</strong>
             <small>融合异构知识</small>
@@ -152,6 +154,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 
 import layer01 from "@/assets/pages/loginPage/images/layer01.svg";
@@ -163,11 +166,15 @@ import layer4 from "@/assets/pages/loginPage/images/layer4.svg";
 import logoImage from "@/assets/pages/loginPage/images/loginLogo.png";
 import type { LoginCredentials } from "@/types";
 
+import { useLoginCommand } from "./composables/useLoginCommand";
+
 type LoginCommandStatus = "idle" | "submitting" | "success" | "error";
 
 const showPassword = ref(false);
+const router = useRouter();
 const loginStatus = ref<LoginCommandStatus>("idle");
 const loginError = ref("");
+const { submitLogin } = useLoginCommand();
 const formData = ref<LoginCredentials>({
   username: "",
   password: "",
@@ -186,24 +193,22 @@ function resetLoginStatus() {
 async function onSubmit() {
   if (loginStatus.value === "submitting") return;
 
-  const username = formData.value.username.trim();
-  const password = formData.value.password.trim();
-
-  if (!username || !password) {
-    loginStatus.value = "error";
-    loginError.value = "请输入用户名和密码。";
-    ElMessage.warning("请输入用户名和密码。");
-    return;
-  }
-
   loginStatus.value = "submitting";
   loginError.value = "";
 
-  await Promise.resolve();
-
-  loginStatus.value = "error";
-  loginError.value = "认证服务尚未接入，请联系管理员。";
-  ElMessage.error(loginError.value);
+  try {
+    const response = await submitLogin(formData.value);
+    if (response.code !== 200) {
+      throw new Error(response.message || "登录失败，请检查账号密码后重试。");
+    }
+    const failure = await router.push({ name: "OntologySpaceManagement" });
+    if (failure) throw new Error("进入系统失败，请稍后重试。");
+    loginStatus.value = "success";
+  } catch (error) {
+    loginStatus.value = "error";
+    loginError.value = error instanceof Error && error.message ? error.message : "登录失败，请稍后重试。";
+    ElMessage.error(loginError.value);
+  }
 }
 </script>
 
@@ -227,9 +232,10 @@ async function onSubmit() {
   inset: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(var(--aircas-color-accent-cyan-soft) 1px, transparent 1px),
-    linear-gradient(145deg, var(--aircas-color-accent-blue-soft), transparent 58%);
-  background-size: 30px 30px, auto;
+    radial-gradient(var(--aircas-color-accent-cyan-soft) 1px, transparent 1px), linear-gradient(145deg, var(--aircas-color-accent-blue-soft), transparent 58%);
+  background-size:
+    30px 30px,
+    auto;
   opacity: 0.68;
 }
 
@@ -347,11 +353,21 @@ async function onSubmit() {
   bottom: 10%;
 }
 
-.layer-3 { z-index: 2; }
-.layer-2 { z-index: 3; }
-.layer-1 { z-index: 4; }
-.layer-01 { z-index: 5; }
-.layer-02 { z-index: 6; }
+.layer-3 {
+  z-index: 2;
+}
+.layer-2 {
+  z-index: 3;
+}
+.layer-1 {
+  z-index: 4;
+}
+.layer-01 {
+  z-index: 5;
+}
+.layer-02 {
+  z-index: 6;
+}
 
 .login-card {
   width: 100%;
@@ -400,7 +416,10 @@ async function onSubmit() {
     color: var(--aircas-color-text-primary);
     font-size: 15px;
     background: var(--aircas-color-input-background);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease;
 
     &::placeholder {
       color: var(--aircas-color-text-placeholder);
@@ -461,7 +480,9 @@ async function onSubmit() {
   background: transparent;
   cursor: pointer;
   transform: translateY(-50%);
-  transition: color 0.2s ease, background-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
 
   &:hover,
   &:focus-visible {
@@ -497,7 +518,10 @@ async function onSubmit() {
   background: linear-gradient(100deg, var(--aircas-color-accent-cyan), var(--aircas-color-accent-blue));
   box-shadow: 0 10px 24px var(--aircas-color-accent-blue-shadow);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 
   &:hover {
     filter: brightness(1.08);
@@ -539,7 +563,9 @@ async function onSubmit() {
     background: linear-gradient(90deg, transparent, var(--aircas-color-accent-cyan), transparent);
   }
 
-  p { margin: 0; }
+  p {
+    margin: 0;
+  }
 }
 
 .core-grid {

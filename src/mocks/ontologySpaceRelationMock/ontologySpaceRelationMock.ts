@@ -1,0 +1,89 @@
+import type {
+  OntologyRelationCategoryNode,
+  OntologyRelationClass,
+  SpaceRelationObjectOption,
+  SpaceRelationWorkspaceData,
+} from "@/types";
+
+const ROOT_RELATION_CATEGORY_ID = "relation-all";
+
+function cloneCategoryNode(node: OntologyRelationCategoryNode): OntologyRelationCategoryNode {
+  return {
+    id: node.id,
+    label: node.label,
+    ...(node.color ? { color: node.color } : {}),
+    children: node.children.map(cloneCategoryNode),
+  };
+}
+
+const relationCategoryTreeSeed: OntologyRelationCategoryNode[] = [
+  {
+    id: ROOT_RELATION_CATEGORY_ID,
+    label: "全部关系",
+    children: [
+      { id: "rel-org", label: "编制隶属", color: "#4dd2ff", children: [] },
+      {
+        id: "rel-combat",
+        label: "作战协同",
+        color: "#9272ff",
+        children: [
+          { id: "rel-combat-command", label: "指挥控制", color: "#2187a8", children: [] },
+          { id: "rel-combat-support", label: "火力支援", color: "#ed7120", children: [] },
+        ],
+      },
+      { id: "rel-deploy", label: "部署保障", color: "#3ba73b", children: [] },
+    ],
+  },
+];
+
+const relationsSeed: OntologyRelationClass[] = [
+  { id: "rel-belongs-to-fleet", categoryId: "rel-org", categoryName: "编制隶属", displayName: "隶属舰队", apiName: "belongsToFleet", sourceName: "福特级航空母舰(CVN)", targetName: "航母打击群", cardinality: "多对一", description: "舰艇编制归属的舰队或打击群" },
+  { id: "rel-has-air-wing", categoryId: "rel-org", categoryName: "编制隶属", displayName: "编成舰载机联队", apiName: "hasAirWing", sourceName: "福特级航空母舰(CVN)", targetName: "舰载机联队", cardinality: "一对一", description: "航母编制内的舰载机联队配置" },
+  { id: "rel-commands-escort", categoryId: "rel-combat-command", categoryName: "指挥控制", displayName: "指挥护航编队", apiName: "commandsEscort", sourceName: "福特级航空母舰(CVN)", targetName: "驱逐舰", cardinality: "一对多", description: "航母对护航驱逐舰的战术指挥关系" },
+  { id: "rel-receives-orders", categoryId: "rel-combat-command", categoryName: "指挥控制", displayName: "接受上级指令", apiName: "receivesOrdersFrom", sourceName: "福特级航空母舰(CVN)", targetName: "联合任务部队", cardinality: "多对一", description: "接受联合任务部队作战指令" },
+  { id: "rel-provides-air-cover", categoryId: "rel-combat-support", categoryName: "火力支援", displayName: "提供空中掩护", apiName: "providesAirCover", sourceName: "福特级航空母舰(CVN)", targetName: "两栖攻击舰", cardinality: "一对多", description: "为两栖编队提供舰载航空掩护" },
+  { id: "rel-homeported-at", categoryId: "rel-deploy", categoryName: "部署保障", displayName: "母港部署", apiName: "homeportedAt", sourceName: "福特级航空母舰(CVN)", targetName: "海军基地", cardinality: "多对一", description: "舰艇母港与基地保障关系" },
+  { id: "rel-replenished-by", categoryId: "rel-deploy", categoryName: "部署保障", displayName: "接受补给", apiName: "replenishedBy", sourceName: "福特级航空母舰(CVN)", targetName: "补给舰", cardinality: "多对多", description: "海上补给与油料弹药保障" },
+  { id: "rel-escorts-with", categoryId: "rel-combat-support", categoryName: "火力支援", displayName: "协同护航", apiName: "escortsWith", sourceName: "福特级航空母舰(CVN)", targetName: "巡洋舰", cardinality: "多对多", description: "与巡洋舰编队协同防空反导" },
+  { id: "rel-burke-escorts-ford", categoryId: "rel-combat-support", categoryName: "火力支援", displayName: "护航协同", apiName: "burkeEscortsFord", sourceName: "阿利·伯克级驱逐舰(DDG)", targetName: "福特级航空母舰(CVN)", cardinality: "多对一", description: "伯克级驱逐舰对福特级航母的护航协同" },
+  { id: "rel-burke-aa-coord", categoryId: "rel-combat-support", categoryName: "火力支援", displayName: "防空协同", apiName: "burkeAaCoordWithCruiser", sourceName: "阿利·伯克级驱逐舰(DDG)", targetName: "巡洋舰", cardinality: "多对多", description: "伯克级与巡洋舰协同防空反导" },
+  { id: "rel-burke-replenished", categoryId: "rel-deploy", categoryName: "部署保障", displayName: "接受补给", apiName: "burkeReplenishedBy", sourceName: "阿利·伯克级驱逐舰(DDG)", targetName: "补给舰", cardinality: "多对多", description: "伯克级海上补给与油料弹药保障" },
+  { id: "rel-burke-homeported", categoryId: "rel-deploy", categoryName: "部署保障", displayName: "母港部署", apiName: "burkeHomeportedAt", sourceName: "阿利·伯克级驱逐舰(DDG)", targetName: "海军基地", cardinality: "多对一", description: "伯克级母港与基地保障关系" },
+  { id: "rel-nimitz-belongs-fleet", categoryId: "rel-org", categoryName: "编制隶属", displayName: "隶属舰队", apiName: "nimitzBelongsToFleet", sourceName: "尼米兹级航空母舰(CVN)", targetName: "航母打击群", cardinality: "多对一", description: "尼米兹级编制归属的航母打击群" },
+  { id: "rel-nimitz-homeported", categoryId: "rel-deploy", categoryName: "部署保障", displayName: "母港部署", apiName: "nimitzHomeportedAt", sourceName: "尼米兹级航空母舰(CVN)", targetName: "海军基地", cardinality: "多对一", description: "尼米兹级母港与基地保障关系" },
+  { id: "rel-cruiser-escorts-ford", categoryId: "rel-combat-support", categoryName: "火力支援", displayName: "护航支援", apiName: "cruiserEscortsFord", sourceName: "巡洋舰", targetName: "福特级航空母舰(CVN)", cardinality: "多对一", description: "巡洋舰对福特级航母的护航支援" },
+  { id: "rel-nimitz-commands-burke", categoryId: "rel-combat-command", categoryName: "指挥控制", displayName: "指挥护航编队", apiName: "nimitzCommandsBurke", sourceName: "尼米兹级航空母舰(CVN)", targetName: "阿利·伯克级驱逐舰(DDG)", cardinality: "一对多", description: "尼米兹级对伯克级驱逐舰的战术指挥关系" },
+  { id: "rel-airwing-fighter", categoryId: "rel-org", categoryName: "编制隶属", displayName: "配属舰载战斗机", apiName: "airwingHasFighter", sourceName: "舰载机联队", targetName: "舰载战斗机", cardinality: "一对多", description: "舰载机联队下辖配属的舰载战斗机兵力" },
+  { id: "rel-amphibious-carries-marine", categoryId: "rel-combat", categoryName: "作战协同", displayName: "搭载海军陆战队", apiName: "amphibiousCarriesMarine", sourceName: "两栖攻击舰", targetName: "海军陆战队", cardinality: "一对多", description: "两栖攻击舰投送搭载的海军陆战队兵力" },
+  { id: "rel-base-shipyard", categoryId: "rel-deploy", categoryName: "部署保障", displayName: "驻泊海军造船厂", apiName: "baseHasShipyard", sourceName: "海军基地", targetName: "海军造船厂", cardinality: "多对一", description: "海军基地驻泊配套的海军造船厂" },
+  { id: "rel-jtf-patrol-aircraft", categoryId: "rel-combat-command", categoryName: "指挥控制", displayName: "协同海上巡逻机", apiName: "jtfCoordinatesPatrolAircraft", sourceName: "联合任务部队", targetName: "海上巡逻机", cardinality: "一对多", description: "联合任务部队指挥协同的海上巡逻侦察兵力" },
+  { id: "rel-destroyer-submarine-escort", categoryId: "rel-combat-support", categoryName: "火力支援", displayName: "核潜艇协同护航", apiName: "destroyerSubmarineEscort", sourceName: "驱逐舰", targetName: "攻击型核潜艇", cardinality: "多对多", description: "驱逐舰与攻击型核潜艇水下协同护航" },
+  { id: "rel-fighter-squadron", categoryId: "rel-org", categoryName: "编制隶属", displayName: "编属舰载机中队", apiName: "fighterHasSquadron", sourceName: "舰载战斗机", targetName: "舰载机中队", cardinality: "多对一", description: "舰载战斗机编属的舰载机中队" },
+  { id: "rel-marine-meu", categoryId: "rel-org", categoryName: "编制隶属", displayName: "编入陆战队远征分队", apiName: "marineHasMeu", sourceName: "海军陆战队", targetName: "陆战队远征分队", cardinality: "一对多", description: "海军陆战队编入的陆战队远征分队" },
+  { id: "rel-shipyard-repair-center", categoryId: "rel-deploy", categoryName: "部署保障", displayName: "下辖区域维修中心", apiName: "shipyardHasRepairCenter", sourceName: "海军造船厂", targetName: "区域维修中心", cardinality: "一对多", description: "海军造船厂下辖的区域维修保障中心" },
+  { id: "rel-patrol-air-base", categoryId: "rel-deploy", categoryName: "部署保障", displayName: "依托岸基航空兵基地", apiName: "patrolAircraftReliesAirBase", sourceName: "海上巡逻机", targetName: "岸基航空兵基地", cardinality: "多对一", description: "海上巡逻机驻训依托的岸基航空兵基地" },
+];
+
+export function buildObjectOptions(relations: OntologyRelationClass[]): SpaceRelationObjectOption[] {
+  const names = new Set<string>();
+  for (const relation of relations) {
+    if (relation.sourceName.trim()) names.add(relation.sourceName.trim());
+    if (relation.targetName.trim()) names.add(relation.targetName.trim());
+  }
+  return [...names]
+    .sort((a, b) => a.localeCompare(b, "zh-CN"))
+    .map((name) => ({ value: name, label: name }));
+}
+
+/** 返回可写的空间关系工作台初始数据（克隆种子，避免共享引用）。 */
+export function createOntologySpaceRelationWorkspaceData(): SpaceRelationWorkspaceData {
+  const categoryTree = relationCategoryTreeSeed.map(cloneCategoryNode);
+  const relations = relationsSeed.map((item) => ({ ...item }));
+  return {
+    categoryTree,
+    relations,
+    objectOptions: buildObjectOptions(relations),
+  };
+}
+
+export { cloneCategoryNode };

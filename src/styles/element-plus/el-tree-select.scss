@@ -1,0 +1,151 @@
+/* ==========================================================================
+   Aircas · el-tree-select 覆盖
+   --------------------------------------------------------------------------
+   用法：
+     <el-tree-select
+       class="aircas-tree-select"
+       popper-class="aircas-tree-select-popper"
+     >
+   覆盖触发器与挂载到 body 的树选择面板。
+   ========================================================================== */
+
+.aircas-tree-select {
+  &.el-tree-select,
+  &.el-select {
+    --el-tree-node-hover-bg-color: var(--aircas-color-hover-background);
+    --el-tree-text-color: var(--aircas-color-text-primary);
+    --el-tree-expand-icon-color: var(--aircas-color-title);
+    --el-select-border-color-hover: var(--aircas-color-border-highlight);
+    --el-select-disabled-color: var(--aircas-color-text-disabled);
+    --el-select-disabled-border: var(--aircas-color-border);
+    --el-select-input-color: var(--aircas-color-text-muted);
+    --el-select-multiple-input-color: var(--aircas-color-text-primary);
+    --el-select-input-focus-border-color: var(--aircas-color-focus-border);
+    --el-select-close-hover-color: var(--aircas-color-title);
+    --el-fill-color-blank: var(--aircas-color-input-background);
+    --el-border-color: var(--aircas-color-border);
+    --el-border-color-hover: var(--aircas-color-border-highlight);
+    --el-text-color-placeholder: var(--aircas-color-text-placeholder);
+    --el-text-color-regular: var(--aircas-color-text-primary);
+    --el-input-icon-color: var(--aircas-color-text-muted);
+    --el-disabled-border-color: var(--aircas-color-border);
+    --el-disabled-text-color: var(--aircas-color-text-disabled);
+    --el-fill-color-light: var(--aircas-color-panel-background);
+  }
+
+  .el-select__wrapper {
+    background-color: var(--aircas-color-input-background);
+    box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+    color: var(--aircas-color-text-primary);
+  }
+
+  .el-select__wrapper.is-hovering:not(.is-focused) {
+    box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
+  }
+
+  .el-select__wrapper.is-focused {
+    box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
+  }
+
+  .el-select__wrapper.is-disabled {
+    background-color: var(--aircas-color-panel-background);
+    color: var(--aircas-color-text-disabled);
+    box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+  }
+
+  .el-select__placeholder {
+    color: var(--aircas-color-text-primary);
+  }
+
+  .el-select__placeholder.is-transparent {
+    color: var(--aircas-color-text-placeholder);
+  }
+
+  .el-select__caret,
+  .el-select__clear,
+  .el-select__prefix,
+  .el-select__suffix {
+    color: var(--aircas-color-text-muted);
+  }
+
+  .el-select__clear:hover {
+    color: var(--aircas-color-title);
+  }
+
+  .el-select__input {
+    color: var(--aircas-color-text-primary);
+  }
+}
+
+/* 下拉面板挂载在 body，须通过 popper-class="aircas-tree-select-popper" 启用 */
+.aircas-tree-select-popper {
+  &.el-popper,
+  &.el-select__popper,
+  &.el-tree-select__popper {
+    border: 1px solid var(--aircas-color-border);
+    border-radius: 4px;
+    background-color: var(--aircas-color-menu-background);
+    box-shadow: var(--el-box-shadow-lighter, var(--el-box-shadow-light));
+  }
+
+  .el-select-dropdown,
+  &.el-select-dropdown {
+    background-color: var(--aircas-color-menu-background);
+    border: none;
+  }
+
+  .el-select-dropdown__empty,
+  .el-select-dropdown__loading {
+    color: var(--aircas-color-text-secondary);
+  }
+
+  .el-tree {
+    background-color: var(--aircas-color-transparent);
+    color: var(--aircas-color-text-primary);
+    --el-tree-node-hover-bg-color: var(--aircas-color-hover-background);
+    --el-tree-text-color: var(--aircas-color-text-primary);
+    --el-tree-expand-icon-color: var(--aircas-color-title);
+  }
+
+  .el-tree-node__content {
+    color: var(--aircas-color-text-primary);
+
+    &:hover {
+      background-color: var(--aircas-color-hover-background);
+    }
+  }
+
+  .el-tree-node__expand-icon {
+    color: var(--aircas-color-title);
+  }
+
+  .el-tree-node:focus > .el-tree-node__content {
+    background-color: var(--aircas-color-hover-background);
+  }
+
+  .el-tree-node.is-current > .el-tree-node__content,
+  .el-tree--highlight-current .el-tree-node.is-current > .el-tree-node__content {
+    background-color: var(--aircas-color-selected-background);
+    color: var(--aircas-color-title);
+  }
+
+  .el-tree-node.is-checked > .el-tree-node__content .el-select-dropdown__item,
+  .el-select-dropdown__item.is-selected {
+    color: var(--aircas-color-title);
+    font-weight: 700;
+  }
+
+  .el-select-dropdown__item {
+    color: var(--aircas-color-text-primary);
+    background-color: var(--aircas-color-transparent);
+  }
+
+  .el-select-dropdown__item.is-disabled {
+    color: var(--aircas-color-text-disabled);
+  }
+
+  .el-popper__arrow::before {
+    background-color: var(--aircas-color-menu-background);
+    border: 1px solid var(--aircas-color-border);
+  }
+}

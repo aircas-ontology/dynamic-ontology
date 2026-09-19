@@ -16,6 +16,10 @@ dist
 dist-ssr
 coverage
 *.local
+# .npm-cache
+# .npm-cache*
+.trae
+.trae*
 
 # Editor directories and files
 .idea

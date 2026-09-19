@@ -3,6 +3,7 @@
    --------------------------------------------------------------------------
    用法：`<el-pagination class="aircas-pagination">` 即生效。
    深色科技风分页：青色数字方块 / 激活高亮 / 透明输入框。
+   每页条数下拉挂到 body 时另加 popper-class="aircas-pagination-popper"。
    ========================================================================== */
 
 .aircas-pagination {
@@ -51,11 +52,53 @@
     .el-pagination__jump {
       color: var(--aircas-color-text-secondary);
     }
+
+    /* 分页内 el-select 选择每页条数 */
+    .el-select__wrapper {
+      background-color: var(--aircas-color-panel-background);
+      box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+
+      .el-select__selected-item {
+        color: var(--aircas-color-text-primary);
+      }
+
+      .el-select__caret {
+        color: var(--aircas-color-text-secondary);
+      }
+    }
   }
 }
 
-/* 分页内会使用 el-select 选择每页条数，复用 select 面板命名空间 */
-.aircas-pagination .el-select__wrapper {
-  background-color: var(--aircas-color-panel-background);
-  box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+/* 每页条数选择器挂载到 body 时，使用独立公共命名空间继承主题。 */
+.aircas-pagination-popper {
+  &.el-popper {
+    min-width: 100px;
+    padding: 4px 0;
+    border: 1px solid var(--aircas-color-border);
+    border-radius: 4px;
+    background-color: var(--aircas-color-menu-background);
+    color: var(--aircas-color-text-primary);
+    box-shadow: var(--el-box-shadow-lighter, var(--el-box-shadow-light));
+
+    .el-select-dropdown__item {
+      color: var(--aircas-color-text-primary);
+
+      &:hover,
+      &.hover {
+        background-color: var(--aircas-color-hover-background);
+      }
+
+      &.selected {
+        background-color: var(--aircas-color-button-background);
+        color: var(--aircas-color-button-text);
+        font-weight: 700;
+      }
+
+      &.is-disabled {
+        background-color: var(--aircas-color-menu-background) !important;
+        color: var(--aircas-color-text-disabled) !important;
+        cursor: not-allowed;
+      }
+    }
+  }
 }

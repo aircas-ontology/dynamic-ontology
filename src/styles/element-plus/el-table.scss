@@ -3,10 +3,13 @@
    --------------------------------------------------------------------------
    用法：`<el-table class="aircas-table">` 即生效。
    深色科技风：深底 + 青色表头渐变 + 强调 hover + 自定义排序箭头。
+   可选纯色表格：与 aircas-table 同时使用，保留公共交互和双主题配色。
    ========================================================================== */
 
 .aircas-table {
   &.el-table {
+    --el-table-tr-bg-color: var(--aircas-color-background);
+    --el-table-row-hover-bg-color: color-mix(in srgb, var(--aircas-color-button-background) 30%, transparent);
     background-color: var(--aircas-color-background);
     color: var(--aircas-color-text-primary);
 
@@ -22,18 +25,14 @@
 
   /* --------------------- 表头 ------------------------------------------- */
   &.el-table th.el-table__cell {
-    background-image: linear-gradient(
-      0deg,
-      var(--aircas-color-button-background) 0%,
-      var(--aircas-color-panel-background-deep) 100%
-    );
+    background-image: linear-gradient(0deg, var(--aircas-color-button-background) 0%, var(--aircas-color-panel-background-deep) 100%);
     color: var(--aircas-color-title);
     font-size: var(--el-font-size-base);
   }
 
   /* --------------------- 单元格 / 斑马纹 --------------------------------- */
   &.el-table .el-table__cell {
-    padding: 6px 0;
+    padding: var(--aircas-table-cell-padding, 6px 0);
     border: none;
   }
 
@@ -51,8 +50,9 @@
   }
 
   /* --------------------- hover / current -------------------------------- */
-  &.el-table .el-table__body tr:hover > td.el-table__cell {
-    background-color: var(--aircas-color-hover-background) !important;
+  &.el-table .el-table__body tr:hover > td.el-table__cell,
+  &.el-table .el-table__body tr.hover-row > td.el-table__cell {
+    background-color: var(--el-table-row-hover-bg-color) !important;
     color: var(--aircas-color-text-primary);
   }
 
@@ -79,5 +79,25 @@
 
   &.el-table .el-table__empty-text {
     color: var(--aircas-color-text-empty);
+  }
+}
+
+/* 可选纯色表格：与 aircas-table 同时使用，保留公共交互和双主题配色。 */
+.aircas-table.aircas-table--flat {
+  &.el-table {
+    border: 1px solid var(--aircas-color-border);
+    border-radius: 8px;
+  }
+
+  &.el-table th.el-table__cell {
+    padding: 12px 0;
+    background-image: none;
+    background-color: var(--aircas-color-panel-background);
+    border-bottom: 2px solid var(--aircas-color-accent-cyan);
+  }
+
+  &.el-table td.el-table__cell {
+    border-bottom: 1px solid var(--aircas-color-border-soft);
+    color: var(--aircas-color-text-primary);
   }
 }

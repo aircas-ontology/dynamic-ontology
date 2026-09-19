@@ -28,10 +28,10 @@ ontologyApi.ts
 接口函数使用“小写 HTTP 方法 + 业务动作或资源名 + `Interface`”格式：
 
 ```ts
-getExampleInterface
-postExampleInterface
-putExampleInterface
-deleteExampleInterface
+getExampleInterface;
+postExampleInterface;
+putExampleInterface;
+deleteExampleInterface;
 ```
 
 - 【必须】HTTP 方法前缀与实际请求方法一致，使用 `get`、`post`、`put`、`delete` 等小写形式。
@@ -87,8 +87,8 @@ export function getExampleInterface(params: ExampleParams): Promise<ApiResponse<
  * 请求方式：GET `/example`
  *
  * @param params 查询参数。
- * @param params.page 当前页码，从 1 开始。
- * @param params.pageSize 每页返回的数据条数。
+ * @param {number} params.page 当前页码，从 1 开始。
+ * @param {number} params.pageSize 每页返回的数据条数。
  * @returns 标准 API 响应，包含分页列表和数据总数。
  */
 ```
