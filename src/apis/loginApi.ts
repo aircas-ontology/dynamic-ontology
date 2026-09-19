@@ -37,7 +37,9 @@ export function persistLoginToken(headers: AxiosResponse<LoginData>["headers"]):
  *
  * 10 秒超时，超时或传输失败由调用方决定是否回退模拟登录。
  *
- * @param params 登录参数，包含用户名和密码。
+ * @param params 登录参数。
+ * @param {string} params.username - 用户名
+ * @param {string} params.password - 密码
  * @returns 标准 API 响应，`code` 为 200 时表示登录通过。
  */
 export function postLoginInterface(params: LoginParams): Promise<ApiResponse<LoginData>> {

@@ -33,10 +33,10 @@ const DELETE_ONTOLOGY_SPACE_TIMEOUT = 10000;
  * 请求方式：POST `/ontology/space`
  *
  * @param params 创建空间参数。
- * @param params.apiName 空间API名称。
- * @param params.displayName 空间名称。
- * @param params.icon 空间图标url。
- * @param params.description 空间描述。
+ * @param {string} params.apiName 空间API名称。
+ * @param {string} params.displayName 空间名称。
+ * @param {string} params.icon 空间图标url。
+ * @param {string} params.description 空间描述。
  * @returns 标准 API 响应，data 为新创建空间 id。
  */
 export function createOntologySpaceInterface(params: CreateOntologySpaceParams): Promise<ApiResponse<CreateOntologySpaceData>> {
@@ -54,7 +54,7 @@ export function createOntologySpaceInterface(params: CreateOntologySpaceParams):
  * 请求方式：DELETE `/ontology/space/{spaceId}`
  *
  * @param params 删除空间参数。
- * @param params.spaceId 空间ID。
+ * @param {number} params.spaceId 空间ID。
  * @returns 标准 API 响应，data 为空对象。
  */
 export function deleteOntologySpaceInterface(params: DeleteOntologySpaceParams): Promise<ApiResponse<DeleteOntologySpaceData>> {
@@ -71,10 +71,10 @@ export function deleteOntologySpaceInterface(params: DeleteOntologySpaceParams):
  * 请求方式：PUT `/ontology/space`
  *
  * @param params 编辑空间参数。
- * @param params.spaceId 空间ID。
- * @param params.displayName 空间名称。
- * @param params.icon 空间图标url。
- * @param params.description 空间描述。
+ * @param {number} params.spaceId 空间ID。
+ * @param {string} params.displayName 空间名称。
+ * @param {string} params.icon 空间图标url。
+ * @param {string} params.description 空间描述。
  * @returns 标准 API 响应，data 为空对象。
  */
 export function updateOntologySpaceInterface(params: UpdateOntologySpaceParams): Promise<ApiResponse<UpdateOntologySpaceData>> {
@@ -126,9 +126,9 @@ export function getOntologySpaceListInterface(): Promise<ApiResponse<OntologySpa
  * 请求方式：POST `/ontology/category/`
  *
  * @param payload 创建参数。
- * @param payload.spaceId 当前空间 id，数字。
- * @param payload.parentId 父级分类 id，数字，根分类为 0。
- * @param payload.name 主分类名称。
+ * @param {number} payload.spaceId 当前空间 id，数字。
+ * @param {number} payload.parentId 父级分类 id，数字，根分类为 0。
+ * @param {string} payload.name 主分类名称。
  * @returns 标准 API 响应；成功时 code 为 200，响应体不含 data。
  */
 export function postCreateOntologyCategoryTreeInterface(payload: CreateOntologyCategoryTreeParams): Promise<ApiResponse<undefined>> {
@@ -145,8 +145,8 @@ export function postCreateOntologyCategoryTreeInterface(payload: CreateOntologyC
  * 请求方式：DELETE `/ontology/category`
  *
  * @param payload 删除参数。
- * @param payload.spaceId 当前空间 id，数字。
- * @param payload.categoryId 要删除的分类 id，数字。
+ * @param {number} payload.spaceId 当前空间 id，数字。
+ * @param {number} payload.categoryId 要删除的分类 id，数字。
  * @returns 标准 API 响应；成功时 code 为 200，响应体不含 data。
  */
 export function deleteOntologyCategoryTreeInterface(payload: DeleteOntologyCategoryTreeParams): Promise<ApiResponse<undefined>> {
@@ -163,9 +163,9 @@ export function deleteOntologyCategoryTreeInterface(payload: DeleteOntologyCateg
  * 请求方式：PUT `/ontology/category`
  *
  * @param payload 修改参数。
- * @param payload.spaceId 当前空间 id，数字。
- * @param payload.categoryId 要修改的分类 id，数字。
- * @param payload.name 新的分类名称。
+ * @param {number} payload.spaceId 当前空间 id，数字。
+ * @param {number} payload.categoryId 要修改的分类 id，数字。
+ * @param {string} payload.name 新的分类名称。
  * @returns 标准 API 响应；成功时 code 为 200，响应体不含 data。
  */
 export function putUpdateOntologyCategoryNameInterface(payload: UpdateOntologyCategoryNameParams): Promise<ApiResponse<undefined>> {
