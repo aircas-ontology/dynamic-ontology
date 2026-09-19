@@ -8,23 +8,11 @@
       <span v-if="loading" class="space-overview-panel__status">统计加载中...</span>
     </header>
 
-    <el-alert
-      v-if="error"
-      class="space-overview-panel__error"
-      :title="error"
-      type="error"
-      :closable="false"
-      show-icon
-    />
+    <el-alert v-if="error" class="space-overview-panel__error" :title="error" type="error" :closable="false" show-icon />
 
-    <el-button v-if="error" class="aircas-button" @click="load">重试</el-button>
+    <el-button v-if="error" class="aircas-button" @click="loadSpaceOverview">重试</el-button>
     <dl class="space-overview-panel__stats">
-      <div
-        v-for="item in statItems"
-        :key="item.id"
-        class="space-overview-panel__stat"
-        :class="`space-overview-panel__stat--${item.tone}`"
-      >
+      <div v-for="item in statItems" :key="item.id" class="space-overview-panel__stat" :class="`space-overview-panel__stat--${item.tone}`">
         <dt>
           <el-icon><component :is="item.icon" /></el-icon>
           <span>{{ item.label }}</span>
@@ -46,7 +34,7 @@ import { formatOverviewStat } from "../utils/overviewStats";
 
 const route = useRoute();
 const spaceId = computed(() => String(route.params.spaceId || ""));
-const { data, loading, error, load } = useSpaceOverview(spaceId);
+const { data, loading, error, loadSpaceOverview } = useSpaceOverview(spaceId);
 const statItems: ReadonlyArray<{ id: Exclude<ManagementWorkspaceTab, "overview">; label: string; icon: typeof Grid; tone: string }> = [
   { id: "object", label: "对象", icon: Grid, tone: "cyan" },
   { id: "relation", label: "关系", icon: Share, tone: "purple" },
@@ -57,8 +45,12 @@ const statItems: ReadonlyArray<{ id: Exclude<ManagementWorkspaceTab, "overview">
 function stat(id: Exclude<ManagementWorkspaceTab, "overview">) {
   return formatOverviewStat(data.value?.counts[id], data.value?.availableTabs.includes(id) ?? true, loading.value);
 }
-function formatCount(id: Exclude<ManagementWorkspaceTab, "overview">) { return stat(id).value; }
-function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) { return stat(id).note; }
+function formatCount(id: Exclude<ManagementWorkspaceTab, "overview">) {
+  return stat(id).value;
+}
+function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
+  return stat(id).note;
+}
 </script>
 
 <style lang="scss" scoped>
@@ -177,6 +169,9 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) { return st
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
-@media (max-width: 700px) { .space-overview-panel__stats { grid-template-columns: 1fr; } }
+@media (max-width: 700px) {
+  .space-overview-panel__stats {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
-

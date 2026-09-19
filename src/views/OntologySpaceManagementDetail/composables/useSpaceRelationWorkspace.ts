@@ -43,28 +43,23 @@ export function useSpaceRelationWorkspace() {
   const spaceId = computed(() => String(route.params.spaceId || "").trim());
   const relationCategoryTree = computed(() => workspace.value?.categoryTree ?? []);
   const relations = computed(() => workspace.value?.relations ?? []);
-  const relationObjectOptions = computed<SpaceRelationObjectOption[]>(
-    () => workspace.value?.objectOptions ?? [],
-  );
+  const relationObjectOptions = computed<SpaceRelationObjectOption[]>(() => workspace.value?.objectOptions ?? []);
   const selectedRelationCategoryLabel = computed(
     () => findRelationCategoryNode(relationCategoryTree.value, selectedRelationCategoryId.value)?.label || "全部关系",
   );
-  const relationCategoryOptions = computed(
-    () => relationCategoryTree.value[0]?.children ?? [],
-  );
+  const relationCategoryOptions = computed(() => relationCategoryTree.value[0]?.children ?? []);
   const visibleSpaceRelations = computed(() => {
-    const byCategory = filterRelationsByCategory(
-      relations.value,
-      relationCategoryTree.value,
-      selectedRelationCategoryId.value,
-    );
+    const byCategory = filterRelationsByCategory(relations.value, relationCategoryTree.value, selectedRelationCategoryId.value);
     if (!relationFilter.value.applied) return byCategory;
     return filterRelationsByHop(byCategory, relationFilter.value.seedNames, relationFilter.value.maxHop);
   });
   const graphSeedNames = computed(() => relationFilter.value.seedNames);
   const graphMaxHop = computed(() => relationFilter.value.maxHop);
 
-  function load() {
+  /**
+   * @description 按当前空间 id 加载关系工作区；无空间 id 时进入空状态，加载失败时保留错误信息。
+   */
+  function loadSpaceRelationWorkspace() {
     status.value = "loading";
     errorMessage.value = "";
     try {
@@ -74,8 +69,7 @@ export function useSpaceRelationWorkspace() {
         return;
       }
       workspace.value = createOntologySpaceRelationWorkspaceData();
-      selectedRelationCategoryId.value =
-        workspace.value.categoryTree[0]?.id || ROOT_RELATION_CATEGORY_ID;
+      selectedRelationCategoryId.value = workspace.value.categoryTree[0]?.id || ROOT_RELATION_CATEGORY_ID;
       status.value = "ready";
     } catch (cause) {
       workspace.value = null;
@@ -127,11 +121,9 @@ export function useSpaceRelationWorkspace() {
     const error = mutate((data) => removeRelationCategory(data, categoryId));
     if (
       !error &&
-      (selectedRelationCategoryId.value === categoryId ||
-        !findRelationCategoryNode(relationCategoryTree.value, selectedRelationCategoryId.value))
+      (selectedRelationCategoryId.value === categoryId || !findRelationCategoryNode(relationCategoryTree.value, selectedRelationCategoryId.value))
     ) {
-      selectedRelationCategoryId.value =
-        relationCategoryTree.value[0]?.id || ROOT_RELATION_CATEGORY_ID;
+      selectedRelationCategoryId.value = relationCategoryTree.value[0]?.id || ROOT_RELATION_CATEGORY_ID;
     }
     return error;
   }
@@ -148,7 +140,7 @@ export function useSpaceRelationWorkspace() {
     return mutate((data) => removeRelation(data, relationId));
   }
 
-  onMounted(load);
+  onMounted(loadSpaceRelationWorkspace);
 
   return {
     status,
@@ -164,7 +156,7 @@ export function useSpaceRelationWorkspace() {
     relationFilter,
     graphSeedNames,
     graphMaxHop,
-    load,
+    loadSpaceRelationWorkspace,
     selectRelationCategory,
     setRelationViewMode,
     applyRelationFilter,

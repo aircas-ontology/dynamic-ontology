@@ -10,3 +10,5 @@ export const geoAltitudeKm: number = 35786; // 同步轨道高度（km）
 export const auKm: number = 149597870.7; // 天文单位（km）
 export const jdUnixEpoch: number = 2440587.5; // Unix 纪元对应的儒略日
 export const msPerDay: number = 86400000; // 一天的毫秒数
+export const relationCategoryPredefineColors: string[] = ["#4dd2ff", "#269cff", "#9272ff", "#20d99a", "#ff9f43", "#07eaff"]; // 关系分类颜色选择器预设色
+export const requestTimeoutMs: number = 10000; // 接口请求超时时间（毫秒）

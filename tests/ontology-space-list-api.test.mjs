@@ -14,8 +14,8 @@ test("ontology space list api issues a GET to the manage domain space uri with t
   assert.match(apiSource, /request<OntologySpaceListData>\(\{/);
   assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/space"/);
   assert.match(apiSource, /method:\s*"get"/);
-  assert.match(apiSource, /timeout: ONTOLOGY_SPACE_LIST_TIMEOUT,/);
-  assert.match(apiSource, /const ONTOLOGY_SPACE_LIST_TIMEOUT = 10000;/);
+  assert.match(apiSource, /timeout: requestTimeoutMs,/);
+  assert.match(apiSource, /import \{ requestTimeoutMs \} from "@\/utils\/constants";/);
   assert.match(apiSource, /import type \{[\s\S]*OntologySpaceListData[\s\S]*\} from "@\/types"/);
   assert.match(apiSource, /@description/);
   assert.doesNotMatch(apiSource, /LOGIN_URL/);

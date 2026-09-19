@@ -5,10 +5,18 @@
     <SpaceCardGrid v-else :spaces="spaces" @action="forward" />
     <footer v-if="total" class="space-collection__pagination">
       <span>共 {{ total }} 条</span>
-      <el-pagination class="aircas-pagination" popper-class="aircas-pagination-popper" background
-        layout="prev, pager, next, sizes" :total="total" :page-sizes="[5, 10, 20]" :current-page="page"
-        :page-size="pageSize" @update:current-page="emit('update:page', $event)"
-        @update:page-size="emit('update:pageSize', $event)" />
+      <el-pagination
+        class="aircas-pagination"
+        popper-class="aircas-pagination-popper"
+        background
+        layout="prev, pager, next, sizes"
+        :total="total"
+        :page-sizes="[5, 10, 20]"
+        :current-page="page"
+        :page-size="pageSize"
+        @update:current-page="emit('update:page', $event)"
+        @update:page-size="emit('update:pageSize', $event)"
+      />
     </footer>
   </section>
 </template>

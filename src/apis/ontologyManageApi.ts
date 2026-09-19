@@ -13,19 +13,8 @@ import type {
   UpdateOntologySpaceData,
   UpdateOntologySpaceParams,
 } from "@/types";
+import { requestTimeoutMs } from "@/utils/constants";
 import { request } from "@/utils/request";
-
-/** 列表查询超时时间（毫秒）：远程不可达时快速失败，使页面回退到样例数据。 */
-const ONTOLOGY_SPACE_LIST_TIMEOUT = 10000;
-
-/** 空间创建超时时间（毫秒）：远程不可达时快速失败，使调用方提示失败信息。 */
-const CREATE_ONTOLOGY_SPACE_TIMEOUT = 10000;
-
-/** 空间编辑超时时间（毫秒）：远程不可达时快速失败，使调用方提示失败信息。 */
-const UPDATE_ONTOLOGY_SPACE_TIMEOUT = 10000;
-
-/** 空间删除超时时间（毫秒）：远程不可达时快速失败，使调用方提示失败信息。 */
-const DELETE_ONTOLOGY_SPACE_TIMEOUT = 10000;
 
 /**
  * @description 创建本体空间。
@@ -44,7 +33,7 @@ export function createOntologySpaceInterface(params: CreateOntologySpaceParams):
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "post",
     data: params,
-    timeout: CREATE_ONTOLOGY_SPACE_TIMEOUT,
+    timeout: requestTimeoutMs,
   });
 }
 
@@ -61,7 +50,7 @@ export function deleteOntologySpaceInterface(params: DeleteOntologySpaceParams):
   return request<DeleteOntologySpaceData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space/" + params.spaceId,
     method: "delete",
-    timeout: DELETE_ONTOLOGY_SPACE_TIMEOUT,
+    timeout: requestTimeoutMs,
   });
 }
 
@@ -82,7 +71,7 @@ export function updateOntologySpaceInterface(params: UpdateOntologySpaceParams):
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "put",
     data: params,
-    timeout: UPDATE_ONTOLOGY_SPACE_TIMEOUT,
+    timeout: requestTimeoutMs,
   });
 }
 
@@ -100,6 +89,7 @@ export function getOntologyCategoryTreeInterface(params: OntologyCategoryTreePar
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/category/tree",
     method: "get",
     params,
+    timeout: requestTimeoutMs,
   });
 }
 
@@ -116,7 +106,7 @@ export function getOntologySpaceListInterface(): Promise<ApiResponse<OntologySpa
     // url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "get",
-    timeout: ONTOLOGY_SPACE_LIST_TIMEOUT,
+    timeout: requestTimeoutMs,
   });
 }
 
@@ -136,6 +126,7 @@ export function postCreateOntologyCategoryTreeInterface(payload: CreateOntologyC
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/category",
     method: "post",
     data: payload,
+    timeout: requestTimeoutMs,
   });
 }
 
@@ -154,6 +145,7 @@ export function deleteOntologyCategoryTreeInterface(payload: DeleteOntologyCateg
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/category",
     method: "delete",
     data: payload,
+    timeout: requestTimeoutMs,
   });
 }
 
@@ -173,5 +165,6 @@ export function putUpdateOntologyCategoryNameInterface(payload: UpdateOntologyCa
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/category",
     method: "put",
     data: payload,
+    timeout: requestTimeoutMs,
   });
 }

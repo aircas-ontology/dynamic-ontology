@@ -2,10 +2,8 @@ import type { AxiosResponse } from "axios";
 
 import type { ApiResponse, LoginData, LoginParams } from "@/types";
 import { saveLoginToken } from "../utils/authToken.ts";
+import { requestTimeoutMs } from "../utils/constants.ts";
 import { requestFull } from "../utils/request.ts";
-
-/** 登录请求超时时间（毫秒）：服务不可达时快速失败，使调用方回退到模拟登录。 */
-const LOGIN_REQUEST_TIMEOUT = 10000;
 
 /**
  * @description 从登录响应头提取 Authorization 值，兼容 axios 对响应头键名的小写归一化与原始大小写。
@@ -46,7 +44,7 @@ export function postLoginInterface(params: LoginParams): Promise<ApiResponse<Log
   return requestFull<LoginData>({
     url: DOMAIN_CONFIG.LOGIN_URL + "/ontology/user/login",
     method: "post",
-    timeout: LOGIN_REQUEST_TIMEOUT,
+    timeout: requestTimeoutMs,
     data: params,
   }).then(({ data, headers }) => {
     persistLoginToken(headers);

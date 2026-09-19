@@ -27,8 +27,8 @@ test("create ontology space api issues a POST to the manage domain space uri wit
   assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/space"/);
   assert.match(apiSource, /method:\s*"post"/);
   assert.match(apiSource, /data: params,/);
-  assert.match(apiSource, /timeout: CREATE_ONTOLOGY_SPACE_TIMEOUT,/);
-  assert.match(apiSource, /const CREATE_ONTOLOGY_SPACE_TIMEOUT = 10000;/);
+  assert.match(apiSource, /timeout: requestTimeoutMs,/);
+  assert.match(apiSource, /import \{ requestTimeoutMs \} from "@\/utils\/constants";/);
   assert.match(apiSource, /import type \{[\s\S]*CreateOntologySpaceData[\s\S]*\} from "@\/types"/);
   assert.match(apiSource, /@description/);
   assert.doesNotMatch(apiSource, /method:\s*"get"[^\n]*\n[\s\S]*createOntologySpaceInterface/);

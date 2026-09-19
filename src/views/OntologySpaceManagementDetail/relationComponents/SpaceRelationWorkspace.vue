@@ -19,9 +19,7 @@
           <h2>{{ selectedRelationCategoryLabel }}</h2>
           <span>
             空间内多对象关系 · {{ visibleSpaceRelations.length }} 条
-            <template v-if="relationFilter.applied">
-              （中心：{{ relationFilter.seedNames[0] }} / {{ relationFilter.maxHop }} 级）
-            </template>
+            <template v-if="relationFilter.applied"> （中心：{{ relationFilter.seedNames[0] }} / {{ relationFilter.maxHop }} 级） </template>
           </span>
         </div>
         <div class="space-relation-workspace__actions">
@@ -73,7 +71,7 @@
       <div v-if="status === 'loading'" class="space-relation-workspace__state" role="status">加载中...</div>
       <div v-else-if="status === 'error'" class="space-relation-workspace__state space-relation-workspace__state-error" role="alert">
         <span>{{ errorMessage }}</span>
-        <el-button class="aircas-button" type="primary" @click="load">重试</el-button>
+        <el-button class="aircas-button" type="primary" @click="loadSpaceRelationWorkspace">重试</el-button>
       </div>
       <template v-else>
         <RelationGraphView
@@ -88,14 +86,11 @@
         />
         <template v-else>
           <div v-if="visibleSpaceRelations.length" class="space-relation-workspace__table-wrap">
-            <el-table
-              :data="visibleSpaceRelations"
-              stripe
-              height="100%"
-              class="aircas-table aircas-table--flat space-relation-workspace__table"
-            >
+            <el-table :data="visibleSpaceRelations" stripe height="100%" class="aircas-table aircas-table--flat space-relation-workspace__table">
               <el-table-column label="关系名称" min-width="140" show-overflow-tooltip>
-                <template #default="{ row }"><span class="space-relation-workspace__name">{{ row.displayName }}</span></template>
+                <template #default="{ row }"
+                  ><span class="space-relation-workspace__name">{{ row.displayName }}</span></template
+                >
               </el-table-column>
               <el-table-column prop="apiName" label="API 名称" min-width="140" show-overflow-tooltip />
               <el-table-column prop="categoryName" label="分类" min-width="110" show-overflow-tooltip />
@@ -181,7 +176,7 @@ const {
   relationFilter,
   graphSeedNames,
   graphMaxHop,
-  load,
+  loadSpaceRelationWorkspace,
   selectRelationCategory,
   setRelationViewMode,
   applyRelationFilter,
@@ -326,10 +321,7 @@ function openRelationDelete(item: OntologyRelationClass) {
 function handleRelationSubmit(payload: RelationClassWritePayload) {
   actionLoading.value = true;
   relationFormRef.value?.setLoading(true);
-  const error =
-    relationFormMode.value === "create"
-      ? createRelationClass(payload)
-      : editRelationClass({ ...payload, id: activeRelation.value?.id || "" });
+  const error = relationFormMode.value === "create" ? createRelationClass(payload) : editRelationClass({ ...payload, id: activeRelation.value?.id || "" });
   actionLoading.value = false;
   relationFormRef.value?.setLoading(false);
   if (error) {
@@ -387,43 +379,100 @@ function handleRelationDelete() {
   background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
   box-shadow: inset 0 0 18px var(--aircas-color-divider);
 }
-.space-relation-workspace__title { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
-.space-relation-workspace__title h2 { margin: 0; color: var(--aircas-color-text-primary); font-size: 16px; font-weight: 600; }
-.space-relation-workspace__title span { color: var(--aircas-color-text-muted); font-size: 12px; }
-.space-relation-workspace__actions { display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
+.space-relation-workspace__title {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.space-relation-workspace__title h2 {
+  margin: 0;
+  color: var(--aircas-color-text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+.space-relation-workspace__title span {
+  color: var(--aircas-color-text-muted);
+  font-size: 12px;
+}
+.space-relation-workspace__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+}
 .space-relation-workspace__view-switch {
-  display: inline-flex; gap: 4px; padding: 2px;
-  border: 1px solid var(--aircas-color-border); border-radius: 6px;
+  display: inline-flex;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 6px;
   background: var(--aircas-color-panel-background-deep);
 }
 .space-relation-workspace__view-btn {
-  display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; padding: 0;
-  border: 1px solid var(--aircas-color-transparent); border-radius: 4px;
-  background: var(--aircas-color-transparent); color: var(--aircas-color-text-secondary);
-  cursor: pointer; opacity: 0.55;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--aircas-color-transparent);
+  border-radius: 4px;
+  background: var(--aircas-color-transparent);
+  color: var(--aircas-color-text-secondary);
+  cursor: pointer;
+  opacity: 0.55;
 }
 .space-relation-workspace__view-btn:hover {
-  opacity: 0.85; border-color: var(--aircas-color-border); background: var(--aircas-color-accent-blue-soft);
+  opacity: 0.85;
+  border-color: var(--aircas-color-border);
+  background: var(--aircas-color-accent-blue-soft);
 }
 .space-relation-workspace__view-btn-active {
-  opacity: 1; border-color: var(--aircas-color-accent-cyan);
-  color: var(--aircas-color-accent-cyan); background: var(--aircas-color-card-background-active);
+  opacity: 1;
+  border-color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-accent-cyan);
+  background: var(--aircas-color-card-background-active);
 }
 .space-relation-workspace__filter {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px;
-  border: 1px solid var(--aircas-color-border); border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
   background: var(--aircas-color-panel-background-deep);
 }
-.space-relation-workspace__filter-objects { width: min(360px, 100%); }
+.space-relation-workspace__filter-objects {
+  width: min(360px, 100%);
+}
 .space-relation-workspace__state {
-  display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 160px;
-  color: var(--aircas-color-text-muted); font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 160px;
+  color: var(--aircas-color-text-muted);
+  font-size: 14px;
 }
-.space-relation-workspace__state-error { color: var(--aircas-color-accent-orange); }
+.space-relation-workspace__state-error {
+  color: var(--aircas-color-accent-orange);
+}
 .space-relation-workspace__table-wrap {
-  min-width: 0; min-height: 0; flex: 1; overflow: hidden;
-  border: 1px solid var(--aircas-color-border); border-radius: 8px;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
 }
-.space-relation-workspace__name { color: var(--aircas-color-text-primary); font-weight: 600; }
-.space-relation-workspace__row-actions { display: inline-flex; gap: 8px; }
+.space-relation-workspace__name {
+  color: var(--aircas-color-text-primary);
+  font-weight: 600;
+}
+.space-relation-workspace__row-actions {
+  display: inline-flex;
+  gap: 8px;
+}
 </style>

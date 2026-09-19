@@ -16,7 +16,7 @@
         <el-input v-model="name" class="aircas-input" maxlength="64" placeholder="请输入分类名称" />
       </el-form-item>
       <el-form-item label="分类颜色" required>
-        <el-color-picker :model-value="color" color-format="hex" :predefine="predefineColors" @update:model-value="onColorChange" />
+        <el-color-picker :model-value="color" color-format="hex" :predefine="relationCategoryPredefineColors" @update:model-value="onColorChange" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { relationCategoryPredefineColors } from "@/utils/constants";
 
 const DEFAULT_COLOR = "#4dd2ff";
 const props = defineProps<{
@@ -41,7 +42,6 @@ const emit = defineEmits<{ "update:modelValue": [value: boolean]; submit: [name:
 const name = ref("");
 const color = ref(DEFAULT_COLOR);
 const loading = ref(false);
-const predefineColors = ["#4dd2ff", "#269cff", "#9272ff", "#20d99a", "#ff9f43", "#07eaff"];
 
 watch(
   () => props.modelValue,
