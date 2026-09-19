@@ -104,6 +104,6 @@ test("object workspace composable loads the category tree api instead of navy mo
   const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts", import.meta.url), "utf8");
   assert.match(source, /getOntologyCategoryTreeInterface/);
   assert.match(source, /mapOntologyCategoryTree/);
-  assert.match(source, /sections:\s*\[\]/);
+  assert.match(source, /mapOntologyCategorySections/);
   assert.doesNotMatch(source, /ontologySpaceObjectMock/);
 });

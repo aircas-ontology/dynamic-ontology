@@ -1,11 +1,5 @@
 /** 空间内管理工作区 Tab 标识。 */
-export type ManagementWorkspaceTab =
-  | "overview"
-  | "object"
-  | "relation"
-  | "function-operator"
-  | "behavior"
-  | "behavior-schedule";
+export type ManagementWorkspaceTab = "overview" | "object" | "relation" | "function-operator" | "behavior" | "behavior-schedule";
 
 export type OntologySpaceDetailRouteName =
   | "OntologySpaceManagementDetailOverview"
@@ -36,10 +30,20 @@ export interface OntologyObjectItem {
   categoryId: string;
   displayName: string;
   apiName: string;
+  description: string;
   parentDisplayName: string;
   createdAt: string;
   iconUrl: string;
   metrics: OntologyObjectMetrics;
+}
+
+export interface OntologyObjectCreateDraft {
+  apiName: string;
+  displayName: string;
+  description: string;
+  iconUrl: string;
+  categoryId: string;
+  parentId?: string;
 }
 
 export interface OntologyObjectSection {

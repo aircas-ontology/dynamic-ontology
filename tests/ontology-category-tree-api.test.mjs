@@ -84,7 +84,22 @@ test("category tree mapper builds concept nodes with empty name and local meta c
   assert.equal(tree[0]?.children[0]?.count, 0);
 });
 
-test("object workspace loads category tree api into the left tree and keeps sections empty", () => {
+test("category tree mapper omits the synthetic all section from the right object list", async () => {
+  const mapperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts", import.meta.url);
+  const { mapOntologyCategorySections } = await import(mapperUrl.href);
+  const sections = mapOntologyCategorySections({
+    categoryId: 0,
+    name: "全部",
+    ontologyMetaInfos: [],
+    children: [{ categoryId: 1, name: "分类1", ontologyMetaInfos: [] }],
+  });
+  assert.deepEqual(
+    sections.map((section) => section.name),
+    ["分类1"],
+  );
+});
+
+test("object workspace loads category tree api into the left tree and maps metadata sections", () => {
   const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts");
   assert.match(workspaceSource, /getOntologyCategoryTreeInterface/);
   assert.match(workspaceSource, /mapOntologyCategoryTree/);
