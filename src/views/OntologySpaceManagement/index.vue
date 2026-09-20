@@ -22,7 +22,13 @@
       @update:page="page = $event"
       @action="handleOntologySpaceAction"
     />
-    <SpaceFormDialog v-model="formVisible" :space="activeSpace" :external-error="actionError" @save="submitOntologySpaceForm" />
+    <SpaceFormDialog
+      v-model="formVisible"
+      :space="activeSpace"
+      :external-error="actionError"
+      @save="submitOntologySpaceForm"
+      @open-conceptual="openConceptualModel"
+    />
     <SpaceCommandDialogs
       v-model:delete-visible="deleteVisible"
       v-model:export-visible="exportVisible"
@@ -58,6 +64,7 @@ const {
   openOntologySpaceForm,
   handleOntologySpaceAction,
   submitOntologySpaceForm,
+  openConceptualModel,
   confirmDeleteOntologySpace,
   confirmExportOntologySpace,
 } = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace, loadOntologySpaces });
