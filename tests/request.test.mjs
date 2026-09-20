@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { authorizeRequest, normalizeRequestError, rejectResponse, RequestError, resolveResponseData } from "../src/utils/request.ts";
-import { clearLoginToken, getAuthorizationHeader, saveLoginToken } from "../src/utils/authToken.ts";
+import { clearLoginToken, getAccessTokenHeader, saveLoginToken } from "../src/utils/authToken.ts";
 
 function createSessionStorage() {
   const values = new Map();
@@ -43,7 +43,7 @@ test("request errors use a safe typed contract and delegate auth to the token mo
 
   assert.match(source, /export class RequestError extends Error/);
   assert.doesNotMatch(source, /getStorage|localStorage|sessionStorage|console\.(?:log|error)/);
-  assert.match(source, /getAuthorizationHeader/);
+  assert.match(source, /getAccessTokenHeader/);
   assert.match(source, /clearLoginToken/);
   assert.match(source, /axios\.isAxiosError/);
 });
@@ -66,16 +66,16 @@ test("request error normalization hides server payloads and preserves safe statu
   assert.equal(unknownError.message, "请求失败，请稍后重试。");
 });
 
-test("request interceptor injects the Bearer token only when authenticated", () => {
+test("request interceptor injects the access-token only when authenticated", () => {
   withFakeSessionStorage(() => {
     const unauthenticatedHeaders = new AxiosHeaders();
     authorizeRequest({ headers: unauthenticatedHeaders });
-    assert.equal(unauthenticatedHeaders.get("Authorization"), undefined);
+    assert.equal(unauthenticatedHeaders.get("access-token"), undefined);
 
     saveLoginToken("Bearer abc.token");
     const authenticatedHeaders = new AxiosHeaders();
     authorizeRequest({ headers: authenticatedHeaders });
-    assert.equal(authenticatedHeaders.get("Authorization"), "Bearer abc.token");
+    assert.equal(authenticatedHeaders.get("access-token"), "Bearer abc.token");
   });
 });
 
@@ -95,14 +95,14 @@ test("401 responses clear the token while other statuses keep it", () => {
       () => rejectResponse({ isAxiosError: true, response: { status: 401 } }),
       (error) => error instanceof RequestError && error.status === 401,
     );
-    assert.equal(getAuthorizationHeader(), null);
+    assert.equal(getAccessTokenHeader(), null);
 
     saveLoginToken("abc.token");
     assert.throws(
       () => rejectResponse({ isAxiosError: true, response: { status: 404 } }),
       (error) => error instanceof RequestError && error.status === 404,
     );
-    assert.equal(getAuthorizationHeader(), "Bearer abc.token");
+    assert.equal(getAccessTokenHeader(), "Bearer abc.token");
     clearLoginToken();
   });
 });

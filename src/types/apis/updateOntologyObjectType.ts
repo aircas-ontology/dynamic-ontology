@@ -2,7 +2,7 @@
 export interface UpdateOntologyObjectParams {
   ontologyIdentifier: string;
   displayName: string;
-  groupIds: string[];
+  groupIds: Array<string | null>;
   icon?: string;
   description?: string;
   categoryId?: number;

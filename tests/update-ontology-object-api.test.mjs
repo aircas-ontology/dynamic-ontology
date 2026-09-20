@@ -22,7 +22,7 @@ test("update ontology object api follows the documented PUT contract", () => {
   assert.match(apiSource, /data: params/);
   assert.match(typeSource, /ontologyIdentifier:\s*string/);
   assert.match(typeSource, /displayName:\s*string/);
-  assert.match(typeSource, /groupIds:\s*string\[\]/);
+  assert.match(typeSource, /groupIds:\s*Array<string \| null>/);
   assert.match(barrelSource, /updateOntologyObjectInterface/);
   assert.match(typeBarrelSource, /UpdateOntologyObjectParams/);
   assert.match(mockSource, /updateOntologyObjectMock: ApiResponse<UpdateOntologyObjectData>/);
@@ -36,6 +36,7 @@ test("object edit action opens a prefilled dialog and refreshes after success", 
   assert.match(panelSource, /editingObject/);
   assert.match(panelSource, /action === "edit"/);
   assert.match(panelSource, /const response = await updateOntologyObjectInterface\([\s\S]*?if \(response\.code !== 200\)/);
+  assert.match(panelSource, /updateOntologyObjectInterface\([\s\S]*?groupIds:\s*\[null\]/);
   assert.match(panelSource, /await load\(\)/);
   assert.match(dialogSource, /editingItem/);
   assert.match(dialogSource, /编辑本体/);

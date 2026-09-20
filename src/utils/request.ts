@@ -1,7 +1,7 @@
 import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from "axios";
 
 import type { ApiResponse } from "@/types";
-import { clearLoginToken, getAuthorizationHeader } from "./authToken.ts";
+import { clearLoginToken, getAccessTokenHeader } from "./authToken.ts";
 
 declare module "axios" {
   interface AxiosRequestConfig {
@@ -60,14 +60,14 @@ export function normalizeRequestError(error: unknown): RequestError {
 }
 
 /**
- * @description 请求拦截器：已登录时为每个业务请求统一注入 `Authorization: Bearer <token>`，未登录不写入该头。
+ * @description 请求拦截器：已登录时为每个业务请求统一注入 `access-token: Bearer <token>`，未登录不写入该头。
  * @param config axios 内部请求配置。
  * @returns 补充鉴权头后的请求配置。
  */
 export function authorizeRequest(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
-  const authorization = getAuthorizationHeader();
-  if (authorization) {
-    config.headers.set("access-token", authorization);
+  const accessToken = getAccessTokenHeader();
+  if (accessToken) {
+    config.headers.set("access-token", accessToken);
   }
   return config;
 }

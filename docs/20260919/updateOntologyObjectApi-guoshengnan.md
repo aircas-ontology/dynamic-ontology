@@ -36,7 +36,7 @@
   "icon": "",
   "displayName": "测试本体对象-修改",
   "description": "这是修改后的本体描述",
-  "groupIds": [],
+  "groupIds": [null],
   "categoryId": 29
 }
 ```
@@ -45,7 +45,7 @@
 - `icon`：【string，可选】本体图标。
 - `displayName`：【string，必填】本体名称。
 - `description`：【string，可选】本体描述。
-- `groupIds`：【string[]，必填】分组 ids。
+- `groupIds`：【(string|null)[]，必填】分组 ids，当前编辑场景固定传 `[null]`。
 - `categoryId`：【number，可选】分类 id。
 
 ## 输出参数
@@ -84,7 +84,7 @@
 export interface UpdateOntologyObjectParams {
   ontologyIdentifier: string;
   displayName: string;
-  groupIds: string[];
+  groupIds: Array<string | null>;
   icon?: string;
   description?: string;
   categoryId?: number;

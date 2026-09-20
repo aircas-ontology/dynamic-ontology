@@ -468,7 +468,7 @@ async function updateOntologyObject(draft: OntologyObjectCreateDraft) {
     const response = await updateOntologyObjectInterface({
       ontologyIdentifier: editingObject.value.id,
       displayName: draft.displayName.trim(),
-      groupIds: [],
+      groupIds: [null],
       icon: draft.iconUrl,
       description: draft.description,
       categoryId,
