@@ -27,6 +27,15 @@ export type {
   UpdateOntologyCategoryNameParams,
 } from "./apis/ontologyCategoryTreeType";
 export type { OntologySpaceListData, OntologySpaceListItem } from "./apis/ontologyManageType";
+export type {
+  CreateOntologyRelationCategoryTreeParams,
+  DeleteOntologyRelationCategoryTreeParams,
+  OntologyRelationCategoryLink,
+  OntologyRelationCategoryTreeData,
+  OntologyRelationCategoryTreeNode,
+  OntologyRelationCategoryTreeParams,
+  UpdateOntologyRelationCategoryNameParams,
+} from "./apis/ontologyRelationCategoryTreeType";
 export type { UpdateOntologyObjectArrTypeTreeParams } from "./apis/updateOntologyObjectArrTypeTreeType";
 export type { UpdateOntologyObjectData, UpdateOntologyObjectParams } from "./apis/updateOntologyObjectType";
 export type { UpdateOntologyPropertyData, UpdateOntologyPropertyParams } from "./apis/updateOntologyPropertyType";

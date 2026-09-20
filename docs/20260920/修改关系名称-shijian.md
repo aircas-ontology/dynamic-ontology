@@ -1,6 +1,6 @@
 # 接口名称
 
-- 删除本体分类体系树
+- 修改关系名称
 
 ## 编译位置
 
@@ -10,21 +10,17 @@ mocks与types文件名自行语义化命名
 - mocks：`src/mocks/`
 - types：`src/types/apis/`
 
-## 接口描述
-
-- 删除本体分类体系树
-
 ## 接口domain
 
 - `DOMAIN_CONFIG.ONTOLOGYMANAGE_URL`
 
 ## 接口uri
 
-- `/ontology/category`
+- `/ontology/link_category`
 
 ## 请求方式
 
-- delete
+- put
 
 ## 输入参数
 
@@ -32,11 +28,13 @@ mocks与types文件名自行语义化命名
   {
     "spaceId": "10",
     "categoryId": 0,
+    "name":"输入的名称"
   }
   ```
 
-- `spaceId`：【string，必填】 空间Id
-- `categoryId`：【string，必填】目录分类id
+- `spaceId`：【number，必填】 空间Id
+- `categoryId`：【number，必填】目录分类id
+- `name`：【string，必填】输入的名称
 
 ## 输出参数
 

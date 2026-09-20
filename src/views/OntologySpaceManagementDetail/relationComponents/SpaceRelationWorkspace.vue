@@ -149,10 +149,16 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Grid, Plus, Share } from "@element-plus/icons-vue";
 import type { OntologyRelationCategoryNode, OntologyRelationClass, RelationClassWritePayload } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
+import {
+  deleteOntologyRelationCategoryTreeInterface,
+  postCreateOntologyRelationCategoryTreeInterface,
+  putUpdateOntologyRelationCategoryNameInterface,
+} from "@/apis";
 import { useSpaceRelationWorkspace } from "../composables/useSpaceRelationWorkspace";
 import { collectCategoryIds, findRelationCategoryNode } from "../utils/relationOperations";
 import RelationCategoryPanel from "./RelationCategoryPanel.vue";
@@ -162,6 +168,7 @@ import RelationCategoryDeleteDialog from "./RelationCategoryDeleteDialog.vue";
 import RelationDeleteDialog from "./RelationDeleteDialog.vue";
 import SpaceRelationFormDialog from "./SpaceRelationFormDialog.vue";
 
+const route = useRoute();
 const {
   status,
   errorMessage,
@@ -181,9 +188,6 @@ const {
   setRelationViewMode,
   applyRelationFilter,
   findRelationCategoryLabel,
-  createCategory,
-  editCategory,
-  deleteCategory,
   createRelationClass,
   editRelationClass,
   deleteRelationClass,
@@ -251,7 +255,7 @@ function resetFilter() {
 function openCategoryCreate(parentId: string) {
   categoryFormMode.value = "create";
   categoryParentId.value = parentId;
-  categoryParentLabel.value = findRelationCategoryLabel(parentId) || "全部关系";
+  categoryParentLabel.value = parentId ? findRelationCategoryLabel(parentId) || "全部关系" : "根分类";
   categoryActionName.value = "";
   categoryActionColor.value = "";
   categoryFormVisible.value = true;
@@ -271,34 +275,103 @@ function openCategoryDelete(categoryId: string) {
   categoryDeleteVisible.value = true;
 }
 
-function handleCategorySubmit(name: string, color: string) {
+/**
+ * @description 创建或修改关系分类名称：创建走 POST，修改走 PUT；均不提交颜色，成功后刷新分类树。
+ * @param name 分类名称。
+ * @param color 分类颜色；创建/修改接口均不提交该字段。
+ */
+async function handleCategorySubmit(name: string, _color: string) {
+  const space = String(route.params.spaceId || "").trim();
+  const numericSpaceId = Number(space);
+
+  if (categoryFormMode.value === "edit") {
+    const numericCategoryId = Number(categoryActionId.value);
+    if (!space || !Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId)) {
+      ElMessage.error("缺少空间或分类 id，无法修改关系分类名称。");
+      categoryFormRef.value?.setLoading(false);
+      return;
+    }
+    actionLoading.value = true;
+    categoryFormRef.value?.setLoading(true);
+    try {
+      const response = await putUpdateOntologyRelationCategoryNameInterface({
+        spaceId: numericSpaceId,
+        categoryId: numericCategoryId,
+        name,
+      });
+      if (response.code !== 200) {
+        throw new Error(response.message || "修改关系分类名称失败");
+      }
+      categoryFormVisible.value = false;
+      ElMessage.success("分类已更新");
+      await loadSpaceRelationWorkspace();
+    } catch (cause) {
+      ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "修改关系分类名称失败，请重试。");
+      categoryFormRef.value?.setLoading(false);
+    } finally {
+      actionLoading.value = false;
+    }
+    return;
+  }
+
+  const numericParentId = categoryParentId.value.trim() === "" ? 0 : Number(categoryParentId.value);
+  if (!space || !Number.isInteger(numericSpaceId) || !Number.isInteger(numericParentId)) {
+    ElMessage.error("缺少空间或父分类 id，无法创建关系分类。");
+    categoryFormRef.value?.setLoading(false);
+    return;
+  }
+
   actionLoading.value = true;
   categoryFormRef.value?.setLoading(true);
-  const error =
-    categoryFormMode.value === "create"
-      ? createCategory({ parentId: categoryParentId.value, name, color })
-      : editCategory({ id: categoryActionId.value, name, color });
-  actionLoading.value = false;
-  categoryFormRef.value?.setLoading(false);
-  if (error) {
-    ElMessage.error(error);
-    return;
+  try {
+    const response = await postCreateOntologyRelationCategoryTreeInterface({
+      spaceId: numericSpaceId,
+      parentId: numericParentId,
+      name,
+    });
+    if (response.code !== 200) {
+      throw new Error(response.message || "创建关系分类失败");
+    }
+    categoryFormVisible.value = false;
+    ElMessage.success("分类已添加");
+    await loadSpaceRelationWorkspace();
+  } catch (cause) {
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "创建关系分类失败，请重试。");
+    categoryFormRef.value?.setLoading(false);
+  } finally {
+    actionLoading.value = false;
   }
-  categoryFormVisible.value = false;
-  ElMessage.success(categoryFormMode.value === "create" ? "分类已添加" : "分类已更新");
 }
 
-function handleCategoryDelete() {
+/**
+ * @description 删除关系分类：提交 spaceId 与 categoryId；成功后关闭弹框并刷新分类树。
+ */
+async function handleCategoryDelete() {
   if (categoryDeleteBlocked.value) return;
-  actionLoading.value = true;
-  const error = deleteCategory(categoryActionId.value);
-  actionLoading.value = false;
-  if (error) {
-    ElMessage.error(error);
+  const space = String(route.params.spaceId || "").trim();
+  const numericSpaceId = Number(space);
+  const numericCategoryId = Number(categoryActionId.value);
+  if (!space || !Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId)) {
+    ElMessage.error("缺少空间或分类 id，无法删除关系分类。");
     return;
   }
-  categoryDeleteVisible.value = false;
-  ElMessage.success("分类已删除");
+  actionLoading.value = true;
+  try {
+    const response = await deleteOntologyRelationCategoryTreeInterface({
+      spaceId: numericSpaceId,
+      categoryId: numericCategoryId,
+    });
+    if (response.code !== 200) {
+      throw new Error(response.message || "删除关系分类失败");
+    }
+    categoryDeleteVisible.value = false;
+    ElMessage.success("分类已删除");
+    await loadSpaceRelationWorkspace();
+  } catch (cause) {
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "删除关系分类失败，请重试。");
+  } finally {
+    actionLoading.value = false;
+  }
 }
 
 function openRelationCreate() {

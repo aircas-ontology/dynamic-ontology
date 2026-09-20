@@ -8,7 +8,7 @@
     destroy-on-close
     @close="emit('update:modelValue', false)"
   >
-    <el-form label-position="top">
+    <el-form class="aircas-form" label-position="top">
       <el-form-item v-if="mode === 'create'" label="父分类">
         <el-input class="aircas-input" :model-value="parentLabel" disabled />
       </el-form-item>

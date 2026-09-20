@@ -1,18 +1,14 @@
 # 接口名称
 
-- 删除本体分类体系树
+- 创建关系分类体系树
 
 ## 编译位置
 
-mocks与types文件名自行语义化命名
+mocks，types文件名自行语义化命名
 
 - apis：`src/apis/ontologyManageApi.ts`
 - mocks：`src/mocks/`
 - types：`src/types/apis/`
-
-## 接口描述
-
-- 删除本体分类体系树
 
 ## 接口domain
 
@@ -20,23 +16,24 @@ mocks与types文件名自行语义化命名
 
 ## 接口uri
 
-- `/ontology/category`
+- `/ontology/link`
 
 ## 请求方式
 
-- delete
+- post
 
 ## 输入参数
 
 - ```JSON
   {
-    "spaceId": "10",
-    "categoryId": 0,
+    "name": "关系名称",
+    "ontologyUniqueIdentifierFrom": "源本体"
   }
   ```
 
-- `spaceId`：【string，必填】 空间Id
-- `categoryId`：【string，必填】目录分类id
+- `spaceId`：【number，必填】 空间Id
+- `parentId`：【number，必填】父级目录id
+- `name`：【string，必填】分类名称
 
 ## 输出参数
 

@@ -30,16 +30,7 @@
         />
       </el-form-item>
       <el-form-item label="源本体" required>
-        <el-select
-          v-model="sourceName"
-          class="aircas-select"
-          popper-class="aircas-select-popper"
-          filterable
-          allow-create
-          default-first-option
-          placeholder="请选择或输入源本体对象"
-          style="width: 100%"
-        >
+        <el-select v-model="sourceName" class="aircas-select" popper-class="aircas-select-popper" filterable placeholder="请选择源本体对象" style="width: 100%">
           <el-option v-for="item in objectOptions" :key="`src-${item.value}`" :label="item.label" :value="item.value" />
         </el-select>
       </el-form-item>
@@ -49,9 +40,7 @@
           class="aircas-select"
           popper-class="aircas-select-popper"
           filterable
-          allow-create
-          default-first-option
-          placeholder="请选择或输入目标本体对象"
+          placeholder="请选择目标本体对象"
           style="width: 100%"
         >
           <el-option v-for="item in objectOptions" :key="`tgt-${item.value}`" :label="item.label" :value="item.value" />
@@ -79,6 +68,7 @@ import type {
   SpaceRelationObjectOption,
 } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
+import { findRelationCategoryNode } from "../utils/relationOperations";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -104,6 +94,18 @@ const description = ref("");
 const loading = ref(false);
 const allowRootCategory = computed(() => props.categoryOptions.length === 0);
 
+/**
+ * @description 创建模式下解析默认分类：仅当 defaultCategoryId 存在于可选子分类树中时预填，根 id 或不在选项中则留空以展示占位符。
+ * @returns 可写入表单的分类 id，无可选项时回退根常量。
+ */
+function resolveCreateCategoryId(): string {
+  if (allowRootCategory.value) return ROOT_RELATION_CATEGORY_ID;
+  if (props.defaultCategoryId && findRelationCategoryNode(props.categoryOptions, props.defaultCategoryId)) {
+    return props.defaultCategoryId;
+  }
+  return "";
+}
+
 watch(
   () => props.modelValue,
   (visible) => {
@@ -121,11 +123,7 @@ watch(
     }
     displayName.value = "";
     apiName.value = "";
-    categoryId.value = allowRootCategory.value
-      ? ROOT_RELATION_CATEGORY_ID
-      : props.defaultCategoryId && props.defaultCategoryId !== ROOT_RELATION_CATEGORY_ID
-        ? props.defaultCategoryId
-        : "";
+    categoryId.value = resolveCreateCategoryId();
     sourceName.value = "";
     targetName.value = "";
     cardinality.value = "一对多";
@@ -138,7 +136,7 @@ function submit() {
   const tgt = targetName.value.trim();
   if (!displayName.value.trim() || !apiName.value.trim() || !categoryId.value || !src || !tgt) return;
   if (src === tgt) {
-    ElMessage.warning("源端与目标端不能相同");
+    ElMessage.warning("源本体与目标本体不能相同");
     return;
   }
   loading.value = true;
