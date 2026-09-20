@@ -76,25 +76,25 @@ test("relation object options mapper collects ontology meta display names from t
   const options = mapOntologyObjectsToRelationOptions({
     categoryId: 1,
     name: "平台",
-    ontologyMetaInfos: [{ displayName: "舰船1", uniqueIdentifier: "a" }],
+    ontologyMetaInfos: [{ displayName: "舰船1", uniqueIdentifier: "id-a" }],
     children: [
       {
         categoryId: 2,
         name: "舰船分类",
         ontologyMetaInfos: [
-          { displayName: "飞机", uniqueIdentifier: "b" },
-          { displayName: "舰船1", uniqueIdentifier: "c" },
+          { displayName: "飞机", uniqueIdentifier: "id-b" },
+          { displayName: "舰船1", uniqueIdentifier: "id-c" },
         ],
       },
     ],
   });
   assert.deepEqual(
-    options.map((item) => item.value),
-    ["舰船1", "飞机"].sort((a, b) => a.localeCompare(b, "zh-CN")),
-  );
-  assert.equal(
-    options.every((item) => item.value === item.label),
-    true,
+    options.map((item) => ({ value: item.value, label: item.label })),
+    [
+      { value: "id-b", label: "飞机" },
+      { value: "id-a", label: "舰船1" },
+      { value: "id-c", label: "舰船1" },
+    ].sort((a, b) => a.label.localeCompare(b.label, "zh-CN") || a.value.localeCompare(b.value)),
   );
 });
 
@@ -120,4 +120,15 @@ test("relation form create only prefills categoryId when default is in category 
   assert.match(formSource, /findRelationCategoryNode\(props\.categoryOptions,\s*props\.defaultCategoryId\)/);
   assert.doesNotMatch(formSource, /defaultCategoryId\s*&&\s*props\.defaultCategoryId\s*!==\s*ROOT_RELATION_CATEGORY_ID/);
   assert.match(formSource, /placeholder="请选择关系分类"/);
+});
+
+test("relation form category is optional and create submit does not require categoryId", () => {
+  const formSource = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationFormDialog.vue", import.meta.url),
+    "utf8",
+  );
+  const pageTypeSource = readFileSync(new URL("../src/types/pages/ontologySpaceRelationType.ts", import.meta.url), "utf8");
+  assert.match(formSource, /<el-form-item v-if="categoryOptions\.length" label="分类">/);
+  assert.doesNotMatch(formSource, /!categoryId\.value/);
+  assert.match(pageTypeSource, /categoryId\?:\s*string/);
 });

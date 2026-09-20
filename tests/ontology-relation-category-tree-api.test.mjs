@@ -58,8 +58,8 @@ test("relation category tree mock mirrors the SUCCESS sample", () => {
 test("relation category tree mapper builds page nodes from categoryId and name", async () => {
   const mapperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/mapOntologyRelationCategoryTree.ts", import.meta.url);
   assert.equal(existsSync(mapperUrl), true, "missing mapper file");
-  const { mapOntologyRelationCategoryTree } = await import(mapperUrl.href);
-  const tree = mapOntologyRelationCategoryTree({
+  const { mapOntologyRelationCategoryTree, mapOntologyRelationLinks } = await import(mapperUrl.href);
+  const treeData = {
     categoryId: 1,
     name: "全部关系1",
     links: [
@@ -74,8 +74,37 @@ test("relation category tree mapper builds page nodes from categoryId and name",
         ontologyNameTo: "舰船1",
       },
     ],
-    children: [{ categoryId: 2, name: "编制隶书", children: [{ categoryId: 3, name: "指挥控制" }] }],
-  });
+    children: [
+      {
+        categoryId: 2,
+        name: "编制隶书",
+        links: [
+          {
+            uniqueIdentifier: "l1",
+            name: "dup",
+            type: "COMPOSITION",
+            categoryId: 2,
+            ontologyUniqueIdentifierFrom: "a",
+            ontologyNameFrom: "x",
+            ontologyUniqueIdentifierTo: "b",
+            ontologyNameTo: "y",
+          },
+          {
+            uniqueIdentifier: "l2",
+            name: "指挥",
+            type: "COMPOSITION",
+            categoryId: 2,
+            ontologyUniqueIdentifierFrom: "c",
+            ontologyNameFrom: "飞机",
+            ontologyUniqueIdentifierTo: "d",
+            ontologyNameTo: "舰船1",
+          },
+        ],
+        children: [{ categoryId: 3, name: "指挥控制" }],
+      },
+    ],
+  };
+  const tree = mapOntologyRelationCategoryTree(treeData);
   assert.equal(tree.length, 1);
   assert.equal(tree[0]?.id, "1");
   assert.equal(tree[0]?.label, "全部关系1");
@@ -83,17 +112,45 @@ test("relation category tree mapper builds page nodes from categoryId and name",
   assert.equal(tree[0]?.children[0]?.label, "编制隶书");
   assert.equal(tree[0]?.children[0]?.children[0]?.id, "3");
   assert.equal(tree[0]?.children[0]?.children[0]?.label, "指挥控制");
+
+  const relations = mapOntologyRelationLinks(treeData);
+  assert.equal(relations.length, 2);
+  assert.deepEqual(relations[0], {
+    id: "l1",
+    categoryId: "1",
+    categoryName: "",
+    displayName: "a",
+    apiName: "",
+    sourceName: "舰船2",
+    targetName: "舰船1",
+    cardinality: "一对多",
+    description: "",
+  });
+  assert.equal(relations[1]?.id, "l2");
+  assert.equal(relations[1]?.displayName, "指挥");
+  assert.equal(relations[1]?.sourceName, "飞机");
+  assert.equal(relations[1]?.targetName, "舰船1");
 });
 
-test("relation workspace loads category tree api and keeps relations empty until links can map", () => {
+test("relation workspace loads category tree api and maps links into relations", () => {
   const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useSpaceRelationWorkspace.ts");
   const panelSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/RelationCategoryPanel.vue");
+  const tableSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue");
   assert.match(workspaceSource, /getOntologyRelationCategoryTreeInterface/);
   assert.match(workspaceSource, /mapOntologyRelationCategoryTree/);
-  assert.match(workspaceSource, /relations:\s*\[\]/);
+  assert.match(workspaceSource, /mapOntologyRelationLinks/);
+  assert.match(workspaceSource, /relations:\s*mapOntologyRelationLinks\(relationResponse\.data\)/);
   assert.match(workspaceSource, /isMissingOntologyRelationCategoryTreeData|data == null|data === undefined/);
   assert.match(panelSource, /添加关系分类/);
   assert.doesNotMatch(workspaceSource, /createOntologySpaceRelationWorkspaceData\(\)/);
+  assert.match(tableSource, /label="源本体"/);
+  assert.match(tableSource, /label="目标本体"/);
+  assert.match(tableSource, /prop="apiName"/);
+  assert.match(tableSource, /prop="categoryName"/);
+  assert.match(tableSource, /prop="description"/);
+  assert.match(tableSource, /postCreateOntologyLinkInterface/);
+  assert.match(tableSource, /loadSpaceRelationWorkspace\(\)/);
+  assert.doesNotMatch(tableSource, /createRelationClass\(\{/);
 });
 
 test("create relation category api posts spaceId parentId and name to link_category uri", () => {

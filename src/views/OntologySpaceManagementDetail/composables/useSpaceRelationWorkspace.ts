@@ -17,7 +17,7 @@ import { ROOT_RELATION_CATEGORY_ID } from "@/types";
 import { getOntologyCategoryTreeInterface, getOntologyRelationCategoryTreeInterface } from "@/apis";
 import { filterRelationsByHop } from "../utils/spaceRelationGraph";
 import { mapOntologyObjectsToRelationOptions } from "../utils/mapOntologyObjectsToRelationOptions";
-import { mapOntologyRelationCategoryTree } from "../utils/mapOntologyRelationCategoryTree";
+import { mapOntologyRelationCategoryTree, mapOntologyRelationLinks } from "../utils/mapOntologyRelationCategoryTree";
 import {
   addRelation,
   addRelationCategory,
@@ -79,7 +79,7 @@ async function loadSpaceRelationWorkspaceFromApi(spaceId: string): Promise<Space
   }
   return {
     categoryTree: mapOntologyRelationCategoryTree(relationResponse.data),
-    relations: [],
+    relations: mapOntologyRelationLinks(relationResponse.data),
     objectOptions,
   };
 }

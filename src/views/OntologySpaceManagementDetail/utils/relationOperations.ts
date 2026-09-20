@@ -120,7 +120,8 @@ export function removeRelationCategory(data: SpaceRelationWorkspaceData, categor
 }
 
 export function addRelation(data: SpaceRelationWorkspaceData, payload: RelationClassWritePayload): SpaceRelationWorkspaceData {
-  const category = findRelationCategoryNode(data.categoryTree, payload.categoryId);
+  const resolvedCategoryId = payload.categoryId?.trim() || data.categoryTree[0]?.id || ROOT_RELATION_CATEGORY_ID;
+  const category = findRelationCategoryNode(data.categoryTree, resolvedCategoryId);
   if (!category) throw new Error("关系分类不存在");
   const displayName = payload.displayName.trim();
   const apiName = payload.apiName.trim();
@@ -133,7 +134,7 @@ export function addRelation(data: SpaceRelationWorkspaceData, payload: RelationC
     ...data.relations,
     {
       id: createId("rel"),
-      categoryId: payload.categoryId,
+      categoryId: resolvedCategoryId,
       categoryName: category.label,
       displayName,
       apiName,
@@ -149,7 +150,8 @@ export function addRelation(data: SpaceRelationWorkspaceData, payload: RelationC
 export function updateRelation(data: SpaceRelationWorkspaceData, payload: RelationClassUpdatePayload): SpaceRelationWorkspaceData {
   const index = data.relations.findIndex((item) => item.id === payload.id);
   if (index < 0) throw new Error("关系不存在");
-  const category = findRelationCategoryNode(data.categoryTree, payload.categoryId);
+  const resolvedCategoryId = payload.categoryId?.trim() || data.categoryTree[0]?.id || ROOT_RELATION_CATEGORY_ID;
+  const category = findRelationCategoryNode(data.categoryTree, resolvedCategoryId);
   if (!category) throw new Error("关系分类不存在");
   const displayName = payload.displayName.trim();
   const apiName = payload.apiName.trim();
@@ -164,7 +166,7 @@ export function updateRelation(data: SpaceRelationWorkspaceData, payload: Relati
     item.id === payload.id
       ? {
           ...item,
-          categoryId: payload.categoryId,
+          categoryId: resolvedCategoryId,
           categoryName: category.label,
           displayName,
           apiName,

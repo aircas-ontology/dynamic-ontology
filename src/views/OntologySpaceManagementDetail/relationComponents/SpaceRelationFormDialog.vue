@@ -15,7 +15,7 @@
       <el-form-item label="API 名称" required>
         <el-input v-model="apiName" class="aircas-input" maxlength="64" placeholder="请输入 API 名称" />
       </el-form-item>
-      <el-form-item v-if="categoryOptions.length" label="分类" required>
+      <el-form-item v-if="categoryOptions.length" label="分类">
         <el-tree-select
           v-model="categoryId"
           class="aircas-tree-select"
@@ -25,6 +25,7 @@
           :render-after-expand="false"
           node-key="id"
           :props="{ label: 'label', children: 'children' }"
+          clearable
           placeholder="请选择关系分类"
           style="width: 100%"
         />
@@ -134,14 +135,15 @@ watch(
 function submit() {
   const src = sourceName.value.trim();
   const tgt = targetName.value.trim();
-  if (!displayName.value.trim() || !apiName.value.trim() || !categoryId.value || !src || !tgt) return;
+  if (!displayName.value.trim() || !apiName.value.trim() || !src || !tgt) return;
   if (src === tgt) {
     ElMessage.warning("源本体与目标本体不能相同");
     return;
   }
   loading.value = true;
+  const trimmedCategoryId = categoryId.value.trim();
   emit("submit", {
-    categoryId: categoryId.value,
+    ...(trimmedCategoryId ? { categoryId: trimmedCategoryId } : {}),
     displayName: displayName.value.trim(),
     apiName: apiName.value.trim(),
     sourceName: src,

@@ -1,10 +1,10 @@
 # 接口名称
 
-- 创建本体之间的关系
+- 删除本体之间的关系
 
 ## 编译位置
 
-mocks，types文件名自行语义化命名
+mocks与types文件名自行语义化命名
 
 - apis：`src/apis/ontologyManageApi.ts`
 - mocks：`src/mocks/`
@@ -16,33 +16,15 @@ mocks，types文件名自行语义化命名
 
 ## 接口uri
 
-- `/ontology/link`
+- `/ontology/link/{linkUniqIdentifier}`
 
 ## 请求方式
 
-- post
+- delete
 
 ## 输入参数
 
-- ```JSON
-  {
-    "name": "关系名称",
-    "ontologyUniqueIdentifierFrom": "",
-    "ontologyUniqueIdentifierTo": "",
-    "categoryId": "",
-    "apiName": "",
-    "comment": "",
-    "spaceId": "",
-  }
-  ```
-
-- `name`：【string，必填】 关系名称
-- `ontologyUniqueIdentifierFrom`：【string，必填】源本体id
-- `ontologyUniqueIdentifierTo`：【string，必填】目标本体id
-- `categoryId`：【number，非必填】 关系分类id
-- `apiName`：【string，必填】关系api名称
-- `comment`：【string，非必填】 关系备注/描述
-- `spaceId`：【number，必填】关系所属空间id
+- 路径填充关系对象的linkUniqIdentifier属性值
 
 ## 输出参数
 
