@@ -1,6 +1,6 @@
 # 接口名称
 
-- 删除本体分类体系树
+- 查询关系分类体系树
 
 ## 编译位置
 
@@ -10,45 +10,67 @@ mocks与types文件名自行语义化命名
 - mocks：`src/mocks/`
 - types：`src/types/apis/`
 
-## 接口描述
-
-- 删除本体分类体系树
-
 ## 接口domain
 
 - `DOMAIN_CONFIG.ONTOLOGYMANAGE_URL`
 
 ## 接口uri
 
-- `/ontology/category`
+- `/ontology/link_category/tree`
 
 ## 请求方式
 
-- delete
+- get
 
 ## 输入参数
 
 - ```JSON
   {
-    "spaceId": "10",
-    "categoryId": 0,
+    "spaceId": "1",
   }
   ```
-
-- `spaceId`：【string，必填】 空间Id
-- `categoryId`：【string，必填】目录分类id
+- `spaceId`：【string，必填】 空间id
 
 ## 输出参数
 
 ```JSON
 {
   "code": 200,
-  "message": "SUCCESS"
+  "message": "SUCCESS",
+  "data": {
+    "categoryId": 1,
+    "name": "全部关系1",
+    "links": [
+      {
+        "uniqueIdentifier": "4fcd1a4cb21244898ee0497b6e529625",
+        "name": "a",
+        "type": "COMPOSITION",
+        "categoryId": 1,
+        "ontologyUniqueIdentifierFrom": "d7749eaded274a8f98fa0ac78032d3d0",
+        "ontologyNameFrom": "舰船2",
+        "ontologyUniqueIdentifierTo": "17829f55e64e4efba9fdcee03eb46675",
+        "ontologyNameTo": "舰船1"
+      }
+    ],
+    "children": [
+      {
+        "categoryId": 2,
+        "name": "编制隶书",
+        "children": [
+          {
+            "categoryId": 3,
+            "name": "指挥控制"
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 
 - `code`：【number】响应码
 - `message`：【string】消息描述
+- `data`：【object】响应数据,如果没有data属性，说明关系树为空，需要添加
 
 ## code
 

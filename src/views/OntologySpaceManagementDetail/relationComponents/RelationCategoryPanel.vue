@@ -9,8 +9,11 @@
       ></template>
     </el-input>
     <div class="relation-category-panel__content">
+      <div v-if="!displayTreeData.length" class="relation-category-panel__empty">
+        <el-button class="aircas-button" type="primary" @click="emit('create', '')">添加关系分类</el-button>
+      </div>
       <el-tree
-        v-if="displayTreeData.length"
+        v-else-if="displayTreeData.length"
         v-show="hasSearchResult"
         ref="treeRef"
         :data="displayTreeData"
@@ -39,7 +42,7 @@
                   <el-icon><Plus /></el-icon>
                 </button>
               </el-tooltip>
-              <el-tooltip v-if="canUpdate && data.id !== ROOT_RELATION_CATEGORY_ID" content="编辑分类" placement="top" :show-after="200">
+              <el-tooltip v-if="canUpdate && !isRootCategory(data.id)" content="编辑分类" placement="top" :show-after="200">
                 <button
                   type="button"
                   class="relation-category-panel__action relation-category-panel__action--edit"
@@ -49,7 +52,7 @@
                   <el-icon><Edit /></el-icon>
                 </button>
               </el-tooltip>
-              <el-tooltip v-if="canDelete && data.id !== ROOT_RELATION_CATEGORY_ID" content="删除分类" placement="top" :show-after="200">
+              <el-tooltip v-if="canDelete && !isRootCategory(data.id)" content="删除分类" placement="top" :show-after="200">
                 <button
                   type="button"
                   class="relation-category-panel__action relation-category-panel__action--danger"
@@ -64,7 +67,6 @@
         </template>
       </el-tree>
       <el-empty v-if="displayTreeData.length && !hasSearchResult" description="暂无匹配分类" :image-size="54" />
-      <el-empty v-if="!displayTreeData.length" description="暂无关系分类" :image-size="54" />
     </div>
   </aside>
 </template>
@@ -124,12 +126,22 @@ function enrich(nodes: OntologyRelationCategoryNode[]): DisplayCategoryNode[] {
 }
 
 const displayTreeData = computed(() => enrich(Array.isArray(props.treeData) ? props.treeData : []));
+const rootCategoryId = computed(() => displayTreeData.value[0]?.id ?? ROOT_RELATION_CATEGORY_ID);
 const hasSearchResult = computed(() => {
   const searchValue = keyword.value.trim().toLocaleLowerCase();
   if (!searchValue) return true;
   const matches = (node: OntologyRelationCategoryNode): boolean => node.label.toLocaleLowerCase().includes(searchValue) || node.children.some(matches);
   return displayTreeData.value.some(matches);
 });
+
+/**
+ * @description 判断节点是否为关系分类树根节点。
+ * @param categoryId 分类 id。
+ * @returns 是否为根分类。
+ */
+function isRootCategory(categoryId: string): boolean {
+  return categoryId === ROOT_RELATION_CATEGORY_ID || categoryId === rootCategoryId.value;
+}
 
 function filterNode(value: string, data: TreeNodeData): boolean {
   const label = typeof data.label === "string" ? data.label : "";
@@ -178,6 +190,11 @@ watch(
   min-height: 0;
   overflow: auto;
   flex: 1;
+}
+.relation-category-panel__empty {
+  display: grid;
+  min-height: 120px;
+  place-items: center;
 }
 .relation-category-panel :deep(.el-tree) {
   color: var(--aircas-color-text-secondary);

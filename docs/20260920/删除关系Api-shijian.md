@@ -1,6 +1,6 @@
 # 接口名称
 
-- 删除本体分类体系树
+- 删除关系
 
 ## 编译位置
 
@@ -10,17 +10,13 @@ mocks与types文件名自行语义化命名
 - mocks：`src/mocks/`
 - types：`src/types/apis/`
 
-## 接口描述
-
-- 删除本体分类体系树
-
 ## 接口domain
 
 - `DOMAIN_CONFIG.ONTOLOGYMANAGE_URL`
 
 ## 接口uri
 
-- `/ontology/category`
+- `/ontology/link_category`
 
 ## 请求方式
 
