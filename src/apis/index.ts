@@ -15,6 +15,12 @@ import {
   updateOntologySpaceInterface,
 } from "./ontologyManageApi";
 import {
+  createOntologyObjectArrTypeTreeInterface,
+  deleteOntologyObjectArrTypeTreeInterface,
+  getOntologyObjectArrTypeTreeInterface,
+  updateOntologyObjectArrTypeTreeInterface,
+} from "./ontologyObjectArrManageApi";
+import {
   createOntologyObjectInterface,
   deleteOntologyObjectInterface,
   getOntologyObjectByCategoryIdInterface,
@@ -24,12 +30,15 @@ import {
 export {
   createOntologySpaceInterface,
   createOntologyObjectInterface,
+  createOntologyObjectArrTypeTreeInterface,
+  deleteOntologyObjectArrTypeTreeInterface,
   deleteOntologyCategoryTreeInterface,
   deleteOntologyObjectInterface,
   deleteOntologyRelationCategoryTreeInterface,
   deleteOntologySpaceInterface,
   getExampleInterface,
   getOntologyCategoryTreeInterface,
+  getOntologyObjectArrTypeTreeInterface,
   getOntologyObjectByCategoryIdInterface,
   getOntologyRelationCategoryTreeInterface,
   getOntologySpaceListInterface,
@@ -39,5 +48,6 @@ export {
   putUpdateOntologyCategoryNameInterface,
   putUpdateOntologyRelationCategoryNameInterface,
   updateOntologySpaceInterface,
+  updateOntologyObjectArrTypeTreeInterface,
   updateOntologyObjectInterface,
 };

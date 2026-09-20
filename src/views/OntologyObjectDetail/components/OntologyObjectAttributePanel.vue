@@ -1,0 +1,877 @@
+<template>
+  <section class="ontology-object-attribute-panel" aria-label="本体对象属性">
+    <aside class="ontology-object-attribute-panel__categories" aria-label="属性分类树">
+      <header class="ontology-object-attribute-panel__section-header">
+        <div>
+          <h1>属性分类树 <small>/ Property Category</small></h1>
+          <p>按分类浏览当前本体对象的属性</p>
+        </div>
+      </header>
+      <el-input v-model="categorySearch" class="aircas-input" clearable placeholder="搜索属性分类" ariaLabel="搜索属性分类" />
+      <p v-if="categoryTreeLoading" class="ontology-object-attribute-panel__tree-state">正在加载属性分类...</p>
+      <p v-else-if="categoryTreeError" class="ontology-object-attribute-panel__tree-state is-error" role="alert">{{ categoryTreeError }}</p>
+      <div v-else-if="categoryTreeEmpty" class="ontology-object-attribute-panel__tree-empty">
+        <p class="ontology-object-attribute-panel__tree-state">暂无分类树数据</p>
+        <el-button class="aircas-button" type="primary" @click="openRootCategoryCreate">创建分类</el-button>
+      </div>
+      <el-tree
+        v-else
+        ref="treeRef"
+        class="ontology-object-attribute-panel__tree"
+        :data="categories"
+        node-key="id"
+        :props="treeProps"
+        default-expand-all
+        highlight-current
+        :current-node-key="selectedCategoryId"
+        :expand-on-click-node="false"
+        :filter-node-method="filterCategoryNode"
+        @node-click="selectCategory"
+      >
+        <template #default="{ data }">
+          <div class="ontology-object-attribute-panel__tree-node">
+            <span class="ontology-object-attribute-panel__tree-label"
+              ><el-icon><FolderOpened v-if="data.children?.length" /><CollectionTag v-else /></el-icon>{{ data.label }}<em>{{ data.count }}</em></span
+            >
+            <span class="ontology-object-attribute-panel__tree-actions" @click.stop>
+              <el-tooltip content="添加子分类" placement="top" :show-after="200">
+                <button type="button" class="ontology-object-attribute-panel__tree-action" aria-label="添加子分类" @click="openCategoryCreate(data)">
+                  <el-icon><Plus /></el-icon>
+                </button>
+              </el-tooltip>
+              <el-tooltip content="编辑分类" placement="top" :show-after="200">
+                <button type="button" class="ontology-object-attribute-panel__tree-action is-edit" aria-label="编辑分类" @click="openCategoryEdit(data)">
+                  <el-icon><EditPen /></el-icon>
+                </button>
+              </el-tooltip>
+              <el-tooltip content="删除分类" placement="top" :show-after="200">
+                <button type="button" class="ontology-object-attribute-panel__tree-action is-danger" aria-label="删除分类" @click="removeCategory(data)">
+                  <el-icon><Delete /></el-icon>
+                </button>
+              </el-tooltip>
+            </span>
+          </div>
+        </template>
+      </el-tree>
+    </aside>
+
+    <main class="ontology-object-attribute-panel__content">
+      <header class="ontology-object-attribute-panel__content-header">
+        <div>
+          <h2>{{ selectedCategoryName }}</h2>
+          <p>{{ visibleAttributes.length }} 个属性类</p>
+        </div>
+        <div class="ontology-object-attribute-panel__toolbar">
+          <el-input
+            v-model="attributeSearch"
+            class="aircas-input ontology-object-attribute-panel__search"
+            clearable
+            placeholder="搜索属性 API 或描述"
+            ariaLabel="搜索属性"
+          />
+          <el-button class="aircas-button" @click="openDataSource"
+            ><el-icon><Connection /></el-icon>关联数据源</el-button
+          >
+          <el-button class="aircas-button" type="primary" @click="openCreateAttribute"
+            ><el-icon><Plus /></el-icon>添加</el-button
+          >
+        </div>
+      </header>
+
+      <div v-if="visibleAttributes.length" class="ontology-object-attribute-panel__table-wrap">
+        <el-table :data="visibleAttributes" class="aircas-table" height="100%" row-key="id">
+          <el-table-column prop="apiName" label="API" min-width="150" show-overflow-tooltip />
+          <el-table-column prop="dataType" label="数据类型" width="110" />
+          <el-table-column prop="storageGroup" label="存储分组" width="120" />
+          <el-table-column label="默认值" min-width="110" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.defaultValue || "—" }}</template>
+          </el-table-column>
+          <el-table-column prop="description" label="属性描述" min-width="210" show-overflow-tooltip />
+          <el-table-column label="主键" width="72"
+            ><template #default="{ row }">{{ row.isPrimary ? "是" : "否" }}</template></el-table-column
+          >
+          <el-table-column label="名称键" width="72"
+            ><template #default="{ row }">{{ row.isNameKey ? "是" : "否" }}</template></el-table-column
+          >
+          <el-table-column label="操作" width="140" fixed="right">
+            <template #default="{ row }">
+              <el-button class="aircas-button" link size="small" @click="openEditAttribute(row)">编辑</el-button>
+              <el-button class="aircas-button" link type="danger" size="small" @click="removeAttribute(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <el-empty v-else class="ontology-object-attribute-panel__empty" description="暂无匹配属性" />
+    </main>
+
+    <el-dialog v-model="categoryDialogVisible" class="aircas-dialog" title="创建分类" width="min(480px, 94vw)" append-to-body destroy-on-close>
+      <el-form class="aircas-form" label-position="top">
+        <el-form-item label="父分类">
+          <el-input v-model="categoryParentName" class="aircas-input" readonly ariaLabel="父分类" />
+        </el-form-item>
+        <el-form-item label="输入分类名称" required>
+          <el-input
+            v-model="categoryName"
+            class="aircas-input"
+            maxlength="64"
+            ariaLabel="输入分类名称"
+            placeholder="请输入分类名称"
+            :disabled="categorySubmitting"
+          />
+        </el-form-item>
+      </el-form>
+      <p v-if="categoryError" class="ontology-object-attribute-panel__dialog-error" role="alert">{{ categoryError }}</p>
+      <template #footer>
+        <el-button class="aircas-button" :disabled="categorySubmitting" @click="categoryDialogVisible = false">取消</el-button>
+        <el-button class="aircas-button" type="primary" :loading="categorySubmitting" @click="saveCategoryDraft">确认</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="categoryEditDialogVisible" class="aircas-dialog" title="编辑分类" width="min(480px, 94vw)" append-to-body destroy-on-close>
+      <el-form class="aircas-form" label-position="top">
+        <el-form-item label="父分类">
+          <el-input v-model="categoryParentName" class="aircas-input" readonly ariaLabel="父分类" />
+        </el-form-item>
+        <el-form-item label="分类名称" required>
+          <el-input
+            v-model="categoryEditName"
+            class="aircas-input"
+            maxlength="64"
+            ariaLabel="分类名称"
+            placeholder="请输入分类名称"
+            :disabled="categoryEditSubmitting"
+          />
+        </el-form-item>
+      </el-form>
+      <p v-if="categoryEditError" class="ontology-object-attribute-panel__dialog-error" role="alert">{{ categoryEditError }}</p>
+      <template #footer>
+        <el-button class="aircas-button" :disabled="categoryEditSubmitting" @click="categoryEditDialogVisible = false">取消</el-button>
+        <el-button class="aircas-button" type="primary" :loading="categoryEditSubmitting" @click="saveCategoryEdit">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+      v-model="attributeDialogVisible"
+      class="aircas-dialog"
+      :title="editingAttributeId === null ? '添加属性' : '编辑属性'"
+      width="min(560px, 94vw)"
+      append-to-body
+      destroy-on-close
+    >
+      <el-form ref="attributeFormRef" :model="draft" :rules="attributeRules" class="aircas-form" label-position="top">
+        <div class="ontology-object-attribute-panel__form-grid">
+          <el-form-item label="属性名称" prop="apiName"
+            ><el-input v-model="draft.apiName" class="aircas-input" placeholder="请输入属性 API 名称"
+          /></el-form-item>
+          <el-form-item label="数据类型" prop="dataType"
+            ><el-select v-model="draft.dataType" class="aircas-input" placeholder="请选择数据类型"
+              ><el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" /></el-select
+          ></el-form-item>
+          <el-form-item label="存储分组" prop="storageGroup"
+            ><el-input v-model="draft.storageGroup" class="aircas-input" placeholder="请输入存储分组"
+          /></el-form-item>
+          <el-form-item label="默认值"><el-input v-model="draft.defaultValue" class="aircas-input" placeholder="可选" /></el-form-item>
+        </div>
+        <el-form-item label="属性描述" prop="description"
+          ><el-input v-model="draft.description" class="aircas-input" type="textarea" :rows="3" placeholder="请输入属性描述"
+        /></el-form-item>
+        <div class="ontology-object-attribute-panel__checks">
+          <el-checkbox :model-value="draft.isPrimary" @update:model-value="draft.isPrimary = $event === true">主键</el-checkbox>
+          <el-checkbox :model-value="draft.isNameKey" @update:model-value="draft.isNameKey = $event === true">名称键</el-checkbox>
+        </div>
+      </el-form>
+      <template #footer>
+        <el-button class="aircas-button" @click="attributeDialogVisible = false">取消</el-button>
+        <el-button class="aircas-button" type="primary" :loading="savingAttribute" @click="saveAttributeDraft">保存</el-button>
+      </template>
+    </el-dialog>
+  </section>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { CollectionTag, Connection, Delete, EditPen, FolderOpened, Plus } from "@element-plus/icons-vue";
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from "element-plus";
+import {
+  createOntologyObjectArrTypeTreeInterface,
+  deleteOntologyObjectArrTypeTreeInterface,
+  getOntologyObjectArrTypeTreeInterface,
+  updateOntologyObjectArrTypeTreeInterface,
+} from "@/apis";
+import type { GetOntologyObjectArrTypeTreeData } from "@/types";
+import { useRoute } from "vue-router";
+
+interface CategoryNode {
+  id: string;
+  label: string;
+  count: number;
+  isRoot?: boolean;
+  children?: CategoryNode[];
+}
+
+interface AttributeItem {
+  id: number;
+  categoryId: string;
+  apiName: string;
+  dataType: string;
+  storageGroup: string;
+  defaultValue: string;
+  description: string;
+  isPrimary: boolean;
+  isNameKey: boolean;
+}
+
+type AttributeDraft = Omit<AttributeItem, "id" | "categoryId">;
+const route = useRoute();
+const dataTypes = ["String", "整数", "小数", "日期", "布尔"];
+const categories = ref<CategoryNode[]>([
+  {
+    id: "all",
+    label: "全部属性",
+    count: 23,
+    children: [
+      { id: "identity", label: "标识信息", count: 4 },
+      {
+        id: "physical",
+        label: "物理特征",
+        count: 6,
+        children: [
+          { id: "scale", label: "尺度", count: 4 },
+          { id: "weight", label: "重量排水", count: 2 },
+        ],
+      },
+      { id: "power", label: "动力系统", count: 4 },
+      {
+        id: "combat",
+        label: "作战能力",
+        count: 6,
+        children: [
+          { id: "sensor", label: "传感器", count: 3 },
+          { id: "weapon", label: "武器", count: 3 },
+        ],
+      },
+      { id: "support", label: "编制与保障", count: 3 },
+    ],
+  },
+]);
+const attributes = ref<AttributeItem[]>([
+  {
+    id: 1,
+    categoryId: "identity",
+    apiName: "hullNumber",
+    dataType: "String",
+    storageGroup: "主存储",
+    defaultValue: "",
+    description: "舰艇唯一舷号标识",
+    isPrimary: true,
+    isNameKey: false,
+  },
+  {
+    id: 2,
+    categoryId: "identity",
+    apiName: "shipName",
+    dataType: "String",
+    storageGroup: "主存储",
+    defaultValue: "",
+    description: "舰艇正式名称",
+    isPrimary: true,
+    isNameKey: true,
+  },
+  {
+    id: 3,
+    categoryId: "identity",
+    apiName: "natoCode",
+    dataType: "String",
+    storageGroup: "主存储",
+    defaultValue: "",
+    description: "北约通报用名称或代号",
+    isPrimary: false,
+    isNameKey: false,
+  },
+  {
+    id: 4,
+    categoryId: "identity",
+    apiName: "commissionDate",
+    dataType: "日期",
+    storageGroup: "主存储",
+    defaultValue: "",
+    description: "正式服役日期",
+    isPrimary: false,
+    isNameKey: false,
+  },
+  {
+    id: 5,
+    categoryId: "scale",
+    apiName: "lengthOverall",
+    dataType: "小数",
+    storageGroup: "主存储",
+    defaultValue: "",
+    description: "舰长，单位米",
+    isPrimary: false,
+    isNameKey: false,
+  },
+  {
+    id: 6,
+    categoryId: "scale",
+    apiName: "beam",
+    dataType: "小数",
+    storageGroup: "主存储",
+    defaultValue: "",
+    description: "舰宽，单位米",
+    isPrimary: false,
+    isNameKey: false,
+  },
+  {
+    id: 7,
+    categoryId: "scale",
+    apiName: "draft",
+    dataType: "小数",
+    storageGroup: "主存储",
+    defaultValue: "",
+    description: "设计吃水，单位米",
+    isPrimary: false,
+    isNameKey: false,
+  },
+  {
+    id: 8,
+    categoryId: "scale",
+    apiName: "flightDeckArea",
+    dataType: "小数",
+    storageGroup: "主存储",
+    defaultValue: "",
+    description: "飞行甲板面积，单位平方米",
+    isPrimary: false,
+    isNameKey: false,
+  },
+  {
+    id: 9,
+    categoryId: "weight",
+    apiName: "standardDisplacement",
+    dataType: "整数",
+    storageGroup: "主存储",
+    defaultValue: "",
+    description: "标准排水量，单位吨",
+    isPrimary: false,
+    isNameKey: false,
+  },
+  {
+    id: 10,
+    categoryId: "weight",
+    apiName: "fullDisplacement",
+    dataType: "整数",
+    storageGroup: "主存储",
+    defaultValue: "",
+    description: "满载排水量，单位吨",
+    isPrimary: false,
+    isNameKey: false,
+  },
+  ...Array.from({ length: 13 }, (_, index) => ({
+    id: index + 11,
+    categoryId: index < 4 ? "power" : index < 10 ? "combat" : "support",
+    apiName: `property${index + 11}`,
+    dataType: index % 2 ? "String" : "整数",
+    storageGroup: "主存储",
+    defaultValue: "",
+    description: "本体对象扩展属性",
+    isPrimary: false,
+    isNameKey: false,
+  })),
+]);
+const treeProps = { children: "children", label: "label" };
+const treeRef = ref<{ filter: (value: string) => void }>();
+const categorySearch = ref("");
+const categoryTreeLoading = ref(false);
+const categoryTreeError = ref("");
+const categoryTreeEmpty = ref(false);
+const categoryDialogVisible = ref(false);
+const categorySubmitting = ref(false);
+const categoryError = ref("");
+const categoryEditDialogVisible = ref(false);
+const categoryEditSubmitting = ref(false);
+const categoryEditError = ref("");
+const categoryEditId = ref("");
+const categoryEditName = ref("");
+const categoryName = ref("");
+const categoryParentId = ref("all");
+const categoryParentName = ref("无");
+const attributeSearch = ref("");
+const selectedCategoryId = ref("all");
+const attributeDialogVisible = ref(false);
+const savingAttribute = ref(false);
+const editingAttributeId = ref<number | null>(null);
+const attributeFormRef = ref<FormInstance>();
+const draft = reactive<AttributeDraft>({
+  apiName: "",
+  dataType: "String",
+  storageGroup: "主存储",
+  defaultValue: "",
+  description: "",
+  isPrimary: false,
+  isNameKey: false,
+});
+const attributeRules: FormRules<AttributeDraft> = {
+  apiName: [{ required: true, message: "请输入属性 API 名称", trigger: "blur" }],
+  dataType: [{ required: true, message: "请选择数据类型", trigger: "change" }],
+  storageGroup: [{ required: true, message: "请输入存储分组", trigger: "blur" }],
+  description: [{ required: true, message: "请输入属性描述", trigger: "blur" }],
+};
+const selectedCategoryName = computed(() => findCategory(categories.value, selectedCategoryId.value)?.label ?? "全部属性");
+const visibleAttributes = computed(() =>
+  attributes.value.filter((item) => {
+    const categoryMatch =
+      selectedCategoryId.value === "all" || selectedCategoryId.value === categories.value[0]?.id || item.categoryId === selectedCategoryId.value;
+    const keyword = attributeSearch.value.trim().toLowerCase();
+    return categoryMatch && (!keyword || `${item.apiName} ${item.description}`.toLowerCase().includes(keyword));
+  }),
+);
+
+/** @description 将接口分类树节点适配为属性页树节点。 */
+function mapCategoryTreeNode(node: GetOntologyObjectArrTypeTreeData): CategoryNode {
+  const children = node.children?.map(mapCategoryTreeNode);
+  return {
+    id: String(node.categoryId),
+    label: node.name || "未命名分类",
+    count: children?.reduce((total, child) => total + child.count, 0) ?? attributes.value.filter((item) => item.categoryId === String(node.categoryId)).length,
+    isRoot: true,
+    children: children?.length ? children : undefined,
+  };
+}
+/** @description 查询当前本体对象的属性分类树并更新左侧分类状态。 */
+async function loadAttributeCategoryTree() {
+  const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
+  if (!ontologyUniqueIdentifier) {
+    categoryTreeError.value = "缺少本体对象标识，无法加载属性分类。";
+    return;
+  }
+  categoryTreeLoading.value = true;
+  categoryTreeError.value = "";
+  categoryTreeEmpty.value = false;
+  try {
+    const response = await getOntologyObjectArrTypeTreeInterface({ ontologyUniqueIdentifier });
+    if (response.code !== 200) throw new Error(response.message || "属性分类查询失败");
+    if (!response.data) {
+      categories.value = [];
+      selectedCategoryId.value = "all";
+      categoryTreeEmpty.value = true;
+      return;
+    }
+    const root = mapCategoryTreeNode(response.data);
+    categories.value = [root];
+    selectedCategoryId.value = root.id;
+  } catch (cause) {
+    categoryTreeError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性分类查询失败，请重试。";
+    ElMessage.error(categoryTreeError.value);
+  } finally {
+    categoryTreeLoading.value = false;
+  }
+}
+
+/** @description 在分类树中递归查找指定节点。 */
+function findCategory(nodes: CategoryNode[], id: string): CategoryNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    const found = node.children ? findCategory(node.children, id) : undefined;
+    if (found) return found;
+  }
+  return undefined;
+}
+/** @description 根据分类搜索词过滤树节点。 */
+function filterCategoryNode(value: string, data: unknown): boolean {
+  if (!data || typeof data !== "object" || !("label" in data) || typeof data.label !== "string") return false;
+  return !value.trim() || data.label.includes(value.trim());
+}
+/** @description 选中属性分类并刷新右侧列表。 */
+function selectCategory(data: CategoryNode) {
+  selectedCategoryId.value = data.id;
+}
+/** @description 查找分类节点的父分类。 */
+function findCategoryParent(nodes: CategoryNode[], id: string, parent?: CategoryNode): CategoryNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return parent;
+    const found = node.children ? findCategoryParent(node.children, id, node) : undefined;
+    if (found) return found;
+  }
+  return undefined;
+}
+/** @description 打开分类编辑弹窗并回显父分类和当前名称。 */
+function openCategoryEdit(data: CategoryNode) {
+  categoryEditId.value = data.id;
+  categoryEditName.value = data.label;
+  categoryParentName.value = findCategoryParent(categories.value, data.id)?.label ?? "无";
+  categoryEditError.value = "";
+  categoryEditDialogVisible.value = true;
+}
+/** @description 校验并调用编辑接口保存分类名称。 */
+async function saveCategoryEdit() {
+  const name = categoryEditName.value.trim();
+  if (!name) {
+    categoryEditError.value = "请输入分类名称";
+    return;
+  }
+  const ontologyIdentifier = String(route.params.objectId || "").trim();
+  const categoryId = Number(categoryEditId.value);
+  if (!ontologyIdentifier || !Number.isFinite(categoryId)) {
+    categoryEditError.value = "缺少分类标识，无法编辑分类。";
+    return;
+  }
+  categoryEditSubmitting.value = true;
+  categoryEditError.value = "";
+  try {
+    const response = await updateOntologyObjectArrTypeTreeInterface({ ontologyIdentifier, categoryId, name });
+    if (response.code !== 200) throw new Error(response.message || "属性分类编辑失败");
+    categoryEditDialogVisible.value = false;
+    ElMessage.success("属性分类编辑成功");
+    await loadAttributeCategoryTree();
+  } catch (cause) {
+    categoryEditError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性分类编辑失败，请重试。";
+    ElMessage.error(categoryEditError.value);
+  } finally {
+    categoryEditSubmitting.value = false;
+  }
+}
+/** @description 创建属性子分类并将其加入当前树节点。 */
+async function openCategoryCreate(parent: CategoryNode) {
+  categoryParentId.value = parent.id;
+  categoryParentName.value = parent.label;
+  categoryName.value = "";
+  categoryError.value = "";
+  categoryDialogVisible.value = true;
+}
+/** @description 打开根属性分类创建弹窗。 */
+function openRootCategoryCreate() {
+  categoryParentId.value = "0";
+  categoryParentName.value = "无";
+  categoryName.value = "";
+  categoryError.value = "";
+  categoryDialogVisible.value = true;
+}
+/** @description 校验并通过接口保存属性分类表单。 */
+async function saveCategoryDraft() {
+  const name = categoryName.value.trim();
+  if (!name) {
+    categoryError.value = "请输入分类名称";
+    return;
+  }
+  const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
+  if (!ontologyUniqueIdentifier) {
+    categoryError.value = "缺少本体对象标识，无法创建分类。";
+    return;
+  }
+  categorySubmitting.value = true;
+  categoryError.value = "";
+  try {
+    const response = await createOntologyObjectArrTypeTreeInterface({
+      ontologyIdentifier: ontologyUniqueIdentifier,
+      parentId: Number(categoryParentId.value) || 0,
+      name,
+    });
+    if (response.code !== 200) throw new Error(response.message || "属性分类创建失败");
+    categoryDialogVisible.value = false;
+    ElMessage.success("属性分类创建成功");
+    await loadAttributeCategoryTree();
+  } catch (cause) {
+    categoryError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性分类创建失败，请重试。";
+    ElMessage.error(categoryError.value);
+  } finally {
+    categorySubmitting.value = false;
+  }
+}
+/** @description 删除属性分类并提示结果。 */
+async function removeCategory(data: CategoryNode) {
+  try {
+    await ElMessageBox.confirm(`确认删除属性分类「${data.label}」吗？`, "删除属性分类", { type: "warning" });
+    const ontologyIdentifier = String(route.params.objectId || "").trim();
+    const categoryId = Number(data.id);
+    if (!ontologyIdentifier || !Number.isFinite(categoryId)) throw new Error("缺少分类标识，无法删除分类。");
+    const response = await deleteOntologyObjectArrTypeTreeInterface({ ontologyIdentifier, categoryId });
+    if (response.code !== 200) throw new Error(response.message || "属性分类删除失败");
+    ElMessage.success("属性分类删除成功");
+    await loadAttributeCategoryTree();
+  } catch (cause) {
+    if (cause instanceof Error && cause.message.trim()) ElMessage.error(cause.message);
+  }
+}
+/** @description 打开数据源关联入口。 */
+function openDataSource() {
+  ElMessage.info("数据源关联入口已准备");
+}
+/** @description 重置属性表单草稿。 */
+function resetDraft() {
+  Object.assign(draft, { apiName: "", dataType: "String", storageGroup: "主存储", defaultValue: "", description: "", isPrimary: false, isNameKey: false });
+}
+/** @description 打开新增属性表单。 */
+function openCreateAttribute() {
+  editingAttributeId.value = null;
+  resetDraft();
+  attributeDialogVisible.value = true;
+}
+/** @description 打开属性编辑表单并回显当前数据。 */
+function openEditAttribute(value: unknown) {
+  if (!isAttributeItem(value)) return;
+  const item = value;
+  editingAttributeId.value = item.id;
+  Object.assign(draft, item);
+  attributeDialogVisible.value = true;
+}
+/** @description 保存新增或编辑后的属性草稿。 */
+async function saveAttributeDraft() {
+  const valid = await attributeFormRef.value?.validate().catch(() => false);
+  if (!valid) return;
+  savingAttribute.value = true;
+  try {
+    if (editingAttributeId.value === null) {
+      attributes.value.push({
+        id: Math.max(...attributes.value.map((item) => item.id)) + 1,
+        categoryId: selectedCategoryId.value === "all" ? "identity" : selectedCategoryId.value,
+        ...draft,
+      });
+      ElMessage.success("属性添加成功");
+    } else {
+      const target = attributes.value.find((item) => item.id === editingAttributeId.value);
+      if (target) Object.assign(target, draft);
+      ElMessage.success("属性编辑成功");
+    }
+    attributeDialogVisible.value = false;
+  } finally {
+    savingAttribute.value = false;
+  }
+}
+/** @description 删除属性并刷新当前列表。 */
+async function removeAttribute(value: unknown) {
+  if (!isAttributeItem(value)) return;
+  const item = value;
+  try {
+    await ElMessageBox.confirm(`确认删除属性「${item.apiName}」吗？此操作不可恢复。`, "删除属性", { type: "warning" });
+    attributes.value = attributes.value.filter((current) => current.id !== item.id);
+    ElMessage.success("属性删除成功");
+  } catch {
+    // 用户取消删除时保持当前页面状态。
+  }
+}
+/** @description 判断表格行是否符合属性数据结构。 */
+function isAttributeItem(value: unknown): value is AttributeItem {
+  if (!value || typeof value !== "object") return false;
+  return "id" in value && typeof value.id === "number" && "apiName" in value && typeof value.apiName === "string";
+}
+watch(categorySearch, (value) => treeRef.value?.filter(value));
+onMounted(() => {
+  void loadAttributeCategoryTree();
+});
+</script>
+
+<style scoped lang="scss">
+.ontology-object-attribute-panel {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(260px, 28%) minmax(0, 1fr);
+  gap: 8px;
+}
+.ontology-object-attribute-panel__categories,
+.ontology-object-attribute-panel__content {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-divider);
+}
+.ontology-object-attribute-panel__categories {
+  display: flex;
+  padding: 16px 12px;
+  flex-direction: column;
+  gap: 12px;
+}
+.ontology-object-attribute-panel__section-header h1,
+.ontology-object-attribute-panel__content-header h2 {
+  margin: 0;
+  color: var(--aircas-color-text-primary);
+  font-size: 16px;
+}
+.ontology-object-attribute-panel__section-header h1 small {
+  color: var(--aircas-color-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.ontology-object-attribute-panel__section-header p,
+.ontology-object-attribute-panel__content-header p {
+  margin: 4px 0 0;
+  color: var(--aircas-color-text-muted);
+  font-size: 12px;
+}
+.ontology-object-attribute-panel__tree {
+  min-height: 0;
+  padding-right: 4px;
+  flex: 1;
+  overflow: auto;
+  color: var(--aircas-color-text-secondary);
+  background: var(--aircas-color-transparent);
+}
+.ontology-object-attribute-panel__tree-state {
+  display: grid;
+  min-height: 120px;
+  margin: 0;
+  place-items: center;
+  color: var(--aircas-color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+.ontology-object-attribute-panel__tree-state.is-error {
+  color: var(--aircas-color-danger);
+}
+.ontology-object-attribute-panel__tree-empty {
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  gap: 12px;
+}
+.ontology-object-attribute-panel__tree-empty .ontology-object-attribute-panel__tree-state {
+  min-height: auto;
+}
+.ontology-object-attribute-panel__tree :deep(.el-tree-node__content) {
+  height: 32px;
+  border-radius: 4px;
+}
+.ontology-object-attribute-panel__tree :deep(.el-tree-node__content:hover) {
+  background: var(--aircas-color-hover-background);
+}
+.ontology-object-attribute-panel__tree :deep(.el-tree-node.is-current > .el-tree-node__content) {
+  color: var(--aircas-color-text-primary);
+  background: var(--aircas-color-selected-background);
+}
+.ontology-object-attribute-panel__tree-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+}
+.ontology-object-attribute-panel__tree-label {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+  color: var(--aircas-color-text-secondary);
+}
+.ontology-object-attribute-panel__tree-label em {
+  padding: 0 6px;
+  border-radius: 10px;
+  color: var(--aircas-color-accent-cyan);
+  background: var(--aircas-color-accent-cyan-soft);
+  font-size: 11px;
+  font-style: normal;
+}
+.ontology-object-attribute-panel__tree-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.ontology-object-attribute-panel__tree :deep(.el-tree-node__content:hover) .ontology-object-attribute-panel__tree-actions,
+.ontology-object-attribute-panel__tree :deep(.el-tree-node__content:focus-within) .ontology-object-attribute-panel__tree-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ontology-object-attribute-panel__tree-action {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  place-items: center;
+  color: var(--aircas-color-text-inverse);
+  background: var(--aircas-color-button-primary-background);
+  cursor: pointer;
+}
+.ontology-object-attribute-panel__tree-action.is-edit {
+  background: var(--aircas-color-accent-blue);
+}
+.ontology-object-attribute-panel__tree-action.is-danger {
+  background: var(--aircas-color-danger);
+}
+.ontology-object-attribute-panel__tree-action:focus-visible {
+  outline: 1px solid var(--aircas-color-border);
+  outline-offset: 1px;
+}
+.ontology-object-attribute-panel__content {
+  display: flex;
+  padding: 16px;
+  flex-direction: column;
+  gap: 12px;
+}
+.ontology-object-attribute-panel__content-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ontology-object-attribute-panel__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ontology-object-attribute-panel__search {
+  width: 240px;
+}
+.ontology-object-attribute-panel__table-wrap {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+.ontology-object-attribute-panel__empty {
+  flex: 1;
+}
+.ontology-object-attribute-panel__dialog-error {
+  margin: 8px 0 0;
+  color: var(--aircas-color-danger);
+  font-size: 12px;
+}
+.ontology-object-attribute-panel__form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+.ontology-object-attribute-panel__checks {
+  display: flex;
+  gap: 16px;
+}
+@media (max-width: 980px) {
+  .ontology-object-attribute-panel {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+  .ontology-object-attribute-panel__content-header {
+    flex-direction: column;
+  }
+  .ontology-object-attribute-panel__toolbar,
+  .ontology-object-attribute-panel__search {
+    width: 100%;
+  }
+}
+@media (max-width: 720px) {
+  .ontology-object-attribute-panel {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+  .ontology-object-attribute-panel__categories {
+    min-height: 280px;
+  }
+  .ontology-object-attribute-panel__content {
+    min-height: 520px;
+  }
+  .ontology-object-attribute-panel__toolbar {
+    flex-wrap: wrap;
+  }
+  .ontology-object-attribute-panel__form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

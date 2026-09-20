@@ -16,6 +16,12 @@ export const workspaceRoutes: RouteRecordRaw[] = [
         meta: { title: "本体空间管理" },
       },
       {
+        path: "ontology-space-management/conceptual-model-create",
+        name: "OntologyConceptualModelCreate",
+        component: () => import("@/views/OntologyConceptualModelCreate/index.vue"),
+        meta: { title: "概念模型构建" },
+      },
+      {
         path: "ontology-space-management/:spaceId",
         name: "OntologySpaceManagementDetail",
         component: () => import("@/views/OntologySpaceManagementDetail/index.vue"),
@@ -76,7 +82,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "attribute",
             name: "OntologyObjectDetailAttribute",
-            component: emptyWorkspacePanel,
+            component: () => import("@/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue"),
             meta: { title: "本体对象详情", objectDetailTab: "attribute" },
           },
           {
