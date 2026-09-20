@@ -76,3 +76,73 @@
 
 - 成功时返回：`SUCCESS`。
 - 失败时返回具体错误信息。
+
+## types 示例
+
+文件：`src/types/apis/getOntologyPropertyByCategoryIdType.ts`
+
+```ts
+import type { OntologyPropertyInfo } from "./getOntologyPropertyByOntologyIdType";
+
+export interface GetOntologyPropertyByCategoryIdParams {
+  categoryId?: number;
+}
+
+export type GetOntologyPropertyByCategoryIdData = OntologyPropertyInfo[];
+```
+
+并在 `src/types/index.ts` 中统一导出：
+
+```ts
+export type { GetOntologyPropertyByCategoryIdData, GetOntologyPropertyByCategoryIdParams } from "./apis/getOntologyPropertyByCategoryIdType";
+```
+
+## apis 示例
+
+文件：`src/apis/ontologyPropertyApi.ts`
+
+```ts
+import type { ApiResponse, GetOntologyPropertyByCategoryIdData, GetOntologyPropertyByCategoryIdParams } from "@/types";
+import { request } from "@/utils/request";
+
+/**
+ * 根据分类查询本体对象属性列表。
+ *
+ * 请求方式：GET `/ontology/property/by_category`
+ *
+ * @param params 可选查询参数；不传 categoryId 时查询全部属性。
+ * @returns 标准 API 响应，data 为属性列表。
+ */
+export function getOntologyPropertyByCategoryIdInterface(
+  params?: GetOntologyPropertyByCategoryIdParams,
+): Promise<ApiResponse<GetOntologyPropertyByCategoryIdData>> {
+  return request<GetOntologyPropertyByCategoryIdData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/property/by_category",
+    method: "get",
+    params,
+  });
+}
+```
+
+并在 `src/apis/index.ts` 中导出：
+
+```ts
+import { getOntologyPropertyByCategoryIdInterface } from "./ontologyPropertyApi";
+
+export { getOntologyPropertyByCategoryIdInterface };
+```
+
+## mocks 示例
+
+文件：`src/mocks/getOntologyPropertyByCategoryIdMock/getOntologyPropertyByCategoryIdMock.ts`
+
+```ts
+import type { ApiResponse, GetOntologyPropertyByCategoryIdData } from "@/types";
+
+export const getOntologyPropertyByCategoryIdMock: ApiResponse<GetOntologyPropertyByCategoryIdData> = {
+  code: 200,
+  message: "SUCCESS",
+  success: true,
+  data: [],
+};
+```

@@ -76,3 +76,89 @@
 
 - 成功时返回：`SUCCESS`。
 - 失败时返回具体错误信息。
+
+## types 示例
+
+文件：`src/types/apis/getOntologyPropertyByOntologyIdType.ts`
+
+```ts
+export interface GetOntologyPropertyByOntologyIdParams {
+  ontologyUniqueIdentifier: string;
+}
+
+export interface OntologyPropertyInfo {
+  displayName?: string;
+  description?: string;
+  isPrimaryKey?: boolean;
+  isTitleKey?: boolean;
+  uniqueIdentifier?: string;
+  ontologyUniqueIdentifier?: string;
+  defaultValue?: string;
+  storageGroup?: string;
+  categoryId?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export type GetOntologyPropertyByOntologyIdData = OntologyPropertyInfo[];
+```
+
+并在 `src/types/index.ts` 中统一导出：
+
+```ts
+export type {
+  GetOntologyPropertyByOntologyIdData,
+  GetOntologyPropertyByOntologyIdParams,
+  OntologyPropertyInfo,
+} from "./apis/getOntologyPropertyByOntologyIdType";
+```
+
+## apis 示例
+
+文件：`src/apis/ontologyPropertyApi.ts`
+
+```ts
+import type { ApiResponse, GetOntologyPropertyByOntologyIdData, GetOntologyPropertyByOntologyIdParams } from "@/types";
+import { request } from "@/utils/request";
+
+/**
+ * 根据本体标识查询本体对象属性列表。
+ *
+ * 请求方式：GET `/ontology/property/info`
+ *
+ * @param params 查询参数。
+ * @param params.ontologyUniqueIdentifier 本体唯一标识。
+ * @returns 标准 API 响应，data 为属性列表。
+ */
+export function getOntologyPropertyByOntologyIdInterface(
+  params: GetOntologyPropertyByOntologyIdParams,
+): Promise<ApiResponse<GetOntologyPropertyByOntologyIdData>> {
+  return request<GetOntologyPropertyByOntologyIdData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/property/info",
+    method: "get",
+    params,
+  });
+}
+```
+
+并在 `src/apis/index.ts` 中导出：
+
+```ts
+import { getOntologyPropertyByOntologyIdInterface } from "./ontologyPropertyApi";
+
+export { getOntologyPropertyByOntologyIdInterface };
+```
+
+## mocks 示例
+
+文件：`src/mocks/getOntologyPropertyByOntologyIdMock/getOntologyPropertyByOntologyIdMock.ts`
+
+```ts
+import type { ApiResponse, GetOntologyPropertyByOntologyIdData } from "@/types";
+
+export const getOntologyPropertyByOntologyIdMock: ApiResponse<GetOntologyPropertyByOntologyIdData> = {
+  code: 200,
+  message: "SUCCESS",
+  success: true,
+  data: [],
+};
+```

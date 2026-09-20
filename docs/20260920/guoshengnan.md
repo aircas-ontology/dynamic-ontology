@@ -32,3 +32,13 @@
 本体对象属性查询在线接口文档地址：（查全部的时候）http://172.16.18.58:37002/ontology/doc.html#/ontology/%E6%9C%AC%E4%BD%93%E5%B1%9E%E6%80%A7%E7%AE%A1%E7%90%86/OntologyPropertyController_getPropertyInfoByOntologyId/doc
 （查某个分类下的属性的时候）http://172.16.18.58:37002/ontology/doc.html#/ontology/%E6%9C%AC%E4%BD%93%E5%B1%9E%E6%80%A7%E7%AE%A1%E7%90%86/OntologyPropertyController_getByCategoryId/doc
 按规范生成md文档，命名规则参照docs/0920/下的API说明，接口路径需要增加前缀/ontology，每一个接口生成一个文档
+
+## 4 本体对象属性接口对接
+
+## 需求背景
+
+本体对象属性接口对接
+
+## 功能要求
+
+按照E:\资料\h数字5模块\project\dev-project\docs\20260920\createOntologyPropertyApi-guoshengnan.md接口说明对接属性创建功能，字段按照页面的来，少的默认空值。按照E:\资料\h数字5模块\project\dev-project\docs\20260920\getOntologyPropertyByCategoryIdApi-guoshengnan.md接口说明对接按分类查属性列表功能，点击左侧分类树节点，查询节点下属性列表。按照E:\资料\h数字5模块\project\dev-project\docs\20260920\getOntologyPropertyByOntologyIdApi-guoshengnan.md接口说明对接查询全部属性列表功能，进入属性页面默认查询全部属性列表。按照E:\资料\h数字5模块\project\dev-project\docs\20260920\updateOntologyPropertyApi-guoshengnan.md接口说明对接编辑属性接口，属性列表点击编辑按钮弹出编辑弹窗，修改信息保存调用编辑接口。按照E:\资料\h数字5模块\project\dev-project\docs\20260920\deleteOntologyPropertyApi-guoshengnan.md接口说明对接属性删除接口，点击属性列表的删除按钮，再次提示删除操作，点击确认后调用删除接口。

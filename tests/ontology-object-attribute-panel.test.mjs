@@ -32,6 +32,15 @@ test("object attribute panel exposes category tree, property columns, and local 
   assert.match(source, /数据类型/);
   assert.match(source, /存储分组/);
   assert.match(source, /属性描述/);
+  assert.match(source, /prop="displayName" label="属性名称"/);
+  assert.match(source, /placeholder="例如：任务优先级"/);
+  assert.match(source, /placeholder="例如：priority"/);
+  assert.match(source, /请选择属性分类/);
+  assert.match(source, /class="aircas-select" popper-class="aircas-select-popper"/);
+  assert.match(source, /class="aircas-switch"/);
+  assert.match(source, /主键/);
+  assert.match(source, /名称键/);
+  assert.match(source, /ontology-object-attribute-panel__form-grid/);
   assert.match(source, /function openCreateAttribute/);
   assert.match(source, /function openEditAttribute/);
   assert.match(source, /function openCategoryCreate/);

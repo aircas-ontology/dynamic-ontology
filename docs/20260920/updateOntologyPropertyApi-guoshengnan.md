@@ -66,3 +66,84 @@
 
 - 成功时返回：`SUCCESS`。
 - 失败时返回具体错误信息。
+
+## types 示例
+
+文件：`src/types/apis/updateOntologyPropertyType.ts`
+
+```ts
+import type { PropertyDatasourceParam } from "./createOntologyPropertyType";
+
+export interface UpdateOntologyPropertyParams {
+  uniqueIdentifier: string;
+  datasource?: PropertyDatasourceParam;
+  schemaName: string;
+  datasourceId: string;
+  datasourceColumnName: string;
+  displayName: string;
+  dataType: string;
+  description?: string;
+  isTitleKey: boolean;
+  isPrimaryKey: boolean;
+  defaultValue?: string;
+  storageGroup: string;
+  categoryId?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export type UpdateOntologyPropertyData = undefined;
+```
+
+并在 `src/types/index.ts` 中统一导出：
+
+```ts
+export type { UpdateOntologyPropertyData, UpdateOntologyPropertyParams } from "./apis/updateOntologyPropertyType";
+```
+
+## apis 示例
+
+文件：`src/apis/ontologyPropertyApi.ts`
+
+```ts
+import type { ApiResponse, UpdateOntologyPropertyData, UpdateOntologyPropertyParams } from "@/types";
+import { request } from "@/utils/request";
+
+/**
+ * 修改本体对象属性。
+ *
+ * 请求方式：PUT `/ontology/property`
+ *
+ * @param params 修改本体对象属性参数。
+ * @returns 标准 API 响应。
+ */
+export function updateOntologyPropertyInterface(params: UpdateOntologyPropertyParams): Promise<ApiResponse<UpdateOntologyPropertyData>> {
+  return request<UpdateOntologyPropertyData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/property",
+    method: "put",
+    data: params,
+  });
+}
+```
+
+并在 `src/apis/index.ts` 中导出：
+
+```ts
+import { updateOntologyPropertyInterface } from "./ontologyPropertyApi";
+
+export { updateOntologyPropertyInterface };
+```
+
+## mocks 示例
+
+文件：`src/mocks/updateOntologyPropertyMock/updateOntologyPropertyMock.ts`
+
+```ts
+import type { ApiResponse, UpdateOntologyPropertyData } from "@/types";
+
+export const updateOntologyPropertyMock: ApiResponse<UpdateOntologyPropertyData> = {
+  code: 200,
+  message: "SUCCESS",
+  success: true,
+  data: undefined,
+};
+```

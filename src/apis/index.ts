@@ -22,19 +22,30 @@ import {
   getOntologyObjectByCategoryIdInterface,
   updateOntologyObjectInterface,
 } from "./ontologyObjectManageApi";
+import {
+  createOntologyPropertyInterface,
+  deleteOntologyPropertyInterface,
+  getOntologyPropertyByCategoryIdInterface,
+  getOntologyPropertyByOntologyIdInterface,
+  updateOntologyPropertyInterface,
+} from "./ontologyPropertyApi";
 
 export {
   createOntologySpaceInterface,
   createOntologyObjectInterface,
   createOntologyObjectArrTypeTreeInterface,
+  createOntologyPropertyInterface,
   deleteOntologyObjectArrTypeTreeInterface,
   deleteOntologyCategoryTreeInterface,
   deleteOntologyObjectInterface,
   deleteOntologySpaceInterface,
+  deleteOntologyPropertyInterface,
   getExampleInterface,
   getOntologyCategoryTreeInterface,
   getOntologyObjectArrTypeTreeInterface,
   getOntologyObjectByCategoryIdInterface,
+  getOntologyPropertyByCategoryIdInterface,
+  getOntologyPropertyByOntologyIdInterface,
   getOntologySpaceListInterface,
   postCreateOntologyCategoryTreeInterface,
   postLoginInterface,
@@ -42,4 +53,5 @@ export {
   updateOntologySpaceInterface,
   updateOntologyObjectArrTypeTreeInterface,
   updateOntologyObjectInterface,
+  updateOntologyPropertyInterface,
 };
