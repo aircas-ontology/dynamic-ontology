@@ -16,7 +16,7 @@ mocks，types文件名自行语义化命名
 
 ## 接口uri
 
-- `/ontology/link_category`
+- `/ontology/link`
 
 ## 请求方式
 
@@ -26,9 +26,8 @@ mocks，types文件名自行语义化命名
 
 - ```JSON
   {
-    "spaceId": 10,
-    "parentId": 0,
-    "name": "全部分类",
+    "name": "关系名称",
+    "ontologyUniqueIdentifierFrom": "源本体"
   }
   ```
 
