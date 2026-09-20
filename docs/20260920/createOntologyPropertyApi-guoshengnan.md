@@ -68,3 +68,88 @@
 
 - 成功时返回：`SUCCESS`。
 - 失败时返回具体错误信息。
+
+## types 示例
+
+文件：`src/types/apis/createOntologyPropertyType.ts`
+
+```ts
+export interface PropertyDatasourceParam {
+  [key: string]: unknown;
+}
+
+export interface CreateOntologyPropertyParams {
+  ontologyIdentifier: string;
+  datasource?: PropertyDatasourceParam;
+  schemaName: string;
+  datasourceId: string;
+  datasourceColumnName: string;
+  dataType: string;
+  description: string;
+  displayName: string;
+  apiName: string;
+  isPrimaryKey: boolean;
+  isTitleKey: boolean;
+  type?: string;
+  defaultValue?: string;
+  storageGroup: string;
+  categoryId?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export type CreateOntologyPropertyData = undefined;
+```
+
+并在 `src/types/index.ts` 中统一导出：
+
+```ts
+export type { CreateOntologyPropertyData, CreateOntologyPropertyParams, PropertyDatasourceParam } from "./apis/createOntologyPropertyType";
+```
+
+## apis 示例
+
+文件：`src/apis/ontologyPropertyApi.ts`
+
+```ts
+import type { ApiResponse, CreateOntologyPropertyData, CreateOntologyPropertyParams } from "@/types";
+import { request } from "@/utils/request";
+
+/**
+ * 创建本体对象属性。
+ *
+ * 请求方式：POST `/ontology/property`
+ *
+ * @param params 创建本体对象属性参数。
+ * @returns 标准 API 响应。
+ */
+export function createOntologyPropertyInterface(params: CreateOntologyPropertyParams): Promise<ApiResponse<CreateOntologyPropertyData>> {
+  return request<CreateOntologyPropertyData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/property",
+    method: "post",
+    data: params,
+  });
+}
+```
+
+并在 `src/apis/index.ts` 中导出：
+
+```ts
+import { createOntologyPropertyInterface } from "./ontologyPropertyApi";
+
+export { createOntologyPropertyInterface };
+```
+
+## mocks 示例
+
+文件：`src/mocks/createOntologyPropertyMock/createOntologyPropertyMock.ts`
+
+```ts
+import type { ApiResponse, CreateOntologyPropertyData } from "@/types";
+
+export const createOntologyPropertyMock: ApiResponse<CreateOntologyPropertyData> = {
+  code: 200,
+  message: "SUCCESS",
+  success: true,
+  data: undefined,
+};
+```
