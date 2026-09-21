@@ -8,7 +8,7 @@ import type {
 } from "@/types";
 
 /**
- * @description 将单个分类树节点映射为概念层级树节点；缺 name 用空串，count 为本节点 meta 条数。
+ * @description 将单个分类树节点映射为概念层级树节点；同时保留节点下本体对象显示名称。
  * @param node 接口分类节点。
  * @returns 页面概念树节点。
  */
@@ -18,6 +18,7 @@ function mapOntologyCategoryTreeNode(node: OntologyCategoryTreeNode): OntologyCo
     id,
     label: node.name ?? "",
     count: node.ontologyMetaInfos?.length ?? 0,
+    objectNames: (node.ontologyMetaInfos ?? []).map((meta) => meta.displayName).filter((name) => Boolean(name?.trim())),
     targetCategoryId: id,
     children: (node.children ?? []).map(mapOntologyCategoryTreeNode),
   };

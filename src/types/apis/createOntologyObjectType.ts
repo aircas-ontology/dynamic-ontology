@@ -5,7 +5,7 @@ export interface CreateOntologyObjectParams {
   apiName: string;
   icon?: string;
   description?: string;
-  parentOntologyUniqueIdentifier?: number;
+  parentOntologyUniqueIdentifier?: string;
   categoryId?: number;
   groupIds?: string[];
 }

@@ -29,8 +29,15 @@
             <FolderOpened v-if="hasChildren(data)" />
             <CollectionTag v-else />
           </el-icon>
-          <span class="concept-hierarchy__label" :title="nodeLabel(data)">{{ nodeLabel(data) }}</span>
-          <span v-if="nodeCount(data)" class="concept-hierarchy__count">{{ nodeCount(data) }}</span>
+          <span class="concept-hierarchy__content">
+            <span class="concept-hierarchy__heading">
+              <span class="concept-hierarchy__label" :title="nodeLabel(data)">{{ nodeLabel(data) }}</span>
+              <span v-if="nodeCount(data)" class="concept-hierarchy__count">{{ nodeCount(data) }}</span>
+            </span>
+            <span v-if="nodeObjectNames(data).length" class="concept-hierarchy__objects" aria-label="本体对象名称">
+              <span v-for="name in nodeObjectNames(data)" :key="name" class="concept-hierarchy__object-name" :title="name">{{ name }}</span>
+            </span>
+          </span>
           <span class="concept-hierarchy__create-child-wrap" @click.stop>
             <el-tooltip content="新建子分类" placement="top" :show-after="200">
               <button type="button" class="concept-hierarchy__create-child" aria-label="新建子分类" @click="openChildCategoryDialog(data)">
@@ -99,6 +106,11 @@ function nodeLabel(value: unknown) {
 
 function nodeCount(value: unknown) {
   return isConceptNode(value) ? value.count : 0;
+}
+
+/** @description 读取概念节点下的本体对象显示名称。 */
+function nodeObjectNames(value: unknown): string[] {
+  return isConceptNode(value) ? (value.objectNames ?? []) : [];
 }
 
 function hasChildren(value: unknown) {
@@ -189,7 +201,9 @@ function openDeleteCategoryDialog(value: unknown) {
 }
 
 .concept-hierarchy__tree :deep(.el-tree-node__content) {
-  height: 32px;
+  min-height: 32px;
+  height: auto;
+  padding: 4px 0;
   border-radius: 4px;
 }
 
@@ -206,8 +220,40 @@ function openDeleteCategoryDialog(value: unknown) {
   display: flex;
   min-width: 0;
   flex: 1;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.concept-hierarchy__content {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.concept-hierarchy__heading {
+  display: flex;
+  min-width: 0;
   align-items: center;
   gap: 6px;
+}
+
+.concept-hierarchy__objects {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 2px;
+}
+
+.concept-hierarchy__object-name {
+  overflow: hidden;
+  color: var(--aircas-color-text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .concept-hierarchy__create-child-wrap {

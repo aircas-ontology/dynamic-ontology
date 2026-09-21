@@ -10,7 +10,7 @@ test("create ontology object types expose the documented request and response fi
   assert.match(source, /spaceId: number/);
   assert.match(source, /displayName: string/);
   assert.match(source, /apiName: string/);
-  assert.match(source, /parentOntologyUniqueIdentifier\?: number/);
+  assert.match(source, /parentOntologyUniqueIdentifier\?: string/);
   assert.match(source, /categoryId\?: number/);
   assert.match(source, /groupIds\?: string\[\]/);
   assert.match(source, /export interface CreateOntologyObjectData/);
@@ -40,6 +40,8 @@ test("create ontology object mock mirrors the documented success envelope", () =
 test("object workspace submits manual creation through the api and reloads after success", () => {
   const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
   const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
+  assert.match(panelSource, /createOntologyObjectInterface/);
+  assert.match(panelSource, /await createOntologyObjectInterface/);
   assert.match(actionsSource, /createOntologyObjectInterface/);
   assert.match(actionsSource, /await createOntologyObjectInterface/);
   assert.match(panelSource, /@submit-manual="createOntologyObject"/);
@@ -48,4 +50,7 @@ test("object workspace submits manual creation through the api and reloads after
   assert.match(actionsSource, /objectCreateError\.value/);
   assert.match(actionsSource, /response\.code !== 200/);
   assert.doesNotMatch(actionsSource, /response\.code !== 200 \|\| !response\.success/);
+  const createFunction = panelSource.match(/async function createOntologyObject\(draft[\s\S]*?\/\*\*/)?.[0] ?? "";
+  assert.match(createFunction, /parentOntologyUniqueIdentifier \}/);
+  assert.doesNotMatch(createFunction, /numericParentId/);
 });
