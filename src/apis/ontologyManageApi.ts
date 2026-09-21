@@ -34,8 +34,8 @@ import { request } from "@/utils/request";
  * @param params 创建空间参数。
  * @param {string} params.apiName 空间API名称。
  * @param {string} params.displayName 空间名称。
- * @param {string} params.icon 空间图标url。
- * @param {string} params.description 空间描述。
+ * @param {string} [params.iconUrl] 空间图标url。
+ * @param {string} [params.description] 空间描述。
  * @returns 标准 API 响应，data 为新创建空间 id。
  */
 export function createOntologySpaceInterface(params: CreateOntologySpaceParams): Promise<ApiResponse<CreateOntologySpaceData>> {
@@ -86,8 +86,8 @@ export function deleteOntologySpaceInterface(params: DeleteOntologySpaceParams):
  * @param params 编辑空间参数。
  * @param {number} params.spaceId 空间ID。
  * @param {string} params.displayName 空间名称。
- * @param {string} params.icon 空间图标url。
- * @param {string} params.description 空间描述。
+ * @param {string} [params.iconUrl] 空间图标url。
+ * @param {string} [params.description] 空间描述。
  * @returns 标准 API 响应，data 为空对象。
  */
 export function updateOntologySpaceInterface(params: UpdateOntologySpaceParams): Promise<ApiResponse<UpdateOntologySpaceData>> {

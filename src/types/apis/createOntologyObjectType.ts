@@ -3,7 +3,7 @@ export interface CreateOntologyObjectParams {
   spaceId: number;
   displayName: string;
   apiName: string;
-  icon?: string;
+  iconUrl?: string;
   description?: string;
   parentOntologyUniqueIdentifier?: number;
   categoryId?: number;

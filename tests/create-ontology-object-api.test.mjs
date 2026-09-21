@@ -10,6 +10,7 @@ test("create ontology object types expose the documented request and response fi
   assert.match(source, /spaceId: number/);
   assert.match(source, /displayName: string/);
   assert.match(source, /apiName: string/);
+  assert.match(source, /iconUrl\?: string/);
   assert.match(source, /parentOntologyUniqueIdentifier\?: number/);
   assert.match(source, /categoryId\?: number/);
   assert.match(source, /groupIds\?: string\[\]/);

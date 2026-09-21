@@ -421,7 +421,7 @@ async function createOntologyObject(draft: OntologyObjectCreateDraft) {
       spaceId: numericSpaceId,
       displayName: draft.displayName,
       apiName: draft.apiName,
-      ...(draft.iconUrl ? { icon: draft.iconUrl } : {}),
+      ...(draft.iconUrl ? { iconUrl: draft.iconUrl } : {}),
       ...(draft.description ? { description: draft.description } : {}),
       ...(numericParentId === undefined ? {} : { parentOntologyUniqueIdentifier: numericParentId }),
       categoryId: numericCategoryId,
