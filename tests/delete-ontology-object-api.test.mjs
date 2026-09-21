@@ -30,13 +30,14 @@ test("delete ontology object api follows the documented DELETE path contract", (
 
 test("object delete action opens a confirmation dialog and refreshes after success", () => {
   const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
   const dialogSource = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectDeleteDialog.vue");
 
   assert.match(panelSource, /<OntologyObjectDeleteDialog/);
-  assert.match(panelSource, /deleteOntologyObjectInterface/);
+  assert.match(actionsSource, /deleteOntologyObjectInterface/);
   assert.match(panelSource, /action === "delete"/);
-  assert.match(panelSource, /const response = await deleteOntologyObjectInterface\([\s\S]*?if \(response\.code !== 200\)/);
-  assert.match(panelSource, /await load\(\)/);
+  assert.match(actionsSource, /const response = await deleteOntologyObjectInterface\([\s\S]*?if \(response\.code !== 200\)/);
+  assert.match(actionsSource, /await load\(\)/);
   assert.match(dialogSource, /确认删除本体对象/);
   assert.match(dialogSource, /确认删除/);
 });

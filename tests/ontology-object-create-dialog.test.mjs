@@ -20,13 +20,14 @@ test("ontology object create dialog exposes prototype creation modes and require
 });
 
 test("object workspace routes create action to the dialog and separates manual api submission", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
-  assert.match(source, /<OntologyObjectCreateDialog/);
-  assert.match(source, /@submit-manual="createOntologyObject"/);
-  assert.match(source, /@submit-import="createOntologyObjects"/);
-  assert.match(source, /if \(action === "create"\)/);
-  assert.match(source, /createOntologyObjectInterface/);
-  assert.match(source, /await load\(\)/);
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
+  assert.match(panelSource, /<OntologyObjectCreateDialog/);
+  assert.match(panelSource, /@submit-manual="createOntologyObject"/);
+  assert.match(panelSource, /@submit-import="createOntologyObjects"/);
+  assert.match(panelSource, /if \(action === "create"\)/);
+  assert.match(actionsSource, /createOntologyObjectInterface/);
+  assert.match(actionsSource, /await load\(\)/);
 });
 
 test("category tree mapping includes ontology metadata in object sections", () => {

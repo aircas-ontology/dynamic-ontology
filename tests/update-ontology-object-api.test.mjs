@@ -30,14 +30,15 @@ test("update ontology object api follows the documented PUT contract", () => {
 
 test("object edit action opens a prefilled dialog and refreshes after success", () => {
   const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
   const dialogSource = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectCreateDialog.vue");
 
-  assert.match(panelSource, /updateOntologyObjectInterface/);
-  assert.match(panelSource, /editingObject/);
+  assert.match(actionsSource, /updateOntologyObjectInterface/);
+  assert.match(actionsSource, /editingObject/);
   assert.match(panelSource, /action === "edit"/);
-  assert.match(panelSource, /const response = await updateOntologyObjectInterface\([\s\S]*?if \(response\.code !== 200\)/);
-  assert.match(panelSource, /updateOntologyObjectInterface\([\s\S]*?groupIds:\s*\[null\]/);
-  assert.match(panelSource, /await load\(\)/);
+  assert.match(actionsSource, /const response = await updateOntologyObjectInterface\([\s\S]*?if \(response\.code !== 200\)/);
+  assert.match(actionsSource, /updateOntologyObjectInterface\([\s\S]*?groupIds:\s*\[null\]/);
+  assert.match(actionsSource, /await load\(\)/);
   assert.match(dialogSource, /editingItem/);
   assert.match(dialogSource, /编辑本体/);
   assert.match(dialogSource, /submit-edit/);

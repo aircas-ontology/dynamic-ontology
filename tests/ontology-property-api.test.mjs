@@ -49,7 +49,9 @@ test("ontology property api maps query and command endpoints", () => {
 });
 
 test("attribute panel uses ontology property api for list and commands", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  const formDialogSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  const helpersSource = readSource("../src/views/OntologyObjectDetail/utils/attributePanelHelpers.ts");
   assert.match(source, /getOntologyPropertyByOntologyIdInterface/);
   assert.match(source, /getOntologyPropertyByCategoryIdInterface/);
   assert.match(source, /createOntologyPropertyInterface/);
@@ -62,11 +64,11 @@ test("attribute panel uses ontology property api for list and commands", () => {
   assert.match(source, /buildUpdatePropertyParams/);
   assert.match(source, /isPrimaryKey: draft\.isPrimary/);
   assert.match(source, /isTitleKey: draft\.isNameKey/);
-  assert.match(source, /apiName: item\.apiName/);
-  assert.match(source, /dataType: item\.dataType/);
-  assert.match(source, /const storageGroups = \[\{ label: "主存储", value: "main" \}\]/);
+  assert.match(helpersSource, /apiName: item\.apiName/);
+  assert.match(helpersSource, /dataType: item\.dataType/);
+  assert.match(source, /storageGroups: OntologyAttributeStorageGroupOption\[\] = \[\{ label: "主存储", value: "main" \}\]/);
   assert.match(source, /storageGroup: "main"/);
-  assert.match(source, /:label="group\.label" :value="group\.value"/);
+  assert.match(formDialogSource, /:label="group\.label" :value="group\.value"/);
   const createBuilder = source.match(/function buildCreatePropertyParams[\s\S]*?function buildUpdatePropertyParams/)?.[0] ?? "";
   assert.doesNotMatch(createBuilder, /datasource:|metadata:|type:/);
   assert.match(source, /ElMessageBox\.confirm/);

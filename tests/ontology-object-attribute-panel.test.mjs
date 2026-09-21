@@ -21,44 +21,64 @@ test("object attribute route resolves to the prototype attribute panel", () => {
   assert.match(String(route.matched.at(-1)?.components?.default), /OntologyObjectAttributePanel/);
 });
 
-test("object attribute panel exposes category tree, property columns, and local actions", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
-  assert.match(source, /属性分类树/);
-  assert.match(source, /搜索属性分类/);
-  assert.match(source, /添加子分类/);
-  assert.match(source, /current-node-key="selectedCategoryId"/);
-  assert.match(source, /class="aircas-dialog"/);
-  assert.match(source, /关联数据源/);
-  assert.match(source, /数据类型/);
-  assert.match(source, /存储分组/);
-  assert.match(source, /属性描述/);
-  assert.match(source, /prop="displayName" label="属性名称"/);
-  assert.match(source, /placeholder="例如：任务优先级"/);
-  assert.match(source, /placeholder="例如：priority"/);
-  assert.match(source, /请选择属性分类/);
-  assert.match(source, /class="aircas-select" popper-class="aircas-select-popper"/);
-  assert.match(source, /class="aircas-switch"/);
-  assert.match(source, /主键/);
-  assert.match(source, /名称键/);
-  assert.match(source, /ontology-object-attribute-panel__form-grid/);
-  assert.match(source, /function openCreateAttribute/);
-  assert.match(source, /function openEditAttribute/);
-  assert.match(source, /function openCategoryCreate/);
-  assert.match(source, /function openCategoryEdit/);
-  assert.match(source, /function saveCategoryEdit/);
-  assert.match(source, /deleteOntologyObjectArrTypeTreeInterface/);
-  assert.match(source, /function removeCategory/);
-  assert.match(source, /ElMessageBox\.confirm/);
-  assert.match(source, /编辑分类/);
-  assert.match(source, /父分类/);
-  assert.match(source, /编辑分类/);
-  assert.match(source, /删除分类/);
-  assert.match(source, /function saveCategoryDraft/);
-  assert.match(source, /暂无分类树数据/);
-  assert.match(source, /创建分类/);
-  assert.match(source, /parentId: Number\(categoryParentId\.value\) \|\| 0/);
-  assert.match(source, /categoryParentName/);
-  assert.match(source, /父分类/);
-  assert.match(source, /function removeAttribute/);
-  assert.match(source, /function saveAttributeDraft/);
+test("object attribute panel splits tree, table, dialogs, and composables", () => {
+  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
+  const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
+  const createDialogSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryCreateDialog.vue");
+  const editDialogSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryEditDialog.vue");
+  const formDialogSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  const categoryComposable = readSource("../src/views/OntologyObjectDetail/composables/useAttributeCategoryTree.ts");
+  const propertyComposable = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+
+  assert.match(panelSource, /AttributeCategoryTree/);
+  assert.match(panelSource, /AttributePropertyTable/);
+  assert.match(panelSource, /AttributeCategoryCreateDialog/);
+  assert.match(panelSource, /AttributeCategoryEditDialog/);
+  assert.match(panelSource, /AttributePropertyFormDialog/);
+  assert.match(panelSource, /useAttributeCategoryTree/);
+  assert.match(panelSource, /useAttributePropertyList/);
+
+  assert.match(treeSource, /属性分类树/);
+  assert.match(treeSource, /搜索属性分类/);
+  assert.match(treeSource, /添加子分类/);
+  assert.match(treeSource, /current-node-key=/);
+  assert.match(treeSource, /编辑分类/);
+  assert.match(treeSource, /删除分类/);
+  assert.match(treeSource, /暂无分类树数据/);
+  assert.match(treeSource, /创建分类/);
+
+  assert.match(tableSource, /关联数据源/);
+  assert.match(tableSource, /prop="displayName" label="属性名称"/);
+  assert.match(tableSource, /数据类型/);
+  assert.match(tableSource, /存储分组/);
+  assert.match(tableSource, /属性描述/);
+  assert.match(tableSource, /主键/);
+  assert.match(tableSource, /名称键/);
+
+  assert.match(createDialogSource, /class="aircas-dialog"/);
+  assert.match(createDialogSource, /父分类/);
+  assert.match(editDialogSource, /编辑分类/);
+  assert.match(editDialogSource, /父分类/);
+  assert.match(formDialogSource, /placeholder="例如：任务优先级"/);
+  assert.match(formDialogSource, /placeholder="例如：priority"/);
+  assert.match(formDialogSource, /请选择属性分类/);
+  assert.match(formDialogSource, /class="aircas-select" popper-class="aircas-select-popper"/);
+  assert.match(formDialogSource, /class="aircas-switch"/);
+  assert.match(formDialogSource, /ontology-object-attribute-panel__form-grid/);
+
+  assert.match(categoryComposable, /function openCategoryCreate/);
+  assert.match(categoryComposable, /function openCategoryEdit/);
+  assert.match(categoryComposable, /function saveCategoryEdit/);
+  assert.match(categoryComposable, /function saveCategoryDraft/);
+  assert.match(categoryComposable, /function removeCategory/);
+  assert.match(categoryComposable, /deleteOntologyObjectArrTypeTreeInterface/);
+  assert.match(categoryComposable, /ElMessageBox\.confirm/);
+  assert.match(categoryComposable, /parentId: Number\(categoryParentId\.value\) \|\| 0/);
+  assert.match(categoryComposable, /categoryParentName/);
+
+  assert.match(propertyComposable, /function openCreateAttribute/);
+  assert.match(propertyComposable, /function openEditAttribute/);
+  assert.match(propertyComposable, /function removeAttribute/);
+  assert.match(propertyComposable, /function saveAttributeDraft/);
 });

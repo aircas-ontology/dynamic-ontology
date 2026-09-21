@@ -81,18 +81,20 @@ test("ontology object attribute category delete api follows the DELETE contract"
 });
 
 test("object attribute panel queries the category tree with the route object identifier", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributeCategoryTree.ts");
+  const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
+  const createDialogSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryCreateDialog.vue");
   assert.match(source, /getOntologyObjectArrTypeTreeInterface/);
   assert.match(source, /useRoute/);
   assert.match(source, /ontologyUniqueIdentifier/);
   assert.match(source, /categoryTreeLoading/);
   assert.match(source, /categoryTreeError/);
   assert.match(source, /categoryTreeEmpty/);
-  assert.match(source, /暂无分类树数据/);
-  assert.match(source, /创建分类/);
+  assert.match(treeSource, /暂无分类树数据/);
+  assert.match(treeSource, /创建分类/);
   assert.match(source, /parentId: Number\(categoryParentId\.value\) \|\| 0/);
   assert.match(source, /categoryParentName/);
-  assert.match(source, /readonly/);
+  assert.match(createDialogSource, /readonly/);
   assert.match(source, /createOntologyObjectArrTypeTreeInterface/);
   assert.match(source, /updateOntologyObjectArrTypeTreeInterface/);
   assert.match(source, /categoryEditDialogVisible/);

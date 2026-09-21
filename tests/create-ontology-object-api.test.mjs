@@ -38,13 +38,14 @@ test("create ontology object mock mirrors the documented success envelope", () =
 });
 
 test("object workspace submits manual creation through the api and reloads after success", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
-  assert.match(source, /createOntologyObjectInterface/);
-  assert.match(source, /await createOntologyObjectInterface/);
-  assert.match(source, /@submit-manual="createOntologyObject"/);
-  assert.match(source, /await load\(\)/);
-  assert.match(source, /ElMessage\.success/);
-  assert.match(source, /objectCreateError\.value/);
-  assert.match(source, /response\.code !== 200/);
-  assert.doesNotMatch(source, /response\.code !== 200 \|\| !response\.success/);
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
+  assert.match(actionsSource, /createOntologyObjectInterface/);
+  assert.match(actionsSource, /await createOntologyObjectInterface/);
+  assert.match(panelSource, /@submit-manual="createOntologyObject"/);
+  assert.match(actionsSource, /await load\(\)/);
+  assert.match(actionsSource, /ElMessage\.success/);
+  assert.match(actionsSource, /objectCreateError\.value/);
+  assert.match(actionsSource, /response\.code !== 200/);
+  assert.doesNotMatch(actionsSource, /response\.code !== 200 \|\| !response\.success/);
 });

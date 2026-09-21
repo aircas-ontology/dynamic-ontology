@@ -44,7 +44,24 @@ export type { UpdateOntologyPropertyData, UpdateOntologyPropertyParams } from ".
 export type { UpdateOntologySpaceData, UpdateOntologySpaceParams } from "./apis/updateOntologySpaceType";
 export type { LoginCredentials } from "./auth/credentialsType";
 export type { MapConfig } from "./map/configType";
-export type { OntologyObjectDetailRouteName, OntologyObjectDetailTab } from "./pages/ontologyObjectDetailType";
+export type {
+  ConceptualModelAttribute,
+  ConceptualModelObject,
+  ConceptualModelPaletteItem,
+  ConceptualModelPaletteType,
+  ConceptualModelPort,
+  ConceptualModelRelation,
+  ConceptualModelSelectedAttribute,
+  ConceptualModelSelection,
+} from "./pages/ontologyConceptualModelCreateType";
+export type {
+  OntologyAttributeCategoryNode,
+  OntologyAttributeDraft,
+  OntologyAttributeItem,
+  OntologyAttributeStorageGroupOption,
+  OntologyObjectDetailRouteName,
+  OntologyObjectDetailTab,
+} from "./pages/ontologyObjectDetailType";
 export type {
   ManagementWorkspaceTab,
   OntologyConceptNode,

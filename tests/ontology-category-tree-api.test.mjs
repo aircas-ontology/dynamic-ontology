@@ -111,7 +111,7 @@ test("create category tree api posts name, parentId and spaceId to the category 
   const apiSource = readSource("../src/apis/ontologyManageApi.ts");
   const typeSource = readSource("../src/types/apis/ontologyCategoryTreeType.ts");
   const mockSource = readSource("../src/mocks/ontologyCategoryTreeMock/ontologyCategoryTreeMock.ts");
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts");
   assert.match(
     apiSource,
     /export function postCreateOntologyCategoryTreeInterface\(payload: CreateOntologyCategoryTreeParams\): Promise<ApiResponse<undefined>>/,
@@ -120,19 +120,19 @@ test("create category tree api posts name, parentId and spaceId to the category 
   assert.match(apiSource, /data: payload/);
   assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/category"/);
   assert.match(typeSource, /export interface CreateOntologyCategoryTreeParams[\s\S]*spaceId:\s*number;[\s\S]*parentId:\s*number;/);
-  assert.match(panelSource, /const numericSpaceId = Number\(space\)/);
-  assert.match(panelSource, /spaceId:\s*numericSpaceId/);
+  assert.match(actionsSource, /const numericSpaceId = Number\(space\)/);
+  assert.match(actionsSource, /spaceId:\s*numericSpaceId/);
   assert.match(mockSource, /export const createOntologyCategoryTreeMock: ApiResponse<undefined>/);
   assert.match(mockSource, /message: "SUCCESS"/);
-  assert.match(panelSource, /postCreateOntologyCategoryTreeInterface/);
-  assert.match(panelSource, /parentId:\s*0/);
+  assert.match(actionsSource, /postCreateOntologyCategoryTreeInterface/);
+  assert.match(actionsSource, /parentId:\s*0/);
 });
 
 test("delete category tree api sends spaceId and categoryId with delete", () => {
   const apiSource = readSource("../src/apis/ontologyManageApi.ts");
   const typeSource = readSource("../src/types/apis/ontologyCategoryTreeType.ts");
   const mockSource = readSource("../src/mocks/ontologyCategoryTreeMock/ontologyCategoryTreeMock.ts");
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts");
   assert.match(apiSource, /export function deleteOntologyCategoryTreeInterface\(payload: DeleteOntologyCategoryTreeParams\): Promise<ApiResponse<undefined>>/);
   assert.match(apiSource, /method:\s*"delete"/);
   assert.match(apiSource, /data: payload/);
@@ -140,15 +140,15 @@ test("delete category tree api sends spaceId and categoryId with delete", () => 
   assert.match(typeSource, /export interface DeleteOntologyCategoryTreeParams[\s\S]*spaceId:\s*number;[\s\S]*categoryId:\s*number;/);
   assert.match(mockSource, /export const deleteOntologyCategoryTreeMock: ApiResponse<undefined>/);
   assert.match(mockSource, /message: "SUCCESS"/);
-  assert.match(panelSource, /deleteOntologyCategoryTreeInterface/);
-  assert.match(panelSource, /categoryId: numericCategoryId/);
+  assert.match(actionsSource, /deleteOntologyCategoryTreeInterface/);
+  assert.match(actionsSource, /categoryId: numericCategoryId/);
 });
 
 test("update category name api puts spaceId, categoryId and name to the category uri", () => {
   const apiSource = readSource("../src/apis/ontologyManageApi.ts");
   const typeSource = readSource("../src/types/apis/ontologyCategoryTreeType.ts");
   const mockSource = readSource("../src/mocks/ontologyCategoryTreeMock/ontologyCategoryTreeMock.ts");
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts");
   const barrelSource = readSource("../src/apis/index.ts");
   assert.match(
     apiSource,
@@ -160,7 +160,7 @@ test("update category name api puts spaceId, categoryId and name to the category
   assert.match(typeSource, /export interface UpdateOntologyCategoryNameParams[\s\S]*spaceId:\s*number;[\s\S]*categoryId:\s*number;[\s\S]*name:\s*string;/);
   assert.match(mockSource, /export const updateOntologyCategoryNameMock: ApiResponse<undefined>/);
   assert.match(mockSource, /message: "SUCCESS"/);
-  assert.match(panelSource, /putUpdateOntologyCategoryNameInterface/);
-  assert.match(panelSource, /name,/);
+  assert.match(actionsSource, /putUpdateOntologyCategoryNameInterface/);
+  assert.match(actionsSource, /name,/);
   assert.match(barrelSource, /putUpdateOntologyCategoryNameInterface/);
 });
