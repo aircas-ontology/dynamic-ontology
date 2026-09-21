@@ -10,7 +10,7 @@ test("create ontology object types expose the documented request and response fi
   assert.match(source, /spaceId: number/);
   assert.match(source, /displayName: string/);
   assert.match(source, /apiName: string/);
-  assert.match(source, /parentOntologyUniqueIdentifier\?: number/);
+  assert.match(source, /parentOntologyUniqueIdentifier\?: string/);
   assert.match(source, /categoryId\?: number/);
   assert.match(source, /groupIds\?: string\[\]/);
   assert.match(source, /export interface CreateOntologyObjectData/);
@@ -47,4 +47,7 @@ test("object workspace submits manual creation through the api and reloads after
   assert.match(source, /objectCreateError\.value/);
   assert.match(source, /response\.code !== 200/);
   assert.doesNotMatch(source, /response\.code !== 200 \|\| !response\.success/);
+  const createFunction = source.match(/async function createOntologyObject\(draft[\s\S]*?\/\*\*/)?.[0] ?? "";
+  assert.match(createFunction, /parentOntologyUniqueIdentifier \}/);
+  assert.doesNotMatch(createFunction, /numericParentId/);
 });

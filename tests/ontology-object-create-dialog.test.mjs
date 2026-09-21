@@ -37,5 +37,14 @@ test("category tree mapping includes ontology metadata in object sections", () =
   const source = readSource("../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts");
   assert.match(source, /mapOntologyCategorySections/);
   assert.match(source, /node\.ontologyMetaInfos/);
+  assert.match(source, /objectNames:/);
+  assert.match(source, /meta\.displayName/);
   assert.match(source, /propertyCount/);
+});
+
+test("concept hierarchy tree renders object names below each category node", () => {
+  const source = readSource("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue");
+  assert.match(source, /nodeObjectNames\(data\)/);
+  assert.match(source, /本体对象名称/);
+  assert.match(source, /concept-hierarchy__object-name/);
 });
