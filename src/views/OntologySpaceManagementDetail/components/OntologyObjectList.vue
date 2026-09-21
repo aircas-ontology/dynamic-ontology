@@ -190,6 +190,10 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+  background: var(--aircas-color-panel-background);
 }
 .ontology-object-list__toolbar h1 {
   margin: 0;

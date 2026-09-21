@@ -35,9 +35,13 @@
 
 .aircas-radio-group {
   &.el-radio-group {
+    --el-border-color: var(--aircas-color-border);
+    --el-radio-button-checked-border-color: var(--aircas-color-border);
+
     .el-radio-button__inner {
       background-color: var(--aircas-color-panel-background);
       border: 1px solid var(--aircas-color-border);
+      outline: 1px solid var(--aircas-color-border);
       color: var(--aircas-color-text-secondary);
 
       &:hover {
@@ -47,9 +51,9 @@
 
     .el-radio-button__original-radio:checked + .el-radio-button__inner {
       background-color: var(--aircas-color-button-background);
-      border-color: var(--aircas-color-button-background);
+      border-color: var(--aircas-color-border);
       color: var(--aircas-color-button-text);
-      box-shadow: -1px 0 0 0 var(--aircas-color-button-background);
+      box-shadow: -1px 0 0 0 var(--aircas-color-border);
     }
   }
 }

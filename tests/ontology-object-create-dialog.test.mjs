@@ -14,6 +14,10 @@ test("ontology object create dialog exposes prototype creation modes and require
   assert.match(source, /显示名称/);
   assert.match(source, /继承本体/);
   assert.match(source, /分类/);
+  assert.match(source, /el-tree-select/);
+  assert.match(source, /aircas-tree-select/);
+  assert.match(source, /check-strictly/);
+  assert.doesNotMatch(source, /<el-select v-model="draft\.categoryId"/);
   assert.match(source, /submitCreate/);
   assert.match(source, /const payload: OntologyObjectCreateDraft = \{ \.\.\.draft \}/);
   assert.doesNotMatch(source, /structuredClone\(draft\)/);
@@ -23,6 +27,7 @@ test("object workspace routes create action to the dialog and separates manual a
   const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
   const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
   assert.match(panelSource, /<OntologyObjectCreateDialog/);
+  assert.match(panelSource, /:category-tree="workspaceTree"/);
   assert.match(panelSource, /@submit-manual="createOntologyObject"/);
   assert.match(panelSource, /@submit-import="createOntologyObjects"/);
   assert.match(panelSource, /if \(action === "create"\)/);

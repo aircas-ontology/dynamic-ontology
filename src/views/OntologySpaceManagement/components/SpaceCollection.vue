@@ -52,6 +52,10 @@ function forward(action: OntologySpaceAction, space: OntologySpaceItem) {
   min-height: 400px;
   flex: 1;
   flex-direction: column;
+  padding: 12px 16px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+  background: var(--aircas-color-card-background);
 }
 
 .space-collection__pagination {

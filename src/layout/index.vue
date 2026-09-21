@@ -31,7 +31,9 @@ const collapsed = ref(true);
   grid-template-columns: 60px minmax(0, 1fr);
   min-height: 0;
 }
-.layout-workspace.is-expanded { grid-template-columns: 224px minmax(0, 1fr); }
+.layout-workspace.is-expanded {
+  grid-template-columns: 224px minmax(0, 1fr);
+}
 .layout-content {
   min-width: 0;
   display: grid;

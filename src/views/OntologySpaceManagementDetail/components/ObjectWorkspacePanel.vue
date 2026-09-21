@@ -52,7 +52,7 @@
     />
     <OntologyObjectCreateDialog
       v-model="objectCreateVisible"
-      :categories="categoryOptions"
+      :category-tree="workspaceTree"
       :parent-options="parentOptions"
       :submitting="objectCreateSubmitting"
       :error="objectCreateError"
@@ -142,7 +142,6 @@ const {
   objectDeleteSubmitting,
   objectDeleteError,
   deletingObject,
-  categoryOptions,
   parentOptions,
   openOntologyObjectCreateDialog,
   openOntologyObjectEditDialog,
