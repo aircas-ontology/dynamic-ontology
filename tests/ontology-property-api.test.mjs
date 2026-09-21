@@ -23,9 +23,12 @@ test("ontology property contracts expose the documented fields", () => {
   assert.match(querySource, /ontologyUniqueIdentifier:\s*string/);
   assert.match(querySource, /export interface OntologyPropertyInfo/);
   assert.match(querySource, /apiName\?:\s*string/);
-  assert.match(querySource, /dataType\?:\s*string/);
+  assert.match(querySource, /propertyType\?:\s*string/);
   assert.match(categorySource, /categoryId\?:\s*number/);
   assert.match(updateSource, /uniqueIdentifier:\s*string/);
+  assert.match(updateSource, /displayName:\s*string/);
+  assert.match(updateSource, /apiName:\s*string/);
+  assert.doesNotMatch(updateSource, /datasource|schemaName|datasourceId|datasourceColumnName|metadata/);
   assert.match(deleteSource, /propertyUniqueIdentifier:\s*string/);
 });
 
@@ -48,10 +51,21 @@ test("ontology property api maps query and command endpoints", () => {
   assert.match(barrelSource, /deleteOntologyPropertyInterface/);
 });
 
+test("ontology property api exposes automatic datasource binding", () => {
+  const apiSource = readSource("../src/apis/ontologyPropertyApi.ts");
+  const barrelSource = readSource("../src/apis/index.ts");
+  const typeSource = readSource("../src/types/apis/autoBindOntologyPropertyDatasourceType.ts");
+
+  assert.match(typeSource, /ontologyIdentifier:\s*string/);
+  assert.match(apiSource, /autoBindOntologyPropertyDatasourceInterface/);
+  assert.match(apiSource, /\/ontology\/property\/auto_bind_datasource/);
+  assert.match(apiSource, /method: "post"/);
+  assert.match(apiSource, /data: params/);
+  assert.match(barrelSource, /autoBindOntologyPropertyDatasourceInterface/);
+});
+
 test("attribute panel uses ontology property api for list and commands", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
-  const formDialogSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
-  const helpersSource = readSource("../src/views/OntologyObjectDetail/utils/attributePanelHelpers.ts");
+  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
   assert.match(source, /getOntologyPropertyByOntologyIdInterface/);
   assert.match(source, /getOntologyPropertyByCategoryIdInterface/);
   assert.match(source, /createOntologyPropertyInterface/);
@@ -64,11 +78,13 @@ test("attribute panel uses ontology property api for list and commands", () => {
   assert.match(source, /buildUpdatePropertyParams/);
   assert.match(source, /isPrimaryKey: draft\.isPrimary/);
   assert.match(source, /isTitleKey: draft\.isNameKey/);
-  assert.match(helpersSource, /apiName: item\.apiName/);
-  assert.match(helpersSource, /dataType: item\.dataType/);
-  assert.match(source, /storageGroups: OntologyAttributeStorageGroupOption\[\] = \[\{ label: "主存储", value: "main" \}\]/);
+  const updateBuilder = source.match(/function buildUpdatePropertyParams[\s\S]*?function resetDraft/)?.[0] ?? "";
+  assert.doesNotMatch(updateBuilder, /datasource:|schemaName:|datasourceId:|datasourceColumnName:|metadata:/);
+  assert.match(source, /apiName: item\.apiName/);
+  assert.match(source, /dataType: item\.propertyType/);
+  assert.match(source, /const storageGroups = \[\{ label: "主存储", value: "main" \}\]/);
   assert.match(source, /storageGroup: "main"/);
-  assert.match(formDialogSource, /:label="group\.label" :value="group\.value"/);
+  assert.match(source, /:label="group\.label" :value="group\.value"/);
   const createBuilder = source.match(/function buildCreatePropertyParams[\s\S]*?function buildUpdatePropertyParams/)?.[0] ?? "";
   assert.doesNotMatch(createBuilder, /datasource:|metadata:|type:/);
   assert.match(source, /ElMessageBox\.confirm/);

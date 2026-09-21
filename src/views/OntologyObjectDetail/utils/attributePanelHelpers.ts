@@ -31,7 +31,7 @@ export function mapOntologyPropertyItem(item: OntologyPropertyInfo, ontologyUniq
     ontologyUniqueIdentifier: item.ontologyUniqueIdentifier ?? ontologyUniqueIdentifier,
     displayName: item.displayName ?? "",
     apiName: item.apiName ?? metadataApiName,
-    dataType: item.dataType ?? metadataDataType,
+    dataType: item.propertyType ?? metadataDataType,
     categoryId: item.categoryId === undefined ? "" : String(item.categoryId),
     storageGroup: item.storageGroup ?? "",
     defaultValue: item.defaultValue ?? "",

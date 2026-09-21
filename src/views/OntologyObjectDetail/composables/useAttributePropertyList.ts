@@ -135,11 +135,8 @@ export function useAttributePropertyList(options: { selectedCategoryId: Ref<stri
     const categoryId = getDraftCategoryId();
     return {
       uniqueIdentifier,
-      datasource: {},
-      schemaName: "",
-      datasourceId: "",
-      datasourceColumnName: "",
       displayName: draft.displayName,
+      apiName: draft.apiName,
       dataType: draft.dataType,
       description: draft.description,
       isTitleKey: draft.isNameKey,
@@ -147,7 +144,6 @@ export function useAttributePropertyList(options: { selectedCategoryId: Ref<stri
       defaultValue: draft.defaultValue,
       storageGroup: draft.storageGroup,
       ...(categoryId === undefined ? {} : { categoryId }),
-      metadata: {},
     };
   }
 

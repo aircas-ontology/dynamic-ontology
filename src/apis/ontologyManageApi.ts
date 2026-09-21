@@ -15,6 +15,8 @@ import type {
   UpdateOntologyRelationCategoryNameParams,
   CreateOntologySpaceData,
   CreateOntologySpaceParams,
+  CreateOntologySpaceWithCanvasContentData,
+  CreateOntologySpaceWithCanvasContentParams,
   DeleteOntologySpaceData,
   DeleteOntologySpaceParams,
   UpdateOntologySpaceData,
@@ -38,6 +40,23 @@ import { request } from "@/utils/request";
 export function createOntologySpaceInterface(params: CreateOntologySpaceParams): Promise<ApiResponse<CreateOntologySpaceData>> {
   return request<CreateOntologySpaceData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
+    method: "post",
+    data: params,
+    timeout: requestTimeoutMs,
+  });
+}
+
+/**
+ * @description 通过概念模型画布创建本体空间及其对象、属性和关系。
+ * 请求方式：POST `/ontology/space/canvas`
+ * @param params 画布空间、对象、属性和关系内容。
+ * @returns 标准 API 响应，data 包含新建空间 id。
+ */
+export function createOntologySpaceWithCanvasContentInterface(
+  params: CreateOntologySpaceWithCanvasContentParams,
+): Promise<ApiResponse<CreateOntologySpaceWithCanvasContentData>> {
+  return request<CreateOntologySpaceWithCanvasContentData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space/canvas",
     method: "post",
     data: params,
     timeout: requestTimeoutMs,

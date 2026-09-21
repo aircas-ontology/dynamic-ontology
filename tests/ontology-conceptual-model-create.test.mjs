@@ -10,41 +10,29 @@ const readSource = (relativePath) => {
   return readFileSync(fileUrl, "utf8");
 };
 
-test("conceptual model page splits canvas areas into page components and composable", () => {
-  const pageSource = readSource("../src/views/OntologyConceptualModelCreate/index.vue");
-  const canvasSource = readSource("../src/views/OntologyConceptualModelCreate/composables/useConceptualModelCanvas.ts");
-  const geometrySource = readSource("../src/views/OntologyConceptualModelCreate/utils/conceptualModelGeometry.ts");
-  const topbarSource = readSource("../src/views/OntologyConceptualModelCreate/components/ConceptualModelTopbar.vue");
-  const paletteSource = readSource("../src/views/OntologyConceptualModelCreate/components/ConceptualModelPalette.vue");
-  const stageSource = readSource("../src/views/OntologyConceptualModelCreate/components/ConceptualModelCanvas.vue");
-  const inspectorSource = readSource("../src/views/OntologyConceptualModelCreate/components/ConceptualModelInspector.vue");
-
-  assert.match(pageSource, /useConceptualModelCanvas/);
-  assert.match(pageSource, /ConceptualModelTopbar/);
-  assert.match(pageSource, /ConceptualModelPalette/);
-  assert.match(pageSource, /ConceptualModelCanvas/);
-  assert.match(pageSource, /ConceptualModelInspector/);
-
-  assert.match(topbarSource, /概念模型画布/);
-  assert.match(paletteSource, /UML 组件/);
-  assert.match(paletteSource, /对象关系/);
-  assert.match(stageSource, /@drop="\$emit\('drop-palette', \$event\)"|@drop="onDropPalette"/);
-  assert.match(stageSource, /conceptual-model-create__edge/);
-  assert.match(stageSource, /conceptual-model-create__edge-label/);
-  assert.match(stageSource, /conceptual-model-create__edge-port/);
-  assert.match(inspectorSource, /对象检查器/);
-
-  assert.match(canvasSource, /function addObject/);
-  assert.match(canvasSource, /function addAttribute/);
-  assert.match(canvasSource, /function addRelation/);
-  assert.match(canvasSource, /function updateObject/);
-  assert.match(canvasSource, /function updateAttribute/);
-  assert.match(canvasSource, /function updateRelation/);
-  assert.match(canvasSource, /function startRelationPortDrag/);
-  assert.match(canvasSource, /function fitCanvas/);
-  assert.match(canvasSource, /function deleteSelected/);
-  assert.match(geometrySource, /function objectPoint/);
-  assert.match(geometrySource, /function pointFor/);
+test("conceptual model page exposes the prototype canvas areas and interactions", () => {
+  const source = readSource("../src/views/OntologyConceptualModelCreate/index.vue");
+  assert.match(source, /概念模型画布/);
+  assert.match(source, /UML 组件/);
+  assert.match(source, /对象关系/);
+  assert.match(source, /@drop="dropPalette"/);
+  assert.match(source, /function addObject/);
+  assert.match(source, /function addAttribute/);
+  assert.match(source, /function addRelation/);
+  assert.match(source, /function updateObject/);
+  assert.match(source, /function updateAttribute/);
+  assert.match(source, /function updateRelation/);
+  assert.match(source, /conceptual-model-create__edge/);
+  assert.match(source, /conceptual-model-create__edge-label/);
+  assert.match(source, /conceptual-model-create__edge-port/);
+  assert.match(source, /function startRelationPortDrag/);
+  assert.match(source, /function fitCanvas/);
+  assert.match(source, /function deleteSelected/);
+  assert.match(source, /空间名称/);
+  assert.match(source, /createOntologySpaceWithCanvasContentInterface/);
+  assert.match(source, /buildCanvasSpaceParams/);
+  assert.match(source, /mapCanvasDataType/);
+  assert.match(source, /spaceId/);
 });
 
 test("conceptual model route resolves under the workspace layout", () => {
