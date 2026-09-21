@@ -28,6 +28,11 @@ test("conceptual model page exposes the prototype canvas areas and interactions"
   assert.match(source, /function startRelationPortDrag/);
   assert.match(source, /function fitCanvas/);
   assert.match(source, /function deleteSelected/);
+  assert.match(source, /空间名称/);
+  assert.match(source, /createOntologySpaceWithCanvasContentInterface/);
+  assert.match(source, /buildCanvasSpaceParams/);
+  assert.match(source, /mapCanvasDataType/);
+  assert.match(source, /spaceId/);
 });
 
 test("conceptual model route resolves under the workspace layout", () => {

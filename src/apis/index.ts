@@ -2,6 +2,7 @@ import { getExampleInterface } from "./exampleApi";
 import { postLoginInterface } from "./loginApi";
 import {
   createOntologySpaceInterface,
+  createOntologySpaceWithCanvasContentInterface,
   deleteOntologyCategoryTreeInterface,
   deleteOntologyLinkInterface,
   deleteOntologyRelationCategoryTreeInterface,
@@ -29,6 +30,7 @@ import {
   updateOntologyObjectInterface,
 } from "./ontologyObjectManageApi";
 import {
+  autoBindOntologyPropertyDatasourceInterface,
   createOntologyPropertyInterface,
   deleteOntologyPropertyInterface,
   getOntologyPropertyByCategoryIdInterface,
@@ -37,7 +39,9 @@ import {
 } from "./ontologyPropertyApi";
 
 export {
+  autoBindOntologyPropertyDatasourceInterface,
   createOntologySpaceInterface,
+  createOntologySpaceWithCanvasContentInterface,
   createOntologyObjectInterface,
   createOntologyObjectArrTypeTreeInterface,
   createOntologyPropertyInterface,

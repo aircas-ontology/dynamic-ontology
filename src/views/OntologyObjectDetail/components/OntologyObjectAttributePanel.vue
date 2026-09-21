@@ -217,6 +217,15 @@
         <el-button class="aircas-button" type="primary" :loading="savingAttribute" @click="saveAttributeDraft">保存</el-button>
       </template>
     </el-dialog>
+
+    <DataSourceAssociateDialog
+      v-model="dataSourceDialogVisible"
+      :catalog="mockDataSourceCatalog"
+      :properties="mockOntologyProperties"
+      :auto-associate-loading="autoDataSourceSubmitting"
+      @auto-associate="handleAutoDataSourceAssociate"
+      @submit="handleDataSourceSubmit"
+    />
   </section>
 </template>
 
@@ -225,6 +234,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { CollectionTag, Connection, Delete, EditPen, FolderOpened, Plus } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from "element-plus";
 import {
+  autoBindOntologyPropertyDatasourceInterface,
   createOntologyPropertyInterface,
   createOntologyObjectArrTypeTreeInterface,
   deleteOntologyPropertyInterface,
@@ -237,6 +247,7 @@ import {
 } from "@/apis";
 import type { CreateOntologyPropertyParams, GetOntologyObjectArrTypeTreeData, OntologyPropertyInfo, UpdateOntologyPropertyParams } from "@/types";
 import { useRoute } from "vue-router";
+import DataSourceAssociateDialog from "./DataSourceAssociateDialog.vue";
 
 interface CategoryNode {
   id: string;
@@ -300,6 +311,192 @@ const categoryParentName = ref("无");
 const attributeSearch = ref("");
 const selectedCategoryId = ref("all");
 const attributeDialogVisible = ref(false);
+const dataSourceDialogVisible = ref(false);
+const autoDataSourceSubmitting = ref(false);
+
+interface MockDataSourceField {
+  id: string;
+  name: string;
+  dataType: string;
+}
+interface MockDataSourceTable {
+  id: string;
+  name: string;
+  fields: MockDataSourceField[];
+}
+interface MockDataSourceDatabase {
+  id: string;
+  name: string;
+  tables: MockDataSourceTable[];
+}
+interface MockPropertyBind {
+  databaseId: string;
+  databaseName: string;
+  tableId: string;
+  tableName: string;
+  fieldId: string;
+  fieldName: string;
+}
+interface MockOntologyProperty {
+  id: string;
+  displayName: string;
+  apiName: string;
+  categoryName: string;
+  dataSource: MockPropertyBind | null;
+}
+
+const mockDataSourceCatalog: MockDataSourceDatabase[] = [
+  {
+    id: "db-1",
+    name: "舰艇装备数据库",
+    tables: [
+      {
+        id: "table-1",
+        name: "舰艇主表",
+        fields: [
+          { id: "f-1", name: "舷号", dataType: "String" },
+          { id: "f-2", name: "舰名", dataType: "String" },
+          { id: "f-3", name: "舰级", dataType: "String" },
+          { id: "f-4", name: "下水日期", dataType: "Date" },
+          { id: "f-5", name: "标准排水量", dataType: "Double" },
+          { id: "f-6", name: "最大航速", dataType: "Double" },
+        ],
+      },
+      {
+        id: "table-2",
+        name: "武器系统表",
+        fields: [
+          { id: "f-7", name: "主炮型号", dataType: "String" },
+          { id: "f-8", name: "防空导弹", dataType: "String" },
+          { id: "f-9", name: "反舰导弹", dataType: "String" },
+          { id: "f-10", name: "鱼雷数量", dataType: "Integer" },
+        ],
+      },
+    ],
+  },
+];
+
+const mockOntologyProperties: MockOntologyProperty[] = [
+  {
+    id: "prop-1",
+    displayName: "舷号",
+    apiName: "hullNumber",
+    categoryName: "标识信息",
+    dataSource: {
+      databaseId: "db-1",
+      databaseName: "舰艇装备数据库",
+      tableId: "table-1",
+      tableName: "舰艇主表",
+      fieldId: "f-1",
+      fieldName: "舷号",
+    },
+  },
+  {
+    id: "prop-2",
+    displayName: "舰名",
+    apiName: "shipName",
+    categoryName: "标识信息",
+    dataSource: {
+      databaseId: "db-1",
+      databaseName: "舰艇装备数据库",
+      tableId: "table-1",
+      tableName: "舰艇主表",
+      fieldId: "f-2",
+      fieldName: "舰名",
+    },
+  },
+  {
+    id: "prop-3",
+    displayName: "舰级",
+    apiName: "shipClass",
+    categoryName: "标识信息",
+    dataSource: {
+      databaseId: "db-1",
+      databaseName: "舰艇装备数据库",
+      tableId: "table-1",
+      tableName: "舰艇主表",
+      fieldId: "f-3",
+      fieldName: "舰级",
+    },
+  },
+  {
+    id: "prop-4",
+    displayName: "下水日期",
+    apiName: "launchDate",
+    categoryName: "时间信息",
+    dataSource: {
+      databaseId: "db-1",
+      databaseName: "舰艇装备数据库",
+      tableId: "table-1",
+      tableName: "舰艇主表",
+      fieldId: "f-4",
+      fieldName: "下水日期",
+    },
+  },
+  {
+    id: "prop-5",
+    displayName: "标准排水量",
+    apiName: "standardDisplacement",
+    categoryName: "尺度参数",
+    dataSource: {
+      databaseId: "db-1",
+      databaseName: "舰艇装备数据库",
+      tableId: "table-1",
+      tableName: "舰艇主表",
+      fieldId: "f-5",
+      fieldName: "标准排水量",
+    },
+  },
+  {
+    id: "prop-6",
+    displayName: "最大航速",
+    apiName: "maxSpeed",
+    categoryName: "动力性能",
+    dataSource: {
+      databaseId: "db-1",
+      databaseName: "舰艇装备数据库",
+      tableId: "table-1",
+      tableName: "舰艇主表",
+      fieldId: "f-6",
+      fieldName: "最大航速",
+    },
+  },
+  {
+    id: "prop-7",
+    displayName: "主炮型号",
+    apiName: "mainGunModel",
+    categoryName: "武器系统",
+    dataSource: {
+      databaseId: "db-1",
+      databaseName: "舰艇装备数据库",
+      tableId: "table-2",
+      tableName: "武器系统表",
+      fieldId: "f-7",
+      fieldName: "主炮型号",
+    },
+  },
+  {
+    id: "prop-8",
+    displayName: "防空导弹",
+    apiName: "airDefenseMissile",
+    categoryName: "武器系统",
+    dataSource: null,
+  },
+  {
+    id: "prop-9",
+    displayName: "反舰导弹",
+    apiName: "antiShipMissile",
+    categoryName: "武器系统",
+    dataSource: null,
+  },
+  {
+    id: "prop-10",
+    displayName: "鱼雷数量",
+    apiName: "torpedoCount",
+    categoryName: "武器系统",
+    dataSource: null,
+  },
+];
 const savingAttribute = ref(false);
 const editingAttributeId = ref<string | null>(null);
 const attributeFormRef = ref<FormInstance>();
@@ -344,13 +541,12 @@ function mapCategoryTreeNode(node: GetOntologyObjectArrTypeTreeData): CategoryNo
 /** @description 将接口属性记录适配为属性页列表项。 */
 function mapOntologyPropertyItem(item: OntologyPropertyInfo): AttributeItem {
   const metadataApiName = typeof item.metadata?.apiName === "string" ? item.metadata.apiName : "";
-  const metadataDataType = typeof item.metadata?.dataType === "string" ? item.metadata.dataType : "";
   return {
     uniqueIdentifier: item.uniqueIdentifier ?? "",
     ontologyUniqueIdentifier: item.ontologyUniqueIdentifier ?? String(route.params.objectId || ""),
     displayName: item.displayName ?? "",
     apiName: item.apiName ?? metadataApiName,
-    dataType: item.dataType ?? metadataDataType,
+    dataType: item.propertyType ?? "",
     categoryId: item.categoryId === undefined ? "" : String(item.categoryId),
     storageGroup: item.storageGroup ?? "",
     defaultValue: item.defaultValue ?? "",
@@ -548,9 +744,47 @@ async function removeCategory(data: CategoryNode) {
     if (cause instanceof Error && cause.message.trim()) ElMessage.error(cause.message);
   }
 }
-/** @description 打开数据源关联入口。 */
+/** @description 打开数据源关联弹窗。 */
 function openDataSource() {
-  ElMessage.info("数据源关联入口已准备");
+  dataSourceDialogVisible.value = true;
+}
+
+/** @description 调用后端自动关联当前本体的全部属性数据源，并保留关联弹窗。 */
+async function handleAutoDataSourceAssociate(): Promise<void> {
+  if (autoDataSourceSubmitting.value) return;
+  const ontologyIdentifier = String(route.params.objectId || "").trim();
+  if (!ontologyIdentifier) {
+    ElMessage.error("缺少本体对象标识，无法自动关联数据源。");
+    return;
+  }
+  autoDataSourceSubmitting.value = true;
+  try {
+    const response = await autoBindOntologyPropertyDatasourceInterface({ ontologyIdentifier });
+    if (response.code !== 200) throw new Error(response.message || "自动关联数据源失败");
+    ElMessage.success("自动关联数据源成功");
+  } catch (cause) {
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "自动关联数据源失败，请重试。");
+  } finally {
+    autoDataSourceSubmitting.value = false;
+  }
+}
+
+interface MockPropertyBindPayload {
+  id: string;
+  dataSource: MockPropertyBind | null;
+}
+
+/** @description 处理数据源关联弹窗提交，预览关联变更并关闭弹窗。 */
+async function handleDataSourceSubmit(payloads: MockPropertyBindPayload[]): Promise<void> {
+  const summary = payloads
+    .map((payload) => {
+      const target = mockOntologyProperties.find((item) => item.id === payload.id)?.apiName ?? payload.id;
+      if (!payload.dataSource) return `${target}：解除关联`;
+      return `${target} → ${payload.dataSource.tableName}.${payload.dataSource.fieldName}`;
+    })
+    .join("\n");
+  ElMessage.success(`提交 ${payloads.length} 项关联变更\n${summary}`);
+  dataSourceDialogVisible.value = false;
 }
 /** @description 将表单分类标识转换为接口需要的数字。 */
 function getDraftCategoryId(): number | undefined {
@@ -576,16 +810,13 @@ function buildCreatePropertyParams(ontologyIdentifier: string): CreateOntologyPr
     ...(categoryId === undefined ? {} : { categoryId }),
   };
 }
-/** @description 组装编辑属性接口请求参数，补齐页面未展示的字段。 */
+/** @description 组装编辑属性接口请求参数，仅提交唯一标识和页面可编辑字段。 */
 function buildUpdatePropertyParams(uniqueIdentifier: string): UpdateOntologyPropertyParams {
   const categoryId = getDraftCategoryId();
   return {
     uniqueIdentifier,
-    datasource: {},
-    schemaName: "",
-    datasourceId: "",
-    datasourceColumnName: "",
     displayName: draft.displayName,
+    apiName: draft.apiName,
     dataType: draft.dataType,
     description: draft.description,
     isTitleKey: draft.isNameKey,
@@ -593,7 +824,6 @@ function buildUpdatePropertyParams(uniqueIdentifier: string): UpdateOntologyProp
     defaultValue: draft.defaultValue,
     storageGroup: draft.storageGroup,
     ...(categoryId === undefined ? {} : { categoryId }),
-    metadata: {},
   };
 }
 /** @description 重置属性表单草稿。 */

@@ -5,7 +5,7 @@ export interface GetOntologyPropertyByOntologyIdParams {
 export interface OntologyPropertyInfo {
   displayName?: string;
   apiName?: string;
-  dataType?: string;
+  propertyType?: string;
   description?: string;
   isPrimaryKey?: boolean;
   isTitleKey?: boolean;
