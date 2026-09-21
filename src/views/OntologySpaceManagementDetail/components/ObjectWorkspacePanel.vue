@@ -515,11 +515,11 @@ function incrementCategoryCount(nodes: OntologyConceptNode[], categoryId: string
 }
 
 /**
- * @description 保留原型的大模型构建入口，在当前项目尚未接入流程时给出明确反馈。
+ * @description 关闭对象创建弹窗并进入当前空间的大模型构建页。
  */
 function openOntologyLlmBuilder() {
   objectCreateVisible.value = false;
-  ElMessage.info("大模型构建流程尚未接入。");
+  void router.push({ name: "OntologyLlmBuilder", params: { spaceId: spaceId.value } });
 }
 
 function handleAction(action: string, item?: OntologyObjectItem) {

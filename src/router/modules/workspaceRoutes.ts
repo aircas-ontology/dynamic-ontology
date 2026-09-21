@@ -64,6 +64,18 @@ export const workspaceRoutes: RouteRecordRaw[] = [
             component: emptyWorkspacePanel,
             meta: { title: "空间内管理", workspaceTab: "behavior-schedule" },
           },
+          {
+            path: "llm-builder",
+            name: "OntologyLlmBuilder",
+            component: () => import("@/views/OntologyLlmBuilder/index.vue"),
+            meta: { title: "大模型构建" },
+          },
+          {
+            path: "subspace-create",
+            name: "OntologySubspaceCreate",
+            component: () => import("@/views/OntologySubspaceCreate/index.vue"),
+            meta: { title: "创建子空间" },
+          },
         ],
       },
       {

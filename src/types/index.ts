@@ -1,9 +1,17 @@
 export type { ApiResponse } from "./apis/apiResponseType";
+export type { AutoBindOntologyPropertyDatasourceData, AutoBindOntologyPropertyDatasourceParams } from "./apis/autoBindOntologyPropertyDatasourceType";
 export type { CreateOntologyLinkParams } from "./apis/createOntologyLinkType";
 export type { CreateOntologyObjectArrTypeTreeParams } from "./apis/createOntologyObjectArrTypeTreeType";
 export type { CreateOntologyObjectData, CreateOntologyObjectParams } from "./apis/createOntologyObjectType";
 export type { CreateOntologyPropertyData, CreateOntologyPropertyParams, PropertyDatasourceParam } from "./apis/createOntologyPropertyType";
 export type { CreateOntologySpaceData, CreateOntologySpaceParams } from "./apis/createOntologySpaceType";
+export type {
+  CanvasLink,
+  CanvasOntology,
+  CanvasProperty,
+  CreateOntologySpaceWithCanvasContentData,
+  CreateOntologySpaceWithCanvasContentParams,
+} from "./apis/createOntologySpaceWithCanvasContentType";
 export type { DeleteOntologyLinkParams } from "./apis/deleteOntologyLinkType";
 export type { DeleteOntologyObjectArrTypeTreeParams } from "./apis/deleteOntologyObjectArrTypeTreeType";
 export type { DeleteOntologyObjectData, DeleteOntologyObjectParams } from "./apis/deleteOntologyObjectType";

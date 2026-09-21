@@ -7,15 +7,19 @@
         <h1>概念模型画布</h1>
         <p>拖拽 UML 对象构建空间骨架，保存后自动写入默认「全部」分类</p>
       </div>
-      <el-input v-model="spaceApiName" class="aircas-input conceptual-model-create__space-input" ariaLabel="空间 API 名称" placeholder="空间 API 名称" />
+      <div class="conceptual-model-create__space-fields">
+        <el-input v-model="spaceDisplayName" class="aircas-input" ariaLabel="空间名称" placeholder="空间名称" />
+        <el-input v-model="spaceApiName" class="aircas-input" ariaLabel="空间 API 名称" placeholder="空间 API 名称" />
+      </div>
       <div class="conceptual-model-create__actions">
         <span>{{ zoom }}%</span><el-button class="aircas-button" size="small" @click="zoomOut">缩小</el-button
         ><el-button class="aircas-button" size="small" @click="zoomIn">放大</el-button
         ><el-button class="aircas-button" size="small" @click="fitCanvas">适应画布</el-button
         ><el-button class="aircas-button" type="danger" size="small" :disabled="!selected" @click="deleteSelected">删除选中</el-button
-        ><el-button class="aircas-button" type="primary" size="small" @click="saveConceptualModel">保存并创建空间</el-button>
+        ><el-button class="aircas-button" type="primary" size="small" :loading="saving" @click="saveConceptualModel">保存并创建空间</el-button>
       </div>
     </header>
+    <p v-if="saveError" class="conceptual-model-create__save-error" role="alert">{{ saveError }}</p>
     <div class="conceptual-model-create__workspace">
       <aside class="conceptual-model-create__palette" aria-label="UML 组件">
         <span class="conceptual-model-create__eyebrow">UML COMPONENTS</span>
@@ -201,6 +205,8 @@
 import { computed, onBeforeUnmount, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
+import { createOntologySpaceWithCanvasContentInterface } from "@/apis";
+import type { CanvasLink, CanvasOntology, CanvasProperty, CreateOntologySpaceWithCanvasContentParams } from "@/types";
 type PaletteType = "object" | "attribute" | "relation";
 type Port = "top" | "right" | "bottom" | "left";
 type Selection = { kind: "object" | "attribute" | "relation"; id: number };
@@ -237,12 +243,22 @@ interface Relation {
 }
 const router = useRouter();
 const canvasRef = ref<HTMLElement | null>(null);
+const spaceDisplayName = ref("新建本体空间");
 const spaceApiName = ref("");
+const saving = ref(false);
+const saveError = ref("");
 const zoom = ref(100);
 const selected = ref<Selection | null>({ kind: "object", id: 1 });
 const objects = ref<ModelObject[]>([{ id: 1, displayName: "Object_1", apiName: "Object_1", description: "", x: 120, y: 100, attributes: [] }]);
 const relations = ref<Relation[]>([]);
 const dataTypes = ["字符串", "整数", "小数", "布尔", "日期时间"];
+const dataTypeMap: Record<string, string> = {
+  字符串: "String",
+  整数: "Integer",
+  小数: "Double",
+  布尔: "Boolean",
+  日期时间: "DateTime",
+};
 const ports: Port[] = ["top", "right", "bottom", "left"];
 const relationEndpoints: Array<"source" | "target"> = ["source", "target"];
 let sequence = 1;
@@ -473,8 +489,96 @@ function stopRelationPort(event: PointerEvent) {
 /** @description 适应画布。 */ function fitCanvas() {
   zoom.value = 100;
 }
-/** @description 保存概念模型。 */ function saveConceptualModel() {
-  ElMessage.success("概念模型已保存，空间创建流程已准备就绪");
+/** @description 将画布中的属性数据类型转换为后端枚举名称。 @param value 画布数据类型。 @returns 后端数据类型枚举名称。 */
+function mapCanvasDataType(value: string): string {
+  return dataTypeMap[value] ?? "String";
+}
+
+/** @description 将画布对象属性转换为创建空间接口属性。 @param attribute 画布属性。 @returns 接口属性参数。 */
+function mapCanvasProperty(attribute: Attribute): CanvasProperty {
+  return {
+    displayName: attribute.displayName.trim(),
+    apiName: attribute.apiName.trim(),
+    dataType: mapCanvasDataType(attribute.dataType),
+    description: attribute.description.trim(),
+    isPrimaryKey: attribute.isPrimary,
+    isTitleKey: attribute.isNameKey,
+    defaultValue: attribute.defaultValue,
+  };
+}
+
+/** @description 将画布对象转换为创建空间接口对象。 @param object 画布对象。 @returns 接口本体对象参数。 */
+function mapCanvasOntology(object: ModelObject): CanvasOntology {
+  return {
+    displayName: object.displayName.trim(),
+    apiName: object.apiName.trim(),
+    description: object.description.trim(),
+    properties: object.attributes.map(mapCanvasProperty),
+  };
+}
+
+/** @description 将已连接的画布关系转换为创建空间接口关系。 @param relation 画布关系。 @returns 接口关系参数或 undefined。 */
+function mapCanvasLink(relation: Relation): CanvasLink | undefined {
+  const source = objects.value.find((object) => object.id === relation.sourceId);
+  const target = objects.value.find((object) => object.id === relation.targetId);
+  if (!source || !target) return undefined;
+  return {
+    name: relation.displayName.trim(),
+    apiName: relation.apiName.trim(),
+    description: relation.description.trim(),
+    fromOntologyApiName: source.apiName.trim(),
+    toOntologyApiName: target.apiName.trim(),
+  };
+}
+
+/** @description 组装画布一键创建空间接口请求体。 @returns 画布创建空间请求参数。 */
+function buildCanvasSpaceParams(): CreateOntologySpaceWithCanvasContentParams {
+  return {
+    displayName: spaceDisplayName.value.trim(),
+    apiName: spaceApiName.value.trim(),
+    iconUrl: "",
+    description: "",
+    ontologies: objects.value.map(mapCanvasOntology),
+    links: relations.value
+      .filter((relation) => relation.sourceId !== null && relation.targetId !== null)
+      .map(mapCanvasLink)
+      .filter((link): link is CanvasLink => link !== undefined),
+  };
+}
+
+/** @description 调用画布一键创建空间接口，成功后进入新空间概览，失败时保留当前画布。 */
+async function saveConceptualModel() {
+  if (saving.value) return;
+  saveError.value = "";
+  if (!spaceDisplayName.value.trim()) {
+    saveError.value = "请输入空间名称。";
+    ElMessage.warning(saveError.value);
+    return;
+  }
+  if (!spaceApiName.value.trim()) {
+    saveError.value = "请输入空间 API 名称。";
+    ElMessage.warning(saveError.value);
+    return;
+  }
+  const disconnectedRelation = relations.value.find((relation) => relation.sourceId === null || relation.targetId === null);
+  if (disconnectedRelation) {
+    saveError.value = `关系“${disconnectedRelation.displayName || "未命名关系"}”尚未连接完整。`;
+    ElMessage.warning(saveError.value);
+    return;
+  }
+  saving.value = true;
+  try {
+    const response = await createOntologySpaceWithCanvasContentInterface(buildCanvasSpaceParams());
+    const spaceId = response.data?.spaceId;
+    if (response.code !== 200 || !Number.isFinite(spaceId)) throw new Error(response.message || "空间创建失败");
+    ElMessage.success("空间创建成功");
+    await router.push({ name: "OntologySpaceManagementDetailOverview", params: { spaceId: String(spaceId) } });
+  } catch (cause) {
+    saveError.value = cause instanceof Error && cause.message.trim() ? cause.message : "空间创建失败，请重试。";
+    ElMessage.error(saveError.value);
+  } finally {
+    saving.value = false;
+  }
 }
 onBeforeUnmount(() => {
   window.removeEventListener("pointermove", moveObject);
@@ -507,6 +611,21 @@ onBeforeUnmount(() => {
 .conceptual-model-create__identity {
   flex: 1;
   min-width: 180px;
+}
+.conceptual-model-create__space-fields {
+  display: grid;
+  min-width: 300px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.conceptual-model-create__save-error {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--aircas-color-danger);
+  border-radius: 6px;
+  color: var(--aircas-color-danger);
+  background: var(--aircas-color-danger-background);
+  font-size: 12px;
 }
 .conceptual-model-create h1,
 .conceptual-model-create h2 {
