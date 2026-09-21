@@ -47,7 +47,7 @@ export function getOntologyObjectByCategoryIdInterface(params?: GetOntologyObjec
 /**
  * @description 修改本体对象元数据。
  *
- * 请求方式：PUT `/meta`
+ * 请求方式：PUT `/ontology/meta`
  *
  * @param params 修改本体对象参数。
  * @param params.ontologyIdentifier 本体 id。
@@ -60,7 +60,7 @@ export function getOntologyObjectByCategoryIdInterface(params?: GetOntologyObjec
  */
 export function updateOntologyObjectInterface(params: UpdateOntologyObjectParams): Promise<ApiResponse<UpdateOntologyObjectData>> {
   return request<UpdateOntologyObjectData>({
-    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/meta",
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/meta",
     method: "put",
     data: params,
   });

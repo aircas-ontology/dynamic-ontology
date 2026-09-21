@@ -8,6 +8,15 @@ export const getOntologyObjectArrTypeTreeMock: ApiResponse<GetOntologyObjectArrT
   data: {
     categoryId: 6,
     name: "全部",
+    propertyInfos: [
+      {
+        uniqueIdentifier: "property-1",
+        displayName: "属性名称",
+        apiName: "propertyName",
+        categoryId: 6,
+        propertyType: "String",
+      },
+    ],
     children: [
       {
         categoryId: 7,
