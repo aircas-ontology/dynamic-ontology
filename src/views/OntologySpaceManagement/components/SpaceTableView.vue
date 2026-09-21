@@ -7,13 +7,16 @@
           <el-icon v-else :size="32">
             <Box />
           </el-icon>
-          <div><strong>{{ spaceRow(row).displayName }}</strong><small>{{ spaceRow(row).apiName }}</small></div>
+          <div>
+            <strong>{{ spaceRow(row).displayName }}</strong
+            ><small>{{ spaceRow(row).apiName }}</small>
+          </div>
         </div>
       </template>
     </el-table-column>
     <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
-    <el-table-column prop="createdTime" label="创建时间" width="160" />
-    <el-table-column prop="updatedTime" label="更新时间" width="160" />
+    <el-table-column prop="createdTime" label="创建时间" width="180" />
+    <el-table-column prop="updatedTime" label="更新时间" width="180" />
     <el-table-column label="操作" width="230" fixed="right">
       <template #default="{ row }">
         <SpaceActions :space="spaceRow(row)" @action="emit('action', $event, spaceRow(row))" />
@@ -32,7 +35,7 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
 
 function spaceRow(row: unknown): OntologySpaceItem {
   if (row && typeof row === "object" && "id" in row) {
-    const space = props.spaces.find(item => item.id === row.id);
+    const space = props.spaces.find((item) => item.id === row.id);
     if (space) return space;
   }
   throw new Error("无效的空间数据行。");

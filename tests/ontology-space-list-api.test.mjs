@@ -76,6 +76,8 @@ test("api contract mock lives beside the page sample and mirrors the response sa
   assert.match(apiMockSource, /actionCount:\s*0/);
   assert.match(apiMockSource, /propertyCount:\s*7/);
   assert.match(apiMockSource, /linkCount:\s*0/);
+  assert.match(apiMockSource, /createTime:\s*"2026-09-21 10:47:32"/);
+  assert.match(apiMockSource, /updateTime:\s*"2026-09-21 10:47:32"/);
 });
 
 test("mapper converts contract list items into page ontology space items", async () => {
@@ -92,6 +94,8 @@ test("mapper converts contract list items into page ontology space items", async
     actionCount: 0,
     propertyCount: 7,
     linkCount: 0,
+    createTime: "2026-09-21 10:47:32",
+    updateTime: "2026-09-21 10:47:32",
   });
   assert.equal(mapped.id, "1");
   assert.equal(mapped.metrics.ontology, 2);
@@ -99,8 +103,8 @@ test("mapper converts contract list items into page ontology space items", async
   assert.equal(mapped.metrics.relation, 0);
   assert.equal(mapped.metrics.rule, 7);
   assert.equal(mapped.metrics.source, 0);
-  assert.equal(mapped.createdTime, "");
-  assert.equal(mapped.updatedTime, "");
+  assert.equal(mapped.createdTime, "2026-09-21 10:47:32");
+  assert.equal(mapped.updatedTime, "2026-09-21 10:47:32");
   assert.equal(mapped.category, "");
   assert.equal(mapped.isSubspace, false);
   assert.equal(mapped.parentSpaceDisplayName, "");

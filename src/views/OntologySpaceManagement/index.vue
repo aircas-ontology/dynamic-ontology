@@ -92,6 +92,7 @@ onMounted(loadOntologySpaces);
   grid-template-columns: minmax(520px, 1.42fr) minmax(760px, 2.25fr);
   gap: 10px;
   min-height: 150px;
+  min-width: 1200px;
 }
 
 .ontology-space-management__stats {
@@ -112,17 +113,17 @@ onMounted(loadOntologySpaces);
   background-color: var(--aircas-color-panel-background);
 }
 
-@media (max-width: 1440px) {
-  .ontology-space-management__overview {
-    grid-template-columns: minmax(430px, 1.2fr) minmax(700px, 2.2fr);
-  }
-}
+// @media (max-width: 1440px) {
+//   .ontology-space-management__overview {
+//     grid-template-columns: minmax(430px, 1.2fr) minmax(700px, 2.2fr);
+//   }
+// }
 
-@media (max-width: 1200px) {
-  .ontology-space-management__overview {
-    grid-template-columns: 1fr;
-  }
-}
+// @media (max-width: 1200px) {
+//   .ontology-space-management__overview {
+//     grid-template-columns: 1fr;
+//   }
+// }
 
 @media (max-width: 700px) {
   .ontology-space-management {

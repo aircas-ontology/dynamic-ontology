@@ -1,6 +1,10 @@
 import type { OntologySpaceItem, OntologySpaceListData, OntologySpaceListItem } from "@/types";
 
-/** 将列表接口单条记录映射为页面本体空间模型。 */
+/**
+ * @description 将列表接口单条记录映射为页面本体空间模型，创建时间和更新时间取契约字段。
+ * @param item 接口返回的单条空间记录。
+ * @returns 页面本体空间模型。
+ */
 export function mapOntologySpaceListItem(item: OntologySpaceListItem): OntologySpaceItem {
   return {
     id: String(item.spaceId),
@@ -16,8 +20,8 @@ export function mapOntologySpaceListItem(item: OntologySpaceListItem): OntologyS
       rule: item.propertyCount,
       source: 0,
     },
-    createdTime: "",
-    updatedTime: "",
+    createdTime: item.createTime,
+    updatedTime: item.updateTime,
     isSubspace: false,
     parentSpaceDisplayName: "",
   };

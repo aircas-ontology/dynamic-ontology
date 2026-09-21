@@ -52,7 +52,7 @@
     />
     <OntologyObjectCreateDialog
       v-model="objectCreateVisible"
-      :categories="categoryOptions"
+      :category-tree="workspaceTree"
       :parent-options="parentOptions"
       :submitting="objectCreateSubmitting"
       :error="objectCreateError"
@@ -135,20 +135,6 @@ const objectDeleteSubmitting = ref(false);
 const objectDeleteError = ref("");
 const deletingObject = ref<OntologyObjectItem | null>(null);
 let locationRequestId = 0;
-
-const categoryOptions = computed(() => {
-  const options: Array<{ id: string; name: string }> = [];
-
-  /** @description 递归收集分类树选项。 @param nodes 当前分类节点。 */
-  function visit(nodes: OntologyConceptNode[]) {
-    nodes.forEach((node) => {
-      options.push({ id: node.targetCategoryId ?? node.id, name: node.label || `分类 ${node.id}` });
-      visit(node.children);
-    });
-  }
-  visit(workspaceTree.value);
-  return options;
-});
 
 const parentOptions = computed(() => workspaceSections.value.flatMap((section) => section.items));
 
