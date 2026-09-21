@@ -7,7 +7,7 @@
       </div>
     </section>
     <SectionToolbar v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
-    <div v-if="status === 'loading'" class="ontology-space-management__state" role="status">正在加载本体空间…</div>
+    <div v-if="status === 'loading'" class="ontology-space-management__state" role="status"><AircasLoading>正在加载本体空间…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="ontology-space-management__state" role="alert">
       <span>{{ error }}</span
       ><el-button class="aircas-button" type="primary" @click="loadOntologySpaces">重试</el-button>
@@ -43,6 +43,7 @@
 
 <script setup lang="ts">
 import { onMounted } from "vue";
+import AircasLoading from "@/components/AircasLoading.vue";
 import SectionToolbar from "./components/SectionToolbar.vue";
 import SpaceCollection from "./components/SpaceCollection.vue";
 import SpaceCommandDialogs from "./components/SpaceCommandDialogs.vue";

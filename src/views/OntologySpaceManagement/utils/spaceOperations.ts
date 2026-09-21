@@ -10,15 +10,30 @@ export function filterSpaces(spaces: OntologySpaceItem[], keyword: string, order
   return { items: matches.slice((current - 1) * size, current * size), total: matches.length, page: current };
 }
 
+/**
+ * @description 校验空间草稿字段；图标允许内嵌 base64 图片或 http(s) 缩略图 URL。
+ * @param draft 待校验草稿。
+ * @returns 规范化后的草稿。
+ */
 export function validateSpace(draft: OntologySpaceDraft): OntologySpaceDraft {
   const value = { ...draft, apiName: draft.apiName.trim(), displayName: draft.displayName.trim(), description: draft.description.trim() };
   if (!/^[a-zA-Z_$][a-zA-Z0-9_$]{0,62}$/.test(value.apiName)) throw new Error("API 名称须以字母、下划线或 $ 开头，长度不超过 63 字符。");
   if (!value.displayName || value.displayName.length > 64) throw new Error("空间名称须为 1–64 个字符。");
   if (value.description.length > 256) throw new Error("空间描述不能超过 256 个字符。");
-  if (value.iconUrl && !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value.iconUrl)) {
-    throw new Error("导入图标须为 PNG、JPEG 或 WEBP 的内嵌图片。");
+  if (value.iconUrl && !isAcceptedSpaceIconUrl(value.iconUrl)) {
+    throw new Error("空间图标须为 PNG、JPEG、WEBP 的内嵌图片，或 http(s) 缩略图地址。");
   }
   return value;
+}
+
+/**
+ * @description 判断空间图标是否为可接受的内嵌图片或远程缩略图 URL。
+ * @param iconUrl 草稿中的图标地址。
+ * @returns 合法时返回 true。
+ */
+function isAcceptedSpaceIconUrl(iconUrl: string): boolean {
+  if (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(iconUrl)) return true;
+  return /^https?:\/\//.test(iconUrl);
 }
 
 /** 演示数据只驻留内存，使用固定时间保证可重复。 */
@@ -76,7 +91,7 @@ export function serializeSpace(space: OntologySpaceDraft): string {
         apiName: space.apiName,
         displayName: space.displayName,
         description: space.description,
-        iconUrl: space.iconUrl.startsWith("data:") ? space.iconUrl : "",
+        iconUrl: /^data:|^https?:\/\//.test(space.iconUrl) ? space.iconUrl : "",
       },
     },
     null,

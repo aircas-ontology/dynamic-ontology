@@ -1,7 +1,7 @@
 <template>
   <div class="space-management-detail" :class="{ 'is-empty': status === 'empty' }">
     <el-empty v-if="status === 'empty'" description="未找到对应的本体空间" />
-    <div v-else-if="status === 'loading'" class="space-management-detail__state" role="status">正在加载空间…</div>
+    <div v-else-if="status === 'loading'" class="space-management-detail__state" role="status"><AircasLoading>正在加载空间…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="space-management-detail__state" role="alert">
       <span>{{ error || "空间加载失败" }}</span>
       <el-button class="aircas-button" type="primary" @click="load">重试</el-button>
@@ -24,6 +24,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import AircasLoading from "@/components/AircasLoading.vue";
 import type { ManagementWorkspaceTab } from "@/types";
 import WorkspaceTypeTabs from "./components/WorkspaceTypeTabs.vue";
 import { useSpaceWorkspace } from "./composables/useSpaceWorkspace";

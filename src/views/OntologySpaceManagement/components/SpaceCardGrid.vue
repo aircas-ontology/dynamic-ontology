@@ -6,32 +6,35 @@
         <el-icon v-else :size="32">
           <Box />
         </el-icon>
-        <div><strong>{{ space.displayName }}</strong><small>{{ space.apiName }}</small></div>
+        <div>
+          <strong>{{ space.displayName }}</strong
+          ><small>{{ space.apiName }}</small>
+        </div>
       </header>
       <p class="space-card__description">{{ space.description || "暂无描述" }}</p>
       <dl>
         <div>
-          <dt><el-icon>
-              <DataLine />
-            </el-icon>对象</dt>
+          <dt>
+            <el-icon> <DataLine /> </el-icon>对象
+          </dt>
           <dd>{{ space.metrics.ontology }}</dd>
         </div>
         <div>
-          <dt><el-icon>
-              <Operation />
-            </el-icon>行为</dt>
+          <dt>
+            <el-icon> <Operation /> </el-icon>行为
+          </dt>
           <dd>{{ space.metrics.behavior }}</dd>
         </div>
         <div>
-          <dt><el-icon>
-              <Connection />
-            </el-icon>关系</dt>
+          <dt>
+            <el-icon> <Connection /> </el-icon>关系
+          </dt>
           <dd>{{ space.metrics.relation }}</dd>
         </div>
         <div>
-          <dt><el-icon>
-              <Tickets />
-            </el-icon>规则</dt>
+          <dt>
+            <el-icon> <Tickets /> </el-icon>规则
+          </dt>
           <dd>{{ space.metrics.rule }}</dd>
         </div>
       </dl>
@@ -54,7 +57,7 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
 .space-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
-  gap: 16px;
+  gap: 8px;
   padding-bottom: 16px;
 }
 

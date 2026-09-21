@@ -21,8 +21,9 @@ import type {
   DeleteOntologySpaceParams,
   UpdateOntologySpaceData,
   UpdateOntologySpaceParams,
+  UploadOntologyThumbnailData,
+  UploadOntologyThumbnailParams,
 } from "@/types";
-import { requestTimeoutMs } from "@/utils/constants";
 import { request } from "@/utils/request";
 
 /**
@@ -42,7 +43,6 @@ export function createOntologySpaceInterface(params: CreateOntologySpaceParams):
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "post",
     data: params,
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -59,7 +59,6 @@ export function createOntologySpaceWithCanvasContentInterface(
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space/canvas",
     method: "post",
     data: params,
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -76,7 +75,6 @@ export function deleteOntologySpaceInterface(params: DeleteOntologySpaceParams):
   return request<DeleteOntologySpaceData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space/" + params.spaceId,
     method: "delete",
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -97,7 +95,26 @@ export function updateOntologySpaceInterface(params: UpdateOntologySpaceParams):
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "put",
     data: params,
-    timeout: requestTimeoutMs,
+  });
+}
+
+/**
+ * @description 上传图片文件并获取缩略图 URL。
+ *
+ * 请求方式：POST `/ontology/file/thumbnail`
+ *
+ * @param params 上传参数。
+ * @param {File} params.image 必填图片文件。
+ * @returns 标准 API 响应，data 为缩略图 URL 字符串。
+ */
+export function postUploadOntologyThumbnailInterface(params: UploadOntologyThumbnailParams): Promise<ApiResponse<UploadOntologyThumbnailData>> {
+  const formData = new FormData();
+  formData.append("image", params.image);
+  return request<UploadOntologyThumbnailData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/file/thumbnail",
+    method: "post",
+    data: formData,
+    headers: { "Content-Type": "multipart/form-data" },
   });
 }
 
@@ -115,7 +132,6 @@ export function getOntologyCategoryTreeInterface(params: OntologyCategoryTreePar
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/category/tree",
     method: "get",
     params,
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -133,7 +149,6 @@ export function getOntologyRelationCategoryTreeInterface(params: OntologyRelatio
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link_category/tree",
     method: "get",
     params,
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -150,7 +165,6 @@ export function getOntologySpaceListInterface(): Promise<ApiResponse<OntologySpa
     // url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "get",
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -170,7 +184,6 @@ export function postCreateOntologyCategoryTreeInterface(payload: CreateOntologyC
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/category",
     method: "post",
     data: payload,
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -190,7 +203,6 @@ export function postCreateOntologyRelationCategoryTreeInterface(payload: CreateO
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link_category",
     method: "post",
     data: payload,
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -210,7 +222,6 @@ export function putUpdateOntologyRelationCategoryNameInterface(payload: UpdateOn
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link_category",
     method: "put",
     data: payload,
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -229,7 +240,6 @@ export function deleteOntologyRelationCategoryTreeInterface(payload: DeleteOntol
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link_category",
     method: "delete",
     data: payload,
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -253,7 +263,6 @@ export function postCreateOntologyLinkInterface(payload: CreateOntologyLinkParam
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link",
     method: "post",
     data: payload,
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -270,7 +279,6 @@ export function deleteOntologyLinkInterface(payload: DeleteOntologyLinkParams): 
   return request<undefined>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link/" + encodeURIComponent(payload.linkUniqIdentifier),
     method: "delete",
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -289,7 +297,6 @@ export function deleteOntologyCategoryTreeInterface(payload: DeleteOntologyCateg
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/category",
     method: "delete",
     data: payload,
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -309,6 +316,5 @@ export function putUpdateOntologyCategoryNameInterface(payload: UpdateOntologyCa
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/category",
     method: "put",
     data: payload,
-    timeout: requestTimeoutMs,
   });
 }
