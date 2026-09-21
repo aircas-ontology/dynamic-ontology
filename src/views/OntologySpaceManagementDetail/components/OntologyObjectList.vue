@@ -90,7 +90,7 @@
         </div>
 
         <div v-else class="ontology-object-section__table">
-          <el-table class="aircas-table aircas-table--flat" :data="section.items" row-key="id" height="100%">
+          <el-table class="aircas-table aircas-table--flat" :data="section.items" row-key="id" height="100%" stripe>
             <el-table-column label="本体名称" min-width="220">
               <template #default="{ row }"
                 ><strong>{{ objectRow(row).displayName }}</strong
