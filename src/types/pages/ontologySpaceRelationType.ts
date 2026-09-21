@@ -63,7 +63,7 @@ export interface RelationCategoryUpdatePayload {
 }
 
 export interface RelationClassWritePayload {
-  categoryId: string;
+  categoryId?: string;
   displayName: string;
   apiName: string;
   sourceName: string;

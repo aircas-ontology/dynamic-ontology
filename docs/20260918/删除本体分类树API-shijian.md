@@ -5,6 +5,7 @@
 ## 编译位置
 
 mocks与types文件名自行语义化命名
+
 - apis：`src/apis/ontologyManageApi.ts`
 - mocks：`src/mocks/`
 - types：`src/types/apis/`
@@ -37,7 +38,6 @@ mocks与types文件名自行语义化命名
 - `spaceId`：【string，必填】 空间Id
 - `categoryId`：【string，必填】目录分类id
 
-
 ## 输出参数
 
 ```JSON
@@ -49,8 +49,6 @@ mocks与types文件名自行语义化命名
 
 - `code`：【number】响应码
 - `message`：【string】消息描述
-
-
 
 ## code
 

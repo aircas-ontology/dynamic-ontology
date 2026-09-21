@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { clearLoginToken, getAuthorizationHeader, getLoginToken, hasLoginToken, LOGIN_TOKEN_STORAGE_KEY, saveLoginToken } from "../src/utils/authToken.ts";
+import { clearLoginToken, getAccessTokenHeader, getLoginToken, hasLoginToken, LOGIN_TOKEN_STORAGE_KEY, saveLoginToken } from "../src/utils/authToken.ts";
 
 function createSessionStorage() {
   const values = new Map();
@@ -19,13 +19,13 @@ function createSessionStorage() {
   };
 }
 
-test("saves the raw token and exposes it as a Bearer authorization header", () => {
+test("saves the raw token and exposes it as a Bearer access-token value", () => {
   const storage = createSessionStorage();
 
   saveLoginToken("abc.token", storage);
 
   assert.equal(getLoginToken(storage), "abc.token");
-  assert.equal(getAuthorizationHeader(storage), "Bearer abc.token");
+  assert.equal(getAccessTokenHeader(storage), "Bearer abc.token");
   assert.equal(hasLoginToken(storage), true);
   assert.deepEqual(JSON.parse(storage.getItem(LOGIN_TOKEN_STORAGE_KEY)), "abc.token");
 });
@@ -36,7 +36,7 @@ test("normalizes an existing Bearer prefix without duplicating it", () => {
   saveLoginToken("Bearer abc.token", storage);
 
   assert.equal(getLoginToken(storage), "abc.token");
-  assert.equal(getAuthorizationHeader(storage), "Bearer abc.token");
+  assert.equal(getAccessTokenHeader(storage), "Bearer abc.token");
 });
 
 test("rejects blank tokens instead of persisting an empty credential", () => {
@@ -50,7 +50,7 @@ test("missing token reads as null and clear removes the session token", () => {
   const storage = createSessionStorage();
 
   assert.equal(getLoginToken(storage), null);
-  assert.equal(getAuthorizationHeader(storage), null);
+  assert.equal(getAccessTokenHeader(storage), null);
   assert.equal(hasLoginToken(storage), false);
 
   saveLoginToken("abc", storage);
@@ -73,14 +73,14 @@ test("falls back to window.sessionStorage and stays safe without a browser", () 
   try {
     delete globalThis.window;
     assert.equal(getLoginToken(), null);
-    assert.equal(getAuthorizationHeader(), null);
+    assert.equal(getAccessTokenHeader(), null);
     assert.doesNotThrow(() => clearLoginToken());
 
     const storage = createSessionStorage();
     globalThis.window = { sessionStorage: storage };
     saveLoginToken("xyz");
     assert.equal(getLoginToken(), "xyz");
-    assert.equal(getAuthorizationHeader(), "Bearer xyz");
+    assert.equal(getAccessTokenHeader(), "Bearer xyz");
     clearLoginToken();
     assert.equal(hasLoginToken(), false);
   } finally {

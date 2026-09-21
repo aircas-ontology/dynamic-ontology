@@ -94,8 +94,8 @@
               </el-table-column>
               <el-table-column prop="apiName" label="API 名称" min-width="140" show-overflow-tooltip />
               <el-table-column prop="categoryName" label="分类" min-width="110" show-overflow-tooltip />
-              <el-table-column prop="sourceName" label="源端" min-width="140" show-overflow-tooltip />
-              <el-table-column prop="targetName" label="目标端" min-width="120" show-overflow-tooltip />
+              <el-table-column prop="sourceName" label="源本体" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="targetName" label="目标本体" min-width="120" show-overflow-tooltip />
               <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
               <el-table-column label="操作" width="180" fixed="right">
                 <template #default="scope">
@@ -149,10 +149,18 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Grid, Plus, Share } from "@element-plus/icons-vue";
-import type { OntologyRelationCategoryNode, OntologyRelationClass, RelationClassWritePayload } from "@/types";
+import type { CreateOntologyLinkParams, OntologyRelationCategoryNode, OntologyRelationClass, RelationClassWritePayload } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
+import {
+  deleteOntologyLinkInterface,
+  deleteOntologyRelationCategoryTreeInterface,
+  postCreateOntologyLinkInterface,
+  postCreateOntologyRelationCategoryTreeInterface,
+  putUpdateOntologyRelationCategoryNameInterface,
+} from "@/apis";
 import { useSpaceRelationWorkspace } from "../composables/useSpaceRelationWorkspace";
 import { collectCategoryIds, findRelationCategoryNode } from "../utils/relationOperations";
 import RelationCategoryPanel from "./RelationCategoryPanel.vue";
@@ -162,6 +170,7 @@ import RelationCategoryDeleteDialog from "./RelationCategoryDeleteDialog.vue";
 import RelationDeleteDialog from "./RelationDeleteDialog.vue";
 import SpaceRelationFormDialog from "./SpaceRelationFormDialog.vue";
 
+const route = useRoute();
 const {
   status,
   errorMessage,
@@ -181,12 +190,7 @@ const {
   setRelationViewMode,
   applyRelationFilter,
   findRelationCategoryLabel,
-  createCategory,
-  editCategory,
-  deleteCategory,
-  createRelationClass,
   editRelationClass,
-  deleteRelationClass,
 } = useSpaceRelationWorkspace();
 
 const categoryFormRef = ref<InstanceType<typeof RelationCategoryFormDialog> | null>(null);
@@ -251,7 +255,7 @@ function resetFilter() {
 function openCategoryCreate(parentId: string) {
   categoryFormMode.value = "create";
   categoryParentId.value = parentId;
-  categoryParentLabel.value = findRelationCategoryLabel(parentId) || "全部关系";
+  categoryParentLabel.value = parentId ? findRelationCategoryLabel(parentId) || "全部关系" : "根分类";
   categoryActionName.value = "";
   categoryActionColor.value = "";
   categoryFormVisible.value = true;
@@ -271,34 +275,103 @@ function openCategoryDelete(categoryId: string) {
   categoryDeleteVisible.value = true;
 }
 
-function handleCategorySubmit(name: string, color: string) {
+/**
+ * @description 创建或修改关系分类名称：创建走 POST，修改走 PUT；均不提交颜色，成功后刷新分类树。
+ * @param name 分类名称。
+ * @param color 分类颜色；创建/修改接口均不提交该字段。
+ */
+async function handleCategorySubmit(name: string, _color: string) {
+  const space = String(route.params.spaceId || "").trim();
+  const numericSpaceId = Number(space);
+
+  if (categoryFormMode.value === "edit") {
+    const numericCategoryId = Number(categoryActionId.value);
+    if (!space || !Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId)) {
+      ElMessage.error("缺少空间或分类 id，无法修改关系分类名称。");
+      categoryFormRef.value?.setLoading(false);
+      return;
+    }
+    actionLoading.value = true;
+    categoryFormRef.value?.setLoading(true);
+    try {
+      const response = await putUpdateOntologyRelationCategoryNameInterface({
+        spaceId: numericSpaceId,
+        categoryId: numericCategoryId,
+        name,
+      });
+      if (response.code !== 200) {
+        throw new Error(response.message || "修改关系分类名称失败");
+      }
+      categoryFormVisible.value = false;
+      ElMessage.success("分类已更新");
+      await loadSpaceRelationWorkspace();
+    } catch (cause) {
+      ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "修改关系分类名称失败，请重试。");
+      categoryFormRef.value?.setLoading(false);
+    } finally {
+      actionLoading.value = false;
+    }
+    return;
+  }
+
+  const numericParentId = categoryParentId.value.trim() === "" ? 0 : Number(categoryParentId.value);
+  if (!space || !Number.isInteger(numericSpaceId) || !Number.isInteger(numericParentId)) {
+    ElMessage.error("缺少空间或父分类 id，无法创建关系分类。");
+    categoryFormRef.value?.setLoading(false);
+    return;
+  }
+
   actionLoading.value = true;
   categoryFormRef.value?.setLoading(true);
-  const error =
-    categoryFormMode.value === "create"
-      ? createCategory({ parentId: categoryParentId.value, name, color })
-      : editCategory({ id: categoryActionId.value, name, color });
-  actionLoading.value = false;
-  categoryFormRef.value?.setLoading(false);
-  if (error) {
-    ElMessage.error(error);
-    return;
+  try {
+    const response = await postCreateOntologyRelationCategoryTreeInterface({
+      spaceId: numericSpaceId,
+      parentId: numericParentId,
+      name,
+    });
+    if (response.code !== 200) {
+      throw new Error(response.message || "创建关系分类失败");
+    }
+    categoryFormVisible.value = false;
+    ElMessage.success("分类已添加");
+    await loadSpaceRelationWorkspace();
+  } catch (cause) {
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "创建关系分类失败，请重试。");
+    categoryFormRef.value?.setLoading(false);
+  } finally {
+    actionLoading.value = false;
   }
-  categoryFormVisible.value = false;
-  ElMessage.success(categoryFormMode.value === "create" ? "分类已添加" : "分类已更新");
 }
 
-function handleCategoryDelete() {
+/**
+ * @description 删除关系分类：提交 spaceId 与 categoryId；成功后关闭弹框并刷新分类树。
+ */
+async function handleCategoryDelete() {
   if (categoryDeleteBlocked.value) return;
-  actionLoading.value = true;
-  const error = deleteCategory(categoryActionId.value);
-  actionLoading.value = false;
-  if (error) {
-    ElMessage.error(error);
+  const space = String(route.params.spaceId || "").trim();
+  const numericSpaceId = Number(space);
+  const numericCategoryId = Number(categoryActionId.value);
+  if (!space || !Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId)) {
+    ElMessage.error("缺少空间或分类 id，无法删除关系分类。");
     return;
   }
-  categoryDeleteVisible.value = false;
-  ElMessage.success("分类已删除");
+  actionLoading.value = true;
+  try {
+    const response = await deleteOntologyRelationCategoryTreeInterface({
+      spaceId: numericSpaceId,
+      categoryId: numericCategoryId,
+    });
+    if (response.code !== 200) {
+      throw new Error(response.message || "删除关系分类失败");
+    }
+    categoryDeleteVisible.value = false;
+    ElMessage.success("分类已删除");
+    await loadSpaceRelationWorkspace();
+  } catch (cause) {
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "删除关系分类失败，请重试。");
+  } finally {
+    actionLoading.value = false;
+  }
 }
 
 function openRelationCreate() {
@@ -318,32 +391,101 @@ function openRelationDelete(item: OntologyRelationClass) {
   relationDeleteVisible.value = true;
 }
 
-function handleRelationSubmit(payload: RelationClassWritePayload) {
-  actionLoading.value = true;
-  relationFormRef.value?.setLoading(true);
-  const error = relationFormMode.value === "create" ? createRelationClass(payload) : editRelationClass({ ...payload, id: activeRelation.value?.id || "" });
-  actionLoading.value = false;
-  relationFormRef.value?.setLoading(false);
-  if (error) {
-    ElMessage.error(error);
-    return;
-  }
-  relationFormVisible.value = false;
-  ElMessage.success(relationFormMode.value === "create" ? "关系已添加" : "关系已更新");
+/**
+ * @description 将表单分类 id 转为接口可选的数字 categoryId；根常量或非法值时省略。
+ * @param categoryId 表单分类 id。
+ * @returns 可提交的分类 id，或 undefined。
+ */
+function resolveCreateLinkCategoryId(categoryId: string | undefined): number | undefined {
+  const trimmed = categoryId?.trim() ?? "";
+  if (!trimmed || trimmed === ROOT_RELATION_CATEGORY_ID) return undefined;
+  const numericCategoryId = Number(trimmed);
+  return Number.isInteger(numericCategoryId) ? numericCategoryId : undefined;
 }
 
-function handleRelationDelete() {
-  if (!activeRelation.value) return;
-  actionLoading.value = true;
-  const error = deleteRelationClass(activeRelation.value.id);
-  actionLoading.value = false;
-  if (error) {
-    ElMessage.error(error);
+/**
+ * @description 提交关系表单：创建走 POST `/ontology/link` 成功后刷新关系树；编辑仍走本地更新。
+ * @param payload 关系写载荷；create 时 sourceName/targetName 为本体 uniqueIdentifier。
+ */
+async function handleRelationSubmit(payload: RelationClassWritePayload) {
+  if (relationFormMode.value === "edit") {
+    actionLoading.value = true;
+    relationFormRef.value?.setLoading(true);
+    const error = editRelationClass({ ...payload, id: activeRelation.value?.id || "" });
+    actionLoading.value = false;
+    relationFormRef.value?.setLoading(false);
+    if (error) {
+      ElMessage.error(error);
+      return;
+    }
+    relationFormVisible.value = false;
+    ElMessage.success("关系已更新");
     return;
   }
-  relationDeleteVisible.value = false;
-  activeRelation.value = null;
-  ElMessage.success("关系已删除");
+
+  const space = String(route.params.spaceId || "").trim();
+  const numericSpaceId = Number(space);
+  if (!space || !Number.isInteger(numericSpaceId)) {
+    ElMessage.error("缺少空间 id，无法创建关系。");
+    relationFormRef.value?.setLoading(false);
+    return;
+  }
+
+  const requestBody: CreateOntologyLinkParams = {
+    name: payload.displayName,
+    ontologyUniqueIdentifierFrom: payload.sourceName,
+    ontologyUniqueIdentifierTo: payload.targetName,
+    apiName: payload.apiName,
+    spaceId: numericSpaceId,
+  };
+  const categoryId = resolveCreateLinkCategoryId(payload.categoryId);
+  if (categoryId !== undefined) requestBody.categoryId = categoryId;
+  const comment = payload.description.trim();
+  if (comment) requestBody.comment = comment;
+
+  actionLoading.value = true;
+  relationFormRef.value?.setLoading(true);
+  try {
+    const response = await postCreateOntologyLinkInterface(requestBody);
+    if (response.code !== 200) {
+      throw new Error(response.message || "创建关系失败");
+    }
+    relationFormVisible.value = false;
+    ElMessage.success("关系已添加");
+    await loadSpaceRelationWorkspace();
+  } catch (cause) {
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "创建关系失败，请重试。");
+  } finally {
+    actionLoading.value = false;
+    relationFormRef.value?.setLoading(false);
+  }
+}
+
+/**
+ * @description 删除关系：提交关系唯一标识；表格与三维图删除共用此确认逻辑；成功后关闭弹框并刷新关系树。
+ */
+async function handleRelationDelete() {
+  if (!activeRelation.value) return;
+  const linkUniqIdentifier = activeRelation.value.id.trim();
+  if (!linkUniqIdentifier) {
+    ElMessage.error("缺少关系唯一标识，无法删除。");
+    return;
+  }
+  actionLoading.value = true;
+  try {
+    const response = await deleteOntologyLinkInterface({ linkUniqIdentifier });
+    if (response.code !== 200) {
+      throw new Error(response.message || "删除关系失败");
+    }
+    relationDeleteVisible.value = false;
+    activeRelation.value = null;
+    ElMessage.success("关系已删除");
+    await loadSpaceRelationWorkspace();
+  } catch (cause) {
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "删除关系失败，请重试。");
+  } finally {
+    actionLoading.value = false;
+  }
 }
 </script>
 

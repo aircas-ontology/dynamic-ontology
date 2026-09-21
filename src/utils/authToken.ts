@@ -27,7 +27,7 @@ function isNonEmptyString(value: unknown): value is string {
 
 /**
  * @description 归一化 Bearer 令牌：去除首尾空白与已有的 Bearer 前缀，拒绝空令牌。
- * @param rawToken 登录响应头中的原始 Authorization 值。
+ * @param rawToken 登录响应头中的原始 access-token 值。
  * @returns 不带 Bearer 前缀的原始令牌。
  */
 function normalizeBearerToken(rawToken: string): string {
@@ -40,7 +40,7 @@ function normalizeBearerToken(rawToken: string): string {
 
 /**
  * @description 保存登录令牌到 sessionStorage（关闭标签页后失效），自动归一化 Bearer 前缀。
- * @param rawToken 登录响应头返回的 Authorization 值。
+ * @param rawToken 登录响应头返回的 access-token 值。
  * @param storage 可选存储适配器，未传时使用 window.sessionStorage。
  */
 export function saveLoginToken(rawToken: string, storage?: Storage): void {
@@ -69,11 +69,11 @@ export function getLoginToken(storage?: Storage): string | null {
 }
 
 /**
- * @description 获取可直接写入请求头的完整 Authorization 值。
+ * @description 获取可直接写入 access-token 请求头的完整令牌值。
  * @param storage 可选存储适配器。
  * @returns 形如 `Bearer <token>` 的值；未登录时为 null。
  */
-export function getAuthorizationHeader(storage?: Storage): string | null {
+export function getAccessTokenHeader(storage?: Storage): string | null {
   const token = getLoginToken(storage);
   return token ? `${BEARER_PREFIX}${token}` : null;
 }

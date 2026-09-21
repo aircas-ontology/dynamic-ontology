@@ -1,5 +1,11 @@
 <template>
-  <div ref="rootRef" class="relation-graph-view" :class="{ 'relation-graph-view--holographic': layoutMode === 'network' }" @click="closeMenu" @contextmenu.prevent>
+  <div
+    ref="rootRef"
+    class="relation-graph-view"
+    :class="{ 'relation-graph-view--holographic': layoutMode === 'network' }"
+    @click="closeMenu"
+    @contextmenu.prevent
+  >
     <el-empty v-if="!safeItems.length" description="暂无关系类" :image-size="72" />
     <div v-show="safeItems.length" ref="canvasRef" class="relation-graph-view__canvas" aria-label="关系三维图" />
     <template v-if="layoutMode === 'network'">
@@ -163,11 +169,24 @@ watch(
   border-radius: 8px;
   background: linear-gradient(165deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
 }
-.relation-graph-view__canvas { width: 100%; height: 100%; min-height: 320px; cursor: grab; }
-.relation-graph-view--holographic { background: var(--aircas-color-page-background); }
+.relation-graph-view__canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  cursor: grab;
+}
+.relation-graph-view--holographic {
+  background: var(--aircas-color-page-background);
+  justify-content: center;
+}
 .relation-graph-view__noise,
 .relation-graph-view__scanlines,
-.relation-graph-view__vignette { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.relation-graph-view__vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
 .relation-graph-view__noise {
   opacity: 0.055;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
@@ -181,22 +200,48 @@ watch(
   background: radial-gradient(circle, transparent 50%, var(--aircas-color-overlay) 118%);
 }
 .relation-graph-view__hint {
-  z-index: 3; position: absolute; bottom: 12px; left: 0; right: 0; text-align: center;
-  color: var(--aircas-color-text-muted); font-size: 12px; pointer-events: none;
+  z-index: 3;
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--aircas-color-text-muted);
+  font-size: 12px;
+  pointer-events: none;
 }
 .relation-graph-context-menu {
-  position: absolute; z-index: 20; display: flex; flex-direction: column; gap: 4px; min-width: 112px; padding: 6px;
-  border: 1px solid var(--aircas-color-border); border-radius: 8px; background: var(--aircas-color-panel-background-deep);
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 112px;
+  padding: 6px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+  background: var(--aircas-color-panel-background-deep);
   box-shadow: 0 8px 24px var(--aircas-color-divider);
 }
 .relation-graph-context-menu__item {
-  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px;
-  border: 1px solid var(--aircas-color-transparent); border-radius: 4px;
-  color: var(--aircas-color-text-primary); background: var(--aircas-color-transparent);
-  font-size: 12px; font-family: inherit; cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--aircas-color-transparent);
+  border-radius: 4px;
+  color: var(--aircas-color-text-primary);
+  background: var(--aircas-color-transparent);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
 }
 .relation-graph-context-menu__item:hover {
-  border-color: var(--aircas-color-border); background: var(--aircas-color-accent-blue-soft);
+  border-color: var(--aircas-color-border);
+  background: var(--aircas-color-accent-blue-soft);
 }
-.relation-graph-context-menu__item-danger { color: var(--aircas-color-danger); }
+.relation-graph-context-menu__item-danger {
+  color: var(--aircas-color-danger);
+}
 </style>

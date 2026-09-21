@@ -47,6 +47,15 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   }
 
   /**
+   * @description 关闭空间创建弹窗并进入空间概念模型构建页。
+   */
+  function openConceptualModel() {
+    formVisible.value = false;
+    resetOntologySpaceCommandState();
+    void router.push({ name: "OntologyConceptualModelCreate" });
+  }
+
+  /**
    * @description 处理空间列表行操作：进入、编辑、删除、导出或子空间提示。
    * @param action 操作类型。
    * @param space 目标空间。
@@ -175,6 +184,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
     actionBusy,
     actionError,
     openOntologySpaceForm,
+    openConceptualModel,
     handleOntologySpaceAction,
     submitOntologySpaceForm,
     confirmDeleteOntologySpace,

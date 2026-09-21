@@ -85,6 +85,10 @@ test("root concept node opens a child category name dialog", () => {
   const treeSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue", import.meta.url), "utf8");
   const dialogSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/CategoryTreeChildDialog.vue", import.meta.url), "utf8");
   const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue", import.meta.url), "utf8");
+  const actionsSource = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts", import.meta.url),
+    "utf8",
+  );
   assert.doesNotMatch(treeSource, /isRootConceptNode/);
   assert.match(treeSource, /openChildCategoryDialog\(data\)/);
   assert.match(treeSource, /aria-label="新建子分类"/);
@@ -97,13 +101,13 @@ test("root concept node opens a child category name dialog", () => {
   assert.match(dialogSource, /emit\("submit", name\)/);
   assert.doesNotMatch(dialogSource, /postCreateOntologyCategoryTreeInterface/);
   assert.match(panelSource, /submitCreateOntologyCategoryChild/);
-  assert.match(panelSource, /parentId: numericParentId/);
+  assert.match(actionsSource, /parentId: numericParentId/);
 });
 
 test("object workspace composable loads the category tree api instead of navy mock data", () => {
   const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts", import.meta.url), "utf8");
   assert.match(source, /getOntologyCategoryTreeInterface/);
   assert.match(source, /mapOntologyCategoryTree/);
-  assert.match(source, /sections:\s*\[\]/);
+  assert.match(source, /mapOntologyCategorySections/);
   assert.doesNotMatch(source, /ontologySpaceObjectMock/);
 });

@@ -1,11 +1,18 @@
 import type {
   ApiResponse,
   CreateOntologyCategoryTreeParams,
+  CreateOntologyLinkParams,
+  CreateOntologyRelationCategoryTreeParams,
   DeleteOntologyCategoryTreeParams,
+  DeleteOntologyLinkParams,
+  DeleteOntologyRelationCategoryTreeParams,
   OntologyCategoryTreeData,
   OntologyCategoryTreeParams,
+  OntologyRelationCategoryTreeData,
+  OntologyRelationCategoryTreeParams,
   OntologySpaceListData,
   UpdateOntologyCategoryNameParams,
+  UpdateOntologyRelationCategoryNameParams,
   CreateOntologySpaceData,
   CreateOntologySpaceParams,
   DeleteOntologySpaceData,
@@ -94,6 +101,24 @@ export function getOntologyCategoryTreeInterface(params: OntologyCategoryTreePar
 }
 
 /**
+ * @description 查询空间关系分类体系树。
+ *
+ * 请求方式：GET `/ontology/link_category/tree`
+ *
+ * @param params 查询参数。
+ * @param {string} params.spaceId 必填空间 id。
+ * @returns 标准 API 响应，data 为关系分类体系单根节点；无 data 时表示关系树为空。
+ */
+export function getOntologyRelationCategoryTreeInterface(params: OntologyRelationCategoryTreeParams): Promise<ApiResponse<OntologyRelationCategoryTreeData>> {
+  return request<OntologyRelationCategoryTreeData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link_category/tree",
+    method: "get",
+    params,
+    timeout: requestTimeoutMs,
+  });
+}
+
+/**
  * @description 查询本体空间列表。
  *
  * 请求方式：GET `/ontology/space`
@@ -126,6 +151,106 @@ export function postCreateOntologyCategoryTreeInterface(payload: CreateOntologyC
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/category",
     method: "post",
     data: payload,
+    timeout: requestTimeoutMs,
+  });
+}
+
+/**
+ * @description 创建空间关系分类体系树。
+ *
+ * 请求方式：POST `/ontology/link_category`
+ *
+ * @param payload 创建参数。
+ * @param {number} payload.spaceId 当前空间 id，数字。
+ * @param {number} payload.parentId 父级分类 id，数字，根分类为 0。
+ * @param {string} payload.name 分类名称。
+ * @returns 标准 API 响应；成功时 code 为 200，响应体不含 data。
+ */
+export function postCreateOntologyRelationCategoryTreeInterface(payload: CreateOntologyRelationCategoryTreeParams): Promise<ApiResponse<undefined>> {
+  return request<undefined>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link_category",
+    method: "post",
+    data: payload,
+    timeout: requestTimeoutMs,
+  });
+}
+
+/**
+ * @description 修改空间关系分类名称。
+ *
+ * 请求方式：PUT `/ontology/link_category`
+ *
+ * @param payload 修改参数。
+ * @param {number} payload.spaceId 当前空间 id，数字。
+ * @param {number} payload.categoryId 要修改的分类 id，数字。
+ * @param {string} payload.name 新的分类名称。
+ * @returns 标准 API 响应；成功时 code 为 200，响应体不含 data。
+ */
+export function putUpdateOntologyRelationCategoryNameInterface(payload: UpdateOntologyRelationCategoryNameParams): Promise<ApiResponse<undefined>> {
+  return request<undefined>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link_category",
+    method: "put",
+    data: payload,
+    timeout: requestTimeoutMs,
+  });
+}
+
+/**
+ * @description 删除空间关系分类。
+ *
+ * 请求方式：DELETE `/ontology/link_category`
+ *
+ * @param payload 删除参数。
+ * @param {number} payload.spaceId 当前空间 id，数字。
+ * @param {number} payload.categoryId 要删除的分类 id，数字。
+ * @returns 标准 API 响应；成功时 code 为 200，响应体不含 data。
+ */
+export function deleteOntologyRelationCategoryTreeInterface(payload: DeleteOntologyRelationCategoryTreeParams): Promise<ApiResponse<undefined>> {
+  return request<undefined>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link_category",
+    method: "delete",
+    data: payload,
+    timeout: requestTimeoutMs,
+  });
+}
+
+/**
+ * @description 创建本体之间的关系。
+ *
+ * 请求方式：POST `/ontology/link`
+ *
+ * @param payload 创建参数。
+ * @param {string} payload.name 关系名称。
+ * @param {string} payload.ontologyUniqueIdentifierFrom 源本体唯一标识。
+ * @param {string} payload.ontologyUniqueIdentifierTo 目标本体唯一标识。
+ * @param {number} [payload.categoryId] 关系分类 id，非必填。
+ * @param {string} payload.apiName 关系 API 名称。
+ * @param {string} [payload.comment] 关系备注/描述，非必填。
+ * @param {number} payload.spaceId 关系所属空间 id。
+ * @returns 标准 API 响应；成功时 code 为 200，响应体不含 data。
+ */
+export function postCreateOntologyLinkInterface(payload: CreateOntologyLinkParams): Promise<ApiResponse<undefined>> {
+  return request<undefined>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link",
+    method: "post",
+    data: payload,
+    timeout: requestTimeoutMs,
+  });
+}
+
+/**
+ * @description 删除本体之间的关系。
+ *
+ * 请求方式：DELETE `/ontology/link/{linkUniqIdentifier}`
+ *
+ * @param payload 删除参数。
+ * @param {string} payload.linkUniqIdentifier 关系唯一标识（路径参数）。
+ * @returns 标准 API 响应；成功时 code 为 200，响应体不含 data。
+ */
+export function deleteOntologyLinkInterface(payload: DeleteOntologyLinkParams): Promise<ApiResponse<undefined>> {
+  return request<undefined>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link/" + encodeURIComponent(payload.linkUniqIdentifier),
+    method: "delete",
     timeout: requestTimeoutMs,
   });
 }

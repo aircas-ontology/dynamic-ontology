@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { extractAuthorizationHeader, persistLoginToken, postLoginInterface } from "../src/apis/loginApi.ts";
-import { getAuthorizationHeader } from "../src/utils/authToken.ts";
+import { extractAccessTokenHeader, persistLoginToken, postLoginInterface } from "../src/apis/loginApi.ts";
+import { getAccessTokenHeader } from "../src/utils/authToken.ts";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -51,12 +51,12 @@ test("login page submits through the login command, checks code 200, and routes 
   assert.match(source, /name: "OntologySpaceManagement"/);
 });
 
-test("extractAuthorizationHeader reads Authorization case-insensitively and rejects non-strings", () => {
-  assert.equal(extractAuthorizationHeader({ authorization: "Bearer abc.token" }), "Bearer abc.token");
-  assert.equal(extractAuthorizationHeader({ Authorization: "abc.token" }), "abc.token");
-  assert.equal(extractAuthorizationHeader({ authorization: "  " }), null);
-  assert.equal(extractAuthorizationHeader({ authorization: 123 }), null);
-  assert.equal(extractAuthorizationHeader({}), null);
+test("extractAccessTokenHeader reads access-token case-insensitively and rejects non-strings", () => {
+  assert.equal(extractAccessTokenHeader({ "access-token": "Bearer abc.token" }), "Bearer abc.token");
+  assert.equal(extractAccessTokenHeader({ "Access-Token": "abc.token" }), "abc.token");
+  assert.equal(extractAccessTokenHeader({ "access-token": "  " }), null);
+  assert.equal(extractAccessTokenHeader({ "access-token": 123 }), null);
+  assert.equal(extractAccessTokenHeader({}), null);
 });
 
 test("persistLoginToken stores the response token and fails fast when it is missing", () => {
@@ -76,12 +76,12 @@ test("persistLoginToken stores the response token and fails fast when it is miss
   globalThis.window = { sessionStorage: storage };
 
   try {
-    persistLoginHeader({ authorization: "Bearer abc.token" });
-    assert.equal(getAuthorizationHeader(), "Bearer abc.token");
+    persistLoginHeader({ "access-token": "Bearer abc.token" });
+    assert.equal(getAccessTokenHeader(), "Bearer abc.token");
 
     storage.values.clear();
-    persistLoginHeader({ Authorization: "plain.token" });
-    assert.equal(getAuthorizationHeader(), "Bearer plain.token");
+    persistLoginHeader({ "Access-Token": "plain.token" });
+    assert.equal(getAccessTokenHeader(), "Bearer plain.token");
 
     assert.throws(() => persistLoginHeader({}), /令牌/);
   } finally {

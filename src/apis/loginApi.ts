@@ -6,12 +6,12 @@ import { requestTimeoutMs } from "../utils/constants.ts";
 import { requestFull } from "../utils/request.ts";
 
 /**
- * @description 从登录响应头提取 Authorization 值，兼容 axios 对响应头键名的小写归一化与原始大小写。
+ * @description 从登录响应头提取 access-token 值，兼容 axios 对响应头键名的小写归一化与原始大小写。
  * @param headers axios 响应头集合。
- * @returns 去除首尾空白的 Authorization 值；缺失或为非字符串时返回 null。
+ * @returns 去除首尾空白的 access-token 值；缺失或为非字符串时返回 null。
  */
-export function extractAuthorizationHeader(headers: AxiosResponse<LoginData>["headers"]): string | null {
-  const rawHeader = headers["access-token"] ?? headers["AccessToken"];
+export function extractAccessTokenHeader(headers: AxiosResponse<LoginData>["headers"]): string | null {
+  const rawHeader = headers["access-token"] ?? headers["Access-Token"];
   const normalizedHeader = typeof rawHeader === "string" ? rawHeader.trim() : "";
   return normalizedHeader.length > 0 ? normalizedHeader : null;
 }
@@ -21,11 +21,11 @@ export function extractAuthorizationHeader(headers: AxiosResponse<LoginData>["he
  * @param headers axios 响应头集合。
  */
 export function persistLoginToken(headers: AxiosResponse<LoginData>["headers"]): void {
-  const authorization = extractAuthorizationHeader(headers);
-  if (!authorization) {
+  const accessToken = extractAccessTokenHeader(headers);
+  if (!accessToken) {
     throw new Error("登录响应缺少令牌，请联系管理员检查接口响应头配置。");
   }
-  saveLoginToken(authorization);
+  saveLoginToken(accessToken);
 }
 
 /**
