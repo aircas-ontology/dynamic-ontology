@@ -2,6 +2,7 @@ import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from "axio
 
 import type { ApiResponse } from "@/types";
 import { clearLoginToken, getAccessTokenHeader } from "./authToken.ts";
+import { requestTimeoutMs } from "./constants.ts";
 
 declare module "axios" {
   interface AxiosRequestConfig {
@@ -21,7 +22,7 @@ export class RequestError extends Error {
 }
 
 const instance = axios.create({
-  timeout: 1000 * 60 * 10,
+  timeout: requestTimeoutMs,
 });
 
 instance.defaults.headers.get["Content-Type"] = "application/x-www-form-urlencoded";

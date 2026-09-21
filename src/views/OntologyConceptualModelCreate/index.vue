@@ -278,25 +278,31 @@ const selectedAttribute = computed(() => {
   return undefined;
 });
 const selectedRelation = computed(() => (selected.value?.kind === "relation" ? relations.value.find((item) => item.id === selected.value?.id) : undefined));
-/** @description 返回空间管理页。 */ function goBack() {
+/** @description 返回空间管理页。 */
+function goBack() {
   void router.push({ name: "OntologySpaceManagement" });
 }
-/** @description 选择画布元素。 */ function select(selection: Selection) {
+/** @description 选择画布元素。 */
+function select(selection: Selection) {
   selected.value = selection;
 }
-/** @description 开始组件拖拽。 */ function startDrag(type: PaletteType, event: DragEvent) {
+/** @description 开始组件拖拽。 */
+function startDrag(type: PaletteType, event: DragEvent) {
   event.dataTransfer?.setData("conceptual-model/type", type);
 }
-/** @description 处理组件拖放。 */ function dropPalette(event: DragEvent) {
+/** @description 处理组件拖放。 */
+function dropPalette(event: DragEvent) {
   const type = event.dataTransfer?.getData("conceptual-model/type") as PaletteType | "";
   if (type) addPalette(type);
 }
-/** @description 添加对象、属性或关系。 */ function addPalette(type: PaletteType) {
+/** @description 添加对象、属性或关系。 */
+function addPalette(type: PaletteType) {
   if (type === "object") addObject();
   else if (type === "attribute") addAttribute(selectedObject.value?.id);
   else addRelation();
 }
-/** @description 添加对象。 */ function addObject() {
+/** @description 添加对象。 */
+function addObject() {
   const id = ++sequence;
   objects.value.push({
     id,
@@ -309,7 +315,8 @@ const selectedRelation = computed(() => (selected.value?.kind === "relation" ? r
   });
   select({ kind: "object", id });
 }
-/** @description 添加属性到对象。 */ function addAttribute(objectId?: number) {
+/** @description 添加属性到对象。 */
+function addAttribute(objectId?: number) {
   const object = objects.value.find((item) => item.id === objectId) ?? selectedObject.value;
   if (!object) {
     ElMessage.info("请先选择一个本体对象");
@@ -320,7 +327,8 @@ const selectedRelation = computed(() => (selected.value?.kind === "relation" ? r
   object.attributes.push({ id, displayName: name, apiName: name, dataType: "字符串", defaultValue: "", description: "", isPrimary: false, isNameKey: false });
   select({ kind: "attribute", id });
 }
-/** @description 添加待连接关系。 */ function addRelation() {
+/** @description 添加待连接关系。 */
+function addRelation() {
   const id = ++sequence;
   relations.value.push({
     id,
@@ -336,7 +344,8 @@ const selectedRelation = computed(() => (selected.value?.kind === "relation" ? r
   });
   select({ kind: "relation", id });
 }
-/** @description 开始拖动对象。 */ function startObjectDrag(id: number, event: PointerEvent) {
+/** @description 开始拖动对象。 */
+function startObjectDrag(id: number, event: PointerEvent) {
   const object = objects.value.find((item) => item.id === id);
   const canvas = canvasRef.value?.querySelector<HTMLElement>(".conceptual-model-create__canvas");
   if (!object || !canvas) return;
@@ -351,7 +360,8 @@ const selectedRelation = computed(() => (selected.value?.kind === "relation" ? r
   window.addEventListener("pointermove", moveObject);
   window.addEventListener("pointerup", stopObjectDrag, { once: true });
 }
-/** @description 移动对象节点。 */ function moveObject(event: PointerEvent) {
+/** @description 移动对象节点。 */
+function moveObject(event: PointerEvent) {
   if (!dragState || dragState.kind !== "object") return;
   const state = dragState;
   const canvas = canvasRef.value?.querySelector<HTMLElement>(".conceptual-model-create__canvas");
@@ -362,6 +372,7 @@ const selectedRelation = computed(() => (selected.value?.kind === "relation" ? r
   object.y = Math.max(0, (event.clientY - rect.top) / (zoom.value / 100) - state.offsetY);
 }
 /** @description 开始拖动关系端点。 */
+
 function startRelationPortDrag(id: number, endpoint: "source" | "target", event: PointerEvent) {
   event.preventDefault();
   dragState = { kind: "relation", id, endpoint };
@@ -370,6 +381,7 @@ function startRelationPortDrag(id: number, endpoint: "source" | "target", event:
   window.addEventListener("pointerup", stopRelationPort, { once: true });
 }
 /** @description 移动关系端点。 */
+
 function moveRelationPort(event: PointerEvent) {
   if (!dragState || dragState.kind !== "relation") return;
   const state = dragState;
@@ -388,6 +400,7 @@ function moveRelationPort(event: PointerEvent) {
   }
 }
 /** @description 停止关系端点拖动，并将端点吸附到最近的对象连接点。 */
+
 function stopRelationPort(event: PointerEvent) {
   if (dragState?.kind === "relation") {
     const state = dragState;
@@ -420,11 +433,13 @@ function stopRelationPort(event: PointerEvent) {
   dragState = null;
   window.removeEventListener("pointermove", moveRelationPort);
 }
-/** @description 停止对象拖动。 */ function stopObjectDrag() {
+/** @description 停止对象拖动。 */
+function stopObjectDrag() {
   dragState = null;
   window.removeEventListener("pointermove", moveObject);
 }
-/** @description 连接关系到对象。 */ function connectPort(objectId: number, port: Port, event: PointerEvent) {
+/** @description 连接关系到对象。 */
+function connectPort(objectId: number, port: Port, event: PointerEvent) {
   if (selectedRelation.value) {
     const point = objectPoint(
       objects.value.find((item) => item.id === objectId)!,
@@ -442,29 +457,36 @@ function stopRelationPort(event: PointerEvent) {
   }
   event.stopPropagation();
 }
-/** @description 计算对象连接点。 */ function objectPoint(object: ModelObject, port: Port) {
+/** @description 计算对象连接点。 */
+function objectPoint(object: ModelObject, port: Port) {
   return { x: object.x + (port === "left" ? 0 : port === "right" ? 190 : 95), y: object.y + (port === "top" ? 0 : port === "bottom" ? 120 : 60) };
 }
-/** @description 获取关系端点。 */ function pointFor(relation: Relation, endpoint: "source" | "target") {
+/** @description 获取关系端点。 */
+function pointFor(relation: Relation, endpoint: "source" | "target") {
   const object = objects.value.find((item) => item.id === (endpoint === "source" ? relation.sourceId : relation.targetId));
   const port = endpoint === "source" ? (relation.sourcePort ?? "right") : (relation.targetPort ?? "left");
   return object ? objectPoint(object, port) : endpoint === "source" ? relation.sourcePoint : relation.targetPoint;
 }
-/** @description 修改对象字段。 */ function updateObject(field: "apiName" | "displayName" | "description", value: string) {
+/** @description 修改对象字段。 */
+function updateObject(field: "apiName" | "displayName" | "description", value: string) {
   if (selectedObject.value) selectedObject.value[field] = value;
 }
-/** @description 修改属性字段。 */ function updateAttribute(field: keyof Attribute, value: string | boolean | number) {
+/** @description 修改属性字段。 */
+function updateAttribute(field: keyof Attribute, value: string | boolean | number) {
   const owner = objects.value.find((item) => item.attributes.some((attr) => attr.id === selectedAttribute.value?.id));
   const attr = owner?.attributes.find((item) => item.id === selectedAttribute.value?.id);
   if (attr) attr[field] = value as never;
 }
-/** @description 修改关系字段。 */ function updateRelation(field: keyof Relation, value: string | number | null) {
+/** @description 修改关系字段。 */
+function updateRelation(field: keyof Relation, value: string | number | null) {
   if (selectedRelation.value) selectedRelation.value[field] = value as never;
 }
-/** @description 清除选中元素。 */ function clearSelection() {
+/** @description 清除选中元素。 */
+function clearSelection() {
   selected.value = null;
 }
-/** @description 删除选中元素。 */ function deleteSelected() {
+/** @description 删除选中元素。 */
+function deleteSelected() {
   const item = selected.value;
   if (!item) return;
   if (item.kind === "object") {
@@ -480,21 +502,26 @@ function stopRelationPort(event: PointerEvent) {
     });
   selected.value = null;
 }
-/** @description 缩小画布。 */ function zoomOut() {
+/** @description 缩小画布。 */
+function zoomOut() {
   zoom.value = Math.max(60, zoom.value - 10);
 }
-/** @description 放大画布。 */ function zoomIn() {
+/** @description 放大画布。 */
+function zoomIn() {
   zoom.value = Math.min(160, zoom.value + 10);
 }
-/** @description 适应画布。 */ function fitCanvas() {
+/** @description 适应画布。 */
+function fitCanvas() {
   zoom.value = 100;
 }
 /** @description 将画布中的属性数据类型转换为后端枚举名称。 @param value 画布数据类型。 @returns 后端数据类型枚举名称。 */
+
 function mapCanvasDataType(value: string): string {
   return dataTypeMap[value] ?? "String";
 }
 
 /** @description 将画布对象属性转换为创建空间接口属性。 @param attribute 画布属性。 @returns 接口属性参数。 */
+
 function mapCanvasProperty(attribute: Attribute): CanvasProperty {
   return {
     displayName: attribute.displayName.trim(),
@@ -508,6 +535,7 @@ function mapCanvasProperty(attribute: Attribute): CanvasProperty {
 }
 
 /** @description 将画布对象转换为创建空间接口对象。 @param object 画布对象。 @returns 接口本体对象参数。 */
+
 function mapCanvasOntology(object: ModelObject): CanvasOntology {
   return {
     displayName: object.displayName.trim(),
@@ -518,6 +546,7 @@ function mapCanvasOntology(object: ModelObject): CanvasOntology {
 }
 
 /** @description 将已连接的画布关系转换为创建空间接口关系。 @param relation 画布关系。 @returns 接口关系参数或 undefined。 */
+
 function mapCanvasLink(relation: Relation): CanvasLink | undefined {
   const source = objects.value.find((object) => object.id === relation.sourceId);
   const target = objects.value.find((object) => object.id === relation.targetId);
@@ -532,6 +561,7 @@ function mapCanvasLink(relation: Relation): CanvasLink | undefined {
 }
 
 /** @description 组装画布一键创建空间接口请求体。 @returns 画布创建空间请求参数。 */
+
 function buildCanvasSpaceParams(): CreateOntologySpaceWithCanvasContentParams {
   return {
     displayName: spaceDisplayName.value.trim(),
@@ -547,6 +577,7 @@ function buildCanvasSpaceParams(): CreateOntologySpaceWithCanvasContentParams {
 }
 
 /** @description 调用画布一键创建空间接口，成功后进入新空间概览，失败时保留当前画布。 */
+
 async function saveConceptualModel() {
   if (saving.value) return;
   saveError.value = "";

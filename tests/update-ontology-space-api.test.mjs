@@ -27,8 +27,7 @@ test("update ontology space api issues a PUT to the manage domain space uri with
   assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/space"/);
   assert.match(apiSource, /method:\s*"put"/);
   assert.match(apiSource, /data: params,/);
-  assert.match(apiSource, /timeout: requestTimeoutMs,/);
-  assert.match(apiSource, /import \{ requestTimeoutMs \} from "@\/utils\/constants";/);
+  assert.doesNotMatch(apiSource, /timeout:/);
   assert.match(apiSource, /import type \{[\s\S]*UpdateOntologySpaceData[\s\S]*\} from "@\/types"/);
   assert.match(apiSource, /@description/);
   assert.doesNotMatch(apiSource, /method:\s*"get"[^\n]*\n[\s\S]*updateOntologySpaceInterface/);
