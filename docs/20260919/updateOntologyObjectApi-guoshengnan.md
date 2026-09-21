@@ -19,7 +19,7 @@
 
 ## 接口uri
 
-- `/meta`
+- `/ontology/meta`
 
 ## 请求方式
 
@@ -110,7 +110,7 @@ import { request } from "@/utils/request";
 /**
  * 修改本体对象。
  *
- * 请求方式：PUT `/meta`
+ * 请求方式：PUT `/ontology/meta`
  *
  * @param params 修改本体对象参数。
  * @param params.ontologyIdentifier 本体 id。
@@ -123,7 +123,7 @@ import { request } from "@/utils/request";
  */
 export function updateOntologyObjectInterface(params: UpdateOntologyObjectParams): Promise<ApiResponse<UpdateOntologyObjectData>> {
   return request<UpdateOntologyObjectData>({
-    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/meta",
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/meta",
     method: "put",
     data: params,
   });

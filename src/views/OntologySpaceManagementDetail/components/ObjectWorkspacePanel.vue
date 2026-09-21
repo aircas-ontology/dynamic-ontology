@@ -405,12 +405,12 @@ async function createOntologyObject(draft: OntologyObjectCreateDraft) {
   if (objectCreateSubmitting.value) return;
   const numericSpaceId = Number(spaceId.value.trim());
   const numericCategoryId = Number(draft.categoryId);
-  const numericParentId = draft.parentId ? Number(draft.parentId) : undefined;
   if (!Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId)) {
     objectCreateError.value = "缺少有效的空间或分类 id，无法创建本体。";
     return;
   }
-  if (draft.parentId && !Number.isInteger(numericParentId)) {
+  const parentOntologyUniqueIdentifier = draft.parentId?.trim();
+  if (draft.parentId !== undefined && !parentOntologyUniqueIdentifier) {
     objectCreateError.value = "继承本体 id 无效，无法创建本体。";
     return;
   }
@@ -423,7 +423,7 @@ async function createOntologyObject(draft: OntologyObjectCreateDraft) {
       apiName: draft.apiName,
       ...(draft.iconUrl ? { iconUrl: draft.iconUrl } : {}),
       ...(draft.description ? { description: draft.description } : {}),
-      ...(numericParentId === undefined ? {} : { parentOntologyUniqueIdentifier: numericParentId }),
+      ...(parentOntologyUniqueIdentifier ? { parentOntologyUniqueIdentifier } : {}),
       categoryId: numericCategoryId,
       groupIds: [],
     });

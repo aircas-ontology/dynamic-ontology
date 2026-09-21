@@ -14,7 +14,7 @@ import { request } from "@/utils/request";
 /**
  * @description 根据本体对象唯一标识删除本体对象。
  *
- * 请求方式：DELETE `/meta/{ontologyIdentifier}`
+ * 请求方式：DELETE `/ontology/meta/{ontologyIdentifier}`
  *
  * @param params 删除本体对象参数。
  * @param params.ontologyIdentifier 本体对象唯一标识。
@@ -47,7 +47,7 @@ export function getOntologyObjectByCategoryIdInterface(params?: GetOntologyObjec
 /**
  * @description 修改本体对象元数据。
  *
- * 请求方式：PUT `/meta`
+ * 请求方式：PUT `/ontology/meta`
  *
  * @param params 修改本体对象参数。
  * @param params.ontologyIdentifier 本体 id。
@@ -77,7 +77,7 @@ export function updateOntologyObjectInterface(params: UpdateOntologyObjectParams
  * @param params.apiName 本体对象 API 名称。
  * @param params.iconUrl 本体对象图标地址。
  * @param params.description 本体对象描述。
- * @param params.parentOntologyUniqueIdentifier 继承的本体对象 id。
+ * @param params.parentOntologyUniqueIdentifier 继承的本体对象唯一标识。
  * @param params.categoryId 本体对象所属分类 id。
  * @param params.groupIds 本体对象分组 id 列表。
  * @returns 标准 API 响应，data 为新创建的本体对象标识。

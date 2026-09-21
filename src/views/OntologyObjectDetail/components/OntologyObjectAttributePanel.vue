@@ -30,10 +30,20 @@
       >
         <template #default="{ data }">
           <div class="ontology-object-attribute-panel__tree-node">
-            <span class="ontology-object-attribute-panel__tree-label"
-              ><el-icon><FolderOpened v-if="data.children?.length" /><CollectionTag v-else /></el-icon>{{ data.label }}<em>{{ data.count }}</em></span
-            >
-            <span class="ontology-object-attribute-panel__tree-actions" @click.stop>
+            <template v-if="isCategoryNode(data)">
+              <span class="ontology-object-attribute-panel__tree-label">
+                <el-icon><FolderOpened v-if="data.children?.length" /><CollectionTag v-else /></el-icon>
+                {{ data.label }}
+                <em>{{ data.propertyCount }}</em>
+              </span>
+            </template>
+            <template v-else>
+              <span class="ontology-object-attribute-panel__tree-property-node" :title="data.label">
+                <span class="ontology-object-attribute-panel__tree-property-dot" aria-hidden="true"></span>
+                <span class="ontology-object-attribute-panel__tree-property-name">{{ data.label }}</span>
+              </span>
+            </template>
+            <span v-if="isCategoryNode(data)" class="ontology-object-attribute-panel__tree-actions" @click.stop>
               <el-tooltip content="添加子分类" placement="top" :show-after="200">
                 <button type="button" class="ontology-object-attribute-panel__tree-action" aria-label="添加子分类" @click="openCategoryCreate(data)">
                   <el-icon><Plus /></el-icon>
@@ -81,25 +91,33 @@
       <p v-if="attributeLoading" class="ontology-object-attribute-panel__table-state"><AircasLoading>正在加载属性...</AircasLoading></p>
       <p v-else-if="attributeError" class="ontology-object-attribute-panel__table-state is-error" role="alert">{{ attributeError }}</p>
       <div v-else-if="visibleAttributes.length" class="ontology-object-attribute-panel__table-wrap">
-        <el-table :data="visibleAttributes" class="aircas-table" height="100%" row-key="uniqueIdentifier">
+        <el-table
+          :data="visibleAttributes"
+          stripe
+          height="100%"
+          row-key="uniqueIdentifier"
+          class="aircas-table aircas-table--flat ontology-object-attribute-panel__table"
+        >
           <el-table-column prop="displayName" label="属性名称" min-width="150" show-overflow-tooltip />
           <el-table-column prop="apiName" label="API" min-width="150" show-overflow-tooltip />
-          <el-table-column prop="dataType" label="数据类型" width="110" />
-          <el-table-column prop="storageGroup" label="存储分组" width="120" />
+          <el-table-column prop="dataType" label="数据类型" width="110" show-overflow-tooltip />
+          <el-table-column prop="storageGroup" label="存储分组" width="120" show-overflow-tooltip />
           <el-table-column label="默认值" min-width="110" show-overflow-tooltip>
             <template #default="{ row }">{{ row.defaultValue || "—" }}</template>
           </el-table-column>
           <el-table-column prop="description" label="属性描述" min-width="210" show-overflow-tooltip />
-          <el-table-column label="主键" width="72"
+          <el-table-column label="主键" width="72" show-overflow-tooltip
             ><template #default="{ row }">{{ row.isPrimary ? "是" : "否" }}</template></el-table-column
           >
-          <el-table-column label="名称键" width="72"
+          <el-table-column label="名称键" width="72" show-overflow-tooltip
             ><template #default="{ row }">{{ row.isNameKey ? "是" : "否" }}</template></el-table-column
           >
-          <el-table-column label="操作" width="140" fixed="right">
+          <el-table-column label="操作" width="180" fixed="right">
             <template #default="{ row }">
-              <el-button class="aircas-button" link size="small" @click="openEditAttribute(row)">编辑</el-button>
-              <el-button class="aircas-button" link type="danger" size="small" @click="removeAttribute(row)">删除</el-button>
+              <div class="ontology-object-attribute-panel__row-actions">
+                <el-button class="aircas-button" size="small" @click="openEditAttribute(row)">编辑</el-button>
+                <el-button class="aircas-button" type="danger" size="small" @click="removeAttribute(row)">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -239,8 +257,6 @@ import {
   createOntologyObjectArrTypeTreeInterface,
   deleteOntologyPropertyInterface,
   deleteOntologyObjectArrTypeTreeInterface,
-  getOntologyPropertyByCategoryIdInterface,
-  getOntologyPropertyByOntologyIdInterface,
   getOntologyObjectArrTypeTreeInterface,
   updateOntologyPropertyInterface,
   updateOntologyObjectArrTypeTreeInterface,
@@ -251,12 +267,22 @@ import { useRoute } from "vue-router";
 import DataSourceAssociateDialog from "./DataSourceAssociateDialog.vue";
 
 interface CategoryNode {
+  nodeType: "category";
   id: string;
   label: string;
-  count: number;
+  propertyCount: number;
   isRoot?: boolean;
-  children?: CategoryNode[];
+  children?: TreeNode[];
 }
+
+interface AttributeTreeNode {
+  nodeType: "property";
+  id: string;
+  label: string;
+  source: OntologyPropertyInfo;
+}
+
+type TreeNode = CategoryNode | AttributeTreeNode;
 
 interface AttributeItem {
   uniqueIdentifier: string;
@@ -297,7 +323,6 @@ const categoryTreeEmpty = ref(false);
 const attributeLoading = ref(false);
 const attributeError = ref("");
 const attributeCommandError = ref("");
-let attributesRequestId = 0;
 const categoryDialogVisible = ref(false);
 const categorySubmitting = ref(false);
 const categoryError = ref("");
@@ -530,13 +555,28 @@ const categoryOptions = computed(() => flattenCategoryOptions(categories.value))
 
 /** @description 将接口分类树节点适配为属性页树节点。 */
 function mapCategoryTreeNode(node: GetOntologyObjectArrTypeTreeData): CategoryNode {
-  const children = node.children?.map(mapCategoryTreeNode);
+  const categoryChildren = node.children?.map(mapCategoryTreeNode) ?? [];
+  const propertyChildren = (node.propertyInfos ?? []).map(mapPropertyTreeNode);
+  const children = [...categoryChildren, ...propertyChildren];
   return {
+    nodeType: "category",
     id: String(node.categoryId),
     label: node.name || "未命名分类",
-    count: children?.reduce((total, child) => total + child.count, 0) ?? attributes.value.filter((item) => item.categoryId === String(node.categoryId)).length,
+    propertyCount: propertyChildren.length,
     isRoot: true,
     children: children?.length ? children : undefined,
+  };
+}
+
+/** @description 将接口属性记录适配为分类树的属性树叶节点，保留原始数据供后续筛选直接使用。 */
+function mapPropertyTreeNode(item: OntologyPropertyInfo): AttributeTreeNode {
+  const label = item.displayName || item.apiName || "未命名属性";
+  const uniqueIdentifier = item.uniqueIdentifier?.trim();
+  return {
+    nodeType: "property",
+    id: `property:${uniqueIdentifier || `${item.categoryId ?? ""}:${label}`}`,
+    label,
+    source: item,
   };
 }
 /** @description 将接口属性记录适配为属性页列表项。 */
@@ -581,6 +621,8 @@ async function loadAttributeCategoryTree() {
     }
     const root = mapCategoryTreeNode(response.data);
     categories.value = [root];
+    selectedCategoryId.value = root.id;
+    refreshAttributesFromTree();
   } catch (cause) {
     categoryTreeError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性分类查询失败，请重试。";
     ElMessage.error(categoryTreeError.value);
@@ -588,59 +630,71 @@ async function loadAttributeCategoryTree() {
     categoryTreeLoading.value = false;
   }
 }
-/** @description 查询当前选中范围的本体对象属性并更新列表。 */
-async function loadAttributesForSelection() {
-  const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
-  if (!ontologyUniqueIdentifier) {
-    attributeError.value = "缺少本体对象标识，无法加载属性。";
-    return;
+/** @description 从指定分类节点递归收集属性树节点，映射为属性列表项，不再调用后端接口。 */
+function collectPropertyItemsFromTree(nodes: TreeNode[]): AttributeItem[] {
+  const items: AttributeItem[] = [];
+  for (const node of nodes) {
+    if (node.nodeType === "property") {
+      items.push(mapOntologyPropertyItem(node.source));
+    } else if (node.children?.length) {
+      items.push(...collectPropertyItemsFromTree(node.children));
+    }
   }
-  const requestId = ++attributesRequestId;
-  attributeLoading.value = true;
-  attributeError.value = "";
-  try {
-    const response =
-      selectedCategoryId.value === "all"
-        ? await getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier })
-        : await getOntologyPropertyByCategoryIdInterface({ categoryId: Number(selectedCategoryId.value) });
-    if (response.code !== 200) throw new Error(response.message || "属性查询失败");
-    if (requestId === attributesRequestId) attributes.value = (response.data ?? []).map(mapOntologyPropertyItem);
-  } catch (cause) {
-    if (requestId !== attributesRequestId) return;
-    attributeError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性查询失败，请重试。";
-    attributes.value = [];
-    ElMessage.error(attributeError.value);
-  } finally {
-    if (requestId === attributesRequestId) attributeLoading.value = false;
-  }
+  return items;
 }
 
-/** @description 在分类树中递归查找指定节点。 */
-function findCategory(nodes: CategoryNode[], id: string): CategoryNode | undefined {
+/** @description 根据当前选中的分类节点，从已加载的分类树中直接提取属性列表。 */
+function refreshAttributesFromTree() {
+  const categoryId = selectedCategoryId.value;
+  attributeError.value = "";
+  if (categoryId === "all") {
+    attributes.value = collectPropertyItemsFromTree(categories.value);
+    return;
+  }
+  const selectedCategory = findCategory(categories.value, categoryId);
+  if (!selectedCategory) {
+    attributes.value = [];
+    return;
+  }
+  attributes.value = collectPropertyItemsFromTree([selectedCategory]);
+}
+
+/** @description 判断树节点是否为属性分类节点。 */
+function isCategoryNode(value: unknown): value is CategoryNode {
+  return Boolean(value && typeof value === "object" && "nodeType" in value && value.nodeType === "category");
+}
+
+/** @description 在分类树中递归查找指定分类节点。 */
+function findCategory(nodes: TreeNode[], id: string): CategoryNode | undefined {
   for (const node of nodes) {
+    if (!isCategoryNode(node)) continue;
     if (node.id === id) return node;
     const found = node.children ? findCategory(node.children, id) : undefined;
     if (found) return found;
   }
   return undefined;
 }
+
 /** @description 将属性分类树扁平化为属性表单下拉选项。 */
-function flattenCategoryOptions(nodes: CategoryNode[]): CategoryNode[] {
-  return nodes.flatMap((node) => [node, ...(node.children ? flattenCategoryOptions(node.children) : [])]);
+function flattenCategoryOptions(nodes: TreeNode[]): CategoryNode[] {
+  return nodes.flatMap((node) => (isCategoryNode(node) ? [node, ...(node.children ? flattenCategoryOptions(node.children) : [])] : []));
 }
 /** @description 根据分类搜索词过滤树节点。 */
 function filterCategoryNode(value: string, data: unknown): boolean {
   if (!data || typeof data !== "object" || !("label" in data) || typeof data.label !== "string") return false;
   return !value.trim() || data.label.includes(value.trim());
 }
+
 /** @description 选中属性分类并刷新右侧列表。 */
-function selectCategory(data: CategoryNode) {
+function selectCategory(data: unknown) {
+  if (!isCategoryNode(data)) return;
   selectedCategoryId.value = data.id;
-  void loadAttributesForSelection();
+  refreshAttributesFromTree();
 }
 /** @description 查找分类节点的父分类。 */
-function findCategoryParent(nodes: CategoryNode[], id: string, parent?: CategoryNode): CategoryNode | undefined {
+function findCategoryParent(nodes: TreeNode[], id: string, parent?: CategoryNode): CategoryNode | undefined {
   for (const node of nodes) {
+    if (!isCategoryNode(node)) continue;
     if (node.id === id) return parent;
     const found = node.children ? findCategoryParent(node.children, id, node) : undefined;
     if (found) return found;
@@ -648,7 +702,9 @@ function findCategoryParent(nodes: CategoryNode[], id: string, parent?: Category
   return undefined;
 }
 /** @description 打开分类编辑弹窗并回显父分类和当前名称。 */
-function openCategoryEdit(data: CategoryNode) {
+function openCategoryEdit(value: unknown) {
+  if (!isCategoryNode(value)) return;
+  const data = value;
   categoryEditId.value = data.id;
   categoryEditName.value = data.label;
   categoryParentName.value = findCategoryParent(categories.value, data.id)?.label ?? "无";
@@ -683,8 +739,10 @@ async function saveCategoryEdit() {
     categoryEditSubmitting.value = false;
   }
 }
-/** @description 创建属性子分类并将其加入当前树节点。 */
-async function openCategoryCreate(parent: CategoryNode) {
+/** @description 打开指定分类下的新建子分类弹窗。 */
+function openCategoryCreate(value: unknown) {
+  if (!isCategoryNode(value)) return;
+  const parent = value;
   categoryParentId.value = parent.id;
   categoryParentName.value = parent.label;
   categoryName.value = "";
@@ -731,7 +789,9 @@ async function saveCategoryDraft() {
   }
 }
 /** @description 删除属性分类并提示结果。 */
-async function removeCategory(data: CategoryNode) {
+async function removeCategory(value: unknown) {
+  if (!isCategoryNode(value)) return;
+  const data = value;
   try {
     await ElMessageBox.confirm(`确认删除属性分类「${data.label}」吗？`, "删除属性分类", { type: "warning" });
     const ontologyIdentifier = String(route.params.objectId || "").trim();
@@ -890,7 +950,8 @@ async function saveAttributeDraft() {
       ElMessage.success("属性编辑成功");
     }
     attributeDialogVisible.value = false;
-    await loadAttributesForSelection();
+    refreshAttributesFromTree();
+    await loadAttributeCategoryTree();
   } catch (cause) {
     attributeCommandError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性保存失败，请重试。";
     ElMessage.error(attributeCommandError.value);
@@ -911,7 +972,8 @@ async function removeAttribute(value: unknown) {
     const response = await deleteOntologyPropertyInterface({ propertyUniqueIdentifier: item.uniqueIdentifier });
     if (response.code !== 200) throw new Error(response.message || "属性删除失败");
     ElMessage.success("属性删除成功");
-    await loadAttributesForSelection();
+    refreshAttributesFromTree();
+    await loadAttributeCategoryTree();
   } catch (cause) {
     const message = cause instanceof Error && cause.message.trim() ? cause.message : "属性删除失败，请重试。";
     ElMessage.error(message);
@@ -925,7 +987,7 @@ function isAttributeItem(value: unknown): value is AttributeItem {
 watch(categorySearch, (value) => treeRef.value?.filter(value));
 onMounted(() => {
   void loadAttributeCategoryTree();
-  void loadAttributesForSelection();
+  refreshAttributesFromTree();
 });
 </script>
 
@@ -939,21 +1001,26 @@ onMounted(() => {
   grid-template-columns: minmax(260px, 28%) minmax(0, 1fr);
   gap: 8px;
 }
-.ontology-object-attribute-panel__categories,
-.ontology-object-attribute-panel__content {
+.ontology-object-attribute-panel__categories {
+  display: flex;
   min-width: 0;
   min-height: 0;
+  padding: 16px 12px;
+  flex-direction: column;
+  gap: 12px;
   overflow: hidden;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
   box-shadow: inset 0 0 20px var(--aircas-color-divider);
 }
-.ontology-object-attribute-panel__categories {
+.ontology-object-attribute-panel__content {
   display: flex;
-  padding: 16px 12px;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  overflow: hidden;
 }
 .ontology-object-attribute-panel__section-header h1,
 .ontology-object-attribute-panel__content-header h2 {
@@ -1002,7 +1069,9 @@ onMounted(() => {
   min-height: auto;
 }
 .ontology-object-attribute-panel__tree :deep(.el-tree-node__content) {
-  height: 32px;
+  min-height: 32px;
+  height: auto;
+  padding: 4px 0;
   border-radius: 4px;
 }
 .ontology-object-attribute-panel__tree :deep(.el-tree-node__content:hover) {
@@ -1025,6 +1094,27 @@ onMounted(() => {
   min-width: 0;
   gap: 6px;
   color: var(--aircas-color-text-secondary);
+}
+.ontology-object-attribute-panel__tree-property-node {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  color: var(--aircas-color-text-secondary);
+}
+.ontology-object-attribute-panel__tree-property-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--aircas-color-accent-cyan);
+}
+.ontology-object-attribute-panel__tree-property-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ontology-object-attribute-panel__tree-label em {
   padding: 0 6px;
@@ -1071,17 +1161,17 @@ onMounted(() => {
   outline: 1px solid var(--aircas-color-border);
   outline-offset: 1px;
 }
-.ontology-object-attribute-panel__content {
-  display: flex;
-  padding: 16px;
-  flex-direction: column;
-  gap: 12px;
-}
 .ontology-object-attribute-panel__content-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 18px var(--aircas-color-divider);
 }
 .ontology-object-attribute-panel__toolbar {
   display: flex;
@@ -1092,10 +1182,20 @@ onMounted(() => {
   width: 240px;
 }
 .ontology-object-attribute-panel__table-wrap {
+  display: flex;
   min-width: 0;
   min-height: 0;
   flex: 1;
   overflow: hidden;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+}
+.ontology-object-attribute-panel__table {
+  width: 100%;
+}
+.ontology-object-attribute-panel__row-actions {
+  display: inline-flex;
+  gap: 8px;
 }
 .ontology-object-attribute-panel__empty {
   flex: 1;

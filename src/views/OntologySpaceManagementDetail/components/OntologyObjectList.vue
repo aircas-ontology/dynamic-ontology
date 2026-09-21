@@ -42,7 +42,14 @@
                 <strong :title="item.displayName">{{ item.displayName }}</strong>
                 <small :title="item.apiName">{{ item.apiName }}</small>
               </header>
-              <button class="ontology-object-card__parent" type="button" @click="emit('locateParent', item)">父本体：{{ item.parentDisplayName }}</button>
+              <button
+                v-if="item.parentDisplayName && item.parentDisplayName !== '无'"
+                class="ontology-object-card__parent"
+                type="button"
+                @click="emit('locateParent', item)"
+              >
+                父本体：{{ item.parentDisplayName }}
+              </button>
               <p>创建时间 {{ item.createdAt }}</p>
               <dl>
                 <div>
@@ -83,7 +90,7 @@
         </div>
 
         <div v-else class="ontology-object-section__table">
-          <el-table class="aircas-table aircas-table--flat" :data="section.items" row-key="id" height="100%">
+          <el-table class="aircas-table aircas-table--flat" :data="section.items" row-key="id" height="100%" stripe>
             <el-table-column label="本体名称" min-width="220">
               <template #default="{ row }"
                 ><strong>{{ objectRow(row).displayName }}</strong
@@ -101,7 +108,7 @@
             <el-table-column label="行为" width="80"
               ><template #default="{ row }">{{ objectRow(row).metrics.behavior }}</template></el-table-column
             >
-            <el-table-column label="操作" width="250" fixed="right">
+            <el-table-column label="操作" width="300" fixed="right">
               <template #default="{ row }">
                 <el-button class="aircas-button" size="small" @click="emit('action', 'view', objectRow(row))">详情</el-button>
                 <el-button class="aircas-button" size="small" @click="emit('action', 'edit', objectRow(row))">编辑</el-button>
@@ -389,6 +396,9 @@ onBeforeUnmount(() => {
   height: min(420px, 48vh);
   min-height: 240px;
   padding: 8px;
+}
+.ontology-object-section__table .el-button {
+  white-space: nowrap;
 }
 .ontology-object-table__api {
   display: block;

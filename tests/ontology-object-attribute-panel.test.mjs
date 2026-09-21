@@ -25,6 +25,17 @@ test("object attribute panel exposes category tree, property columns, and local 
   const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
   assert.match(source, /属性分类树/);
   assert.match(source, /搜索属性分类/);
+  assert.match(source, /nodeType: "property"/);
+  assert.match(source, /nodeType: "category"/);
+  assert.match(source, /function isCategoryNode/);
+  assert.match(source, /function collectPropertyItemsFromTree/);
+  assert.match(source, /function refreshAttributesFromTree/);
+  assert.match(source, /\.source\b/);
+  assert.match(source, /collectPropertyItemsFromTree\(\[selectedCategory\]\)/);
+  assert.match(source, /if \(!isCategoryNode\(data\)\) return/);
+  assert.doesNotMatch(source, /toggleNodeProperties/);
+  assert.match(source, /ontology-object-attribute-panel__tree-property-node/);
+  assert.match(source, /ontology-object-attribute-panel__tree-property-dot/);
   assert.match(source, /添加子分类/);
   assert.match(source, /current-node-key="selectedCategoryId"/);
   assert.match(source, /class="aircas-dialog"/);
@@ -61,4 +72,5 @@ test("object attribute panel exposes category tree, property columns, and local 
   assert.match(source, /父分类/);
   assert.match(source, /function removeAttribute/);
   assert.match(source, /function saveAttributeDraft/);
+  assert.match(source, /const propertyChildren = \(node\.propertyInfos \?\? \[\]\)\.map\(mapPropertyTreeNode\)/);
 });
