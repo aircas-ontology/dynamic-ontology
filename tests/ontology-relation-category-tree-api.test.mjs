@@ -18,7 +18,7 @@ test("relation category tree api issues a GET to link_category tree uri with spa
   assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/link_category\/tree"/);
   assert.match(apiSource, /method:\s*"get"/);
   assert.match(apiSource, /params,/);
-  assert.match(apiSource, /timeout: requestTimeoutMs,/);
+  assert.doesNotMatch(apiSource, /timeout:/);
   assert.match(apiSource, /@param \{string\} params\.spaceId/);
   assert.match(barrelSource, /getOntologyRelationCategoryTreeInterface/);
 });

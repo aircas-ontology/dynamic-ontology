@@ -50,6 +50,7 @@ export type { UpdateOntologyObjectArrTypeTreeParams } from "./apis/updateOntolog
 export type { UpdateOntologyObjectData, UpdateOntologyObjectParams } from "./apis/updateOntologyObjectType";
 export type { UpdateOntologyPropertyData, UpdateOntologyPropertyParams } from "./apis/updateOntologyPropertyType";
 export type { UpdateOntologySpaceData, UpdateOntologySpaceParams } from "./apis/updateOntologySpaceType";
+export type { UploadOntologyThumbnailData, UploadOntologyThumbnailParams } from "./apis/uploadOntologyThumbnailType";
 export type { LoginCredentials } from "./auth/credentialsType";
 export type { MapConfig } from "./map/configType";
 export type { OntologyObjectDetailRouteName, OntologyObjectDetailTab } from "./pages/ontologyObjectDetailType";

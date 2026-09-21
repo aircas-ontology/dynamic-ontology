@@ -1,6 +1,6 @@
 <template>
   <section class="object-workspace-panel" aria-label="本体对象工作区">
-    <div v-if="status === 'loading'" class="object-workspace-panel__state" role="status">正在加载本体对象…</div>
+    <div v-if="status === 'loading'" class="object-workspace-panel__state" role="status"><AircasLoading>正在加载本体对象…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="object-workspace-panel__state" role="alert">
       <span>{{ error }}</span>
       <el-button class="aircas-button" type="primary" @click="load">重试</el-button>
@@ -86,6 +86,7 @@ import {
   putUpdateOntologyCategoryNameInterface,
   updateOntologyObjectInterface,
 } from "@/apis";
+import AircasLoading from "@/components/AircasLoading.vue";
 import ConceptHierarchyTree from "./ConceptHierarchyTree.vue";
 import CategoryTreeCreateDialog from "./CategoryTreeCreateDialog.vue";
 import CategoryTreeChildDialog from "./CategoryTreeChildDialog.vue";

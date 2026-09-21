@@ -58,6 +58,7 @@
 <script setup lang="ts">
 import { onScopeDispose, reactive, ref, watch } from "vue";
 import type { OntologySpaceDraft, OntologySpaceItem } from "@/types";
+import { postUploadOntologyThumbnailInterface } from "@/apis";
 import { parseSpaceImport, serializeSpace } from "../utils/spaceOperations";
 import { downloadSpaceJson } from "../utils/downloadSpaceJson";
 const props = defineProps<{ space: OntologySpaceItem | null; externalError: string }>();
@@ -87,9 +88,18 @@ watch(visible, () => {
     busy.value = false;
   }
 });
+/**
+ * @description 从文件选择事件中取出第一个文件。
+ * @param event 文件选择事件。
+ * @returns 选中的文件；未选中时为 undefined。
+ */
 function selectedFile(event: Event): File | undefined {
   return event.target instanceof HTMLInputElement ? event.target.files?.[0] : undefined;
 }
+/**
+ * @description 读取并解析导入的空间 JSON 文件。
+ * @param event 文件选择事件。
+ */
 async function readJson(event: Event) {
   const file = selectedFile(event);
   imported.value = null;
@@ -111,30 +121,46 @@ async function readJson(event: Event) {
     if (current === generation) busy.value = false;
   }
 }
+/**
+ * @description 上传空间图标并写入返回的缩略图 URL；创建与编辑共用此流程。
+ * @param event 文件选择事件。
+ */
 async function readIcon(event: Event) {
+  const input = event.target instanceof HTMLInputElement ? event.target : null;
   const file = selectedFile(event);
   if (!file || busy.value) return;
   if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 2 * 1024 * 1024) {
     error.value = "请选择不超过 2MB 的 PNG、JPEG 或 WEBP 图片。";
+    if (input) input.value = "";
     return;
   }
   busy.value = true;
   error.value = "";
   const current = ++generation;
   try {
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    let binary = "";
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    if (current === generation) draft.iconUrl = "data:" + file.type + ";base64," + btoa(binary);
-  } catch {
-    if (current === generation) error.value = "图片读取失败。";
+    const response = await postUploadOntologyThumbnailInterface({ image: file });
+    if (current !== generation) return;
+    if (response.code !== 200) {
+      error.value = response.message || "图标上传失败。";
+      return;
+    }
+    draft.iconUrl = response.data;
+  } catch (cause) {
+    if (current === generation) error.value = cause instanceof Error ? cause.message : "图标上传失败。";
   } finally {
+    if (input) input.value = "";
     if (current === generation) busy.value = false;
   }
 }
+/**
+ * @description 下载空间导入 JSON 模板。
+ */
 function template() {
   downloadSpaceJson("ontologySpaceTemplate.json", serializeSpace({ apiName: "example_space", displayName: "示例空间", description: "", iconUrl: "" }));
 }
+/**
+ * @description 校验并提交当前模式的空间草稿。
+ */
 async function submit() {
   if (busy.value || mode.value === "conceptual") return;
   error.value = "";
@@ -149,6 +175,10 @@ async function submit() {
   emit("save", mode.value === "import" && imported.value ? imported.value : { ...draft });
   busy.value = false;
 }
+/**
+ * @description 切换创建模式并清空局部错误。
+ * @param value 单选组更新值。
+ */
 function setMode(value: unknown) {
   if (value === "manual" || value === "import" || value === "conceptual") {
     mode.value = value;
@@ -169,6 +199,35 @@ function setMode(value: unknown) {
   margin: 12px 0;
   color: var(--aircas-color-text-secondary);
   font-size: 12px;
+}
+
+.space-form__file input[type="file"] {
+  color: var(--aircas-color-text-secondary);
+}
+
+.space-form__file input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 4px;
+  background-color: var(--aircas-color-button-background);
+  color: var(--aircas-color-button-text);
+  cursor: pointer;
+}
+
+.space-form__file input[type="file"]::file-selector-button:hover {
+  background-color: var(--aircas-color-button-hover-background);
+  border-color: var(--aircas-color-border-highlight);
+}
+
+.space-form__file input[type="file"]:disabled {
+  color: var(--aircas-color-text-disabled);
+}
+
+.space-form__file input[type="file"]:disabled::file-selector-button {
+  background-color: var(--aircas-color-input-background);
+  border-color: var(--aircas-color-border-soft);
+  color: var(--aircas-color-text-disabled);
+  cursor: not-allowed;
 }
 
 .space-form__preview {

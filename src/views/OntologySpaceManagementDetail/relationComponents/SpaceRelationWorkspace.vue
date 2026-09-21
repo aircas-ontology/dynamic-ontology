@@ -68,7 +68,7 @@
         <el-button class="aircas-button" @click="resetFilter">重置</el-button>
       </div>
 
-      <div v-if="status === 'loading'" class="space-relation-workspace__state" role="status">加载中...</div>
+      <div v-if="status === 'loading'" class="space-relation-workspace__state" role="status"><AircasLoading>加载中...</AircasLoading></div>
       <div v-else-if="status === 'error'" class="space-relation-workspace__state space-relation-workspace__state-error" role="alert">
         <span>{{ errorMessage }}</span>
         <el-button class="aircas-button" type="primary" @click="loadSpaceRelationWorkspace">重试</el-button>
@@ -161,6 +161,7 @@ import {
   postCreateOntologyRelationCategoryTreeInterface,
   putUpdateOntologyRelationCategoryNameInterface,
 } from "@/apis";
+import AircasLoading from "@/components/AircasLoading.vue";
 import { useSpaceRelationWorkspace } from "../composables/useSpaceRelationWorkspace";
 import { collectCategoryIds, findRelationCategoryNode } from "../utils/relationOperations";
 import RelationCategoryPanel from "./RelationCategoryPanel.vue";

@@ -8,7 +8,7 @@
         </div>
       </header>
       <el-input v-model="categorySearch" class="aircas-input" clearable placeholder="搜索属性分类" ariaLabel="搜索属性分类" />
-      <p v-if="categoryTreeLoading" class="ontology-object-attribute-panel__tree-state">正在加载属性分类...</p>
+      <p v-if="categoryTreeLoading" class="ontology-object-attribute-panel__tree-state"><AircasLoading>正在加载属性分类...</AircasLoading></p>
       <p v-else-if="categoryTreeError" class="ontology-object-attribute-panel__tree-state is-error" role="alert">{{ categoryTreeError }}</p>
       <div v-else-if="categoryTreeEmpty" class="ontology-object-attribute-panel__tree-empty">
         <p class="ontology-object-attribute-panel__tree-state">暂无分类树数据</p>
@@ -78,7 +78,7 @@
         </div>
       </header>
 
-      <p v-if="attributeLoading" class="ontology-object-attribute-panel__table-state">正在加载属性...</p>
+      <p v-if="attributeLoading" class="ontology-object-attribute-panel__table-state"><AircasLoading>正在加载属性...</AircasLoading></p>
       <p v-else-if="attributeError" class="ontology-object-attribute-panel__table-state is-error" role="alert">{{ attributeError }}</p>
       <div v-else-if="visibleAttributes.length" class="ontology-object-attribute-panel__table-wrap">
         <el-table :data="visibleAttributes" class="aircas-table" height="100%" row-key="uniqueIdentifier">
@@ -246,6 +246,7 @@ import {
   updateOntologyObjectArrTypeTreeInterface,
 } from "@/apis";
 import type { CreateOntologyPropertyParams, GetOntologyObjectArrTypeTreeData, OntologyPropertyInfo, UpdateOntologyPropertyParams } from "@/types";
+import AircasLoading from "@/components/AircasLoading.vue";
 import { useRoute } from "vue-router";
 import DataSourceAssociateDialog from "./DataSourceAssociateDialog.vue";
 
