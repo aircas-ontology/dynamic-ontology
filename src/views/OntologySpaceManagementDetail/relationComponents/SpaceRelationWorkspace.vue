@@ -80,7 +80,6 @@
           :items="visibleSpaceRelations"
           :seed-names="graphSeedNames"
           :max-hop="graphMaxHop"
-          :category-colors="relationCategoryColorMap"
           @edit="openRelationEdit"
           @delete="openRelationDelete"
         />
@@ -118,7 +117,6 @@
       :mode="categoryFormMode"
       :parent-label="categoryParentLabel"
       :initial-name="categoryFormMode === 'edit' ? categoryActionName : ''"
-      :initial-color="categoryFormMode === 'edit' ? categoryActionColor : ''"
       @submit="handleCategorySubmit"
     />
     <RelationCategoryDeleteDialog
@@ -152,7 +150,7 @@ import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Grid, Plus, Share } from "@element-plus/icons-vue";
-import type { CreateOntologyLinkParams, OntologyRelationCategoryNode, OntologyRelationClass, RelationClassWritePayload } from "@/types";
+import type { CreateOntologyLinkParams, OntologyRelationClass, RelationClassWritePayload } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
 import {
   deleteOntologyLinkInterface,
@@ -203,7 +201,6 @@ const categoryActionId = ref("");
 const categoryParentId = ref(ROOT_RELATION_CATEGORY_ID);
 const categoryParentLabel = ref("全部关系");
 const categoryActionName = ref("");
-const categoryActionColor = ref("");
 const relationFormVisible = ref(false);
 const relationFormMode = ref<"create" | "edit">("create");
 const relationDeleteVisible = ref(false);
@@ -216,18 +213,6 @@ const categoryDeleteBlocked = computed(() => {
   if (!node) return true;
   const ids = new Set(collectCategoryIds(node));
   return relations.value.some((item) => ids.has(item.categoryId));
-});
-
-const relationCategoryColorMap = computed<Record<string, string>>(() => {
-  const map: Record<string, string> = {};
-  const walk = (nodes: OntologyRelationCategoryNode[]) => {
-    nodes.forEach((node) => {
-      if (node.color) map[node.id] = node.color;
-      walk(node.children);
-    });
-  };
-  walk(relationCategoryTree.value);
-  return map;
 });
 
 watch(
@@ -258,7 +243,6 @@ function openCategoryCreate(parentId: string) {
   categoryParentId.value = parentId;
   categoryParentLabel.value = parentId ? findRelationCategoryLabel(parentId) || "全部关系" : "根分类";
   categoryActionName.value = "";
-  categoryActionColor.value = "";
   categoryFormVisible.value = true;
 }
 
@@ -266,7 +250,6 @@ function openCategoryEdit(categoryId: string) {
   categoryFormMode.value = "edit";
   categoryActionId.value = categoryId;
   categoryActionName.value = findRelationCategoryLabel(categoryId);
-  categoryActionColor.value = findRelationCategoryNode(relationCategoryTree.value, categoryId)?.color ?? "";
   categoryFormVisible.value = true;
 }
 
@@ -277,11 +260,10 @@ function openCategoryDelete(categoryId: string) {
 }
 
 /**
- * @description 创建或修改关系分类名称：创建走 POST，修改走 PUT；均不提交颜色，成功后刷新分类树。
+ * @description 创建或修改关系分类名称：创建走 POST，修改走 PUT；成功后刷新分类树。
  * @param name 分类名称。
- * @param color 分类颜色；创建/修改接口均不提交该字段。
  */
-async function handleCategorySubmit(name: string, _color: string) {
+async function handleCategorySubmit(name: string) {
   const space = String(route.params.spaceId || "").trim();
   const numericSpaceId = Number(space);
 

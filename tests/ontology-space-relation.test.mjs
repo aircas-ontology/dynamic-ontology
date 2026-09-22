@@ -47,7 +47,7 @@ test("relation 3d graph does not load entity svg node icons", () => {
 
 test("relation mock CRUD creates and removes categories and relations", () => {
   let data = createOntologySpaceRelationWorkspaceData();
-  data = addRelationCategory(data, { parentId: ROOT_RELATION_CATEGORY_ID, name: "临时分类", color: "#07eaff" });
+  data = addRelationCategory(data, { parentId: ROOT_RELATION_CATEGORY_ID, name: "临时分类" });
   const created = data.categoryTree[0]?.children.find((item) => item.label === "临时分类");
   assert.ok(created);
   data = addRelation(data, {
