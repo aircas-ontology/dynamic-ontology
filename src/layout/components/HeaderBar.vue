@@ -75,11 +75,11 @@ function logoutCurrentSession(command: string) {
   align-items: center;
   justify-content: space-between;
   min-width: 0;
-  height: 56px;
+  height: 50px;
   gap: 20px;
-  padding: 0 16px;
+  padding: 0 15px;
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-panel-background-deep);
+  background: linear-gradient(90deg, var(--aircas-color-header-start), var(--aircas-color-header-end));
   border-bottom: 1px solid var(--aircas-color-border-soft);
 }
 

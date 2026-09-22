@@ -245,7 +245,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border: 1px solid var(--aircas-color-border-soft);
   border-radius: 8px;
-  background: var(--aircas-color-panel-background);
+  background: linear-gradient(180deg, var(--aircas-color-section-background), var(--aircas-color-panel-overlay-deep));
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -261,13 +261,14 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   border-bottom: 1px solid var(--aircas-color-border-soft);
-  background: var(--aircas-color-panel-background-deep);
+  background: linear-gradient(90deg, var(--aircas-color-section-header), var(--aircas-color-panel-background-deep));
 }
 .ontology-object-section__header i {
   width: 3px;
   height: 16px;
   border-radius: 2px;
-  background: var(--aircas-color-accent-cyan);
+  background: linear-gradient(180deg, var(--aircas-color-accent-cyan), var(--aircas-color-accent-purple));
+  box-shadow: 0 0 8px var(--aircas-color-accent-cyan-shadow);
 }
 .ontology-object-section__header h2 {
   margin: 0;
@@ -297,6 +298,18 @@ onBeforeUnmount(() => {
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   background: var(--aircas-color-card-background);
+  box-shadow: 0 2px 12px var(--aircas-color-border-shadow);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+.ontology-object-card:hover {
+  border-color: var(--aircas-color-accent-cyan);
+  box-shadow:
+    0 0 16px var(--aircas-color-cyan-soft),
+    inset 0 0 14px var(--aircas-color-blue-soft);
+  transform: translateY(-2px);
 }
 .ontology-object-card__visual {
   display: grid;
@@ -307,7 +320,7 @@ onBeforeUnmount(() => {
 .ontology-object-card__visual img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .ontology-object-card__visual .el-icon {
   font-size: 52px;

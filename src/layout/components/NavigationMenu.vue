@@ -1,7 +1,13 @@
 <template>
   <aside class="navigation-menu" aria-label="主导航">
     <div class="navigation-menu__control">
-      <button class="navigation-menu__toggle" type="button" :aria-label="collapsed ? '展开导航菜单' : '收起导航菜单'" :aria-expanded="!collapsed" @click="collapsed = !collapsed">
+      <button
+        class="navigation-menu__toggle"
+        type="button"
+        :aria-label="collapsed ? '展开导航菜单' : '收起导航菜单'"
+        :aria-expanded="!collapsed"
+        @click="collapsed = !collapsed"
+      >
         <el-icon><Expand v-if="collapsed" /><Fold v-else /></el-icon>
         <span v-if="!collapsed">收起菜单</span>
       </button>
@@ -34,7 +40,7 @@ const route = useRoute();
   flex-direction: column;
   overflow: hidden;
   border-right: 1px solid var(--aircas-color-border-soft);
-  background: var(--aircas-color-menu-background);
+  background-color: var(--aircas-color-background);
 }
 .navigation-menu__control {
   padding: 6px;
@@ -55,7 +61,9 @@ const route = useRoute();
   font-size: 12px;
   cursor: pointer;
 }
-.navigation-menu__toggle:hover { background: var(--aircas-color-hover-background); }
+.navigation-menu__toggle:hover {
+  background: var(--aircas-color-hover-background);
+}
 .navigation-menu__toggle:focus-visible {
   outline: 2px solid var(--aircas-color-accent-cyan);
   outline-offset: -2px;
@@ -69,7 +77,9 @@ const route = useRoute();
   overflow-y: auto;
   border-right: 0;
 }
-:deep(.el-menu-item) { font-size: 13px; }
+:deep(.el-menu-item) {
+  font-size: 13px;
+}
 :deep(.el-menu-item:focus-visible) {
   outline: 2px solid var(--aircas-color-accent-cyan);
   outline-offset: -2px;

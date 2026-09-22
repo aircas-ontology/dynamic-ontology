@@ -7,12 +7,24 @@ export type OntologyObjectDetailRouteName =
 
 /** 属性分类树节点。 */
 export interface OntologyAttributeCategoryNode {
+  nodeType: "category";
   id: string;
   label: string;
-  count: number;
+  propertyCount: number;
   isRoot?: boolean;
-  children?: OntologyAttributeCategoryNode[];
+  children?: OntologyAttributeTreeNode[];
 }
+
+/** 属性分类树中的属性节点。 */
+export interface OntologyAttributePropertyTreeNode {
+  nodeType: "property";
+  id: string;
+  label: string;
+  source: import("../apis/getOntologyPropertyByOntologyIdType").OntologyPropertyInfo;
+}
+
+/** 属性分类树节点联合类型。 */
+export type OntologyAttributeTreeNode = OntologyAttributeCategoryNode | OntologyAttributePropertyTreeNode;
 
 /** 属性列表项。 */
 export interface OntologyAttributeItem {

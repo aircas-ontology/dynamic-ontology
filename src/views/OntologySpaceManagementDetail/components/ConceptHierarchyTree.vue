@@ -133,9 +133,7 @@ function transformCategoryNode(node: OntologyConceptNode): ConceptCategoryTreeNo
     label: name,
     children: [],
   }));
-  const childCategoryNodes: ConceptCategoryTreeNode[] = (node.children ?? []).map((child) =>
-    transformCategoryNode(child),
-  );
+  const childCategoryNodes: ConceptCategoryTreeNode[] = (node.children ?? []).map((child) => transformCategoryNode(child));
   return {
     kind: "category",
     id: node.id,
@@ -263,9 +261,14 @@ function openDeleteCategoryDialog(value: unknown) {
   padding: 12px;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-border);
+  border: 1px solid var(--aircas-color-cyan-border);
   border-radius: 8px;
-  background: var(--aircas-color-panel-background);
+  background:
+    radial-gradient(circle at 12% 0, var(--aircas-color-cyan-soft), var(--aircas-color-transparent) 42%),
+    linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  box-shadow:
+    inset 0 0 20px var(--aircas-color-border-shadow),
+    0 0 18px var(--aircas-color-blue-soft);
 }
 
 .concept-hierarchy__header {

@@ -167,7 +167,6 @@ export function getOntologySpaceListInterface(): Promise<ApiResponse<OntologySpa
     // url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "get",
-<<<<<<< HEAD
   });
 }
 
@@ -185,8 +184,6 @@ export function getOntologySpaceStatisticInterface(params: GetOntologySpaceStati
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space/statistic",
     method: "get",
     params,
-=======
->>>>>>> aafdc1dc796df2d5f5e1a6585a97a7064bb58abc
   });
 }
 

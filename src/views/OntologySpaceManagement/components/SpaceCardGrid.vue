@@ -57,19 +57,40 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
 .space-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
-  gap: 8px;
-  padding-bottom: 16px;
+  gap: 12px;
+  min-height: 320px;
+  padding: 12px;
+  border: 1px solid var(--aircas-color-cyan-border);
+  border-radius: 8px;
+  overflow-y: auto;
+  background: linear-gradient(160deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  box-shadow:
+    inset 0 0 28px var(--aircas-color-border-shadow),
+    0 0 18px var(--aircas-color-blue-soft);
 }
 
 .space-card {
   display: flex;
   min-width: 0;
-  padding: 16px;
+  padding: 12px;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: var(--aircas-color-card-background);
+  background: linear-gradient(140deg, var(--aircas-color-panel-background), var(--aircas-color-panel-overlay));
+  box-shadow: 0 2px 12px var(--aircas-color-border-shadow);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.space-card:hover {
+  border-color: var(--aircas-color-accent-cyan);
+  box-shadow:
+    0 0 16px var(--aircas-color-cyan-soft),
+    inset 0 0 14px var(--aircas-color-blue-soft);
+  transform: translateY(-2px);
 }
 
 .space-card__name {
@@ -94,7 +115,9 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
 .space-card__name strong {
   display: block;
   overflow: hidden;
-  font-size: 16px;
+  color: var(--aircas-color-text-primary);
+  font-size: 15px;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -104,7 +127,7 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
   margin-top: 4px;
   overflow-wrap: anywhere;
   color: var(--aircas-color-text-muted);
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .space-card__description {

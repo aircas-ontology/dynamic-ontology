@@ -24,8 +24,8 @@ test("aircas loading indicator sits above the existing loading copy", () => {
     ["../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue", "正在加载本体对象…"],
     ["../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue", "加载中..."],
     ["../src/views/OntologySpaceManagementDetail/components/SpaceOverviewPanel.vue", "统计加载中..."],
-    ["../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue", "正在加载属性分类..."],
-    ["../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue", "正在加载属性..."],
+    ["../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue", "正在加载属性分类..."],
+    ["../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue", "正在加载属性..."],
   ];
 
   for (const [relativePath, label] of callSites) {

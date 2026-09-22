@@ -65,26 +65,28 @@ test("ontology property api exposes automatic datasource binding", () => {
 });
 
 test("attribute panel uses ontology property api for list and commands", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
-  assert.match(source, /refreshAttributesFromTree/);
-  assert.match(source, /collectPropertyItemsFromTree/);
+  const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  const helperSource = readSource("../src/views/OntologyObjectDetail/utils/attributePanelHelpers.ts");
+  assert.match(source, /loadAttributesForSelection/);
+  assert.match(helperSource, /collectPropertyItemsFromTree/);
   assert.match(source, /createOntologyPropertyInterface/);
   assert.match(source, /updateOntologyPropertyInterface/);
   assert.match(source, /deleteOntologyPropertyInterface/);
-  assert.match(source, /ontologyUniqueIdentifier/);
+  assert.match(source, /ontologyIdentifier/);
   assert.match(source, /propertyUniqueIdentifier/);
-  assert.match(source, /await loadAttributeCategoryTree/);
+  assert.match(source, /onPropertyChanged/);
   assert.match(source, /buildCreatePropertyParams/);
   assert.match(source, /buildUpdatePropertyParams/);
   assert.match(source, /isPrimaryKey: draft\.isPrimary/);
   assert.match(source, /isTitleKey: draft\.isNameKey/);
   const updateBuilder = source.match(/function buildUpdatePropertyParams[\s\S]*?function resetDraft/)?.[0] ?? "";
   assert.doesNotMatch(updateBuilder, /datasource:|schemaName:|datasourceId:|datasourceColumnName:|metadata:/);
-  assert.match(source, /apiName: item\.apiName/);
-  assert.match(source, /dataType: item\.propertyType/);
-  assert.match(source, /const storageGroups = \[\{ label: "主存储", value: "main" \}\]/);
+  assert.match(helperSource, /apiName: item\.apiName/);
+  assert.match(helperSource, /dataType: item\.propertyType/);
+  assert.match(source, /storageGroups: OntologyAttributeStorageGroupOption\[\] = \[\{ label: "主存储", value: "main" \}\]/);
   assert.match(source, /storageGroup: "main"/);
-  assert.match(source, /:label="group\.label" :value="group\.value"/);
+  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  assert.match(formSource, /:label="group\.label" :value="group\.value"/);
   const createBuilder = source.match(/function buildCreatePropertyParams[\s\S]*?function buildUpdatePropertyParams/)?.[0] ?? "";
   assert.doesNotMatch(createBuilder, /datasource:|metadata:|type:/);
   assert.match(source, /ElMessageBox\.confirm/);

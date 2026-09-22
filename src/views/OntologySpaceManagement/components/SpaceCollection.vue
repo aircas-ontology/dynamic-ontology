@@ -49,19 +49,22 @@ function forward(action: OntologySpaceAction, space: OntologySpaceItem) {
 .space-collection {
   display: flex;
   min-width: 0;
-  min-height: 400px;
+  min-height: 360px;
   flex: 1;
   flex-direction: column;
-  padding: 12px 16px;
-  border: 1px solid var(--aircas-color-border);
+  gap: 12px;
+  padding: 0;
+  border: 0;
   border-radius: 8px;
-  background: var(--aircas-color-card-background);
+  background: transparent;
 }
 
 .space-collection__pagination {
   display: flex;
-  padding-top: 16px;
-  padding-bottom: 4px;
+  min-height: 40px;
+  padding: 0 4px;
+  padding-top: 0;
+  padding-bottom: 0;
   margin-top: auto;
   align-items: center;
   justify-content: space-between;

@@ -44,9 +44,27 @@ function spaceRow(row: unknown): OntologySpaceItem {
 
 <style scoped lang="scss">
 .space-table-view {
-  --aircas-table-cell-padding: 20px 0;
+  --aircas-table-cell-padding: 14px 0;
   flex: 1;
   min-height: 320px;
+  border: 1px solid var(--aircas-color-cyan-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  box-shadow:
+    inset 0 0 28px var(--aircas-color-border-shadow),
+    0 0 18px var(--aircas-color-blue-soft);
+}
+
+.space-table-view :deep(.el-table__header-wrapper th.el-table__cell) {
+  background: linear-gradient(180deg, var(--aircas-color-section-header), var(--aircas-color-panel-background-deep));
+  color: var(--aircas-color-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.space-table-view :deep(.el-table__body tr:hover > td.el-table__cell) {
+  background: var(--aircas-color-blue-soft);
 }
 
 .space-table-view__user {
@@ -76,7 +94,10 @@ function spaceRow(row: unknown): OntologySpaceItem {
   width: 48px;
   height: 48px;
   object-fit: cover;
-  border-radius: 6px;
+  border: 1px solid var(--aircas-color-cyan-border);
+  border-radius: 8px;
+  background: var(--aircas-color-section-header);
+  box-shadow: 0 0 12px var(--aircas-color-blue-soft);
   flex-shrink: 0;
 }
 
@@ -87,7 +108,9 @@ function spaceRow(row: unknown): OntologySpaceItem {
 .space-table-view__name strong {
   display: block;
   overflow: hidden;
-  font-size: 16px;
+  color: var(--aircas-color-text-primary);
+  font-size: 14px;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -97,6 +120,7 @@ function spaceRow(row: unknown): OntologySpaceItem {
   margin-top: 4px;
   overflow-wrap: anywhere;
   color: var(--aircas-color-text-muted);
-  font-size: 14px;
+  color: var(--aircas-color-text-muted);
+  font-size: 12px;
 }
 </style>

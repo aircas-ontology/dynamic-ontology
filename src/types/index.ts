@@ -74,6 +74,8 @@ export type {
   OntologyAttributeCategoryNode,
   OntologyAttributeDraft,
   OntologyAttributeItem,
+  OntologyAttributePropertyTreeNode,
+  OntologyAttributeTreeNode,
   OntologyAttributeStorageGroupOption,
   OntologyObjectDetailRouteName,
   OntologyObjectDetailTab,
