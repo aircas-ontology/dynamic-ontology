@@ -17,7 +17,6 @@ export type OntologySpaceRelationLoadStatus = "loading" | "ready" | "empty" | "e
 export interface OntologyRelationCategoryNode {
   id: string;
   label: string;
-  color?: string;
   children: OntologyRelationCategoryNode[];
 }
 
@@ -53,13 +52,11 @@ export interface SpaceRelationFilterState {
 export interface RelationCategoryWritePayload {
   parentId: string;
   name: string;
-  color: string;
 }
 
 export interface RelationCategoryUpdatePayload {
   id: string;
   name: string;
-  color: string;
 }
 
 export interface RelationClassWritePayload {

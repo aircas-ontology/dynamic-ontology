@@ -27,7 +27,6 @@
       >
         <template #default="{ data }">
           <span class="relation-category-panel__node" :title="data.label">
-            <i class="relation-category-panel__color-dot" :style="{ background: data.color || 'var(--aircas-color-accent-cyan)' }" aria-hidden="true" />
             <i class="fa fa-folder-open-o" aria-hidden="true"></i>
             <span class="relation-category-panel__label">{{ data.label }}</span>
             <span class="relation-category-panel__count">{{ data.relationCount }}</span>
@@ -217,14 +216,6 @@ watch(
   width: 100%;
   padding-right: 4px;
   font-size: 13px;
-}
-.relation-category-panel__color-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  box-shadow: 0 0 6px var(--aircas-color-accent-cyan-soft);
 }
 .relation-category-panel__node .fa {
   font-size: 13px;

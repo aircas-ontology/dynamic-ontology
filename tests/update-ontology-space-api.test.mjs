@@ -14,7 +14,7 @@ test("update ontology space api types follow the contract params and empty objec
   assert.match(apiTypeSource, /export interface UpdateOntologySpaceParams/);
   assert.match(apiTypeSource, /displayName:\s*string/);
   assert.match(apiTypeSource, /spaceId:\s*number/);
-  assert.match(apiTypeSource, /icon\?:\s*string/);
+  assert.match(apiTypeSource, /iconUrl\?:\s*string/);
   assert.match(apiTypeSource, /description\?:\s*string/);
   assert.match(apiTypeSource, /export type UpdateOntologySpaceData = Record<string, unknown>/);
   assert.match(typeBarrelSource, /export type \{ UpdateOntologySpaceData, UpdateOntologySpaceParams \} from "\.\/apis\/updateOntologySpaceType";/);

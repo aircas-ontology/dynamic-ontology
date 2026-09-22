@@ -555,6 +555,7 @@ async function loadDataSourceTables() {
   } finally {
     dataSourceTableLoading.value = false;
   }
+  return items;
 }
 
 /** @description 按选中的数据源表查询字段信息。 */

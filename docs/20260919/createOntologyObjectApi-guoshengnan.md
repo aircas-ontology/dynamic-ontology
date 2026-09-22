@@ -31,7 +31,7 @@
     "spaceId": 11,
     "displayName": "测试本体对象",
     "apiName":"object_1",
-    "icon": "",
+    "iconUrl": "",
     "description": "这是本体描述",
     "parentOntologyUniqueIdentifier": "d3e1b0c27f29452eb7cadd1f51eac535",
     "categoryId": 29,
@@ -42,7 +42,7 @@
 - `spaceId`：【number，必填】 本体空间 id
 - `displayName`：【string，必填】 本体名称
 - `apiName`：【string，必填】本体api名称
-- `icon`：【string，可选】本体图标url
+- `iconUrl`：【string，可选】本体图标url
 - `description`：【string，可选】本体描述
 - `parentOntologyUniqueIdentifier`：【string，可选】继承的本体唯一标识
 - `categoryId`：【number，可选】分类id
