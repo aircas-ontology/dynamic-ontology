@@ -14,6 +14,7 @@ import type {
   GetOntologySpaceStatisticData,
   GetOntologySpaceStatisticParams,
   UpdateOntologyCategoryNameParams,
+  UpdateOntologyLinkParams,
   UpdateOntologyRelationCategoryNameParams,
   CreateOntologySpaceData,
   CreateOntologySpaceParams,
@@ -167,7 +168,6 @@ export function getOntologySpaceListInterface(): Promise<ApiResponse<OntologySpa
     // url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "get",
-<<<<<<< HEAD
   });
 }
 
@@ -185,8 +185,6 @@ export function getOntologySpaceStatisticInterface(params: GetOntologySpaceStati
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space/statistic",
     method: "get",
     params,
-=======
->>>>>>> aafdc1dc796df2d5f5e1a6585a97a7064bb58abc
   });
 }
 
@@ -276,7 +274,7 @@ export function deleteOntologyRelationCategoryTreeInterface(payload: DeleteOntol
  * @param {string} payload.ontologyUniqueIdentifierTo 目标本体唯一标识。
  * @param {number} [payload.categoryId] 关系分类 id，非必填。
  * @param {string} payload.apiName 关系 API 名称。
- * @param {string} [payload.comment] 关系备注/描述，非必填。
+ * @param {string} [payload.description] 关系备注/描述，非必填。
  * @param {number} payload.spaceId 关系所属空间 id。
  * @returns 标准 API 响应；成功时 code 为 200，响应体不含 data。
  */
@@ -284,6 +282,26 @@ export function postCreateOntologyLinkInterface(payload: CreateOntologyLinkParam
   return request<undefined>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link",
     method: "post",
+    data: payload,
+  });
+}
+
+/**
+ * @description 修改本体之间的关系名称、分类与描述。
+ *
+ * 请求方式：PUT `/ontology/link`
+ *
+ * @param payload 修改参数。
+ * @param {string} payload.uniqueIdentifier 关系唯一标识。
+ * @param {string} payload.name 关系名称。
+ * @param {number} payload.categoryId 关系分类 id。
+ * @param {string} payload.description 关系描述。
+ * @returns 标准 API 响应；成功时 code 为 200，响应体不含 data。
+ */
+export function putUpdateOntologyLinkInterface(payload: UpdateOntologyLinkParams): Promise<ApiResponse<undefined>> {
+  return request<undefined>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link",
+    method: "put",
     data: payload,
   });
 }

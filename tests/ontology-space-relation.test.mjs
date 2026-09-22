@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { workspaceRoutes } from "../src/router/modules/workspaceRoutes.ts";
 import { createOntologySpaceRelationWorkspaceData } from "../src/mocks/ontologySpaceRelationMock/ontologySpaceRelationMock.ts";
-import { filterRelationsByHop } from "../src/views/OntologySpaceManagementDetail/utils/spaceRelationGraph.ts";
+import { filterRelationsByHop, filterRelationsBySourceObject } from "../src/views/OntologySpaceManagementDetail/utils/spaceRelationGraph.ts";
 import {
   addRelation,
   addRelationCategory,
@@ -27,6 +27,21 @@ test("hop filter keeps only adjacent layers from the seed", () => {
   const filtered = filterRelationsByHop(data.relations, ["福特级航空母舰(CVN)"], 1);
   assert.ok(filtered.length > 0);
   assert.ok(filtered.every((item) => item.sourceName === "福特级航空母舰(CVN)" || item.targetName === "福特级航空母舰(CVN)"));
+});
+
+test("source object filter keeps relations whose source matches value or label", () => {
+  const data = createOntologySpaceRelationWorkspaceData();
+  const byLabel = filterRelationsBySourceObject(data.relations, "福特级航空母舰(CVN)");
+  assert.ok(byLabel.length > 0);
+  assert.ok(byLabel.every((item) => item.sourceName === "福特级航空母舰(CVN)"));
+
+  const options = [{ value: "uid-ford", label: "福特级航空母舰(CVN)" }];
+  const byValue = filterRelationsBySourceObject(data.relations, "uid-ford", options);
+  assert.deepEqual(byValue.map((item) => item.id).sort(), byLabel.map((item) => item.id).sort());
+
+  const workspaceSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useSpaceRelationWorkspace.ts", import.meta.url), "utf8");
+  assert.match(workspaceSource, /filterRelationsBySourceObject/);
+  assert.doesNotMatch(workspaceSource, /filterRelationsByHop\(/);
 });
 
 test("category filter includes nested category relations", () => {
@@ -122,13 +137,59 @@ test("relation form create only prefills categoryId when default is in category 
   assert.match(formSource, /placeholder="请选择关系分类"/);
 });
 
+test("relation form category options expose the full tree including the root node", () => {
+  const workspaceSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useSpaceRelationWorkspace.ts", import.meta.url), "utf8");
+  assert.match(workspaceSource, /relationCategoryOptions\s*=\s*computed\(\s*\(\)\s*=>\s*relationCategoryTree\.value\s*\)/);
+  assert.doesNotMatch(workspaceSource, /relationCategoryOptions\s*=\s*computed\(\s*\(\)\s*=>\s*relationCategoryTree\.value\[0\]\?\.children/);
+});
+
+test("relation form disables api name when editing", () => {
+  const formSource = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationFormDialog.vue", import.meta.url),
+    "utf8",
+  );
+  assert.match(formSource, /placeholder="请输入 API 名称"\s*:disabled="mode === 'edit'"/);
+  assert.match(formSource, /:clearable="mode !== 'edit'"/);
+  assert.match(formSource, /placeholder="请选择源本体对象"[\s\S]*?:disabled="mode === 'edit'"/);
+  assert.match(formSource, /placeholder="请选择目标本体对象"[\s\S]*?:disabled="mode === 'edit'"/);
+});
+
 test("relation form category is optional and create submit does not require categoryId", () => {
   const formSource = readFileSync(
     new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationFormDialog.vue", import.meta.url),
     "utf8",
   );
   const pageTypeSource = readFileSync(new URL("../src/types/pages/ontologySpaceRelationType.ts", import.meta.url), "utf8");
-  assert.match(formSource, /<el-form-item v-if="categoryOptions\.length" label="分类">/);
+  assert.match(formSource, /<el-form-item v-if="categoryOptions\.length" label="分类"/);
   assert.doesNotMatch(formSource, /!categoryId\.value/);
   assert.match(pageTypeSource, /categoryId\?:\s*string/);
+});
+
+test("object detail relation route reuses the space relation workspace component", () => {
+  const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
+  const route = router.resolve({
+    name: "OntologyObjectDetailRelation",
+    params: { objectId: "obj-1" },
+    query: { spaceId: "46", objectName: "飞机" },
+  });
+  assert.equal(route.path, "/workspace/ontology-object/obj-1/relation");
+  const source = readFileSync(new URL("../src/router/modules/workspaceRoutes.ts", import.meta.url), "utf8");
+  assert.match(source, /name:\s*"OntologyObjectDetailRelation"[\s\S]*SpaceRelationWorkspace\.vue/);
+});
+
+test("relation route context resolves space id and object filter seed", async () => {
+  const helperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/resolveRelationRouteContext.ts", import.meta.url);
+  assert.equal(existsSync(helperUrl), true);
+  const { resolveRelationSpaceId, resolveObjectRelationFilterSeed } = await import(helperUrl.href);
+  assert.equal(resolveRelationSpaceId({ params: { spaceId: "12" }, query: {} }), "12");
+  assert.equal(resolveRelationSpaceId({ params: {}, query: { spaceId: "46" } }), "46");
+  assert.equal(
+    resolveObjectRelationFilterSeed({ params: { objectId: "uid-plane" }, query: { objectName: "飞机" } }, [{ value: "uid-plane", label: "飞机" }]),
+    "uid-plane",
+  );
+  assert.equal(
+    resolveObjectRelationFilterSeed({ params: { objectId: "missing" }, query: { objectName: "飞机" } }, [{ value: "uid-plane", label: "飞机" }]),
+    "uid-plane",
+  );
+  assert.equal(resolveObjectRelationFilterSeed({ params: {}, query: { objectName: "飞机" } }, []), "");
 });

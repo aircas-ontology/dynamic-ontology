@@ -1,7 +1,13 @@
 <template>
   <aside class="navigation-menu" aria-label="主导航">
     <div class="navigation-menu__control">
-      <button class="navigation-menu__toggle" type="button" :aria-label="collapsed ? '展开导航菜单' : '收起导航菜单'" :aria-expanded="!collapsed" @click="collapsed = !collapsed">
+      <button
+        class="navigation-menu__toggle"
+        type="button"
+        :aria-label="collapsed ? '展开导航菜单' : '收起导航菜单'"
+        :aria-expanded="!collapsed"
+        @click="collapsed = !collapsed"
+      >
         <el-icon><Expand v-if="collapsed" /><Fold v-else /></el-icon>
         <span v-if="!collapsed">收起菜单</span>
       </button>
@@ -15,13 +21,17 @@
         <el-icon><Search /></el-icon>
         <template #title>全文检索</template>
       </el-menu-item>
+      <el-menu-item index="/workspace/application-management" :route="{ name: 'ApplicationManagement' }">
+        <el-icon><Document /></el-icon>
+        <template #title>应用管理</template>
+      </el-menu-item>
     </el-menu>
   </aside>
 </template>
 
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import { Box, Expand, Fold, Search } from "@element-plus/icons-vue";
+import { Box, Document, Expand, Fold, Search } from "@element-plus/icons-vue";
 const collapsed = defineModel<boolean>("collapsed", { default: true });
 const route = useRoute();
 </script>
@@ -55,7 +65,9 @@ const route = useRoute();
   font-size: 12px;
   cursor: pointer;
 }
-.navigation-menu__toggle:hover { background: var(--aircas-color-hover-background); }
+.navigation-menu__toggle:hover {
+  background: var(--aircas-color-hover-background);
+}
 .navigation-menu__toggle:focus-visible {
   outline: 2px solid var(--aircas-color-accent-cyan);
   outline-offset: -2px;
@@ -69,7 +81,9 @@ const route = useRoute();
   overflow-y: auto;
   border-right: 0;
 }
-:deep(.el-menu-item) { font-size: 13px; }
+:deep(.el-menu-item) {
+  font-size: 13px;
+}
 :deep(.el-menu-item:focus-visible) {
   outline: 2px solid var(--aircas-color-accent-cyan);
   outline-offset: -2px;

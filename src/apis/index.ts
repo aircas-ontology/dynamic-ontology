@@ -1,6 +1,7 @@
 import { getExampleInterface } from "./exampleApi";
 import { postLoginInterface } from "./loginApi";
 import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
+import { getOntologyApiDocsInterface } from "./ontologyDocApi";
 import {
   createOntologySpaceInterface,
   createOntologySpaceWithCanvasContentInterface,
@@ -17,6 +18,7 @@ import {
   postCreateOntologyRelationCategoryTreeInterface,
   postUploadOntologyThumbnailInterface,
   putUpdateOntologyCategoryNameInterface,
+  putUpdateOntologyLinkInterface,
   putUpdateOntologyRelationCategoryNameInterface,
   updateOntologySpaceInterface,
 } from "./ontologyManageApi";
@@ -56,6 +58,7 @@ export {
   deleteOntologySpaceInterface,
   deleteOntologyPropertyInterface,
   getExampleInterface,
+  getOntologyApiDocsInterface,
   getOntologyDatasourceColumnsInterface,
   getOntologyCategoryTreeInterface,
   getOntologyObjectArrTypeTreeInterface,
@@ -72,6 +75,7 @@ export {
   postLoginInterface,
   postUploadOntologyThumbnailInterface,
   putUpdateOntologyCategoryNameInterface,
+  putUpdateOntologyLinkInterface,
   putUpdateOntologyRelationCategoryNameInterface,
   updateOntologySpaceInterface,
   updateOntologyObjectArrTypeTreeInterface,

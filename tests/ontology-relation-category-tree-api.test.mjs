@@ -32,6 +32,9 @@ test("relation category tree types cover params, links, and recursive children",
   assert.match(typeSource, /uniqueIdentifier:\s*string/);
   assert.match(typeSource, /ontologyNameFrom:\s*string/);
   assert.match(typeSource, /ontologyNameTo:\s*string/);
+  assert.match(typeSource, /apiName\?:\s*string/);
+  assert.match(typeSource, /description\?:\s*string/);
+  assert.match(typeSource, /ontologyIconFrom\?:\s*string/);
   assert.match(typeSource, /export interface OntologyRelationCategoryTreeNode/);
   assert.match(typeSource, /categoryId:\s*number/);
   assert.match(typeSource, /links\?:\s*OntologyRelationCategoryLink\[\]/);
@@ -48,11 +51,13 @@ test("relation category tree mock mirrors the SUCCESS sample", () => {
   assert.match(mockSource, /code: 200,/);
   assert.match(mockSource, /message: "SUCCESS",/);
   assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /categoryId:\s*1/);
-  assert.match(mockSource, /name: "全部关系1"/);
-  assert.match(mockSource, /uniqueIdentifier: "4fcd1a4cb21244898ee0497b6e529625"/);
-  assert.match(mockSource, /name: "编制隶书"/);
-  assert.match(mockSource, /name: "指挥控制"/);
+  assert.match(mockSource, /categoryId:\s*24/);
+  assert.match(mockSource, /name: "全部"/);
+  assert.match(mockSource, /uniqueIdentifier: "f5dd661753f84476a652d120be86adb5"/);
+  assert.match(mockSource, /name: "人员借调"/);
+  assert.match(mockSource, /apiName: "jiediao"/);
+  assert.match(mockSource, /description: "班级1借调班级2 语文老师"/);
+  assert.match(mockSource, /categoryId:\s*30/);
 });
 
 test("relation category tree mapper builds page nodes from categoryId and name", async () => {
@@ -72,6 +77,8 @@ test("relation category tree mapper builds page nodes from categoryId and name",
         ontologyNameFrom: "舰船2",
         ontologyUniqueIdentifierTo: "b",
         ontologyNameTo: "舰船1",
+        apiName: "link_a",
+        description: "根分类下的关系",
       },
     ],
     children: [
@@ -98,6 +105,8 @@ test("relation category tree mapper builds page nodes from categoryId and name",
             ontologyNameFrom: "飞机",
             ontologyUniqueIdentifierTo: "d",
             ontologyNameTo: "舰船1",
+            apiName: "command",
+            description: "指挥关系描述",
           },
         ],
         children: [{ categoryId: 3, name: "指挥控制" }],
@@ -118,16 +127,20 @@ test("relation category tree mapper builds page nodes from categoryId and name",
   assert.deepEqual(relations[0], {
     id: "l1",
     categoryId: "1",
-    categoryName: "",
+    categoryName: "全部关系1",
     displayName: "a",
-    apiName: "",
+    apiName: "link_a",
     sourceName: "舰船2",
     targetName: "舰船1",
     cardinality: "一对多",
-    description: "",
+    description: "根分类下的关系",
   });
   assert.equal(relations[1]?.id, "l2");
   assert.equal(relations[1]?.displayName, "指挥");
+  assert.equal(relations[1]?.categoryId, "2");
+  assert.equal(relations[1]?.categoryName, "编制隶书");
+  assert.equal(relations[1]?.apiName, "command");
+  assert.equal(relations[1]?.description, "指挥关系描述");
   assert.equal(relations[1]?.sourceName, "飞机");
   assert.equal(relations[1]?.targetName, "舰船1");
 });
@@ -142,6 +155,10 @@ test("relation workspace loads category tree api and maps links into relations",
   assert.match(workspaceSource, /relations:\s*mapOntologyRelationLinks\(relationResponse\.data\)/);
   assert.match(workspaceSource, /isMissingOntologyRelationCategoryTreeData|data == null|data === undefined/);
   assert.match(panelSource, /添加关系分类/);
+  assert.match(panelSource, /kind:\s*"relation"/);
+  assert.match(panelSource, /item\.displayName/);
+  assert.match(panelSource, /relation-category-panel__relation-row/);
+  assert.match(panelSource, /relation-category-panel__relation-dot/);
   assert.doesNotMatch(workspaceSource, /createOntologySpaceRelationWorkspaceData\(\)/);
   assert.match(tableSource, /label="源本体"/);
   assert.match(tableSource, /label="目标本体"/);

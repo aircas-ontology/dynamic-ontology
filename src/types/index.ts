@@ -35,6 +35,14 @@ export type {
 export type { GetOntologySpaceStatisticData, GetOntologySpaceStatisticParams, OntologySpaceStatisticVO } from "./apis/getOntologySpaceStatisticType";
 export type { LoginData, LoginParams } from "./apis/loginType";
 export type {
+  OntologyApiDocsComponents,
+  OntologyApiDocsData,
+  OntologyApiDocsInfo,
+  OntologyApiDocsPathItem,
+  OntologyApiDocsServer,
+  OntologyApiDocsTag,
+} from "./apis/ontologyApiDocsType";
+export type {
   CreateOntologyCategoryTreeParams,
   DeleteOntologyCategoryTreeParams,
   OntologyCategoryMetaInfo,
@@ -53,6 +61,7 @@ export type {
   OntologyRelationCategoryTreeParams,
   UpdateOntologyRelationCategoryNameParams,
 } from "./apis/ontologyRelationCategoryTreeType";
+export type { UpdateOntologyLinkParams } from "./apis/updateOntologyLinkType";
 export type { UpdateOntologyObjectArrTypeTreeParams } from "./apis/updateOntologyObjectArrTypeTreeType";
 export type { UpdateOntologyObjectData, UpdateOntologyObjectParams } from "./apis/updateOntologyObjectType";
 export type { UpdateOntologyPropertyData, UpdateOntologyPropertyParams } from "./apis/updateOntologyPropertyType";
@@ -60,6 +69,16 @@ export type { UpdateOntologySpaceData, UpdateOntologySpaceParams } from "./apis/
 export type { UploadOntologyThumbnailData, UploadOntologyThumbnailParams } from "./apis/uploadOntologyThumbnailType";
 export type { LoginCredentials } from "./auth/credentialsType";
 export type { MapConfig } from "./map/configType";
+export type {
+  ApiDocsEndpointDetail,
+  ApiDocsEndpointGroup,
+  ApiDocsEndpointItem,
+  ApiDocsHttpMethod,
+  ApiDocsParameterRow,
+  ApiDocsResponseRow,
+  ApiDocsSchemaFieldRow,
+  ApiDocsServiceInfo,
+} from "./pages/applicationManagementType";
 export type {
   ConceptualModelAttribute,
   ConceptualModelObject,

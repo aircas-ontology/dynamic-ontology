@@ -31,7 +31,7 @@ mocks，types文件名自行语义化命名
     "ontologyUniqueIdentifierTo": "",
     "categoryId": "",
     "apiName": "",
-    "comment": "",
+    "description": "",
     "spaceId": "",
   }
   ```
@@ -41,7 +41,7 @@ mocks，types文件名自行语义化命名
 - `ontologyUniqueIdentifierTo`：【string，必填】目标本体id
 - `categoryId`：【number，非必填】 关系分类id
 - `apiName`：【string，必填】关系api名称
-- `comment`：【string，非必填】 关系备注/描述
+- `description`：【string，非必填】 关系备注/描述
 - `spaceId`：【number，必填】关系所属空间id
 
 ## 输出参数

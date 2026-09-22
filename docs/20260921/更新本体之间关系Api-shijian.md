@@ -1,10 +1,10 @@
 # 接口名称
 
-- 更新本体之间的关系
+- 修改关系名称
 
 ## 编译位置
 
-mocks，types文件名自行语义化命名
+mocks与types文件名自行语义化命名
 
 - apis：`src/apis/ontologyManageApi.ts`
 - mocks：`src/mocks/`
@@ -27,14 +27,17 @@ mocks，types文件名自行语义化命名
 - ```JSON
   {
     "uniqueIdentifier": "",
-    "name": "",
-    "comment": "",
+    "name":"输入的名称",
+    "categoryId": 0,
+    "description": "",
+
   }
   ```
 
-- `uniqueIdentifier`：【string，必填】 uniqIdentifier
-- `name`：【string，必填】关系名称
-- `comment`：【string，必填】关系描述
+- `uniqueIdentifier`：【string，必填】 关系唯一字段，相当于id
+- `name`：【string，必填】输入的名称
+- `categoryId`：【number，必填】关系分类id
+- `description`：【string，必填】关系描述
 
 ## 输出参数
 
