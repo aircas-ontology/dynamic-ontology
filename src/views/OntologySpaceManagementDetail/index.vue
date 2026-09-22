@@ -1,13 +1,14 @@
 <template>
   <div class="space-management-detail" :class="{ 'is-empty': status === 'empty' }">
     <el-empty v-if="status === 'empty'" description="未找到对应的本体空间" />
-    <div v-else-if="status === 'loading'" class="space-management-detail__state" role="status">正在加载空间…</div>
+    <div v-else-if="status === 'loading'" class="space-management-detail__state" role="status"><AircasLoading>正在加载空间…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="space-management-detail__state" role="alert">
       <span>{{ error || "空间加载失败" }}</span>
       <el-button class="aircas-button" type="primary" @click="load">重试</el-button>
     </div>
     <div v-else class="space-management-detail__layout">
       <WorkspaceTypeTabs
+        v-if="!isWorkflowPage"
         :active-tab="activeTab"
         :available-tabs="availableTabs"
         :space-name="spaceDisplayName"
@@ -21,14 +22,18 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from "vue-router";
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import AircasLoading from "@/components/AircasLoading.vue";
 import type { ManagementWorkspaceTab } from "@/types";
 import WorkspaceTypeTabs from "./components/WorkspaceTypeTabs.vue";
 import { useSpaceWorkspace } from "./composables/useSpaceWorkspace";
 import { routeNameForTab } from "./utils/workspaceTabs";
 
 const router = useRouter();
+const route = useRoute();
 const { status, error, spaceId, activeTab, availableTabs, spaceDisplayName, load } = useSpaceWorkspace();
+const isWorkflowPage = computed(() => route.name === "OntologyLlmBuilder" || route.name === "OntologySubspaceCreate");
 
 function openTab(tab: ManagementWorkspaceTab) {
   if (tab === activeTab.value) return;
@@ -85,6 +90,7 @@ function openTab(tab: ManagementWorkspaceTab) {
   min-width: 0;
   min-height: 0;
   flex: 1;
+  gap: 8px;
 }
 
 .space-management-detail__state {

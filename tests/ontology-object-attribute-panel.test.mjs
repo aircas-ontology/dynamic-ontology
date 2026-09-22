@@ -21,64 +21,102 @@ test("object attribute route resolves to the prototype attribute panel", () => {
   assert.match(String(route.matched.at(-1)?.components?.default), /OntologyObjectAttributePanel/);
 });
 
-test("object attribute panel splits tree, table, dialogs, and composables", () => {
+test("object attribute panel exposes category tree, property columns, and local actions", () => {
   const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
   const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
   const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
-  const createDialogSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryCreateDialog.vue");
-  const editDialogSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryEditDialog.vue");
-  const formDialogSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
-  const categoryComposable = readSource("../src/views/OntologyObjectDetail/composables/useAttributeCategoryTree.ts");
-  const propertyComposable = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  const categoryApiSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributeCategoryTree.ts");
+  const propertyApiSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  const helperSource = readSource("../src/views/OntologyObjectDetail/utils/attributePanelHelpers.ts");
 
-  assert.match(panelSource, /AttributeCategoryTree/);
-  assert.match(panelSource, /AttributePropertyTable/);
-  assert.match(panelSource, /AttributeCategoryCreateDialog/);
-  assert.match(panelSource, /AttributeCategoryEditDialog/);
-  assert.match(panelSource, /AttributePropertyFormDialog/);
-  assert.match(panelSource, /useAttributeCategoryTree/);
-  assert.match(panelSource, /useAttributePropertyList/);
-
+  assert.match(panelSource, /<AttributeCategoryTree/);
+  assert.match(panelSource, /<AttributePropertyTable/);
+  assert.match(panelSource, /<AttributeCategoryCreateDialog/);
+  assert.match(panelSource, /<AttributeCategoryEditDialog/);
+  assert.match(panelSource, /<AttributePropertyFormDialog/);
+  assert.match(panelSource, /<DataSourceAssociateDialog/);
   assert.match(treeSource, /属性分类树/);
   assert.match(treeSource, /搜索属性分类/);
+  assert.match(treeSource, /nodeType === "category"/);
+  assert.match(treeSource, /ontology-object-attribute-panel__tree-property-node/);
+  assert.match(treeSource, /ontology-object-attribute-panel__tree-property-dot/);
   assert.match(treeSource, /添加子分类/);
-  assert.match(treeSource, /current-node-key=/);
-  assert.match(treeSource, /编辑分类/);
-  assert.match(treeSource, /删除分类/);
-  assert.match(treeSource, /暂无分类树数据/);
-  assert.match(treeSource, /创建分类/);
-
+  assert.match(treeSource, /current-node-key="selectedCategoryId"/);
   assert.match(tableSource, /关联数据源/);
-  assert.match(tableSource, /prop="displayName" label="属性名称"/);
   assert.match(tableSource, /数据类型/);
-  assert.match(tableSource, /存储分组/);
-  assert.match(tableSource, /属性描述/);
-  assert.match(tableSource, /主键/);
-  assert.match(tableSource, /名称键/);
+  assert.match(tableSource, /storageGroup/);
+  assert.match(formSource, /属性描述/);
+  assert.match(formSource, /prop="displayName"/);
+  assert.match(formSource, /placeholder="例如：任务优先级"/);
+  assert.match(formSource, /请选择属性分类/);
+  assert.match(formSource, /class="aircas-select" popper-class="aircas-select-popper"/);
+  assert.match(formSource, /class="aircas-switch"/);
+  assert.match(categoryApiSource, /function openCategoryCreate/);
+  assert.match(categoryApiSource, /function openCategoryEdit/);
+  assert.match(categoryApiSource, /deleteOntologyObjectArrTypeTreeInterface/);
+  assert.match(categoryApiSource, /parentId: Number\(categoryParentId\.value\) \|\| 0/);
+  assert.match(propertyApiSource, /function openCreateAttribute/);
+  assert.match(propertyApiSource, /function openEditAttribute/);
+  assert.match(propertyApiSource, /function removeAttribute/);
+  assert.match(helperSource, /function collectPropertyItemsFromTree/);
+  assert.match(helperSource, /propertyType/);
+  assert.match(helperSource, /const propertyChildren = \(node\.propertyInfos \?\? \[\]\)\.map\(mapPropertyTreeNode\)/);
+});
 
-  assert.match(createDialogSource, /class="aircas-dialog"/);
-  assert.match(createDialogSource, /父分类/);
-  assert.match(editDialogSource, /编辑分类/);
-  assert.match(editDialogSource, /父分类/);
-  assert.match(formDialogSource, /placeholder="例如：任务优先级"/);
-  assert.match(formDialogSource, /placeholder="例如：priority"/);
-  assert.match(formDialogSource, /请选择属性分类/);
-  assert.match(formDialogSource, /class="aircas-select" popper-class="aircas-select-popper"/);
-  assert.match(formDialogSource, /class="aircas-switch"/);
-  assert.match(formDialogSource, /ontology-object-attribute-panel__form-grid/);
+test("attribute data type options use the complete backend enum values", () => {
+  const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  const expectedDataTypes = [
+    "Boolean",
+    "Integer",
+    "Long",
+    "Float",
+    "Short",
+    "Byte",
+    "Double",
+    "Decimal",
+    "String",
+    "Date",
+    "Array",
+    "Map",
+    "Vector",
+    "Timestamp",
+    "MediaReference",
+    "TimeSeries",
+    "Attachment",
+    "Geohash",
+    "Geoshape",
+    "Cipher",
+    "Ontology",
+  ];
+  const dataTypesSource = source.match(/const dataTypes = \[([\s\S]*?)\];/)?.[1] ?? "";
+  const actualDataTypes = [...dataTypesSource.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(actualDataTypes, expectedDataTypes);
+});
 
-  assert.match(categoryComposable, /function openCategoryCreate/);
-  assert.match(categoryComposable, /function openCategoryEdit/);
-  assert.match(categoryComposable, /function saveCategoryEdit/);
-  assert.match(categoryComposable, /function saveCategoryDraft/);
-  assert.match(categoryComposable, /function removeCategory/);
-  assert.match(categoryComposable, /deleteOntologyObjectArrTypeTreeInterface/);
-  assert.match(categoryComposable, /ElMessageBox\.confirm/);
-  assert.match(categoryComposable, /parentId: Number\(categoryParentId\.value\) \|\| 0/);
-  assert.match(categoryComposable, /categoryParentName/);
+test("attribute category remains selectable without required validation", () => {
+  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  const listSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  assert.match(formSource, /label="属性分类" prop="categoryId"/);
+  assert.doesNotMatch(listSource, /categoryId:\s*\[\{ required: true/);
+  assert.match(listSource, /categoryId === undefined \? \{\} : \{ categoryId \}/);
+});
 
-  assert.match(propertyComposable, /function openCreateAttribute/);
-  assert.match(propertyComposable, /function openEditAttribute/);
-  assert.match(propertyComposable, /function removeAttribute/);
-  assert.match(propertyComposable, /function saveAttributeDraft/);
+test("attribute API name is disabled only while editing", () => {
+  const source = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  assert.match(source, /v-model="draft\.apiName"[\s\S]*?:disabled="editingAttributeId !== null"/);
+});
+
+test("attribute storage group accepts custom input and deduplicates values from all properties", () => {
+  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  const listSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  assert.match(formSource, /v-model="draft\.storageGroup"[\s\S]*?filterable[\s\S]*?:allow-create="editingAttributeId === null"/);
+  assert.match(listSource, /function getStorageGroupOptions/);
+  assert.match(listSource, /collectPropertyItemsFromTree\(getCategories\(\), ontologyUniqueIdentifier\)/);
+  assert.match(listSource, /new Set\(\["main", \.\.\.propertyStorageGroups\]\)/);
+  assert.match(listSource, /const storageGroupPattern = \/\^\[A-Za-z0-9_\]\+\$\//);
+  assert.match(listSource, /pattern: storageGroupPattern/);
+  assert.match(listSource, /filter\(\(value\) => storageGroupPattern\.test\(value\)\)/);
+  assert.match(listSource, /label: value,/);
+  assert.doesNotMatch(listSource, /label: value === "main" \? "主存储" : value/);
 });

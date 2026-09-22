@@ -10,7 +10,8 @@ test("create ontology object types expose the documented request and response fi
   assert.match(source, /spaceId: number/);
   assert.match(source, /displayName: string/);
   assert.match(source, /apiName: string/);
-  assert.match(source, /parentOntologyUniqueIdentifier\?: number/);
+  assert.match(source, /iconUrl\?: string/);
+  assert.match(source, /parentOntologyUniqueIdentifier\?: string/);
   assert.match(source, /categoryId\?: number/);
   assert.match(source, /groupIds\?: string\[\]/);
   assert.match(source, /export interface CreateOntologyObjectData/);
@@ -38,14 +39,17 @@ test("create ontology object mock mirrors the documented success envelope", () =
 });
 
 test("object workspace submits manual creation through the api and reloads after success", () => {
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
-  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
-  assert.match(actionsSource, /createOntologyObjectInterface/);
-  assert.match(actionsSource, /await createOntologyObjectInterface/);
-  assert.match(panelSource, /@submit-manual="createOntologyObject"/);
-  assert.match(actionsSource, /await load\(\)/);
-  assert.match(actionsSource, /ElMessage\.success/);
-  assert.match(actionsSource, /objectCreateError\.value/);
-  assert.match(actionsSource, /response\.code !== 200/);
-  assert.doesNotMatch(actionsSource, /response\.code !== 200 \|\| !response\.success/);
+  const source = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
+  const panel = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  assert.match(source, /createOntologyObjectInterface/);
+  assert.match(source, /await createOntologyObjectInterface/);
+  assert.match(panel, /@submit-manual="createOntologyObject"/);
+  assert.match(source, /await load\(\)/);
+  assert.match(source, /ElMessage\.success/);
+  assert.match(source, /objectCreateError\.value/);
+  assert.match(source, /response\.code !== 200/);
+  assert.doesNotMatch(source, /response\.code !== 200 \|\| !response\.success/);
+  const createFunction = source.match(/async function createOntologyObject\(draft[\s\S]*?\/\*\*/)?.[0] ?? "";
+  assert.match(createFunction, /parentOntologyUniqueIdentifier \}/);
+  assert.doesNotMatch(createFunction, /numericParentId/);
 });

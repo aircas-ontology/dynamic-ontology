@@ -23,10 +23,15 @@
       </div>
     </header>
 
-    <p v-if="attributeLoading" class="ontology-object-attribute-panel__table-state">正在加载属性...</p>
+    <p v-if="attributeLoading" class="ontology-object-attribute-panel__table-state"><AircasLoading>正在加载属性...</AircasLoading></p>
     <p v-else-if="attributeError" class="ontology-object-attribute-panel__table-state is-error" role="alert">{{ attributeError }}</p>
     <div v-else-if="visibleAttributes.length" class="ontology-object-attribute-panel__table-wrap">
-      <el-table :data="visibleAttributes" class="aircas-table" height="100%" row-key="uniqueIdentifier">
+      <el-table
+        :data="visibleAttributes"
+        class="aircas-table aircas-table--flat ontology-object-attribute-panel__table"
+        height="100%"
+        row-key="uniqueIdentifier"
+      >
         <el-table-column prop="displayName" label="属性名称" min-width="150" show-overflow-tooltip />
         <el-table-column prop="apiName" label="API" min-width="150" show-overflow-tooltip />
         <el-table-column prop="dataType" label="数据类型" width="110" />
@@ -41,10 +46,12 @@
         <el-table-column label="名称键" width="72">
           <template #default="{ row }">{{ row.isNameKey ? "是" : "否" }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button class="aircas-button" link size="small" @click="$emit('edit-attribute', row)">编辑</el-button>
-            <el-button class="aircas-button" link type="danger" size="small" @click="$emit('remove-attribute', row)">删除</el-button>
+            <div class="ontology-object-attribute-panel__row-actions">
+              <el-button class="aircas-button" size="small" @click="$emit('edit-attribute', row)">编辑</el-button>
+              <el-button class="aircas-button" type="danger" size="small" @click="$emit('remove-attribute', row)">删除</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -56,6 +63,7 @@
 <script setup lang="ts">
 import { Connection, Plus } from "@element-plus/icons-vue";
 import type { OntologyAttributeItem } from "@/types";
+import AircasLoading from "@/components/AircasLoading.vue";
 
 defineProps<{
   selectedCategoryName: string;
@@ -79,21 +87,22 @@ defineEmits<{
   display: flex;
   min-width: 0;
   min-height: 0;
-  padding: 16px;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-divider);
 }
 
 .ontology-object-attribute-panel__content-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 18px var(--aircas-color-divider);
 }
 
 .ontology-object-attribute-panel__content-header h2 {
@@ -123,6 +132,27 @@ defineEmits<{
   min-height: 0;
   flex: 1;
   overflow: hidden;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+}
+
+.ontology-object-attribute-panel__table {
+  width: 100%;
+}
+
+.ontology-object-attribute-panel__row-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.ontology-object-attribute-panel__content :deep(.el-table) {
+  --el-table-bg-color: var(--aircas-color-transparent);
+  --el-table-tr-bg-color: var(--aircas-color-transparent);
+  --el-table-header-bg-color: var(--aircas-color-section-header);
+  --el-table-row-hover-bg-color: var(--aircas-color-blue-soft);
+  --el-table-border-color: var(--aircas-color-border-soft);
+  --el-table-text-color: var(--aircas-color-text-primary);
+  --el-table-header-text-color: var(--aircas-color-text-primary);
 }
 
 .ontology-object-attribute-panel__empty {

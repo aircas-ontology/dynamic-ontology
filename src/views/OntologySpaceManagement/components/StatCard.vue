@@ -1,11 +1,15 @@
 <template>
-  <el-card class="aircas-card stat-card" shadow="never"
+  <el-card
+    class="aircas-card stat-card"
+    shadow="never"
     :class="{ 'stat-card--object': stat.id === 'object', 'stat-card--behavior': stat.id === 'behavior', 'stat-card--relation': stat.id === 'relation' }"
-    body-class="stat-card__body">
+    body-class="stat-card__body"
+  >
     <header>
-      <h2>{{ stat.label }}</h2><span class="stat-card__icon"><el-icon :size="18">
-          <component :is="icons[stat.icon]" />
-        </el-icon></span>
+      <h2>{{ stat.label }}</h2>
+      <span class="stat-card__icon"
+        ><el-icon :size="18"> <component :is="icons[stat.icon]" /> </el-icon
+      ></span>
     </header>
     <strong>{{ stat.value.toLocaleString("zh-CN") }}</strong>
     <span class="stat-card__caption">全部空间汇总</span>
@@ -19,25 +23,28 @@ defineProps<{ stat: OntologySpaceSummary }>();
 const icons = { Box, Connection, Link, Share };
 </script>
 <style scoped lang="scss">
-.stat-card {
+.stat-card.aircas-card {
   --stat-accent: var(--aircas-color-accent-cyan);
   --stat-fill: var(--aircas-color-accent-cyan-fill);
   min-width: 0;
-  min-height: 168px;
+  height: 100%;
+  min-height: 150px;
   border-radius: 8px;
+  background: linear-gradient(160deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  box-shadow: inset 0 0 28px var(--aircas-color-border-shadow);
 }
 
-.stat-card--object {
+.stat-card.aircas-card.stat-card--object {
   --stat-accent: var(--aircas-color-accent-green);
   --stat-fill: var(--aircas-color-accent-green-fill);
 }
 
-.stat-card--behavior {
+.stat-card.aircas-card.stat-card--behavior {
   --stat-accent: var(--aircas-color-accent-blue);
   --stat-fill: var(--aircas-color-accent-blue-fill);
 }
 
-.stat-card--relation {
+.stat-card.aircas-card.stat-card--relation {
   --stat-accent: var(--aircas-color-accent-purple);
   --stat-fill: var(--aircas-color-accent-purple-fill);
 }
@@ -67,7 +74,7 @@ h2 {
   place-items: center;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 8px;
   color: var(--stat-accent);
   background: var(--stat-fill);
   flex-shrink: 0;

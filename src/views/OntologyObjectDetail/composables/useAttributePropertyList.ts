@@ -1,13 +1,7 @@
 import { computed, reactive, ref, type Ref } from "vue";
 import { ElMessage, ElMessageBox, type FormRules } from "element-plus";
 import { useRoute } from "vue-router";
-import {
-  createOntologyPropertyInterface,
-  deleteOntologyPropertyInterface,
-  getOntologyPropertyByCategoryIdInterface,
-  getOntologyPropertyByOntologyIdInterface,
-  updateOntologyPropertyInterface,
-} from "@/apis";
+import { createOntologyPropertyInterface, deleteOntologyPropertyInterface, updateOntologyPropertyInterface } from "@/apis";
 import type {
   CreateOntologyPropertyParams,
   OntologyAttributeCategoryNode,
@@ -16,24 +10,57 @@ import type {
   OntologyAttributeStorageGroupOption,
   UpdateOntologyPropertyParams,
 } from "@/types";
-import { flattenCategoryOptions, isAttributeItem, mapOntologyPropertyItem, normalizeStorageGroupValue } from "../utils/attributePanelHelpers";
+import {
+  collectPropertyItemsFromTree,
+  flattenCategoryOptions,
+  findCategory,
+  isAttributeItem,
+  mapOntologyPropertyItem,
+  normalizeStorageGroupValue,
+} from "../utils/attributePanelHelpers";
 
 /**
- * @description 属性列表状态与交互：按分类加载属性、搜索、新增/编辑表单与删除。
+ * @description 属性列表状态与交互：从分类树读取属性、新增/编辑表单与删除。
  * @param options.selectedCategoryId 当前选中的分类 id
- * @param options.getCategories 读取分类树，用于属性表单分类下拉
+ * @param options.getCategories 读取包含属性节点的分类树
+ * @param options.onPropertyChanged 属性命令成功后的刷新回调
  * @returns 属性列表模板所需状态与操作方法
  */
-export function useAttributePropertyList(options: { selectedCategoryId: Ref<string>; getCategories: () => OntologyAttributeCategoryNode[] }) {
-  const { selectedCategoryId, getCategories } = options;
+export function useAttributePropertyList(options: {
+  selectedCategoryId: Ref<string>;
+  getCategories: () => OntologyAttributeCategoryNode[];
+  onPropertyChanged: () => Promise<void> | void;
+}) {
+  const { selectedCategoryId, getCategories, onPropertyChanged } = options;
   const route = useRoute();
-  const dataTypes = ["String", "整数", "小数", "日期", "布尔"];
-  const storageGroups: OntologyAttributeStorageGroupOption[] = [{ label: "主存储", value: "main" }];
+  const dataTypes = [
+    "Boolean",
+    "Integer",
+    "Long",
+    "Float",
+    "Short",
+    "Byte",
+    "Double",
+    "Decimal",
+    "String",
+    "Date",
+    "Array",
+    "Map",
+    "Vector",
+    "Timestamp",
+    "MediaReference",
+    "TimeSeries",
+    "Attachment",
+    "Geohash",
+    "Geoshape",
+    "Cipher",
+    "Ontology",
+  ];
+  const storageGroupPattern = /^[A-Za-z0-9_]+$/;
   const attributes = ref<OntologyAttributeItem[]>([]);
   const attributeLoading = ref(false);
   const attributeError = ref("");
   const attributeCommandError = ref("");
-  let attributesRequestId = 0;
   const attributeSearch = ref("");
   const attributeDialogVisible = ref(false);
   const savingAttribute = ref(false);
@@ -52,48 +79,56 @@ export function useAttributePropertyList(options: { selectedCategoryId: Ref<stri
   const attributeRules: FormRules<OntologyAttributeDraft> = {
     displayName: [{ required: true, message: "请输入属性名称", trigger: "blur" }],
     apiName: [{ required: true, message: "请输入 API 名称", trigger: "blur" }],
-    categoryId: [{ required: true, message: "请选择属性分类", trigger: "change" }],
     dataType: [{ required: true, message: "请选择数据类型", trigger: "change" }],
-    storageGroup: [{ required: true, message: "请选择存储分组", trigger: "change" }],
+    storageGroup: [
+      { required: true, message: "请输入存储分组", trigger: ["blur", "change"] },
+      { pattern: storageGroupPattern, message: "存储分组只能包含字母、数字和下划线", trigger: ["blur", "change"] },
+    ],
   };
-  const visibleAttributes = computed(() =>
-    attributes.value.filter((item) => {
-      const keyword = attributeSearch.value.trim().toLowerCase();
-      return !keyword || `${item.displayName} ${item.apiName} ${item.description}`.toLowerCase().includes(keyword);
-    }),
-  );
+  const visibleAttributes = computed(() => {
+    const keyword = attributeSearch.value.trim().toLowerCase();
+    return attributes.value.filter((item) => !keyword || `${item.displayName} ${item.apiName} ${item.description}`.toLowerCase().includes(keyword));
+  });
   const categoryOptions = computed(() => flattenCategoryOptions(getCategories()));
 
-  /** @description 查询当前选中范围的本体对象属性并更新列表。 */
+  /**
+   * @description 从当前本体对象的全部属性中提取非空存储分组并去重，同时保留新增属性默认使用的 main 选项。
+   * @returns 存储分组下拉选项
+   */
+  function getStorageGroupOptions(): OntologyAttributeStorageGroupOption[] {
+    const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
+    const propertyStorageGroups = collectPropertyItemsFromTree(getCategories(), ontologyUniqueIdentifier)
+      .map((item) => normalizeStorageGroupValue(item.storageGroup).trim())
+      .filter((value) => storageGroupPattern.test(value));
+    return [...new Set(["main", ...propertyStorageGroups])].map((value) => ({
+      label: value,
+      value,
+    }));
+  }
+
+  const storageGroups = computed<OntologyAttributeStorageGroupOption[]>(getStorageGroupOptions);
+
+  /** @description 根据当前分类选择从树节点递归提取属性。 */
   async function loadAttributesForSelection() {
     const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
     if (!ontologyUniqueIdentifier) {
       attributeError.value = "缺少本体对象标识，无法加载属性。";
       return;
     }
-    const requestId = ++attributesRequestId;
     attributeLoading.value = true;
     attributeError.value = "";
     try {
-      const response =
-        selectedCategoryId.value === "all"
-          ? await getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier })
-          : await getOntologyPropertyByCategoryIdInterface({ categoryId: Number(selectedCategoryId.value) });
-      if (response.code !== 200) throw new Error(response.message || "属性查询失败");
-      if (requestId === attributesRequestId) attributes.value = (response.data ?? []).map((item) => mapOntologyPropertyItem(item, ontologyUniqueIdentifier));
+      const categories = getCategories();
+      const selectedCategory = selectedCategoryId.value === "all" ? undefined : findCategory(categories, selectedCategoryId.value);
+      const source = selectedCategoryId.value === "all" ? categories : selectedCategory ? [selectedCategory] : [];
+      attributes.value = collectPropertyItemsFromTree(source, ontologyUniqueIdentifier);
     } catch (cause) {
-      if (requestId !== attributesRequestId) return;
       attributeError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性查询失败，请重试。";
       attributes.value = [];
       ElMessage.error(attributeError.value);
     } finally {
-      if (requestId === attributesRequestId) attributeLoading.value = false;
+      attributeLoading.value = false;
     }
-  }
-
-  /** @description 打开数据源关联入口。 */
-  function openDataSource() {
-    ElMessage.info("数据源关联入口已准备");
   }
 
   /** @description 将表单分类标识转换为接口需要的数字。 */
@@ -102,11 +137,7 @@ export function useAttributePropertyList(options: { selectedCategoryId: Ref<stri
     return Number.isFinite(categoryId) && categoryId > 0 ? categoryId : undefined;
   }
 
-  /**
-   * @description 组装创建属性接口请求参数，补齐页面未展示的字段。
-   * @param ontologyIdentifier 本体对象标识
-   * @returns 创建属性请求参数
-   */
+  /** @description 组装创建属性接口请求参数。 */
   function buildCreatePropertyParams(ontologyIdentifier: string): CreateOntologyPropertyParams {
     const categoryId = getDraftCategoryId();
     return {
@@ -126,20 +157,13 @@ export function useAttributePropertyList(options: { selectedCategoryId: Ref<stri
     };
   }
 
-  /**
-   * @description 组装编辑属性接口请求参数，补齐页面未展示的字段。
-   * @param uniqueIdentifier 属性唯一标识
-   * @returns 编辑属性请求参数
-   */
+  /** @description 组装编辑属性接口请求参数，仅提交页面字段和唯一标识。 */
   function buildUpdatePropertyParams(uniqueIdentifier: string): UpdateOntologyPropertyParams {
     const categoryId = getDraftCategoryId();
     return {
       uniqueIdentifier,
-      datasource: {},
-      schemaName: "",
-      datasourceId: "",
-      datasourceColumnName: "",
       displayName: draft.displayName,
+      apiName: draft.apiName,
       dataType: draft.dataType,
       description: draft.description,
       isTitleKey: draft.isNameKey,
@@ -147,7 +171,6 @@ export function useAttributePropertyList(options: { selectedCategoryId: Ref<stri
       defaultValue: draft.defaultValue,
       storageGroup: draft.storageGroup,
       ...(categoryId === undefined ? {} : { categoryId }),
-      metadata: {},
     };
   }
 
@@ -174,24 +197,20 @@ export function useAttributePropertyList(options: { selectedCategoryId: Ref<stri
     attributeDialogVisible.value = true;
   }
 
-  /**
-   * @description 打开属性编辑表单并回显当前数据。
-   * @param value 表格行数据
-   */
+  /** @description 打开属性编辑表单并回显当前数据。 */
   function openEditAttribute(value: unknown) {
     if (!isAttributeItem(value)) return;
-    const item = value;
-    editingAttributeId.value = item.uniqueIdentifier;
+    editingAttributeId.value = value.uniqueIdentifier;
     Object.assign(draft, {
-      displayName: item.displayName,
-      apiName: item.apiName,
-      categoryId: item.categoryId,
-      dataType: item.dataType,
-      storageGroup: normalizeStorageGroupValue(item.storageGroup),
-      defaultValue: item.defaultValue,
-      description: item.description,
-      isPrimary: item.isPrimary,
-      isNameKey: item.isNameKey,
+      displayName: value.displayName,
+      apiName: value.apiName,
+      categoryId: value.categoryId,
+      dataType: value.dataType,
+      storageGroup: normalizeStorageGroupValue(value.storageGroup),
+      defaultValue: value.defaultValue,
+      description: value.description,
+      isPrimary: value.isPrimary,
+      isNameKey: value.isNameKey,
     });
     attributeCommandError.value = "";
     attributeDialogVisible.value = true;
@@ -218,7 +237,7 @@ export function useAttributePropertyList(options: { selectedCategoryId: Ref<stri
         ElMessage.success("属性编辑成功");
       }
       attributeDialogVisible.value = false;
-      await loadAttributesForSelection();
+      await onPropertyChanged();
     } catch (cause) {
       attributeCommandError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性保存失败，请重试。";
       ElMessage.error(attributeCommandError.value);
@@ -227,26 +246,21 @@ export function useAttributePropertyList(options: { selectedCategoryId: Ref<stri
     }
   }
 
-  /**
-   * @description 删除属性并刷新当前列表。
-   * @param value 表格行数据
-   */
+  /** @description 删除属性并刷新当前分类树和列表。 */
   async function removeAttribute(value: unknown) {
     if (!isAttributeItem(value)) return;
-    const item = value;
     try {
-      await ElMessageBox.confirm(`确认删除属性「${item.apiName || item.displayName}」吗？此操作不可恢复。`, "删除属性", { type: "warning" });
+      await ElMessageBox.confirm(`确认删除属性「${value.apiName || value.displayName}」吗？此操作不可恢复。`, "删除属性", { type: "warning" });
     } catch {
       return;
     }
     try {
-      const response = await deleteOntologyPropertyInterface({ propertyUniqueIdentifier: item.uniqueIdentifier });
+      const response = await deleteOntologyPropertyInterface({ propertyUniqueIdentifier: value.uniqueIdentifier });
       if (response.code !== 200) throw new Error(response.message || "属性删除失败");
       ElMessage.success("属性删除成功");
-      await loadAttributesForSelection();
+      await onPropertyChanged();
     } catch (cause) {
-      const message = cause instanceof Error && cause.message.trim() ? cause.message : "属性删除失败，请重试。";
-      ElMessage.error(message);
+      ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "属性删除失败，请重试。");
     }
   }
 
@@ -266,7 +280,6 @@ export function useAttributePropertyList(options: { selectedCategoryId: Ref<stri
     visibleAttributes,
     categoryOptions,
     loadAttributesForSelection,
-    openDataSource,
     openCreateAttribute,
     openEditAttribute,
     saveAttributeDraft,

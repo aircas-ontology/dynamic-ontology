@@ -9,14 +9,16 @@ import { collectCategoryOptions, incrementCategoryCount } from "../utils/objectW
  * @param options.spaceId 当前空间 id
  * @param options.workspace 当前工作区数据
  * @param options.load 成功后刷新分类树与对象列表
+ * @param options.onOpenLlmBuilder 可选的大模型构建页面跳转回调
  * @returns 对象弹窗状态与操作方法
  */
 export function useObjectWorkspaceObjectActions(options: {
   spaceId: Ref<string>;
   workspace: Ref<OntologyObjectWorkspace | undefined>;
   load: () => Promise<void>;
+  onOpenLlmBuilder?: () => void;
 }) {
-  const { spaceId, workspace, load } = options;
+  const { spaceId, workspace, load, onOpenLlmBuilder } = options;
   const objectCreateVisible = ref(false);
   const objectCreateSubmitting = ref(false);
   const objectCreateError = ref("");
@@ -101,12 +103,12 @@ export function useObjectWorkspaceObjectActions(options: {
     if (objectCreateSubmitting.value) return;
     const numericSpaceId = Number(spaceId.value.trim());
     const numericCategoryId = Number(draft.categoryId);
-    const numericParentId = draft.parentId ? Number(draft.parentId) : undefined;
     if (!Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId)) {
       objectCreateError.value = "缺少有效的空间或分类 id，无法创建本体。";
       return;
     }
-    if (draft.parentId && !Number.isInteger(numericParentId)) {
+    const parentOntologyUniqueIdentifier = draft.parentId?.trim();
+    if (draft.parentId !== undefined && !parentOntologyUniqueIdentifier) {
       objectCreateError.value = "继承本体 id 无效，无法创建本体。";
       return;
     }
@@ -117,9 +119,9 @@ export function useObjectWorkspaceObjectActions(options: {
         spaceId: numericSpaceId,
         displayName: draft.displayName,
         apiName: draft.apiName,
-        ...(draft.iconUrl ? { icon: draft.iconUrl } : {}),
+        ...(draft.iconUrl ? { iconUrl: draft.iconUrl } : {}),
         ...(draft.description ? { description: draft.description } : {}),
-        ...(numericParentId === undefined ? {} : { parentOntologyUniqueIdentifier: numericParentId }),
+        ...(parentOntologyUniqueIdentifier ? { parentOntologyUniqueIdentifier } : {}),
         categoryId: numericCategoryId,
         groupIds: [],
       });
@@ -195,6 +197,10 @@ export function useObjectWorkspaceObjectActions(options: {
   /** @description 保留原型的大模型构建入口，在当前项目尚未接入流程时给出明确反馈。 */
   function openOntologyLlmBuilder() {
     objectCreateVisible.value = false;
+    if (onOpenLlmBuilder) {
+      onOpenLlmBuilder();
+      return;
+    }
     ElMessage.info("大模型构建流程尚未接入。");
   }
 

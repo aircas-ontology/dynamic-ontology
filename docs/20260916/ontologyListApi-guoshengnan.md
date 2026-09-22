@@ -44,7 +44,9 @@
       "ontologyCount": 2,
       "actionCount": 0,
       "propertyCount": 7,
-      "linkCount": 0
+      "linkCount": 0,
+      "createTime": "2026-09-21 10:47:32",
+      "updateTime": "2026-09-21 10:47:32"
     }
   ]
 }
@@ -54,6 +56,8 @@
 - `message`：【string】消息描述
 - `success`：【boolean】请求是否成功
 - `data`：【object】响应数据
+- `createTime`：【string】创建时间
+- `updateTime`：【string】更新时间
 
 ## code
 

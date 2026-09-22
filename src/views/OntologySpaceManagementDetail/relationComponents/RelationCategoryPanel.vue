@@ -26,8 +26,11 @@
         @node-click="handleNodeClick"
       >
         <template #default="{ data }">
-          <span class="relation-category-panel__node" :title="data.label">
-            <i class="relation-category-panel__color-dot" :style="{ background: data.color || 'var(--aircas-color-accent-cyan)' }" aria-hidden="true" />
+          <span v-if="isRelationNode(data)" class="relation-category-panel__relation-row" :title="data.label">
+            <span class="relation-category-panel__relation-dot" aria-hidden="true" />
+            <span class="relation-category-panel__relation-name">{{ data.label }}</span>
+          </span>
+          <span v-else-if="isCategoryNode(data)" class="relation-category-panel__node" :title="data.label">
             <i class="fa fa-folder-open-o" aria-hidden="true"></i>
             <span class="relation-category-panel__label">{{ data.label }}</span>
             <span class="relation-category-panel__count">{{ data.relationCount }}</span>
@@ -78,10 +81,25 @@ import type { TreeInstance, TreeNodeData } from "element-plus";
 import type { OntologyRelationCategoryNode, OntologyRelationClass } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
 
-interface DisplayCategoryNode extends OntologyRelationCategoryNode {
-  children: DisplayCategoryNode[];
+/** 关系分类树渲染用分类节点；children 中混入子分类与关系叶子。 */
+interface DisplayCategoryNode {
+  kind: "category";
+  id: string;
+  label: string;
   relationCount: number;
+  children: DisplayTreeNode[];
 }
+
+/** 关系分类树渲染用关系叶子节点，文案取关系名称。 */
+interface DisplayRelationNode {
+  kind: "relation";
+  id: string;
+  label: string;
+  categoryId: string;
+  children: DisplayTreeNode[];
+}
+
+type DisplayTreeNode = DisplayCategoryNode | DisplayRelationNode;
 
 const props = withDefaults(
   defineProps<{
@@ -112,16 +130,72 @@ const emit = defineEmits<{
 const keyword = ref("");
 const treeRef = ref<TreeInstance>();
 
-function collectIds(node: OntologyRelationCategoryNode): string[] {
-  return [node.id, ...node.children.flatMap(collectIds)];
+/**
+ * @description 递归收集分类及其子孙分类 id，用于统计子树关系数量。
+ * @param node 分类节点。
+ * @returns 分类 id 列表。
+ */
+function collectCategoryIds(node: OntologyRelationCategoryNode): string[] {
+  return [node.id, ...node.children.flatMap(collectCategoryIds)];
 }
 
+/**
+ * @description 将分类树与关系列表组装为混合树：分类下挂载直属关系叶子（展示关系名称）。
+ * @param nodes 页面关系分类树。
+ * @returns 可渲染的混合树节点。
+ */
 function enrich(nodes: OntologyRelationCategoryNode[]): DisplayCategoryNode[] {
   return nodes.map((node) => {
-    const children = enrich(node.children);
-    const ids = new Set(collectIds(node));
+    const childCategories = enrich(node.children);
+    const relationLeaves: DisplayRelationNode[] = props.relations
+      .filter((item) => item.categoryId === node.id)
+      .map((item) => ({
+        kind: "relation",
+        id: `rel-${item.id}`,
+        label: item.displayName,
+        categoryId: item.categoryId,
+        children: [],
+      }));
+    const ids = new Set(collectCategoryIds(node));
     const relationCount = props.relations.filter((item) => ids.has(item.categoryId)).length;
-    return { ...node, children, relationCount };
+    return {
+      kind: "category",
+      id: node.id,
+      label: node.label,
+      relationCount,
+      children: [...childCategories, ...relationLeaves],
+    };
+  });
+}
+
+/**
+ * @description 判断混合树节点是否为分类节点。
+ * @param value 树节点。
+ * @returns 是否为分类节点。
+ */
+function isCategoryNode(value: unknown): value is DisplayCategoryNode {
+  return Boolean(value && typeof value === "object" && "kind" in value && (value as { kind: string }).kind === "category");
+}
+
+/**
+ * @description 判断混合树节点是否为关系叶子节点。
+ * @param value 树节点。
+ * @returns 是否为关系叶子。
+ */
+function isRelationNode(value: unknown): value is DisplayRelationNode {
+  return Boolean(value && typeof value === "object" && "kind" in value && (value as { kind: string }).kind === "relation");
+}
+
+/**
+ * @description 递归判断混合树是否包含与关键字匹配的分类或关系名称。
+ * @param nodes 混合树节点。
+ * @param searchValue 已小写化的搜索关键字。
+ * @returns 是否存在匹配。
+ */
+function hasMatchingNode(nodes: DisplayTreeNode[], searchValue: string): boolean {
+  return nodes.some((node) => {
+    if (node.label.toLocaleLowerCase().includes(searchValue)) return true;
+    return isCategoryNode(node) ? hasMatchingNode(node.children, searchValue) : false;
   });
 }
 
@@ -130,8 +204,7 @@ const rootCategoryId = computed(() => displayTreeData.value[0]?.id ?? ROOT_RELAT
 const hasSearchResult = computed(() => {
   const searchValue = keyword.value.trim().toLocaleLowerCase();
   if (!searchValue) return true;
-  const matches = (node: OntologyRelationCategoryNode): boolean => node.label.toLocaleLowerCase().includes(searchValue) || node.children.some(matches);
-  return displayTreeData.value.some(matches);
+  return hasMatchingNode(displayTreeData.value, searchValue);
 });
 
 /**
@@ -143,13 +216,29 @@ function isRootCategory(categoryId: string): boolean {
   return categoryId === ROOT_RELATION_CATEGORY_ID || categoryId === rootCategoryId.value;
 }
 
+/**
+ * @description el-tree 过滤：分类与关系叶子均按 label 匹配。
+ * @param value 当前搜索关键字。
+ * @param data 树节点数据。
+ * @returns 是否保留该节点。
+ */
 function filterNode(value: string, data: TreeNodeData): boolean {
   const label = typeof data.label === "string" ? data.label : "";
   return !value || label.toLocaleLowerCase().includes(value.toLocaleLowerCase());
 }
 
-function handleNodeClick(data: OntologyRelationCategoryNode): void {
-  emit("select-node", data.id);
+/**
+ * @description 点击分类时选中该分类；点击关系叶子时选中其所属分类。
+ * @param data 被点击的混合树节点。
+ */
+function handleNodeClick(data: DisplayTreeNode): void {
+  if (isRelationNode(data)) {
+    emit("select-node", data.categoryId);
+    return;
+  }
+  if (isCategoryNode(data)) {
+    emit("select-node", data.id);
+  }
 }
 
 watch(keyword, (value) => treeRef.value?.filter(value.trim().slice(0, 50)));
@@ -218,14 +307,6 @@ watch(
   padding-right: 4px;
   font-size: 13px;
 }
-.relation-category-panel__color-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  box-shadow: 0 0 6px var(--aircas-color-accent-cyan-soft);
-}
 .relation-category-panel__node .fa {
   font-size: 13px;
   line-height: 1;
@@ -248,6 +329,29 @@ watch(
   border: 1px solid var(--aircas-color-border-soft);
   border-radius: 8px;
   background: var(--aircas-color-input-background);
+}
+.relation-category-panel__relation-row {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding-left: 4px;
+  color: var(--aircas-color-text-secondary);
+}
+.relation-category-panel__relation-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--aircas-color-accent-cyan);
+  box-shadow: 0 0 4px var(--aircas-color-accent-cyan-soft);
+}
+.relation-category-panel__relation-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .relation-category-panel__actions {
   display: inline-flex;

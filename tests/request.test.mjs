@@ -48,19 +48,20 @@ test("request errors use a safe typed contract and delegate auth to the token mo
   assert.match(source, /axios\.isAxiosError/);
 });
 
-test("request error normalization hides server payloads and preserves safe status context", () => {
+test("request error normalization exposes the server message and preserves fallback status context", () => {
   const notFoundError = normalizeRequestError({
     isAxiosError: true,
-    response: { data: { message: "sensitive server detail" }, status: 404 },
+    response: { data: { message: "本体对象名称已存在" }, status: 404 },
   });
+  const blankMessageError = normalizeRequestError({ isAxiosError: true, response: { data: { message: "  " }, status: 500 } });
   const timeoutError = normalizeRequestError({ isAxiosError: true, code: "ECONNABORTED" });
   const networkError = normalizeRequestError({ isAxiosError: true });
   const unknownError = normalizeRequestError(new Error("internal detail"));
 
   assert.ok(notFoundError instanceof RequestError);
   assert.equal(notFoundError.status, 404);
-  assert.equal(notFoundError.message, "请求资源未找到");
-  assert.doesNotMatch(notFoundError.message, /sensitive server detail/);
+  assert.equal(notFoundError.message, "本体对象名称已存在");
+  assert.equal(blankMessageError.message, "内部服务器错误");
   assert.equal(timeoutError.message, "请求超时，请稍后重试。");
   assert.equal(networkError.message, "网络连接失败，请检查网络后重试。");
   assert.equal(unknownError.message, "请求失败，请稍后重试。");

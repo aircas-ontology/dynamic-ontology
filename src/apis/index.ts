@@ -1,7 +1,10 @@
 import { getExampleInterface } from "./exampleApi";
 import { postLoginInterface } from "./loginApi";
+import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
+import { getOntologyApiDocsInterface } from "./ontologyDocApi";
 import {
   createOntologySpaceInterface,
+  createOntologySpaceWithCanvasContentInterface,
   deleteOntologyCategoryTreeInterface,
   deleteOntologyLinkInterface,
   deleteOntologyRelationCategoryTreeInterface,
@@ -9,10 +12,13 @@ import {
   getOntologyCategoryTreeInterface,
   getOntologyRelationCategoryTreeInterface,
   getOntologySpaceListInterface,
+  getOntologySpaceStatisticInterface,
   postCreateOntologyCategoryTreeInterface,
   postCreateOntologyLinkInterface,
   postCreateOntologyRelationCategoryTreeInterface,
+  postUploadOntologyThumbnailInterface,
   putUpdateOntologyCategoryNameInterface,
+  putUpdateOntologyLinkInterface,
   putUpdateOntologyRelationCategoryNameInterface,
   updateOntologySpaceInterface,
 } from "./ontologyManageApi";
@@ -29,15 +35,19 @@ import {
   updateOntologyObjectInterface,
 } from "./ontologyObjectManageApi";
 import {
+  autoBindOntologyPropertyDatasourceInterface,
   createOntologyPropertyInterface,
   deleteOntologyPropertyInterface,
   getOntologyPropertyByCategoryIdInterface,
   getOntologyPropertyByOntologyIdInterface,
+  putBatchUpdateOntologyPropertiesInterface,
   updateOntologyPropertyInterface,
 } from "./ontologyPropertyApi";
 
 export {
+  autoBindOntologyPropertyDatasourceInterface,
   createOntologySpaceInterface,
+  createOntologySpaceWithCanvasContentInterface,
   createOntologyObjectInterface,
   createOntologyObjectArrTypeTreeInterface,
   createOntologyPropertyInterface,
@@ -49,18 +59,25 @@ export {
   deleteOntologySpaceInterface,
   deleteOntologyPropertyInterface,
   getExampleInterface,
+  getOntologyApiDocsInterface,
+  getOntologyDatasourceColumnsInterface,
   getOntologyCategoryTreeInterface,
   getOntologyObjectArrTypeTreeInterface,
   getOntologyObjectByCategoryIdInterface,
   getOntologyPropertyByCategoryIdInterface,
   getOntologyPropertyByOntologyIdInterface,
+  getOntologyDatasourceTablesInterface,
   getOntologyRelationCategoryTreeInterface,
   getOntologySpaceListInterface,
+  getOntologySpaceStatisticInterface,
   postCreateOntologyCategoryTreeInterface,
   postCreateOntologyLinkInterface,
   postCreateOntologyRelationCategoryTreeInterface,
   postLoginInterface,
+  postUploadOntologyThumbnailInterface,
+  putBatchUpdateOntologyPropertiesInterface,
   putUpdateOntologyCategoryNameInterface,
+  putUpdateOntologyLinkInterface,
   putUpdateOntologyRelationCategoryNameInterface,
   updateOntologySpaceInterface,
   updateOntologyObjectArrTypeTreeInterface,

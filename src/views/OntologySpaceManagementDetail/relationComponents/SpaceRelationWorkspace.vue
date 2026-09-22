@@ -19,7 +19,7 @@
           <h2>{{ selectedRelationCategoryLabel }}</h2>
           <span>
             空间内多对象关系 · {{ visibleSpaceRelations.length }} 条
-            <template v-if="relationFilter.applied"> （中心：{{ relationFilter.seedNames[0] }} / {{ relationFilter.maxHop }} 级） </template>
+            <template v-if="relationFilter.applied"> （源对象：{{ graphSeedNames[0] }}） </template>
           </span>
         </div>
         <div class="space-relation-workspace__actions">
@@ -68,7 +68,7 @@
         <el-button class="aircas-button" @click="resetFilter">重置</el-button>
       </div>
 
-      <div v-if="status === 'loading'" class="space-relation-workspace__state" role="status">加载中...</div>
+      <div v-if="status === 'loading'" class="space-relation-workspace__state" role="status"><AircasLoading>加载中...</AircasLoading></div>
       <div v-else-if="status === 'error'" class="space-relation-workspace__state space-relation-workspace__state-error" role="alert">
         <span>{{ errorMessage }}</span>
         <el-button class="aircas-button" type="primary" @click="loadSpaceRelationWorkspace">重试</el-button>
@@ -80,7 +80,6 @@
           :items="visibleSpaceRelations"
           :seed-names="graphSeedNames"
           :max-hop="graphMaxHop"
-          :category-colors="relationCategoryColorMap"
           @edit="openRelationEdit"
           @delete="openRelationDelete"
         />
@@ -118,7 +117,6 @@
       :mode="categoryFormMode"
       :parent-label="categoryParentLabel"
       :initial-name="categoryFormMode === 'edit' ? categoryActionName : ''"
-      :initial-color="categoryFormMode === 'edit' ? categoryActionColor : ''"
       @submit="handleCategorySubmit"
     />
     <RelationCategoryDeleteDialog
@@ -149,18 +147,19 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Grid, Plus, Share } from "@element-plus/icons-vue";
-import type { CreateOntologyLinkParams, OntologyRelationCategoryNode, OntologyRelationClass, RelationClassWritePayload } from "@/types";
+import type { CreateOntologyLinkParams, OntologyRelationClass, RelationClassWritePayload, UpdateOntologyLinkParams } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
 import {
   deleteOntologyLinkInterface,
   deleteOntologyRelationCategoryTreeInterface,
   postCreateOntologyLinkInterface,
   postCreateOntologyRelationCategoryTreeInterface,
+  putUpdateOntologyLinkInterface,
   putUpdateOntologyRelationCategoryNameInterface,
 } from "@/apis";
+import AircasLoading from "@/components/AircasLoading.vue";
 import { useSpaceRelationWorkspace } from "../composables/useSpaceRelationWorkspace";
 import { collectCategoryIds, findRelationCategoryNode } from "../utils/relationOperations";
 import RelationCategoryPanel from "./RelationCategoryPanel.vue";
@@ -170,10 +169,10 @@ import RelationCategoryDeleteDialog from "./RelationCategoryDeleteDialog.vue";
 import RelationDeleteDialog from "./RelationDeleteDialog.vue";
 import SpaceRelationFormDialog from "./SpaceRelationFormDialog.vue";
 
-const route = useRoute();
 const {
   status,
   errorMessage,
+  spaceId,
   relationCategoryTree,
   relations,
   relationObjectOptions,
@@ -190,7 +189,6 @@ const {
   setRelationViewMode,
   applyRelationFilter,
   findRelationCategoryLabel,
-  editRelationClass,
 } = useSpaceRelationWorkspace();
 
 const categoryFormRef = ref<InstanceType<typeof RelationCategoryFormDialog> | null>(null);
@@ -202,7 +200,6 @@ const categoryActionId = ref("");
 const categoryParentId = ref(ROOT_RELATION_CATEGORY_ID);
 const categoryParentLabel = ref("全部关系");
 const categoryActionName = ref("");
-const categoryActionColor = ref("");
 const relationFormVisible = ref(false);
 const relationFormMode = ref<"create" | "edit">("create");
 const relationDeleteVisible = ref(false);
@@ -215,18 +212,6 @@ const categoryDeleteBlocked = computed(() => {
   if (!node) return true;
   const ids = new Set(collectCategoryIds(node));
   return relations.value.some((item) => ids.has(item.categoryId));
-});
-
-const relationCategoryColorMap = computed<Record<string, string>>(() => {
-  const map: Record<string, string> = {};
-  const walk = (nodes: OntologyRelationCategoryNode[]) => {
-    nodes.forEach((node) => {
-      if (node.color) map[node.id] = node.color;
-      walk(node.children);
-    });
-  };
-  walk(relationCategoryTree.value);
-  return map;
 });
 
 watch(
@@ -257,7 +242,6 @@ function openCategoryCreate(parentId: string) {
   categoryParentId.value = parentId;
   categoryParentLabel.value = parentId ? findRelationCategoryLabel(parentId) || "全部关系" : "根分类";
   categoryActionName.value = "";
-  categoryActionColor.value = "";
   categoryFormVisible.value = true;
 }
 
@@ -265,7 +249,6 @@ function openCategoryEdit(categoryId: string) {
   categoryFormMode.value = "edit";
   categoryActionId.value = categoryId;
   categoryActionName.value = findRelationCategoryLabel(categoryId);
-  categoryActionColor.value = findRelationCategoryNode(relationCategoryTree.value, categoryId)?.color ?? "";
   categoryFormVisible.value = true;
 }
 
@@ -276,12 +259,11 @@ function openCategoryDelete(categoryId: string) {
 }
 
 /**
- * @description 创建或修改关系分类名称：创建走 POST，修改走 PUT；均不提交颜色，成功后刷新分类树。
+ * @description 创建或修改关系分类名称：创建走 POST，修改走 PUT；成功后刷新分类树。
  * @param name 分类名称。
- * @param color 分类颜色；创建/修改接口均不提交该字段。
  */
-async function handleCategorySubmit(name: string, _color: string) {
-  const space = String(route.params.spaceId || "").trim();
+async function handleCategorySubmit(name: string) {
+  const space = spaceId.value;
   const numericSpaceId = Number(space);
 
   if (categoryFormMode.value === "edit") {
@@ -348,7 +330,7 @@ async function handleCategorySubmit(name: string, _color: string) {
  */
 async function handleCategoryDelete() {
   if (categoryDeleteBlocked.value) return;
-  const space = String(route.params.spaceId || "").trim();
+  const space = spaceId.value;
   const numericSpaceId = Number(space);
   const numericCategoryId = Number(categoryActionId.value);
   if (!space || !Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId)) {
@@ -404,26 +386,59 @@ function resolveCreateLinkCategoryId(categoryId: string | undefined): number | u
 }
 
 /**
- * @description 提交关系表单：创建走 POST `/ontology/link` 成功后刷新关系树；编辑仍走本地更新。
+ * @description 将表单分类 id 转为更新关系接口必填的数字 categoryId。
+ * @param categoryId 表单分类 id。
+ * @returns 可提交的分类 id，非法时为 undefined。
+ */
+function resolveUpdateLinkCategoryId(categoryId: string | undefined): number | undefined {
+  const trimmed = categoryId?.trim() ?? "";
+  if (!trimmed) return undefined;
+  const numericCategoryId = Number(trimmed);
+  return Number.isInteger(numericCategoryId) ? numericCategoryId : undefined;
+}
+
+/**
+ * @description 提交关系表单：创建走 POST `/ontology/link`；编辑走 PUT `/ontology/link`；成功后刷新关系树。
  * @param payload 关系写载荷；create 时 sourceName/targetName 为本体 uniqueIdentifier。
  */
 async function handleRelationSubmit(payload: RelationClassWritePayload) {
   if (relationFormMode.value === "edit") {
-    actionLoading.value = true;
-    relationFormRef.value?.setLoading(true);
-    const error = editRelationClass({ ...payload, id: activeRelation.value?.id || "" });
-    actionLoading.value = false;
-    relationFormRef.value?.setLoading(false);
-    if (error) {
-      ElMessage.error(error);
+    const uniqueIdentifier = activeRelation.value?.id?.trim() ?? "";
+    const categoryId = resolveUpdateLinkCategoryId(payload.categoryId);
+    const description = payload.description.trim();
+    if (!uniqueIdentifier || categoryId === undefined || !payload.displayName.trim() || !description) {
+      ElMessage.error("请填写关系名称、分类和描述后再保存。");
+      relationFormRef.value?.setLoading(false);
       return;
     }
-    relationFormVisible.value = false;
-    ElMessage.success("关系已更新");
+
+    const requestBody: UpdateOntologyLinkParams = {
+      uniqueIdentifier,
+      name: payload.displayName.trim(),
+      categoryId,
+      description,
+    };
+
+    actionLoading.value = true;
+    relationFormRef.value?.setLoading(true);
+    try {
+      const response = await putUpdateOntologyLinkInterface(requestBody);
+      if (response.code !== 200) {
+        throw new Error(response.message || "修改关系失败");
+      }
+      relationFormVisible.value = false;
+      ElMessage.success("关系已更新");
+      await loadSpaceRelationWorkspace();
+    } catch (cause) {
+      ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "修改关系失败，请重试。");
+    } finally {
+      actionLoading.value = false;
+      relationFormRef.value?.setLoading(false);
+    }
     return;
   }
 
-  const space = String(route.params.spaceId || "").trim();
+  const space = spaceId.value;
   const numericSpaceId = Number(space);
   if (!space || !Number.isInteger(numericSpaceId)) {
     ElMessage.error("缺少空间 id，无法创建关系。");
@@ -440,8 +455,8 @@ async function handleRelationSubmit(payload: RelationClassWritePayload) {
   };
   const categoryId = resolveCreateLinkCategoryId(payload.categoryId);
   if (categoryId !== undefined) requestBody.categoryId = categoryId;
-  const comment = payload.description.trim();
-  if (comment) requestBody.comment = comment;
+  const description = payload.description.trim();
+  if (description) requestBody.description = description;
 
   actionLoading.value = true;
   relationFormRef.value?.setLoading(true);

@@ -64,6 +64,18 @@ export const workspaceRoutes: RouteRecordRaw[] = [
             component: emptyWorkspacePanel,
             meta: { title: "空间内管理", workspaceTab: "behavior-schedule" },
           },
+          {
+            path: "llm-builder",
+            name: "OntologyLlmBuilder",
+            component: () => import("@/views/OntologyLlmBuilder/index.vue"),
+            meta: { title: "大模型构建" },
+          },
+          {
+            path: "subspace-create",
+            name: "OntologySubspaceCreate",
+            component: () => import("@/views/OntologySubspaceCreate/index.vue"),
+            meta: { title: "创建子空间" },
+          },
         ],
       },
       {
@@ -88,7 +100,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "relation",
             name: "OntologyObjectDetailRelation",
-            component: emptyWorkspacePanel,
+            component: () => import("@/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue"),
             meta: { title: "本体对象详情", objectDetailTab: "relation" },
           },
           {
@@ -104,6 +116,12 @@ export const workspaceRoutes: RouteRecordRaw[] = [
         name: "FullTextSearch",
         component: () => import("@/views/FullTextSearch/index.vue"),
         meta: { title: "全文检索" },
+      },
+      {
+        path: "application-management",
+        name: "ApplicationManagement",
+        component: () => import("@/views/ApplicationManagement/index.vue"),
+        meta: { title: "应用管理" },
       },
     ],
   },

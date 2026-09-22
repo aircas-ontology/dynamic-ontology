@@ -67,14 +67,33 @@
         </el-form-item>
         <div class="ontology-object-create-dialog__grid">
           <el-form-item v-if="!editingItem" label="继承本体">
-            <el-select v-model="draft.parentId" class="aircas-input" clearable filterable placeholder="可选" :disabled="submitting">
+            <el-select
+              v-model="draft.parentId"
+              class="aircas-select"
+              popper-class="aircas-select-popper"
+              clearable
+              filterable
+              placeholder="可选"
+              :disabled="submitting"
+            >
               <el-option v-for="item in parentOptions" :key="item.id" :label="`${item.displayName} (${item.apiName})`" :value="item.id" />
             </el-select>
           </el-form-item>
           <el-form-item label="分类" required>
-            <el-select v-model="draft.categoryId" class="aircas-input" filterable placeholder="请选择分类" :disabled="submitting">
-              <el-option v-for="category in categories" :key="category.id" :label="category.name" :value="category.id" />
-            </el-select>
+            <el-tree-select
+              v-model="draft.categoryId"
+              class="aircas-tree-select"
+              popper-class="aircas-tree-select-popper"
+              :data="categoryTreeOptions"
+              check-strictly
+              filterable
+              :render-after-expand="false"
+              node-key="id"
+              :props="{ label: 'label', children: 'children' }"
+              placeholder="请选择分类"
+              :disabled="submitting"
+              style="width: 100%"
+            />
           </el-form-item>
         </div>
       </el-form>
@@ -120,14 +139,15 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { MagicStick, UploadFilled, Plus, Upload } from "@element-plus/icons-vue";
 import type { UploadFile } from "element-plus";
-import type { OntologyObjectCreateDraft, OntologyObjectItem } from "@/types";
+import type { OntologyConceptNode, OntologyObjectCreateDraft, OntologyObjectItem } from "@/types";
 
-interface CategoryOption {
+interface CategoryTreeOption {
   id: string;
-  name: string;
+  label: string;
+  children: CategoryTreeOption[];
 }
 interface ParentOption {
   id: string;
@@ -138,7 +158,7 @@ type CreateMode = "manual" | "import" | "llm";
 
 const visible = defineModel<boolean>({ required: true });
 const props = defineProps<{
-  categories: CategoryOption[];
+  categoryTree: OntologyConceptNode[];
   parentOptions: ParentOption[];
   submitting: boolean;
   error: string;
@@ -163,6 +183,21 @@ const validationError = ref("");
 const iconError = ref("");
 const templateJson = JSON.stringify([{ apiName: "airplane", displayName: "飞机", description: "", iconUrl: "", categoryId: "1" }], null, 2);
 
+/**
+ * @description 将概念层级树映射为分类树选择数据，节点 id 使用分类提交 id。
+ * @param nodes 概念层级树节点。
+ * @returns 树选择选项。
+ */
+function mapCategoryTreeOptions(nodes: OntologyConceptNode[]): CategoryTreeOption[] {
+  return nodes.map((node) => ({
+    id: node.targetCategoryId ?? node.id,
+    label: node.label || `分类 ${node.id}`,
+    children: mapCategoryTreeOptions(node.children),
+  }));
+}
+
+const categoryTreeOptions = computed(() => mapCategoryTreeOptions(props.categoryTree));
+
 watch([visible, () => props.editingItem], ([opened, editingItem]) => {
   if (!opened) return;
   createMode.value = "manual";
@@ -171,7 +206,7 @@ watch([visible, () => props.editingItem], ([opened, editingItem]) => {
   draft.description = editingItem?.description ?? "";
   draft.iconUrl = editingItem?.iconUrl ?? "";
   draft.parentId = undefined;
-  draft.categoryId = editingItem?.categoryId ?? props.categories[0]?.id ?? "";
+  draft.categoryId = editingItem?.categoryId ?? categoryTreeOptions.value[0]?.id ?? "";
   importDrafts.value = [];
   importError.value = "";
   validationError.value = "";
@@ -244,7 +279,7 @@ async function handleImportChange(file: UploadFile) {
         displayName,
         description: typeof value.description === "string" ? value.description : "",
         iconUrl: typeof value.iconUrl === "string" ? value.iconUrl : "",
-        categoryId: typeof value.categoryId === "string" ? value.categoryId : String(value.categoryId ?? props.categories[0]?.id ?? ""),
+        categoryId: typeof value.categoryId === "string" ? value.categoryId : String(value.categoryId ?? categoryTreeOptions.value[0]?.id ?? ""),
       };
     });
     importDrafts.value = items;

@@ -14,9 +14,11 @@
     <el-tree
       v-else
       class="concept-hierarchy__tree"
-      :data="filteredTree"
+      :data="treeNodes"
+      :props="treeNodeProps"
       node-key="id"
-      default-expand-all
+      :default-expand-all="false"
+      :default-expanded-keys="defaultExpandedKeys"
       highlight-current
       :current-node-key="selectedNodeId"
       :expand-on-click-node="false"
@@ -24,41 +26,51 @@
       @node-click="handleNodeClick"
     >
       <template #default="{ data }">
-        <span class="concept-hierarchy__node">
-          <el-icon>
-            <FolderOpened v-if="hasChildren(data)" />
-            <CollectionTag v-else />
-          </el-icon>
-          <span class="concept-hierarchy__label" :title="nodeLabel(data)">{{ nodeLabel(data) }}</span>
-          <span v-if="nodeCount(data)" class="concept-hierarchy__count">{{ nodeCount(data) }}</span>
-          <span class="concept-hierarchy__create-child-wrap" @click.stop>
-            <el-tooltip content="新建子分类" placement="top" :show-after="200">
-              <button type="button" class="concept-hierarchy__create-child" aria-label="新建子分类" @click="openChildCategoryDialog(data)">
-                <el-icon><Plus /></el-icon>
-              </button>
-            </el-tooltip>
-            <el-tooltip content="修改分类名称" placement="top" :show-after="200">
-              <button
-                type="button"
-                class="concept-hierarchy__action concept-hierarchy__action--edit"
-                aria-label="修改分类名称"
-                @click="openRenameCategoryDialog(data)"
-              >
-                <el-icon><Edit /></el-icon>
-              </button>
-            </el-tooltip>
-            <el-tooltip content="删除分类" placement="top" :show-after="200">
-              <button
-                type="button"
-                class="concept-hierarchy__action concept-hierarchy__action--danger"
-                aria-label="删除分类"
-                @click="openDeleteCategoryDialog(data)"
-              >
-                <el-icon><Delete /></el-icon>
-              </button>
-            </el-tooltip>
-          </span>
+        <span v-if="isObjectNode(data)" class="concept-hierarchy__object-row">
+          <span class="concept-hierarchy__object-dot" aria-hidden="true" />
+          <span class="concept-hierarchy__object-name" :title="data.label">{{ data.label }}</span>
         </span>
+        <template v-else>
+          <span class="concept-hierarchy__node">
+            <el-icon>
+              <FolderOpened v-if="hasChildren(data)" />
+              <CollectionTag v-else />
+            </el-icon>
+            <span class="concept-hierarchy__content">
+              <span class="concept-hierarchy__heading">
+                <span class="concept-hierarchy__label" :title="nodeLabel(data)">{{ nodeLabel(data) }}</span>
+                <span v-if="nodeCount(data)" class="concept-hierarchy__count">{{ nodeCount(data) }}</span>
+              </span>
+            </span>
+            <span class="concept-hierarchy__create-child-wrap" @click.stop>
+              <el-tooltip content="新建子分类" placement="top" :show-after="200">
+                <button type="button" class="concept-hierarchy__create-child" aria-label="新建子分类" @click="openChildCategoryDialog(data)">
+                  <el-icon><Plus /></el-icon>
+                </button>
+              </el-tooltip>
+              <el-tooltip content="修改分类名称" placement="top" :show-after="200">
+                <button
+                  type="button"
+                  class="concept-hierarchy__action concept-hierarchy__action--edit"
+                  aria-label="修改分类名称"
+                  @click="openRenameCategoryDialog(data)"
+                >
+                  <el-icon><Edit /></el-icon>
+                </button>
+              </el-tooltip>
+              <el-tooltip content="删除分类" placement="top" :show-after="200">
+                <button
+                  type="button"
+                  class="concept-hierarchy__action concept-hierarchy__action--danger"
+                  aria-label="删除分类"
+                  @click="openDeleteCategoryDialog(data)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </button>
+              </el-tooltip>
+            </span>
+          </span>
+        </template>
       </template>
     </el-tree>
   </aside>
@@ -68,7 +80,25 @@
 import { computed, ref } from "vue";
 import { CollectionTag, Delete, Edit, FolderOpened, Plus, Search } from "@element-plus/icons-vue";
 import type { OntologyConceptNode } from "@/types";
-import { filterConceptTree } from "../utils/objectWorkspace";
+
+/** el-tree 渲染用的本地节点类型；分类和对象在同一个 children 数组里混合。 */
+interface ConceptCategoryTreeNode {
+  kind: "category";
+  id: string;
+  label: string;
+  count: number;
+  targetCategoryId?: string;
+  children: ConceptTreeNode[];
+}
+
+interface ConceptObjectTreeNode {
+  kind: "object";
+  id: string;
+  label: string;
+  children: ConceptTreeNode[];
+}
+
+type ConceptTreeNode = ConceptCategoryTreeNode | ConceptObjectTreeNode;
 
 const props = defineProps<{
   tree: OntologyConceptNode[];
@@ -77,32 +107,121 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   select: [node: OntologyConceptNode];
+  "select-object": [name: string];
   create: [];
   createChild: [categoryId: string];
   rename: [categoryId: string, name: string];
   delete: [categoryId: string, name: string];
 }>();
-const keyword = ref("");
-const filteredTree = computed(() => filterConceptTree(props.tree, keyword.value));
 
-function isConceptNode(value: unknown): value is OntologyConceptNode {
-  return Boolean(value && typeof value === "object" && "id" in value && "label" in value && "children" in value);
+const keyword = ref("");
+
+const treeNodeProps = {
+  children: "children",
+  label: "label",
+};
+
+/**
+ * @description 将后端 OntologyConceptNode 转换为 el-tree 可渲染的混合节点：对象名称作为分类下的子节点注入。
+ * @param node 后端原始概念分类节点。
+ * @returns 渲染用的分类节点，children 中混入子分类和对象节点。
+ */
+function transformCategoryNode(node: OntologyConceptNode): ConceptCategoryTreeNode {
+  const objectNodes: ConceptObjectTreeNode[] = (node.objectNames ?? []).map((name, index) => ({
+    kind: "object",
+    id: `${node.id}-obj-${index}`,
+    label: name,
+    children: [],
+  }));
+  const childCategoryNodes: ConceptCategoryTreeNode[] = (node.children ?? []).map((child) => transformCategoryNode(child));
+  return {
+    kind: "category",
+    id: node.id,
+    label: node.label,
+    count: node.count,
+    targetCategoryId: node.targetCategoryId,
+    children: [...childCategoryNodes, ...objectNodes],
+  };
+}
+
+/** @description 递归过滤混合节点树：保留分类节点（label 匹配或子树有匹配），对象节点按 label 匹配。 */
+function filterMixedTree(nodes: ConceptTreeNode[], keyword: string): ConceptTreeNode[] {
+  if (!keyword) return nodes;
+  const normalized = keyword.trim().toLocaleLowerCase("zh-CN");
+  const result: ConceptTreeNode[] = [];
+  for (const node of nodes) {
+    if (node.kind === "object") {
+      if (node.label.toLocaleLowerCase("zh-CN").includes(normalized)) result.push(node);
+      continue;
+    }
+    const children = filterMixedTree(node.children, normalized);
+    if (!node.label.toLocaleLowerCase("zh-CN").includes(normalized) && !children.length) continue;
+    result.push({ ...node, children });
+  }
+  return result;
+}
+
+/** el-tree 的数据源，已把后端 objectNames 展开为嵌套子节点。 */
+const treeNodes = computed<ConceptTreeNode[]>(() => {
+  const keywordValue = keyword.value.trim();
+  const raw = props.tree.map((node) => transformCategoryNode(node));
+  return keywordValue ? filterMixedTree(raw, keywordValue) : raw;
+});
+
+/** 分类节点默认展开；对象节点不需要展开。 */
+const defaultExpandedKeys = computed<string[]>(() => collectCategoryIds(treeNodes.value));
+
+/** @description 递归收集所有分类节点的 id，供 el-tree 默认展开使用。 */
+function collectCategoryIds(nodes: ConceptTreeNode[]): string[] {
+  const ids: string[] = [];
+  for (const node of nodes) {
+    if (node.kind === "category") {
+      ids.push(node.id);
+      ids.push(...collectCategoryIds(node.children));
+    }
+  }
+  return ids;
+}
+
+function isCategoryNode(value: unknown): value is ConceptCategoryTreeNode {
+  return Boolean(value && typeof value === "object" && "kind" in value && (value as { kind: string }).kind === "category");
+}
+
+function isObjectNode(value: unknown): value is ConceptObjectTreeNode {
+  return Boolean(value && typeof value === "object" && "kind" in value && (value as { kind: string }).kind === "object");
+}
+
+/** @description 在后端原始 props.tree 里查找指定 id 的 OntologyConceptNode，供 emit select 时保留完整数据。 */
+function findOriginalCategoryNode(nodes: OntologyConceptNode[], id: string): OntologyConceptNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    const found = findOriginalCategoryNode(node.children ?? [], id);
+    if (found) return found;
+  }
+  return undefined;
 }
 
 function handleNodeClick(value: unknown) {
-  if (isConceptNode(value)) emit("select", value);
+  if (isObjectNode(value)) {
+    emit("select-object", value.label);
+    return;
+  }
+  if (isCategoryNode(value)) {
+    const original = findOriginalCategoryNode(props.tree, value.id);
+    if (original) emit("select", original);
+  }
 }
 
 function nodeLabel(value: unknown) {
-  return isConceptNode(value) ? value.label : "";
+  return isCategoryNode(value) ? value.label : "";
 }
 
 function nodeCount(value: unknown) {
-  return isConceptNode(value) ? value.count : 0;
+  return isCategoryNode(value) ? value.count : 0;
 }
 
 function hasChildren(value: unknown) {
-  return isConceptNode(value) && value.children.length > 0;
+  return isCategoryNode(value) && value.children.length > 0;
 }
 
 /**
@@ -110,7 +229,7 @@ function hasChildren(value: unknown) {
  * @param value 被点击的分类节点。
  */
 function openChildCategoryDialog(value: unknown) {
-  if (!isConceptNode(value)) return;
+  if (!isCategoryNode(value)) return;
   const categoryId = value.targetCategoryId ?? value.id;
   emit("createChild", categoryId);
 }
@@ -120,7 +239,7 @@ function openChildCategoryDialog(value: unknown) {
  * @param value 被点击的分类节点。
  */
 function openRenameCategoryDialog(value: unknown) {
-  if (!isConceptNode(value)) return;
+  if (!isCategoryNode(value)) return;
   emit("rename", value.targetCategoryId ?? value.id, value.label);
 }
 
@@ -129,7 +248,7 @@ function openRenameCategoryDialog(value: unknown) {
  * @param value 被点击的分类节点。
  */
 function openDeleteCategoryDialog(value: unknown) {
-  if (!isConceptNode(value)) return;
+  if (!isCategoryNode(value)) return;
   emit("delete", value.targetCategoryId ?? value.id, value.label);
 }
 </script>
@@ -142,9 +261,14 @@ function openDeleteCategoryDialog(value: unknown) {
   padding: 12px;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-border);
+  border: 1px solid var(--aircas-color-cyan-border);
   border-radius: 8px;
-  background: var(--aircas-color-panel-background);
+  background:
+    radial-gradient(circle at 12% 0, var(--aircas-color-cyan-soft), var(--aircas-color-transparent) 42%),
+    linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  box-shadow:
+    inset 0 0 20px var(--aircas-color-border-shadow),
+    0 0 18px var(--aircas-color-blue-soft);
 }
 
 .concept-hierarchy__header {
@@ -189,7 +313,9 @@ function openDeleteCategoryDialog(value: unknown) {
 }
 
 .concept-hierarchy__tree :deep(.el-tree-node__content) {
-  height: 32px;
+  min-height: 32px;
+  height: auto;
+  padding: 4px 0;
   border-radius: 4px;
 }
 
@@ -208,6 +334,66 @@ function openDeleteCategoryDialog(value: unknown) {
   flex: 1;
   align-items: center;
   gap: 6px;
+}
+
+.concept-hierarchy__content {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.concept-hierarchy__heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.concept-hierarchy__label {
+  min-width: 0;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.concept-hierarchy__count {
+  min-width: 24px;
+  padding: 1px 6px;
+  border: 1px solid var(--aircas-color-border-soft);
+  border-radius: 999px;
+  color: var(--aircas-color-text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* 对象节点（树嵌套子节点，无展开箭头） */
+.concept-hierarchy__object-row {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding-left: 4px;
+  color: var(--aircas-color-text-secondary);
+}
+
+.concept-hierarchy__object-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--aircas-color-accent-cyan);
+  box-shadow: 0 0 4px var(--aircas-color-accent-cyan-soft);
+}
+
+.concept-hierarchy__object-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .concept-hierarchy__create-child-wrap {
@@ -268,23 +454,5 @@ function openDeleteCategoryDialog(value: unknown) {
 
 .concept-hierarchy__node > .el-icon {
   color: var(--aircas-color-text-muted);
-}
-
-.concept-hierarchy__label {
-  min-width: 0;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.concept-hierarchy__count {
-  min-width: 24px;
-  padding: 1px 6px;
-  border: 1px solid var(--aircas-color-border-soft);
-  border-radius: 999px;
-  color: var(--aircas-color-text-muted);
-  font-size: 11px;
-  text-align: center;
 }
 </style>

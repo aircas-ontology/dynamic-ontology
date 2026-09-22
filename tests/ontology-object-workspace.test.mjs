@@ -110,4 +110,24 @@ test("object workspace composable loads the category tree api instead of navy mo
   assert.match(source, /mapOntologyCategoryTree/);
   assert.match(source, /mapOntologyCategorySections/);
   assert.doesNotMatch(source, /ontologySpaceObjectMock/);
+  assert.match(source, /catch \(cause\)/);
+  assert.match(source, /cause instanceof Error && cause\.message\.trim\(\) \? cause\.message/);
+});
+
+test("object workspace panel delegates category and object commands to split composables", () => {
+  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue", import.meta.url), "utf8");
+  const categoryActionsSource = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts", import.meta.url),
+    "utf8",
+  );
+  const objectActionsSource = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(panelSource, /useObjectWorkspaceCategoryActions/);
+  assert.match(panelSource, /useObjectWorkspaceObjectActions/);
+  assert.match(categoryActionsSource, /postCreateOntologyCategoryTreeInterface/);
+  assert.match(objectActionsSource, /createOntologyObjectInterface/);
+  assert.match(objectActionsSource, /updateOntologyObjectInterface/);
+  assert.match(objectActionsSource, /deleteOntologyObjectInterface/);
 });

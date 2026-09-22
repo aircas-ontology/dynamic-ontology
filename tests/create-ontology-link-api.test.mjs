@@ -28,7 +28,7 @@ describe("create ontology link api", () => {
     assert.match(apiSource, /@param \{string\} payload\.ontologyUniqueIdentifierTo/);
     assert.match(apiSource, /@param \{number\} \[payload\.categoryId\]/);
     assert.match(apiSource, /@param \{string\} payload\.apiName/);
-    assert.match(apiSource, /@param \{string\} \[payload\.comment\]/);
+    assert.match(apiSource, /@param \{string\} \[payload\.description\]/);
     assert.match(apiSource, /@param \{number\} payload\.spaceId/);
 
     assert.match(typeSource, /export interface CreateOntologyLinkParams/);
@@ -37,7 +37,7 @@ describe("create ontology link api", () => {
     assert.match(typeSource, /ontologyUniqueIdentifierTo:\s*string/);
     assert.match(typeSource, /categoryId\?:\s*number/);
     assert.match(typeSource, /apiName:\s*string/);
-    assert.match(typeSource, /comment\?:\s*string/);
+    assert.match(typeSource, /description\?:\s*string/);
     assert.match(typeSource, /spaceId:\s*number/);
 
     assert.match(mockSource, /export const createOntologyLinkMock: ApiResponse<undefined>/);

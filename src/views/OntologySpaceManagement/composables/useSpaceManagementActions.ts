@@ -56,7 +56,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   }
 
   /**
-   * @description 处理空间列表行操作：进入、编辑、删除、导出或子空间提示。
+   * @description 处理空间列表行操作：进入、编辑、删除、导出或进入子空间构建页。
    * @param action 操作类型。
    * @param space 目标空间。
    */
@@ -72,7 +72,11 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
     } else if (action === "export") {
       exportVisible.value = true;
     } else {
-      ElMessage.info("子空间创建页面尚未接入。");
+      void router.push({
+        name: "OntologySubspaceCreate",
+        params: { spaceId: space.id },
+        query: { spaceName: space.displayName },
+      });
     }
   }
 
@@ -89,7 +93,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
         const response = await createOntologySpaceInterface({
           displayName: draft.displayName,
           apiName: draft.apiName,
-          icon: draft.iconUrl,
+          iconUrl: draft.iconUrl,
           description: draft.description,
         });
         if (response.code === 200) {
@@ -113,7 +117,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
       const response = await updateOntologySpaceInterface({
         spaceId: Number(activeSpace.value!.id),
         displayName: draft.displayName,
-        icon: draft.iconUrl,
+        iconUrl: draft.iconUrl,
         description: draft.description,
       });
       if (response.code === 200) {

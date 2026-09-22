@@ -14,8 +14,9 @@ test("create ontology space api types follow the contract params and numeric dat
   assert.match(apiTypeSource, /export interface CreateOntologySpaceParams/);
   assert.match(apiTypeSource, /displayName:\s*string/);
   assert.match(apiTypeSource, /apiName:\s*string/);
-  assert.match(apiTypeSource, /icon:\s*string/);
-  assert.match(apiTypeSource, /description:\s*string/);
+  assert.match(apiTypeSource, /iconUrl\?:\s*string/);
+  assert.match(apiTypeSource, /description\?:\s*string/);
+  assert.doesNotMatch(apiTypeSource, /^\s*icon:\s*string/m);
   assert.match(apiTypeSource, /export type CreateOntologySpaceData = number/);
   assert.match(typeBarrelSource, /export type \{ CreateOntologySpaceData, CreateOntologySpaceParams \} from "\.\/apis\/createOntologySpaceType";/);
 });
@@ -27,8 +28,7 @@ test("create ontology space api issues a POST to the manage domain space uri wit
   assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/space"/);
   assert.match(apiSource, /method:\s*"post"/);
   assert.match(apiSource, /data: params,/);
-  assert.match(apiSource, /timeout: requestTimeoutMs,/);
-  assert.match(apiSource, /import \{ requestTimeoutMs \} from "@\/utils\/constants";/);
+  assert.doesNotMatch(apiSource, /timeout:/);
   assert.match(apiSource, /import type \{[\s\S]*CreateOntologySpaceData[\s\S]*\} from "@\/types"/);
   assert.match(apiSource, /@description/);
   assert.doesNotMatch(apiSource, /method:\s*"get"[^\n]*\n[\s\S]*createOntologySpaceInterface/);
