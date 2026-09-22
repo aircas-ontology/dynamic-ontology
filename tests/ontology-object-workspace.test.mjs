@@ -110,6 +110,8 @@ test("object workspace composable loads the category tree api instead of navy mo
   assert.match(source, /mapOntologyCategoryTree/);
   assert.match(source, /mapOntologyCategorySections/);
   assert.doesNotMatch(source, /ontologySpaceObjectMock/);
+  assert.match(source, /catch \(cause\)/);
+  assert.match(source, /cause instanceof Error && cause\.message\.trim\(\) \? cause\.message/);
 });
 
 test("object workspace panel delegates category and object commands to split composables", () => {

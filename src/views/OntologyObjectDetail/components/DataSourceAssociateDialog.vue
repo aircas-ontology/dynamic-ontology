@@ -245,6 +245,7 @@ interface OntologyDataSourceField {
 interface OntologyDataSourceTable {
   id: string;
   name: string;
+  schemaName: string;
   fields: OntologyDataSourceField[];
 }
 
@@ -257,6 +258,7 @@ interface OntologyDataSourceDatabase {
 interface OntologyPropertyDataSourceBind {
   databaseId: string;
   databaseName: string;
+  schemaName: string;
   tableId: string;
   tableName: string;
   fieldId: string;
@@ -327,6 +329,7 @@ const emit = defineEmits<{
 const workspaceRef = ref<HTMLElement | null>(null);
 const loading = ref(false);
 const collapsedIds = ref<Set<string>>(new Set());
+const savedBinds = ref<Map<string, OntologyPropertyDataSourceBind | null>>(new Map());
 const draftBinds = ref<Map<string, OntologyPropertyDataSourceBind | null>>(new Map());
 const selectedLineId = ref("");
 const hoveredLineId = ref("");
@@ -349,7 +352,7 @@ const displayTables = computed(() =>
 );
 const pendingOperations = computed(() =>
   props.properties.flatMap((property) => {
-    const before = property.dataSource;
+    const before = savedBinds.value.get(property.id) ?? null;
     const after = draftBinds.value.get(property.id) ?? null;
     if (sameBind(before, after)) return [];
     return (
@@ -375,7 +378,7 @@ function undoOperation(propertyId: string, kind: "add" | "remove"): void {
   const property = props.properties.find((item) => item.id === propertyId);
   if (!property) return;
   const next = new Map(draftBinds.value);
-  const restored = kind === "remove" ? property.dataSource : null;
+  const restored = kind === "remove" ? (savedBinds.value.get(propertyId) ?? null) : null;
   if (restored) {
     next.forEach((bind, id) => {
       if (id !== propertyId && sameBind(bind, restored)) next.set(id, null);
@@ -560,6 +563,7 @@ function resolveBind(databaseId: string, tableId: string, fieldId: string): Onto
   return {
     databaseId: database.id,
     databaseName: database.name,
+    schemaName: table.schemaName,
     tableId: table.id,
     tableName: table.name,
     fieldId: field.id,
@@ -572,6 +576,7 @@ function initDraftBinds(): void {
   props.properties.forEach((property) => {
     next.set(property.id, property.dataSource ? { ...property.dataSource } : null);
   });
+  savedBinds.value = new Map(next);
   draftBinds.value = next;
 }
 
@@ -733,7 +738,8 @@ function handleConfirm(): void {
   const payloads: PropertyDataSourceBindPayload[] = [];
   props.properties.forEach((property) => {
     const nextBind = draftBinds.value.get(property.id) ?? null;
-    if (sameBind(property.dataSource, nextBind)) return;
+    const savedBind = savedBinds.value.get(property.id) ?? null;
+    if (sameBind(savedBind, nextBind)) return;
     payloads.push({ id: property.id, dataSource: nextBind });
   });
   loading.value = true;
@@ -741,6 +747,12 @@ function handleConfirm(): void {
 }
 
 defineExpose({
+  /** @description 将当前草稿标记为已由后端保存，并恢复可操作状态。 */
+  completeSubmit() {
+    savedBinds.value = new Map(draftBinds.value);
+    loading.value = false;
+  },
+  /** @description 设置批量提交加载状态。 */
   setLoading(value: boolean) {
     loading.value = value;
   },

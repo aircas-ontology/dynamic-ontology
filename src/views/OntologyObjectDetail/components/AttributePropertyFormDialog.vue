@@ -14,7 +14,7 @@
           <el-input v-model="draft.displayName" class="aircas-input" placeholder="例如：任务优先级" />
         </el-form-item>
         <el-form-item label="API" prop="apiName">
-          <el-input v-model="draft.apiName" class="aircas-input" placeholder="例如：priority" />
+          <el-input v-model="draft.apiName" class="aircas-input" placeholder="例如：priority" :disabled="editingAttributeId !== null" />
         </el-form-item>
         <el-form-item label="属性分类" prop="categoryId" class="ontology-object-attribute-panel__form-full">
           <el-select v-model="draft.categoryId" class="aircas-select" popper-class="aircas-select-popper" placeholder="请选择属性分类">
@@ -27,7 +27,15 @@
           </el-select>
         </el-form-item>
         <el-form-item label="存储分组" prop="storageGroup">
-          <el-select v-model="draft.storageGroup" class="aircas-select" popper-class="aircas-select-popper" placeholder="请选择存储分组">
+          <el-select
+            v-model="draft.storageGroup"
+            class="aircas-select"
+            popper-class="aircas-select-popper"
+            :placeholder="editingAttributeId === null ? '请输入或选择存储分组' : '请选择存储分组'"
+            filterable
+            :allow-create="editingAttributeId === null"
+            default-first-option
+          >
             <el-option v-for="group in storageGroups" :key="group.value" :label="group.label" :value="group.value" />
           </el-select>
         </el-form-item>

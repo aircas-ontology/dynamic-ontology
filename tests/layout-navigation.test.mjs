@@ -1,20 +1,28 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { parse, compileScript } from '@vue/compiler-sfc';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { parse, compileScript } from "@vue/compiler-sfc";
 
-test('menu supports collapse and shows space management without a home entry', () => {
-  const source = readFileSync(new URL('../src/layout/components/NavigationMenu.vue', import.meta.url), 'utf8');
+test("menu supports collapse and shows space management without a home entry", () => {
+  const source = readFileSync(new URL("../src/layout/components/NavigationMenu.vue", import.meta.url), "utf8");
   const { descriptor } = parse(source);
-  const compiled = compileScript(descriptor, { id: 'navigation' });
+  const compiled = compileScript(descriptor, { id: "navigation" });
   assert.match(compiled.content, /update:collapsed/);
   assert.doesNotMatch(source, /index="\/workspace"/);
   assert.match(source, /index="\/workspace\/ontology-space-management"/);
   assert.match(source, /aircas-menu/);
 });
 
-test('menu includes full text search entry with named route', () => {
-  const source = readFileSync(new URL('../src/layout/components/NavigationMenu.vue', import.meta.url), 'utf8');
+test("menu includes full text search entry with named route", () => {
+  const source = readFileSync(new URL("../src/layout/components/NavigationMenu.vue", import.meta.url), "utf8");
   assert.match(source, /全文检索/);
   assert.match(source, /name:\s*['"]FullTextSearch['"]/);
+});
+
+test("breadcrumb shows a location pin and current page without a home crumb", () => {
+  const source = readFileSync(new URL("../src/layout/components/BreadcrumbBar.vue", import.meta.url), "utf8");
+  assert.match(source, /<Location/);
+  assert.match(source, /breadcrumb-bar__pin/);
+  assert.doesNotMatch(source, />首页</);
+  assert.doesNotMatch(source, /公共消息/);
 });

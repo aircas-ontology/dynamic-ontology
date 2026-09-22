@@ -2,6 +2,8 @@ import type {
   AutoBindOntologyPropertyDatasourceData,
   AutoBindOntologyPropertyDatasourceParams,
   ApiResponse,
+  BatchUpdateOntologyPropertiesData,
+  BatchUpdateOntologyPropertiesParams,
   CreateOntologyPropertyData,
   CreateOntologyPropertyParams,
   DeleteOntologyPropertyData,
@@ -98,6 +100,25 @@ export function getOntologyPropertyByOntologyIdInterface(
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/property/info",
     method: "get",
     params,
+  });
+}
+
+/**
+ * @description 批量更新本体属性及其数据源关联信息。
+ * 请求方式：PUT `/ontology/property/batch`
+ *
+ * @param params 待更新的属性数组。
+ * @param params[].uniqueIdentifier 属性唯一标识。
+ * @param params[].datasource 可选的数据源关联信息。
+ * @returns 标准 API 响应，data 由服务端定义。
+ */
+export function putBatchUpdateOntologyPropertiesInterface(
+  params: BatchUpdateOntologyPropertiesParams,
+): Promise<ApiResponse<BatchUpdateOntologyPropertiesData>> {
+  return request<BatchUpdateOntologyPropertiesData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/property/batch",
+    method: "put",
+    data: params,
   });
 }
 

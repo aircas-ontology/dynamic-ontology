@@ -62,6 +62,7 @@
       @confirm="saveAttributeDraft"
     />
     <DataSourceAssociateDialog
+      ref="dataSourceDialogRef"
       v-model="dataSourceDialogVisible"
       :catalog="dataSourceCatalog"
       :properties="ontologyPropertyMappings"
@@ -80,8 +81,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
-import { autoBindOntologyPropertyDatasourceInterface, getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "@/apis";
-import type { GetOntologyDatasourceColumnsData, GetOntologyDatasourceTablesData } from "@/types";
+import {
+  autoBindOntologyPropertyDatasourceInterface,
+  getOntologyDatasourceColumnsInterface,
+  getOntologyDatasourceTablesInterface,
+  putBatchUpdateOntologyPropertiesInterface,
+} from "@/apis";
+import type { BatchUpdateOntologyPropertiesParams, GetOntologyDatasourceColumnsData, GetOntologyDatasourceTablesData } from "@/types";
 import { useRoute } from "vue-router";
 import { useAttributeCategoryTree } from "../composables/useAttributeCategoryTree";
 import { useAttributePropertyList } from "../composables/useAttributePropertyList";
@@ -102,6 +108,7 @@ interface DataSourceField {
 interface DataSourceTable {
   id: string;
   name: string;
+  schemaName: string;
   dataSourceId: string;
   fields: DataSourceField[];
 }
@@ -115,6 +122,7 @@ interface DataSourceDatabase {
 interface PropertyDataSourceBind {
   databaseId: string;
   databaseName: string;
+  schemaName: string;
   tableId: string;
   tableName: string;
   fieldId: string;
@@ -205,6 +213,7 @@ const {
 } = propertyApi;
 
 const dataSourceDialogVisible = ref(false);
+const dataSourceDialogRef = ref<InstanceType<typeof DataSourceAssociateDialog> | null>(null);
 const dataSourceCatalog = ref<DataSourceDatabase[]>([]);
 const dataSourceTableLoading = ref(false);
 const dataSourceTableError = ref("");
@@ -231,6 +240,7 @@ function mapDatasourceTables(response: GetOntologyDatasourceTablesData): DataSou
       tables: response.records.map((record) => ({
         id: `${record.schemaName}.${record.tableName}`,
         name: record.tableName,
+        schemaName: record.schemaName,
         dataSourceId: record.tableName,
         fields: [],
       })),
@@ -313,8 +323,41 @@ async function handleAutoDataSourceAssociate() {
 
 /** @description 处理手动数据源关联弹窗提交。 */
 async function handleDataSourceSubmit(payloads: PropertyBindPayload[]) {
-  ElMessage.success(`提交 ${payloads.length} 项关联变更`);
-  dataSourceDialogVisible.value = false;
+  const params: BatchUpdateOntologyPropertiesParams = [];
+  for (const payload of payloads) {
+    const attribute = allAttributes.value.find((item) => item.uniqueIdentifier === payload.id);
+    if (!attribute) {
+      dataSourceDialogRef.value?.setLoading(false);
+      ElMessage.error("未找到待关联的本体属性，请重新打开弹窗后再试。");
+      return;
+    }
+    params.push({
+      uniqueIdentifier: attribute.uniqueIdentifier,
+      displayName: attribute.displayName,
+      dataType: attribute.dataType,
+      isTitleKey: attribute.isNameKey,
+      isPrimaryKey: attribute.isPrimary,
+      storageGroup: attribute.storageGroup,
+      ...(payload.dataSource
+        ? {
+            datasource: {
+              schemaName: payload.dataSource.schemaName,
+              datasourceId: payload.dataSource.tableName,
+              datasourceColumnName: payload.dataSource.fieldName,
+            },
+          }
+        : {}),
+    });
+  }
+  try {
+    const response = await putBatchUpdateOntologyPropertiesInterface(params);
+    if (response.code !== 200) throw new Error(response.message || "数据源关联保存失败");
+    dataSourceDialogRef.value?.completeSubmit();
+    ElMessage.success("数据源关联保存成功");
+  } catch (cause) {
+    dataSourceDialogRef.value?.setLoading(false);
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "数据源关联保存失败，请重试。");
+  }
 }
 
 onMounted(async () => {

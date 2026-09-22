@@ -65,8 +65,23 @@ test("data source mapping dialog defines local prototype types and exposes setLo
   assert.match(source, /interface OntologyPropertyClass/);
   assert.match(source, /interface OntologyPropertyDataSourceBind/);
   assert.match(source, /interface PropertyDataSourceBindPayload/);
-  assert.match(source, /defineExpose\(\{\s*setLoading/);
+  assert.match(source, /defineExpose\(\{[\s\S]*setLoading/);
+  assert.match(source, /completeSubmit/);
   assert.match(source, /emit\("submit", payloads\)/);
+});
+
+test("data source mapping dialog keeps manual edits local until submit", () => {
+  const source = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  const addManualBindSource = source.match(/function addManualBind\(\)[\s\S]*?function removeBind/)?.[0] ?? "";
+  const removeBindSource = source.match(/function removeBind[\s\S]*?const dragPreviewPath/)?.[0] ?? "";
+
+  assert.match(source, /const draftBinds = ref<Map/);
+  assert.match(source, /const savedBinds = ref<Map/);
+  assert.match(source, /schemaName:\s*string/);
+  assert.match(source, /schemaName: table\.schemaName/);
+  assert.doesNotMatch(addManualBindSource, /Interface\(/);
+  assert.doesNotMatch(removeBindSource, /Interface\(/);
+  assert.match(source, /function handleConfirm\(\): void[\s\S]*emit\("submit", payloads\)/);
 });
 
 test("data source mapping dialog delegates automatic binding to the parent", () => {
@@ -88,7 +103,25 @@ test("attribute panel wires api catalog and all properties to the data source ma
   assert.match(source, /dataSourceId: table\.dataSourceId/);
   assert.match(source, /void loadDataSourceTables\(\)/);
   assert.match(source, /@submit="handleDataSourceSubmit"/);
+  assert.match(source, /ref="dataSourceDialogRef"/);
+  assert.match(source, /schemaName: record\.schemaName/);
   assert.match(source, /function openDataSource\(\) \{[\s\S]*dataSourceDialogVisible\.value = true;[\s\S]*loadDataSourceTables/);
+});
+
+test("attribute panel persists local datasource drafts only from dialog submit", () => {
+  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const submitSource = source.match(/async function handleDataSourceSubmit[\s\S]*?\n}/)?.[0] ?? "";
+
+  assert.match(source, /putBatchUpdateOntologyPropertiesInterface/);
+  assert.match(submitSource, /allAttributes\.value\.find/);
+  assert.match(submitSource, /uniqueIdentifier: attribute\.uniqueIdentifier/);
+  assert.match(submitSource, /schemaName: payload\.dataSource\.schemaName/);
+  assert.match(submitSource, /datasourceId: payload\.dataSource\.tableName/);
+  assert.match(submitSource, /datasourceColumnName: payload\.dataSource\.fieldName/);
+  assert.match(submitSource, /dataSourceDialogRef\.value\?\.completeSubmit\(\)/);
+  assert.match(submitSource, /dataSourceDialogRef\.value\?\.setLoading\(false\)/);
+  assert.doesNotMatch(submitSource, /dataSourceDialogVisible\.value = false/);
+  assert.doesNotMatch(submitSource, /loadAttributeCategoryTree/);
 });
 
 test("attribute panel handles automatic datasource binding without closing the dialog", () => {

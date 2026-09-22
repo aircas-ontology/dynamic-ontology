@@ -63,3 +63,60 @@ test("object attribute panel exposes category tree, property columns, and local 
   assert.match(helperSource, /propertyType/);
   assert.match(helperSource, /const propertyChildren = \(node\.propertyInfos \?\? \[\]\)\.map\(mapPropertyTreeNode\)/);
 });
+
+test("attribute data type options use the complete backend enum values", () => {
+  const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  const expectedDataTypes = [
+    "Boolean",
+    "Integer",
+    "Long",
+    "Float",
+    "Short",
+    "Byte",
+    "Double",
+    "Decimal",
+    "String",
+    "Date",
+    "Array",
+    "Map",
+    "Vector",
+    "Timestamp",
+    "MediaReference",
+    "TimeSeries",
+    "Attachment",
+    "Geohash",
+    "Geoshape",
+    "Cipher",
+    "Ontology",
+  ];
+  const dataTypesSource = source.match(/const dataTypes = \[([\s\S]*?)\];/)?.[1] ?? "";
+  const actualDataTypes = [...dataTypesSource.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(actualDataTypes, expectedDataTypes);
+});
+
+test("attribute category remains selectable without required validation", () => {
+  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  const listSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  assert.match(formSource, /label="属性分类" prop="categoryId"/);
+  assert.doesNotMatch(listSource, /categoryId:\s*\[\{ required: true/);
+  assert.match(listSource, /categoryId === undefined \? \{\} : \{ categoryId \}/);
+});
+
+test("attribute API name is disabled only while editing", () => {
+  const source = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  assert.match(source, /v-model="draft\.apiName"[\s\S]*?:disabled="editingAttributeId !== null"/);
+});
+
+test("attribute storage group accepts custom input and deduplicates values from all properties", () => {
+  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  const listSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  assert.match(formSource, /v-model="draft\.storageGroup"[\s\S]*?filterable[\s\S]*?:allow-create="editingAttributeId === null"/);
+  assert.match(listSource, /function getStorageGroupOptions/);
+  assert.match(listSource, /collectPropertyItemsFromTree\(getCategories\(\), ontologyUniqueIdentifier\)/);
+  assert.match(listSource, /new Set\(\["main", \.\.\.propertyStorageGroups\]\)/);
+  assert.match(listSource, /const storageGroupPattern = \/\^\[A-Za-z0-9_\]\+\$\//);
+  assert.match(listSource, /pattern: storageGroupPattern/);
+  assert.match(listSource, /filter\(\(value\) => storageGroupPattern\.test\(value\)\)/);
+  assert.match(listSource, /label: value,/);
+  assert.doesNotMatch(listSource, /label: value === "main" \? "主存储" : value/);
+});

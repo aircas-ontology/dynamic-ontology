@@ -33,8 +33,30 @@ export function useAttributePropertyList(options: {
 }) {
   const { selectedCategoryId, getCategories, onPropertyChanged } = options;
   const route = useRoute();
-  const dataTypes = ["String", "整数", "小数", "日期", "布尔"];
-  const storageGroups: OntologyAttributeStorageGroupOption[] = [{ label: "主存储", value: "main" }];
+  const dataTypes = [
+    "Boolean",
+    "Integer",
+    "Long",
+    "Float",
+    "Short",
+    "Byte",
+    "Double",
+    "Decimal",
+    "String",
+    "Date",
+    "Array",
+    "Map",
+    "Vector",
+    "Timestamp",
+    "MediaReference",
+    "TimeSeries",
+    "Attachment",
+    "Geohash",
+    "Geoshape",
+    "Cipher",
+    "Ontology",
+  ];
+  const storageGroupPattern = /^[A-Za-z0-9_]+$/;
   const attributes = ref<OntologyAttributeItem[]>([]);
   const attributeLoading = ref(false);
   const attributeError = ref("");
@@ -57,15 +79,34 @@ export function useAttributePropertyList(options: {
   const attributeRules: FormRules<OntologyAttributeDraft> = {
     displayName: [{ required: true, message: "请输入属性名称", trigger: "blur" }],
     apiName: [{ required: true, message: "请输入 API 名称", trigger: "blur" }],
-    categoryId: [{ required: true, message: "请选择属性分类", trigger: "change" }],
     dataType: [{ required: true, message: "请选择数据类型", trigger: "change" }],
-    storageGroup: [{ required: true, message: "请选择存储分组", trigger: "change" }],
+    storageGroup: [
+      { required: true, message: "请输入存储分组", trigger: ["blur", "change"] },
+      { pattern: storageGroupPattern, message: "存储分组只能包含字母、数字和下划线", trigger: ["blur", "change"] },
+    ],
   };
   const visibleAttributes = computed(() => {
     const keyword = attributeSearch.value.trim().toLowerCase();
     return attributes.value.filter((item) => !keyword || `${item.displayName} ${item.apiName} ${item.description}`.toLowerCase().includes(keyword));
   });
   const categoryOptions = computed(() => flattenCategoryOptions(getCategories()));
+
+  /**
+   * @description 从当前本体对象的全部属性中提取非空存储分组并去重，同时保留新增属性默认使用的 main 选项。
+   * @returns 存储分组下拉选项
+   */
+  function getStorageGroupOptions(): OntologyAttributeStorageGroupOption[] {
+    const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
+    const propertyStorageGroups = collectPropertyItemsFromTree(getCategories(), ontologyUniqueIdentifier)
+      .map((item) => normalizeStorageGroupValue(item.storageGroup).trim())
+      .filter((value) => storageGroupPattern.test(value));
+    return [...new Set(["main", ...propertyStorageGroups])].map((value) => ({
+      label: value,
+      value,
+    }));
+  }
+
+  const storageGroups = computed<OntologyAttributeStorageGroupOption[]>(getStorageGroupOptions);
 
   /** @description 根据当前分类选择从树节点递归提取属性。 */
   async function loadAttributesForSelection() {

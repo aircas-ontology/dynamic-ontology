@@ -66,7 +66,8 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
   overflow: auto;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: var(--aircas-color-panel-background);
+  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
 }
 
 .space-overview-panel__header {
@@ -116,7 +117,7 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
   gap: 12px;
   border: 1px solid var(--aircas-color-border-soft);
   border-radius: 8px;
-  background: var(--aircas-color-card-background);
+  background: radial-gradient(circle at 100% 0, var(--stat-glow), var(--aircas-color-transparent) 64%), var(--aircas-color-card-background);
 }
 
 .space-overview-panel__stat:hover {
@@ -149,16 +150,36 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
   font-size: 12px;
 }
 
+.space-overview-panel__stat--cyan {
+  --stat-glow: var(--aircas-color-cyan-soft);
+}
+
+.space-overview-panel__stat--purple {
+  --stat-glow: var(--aircas-color-purple-soft);
+}
+
 .space-overview-panel__stat--purple .el-icon {
   color: var(--aircas-color-accent-purple);
+}
+
+.space-overview-panel__stat--blue {
+  --stat-glow: var(--aircas-color-blue-soft);
 }
 
 .space-overview-panel__stat--blue .el-icon {
   color: var(--aircas-color-accent-blue);
 }
 
+.space-overview-panel__stat--green {
+  --stat-glow: var(--aircas-color-green-soft);
+}
+
 .space-overview-panel__stat--green .el-icon {
   color: var(--aircas-color-accent-green);
+}
+
+.space-overview-panel__stat--orange {
+  --stat-glow: var(--aircas-color-orange-soft);
 }
 
 .space-overview-panel__stat--orange .el-icon {
