@@ -77,14 +77,18 @@ test("data source mapping dialog delegates automatic binding to the parent", () 
   assert.doesNotMatch(source, /function autoAssociate\(\)/);
 });
 
-test("attribute panel wires mock catalog and properties to the data source mapping dialog", () => {
+test("attribute panel wires api catalog and all properties to the data source mapping dialog", () => {
   const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
   assert.match(source, /import DataSourceAssociateDialog from "\.\/DataSourceAssociateDialog\.vue"/);
   assert.match(source, /const dataSourceDialogVisible = ref\(false\)/);
-  assert.match(source, /:catalog="mockDataSourceCatalog"/);
-  assert.match(source, /:properties="mockOntologyProperties"/);
+  assert.match(source, /:catalog="dataSourceCatalog"/);
+  assert.match(source, /:properties="ontologyPropertyMappings"/);
+  assert.match(source, /@table-change="loadDataSourceColumns"/);
+  assert.match(source, /dataSourceId: record\.tableName/);
+  assert.match(source, /dataSourceId: table\.dataSourceId/);
+  assert.match(source, /void loadDataSourceTables\(\)/);
   assert.match(source, /@submit="handleDataSourceSubmit"/);
-  assert.match(source, /function openDataSource\(\) \{\s*dataSourceDialogVisible\.value = true;\s*\}/);
+  assert.match(source, /function openDataSource\(\) \{[\s\S]*dataSourceDialogVisible\.value = true;[\s\S]*loadDataSourceTables/);
 });
 
 test("attribute panel handles automatic datasource binding without closing the dialog", () => {

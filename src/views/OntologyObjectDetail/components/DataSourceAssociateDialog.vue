@@ -23,11 +23,12 @@
               collapse-tags-tooltip
               filterable
               placeholder="选择数据表（多选）"
+              :loading="tableLoading"
             >
               <el-option
                 v-for="table in flatTables"
                 :key="manualTableKey(table.databaseId, table.table.id)"
-                :label="table.table.name"
+                :label="`${table.databaseName}.${table.table.name}`"
                 :value="manualTableKey(table.databaseId, table.table.id)"
               />
             </el-select>
@@ -41,12 +42,13 @@
               filterable
               clearable
               placeholder="选择数据表"
+              :loading="tableLoading"
               @update:model-value="handleManualTableChange"
             >
               <el-option
                 v-for="table in selectedTables"
                 :key="manualTableKey(table.databaseId, table.table.id)"
-                :label="table.table.name"
+                :label="`${table.databaseName}.${table.table.name}`"
                 :value="manualTableKey(table.databaseId, table.table.id)"
               />
             </el-select>
@@ -60,6 +62,7 @@
               filterable
               :disabled="!manualSelectedTable"
               placeholder="选择字段"
+              :loading="fieldLoading"
             >
               <el-option v-for="field in manualFieldOptions" :key="field.id" :label="field.name" :value="field.id" />
             </el-select>
@@ -73,6 +76,7 @@
           </label>
           <el-button class="aircas-button" type="primary" :disabled="!canAddManualBind || loading" @click="addManualBind">关联</el-button>
         </div>
+        <p v-if="tableError || fieldError" class="mapping-toolbar__error" role="alert">{{ tableError || fieldError }}</p>
         <div class="mapping-toolbar__actions">
           <el-button class="aircas-button" :loading="autoAssociateLoading" :disabled="loading || autoAssociateLoading" @click="emit('auto-associate')"
             >自动关联数据源</el-button
@@ -307,11 +311,16 @@ const props = defineProps<{
   catalog: OntologyDataSourceDatabase[];
   properties: OntologyPropertyClass[];
   autoAssociateLoading: boolean;
+  tableLoading: boolean;
+  fieldLoading: boolean;
+  tableError: string;
+  fieldError: string;
 }>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
   "auto-associate": [];
+  "table-change": [databaseId: string, tableId: string];
   submit: [payloads: PropertyDataSourceBindPayload[]];
 }>();
 
@@ -432,6 +441,9 @@ function parseManualTableKey(key: string): { databaseId: string; tableId: string
 function handleManualTableChange(value: string | number | boolean | undefined): void {
   manualSelectedTable.value = typeof value === "string" ? value : "";
   manualSelectedField.value = "";
+  if (!manualSelectedTable.value) return;
+  const { databaseId, tableId } = parseManualTableKey(manualSelectedTable.value);
+  emit("table-change", databaseId, tableId);
 }
 
 function addManualBind(): void {
@@ -830,6 +842,12 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+.mapping-toolbar__error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--aircas-color-danger);
+  font-size: 12px;
 }
 .mapping-layout {
   display: grid;

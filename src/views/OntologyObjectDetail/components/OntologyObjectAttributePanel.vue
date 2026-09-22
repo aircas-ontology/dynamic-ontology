@@ -238,10 +238,15 @@
 
     <DataSourceAssociateDialog
       v-model="dataSourceDialogVisible"
-      :catalog="mockDataSourceCatalog"
-      :properties="mockOntologyProperties"
+      :catalog="dataSourceCatalog"
+      :properties="ontologyPropertyMappings"
+      :table-loading="dataSourceTableLoading"
+      :field-loading="dataSourceColumnLoading"
+      :table-error="dataSourceTableError"
+      :field-error="dataSourceColumnError"
       :auto-associate-loading="autoDataSourceSubmitting"
       @auto-associate="handleAutoDataSourceAssociate"
+      @table-change="loadDataSourceColumns"
       @submit="handleDataSourceSubmit"
     />
   </section>
@@ -257,11 +262,20 @@ import {
   createOntologyObjectArrTypeTreeInterface,
   deleteOntologyPropertyInterface,
   deleteOntologyObjectArrTypeTreeInterface,
+  getOntologyDatasourceColumnsInterface,
+  getOntologyDatasourceTablesInterface,
   getOntologyObjectArrTypeTreeInterface,
   updateOntologyPropertyInterface,
   updateOntologyObjectArrTypeTreeInterface,
 } from "@/apis";
-import type { CreateOntologyPropertyParams, GetOntologyObjectArrTypeTreeData, OntologyPropertyInfo, UpdateOntologyPropertyParams } from "@/types";
+import type {
+  CreateOntologyPropertyParams,
+  GetOntologyDatasourceColumnsData,
+  GetOntologyDatasourceTablesData,
+  GetOntologyObjectArrTypeTreeData,
+  OntologyPropertyInfo,
+  UpdateOntologyPropertyParams,
+} from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 import { useRoute } from "vue-router";
 import DataSourceAssociateDialog from "./DataSourceAssociateDialog.vue";
@@ -340,22 +354,23 @@ const attributeDialogVisible = ref(false);
 const dataSourceDialogVisible = ref(false);
 const autoDataSourceSubmitting = ref(false);
 
-interface MockDataSourceField {
+interface DataSourceField {
   id: string;
   name: string;
   dataType: string;
 }
-interface MockDataSourceTable {
+interface DataSourceTable {
   id: string;
   name: string;
-  fields: MockDataSourceField[];
+  dataSourceId: string;
+  fields: DataSourceField[];
 }
-interface MockDataSourceDatabase {
+interface DataSourceDatabase {
   id: string;
   name: string;
-  tables: MockDataSourceTable[];
+  tables: DataSourceTable[];
 }
-interface MockPropertyBind {
+interface PropertyDataSourceBind {
   databaseId: string;
   databaseName: string;
   tableId: string;
@@ -363,166 +378,20 @@ interface MockPropertyBind {
   fieldId: string;
   fieldName: string;
 }
-interface MockOntologyProperty {
+interface OntologyPropertyMappingItem {
   id: string;
   displayName: string;
   apiName: string;
   categoryName: string;
-  dataSource: MockPropertyBind | null;
+  dataSource: PropertyDataSourceBind | null;
 }
 
-const mockDataSourceCatalog: MockDataSourceDatabase[] = [
-  {
-    id: "db-1",
-    name: "舰艇装备数据库",
-    tables: [
-      {
-        id: "table-1",
-        name: "舰艇主表",
-        fields: [
-          { id: "f-1", name: "舷号", dataType: "String" },
-          { id: "f-2", name: "舰名", dataType: "String" },
-          { id: "f-3", name: "舰级", dataType: "String" },
-          { id: "f-4", name: "下水日期", dataType: "Date" },
-          { id: "f-5", name: "标准排水量", dataType: "Double" },
-          { id: "f-6", name: "最大航速", dataType: "Double" },
-        ],
-      },
-      {
-        id: "table-2",
-        name: "武器系统表",
-        fields: [
-          { id: "f-7", name: "主炮型号", dataType: "String" },
-          { id: "f-8", name: "防空导弹", dataType: "String" },
-          { id: "f-9", name: "反舰导弹", dataType: "String" },
-          { id: "f-10", name: "鱼雷数量", dataType: "Integer" },
-        ],
-      },
-    ],
-  },
-];
-
-const mockOntologyProperties: MockOntologyProperty[] = [
-  {
-    id: "prop-1",
-    displayName: "舷号",
-    apiName: "hullNumber",
-    categoryName: "标识信息",
-    dataSource: {
-      databaseId: "db-1",
-      databaseName: "舰艇装备数据库",
-      tableId: "table-1",
-      tableName: "舰艇主表",
-      fieldId: "f-1",
-      fieldName: "舷号",
-    },
-  },
-  {
-    id: "prop-2",
-    displayName: "舰名",
-    apiName: "shipName",
-    categoryName: "标识信息",
-    dataSource: {
-      databaseId: "db-1",
-      databaseName: "舰艇装备数据库",
-      tableId: "table-1",
-      tableName: "舰艇主表",
-      fieldId: "f-2",
-      fieldName: "舰名",
-    },
-  },
-  {
-    id: "prop-3",
-    displayName: "舰级",
-    apiName: "shipClass",
-    categoryName: "标识信息",
-    dataSource: {
-      databaseId: "db-1",
-      databaseName: "舰艇装备数据库",
-      tableId: "table-1",
-      tableName: "舰艇主表",
-      fieldId: "f-3",
-      fieldName: "舰级",
-    },
-  },
-  {
-    id: "prop-4",
-    displayName: "下水日期",
-    apiName: "launchDate",
-    categoryName: "时间信息",
-    dataSource: {
-      databaseId: "db-1",
-      databaseName: "舰艇装备数据库",
-      tableId: "table-1",
-      tableName: "舰艇主表",
-      fieldId: "f-4",
-      fieldName: "下水日期",
-    },
-  },
-  {
-    id: "prop-5",
-    displayName: "标准排水量",
-    apiName: "standardDisplacement",
-    categoryName: "尺度参数",
-    dataSource: {
-      databaseId: "db-1",
-      databaseName: "舰艇装备数据库",
-      tableId: "table-1",
-      tableName: "舰艇主表",
-      fieldId: "f-5",
-      fieldName: "标准排水量",
-    },
-  },
-  {
-    id: "prop-6",
-    displayName: "最大航速",
-    apiName: "maxSpeed",
-    categoryName: "动力性能",
-    dataSource: {
-      databaseId: "db-1",
-      databaseName: "舰艇装备数据库",
-      tableId: "table-1",
-      tableName: "舰艇主表",
-      fieldId: "f-6",
-      fieldName: "最大航速",
-    },
-  },
-  {
-    id: "prop-7",
-    displayName: "主炮型号",
-    apiName: "mainGunModel",
-    categoryName: "武器系统",
-    dataSource: {
-      databaseId: "db-1",
-      databaseName: "舰艇装备数据库",
-      tableId: "table-2",
-      tableName: "武器系统表",
-      fieldId: "f-7",
-      fieldName: "主炮型号",
-    },
-  },
-  {
-    id: "prop-8",
-    displayName: "防空导弹",
-    apiName: "airDefenseMissile",
-    categoryName: "武器系统",
-    dataSource: null,
-  },
-  {
-    id: "prop-9",
-    displayName: "反舰导弹",
-    apiName: "antiShipMissile",
-    categoryName: "武器系统",
-    dataSource: null,
-  },
-  {
-    id: "prop-10",
-    displayName: "鱼雷数量",
-    apiName: "torpedoCount",
-    categoryName: "武器系统",
-    dataSource: null,
-  },
-];
+const dataSourceCatalog = ref<DataSourceDatabase[]>([]);
+const dataSourceTableLoading = ref(false);
+const dataSourceTableError = ref("");
+const dataSourceColumnLoading = ref(false);
+const dataSourceColumnError = ref("");
+const allAttributes = ref<AttributeItem[]>([]);
 const savingAttribute = ref(false);
 const editingAttributeId = ref<string | null>(null);
 const attributeFormRef = ref<FormInstance>();
@@ -545,6 +414,15 @@ const attributeRules: FormRules<AttributeDraft> = {
   storageGroup: [{ required: true, message: "请选择存储分组", trigger: "change" }],
 };
 const selectedCategoryName = computed(() => findCategory(categories.value, selectedCategoryId.value)?.label ?? "全部属性");
+const ontologyPropertyMappings = computed<OntologyPropertyMappingItem[]>(() =>
+  allAttributes.value.map((item) => ({
+    id: item.uniqueIdentifier,
+    displayName: item.displayName,
+    apiName: item.apiName,
+    categoryName: findCategory(categories.value, item.categoryId)?.label ?? "未分类",
+    dataSource: null,
+  })),
+);
 const visibleAttributes = computed(() =>
   attributes.value.filter((item) => {
     const keyword = attributeSearch.value.trim().toLowerCase();
@@ -615,13 +493,14 @@ async function loadAttributeCategoryTree() {
     if (response.code !== 200) throw new Error(response.message || "属性分类查询失败");
     if (!response.data) {
       categories.value = [];
+      allAttributes.value = [];
       selectedCategoryId.value = "all";
       categoryTreeEmpty.value = true;
       return;
     }
     const root = mapCategoryTreeNode(response.data);
     categories.value = [root];
-    selectedCategoryId.value = root.id;
+    selectedCategoryId.value = "all";
     refreshAttributesFromTree();
   } catch (cause) {
     categoryTreeError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性分类查询失败，请重试。";
@@ -630,6 +509,74 @@ async function loadAttributeCategoryTree() {
     categoryTreeLoading.value = false;
   }
 }
+
+/** @description 将数据源表分页记录转换为关联弹窗目录。 */
+function mapDatasourceTables(response: GetOntologyDatasourceTablesData): DataSourceDatabase[] {
+  return [
+    {
+      id: "ontology-datasource",
+      name: "本体空间数据源",
+      tables: response.records.map((record) => ({
+        id: `${record.schemaName}.${record.tableName}`,
+        name: record.tableName,
+        dataSourceId: record.tableName,
+        fields: [],
+      })),
+    },
+  ];
+}
+
+/** @description 将接口字段记录转换为关联弹窗字段选项。 */
+function mapDatasourceColumns(data: GetOntologyDatasourceColumnsData): DataSourceField[] {
+  return data.map((column) => ({
+    id: column.columnName,
+    name: column.columnName,
+    dataType: column.type || column.description || "",
+  }));
+}
+
+/** @description 查询当前本体空间的数据源表列表。 */
+async function loadDataSourceTables() {
+  const spaceId = Number(route.query.spaceId);
+  if (!Number.isFinite(spaceId)) {
+    dataSourceTableError.value = "缺少本体空间标识，无法加载数据源。";
+    return;
+  }
+  dataSourceTableLoading.value = true;
+  dataSourceTableError.value = "";
+  try {
+    const response = await getOntologyDatasourceTablesInterface({ spaceId, keyword: "", pageNum: 1, pageSize: 1000 });
+    if (response.code !== 200) throw new Error(response.message || "数据源查询失败");
+    dataSourceCatalog.value = mapDatasourceTables(response.data);
+  } catch (cause) {
+    dataSourceCatalog.value = [];
+    dataSourceTableError.value = cause instanceof Error && cause.message.trim() ? cause.message : "数据源查询失败，请重试。";
+    ElMessage.error(dataSourceTableError.value);
+  } finally {
+    dataSourceTableLoading.value = false;
+  }
+}
+
+/** @description 按选中的数据源表查询字段信息。 */
+async function loadDataSourceColumns(_databaseId: string, tableId: string) {
+  const spaceId = Number(route.query.spaceId);
+  if (!Number.isFinite(spaceId) || !tableId) return;
+  const table = dataSourceCatalog.value[0]?.tables.find((item) => item.id === tableId);
+  if (!table) return;
+  dataSourceColumnLoading.value = true;
+  dataSourceColumnError.value = "";
+  try {
+    const response = await getOntologyDatasourceColumnsInterface({ spaceId, dataSourceId: table.dataSourceId });
+    if (response.code !== 200) throw new Error(response.message || "字段查询失败");
+    table.fields = mapDatasourceColumns(response.data);
+  } catch (cause) {
+    dataSourceColumnError.value = cause instanceof Error && cause.message.trim() ? cause.message : "字段查询失败，请重试。";
+    ElMessage.error(dataSourceColumnError.value);
+  } finally {
+    dataSourceColumnLoading.value = false;
+  }
+}
+
 /** @description 从指定分类节点递归收集属性树节点，映射为属性列表项，不再调用后端接口。 */
 function collectPropertyItemsFromTree(nodes: TreeNode[]): AttributeItem[] {
   const items: AttributeItem[] = [];
@@ -647,8 +594,9 @@ function collectPropertyItemsFromTree(nodes: TreeNode[]): AttributeItem[] {
 function refreshAttributesFromTree() {
   const categoryId = selectedCategoryId.value;
   attributeError.value = "";
+  allAttributes.value = collectPropertyItemsFromTree(categories.value);
   if (categoryId === "all") {
-    attributes.value = collectPropertyItemsFromTree(categories.value);
+    attributes.value = allAttributes.value;
     return;
   }
   const selectedCategory = findCategory(categories.value, categoryId);
@@ -808,6 +756,7 @@ async function removeCategory(value: unknown) {
 /** @description 打开数据源关联弹窗。 */
 function openDataSource() {
   dataSourceDialogVisible.value = true;
+  void loadDataSourceTables();
 }
 
 /** @description 调用后端自动关联当前本体的全部属性数据源，并保留关联弹窗。 */
@@ -830,16 +779,16 @@ async function handleAutoDataSourceAssociate(): Promise<void> {
   }
 }
 
-interface MockPropertyBindPayload {
+interface PropertyBindPayload {
   id: string;
-  dataSource: MockPropertyBind | null;
+  dataSource: PropertyDataSourceBind | null;
 }
 
 /** @description 处理数据源关联弹窗提交，预览关联变更并关闭弹窗。 */
-async function handleDataSourceSubmit(payloads: MockPropertyBindPayload[]): Promise<void> {
+async function handleDataSourceSubmit(payloads: PropertyBindPayload[]): Promise<void> {
   const summary = payloads
     .map((payload) => {
-      const target = mockOntologyProperties.find((item) => item.id === payload.id)?.apiName ?? payload.id;
+      const target = ontologyPropertyMappings.value.find((item) => item.id === payload.id)?.apiName ?? payload.id;
       if (!payload.dataSource) return `${target}：解除关联`;
       return `${target} → ${payload.dataSource.tableName}.${payload.dataSource.fieldName}`;
     })

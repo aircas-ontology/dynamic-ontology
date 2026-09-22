@@ -66,14 +66,14 @@ test("ontology property api exposes automatic datasource binding", () => {
 
 test("attribute panel uses ontology property api for list and commands", () => {
   const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
-  assert.match(source, /getOntologyPropertyByOntologyIdInterface/);
-  assert.match(source, /getOntologyPropertyByCategoryIdInterface/);
+  assert.match(source, /refreshAttributesFromTree/);
+  assert.match(source, /collectPropertyItemsFromTree/);
   assert.match(source, /createOntologyPropertyInterface/);
   assert.match(source, /updateOntologyPropertyInterface/);
   assert.match(source, /deleteOntologyPropertyInterface/);
   assert.match(source, /ontologyUniqueIdentifier/);
   assert.match(source, /propertyUniqueIdentifier/);
-  assert.match(source, /await loadAttributes/);
+  assert.match(source, /await loadAttributeCategoryTree/);
   assert.match(source, /buildCreatePropertyParams/);
   assert.match(source, /buildUpdatePropertyParams/);
   assert.match(source, /isPrimaryKey: draft\.isPrimary/);

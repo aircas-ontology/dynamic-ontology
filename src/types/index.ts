@@ -18,6 +18,12 @@ export type { DeleteOntologyObjectData, DeleteOntologyObjectParams } from "./api
 export type { DeleteOntologyPropertyData, DeleteOntologyPropertyParams } from "./apis/deleteOntologyPropertyType";
 export type { DeleteOntologySpaceData, DeleteOntologySpaceParams } from "./apis/deleteOntologySpaceType";
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
+export type {
+  GetOntologyDatasourceColumnsData,
+  GetOntologyDatasourceColumnsParams,
+  OntologyDatasourceColumnDescVO,
+} from "./apis/getOntologyDatasourceColumnsType";
+export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
 export type { GetOntologyObjectArrTypeTreeData, GetOntologyObjectArrTypeTreeParams } from "./apis/getOntologyObjectArrTypeTreeType";
 export type { GetOntologyObjectByCategoryIdData, GetOntologyObjectByCategoryIdParams, OntologyObjectQueryItem } from "./apis/getOntologyObjectByCategoryIdType";
 export type { GetOntologyPropertyByCategoryIdData, GetOntologyPropertyByCategoryIdParams } from "./apis/getOntologyPropertyByCategoryIdType";
@@ -26,6 +32,7 @@ export type {
   GetOntologyPropertyByOntologyIdParams,
   OntologyPropertyInfo,
 } from "./apis/getOntologyPropertyByOntologyIdType";
+export type { GetOntologySpaceStatisticData, GetOntologySpaceStatisticParams, OntologySpaceStatisticVO } from "./apis/getOntologySpaceStatisticType";
 export type { LoginData, LoginParams } from "./apis/loginType";
 export type {
   CreateOntologyCategoryTreeParams,

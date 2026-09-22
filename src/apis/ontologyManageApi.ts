@@ -11,6 +11,8 @@ import type {
   OntologyRelationCategoryTreeData,
   OntologyRelationCategoryTreeParams,
   OntologySpaceListData,
+  GetOntologySpaceStatisticData,
+  GetOntologySpaceStatisticParams,
   UpdateOntologyCategoryNameParams,
   UpdateOntologyRelationCategoryNameParams,
   CreateOntologySpaceData,
@@ -165,6 +167,23 @@ export function getOntologySpaceListInterface(): Promise<ApiResponse<OntologySpa
     // url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "get",
+  });
+}
+
+/**
+ * @description 查询指定本体空间下的资源数量统计。
+ *
+ * 请求方式：GET `/ontology/space/statistic`
+ *
+ * @param params 查询参数。
+ * @param {number} params.spaceId 本体空间 id，必填。
+ * @returns 标准 API 响应，data 为本体空间资源统计对象。
+ */
+export function getOntologySpaceStatisticInterface(params: GetOntologySpaceStatisticParams): Promise<ApiResponse<GetOntologySpaceStatisticData>> {
+  return request<GetOntologySpaceStatisticData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space/statistic",
+    method: "get",
+    params,
   });
 }
 

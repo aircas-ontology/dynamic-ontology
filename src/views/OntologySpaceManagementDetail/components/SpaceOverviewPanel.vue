@@ -44,7 +44,7 @@ const statItems: ReadonlyArray<{ id: Exclude<ManagementWorkspaceTab, "overview">
   { id: "behavior-schedule", label: "行为调度", icon: Timer, tone: "orange" },
 ];
 function stat(id: Exclude<ManagementWorkspaceTab, "overview">) {
-  return formatOverviewStat(data.value?.counts[id], data.value?.availableTabs.includes(id) ?? true, loading.value);
+  return formatOverviewStat(data.value?.counts[id], loading.value);
 }
 function formatCount(id: Exclude<ManagementWorkspaceTab, "overview">) {
   return stat(id).value;
