@@ -181,19 +181,22 @@ watch(keyword, (value) => treeRef.value?.filter(value));
 <style scoped lang="scss">
 .ontology-subspace-create {
   display: grid;
-  min-height: 100%;
-  grid-template-columns: 360px minmax(0, 1fr);
-  gap: 16px;
-  padding: 20px;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
   color: var(--aircas-color-text-primary);
   background: var(--aircas-color-page-background);
 }
 .ontology-subspace-create__tree-panel,
 .ontology-subspace-create__content {
   min-width: 0;
-  border: 1px solid var(--aircas-color-border-soft);
-  border-radius: 10px;
-  background: var(--aircas-color-panel-background);
+  border: 1px solid var(--aircas-color-cyan-border);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
 }
 .ontology-subspace-create__tree-panel {
   display: flex;
@@ -270,7 +273,7 @@ watch(keyword, (value) => treeRef.value?.filter(value));
   display: flex;
   min-height: 0;
   flex-direction: column;
-  padding: 22px;
+  padding: 16px;
   overflow: auto;
 }
 .ontology-subspace-create__identity {

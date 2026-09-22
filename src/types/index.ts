@@ -1,5 +1,11 @@
 export type { ApiResponse } from "./apis/apiResponseType";
 export type { AutoBindOntologyPropertyDatasourceData, AutoBindOntologyPropertyDatasourceParams } from "./apis/autoBindOntologyPropertyDatasourceType";
+export type {
+  BatchUpdateOntologyPropertiesData,
+  BatchUpdateOntologyPropertiesParams,
+  BatchUpdateOntologyPropertyDatasource,
+  BatchUpdateOntologyPropertyItem,
+} from "./apis/batchUpdateOntologyPropertiesType";
 export type { CreateOntologyLinkParams } from "./apis/createOntologyLinkType";
 export type { CreateOntologyObjectArrTypeTreeParams } from "./apis/createOntologyObjectArrTypeTreeType";
 export type { CreateOntologyObjectData, CreateOntologyObjectParams } from "./apis/createOntologyObjectType";
@@ -93,6 +99,8 @@ export type {
   OntologyAttributeCategoryNode,
   OntologyAttributeDraft,
   OntologyAttributeItem,
+  OntologyAttributePropertyTreeNode,
+  OntologyAttributeTreeNode,
   OntologyAttributeStorageGroupOption,
   OntologyObjectDetailRouteName,
   OntologyObjectDetailTab,

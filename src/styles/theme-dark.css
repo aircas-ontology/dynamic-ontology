@@ -1,140 +1,221 @@
-/* ==========================================================================
-   Aircas · Theme Dark（暗色科技风）
-   --------------------------------------------------------------------------
-   所有变量统一以 --aircas-* 命名，与 theme-light.css 保持【同名同分类】，
-   仅数值不同。按使用场景分类：
-     1. 基础色    2. 背景体系    3. 文本体系    4. 边框与分隔
-     5. 强调色    6. 状态色     7. 按钮色彩   8. 交互状态
-     9. 效果与装饰
-   最后将业务令牌映射回 --el-*，让 element-plus 原生组件跟随主题。
-   ========================================================================== */
-
 :root[theme="dark"] {
-  /* ---------------------------------------------------------------------
-     1. 基础色
-     --------------------------------------------------------------------- */
+  color-scheme: dark;
+
   --aircas-color-white: #ffffff;
   --aircas-color-black: #000000;
   --aircas-color-transparent: transparent;
 
-  /* ---------------------------------------------------------------------
-     2. 背景体系
-     --------------------------------------------------------------------- */
-  --aircas-color-page-background: #020817;
-  --aircas-color-background: #0b1420;
-  --aircas-color-panel-background: #0a1526;
-  --aircas-color-panel-background-deep: #051020;
-  --aircas-color-card-background: #0d1c2e;
-  --aircas-color-card-background-active: #12324a;
-  --aircas-color-section-background: rgba(10, 30, 54, 0.85);
-  --aircas-color-section-header: rgba(5, 70, 62, 0.6);
-  --aircas-color-input-background: #071017;
-  --aircas-color-menu-background: #0a1c30;
-  --aircas-color-overlay: rgba(6, 22, 35, 0.96);
-  --aircas-color-overlay-deep: rgba(4, 18, 30, 0.94);
+  --aircas-color-page-background: #0a1d25;
+  --aircas-color-background: #0c2430;
+  --aircas-color-panel-background: #0c2430;
+  --aircas-color-panel-background-deep: #031623;
+  --aircas-color-panel-overlay: rgba(22, 56, 74, 0.97);
+  --aircas-color-panel-overlay-deep: rgba(3, 22, 35, 0.94);
+  --aircas-color-input-background: rgba(3, 22, 35, 0.9);
+  --aircas-color-section-background: rgba(3, 22, 35, 0.8);
+  --aircas-color-section-header: rgba(0, 46, 65, 0.56);
+  --aircas-color-card-background: #16384a;
+  --aircas-color-card-background-active: rgba(33, 135, 168, 0.3);
+  --aircas-color-background-active: rgba(33, 135, 168, 0.48);
 
-  /* ---------------------------------------------------------------------
-     3. 文本体系
-     --------------------------------------------------------------------- */
-  --aircas-color-text-primary: #eaf1f8;
-  --aircas-color-text-secondary: #b9c6d4;
-  --aircas-color-text-muted: #8ea0b3;
-  --aircas-color-text-placeholder: #6e8296;
-  --aircas-color-text-disabled: #55657a;
-  --aircas-color-text-empty: rgba(205, 224, 240, 0.5);
-  --aircas-color-text-inverse: #0b1420;
+  --aircas-color-header-start: #001922;
+  --aircas-color-header-end: #002e41;
+  --aircas-color-header-text: #ffffff;
 
-  /* ---------------------------------------------------------------------
-     4. 边框与分隔
-     --------------------------------------------------------------------- */
-  --aircas-color-border: #2187a8;
-  --aircas-color-border-soft: rgba(33, 135, 168, 0.5);
-  --aircas-color-border-highlight: rgba(77, 232, 255, 0.6);
-  --aircas-color-divider: rgba(76, 154, 190, 0.25);
+  --aircas-color-text-primary: #ffffff;
+  --aircas-color-text-secondary: #cde1f4;
+  --aircas-color-text-muted: #9db6c8;
+  --aircas-color-text-empty: #9db6c8;
 
-  /* ---------------------------------------------------------------------
-     5. 强调色
-     --------------------------------------------------------------------- */
-  --aircas-color-title: #07eaff;
-  --aircas-color-accent-cyan: #07eaff;
-  --aircas-color-accent-blue: #269cff;
-  --aircas-color-accent-green: #20d99a;
+  --aircas-color-border: rgba(77, 210, 255, 0.28);
+  --aircas-color-border-soft: rgba(77, 210, 255, 0.14);
+  --aircas-color-border-highlight: #4dd2ff;
+  --aircas-color-divider: rgba(77, 210, 255, 0.2);
+
+  --aircas-color-title: #4dd2ff;
+  --aircas-color-accent-cyan: #4dd2ff;
+  --aircas-color-accent-blue: #2187a8;
+  --aircas-color-accent-green: #3ba73b;
   --aircas-color-accent-purple: #9272ff;
-  --aircas-color-accent-orange: #ff9f43;
+  --aircas-color-accent-orange: #ed7120;
+  --aircas-color-gold: #ffd142;
 
-  /* 强调色·柔和 / 边框 / 填充 / 辉光 */
-  --aircas-color-accent-cyan-soft: rgba(7, 234, 255, 0.13);
-  --aircas-color-accent-cyan-border: rgba(7, 234, 255, 0.24);
-  --aircas-color-accent-cyan-fill: rgba(7, 234, 255, 0.12);
-  --aircas-color-accent-cyan-shadow: rgba(7, 234, 255, 0.5);
-  --aircas-color-accent-blue-soft: rgba(38, 156, 255, 0.13);
-  --aircas-color-accent-blue-border: rgba(38, 156, 255, 0.24);
-  --aircas-color-accent-blue-fill: rgba(38, 156, 255, 0.14);
-  --aircas-color-accent-blue-shadow: rgba(38, 156, 255, 0.5);
-  --aircas-color-accent-green-soft: rgba(32, 217, 154, 0.13);
-  --aircas-color-accent-green-border: rgba(32, 217, 154, 0.24);
-  --aircas-color-accent-green-fill: rgba(32, 217, 154, 0.12);
-  --aircas-color-accent-green-shadow: rgba(32, 217, 154, 0.5);
-  --aircas-color-accent-purple-soft: rgba(146, 114, 255, 0.13);
-  --aircas-color-accent-purple-border: rgba(146, 114, 255, 0.24);
-  --aircas-color-accent-purple-fill: rgba(146, 114, 255, 0.12);
-  --aircas-color-accent-purple-shadow: rgba(146, 114, 255, 0.5);
-  --aircas-color-accent-orange-soft: rgba(255, 159, 67, 0.13);
-  --aircas-color-accent-orange-border: rgba(255, 159, 67, 0.24);
-  --aircas-color-accent-orange-fill: rgba(255, 159, 67, 0.12);
-  --aircas-color-accent-orange-shadow: rgba(255, 159, 67, 0.5);
+  --aircas-color-domain-structure: #64748b;
+  --aircas-color-domain-sensing: #0891b2;
+  --aircas-color-domain-communication: #2563eb;
+  --aircas-color-domain-command: #7c3aed;
+  --aircas-color-domain-engagement: #dc2626;
+  --aircas-color-domain-support: #16a34a;
 
-  /* ---------------------------------------------------------------------
-     6. 状态色
-     --------------------------------------------------------------------- */
-  --aircas-color-success: #41d46b;
-  --aircas-color-success-background: rgba(25, 120, 58, 0.3);
-  --aircas-color-warning: #f4b94f;
-  --aircas-color-warning-background: rgba(151, 96, 24, 0.3);
-  --aircas-color-danger: #f56c6c;
-  --aircas-color-danger-background: rgba(188, 61, 61, 0.3);
-  --aircas-color-info: #91a9bd;
-  --aircas-color-info-background: rgba(94, 112, 130, 0.3);
-  --aircas-color-neutral: #91a9bd;
-  --aircas-color-neutral-background: rgba(94, 112, 130, 0.3);
+  --aircas-color-accent-shadow: rgba(77, 210, 255, 0.24);
+  --aircas-color-border-shadow: rgba(23, 101, 127, 0.14);
+  --aircas-color-blue-soft: rgba(33, 135, 168, 0.13);
+  --aircas-color-blue-border: rgba(33, 135, 168, 0.24);
+  --aircas-color-blue-fill: rgba(33, 135, 168, 0.14);
+  --aircas-color-blue-shadow: rgba(33, 135, 168, 0.5);
+  --aircas-color-cyan-soft: rgba(77, 210, 255, 0.13);
+  --aircas-color-cyan-border: rgba(77, 210, 255, 0.24);
+  --aircas-color-cyan-fill: rgba(77, 210, 255, 0.12);
+  --aircas-color-cyan-shadow: rgba(77, 210, 255, 0.5);
+  --aircas-color-green-soft: rgba(59, 167, 59, 0.13);
+  --aircas-color-green-border: rgba(59, 167, 59, 0.24);
+  --aircas-color-green-fill: rgba(59, 167, 59, 0.12);
+  --aircas-color-green-shadow: rgba(59, 167, 59, 0.5);
+  --aircas-color-purple-soft: rgba(146, 114, 255, 0.13);
+  --aircas-color-purple-border: rgba(146, 114, 255, 0.24);
+  --aircas-color-purple-fill: rgba(146, 114, 255, 0.12);
+  --aircas-color-purple-shadow: rgba(146, 114, 255, 0.5);
+  --aircas-color-orange-soft: rgba(237, 113, 32, 0.13);
+  --aircas-color-orange-border: rgba(237, 113, 32, 0.24);
+  --aircas-color-orange-fill: rgba(237, 113, 32, 0.12);
+  --aircas-color-orange-shadow: rgba(237, 113, 32, 0.5);
 
-  /* ---------------------------------------------------------------------
-     7. 按钮色彩（--aircas-color-button-*）
-     --------------------------------------------------------------------- */
-  --aircas-color-button-background: #2187a8;
-  --aircas-color-button-hover-background: #2d9cc0;
-  --aircas-color-button-active-background: #1a6b84;
-  --aircas-color-button-primary-background: #2187a8;
-  --aircas-color-button-primary-hover-background: #2d9cc0;
-  --aircas-color-button-primary-active-background: #1a6b84;
-  --aircas-color-button-success-background: #3daf5f;
-  --aircas-color-button-success-hover-background: #48c46f;
-  --aircas-color-button-success-active-background: #319850;
-  --aircas-color-button-warning-background: #ed7a2f;
-  --aircas-color-button-warning-hover-background: #f18a48;
-  --aircas-color-button-warning-active-background: #c9641e;
-  --aircas-color-button-danger-background: #b54545;
-  --aircas-color-button-danger-hover-background: #c25757;
-  --aircas-color-button-danger-active-background: #963737;
-  --aircas-color-button-info-background: #405268;
-  --aircas-color-button-info-hover-background: #4d6280;
-  --aircas-color-button-info-active-background: #33425a;
-  --aircas-color-button-text: #ffffff;
-  --aircas-color-button-close-active-background: #e81123;
+  --aircas-color-hover-background: #121f2c;
+  --aircas-color-active-background: rgba(33, 135, 168, 0.48);
+  --aircas-color-success: #3ba73b;
+  --aircas-color-success-background: rgba(59, 167, 59, 0.16);
+  --aircas-color-warning: #d9b621;
+  --aircas-color-warning-background: rgba(237, 113, 32, 0.3);
+  --aircas-color-danger: #dd1c1c;
+  --aircas-color-danger-background: rgba(221, 28, 28, 0.18);
+  --aircas-color-danger-border: rgba(221, 28, 28, 0.28);
+  --aircas-color-danger-soft: #f01f1f;
+  --aircas-color-neutral: #9db6c8;
+  --aircas-color-neutral-background: rgba(157, 182, 200, 0.3);
+  --aircas-color-grid-line: rgba(77, 210, 255, 0.04);
+  --aircas-color-page-glow: rgba(33, 135, 168, 0.18);
+  --aircas-color-scrollbar: rgba(77, 210, 255, 0.5);
+  --aircas-color-mask: rgba(10, 29, 37, 0.72);
+  --aircas-color-scrim: rgba(0, 0, 0, 0.18);
+  --aircas-color-scrim-strong: rgba(0, 0, 0, 0.45);
 
-  /* ---------------------------------------------------------------------
-     8. 交互状态
-     --------------------------------------------------------------------- */
-  --aircas-color-hover-background: rgba(10, 130, 175, 0.3);
-  --aircas-color-active-background: rgba(10, 158, 190, 0.48);
-  --aircas-color-selected-background: rgba(33, 135, 168, 0.4);
-  --aircas-color-focus-border: #07eaff;
+  --el-color-primary: #2187a8;
+  --el-color-primary-light-3: #4dd2ff;
+  --el-color-primary-light-5: #70eaff;
+  --el-color-primary-light-7: #9de7ff;
+  --el-color-primary-light-8: #c5f2ff;
+  --el-color-primary-light-9: #e0f3ff;
+  --el-color-primary-dark-2: #17657f;
+  --el-color-success: #3ba73b;
+  --el-color-success-light-3: #2f862f;
+  --el-color-success-light-5: #246624;
+  --el-color-success-light-7: #1a471a;
+  --el-color-success-light-8: #153515;
+  --el-color-success-light-9: #102410;
+  --el-color-success-dark-2: #62b962;
+  --el-color-warning: #d9b621;
+  --el-color-warning-light-3: #ae921b;
+  --el-color-warning-light-5: #826e14;
+  --el-color-warning-light-7: #57490e;
+  --el-color-warning-light-8: #41350a;
+  --el-color-warning-light-9: #2b2207;
+  --el-color-warning-dark-2: #e1c54d;
+  --el-color-danger: #dd1c1c;
+  --el-color-danger-light-3: #b11616;
+  --el-color-danger-light-5: #851111;
+  --el-color-danger-light-7: #580b0b;
+  --el-color-danger-light-8: #420808;
+  --el-color-danger-light-9: #2c0606;
+  --el-color-danger-dark-2: #e44949;
+  --el-color-error: #dd1c1c;
+  --el-color-error-light-3: #b11616;
+  --el-color-error-light-5: #851111;
+  --el-color-error-light-7: #580b0b;
+  --el-color-error-light-8: #420808;
+  --el-color-error-light-9: #2c0606;
+  --el-color-error-dark-2: #e44949;
+  --el-color-info: #9db6c8;
+  --el-color-info-light-3: #7e92a0;
+  --el-color-info-light-5: #5e6d78;
+  --el-color-info-light-7: #3f4950;
+  --el-color-info-light-8: #2f373c;
+  --el-color-info-light-9: #1f2428;
+  --el-color-info-dark-2: #b1c5d3;
+  --el-box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  --el-box-shadow-light: 0 0 12px rgba(0, 0, 0, 0.35);
+  --el-box-shadow-lighter: 0 0 6px rgba(0, 0, 0, 0.35);
+  --el-box-shadow-dark: 0 16px 48px 16px rgba(0, 0, 0, 0.45);
+  --el-bg-color-page: #0a1d25;
+  --el-bg-color: #0c2430;
+  --el-bg-color-overlay: #0c2430;
+  --el-text-color-primary: #ffffff;
+  --el-text-color-regular: #cde1f4;
+  --el-text-color-secondary: #9db6c8;
+  --el-text-color-placeholder: #9db6c8;
+  --el-text-color-disabled: #697183;
+  --el-border-color-darker: #17657f;
+  --el-border-color-dark: #17657f;
+  --el-border-color: #17657f;
+  --el-border-color-light: #002e41;
+  --el-border-color-lighter: #002e41;
+  --el-border-color-extra-light: #001922;
+  --el-fill-color-darker: #121f2c;
+  --el-fill-color-dark: #121f2c;
+  --el-fill-color: #031623;
+  --el-fill-color-light: #121f2c;
+  --el-fill-color-lighter: #031623;
+  --el-fill-color-extra-light: #001922;
+  --el-fill-color-blank: #0c2430;
+  --el-mask-color: rgba(10, 29, 37, 0.72);
+  --el-mask-color-extra-light: rgba(0, 0, 0, 0.3);
+  --el-table-header-bg-color: #031623;
+  --el-table-tr-bg-color: #0c2430;
+  --el-table-row-hover-bg-color: #121f2c;
+  --el-table-border-color: #17657f;
+  --el-table-header-text-color: #cde1f4;
+}
 
-  /* ---------------------------------------------------------------------
-     9. 效果与装饰
-     --------------------------------------------------------------------- */
-  --aircas-color-grid-line: rgba(7, 234, 255, 0.03);
-  --aircas-color-page-glow: rgba(0, 111, 198, 0.18);
-  --aircas-color-scrollbar: rgba(7, 234, 255, 0.5);
-  --aircas-color-loading-mask: rgba(240, 244, 248, 0.7);
+/* 当前项目兼容令牌：保持已有 Aircas 组件与原型令牌共存。 */
+:root[theme="dark"] {
+  --aircas-color-menu-background: var(--aircas-color-background);
+  --aircas-color-overlay: var(--aircas-color-panel-overlay);
+  --aircas-color-overlay-deep: var(--aircas-color-panel-overlay-deep);
+  --aircas-color-accent-cyan-soft: var(--aircas-color-cyan-soft);
+  --aircas-color-accent-cyan-border: var(--aircas-color-cyan-border);
+  --aircas-color-accent-cyan-fill: var(--aircas-color-cyan-fill);
+  --aircas-color-accent-cyan-shadow: var(--aircas-color-cyan-shadow);
+  --aircas-color-accent-blue-soft: var(--aircas-color-blue-soft);
+  --aircas-color-accent-blue-border: var(--aircas-color-blue-border);
+  --aircas-color-accent-blue-fill: var(--aircas-color-blue-fill);
+  --aircas-color-accent-blue-shadow: var(--aircas-color-blue-shadow);
+  --aircas-color-accent-green-soft: var(--aircas-color-green-soft);
+  --aircas-color-accent-green-border: var(--aircas-color-green-border);
+  --aircas-color-accent-green-fill: var(--aircas-color-green-fill);
+  --aircas-color-accent-green-shadow: var(--aircas-color-green-shadow);
+  --aircas-color-accent-purple-soft: var(--aircas-color-purple-soft);
+  --aircas-color-accent-purple-border: var(--aircas-color-purple-border);
+  --aircas-color-accent-purple-fill: var(--aircas-color-purple-fill);
+  --aircas-color-accent-purple-shadow: var(--aircas-color-purple-shadow);
+  --aircas-color-accent-orange-soft: var(--aircas-color-orange-soft);
+  --aircas-color-accent-orange-border: var(--aircas-color-orange-border);
+  --aircas-color-accent-orange-fill: var(--aircas-color-orange-fill);
+  --aircas-color-accent-orange-shadow: var(--aircas-color-orange-shadow);
+  --aircas-color-text-placeholder: var(--aircas-color-text-muted);
+  --aircas-color-text-disabled: var(--el-text-color-disabled);
+  --aircas-color-text-inverse: var(--aircas-color-panel-background-deep);
+  --aircas-color-info: var(--aircas-color-neutral);
+  --aircas-color-info-background: var(--aircas-color-neutral-background);
+  --aircas-color-selected-background: var(--aircas-color-background-active);
+  --aircas-color-focus-border: var(--aircas-color-border-highlight);
+  --aircas-color-button-background: var(--aircas-color-accent-blue);
+  --aircas-color-button-hover-background: var(--aircas-color-accent-cyan);
+  --aircas-color-button-active-background: var(--aircas-color-background-active);
+  --aircas-color-button-primary-background: var(--aircas-color-accent-blue);
+  --aircas-color-button-primary-hover-background: var(--aircas-color-accent-cyan);
+  --aircas-color-button-primary-active-background: var(--aircas-color-background-active);
+  --aircas-color-button-success-background: var(--aircas-color-accent-green);
+  --aircas-color-button-success-hover-background: var(--aircas-color-success);
+  --aircas-color-button-success-active-background: var(--aircas-color-green-fill);
+  --aircas-color-button-warning-background: var(--aircas-color-accent-orange);
+  --aircas-color-button-warning-hover-background: var(--aircas-color-warning);
+  --aircas-color-button-warning-active-background: var(--aircas-color-orange-fill);
+  --aircas-color-button-danger-background: var(--aircas-color-danger);
+  --aircas-color-button-danger-hover-background: var(--aircas-color-danger-soft);
+  --aircas-color-button-danger-active-background: var(--aircas-color-danger-background);
+  --aircas-color-button-info-background: var(--aircas-color-neutral-background);
+  --aircas-color-button-info-hover-background: var(--aircas-color-hover-background);
+  --aircas-color-button-info-active-background: var(--aircas-color-active-background);
+  --aircas-color-button-text: var(--aircas-color-text-primary);
+  --aircas-color-button-close-active-background: var(--aircas-color-danger);
+  --aircas-color-loading-mask: var(--aircas-color-mask);
 }

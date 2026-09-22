@@ -25,12 +25,14 @@ test("ontology object create dialog exposes prototype creation modes and require
 
 test("object workspace routes create action to the dialog and separates manual api submission", () => {
   const source = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const objectActions = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
   assert.match(source, /:category-tree="workspaceTree"/);
   assert.match(source, /@submit-manual="createOntologyObject"/);
   assert.match(source, /@submit-import="createOntologyObjects"/);
   assert.match(source, /if \(action === "create"\)/);
-  assert.match(source, /createOntologyObjectInterface/);
-  assert.match(source, /await load\(\)/);
+  assert.match(source, /useObjectWorkspaceObjectActions/);
+  assert.match(objectActions, /createOntologyObjectInterface/);
+  assert.match(objectActions, /await load\(\)/);
 });
 
 test("category tree mapping includes ontology metadata in object sections", () => {
@@ -44,9 +46,8 @@ test("category tree mapping includes ontology metadata in object sections", () =
 
 test("concept hierarchy tree renders object names below each category node", () => {
   const source = readSource("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue");
-  assert.match(source, /nodeObjectNames\(data\)/);
-  assert.match(source, /本体对象名称/);
-  assert.match(source, /concept-hierarchy__object-node/);
-  assert.match(source, /concept-hierarchy__object-icon/);
+  assert.match(source, /isObjectNode\(data\)/);
+  assert.match(source, /concept-hierarchy__object-row/);
+  assert.match(source, /concept-hierarchy__object-dot/);
   assert.match(source, /concept-hierarchy__object-name/);
 });

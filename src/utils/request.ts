@@ -43,6 +43,22 @@ const httpCode: Record<number, string> = {
   504: "网关超时",
 };
 
+/**
+ * @description 从接口错误响应体中提取可展示的非空 message 字符串。
+ * @param data 接口错误响应体。
+ * @returns 后端错误信息；响应格式不匹配时返回 undefined。
+ */
+function extractResponseErrorMessage(data: unknown): string | undefined {
+  if (typeof data !== "object" || data === null || !("message" in data)) return undefined;
+  const message = data.message;
+  return typeof message === "string" && message.trim() ? message.trim() : undefined;
+}
+
+/**
+ * @description 将请求异常转换为页面可安全展示的统一错误，并优先保留后端返回的 message。
+ * @param error 原始请求异常。
+ * @returns 包含 HTTP 状态和页面提示文案的请求错误。
+ */
 export function normalizeRequestError(error: unknown): RequestError {
   if (!axios.isAxiosError(error)) {
     return new RequestError("请求失败，请稍后重试。");
@@ -50,7 +66,8 @@ export function normalizeRequestError(error: unknown): RequestError {
 
   const status = error.response?.status ?? null;
   if (status !== null) {
-    return new RequestError(httpCode[status] ?? "请求失败，请稍后重试。", status);
+    const responseMessage = extractResponseErrorMessage(error.response?.data);
+    return new RequestError(responseMessage ?? httpCode[status] ?? "请求失败，请稍后重试。", status);
   }
 
   if (error.code === "ECONNABORTED") {
@@ -83,7 +100,7 @@ export function resolveResponseData(response: AxiosResponse): AxiosResponse {
 }
 
 /**
- * @description 失败响应拦截器：401 时清除会话令牌，并将错误归一化为不含服务端细节的 RequestError 后抛出。
+ * @description 失败响应拦截器：401 时清除会话令牌，并将后端 message 归一化到 RequestError 后抛出。
  * @param error 原始请求错误。
  */
 export function rejectResponse(error: unknown): never {

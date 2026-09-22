@@ -19,28 +19,36 @@ const collapsed = ref(true);
 </script>
 <style scoped lang="scss">
 .layout-shell {
+  position: relative;
+  width: 100%;
   height: 100%;
+  min-height: 0;
   display: grid;
-  grid-template-rows: 56px minmax(0, 1fr);
+  grid-template-rows: 50px minmax(0, 1fr);
   min-width: 0;
   overflow: hidden;
-  background: var(--aircas-color-page-background);
+  background-color: var(--aircas-color-page-background);
 }
 .layout-workspace {
   display: grid;
+  min-width: 0;
   grid-template-columns: 60px minmax(0, 1fr);
   min-height: 0;
+  transition: grid-template-columns 0.2s ease;
 }
 .layout-workspace.is-expanded {
-  grid-template-columns: 224px minmax(0, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr);
 }
 .layout-content {
-  min-width: 0;
   display: grid;
-  grid-template-rows: 36px minmax(0, 1fr);
+  min-width: 0;
   min-height: 0;
+  grid-template-rows: 30px minmax(0, 1fr);
+  overflow: hidden;
+  background-color: var(--aircas-color-page-background);
 }
 .layout-page {
+  min-width: 0;
   min-height: 0;
   overflow: auto;
 }

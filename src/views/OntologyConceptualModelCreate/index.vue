@@ -633,11 +633,12 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 14px;
-  min-height: 92px;
-  padding: 14px 18px;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 10px;
-  background: var(--aircas-color-panel-background);
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid var(--aircas-color-cyan-border);
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  box-shadow: 0 0 24px var(--aircas-color-blue-soft);
 }
 .conceptual-model-create__identity {
   flex: 1;
@@ -697,9 +698,10 @@ onBeforeUnmount(() => {
 .conceptual-model-create__canvas-panel,
 .conceptual-model-create__inspector {
   min-width: 0;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 10px;
-  background: var(--aircas-color-panel-background);
+  border: 1px solid var(--aircas-color-cyan-border);
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-background-deep));
+  box-shadow: 0 0 18px var(--aircas-color-cyan-soft);
   overflow: hidden;
 }
 .conceptual-model-create__palette,

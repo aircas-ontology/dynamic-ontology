@@ -1,9 +1,9 @@
 <template>
   <div class="space-actions">
     <el-button class="aircas-button" type="primary" plain size="small" :icon="Right" @click="$emit('action', 'enter', space)">进入</el-button>
-    <el-button class="aircas-button aircas-button--edit" size="small" :icon="Edit" @click="$emit('action', 'edit', space)">编辑</el-button>
+    <el-button class="aircas-button" type="primary" plain size="small" :icon="Edit" @click="$emit('action', 'edit', space)">编辑</el-button>
     <el-dropdown class="aircas-dropdown" popper-class="aircas-dropdown-popper" trigger="click" @command="command">
-      <el-button class="aircas-button" size="small"
+      <el-button class="aircas-button" type="primary" plain size="small"
         >更多<el-icon> <ArrowDown /> </el-icon
       ></el-button>
       <template #dropdown>
@@ -21,6 +21,10 @@ import { ArrowDown, Edit, Right } from "@element-plus/icons-vue";
 import type { OntologySpaceAction, OntologySpaceItem } from "@/types";
 const props = defineProps<{ space: OntologySpaceItem }>();
 const emit = defineEmits<{ action: [action: OntologySpaceAction, space: OntologySpaceItem] }>();
+/**
+ * @description 将下拉命令转成空间运维动作，仅转发子空间、导出和删除。
+ * @param value 下拉菜单提交的未知命令。
+ */
 function command(value: unknown) {
   if (value === "subspace" || value === "export" || value === "delete") emit("action", value, props.space);
 }

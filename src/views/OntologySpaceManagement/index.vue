@@ -91,7 +91,9 @@ onMounted(loadOntologySpaces);
 .ontology-space-management__overview {
   display: grid;
   grid-template-columns: minmax(520px, 1.42fr) minmax(760px, 2.25fr);
-  gap: 10px;
+  align-items: stretch;
+  gap: 12px;
+  height: 150px;
   min-height: 150px;
   min-width: 1200px;
 }
@@ -99,7 +101,9 @@ onMounted(loadOntologySpaces);
 .ontology-space-management__stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
+  min-height: 0;
+  height: 100%;
 }
 
 .ontology-space-management__state {

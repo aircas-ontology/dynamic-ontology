@@ -64,27 +64,56 @@ test("ontology property api exposes automatic datasource binding", () => {
   assert.match(barrelSource, /autoBindOntologyPropertyDatasourceInterface/);
 });
 
+test("ontology property api exposes documented batch update contract", () => {
+  const apiSource = readSource("../src/apis/ontologyPropertyApi.ts");
+  const barrelSource = readSource("../src/apis/index.ts");
+  const typeSource = readSource("../src/types/apis/batchUpdateOntologyPropertiesType.ts");
+  const typeBarrelSource = readSource("../src/types/index.ts");
+  const mockSource = readSource("../src/mocks/batchUpdateOntologyPropertiesMock/batchUpdateOntologyPropertiesMock.ts");
+
+  assert.match(typeSource, /schemaName:\s*string/);
+  assert.match(typeSource, /datasourceId:\s*string/);
+  assert.match(typeSource, /datasourceColumnName:\s*string/);
+  assert.match(typeSource, /uniqueIdentifier:\s*string/);
+  assert.match(typeSource, /datasource\?:\s*BatchUpdateOntologyPropertyDatasource/);
+  assert.match(typeSource, /displayName:\s*string/);
+  assert.match(typeSource, /dataType:\s*string/);
+  assert.match(typeSource, /isTitleKey:\s*boolean/);
+  assert.match(typeSource, /isPrimaryKey:\s*boolean/);
+  assert.match(typeSource, /storageGroup:\s*string/);
+  assert.match(apiSource, /putBatchUpdateOntologyPropertiesInterface/);
+  assert.match(apiSource, /\/ontology\/property\/batch/);
+  assert.match(apiSource, /method: "put"/);
+  assert.match(apiSource, /data: params/);
+  assert.match(barrelSource, /putBatchUpdateOntologyPropertiesInterface/);
+  assert.match(typeBarrelSource, /BatchUpdateOntologyPropertiesParams/);
+  assert.match(mockSource, /batchUpdateOntologyPropertiesMock/);
+  assert.match(mockSource, /message: "SUCCESS"/);
+});
+
 test("attribute panel uses ontology property api for list and commands", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
-  assert.match(source, /refreshAttributesFromTree/);
-  assert.match(source, /collectPropertyItemsFromTree/);
+  const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  const helperSource = readSource("../src/views/OntologyObjectDetail/utils/attributePanelHelpers.ts");
+  assert.match(source, /loadAttributesForSelection/);
+  assert.match(helperSource, /collectPropertyItemsFromTree/);
   assert.match(source, /createOntologyPropertyInterface/);
   assert.match(source, /updateOntologyPropertyInterface/);
   assert.match(source, /deleteOntologyPropertyInterface/);
-  assert.match(source, /ontologyUniqueIdentifier/);
+  assert.match(source, /ontologyIdentifier/);
   assert.match(source, /propertyUniqueIdentifier/);
-  assert.match(source, /await loadAttributeCategoryTree/);
+  assert.match(source, /onPropertyChanged/);
   assert.match(source, /buildCreatePropertyParams/);
   assert.match(source, /buildUpdatePropertyParams/);
   assert.match(source, /isPrimaryKey: draft\.isPrimary/);
   assert.match(source, /isTitleKey: draft\.isNameKey/);
   const updateBuilder = source.match(/function buildUpdatePropertyParams[\s\S]*?function resetDraft/)?.[0] ?? "";
   assert.doesNotMatch(updateBuilder, /datasource:|schemaName:|datasourceId:|datasourceColumnName:|metadata:/);
-  assert.match(source, /apiName: item\.apiName/);
-  assert.match(source, /dataType: item\.propertyType/);
-  assert.match(source, /const storageGroups = \[\{ label: "主存储", value: "main" \}\]/);
+  assert.match(helperSource, /apiName: item\.apiName/);
+  assert.match(helperSource, /dataType: item\.propertyType/);
+  assert.match(source, /const storageGroups = computed<OntologyAttributeStorageGroupOption\[\]>\(getStorageGroupOptions\)/);
   assert.match(source, /storageGroup: "main"/);
-  assert.match(source, /:label="group\.label" :value="group\.value"/);
+  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  assert.match(formSource, /:label="group\.label" :value="group\.value"/);
   const createBuilder = source.match(/function buildCreatePropertyParams[\s\S]*?function buildUpdatePropertyParams/)?.[0] ?? "";
   assert.doesNotMatch(createBuilder, /datasource:|metadata:|type:/);
   assert.match(source, /ElMessageBox\.confirm/);

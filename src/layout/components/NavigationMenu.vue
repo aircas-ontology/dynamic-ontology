@@ -44,7 +44,7 @@ const route = useRoute();
   flex-direction: column;
   overflow: hidden;
   border-right: 1px solid var(--aircas-color-border-soft);
-  background: var(--aircas-color-menu-background);
+  background-color: var(--aircas-color-background);
 }
 .navigation-menu__control {
   padding: 6px;

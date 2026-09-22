@@ -11,7 +11,7 @@ test("create ontology object types expose the documented request and response fi
   assert.match(source, /displayName: string/);
   assert.match(source, /apiName: string/);
   assert.match(source, /iconUrl\?: string/);
-  assert.match(source, /parentOntologyUniqueIdentifier\?: number/);
+  assert.match(source, /parentOntologyUniqueIdentifier\?: string/);
   assert.match(source, /categoryId\?: number/);
   assert.match(source, /groupIds\?: string\[\]/);
   assert.match(source, /export interface CreateOntologyObjectData/);
@@ -39,10 +39,11 @@ test("create ontology object mock mirrors the documented success envelope", () =
 });
 
 test("object workspace submits manual creation through the api and reloads after success", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const source = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
+  const panel = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
   assert.match(source, /createOntologyObjectInterface/);
   assert.match(source, /await createOntologyObjectInterface/);
-  assert.match(source, /@submit-manual="createOntologyObject"/);
+  assert.match(panel, /@submit-manual="createOntologyObject"/);
   assert.match(source, /await load\(\)/);
   assert.match(source, /ElMessage\.success/);
   assert.match(source, /objectCreateError\.value/);

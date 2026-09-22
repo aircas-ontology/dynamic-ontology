@@ -90,6 +90,7 @@ function openTab(tab: ManagementWorkspaceTab) {
   min-width: 0;
   min-height: 0;
   flex: 1;
+  gap: 8px;
 }
 
 .space-management-detail__state {

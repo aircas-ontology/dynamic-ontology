@@ -14,7 +14,7 @@
       ariaLabel="搜索属性分类"
       @update:model-value="$emit('update:categorySearch', $event)"
     />
-    <p v-if="categoryTreeLoading" class="ontology-object-attribute-panel__tree-state">正在加载属性分类...</p>
+    <p v-if="categoryTreeLoading" class="ontology-object-attribute-panel__tree-state"><AircasLoading>正在加载属性分类...</AircasLoading></p>
     <p v-else-if="categoryTreeError" class="ontology-object-attribute-panel__tree-state is-error" role="alert">{{ categoryTreeError }}</p>
     <div v-else-if="categoryTreeEmpty" class="ontology-object-attribute-panel__tree-empty">
       <p class="ontology-object-attribute-panel__tree-state">暂无分类树数据</p>
@@ -36,10 +36,18 @@
     >
       <template #default="{ data }">
         <div class="ontology-object-attribute-panel__tree-node">
-          <span class="ontology-object-attribute-panel__tree-label">
-            <el-icon><FolderOpened v-if="data.children?.length" /><CollectionTag v-else /></el-icon>{{ data.label }}<em>{{ data.count }}</em>
-          </span>
-          <span class="ontology-object-attribute-panel__tree-actions" @click.stop>
+          <template v-if="isCategoryNode(data)">
+            <span class="ontology-object-attribute-panel__tree-label">
+              <el-icon><FolderOpened v-if="data.children?.length" /><CollectionTag v-else /></el-icon>{{ data.label }}<em>{{ data.propertyCount }}</em>
+            </span>
+          </template>
+          <template v-else>
+            <span class="ontology-object-attribute-panel__tree-property-node" :title="data.label">
+              <span class="ontology-object-attribute-panel__tree-property-dot" aria-hidden="true"></span>
+              <span class="ontology-object-attribute-panel__tree-property-name">{{ data.label }}</span>
+            </span>
+          </template>
+          <span v-if="isCategoryNode(data)" class="ontology-object-attribute-panel__tree-actions" @click.stop>
             <el-tooltip content="添加子分类" placement="top" :show-after="200">
               <button type="button" class="ontology-object-attribute-panel__tree-action" aria-label="添加子分类" @click="$emit('create-category', data)">
                 <el-icon><Plus /></el-icon>
@@ -70,7 +78,8 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { CollectionTag, Delete, EditPen, FolderOpened, Plus } from "@element-plus/icons-vue";
-import type { OntologyAttributeCategoryNode } from "@/types";
+import type { OntologyAttributeCategoryNode, OntologyAttributeTreeNode } from "@/types";
+import AircasLoading from "@/components/AircasLoading.vue";
 
 const props = defineProps<{
   categories: OntologyAttributeCategoryNode[];
@@ -85,7 +94,7 @@ const props = defineProps<{
 
 defineEmits<{
   "update:categorySearch": [value: string];
-  "select-category": [data: OntologyAttributeCategoryNode];
+  "select-category": [data: OntologyAttributeTreeNode];
   "create-root": [];
   "create-category": [data: OntologyAttributeCategoryNode];
   "edit-category": [data: OntologyAttributeCategoryNode];
@@ -93,6 +102,11 @@ defineEmits<{
 }>();
 
 const treeRef = ref<{ filter: (value: string) => void }>();
+
+/** @description 判断树节点是否为属性分类节点。 */
+function isCategoryNode(value: unknown): value is OntologyAttributeCategoryNode {
+  return Boolean(value && typeof value === "object" && "nodeType" in value && value.nodeType === "category");
+}
 
 watch(
   () => props.categorySearch,
@@ -168,7 +182,9 @@ watch(
 }
 
 .ontology-object-attribute-panel__tree :deep(.el-tree-node__content) {
-  height: 32px;
+  min-height: 32px;
+  height: auto;
+  padding: 4px 0;
   border-radius: 4px;
 }
 
@@ -195,6 +211,30 @@ watch(
   min-width: 0;
   gap: 6px;
   color: var(--aircas-color-text-secondary);
+}
+
+.ontology-object-attribute-panel__tree-property-node {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  color: var(--aircas-color-text-secondary);
+}
+
+.ontology-object-attribute-panel__tree-property-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--aircas-color-accent-cyan);
+}
+
+.ontology-object-attribute-panel__tree-property-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ontology-object-attribute-panel__tree-label em {
