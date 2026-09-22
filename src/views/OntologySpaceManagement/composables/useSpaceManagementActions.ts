@@ -93,7 +93,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
         const response = await createOntologySpaceInterface({
           displayName: draft.displayName,
           apiName: draft.apiName,
-          icon: draft.iconUrl,
+          iconUrl: draft.iconUrl,
           description: draft.description,
         });
         if (response.code === 200) {
@@ -117,7 +117,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
       const response = await updateOntologySpaceInterface({
         spaceId: Number(activeSpace.value!.id),
         displayName: draft.displayName,
-        icon: draft.iconUrl,
+        iconUrl: draft.iconUrl,
         description: draft.description,
       });
       if (response.code === 200) {

@@ -38,7 +38,7 @@ export function deleteOntologyObjectInterface(params: DeleteOntologyObjectParams
  */
 export function getOntologyObjectByCategoryIdInterface(params?: GetOntologyObjectByCategoryIdParams): Promise<ApiResponse<GetOntologyObjectByCategoryIdData>> {
   return request<GetOntologyObjectByCategoryIdData>({
-    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/meta/category",
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/meta/category",
     method: "get",
     params,
   });
@@ -75,7 +75,7 @@ export function updateOntologyObjectInterface(params: UpdateOntologyObjectParams
  * @param params.spaceId 当前本体空间 id。
  * @param params.displayName 本体对象显示名称。
  * @param params.apiName 本体对象 API 名称。
- * @param params.icon 本体对象图标地址。
+ * @param params.iconUrl 本体对象图标地址。
  * @param params.description 本体对象描述。
  * @param params.parentOntologyUniqueIdentifier 继承的本体对象唯一标识。
  * @param params.categoryId 本体对象所属分类 id。

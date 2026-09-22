@@ -14,8 +14,9 @@ test("create ontology space api types follow the contract params and numeric dat
   assert.match(apiTypeSource, /export interface CreateOntologySpaceParams/);
   assert.match(apiTypeSource, /displayName:\s*string/);
   assert.match(apiTypeSource, /apiName:\s*string/);
-  assert.match(apiTypeSource, /icon:\s*string/);
-  assert.match(apiTypeSource, /description:\s*string/);
+  assert.match(apiTypeSource, /iconUrl\?:\s*string/);
+  assert.match(apiTypeSource, /description\?:\s*string/);
+  assert.doesNotMatch(apiTypeSource, /^\s*icon:\s*string/m);
   assert.match(apiTypeSource, /export type CreateOntologySpaceData = number/);
   assert.match(typeBarrelSource, /export type \{ CreateOntologySpaceData, CreateOntologySpaceParams \} from "\.\/apis\/createOntologySpaceType";/);
 });
