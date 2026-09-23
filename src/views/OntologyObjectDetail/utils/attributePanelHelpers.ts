@@ -83,6 +83,52 @@ export function findCategory(nodes: OntologyAttributeTreeNode[], id: string): On
   return undefined;
 }
 
+/**
+ * @description 查找属性分类树中的根分类 id。
+ * @param nodes 属性分类节点。
+ * @returns 根分类 id；树中没有根分类时返回空字符串。
+ */
+export function findRootCategoryId(nodes: OntologyAttributeCategoryNode[]): string {
+  for (const node of nodes) {
+    if (node.isRoot || node.id === "0") return node.id;
+    const nested = findRootCategoryId(node.children?.filter(isCategoryNode) ?? []);
+    if (nested) return nested;
+  }
+  return "";
+}
+
+/**
+ * @description 取属性分类下拉的第一项。
+ * @param nodes 属性分类节点。
+ * @returns 第一项分类 id；没有分类时返回空字符串。
+ */
+export function findFirstCategoryId(nodes: OntologyAttributeCategoryNode[]): string {
+  return flattenCategoryOptions(nodes)[0]?.id ?? "";
+}
+
+/**
+ * @description 决定属性表单的分类：已有分类保持不变，否则选中下拉第一项。
+ * @param nodes 属性分类节点。
+ * @param currentCategoryId 当前属性分类 id。
+ * @returns 表单应选中的分类 id。
+ */
+export function resolveAttributeFormCategoryId(nodes: OntologyAttributeCategoryNode[], currentCategoryId = ""): string {
+  const current = currentCategoryId.trim();
+  if (current) return current;
+  return findFirstCategoryId(nodes);
+}
+
+/**
+ * @description 将属性表单分类 id 转为接口数字，根分类 0 会保留。
+ * @param categoryId 表单中的分类 id。
+ * @returns 非负整数分类 id；空白或无法解析时返回 undefined。
+ */
+export function parseAttributeCategoryId(categoryId: string): number | undefined {
+  if (!categoryId.trim()) return undefined;
+  const parsed = Number(categoryId);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
 /** @description 将分类树扁平化为属性表单分类选项。 */
 export function flattenCategoryOptions(nodes: OntologyAttributeCategoryNode[]): OntologyAttributeCategoryNode[] {
   return nodes.flatMap((node) => {

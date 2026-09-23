@@ -24,21 +24,32 @@ export type { DeleteOntologyObjectData, DeleteOntologyObjectParams } from "./api
 export type { DeleteOntologyPropertyData, DeleteOntologyPropertyParams } from "./apis/deleteOntologyPropertyType";
 export type { DeleteOntologySpaceData, DeleteOntologySpaceParams } from "./apis/deleteOntologySpaceType";
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
+export type { ExportOntologySpaceFile, ExportOntologySpaceParams } from "./apis/exportOntologySpaceType";
+export type { ExportOntologyFile, ExportOntologyParams } from "./apis/exportOntologyType";
 export type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceColumnsParams,
   OntologyDatasourceColumnDescVO,
 } from "./apis/getOntologyDatasourceColumnsType";
 export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
+export type { GetOntologyMetaStatisticData, GetOntologyMetaStatisticParams, OntologyMetaStatisticVO } from "./apis/getOntologyMetaStatisticType";
 export type { GetOntologyObjectArrTypeTreeData, GetOntologyObjectArrTypeTreeParams } from "./apis/getOntologyObjectArrTypeTreeType";
 export type { GetOntologyObjectByCategoryIdData, GetOntologyObjectByCategoryIdParams, OntologyObjectQueryItem } from "./apis/getOntologyObjectByCategoryIdType";
+export type { GetOntologyOverviewCountData, OverviewCountVO } from "./apis/getOntologyOverviewCountType";
 export type { GetOntologyPropertyByCategoryIdData, GetOntologyPropertyByCategoryIdParams } from "./apis/getOntologyPropertyByCategoryIdType";
 export type {
   GetOntologyPropertyByOntologyIdData,
   GetOntologyPropertyByOntologyIdParams,
   OntologyPropertyInfo,
 } from "./apis/getOntologyPropertyByOntologyIdType";
+export type {
+  GetOntologyPropertyDetailByOntologyIdData,
+  GetOntologyPropertyDetailByOntologyIdParams,
+  OntologyPropertyDetail,
+} from "./apis/getOntologyPropertyDetailByOntologyIdType";
 export type { GetOntologySpaceStatisticData, GetOntologySpaceStatisticParams, OntologySpaceStatisticVO } from "./apis/getOntologySpaceStatisticType";
+export type { ImportOntologiesData, ImportOntologiesParams } from "./apis/importOntologiesType";
+export type { ImportOntologySpaceData, ImportOntologySpaceParams } from "./apis/importOntologySpaceType";
 export type { LoginData, LoginParams } from "./apis/loginType";
 export type {
   OntologyApiDocsComponents,

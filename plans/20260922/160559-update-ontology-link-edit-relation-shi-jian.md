@@ -2,7 +2,7 @@
 
 ## 需求理解
 
-按 `docs/20260921/更新本体之间关系Api-shijian.md` 对接编辑关系；可改 name / categoryId / description；源/目标与 apiName 只读。
+按 `docs/20260921/updateOntologyLinkApi-shijian.md` 对接编辑关系；可改 name / categoryId / description；源/目标与 apiName 只读。
 
 ## 修改范围
 

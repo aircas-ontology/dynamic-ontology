@@ -193,3 +193,65 @@ test("relation route context resolves space id and object filter seed", async ()
   );
   assert.equal(resolveObjectRelationFilterSeed({ params: {}, query: { objectName: "飞机" } }, []), "");
 });
+
+test("space and object relation pages use the prototype panel and graph backgrounds", () => {
+  const workspace = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue", import.meta.url), "utf8");
+  const categoryPanel = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationCategoryPanel.vue", import.meta.url),
+    "utf8",
+  );
+  const graph = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationGraphView.vue", import.meta.url), "utf8");
+  const panelGradient = /linear-gradient\(135deg, var\(--aircas-color-panel-overlay\), var\(--aircas-color-panel-overlay-deep\)\)/;
+
+  assert.match(categoryPanel, panelGradient);
+  assert.match(categoryPanel, /box-shadow: inset 0 0 20px var\(--aircas-color-border-shadow\)/);
+  assert.match(categoryPanel, /background: var\(--aircas-color-active-background\)/);
+  assert.match(workspace, panelGradient);
+  assert.match(workspace, /box-shadow: inset 0 0 18px var\(--aircas-color-border-shadow\)/);
+  assert.match(workspace, /\.space-relation-workspace__view-switch[\s\S]*background: var\(--aircas-color-panel-overlay-deep\)/);
+  assert.match(workspace, /\.space-relation-workspace__view-btn-active[\s\S]*background: var\(--aircas-color-active-background\)/);
+  assert.match(workspace, /\.space-relation-workspace__filter[\s\S]*background: var\(--aircas-color-panel-overlay-deep\)/);
+  assert.match(graph, /radial-gradient\([\s\S]*var\(--aircas-color-cyan-fill\)/);
+  assert.match(graph, /\.relation-graph-view--holographic[\s\S]*background: var\(--aircas-color-page-background\)/);
+  assert.match(graph, /color-mix\(in srgb, var\(--aircas-color-black\) 72%, transparent\)/);
+});
+
+test("relation module buttons use the space management theme tones", () => {
+  const workspace = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue", import.meta.url), "utf8");
+  const categoryPanel = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationCategoryPanel.vue", import.meta.url),
+    "utf8",
+  );
+  const relationForm = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationFormDialog.vue", import.meta.url),
+    "utf8",
+  );
+  const categoryForm = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationCategoryFormDialog.vue", import.meta.url),
+    "utf8",
+  );
+  const relationDelete = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationDeleteDialog.vue", import.meta.url),
+    "utf8",
+  );
+  const categoryDelete = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationCategoryDeleteDialog.vue", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(workspace, /aircas-button aircas-button--tone-primary[\s\S]*添加/);
+  assert.match(workspace, /aircas-button aircas-button--tone-ghost[\s\S]*重置/);
+  assert.match(workspace, /aircas-button aircas-button--tone-primary[\s\S]*重试/);
+  assert.match(categoryPanel, /aircas-button aircas-button--tone-primary[\s\S]*添加关系分类/);
+  assert.match(categoryPanel, /action--add[\s\S]*linear-gradient\(90deg, var\(--aircas-color-active-background\), var\(--aircas-color-blue-fill\)\)/);
+  assert.match(categoryPanel, /action--edit[\s\S]*background: var\(--aircas-color-blue-soft\)/);
+  assert.match(categoryPanel, /action--danger[\s\S]*background: var\(--aircas-color-danger-background\)/);
+  assert.match(relationForm, /aircas-button aircas-button--tone-ghost[\s\S]*取消/);
+  assert.match(relationForm, /aircas-button aircas-button--tone-primary[\s\S]*确认/);
+  assert.match(categoryForm, /aircas-button aircas-button--tone-ghost[\s\S]*取消/);
+  assert.match(categoryForm, /aircas-button aircas-button--tone-primary[\s\S]*确认/);
+  assert.match(relationDelete, /aircas-button aircas-button--tone-ghost[\s\S]*取消/);
+  assert.match(relationDelete, /aircas-button aircas-button--tone-danger[\s\S]*确认删除/);
+  assert.match(categoryDelete, /aircas-button aircas-button--tone-ghost[\s\S]*取消/);
+  assert.match(categoryDelete, /aircas-button aircas-button--tone-danger[\s\S]*确认删除/);
+});

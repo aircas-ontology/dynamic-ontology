@@ -18,7 +18,7 @@
     <p v-else-if="categoryTreeError" class="ontology-object-attribute-panel__tree-state is-error" role="alert">{{ categoryTreeError }}</p>
     <div v-else-if="categoryTreeEmpty" class="ontology-object-attribute-panel__tree-empty">
       <p class="ontology-object-attribute-panel__tree-state">暂无分类树数据</p>
-      <el-button class="aircas-button" type="primary" @click="$emit('create-root')">创建分类</el-button>
+      <el-button class="aircas-button aircas-button--tone-primary" @click="$emit('create-root')">创建分类</el-button>
     </div>
     <el-tree
       v-else
@@ -48,17 +48,17 @@
             </span>
           </template>
           <span v-if="isCategoryNode(data)" class="ontology-object-attribute-panel__tree-actions" @click.stop>
-            <el-tooltip content="添加子分类" placement="top" :show-after="200">
+            <el-tooltip content="添加子分类" placement="top" popper-class="aircas-popper" :show-after="200">
               <button type="button" class="ontology-object-attribute-panel__tree-action" aria-label="添加子分类" @click="$emit('create-category', data)">
                 <el-icon><Plus /></el-icon>
               </button>
             </el-tooltip>
-            <el-tooltip content="编辑分类" placement="top" :show-after="200">
+            <el-tooltip content="编辑分类" placement="top" popper-class="aircas-popper" :show-after="200">
               <button type="button" class="ontology-object-attribute-panel__tree-action is-edit" aria-label="编辑分类" @click="$emit('edit-category', data)">
                 <el-icon><EditPen /></el-icon>
               </button>
             </el-tooltip>
-            <el-tooltip content="删除分类" placement="top" :show-after="200">
+            <el-tooltip v-if="!data.isRoot" content="删除分类" placement="top" popper-class="aircas-popper" :show-after="200">
               <button
                 type="button"
                 class="ontology-object-attribute-panel__tree-action is-danger"
@@ -125,8 +125,8 @@ watch(
   overflow: hidden;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-divider);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
 .ontology-object-attribute-panel__section-header h1 {
@@ -194,7 +194,7 @@ watch(
 
 .ontology-object-attribute-panel__tree :deep(.el-tree-node.is-current > .el-tree-node__content) {
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-selected-background);
+  background: var(--aircas-color-active-background);
 }
 
 .ontology-object-attribute-panel__tree-node {
@@ -240,8 +240,9 @@ watch(
 .ontology-object-attribute-panel__tree-label em {
   padding: 0 6px;
   border-radius: 10px;
-  color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-accent-cyan-soft);
+  color: var(--aircas-color-text-muted);
+  border: 1px solid var(--aircas-color-border-soft);
+  background: var(--aircas-color-input-background);
   font-size: 11px;
   font-style: normal;
 }
@@ -268,20 +269,29 @@ watch(
   width: 22px;
   height: 22px;
   padding: 0;
-  border: 0;
   border-radius: 4px;
   place-items: center;
-  color: var(--aircas-color-text-inverse);
-  background: var(--aircas-color-button-primary-background);
+  color: var(--aircas-color-text-primary);
+  border: 1px solid var(--aircas-color-accent-cyan);
+  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-accent-blue-fill));
+  box-shadow:
+    inset 0 0 10px var(--aircas-color-accent-cyan-fill),
+    0 0 8px var(--aircas-color-accent-cyan-soft);
   cursor: pointer;
 }
 
 .ontology-object-attribute-panel__tree-action.is-edit {
-  background: var(--aircas-color-accent-blue);
+  color: var(--aircas-color-accent-blue);
+  border-color: var(--aircas-color-accent-blue-border);
+  background: var(--aircas-color-accent-blue-soft);
+  box-shadow: none;
 }
 
 .ontology-object-attribute-panel__tree-action.is-danger {
-  background: var(--aircas-color-danger);
+  color: var(--aircas-color-danger);
+  border-color: var(--aircas-color-danger);
+  background: var(--aircas-color-danger-background);
+  box-shadow: none;
 }
 
 .ontology-object-attribute-panel__tree-action:focus-visible {

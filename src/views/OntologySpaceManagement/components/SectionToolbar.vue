@@ -130,7 +130,7 @@ p {
   border-color: var(--aircas-color-accent-cyan);
   background: var(--aircas-color-active-background);
   color: var(--aircas-color-text-primary);
-  box-shadow: 0 0 10px var(--aircas-color-cyan-soft);
+  box-shadow: 0 0 10px var(--aircas-color-accent-cyan-soft);
 }
 
 .section-toolbar__view-icon {

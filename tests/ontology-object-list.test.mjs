@@ -19,17 +19,39 @@ test("object table operation column keeps all actions on one line", () => {
 
 test("object card and table actions use the prototype button colors", () => {
   const source = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectList.vue");
-  assert.equal((source.match(/class="aircas-button ontology-object-action ontology-object-action--view"/g) || []).length, 2);
-  assert.equal((source.match(/class="aircas-button ontology-object-action ontology-object-action--edit"/g) || []).length, 2);
-  assert.equal((source.match(/class="aircas-button ontology-object-action ontology-object-action--export"/g) || []).length, 2);
-  assert.equal((source.match(/class="aircas-button ontology-object-action ontology-object-action--delete"/g) || []).length, 2);
+  assert.equal((source.match(/class="aircas-button ontology-object-action ontology-object-action--view"/g) || []).length, 1);
+  assert.equal((source.match(/class="aircas-button ontology-object-action ontology-object-action--edit"/g) || []).length, 1);
+  assert.equal((source.match(/class="aircas-button ontology-object-action ontology-object-action--export"/g) || []).length, 1);
+  assert.equal((source.match(/class="aircas-button ontology-object-action ontology-object-action--delete"/g) || []).length, 1);
   assert.match(
     source,
-    /ontology-object-action--view[\s\S]*background: linear-gradient\(90deg, var\(--aircas-color-active-background\), var\(--aircas-color-blue-fill\)\)/,
+    /\.ontology-object-card__actions\s+\.ontology-object-action--view\.aircas-button\.el-button:not\(\.el-button--primary\)[\s\S]*background: linear-gradient\(90deg, var\(--aircas-color-active-background\), var\(--aircas-color-blue-fill\)\)/,
   );
-  assert.match(source, /ontology-object-action--edit[\s\S]*background: var\(--aircas-color-blue-soft\)/);
-  assert.match(source, /ontology-object-action--export[\s\S]*background: var\(--aircas-color-panel-overlay-deep\)/);
-  assert.match(source, /ontology-object-action--delete[\s\S]*background: var\(--aircas-color-danger-background\)/);
+  assert.match(source, /\.ontology-object-card__actions\s+\.ontology-object-action--edit[\s\S]*background: var\(--aircas-color-blue-soft\)/);
+  assert.match(source, /\.ontology-object-card__actions\s+\.ontology-object-action--export[\s\S]*background: var\(--aircas-color-panel-overlay-deep\)/);
+  assert.match(
+    source,
+    /\.ontology-object-card__actions\s+\.ontology-object-action--delete\.aircas-button\.el-button\.el-button--danger[\s\S]*background: var\(--aircas-color-danger-background\)/,
+  );
+  assert.match(source, /ontology-object-card__actions \.ontology-object-action\.aircas-button\.el-button[\s\S]*height: 28px/);
+  assert.match(source, /ontology-object-action__icon[\s\S]*fill: none/);
+  assert.match(source, /ontology-object-action__icon[\s\S]*stroke: currentColor/);
+  assert.doesNotMatch(source, /<View|<EditPen|<Download|<Delete/);
+});
+
+test("object list view switch matches the space list and create uses the detail tone", () => {
+  const source = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectList.vue");
+  assert.match(source, /class="aircas-radio-group ontology-object-list__view-switch"/);
+  assert.match(source, /el-radio-button value="card"/);
+  assert.match(source, /el-radio-button value="table"/);
+  assert.match(source, /ontology-object-list__view-icon[\s\S]*fill: none/);
+  assert.match(source, /ontology-object-list__view-icon[\s\S]*stroke: currentColor/);
+  assert.match(
+    source,
+    /ontology-object-list__view-switch\.aircas-radio-group :deep\(\.el-radio-button__original-radio:checked \+ \.el-radio-button__inner\)[\s\S]*border-color: var\(--aircas-color-accent-cyan\)[\s\S]*background: var\(--aircas-color-active-background\)[\s\S]*box-shadow: 0 0 10px var\(--aircas-color-cyan-soft\)/,
+  );
+  assert.match(source, /class="aircas-button aircas-button--tone-primary"[\s\S]*新建本体/);
+  assert.doesNotMatch(source, /<Grid|<List/);
 });
 
 test("object cards use the prototype inset background and image glow", () => {

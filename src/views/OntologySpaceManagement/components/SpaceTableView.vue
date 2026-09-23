@@ -54,13 +54,13 @@ function spaceRow(row: unknown): OntologySpaceItem {
   --aircas-table-cell-padding: 14px 0;
   flex: 1;
   min-height: 320px;
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 8px;
   overflow: hidden;
-  background: linear-gradient(160deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  background: linear-gradient(160deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
   box-shadow:
-    inset 0 0 28px var(--aircas-color-border-shadow),
-    0 0 18px var(--aircas-color-blue-soft);
+    inset 0 0 28px var(--aircas-color-page-glow),
+    0 0 18px var(--aircas-color-accent-blue-soft);
 }
 
 .space-table-view :deep(.el-table__header-wrapper th.el-table__cell) {
@@ -79,7 +79,7 @@ function spaceRow(row: unknown): OntologySpaceItem {
 }
 
 .space-table-view :deep(.el-table__body tr:hover > td.el-table__cell) {
-  background-color: var(--aircas-color-blue-soft) !important;
+  background-color: var(--aircas-color-accent-blue-soft) !important;
 }
 
 .space-table-view__name {
@@ -95,10 +95,10 @@ function spaceRow(row: unknown): OntologySpaceItem {
   width: 48px;
   height: 48px;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 8px;
   background: var(--aircas-color-section-header);
-  box-shadow: 0 0 12px var(--aircas-color-cyan-soft);
+  box-shadow: 0 0 12px var(--aircas-color-accent-cyan-soft);
   color: var(--aircas-color-accent-cyan);
   flex-shrink: 0;
 }

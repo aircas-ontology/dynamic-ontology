@@ -112,7 +112,7 @@ test("mapper converts contract list items into page ontology space items", async
 
 test("space management page maps successful list responses and falls back to page mock on failure", () => {
   const managementSource = readSource("../src/views/OntologySpaceManagement/composables/useSpaceManagement.ts");
-  assert.match(managementSource, /import \{ getOntologySpaceListInterface \} from "@\/apis";/);
+  assert.match(managementSource, /import \{ getOntologyOverviewCountInterface, getOntologySpaceListInterface \} from "@\/apis";/);
   assert.match(managementSource, /import \{ ontologySpaceListMock \} from "@\/mocks\/ontologySpaceListMock\/ontologySpaceListMock";/);
   assert.match(managementSource, /mapOntologySpaceList/);
   assert.match(managementSource, /getOntologySpaceListInterface\(\)/);

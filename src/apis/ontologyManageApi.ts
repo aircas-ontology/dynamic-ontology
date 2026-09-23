@@ -1,3 +1,5 @@
+import type { AxiosResponse } from "axios";
+
 import type {
   ApiResponse,
   CreateOntologyCategoryTreeParams,
@@ -11,8 +13,11 @@ import type {
   OntologyRelationCategoryTreeData,
   OntologyRelationCategoryTreeParams,
   OntologySpaceListData,
+  GetOntologyOverviewCountData,
   GetOntologySpaceStatisticData,
   GetOntologySpaceStatisticParams,
+  ImportOntologySpaceData,
+  ImportOntologySpaceParams,
   UpdateOntologyCategoryNameParams,
   UpdateOntologyLinkParams,
   UpdateOntologyRelationCategoryNameParams,
@@ -22,12 +27,14 @@ import type {
   CreateOntologySpaceWithCanvasContentParams,
   DeleteOntologySpaceData,
   DeleteOntologySpaceParams,
+  ExportOntologySpaceFile,
+  ExportOntologySpaceParams,
   UpdateOntologySpaceData,
   UpdateOntologySpaceParams,
   UploadOntologyThumbnailData,
   UploadOntologyThumbnailParams,
 } from "@/types";
-import { request } from "@/utils/request";
+import { request, requestFull, RequestError } from "@/utils/request";
 
 /**
  * @description 创建本体空间。
@@ -50,10 +57,10 @@ export function createOntologySpaceInterface(params: CreateOntologySpaceParams):
 }
 
 /**
- * @description 通过概念模型画布创建本体空间及其对象、属性和关系。
+ * @description 通过概念模型画布创建本体空间，或向已有空间写入对象、属性和关系。
  * 请求方式：POST `/ontology/space/canvas`
- * @param params 画布空间、对象、属性和关系内容。
- * @returns 标准 API 响应，data 包含新建空间 id。
+ * @param params 新建空间或已有空间下的画布对象、属性和关系内容。
+ * @returns 标准 API 响应，data 包含目标空间 id。
  */
 export function createOntologySpaceWithCanvasContentInterface(
   params: CreateOntologySpaceWithCanvasContentParams,
@@ -98,6 +105,26 @@ export function updateOntologySpaceInterface(params: UpdateOntologySpaceParams):
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "put",
     data: params,
+  });
+}
+
+/**
+ * @description 通过 multipart/form-data 导入文件创建本体空间。
+ *
+ * 请求方式：POST `/ontology/space/import`
+ *
+ * @param params 请求参数。
+ * @param {File} params.file 导入文件，必填。
+ * @returns 标准 API 响应，data 为字符串数组，元素含义文档未说明。
+ */
+export function postImportOntologySpaceInterface(params: ImportOntologySpaceParams): Promise<ApiResponse<ImportOntologySpaceData>> {
+  const formData = new FormData();
+  formData.append("file", params.file);
+  return request<ImportOntologySpaceData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space/import",
+    method: "post",
+    data: formData,
+    headers: { "Content-Type": "multipart/form-data" },
   });
 }
 
@@ -172,6 +199,20 @@ export function getOntologySpaceListInterface(): Promise<ApiResponse<OntologySpa
 }
 
 /**
+ * @description 获取本体概览页面的资源数量统计。
+ *
+ * 请求方式：GET `/ontology/overview/count`
+ *
+ * @returns 标准 API 响应，data 为本体空间、对象、行为、函数、属性和关系统计数据。
+ */
+export function getOntologyOverviewCountInterface(): Promise<ApiResponse<GetOntologyOverviewCountData>> {
+  return request<GetOntologyOverviewCountData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/overview/count",
+    method: "get",
+  });
+}
+
+/**
  * @description 查询指定本体空间下的资源数量统计。
  *
  * 请求方式：GET `/ontology/space/statistic`
@@ -186,6 +227,44 @@ export function getOntologySpaceStatisticInterface(params: GetOntologySpaceStati
     method: "get",
     params,
   });
+}
+
+/**
+ * @description 读取导出响应头中的字符串值。
+ * @param headers axios 响应头。
+ * @param name 响应头名称。
+ * @returns 字符串头值；缺失或不是字符串时返回空字符串。
+ */
+function readExportResponseHeader(headers: AxiosResponse["headers"], name: string): string {
+  const raw = headers[name];
+  return typeof raw === "string" ? raw : "";
+}
+
+/**
+ * @description 导出本体空间，包含分类树、全部本体 schema 与实例数据。
+ *
+ * 请求方式：GET `/ontology/space/export`
+ *
+ * 在线文档未声明 JSON 响应体，成功结果按文件字节返回。
+ * @param params 查询参数。
+ * @param {number} params.spaceId 本体空间 id，必填。
+ * @returns 文件内容和用于命名的响应头。
+ */
+export async function getExportOntologySpaceInterface(params: ExportOntologySpaceParams): Promise<ExportOntologySpaceFile> {
+  const response = await requestFull<Blob>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space/export",
+    method: "get",
+    params,
+    responseType: "blob",
+  });
+  if (!(response.data instanceof Blob)) {
+    throw new RequestError("导出失败，请重试。");
+  }
+  return {
+    blob: response.data,
+    contentDisposition: readExportResponseHeader(response.headers, "content-disposition"),
+    contentType: readExportResponseHeader(response.headers, "content-type"),
+  };
 }
 
 /**

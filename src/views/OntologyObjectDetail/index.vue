@@ -4,7 +4,7 @@
       <ObjectDetailTabs :active-tab="activeTab" :available-tabs="availableTabs" :object-name="objectName" :counts="tabCounts" @update:active-tab="openTab" />
       <div class="ontology-object-detail__content">
         <router-view v-slot="{ Component }">
-          <component v-if="Component" :is="Component as any" :counts="objectCounts" />
+          <component v-if="Component" :is="Component as any" v-bind="detailChildProps" v-on="overviewListeners" />
         </router-view>
       </div>
     </div>
@@ -17,18 +17,21 @@ import { useRouter } from "vue-router";
 import type { OntologyObjectDetailTab } from "@/types";
 import ObjectDetailTabs from "./components/ObjectDetailTabs.vue";
 import { useObjectDetailWorkspace } from "./composables/useObjectDetailWorkspace";
+import { useObjectResourceStatistic } from "./composables/useObjectResourceStatistic";
 import { routeNameForObjectDetailTab } from "./utils/objectDetailTabs";
 
 const router = useRouter();
 const { activeTab, availableTabs, objectName, objectId, spaceId, spaceName } = useObjectDetailWorkspace();
+const { counts: objectCounts, loading: statisticLoading, error: statisticError, loadObjectResourceStatistic } = useObjectResourceStatistic(objectId);
 
-/** 对象资源统计 mock 数据，后续接入真实接口时替换。 */
-const objectCounts = computed<Record<string, number>>(() => ({
-  entity: 28_640,
-  property: 23,
-  relation: 8,
-  behavior: 24,
-}));
+/** @description 向当前子页面传递统计计数；对象概览同时传递加载和错误状态。 */
+const detailChildProps = computed(() => {
+  if (activeTab.value !== "object") return { counts: objectCounts.value };
+  return { counts: objectCounts.value, loading: statisticLoading.value, error: statisticError.value };
+});
+
+/** @description 仅在对象概览页把重试交给统计加载。 */
+const overviewListeners = computed(() => (activeTab.value === "object" ? { retry: loadObjectResourceStatistic } : {}));
 
 /** Tab 徽标计数：属性/关系/行为，对象 Tab 不显示计数。 */
 const tabCounts = computed<Partial<Record<Exclude<OntologyObjectDetailTab, "object">, number>>>(() => ({

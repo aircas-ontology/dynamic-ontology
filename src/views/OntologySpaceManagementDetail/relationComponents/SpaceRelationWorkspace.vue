@@ -24,7 +24,7 @@
         </div>
         <div class="space-relation-workspace__actions">
           <div class="space-relation-workspace__view-switch" role="group" aria-label="展示方式">
-            <el-tooltip content="关系图" placement="top">
+            <el-tooltip content="关系图" placement="top" popper-class="aircas-popper">
               <button
                 type="button"
                 class="space-relation-workspace__view-btn"
@@ -36,7 +36,7 @@
                 <el-icon><Share /></el-icon>
               </button>
             </el-tooltip>
-            <el-tooltip content="列表" placement="top">
+            <el-tooltip content="列表" placement="top" popper-class="aircas-popper">
               <button
                 type="button"
                 class="space-relation-workspace__view-btn"
@@ -49,7 +49,7 @@
               </button>
             </el-tooltip>
           </div>
-          <el-button class="aircas-button" type="primary" :icon="Plus" @click="openRelationCreate">添加</el-button>
+          <el-button class="aircas-button aircas-button--tone-primary" :icon="Plus" @click="openRelationCreate">添加</el-button>
         </div>
       </header>
 
@@ -65,13 +65,13 @@
         >
           <el-option v-for="item in relationObjectOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
-        <el-button class="aircas-button" @click="resetFilter">重置</el-button>
+        <el-button class="aircas-button aircas-button--tone-ghost" @click="resetFilter">重置</el-button>
       </div>
 
       <div v-if="status === 'loading'" class="space-relation-workspace__state" role="status"><AircasLoading>加载中...</AircasLoading></div>
       <div v-else-if="status === 'error'" class="space-relation-workspace__state space-relation-workspace__state-error" role="alert">
         <span>{{ errorMessage }}</span>
-        <el-button class="aircas-button" type="primary" @click="loadSpaceRelationWorkspace">重试</el-button>
+        <el-button class="aircas-button aircas-button--tone-primary" @click="loadSpaceRelationWorkspace">重试</el-button>
       </div>
       <template v-else>
         <RelationGraphView
@@ -99,8 +99,12 @@
               <el-table-column label="操作" width="180" fixed="right">
                 <template #default="scope">
                   <div class="space-relation-workspace__row-actions">
-                    <el-button class="aircas-button" size="small" @click="openRelationEdit(asRelation(scope.row))">编辑</el-button>
-                    <el-button class="aircas-button" type="danger" size="small" @click="openRelationDelete(asRelation(scope.row))">删除</el-button>
+                    <el-button class="aircas-button aircas-button--tone-secondary" size="small" @click="openRelationEdit(asRelation(scope.row))"
+                      >编辑</el-button
+                    >
+                    <el-button class="aircas-button aircas-button--tone-danger" type="danger" size="small" @click="openRelationDelete(asRelation(scope.row))"
+                      >删除</el-button
+                    >
                   </div>
                 </template>
               </el-table-column>
@@ -533,8 +537,8 @@ async function handleRelationDelete() {
   padding: 8px 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
-  box-shadow: inset 0 0 18px var(--aircas-color-divider);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 18px var(--aircas-color-page-glow);
 }
 .space-relation-workspace__title {
   display: flex;
@@ -564,7 +568,7 @@ async function handleRelationDelete() {
   padding: 2px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 6px;
-  background: var(--aircas-color-panel-background-deep);
+  background: var(--aircas-color-overlay-deep);
 }
 .space-relation-workspace__view-btn {
   display: inline-flex;
@@ -589,7 +593,10 @@ async function handleRelationDelete() {
   opacity: 1;
   border-color: var(--aircas-color-accent-cyan);
   color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-card-background-active);
+  background: var(--aircas-color-active-background);
+  box-shadow:
+    inset 0 0 10px var(--aircas-color-accent-cyan-fill),
+    0 0 10px var(--aircas-color-accent-cyan-soft);
 }
 .space-relation-workspace__filter {
   display: flex;
@@ -599,7 +606,7 @@ async function handleRelationDelete() {
   padding: 8px 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: var(--aircas-color-panel-background-deep);
+  background: var(--aircas-color-overlay-deep);
 }
 .space-relation-workspace__filter-objects {
   width: min(360px, 100%);

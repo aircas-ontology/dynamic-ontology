@@ -193,10 +193,10 @@ watch(keyword, (value) => treeRef.value?.filter(value));
 .ontology-subspace-create__tree-panel,
 .ontology-subspace-create__content {
   min-width: 0;
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 .ontology-subspace-create__tree-panel {
   display: flex;

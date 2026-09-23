@@ -10,8 +10,8 @@
   >
     <p>确认删除关系「{{ displayName }}」吗？此操作不可恢复。</p>
     <template #footer>
-      <el-button class="aircas-button" @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button class="aircas-button" type="danger" :loading="loading" @click="emit('confirm')">确认删除</el-button>
+      <el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">取消</el-button>
+      <el-button class="aircas-button aircas-button--tone-danger" type="danger" :loading="loading" @click="emit('confirm')">确认删除</el-button>
     </template>
   </el-dialog>
 </template>

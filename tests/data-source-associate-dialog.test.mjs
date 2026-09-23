@@ -94,6 +94,7 @@ test("data source mapping dialog delegates automatic binding to the parent", () 
 
 test("attribute panel wires api catalog and all properties to the data source mapping dialog", () => {
   const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
   assert.match(source, /import DataSourceAssociateDialog from "\.\/DataSourceAssociateDialog\.vue"/);
   assert.match(source, /const dataSourceDialogVisible = ref\(false\)/);
   assert.match(source, /:catalog="dataSourceCatalog"/);
@@ -101,11 +102,33 @@ test("attribute panel wires api catalog and all properties to the data source ma
   assert.match(source, /@table-change="loadDataSourceColumns"/);
   assert.match(source, /dataSourceId: record\.tableName/);
   assert.match(source, /dataSourceId: table\.dataSourceId/);
-  assert.match(source, /void loadDataSourceTables\(\)/);
   assert.match(source, /@submit="handleDataSourceSubmit"/);
   assert.match(source, /ref="dataSourceDialogRef"/);
   assert.match(source, /schemaName: record\.schemaName/);
-  assert.match(source, /function openDataSource\(\) \{[\s\S]*dataSourceDialogVisible\.value = true;[\s\S]*loadDataSourceTables/);
+  assert.match(source, /:data-source-opening="dataSourceOpening"/);
+  assert.match(tableSource, /dataSourceOpening:\s*boolean/);
+  assert.match(tableSource, /:loading="dataSourceOpening"/);
+});
+
+test("attribute panel loads property datasource info before opening the dialog", () => {
+  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const openSource = source.match(/async function openDataSource\(\)[\s\S]*?async function loadDataSourceTables/)?.[0] ?? "";
+
+  assert.match(source, /getOntologyPropertyByOntologyIdInterface/);
+  assert.match(source, /const ontologyPropertyDetails = ref<GetOntologyPropertyByOntologyIdData>/);
+  assert.match(source, /function resolvePropertyDataSourceBind/);
+  assert.match(source, /detail\.datasourceId/);
+  assert.match(source, /detail\?\.datasourceColumnName/);
+  assert.doesNotMatch(source, /dataSource:\s*null,/);
+  assert.match(openSource, /getOntologyPropertyByOntologyIdInterface\(\{ ontologyUniqueIdentifier \}\)/);
+  assert.match(openSource, /ontologyPropertyDetails\.value = infoResponse\.data/);
+  assert.match(openSource, /await loadDataSourceTables\(\)/);
+  assert.match(openSource, /await loadAssociatedDataSourceColumns\(\)/);
+  assert.match(openSource, /dataSourceDialogVisible\.value = true/);
+  assert.doesNotMatch(openSource, /getOntologyPropertyDetailByOntologyIdInterface/);
+  assert.ok(openSource.indexOf("getOntologyPropertyByOntologyIdInterface") < openSource.indexOf("loadDataSourceTables"));
+  assert.ok(openSource.indexOf("loadDataSourceTables") < openSource.indexOf("loadAssociatedDataSourceColumns"));
+  assert.ok(openSource.indexOf("loadAssociatedDataSourceColumns") < openSource.indexOf("dataSourceDialogVisible.value = true"));
 });
 
 test("attribute panel persists local datasource drafts only from dialog submit", () => {

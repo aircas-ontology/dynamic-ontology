@@ -15,6 +15,7 @@ test("canvas space creation contract exposes nested canvas content", () => {
   assert.match(typeSource, /CreateOntologySpaceWithCanvasContentParams/);
   assert.match(typeSource, /ontologies\?: CanvasOntology\[\]/);
   assert.match(typeSource, /properties\?: CanvasProperty\[\]/);
+  assert.match(typeSource, /storageGroup\?: string/);
   assert.match(typeSource, /links\?: CanvasLink\[\]/);
   assert.match(typeSource, /spaceId\?: number/);
   assert.match(apiSource, /createOntologySpaceWithCanvasContentInterface/);
@@ -32,4 +33,14 @@ test("conceptual model page maps canvas data and handles save states", () => {
   assert.match(source, /toOntologyApiName/);
   assert.match(source, /ElMessage\.error/);
   assert.match(source, /router\.push/);
+});
+
+test("conceptual model save uses the current space id and save label", () => {
+  const source = readSource("../src/views/OntologyConceptualModelCreate/index.vue");
+  const actionSource = readSource("../src/views/OntologySpaceManagement/composables/useSpaceManagementActions.ts");
+  assert.match(actionSource, /spaceId: space\.id/);
+  assert.match(source, /route\.query\.spaceId/);
+  assert.match(source, /params\.spaceId = routeSpaceId\.value/);
+  assert.match(source, />保存<\/el-button>/);
+  assert.doesNotMatch(source, /保存并创建空间/);
 });

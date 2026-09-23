@@ -2,7 +2,7 @@
 
 ## 需求理解
 
-`docs/20260920/创建本体之间关系Api-shijian.md` 将请求体可选字段由 `comment` 改为 `description`，同步类型、JSDoc 与创建提交赋值。
+`docs/20260920/createOntologyLinkApi-shijian.md` 将请求体可选字段由 `comment` 改为 `description`，同步类型、JSDoc 与创建提交赋值。
 
 ## 修改范围
 

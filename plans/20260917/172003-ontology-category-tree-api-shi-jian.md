@@ -4,7 +4,7 @@
 
 ## 需求理解
 
-按 `docs/20260917/查询本体分类体系树API-shijian.md` 生成 API/Types/Mock，并映射到对象页概念层级树；右侧 sections 仍为空。
+按 `docs/20260917/getOntologyCategoryTreeApi-shijian.md` 生成 API/Types/Mock，并映射到对象页概念层级树；右侧 sections 仍为空。
 
 ## 契约映射
 

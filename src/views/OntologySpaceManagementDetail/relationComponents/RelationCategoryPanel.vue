@@ -10,7 +10,7 @@
     </el-input>
     <div class="relation-category-panel__content">
       <div v-if="!displayTreeData.length" class="relation-category-panel__empty">
-        <el-button class="aircas-button" type="primary" @click="emit('create', '')">添加关系分类</el-button>
+        <el-button class="aircas-button aircas-button--tone-primary" @click="emit('create', '')">添加关系分类</el-button>
       </div>
       <el-tree
         v-else-if="displayTreeData.length"
@@ -18,7 +18,7 @@
         ref="treeRef"
         :data="displayTreeData"
         node-key="id"
-        default-expand-all
+        :default-expanded-keys="defaultExpandedKeys"
         highlight-current
         :current-node-key="selectedNodeId || undefined"
         :expand-on-click-node="false"
@@ -26,47 +26,51 @@
         @node-click="handleNodeClick"
       >
         <template #default="{ data }">
-          <span v-if="isRelationNode(data)" class="relation-category-panel__relation-row" :title="data.label">
-            <span class="relation-category-panel__relation-dot" aria-hidden="true" />
-            <span class="relation-category-panel__relation-name">{{ data.label }}</span>
-          </span>
-          <span v-else-if="isCategoryNode(data)" class="relation-category-panel__node" :title="data.label">
-            <i class="fa fa-folder-open-o" aria-hidden="true"></i>
-            <span class="relation-category-panel__label">{{ data.label }}</span>
-            <span class="relation-category-panel__count">{{ data.relationCount }}</span>
-            <span v-if="canCreate || canUpdate || canDelete" class="relation-category-panel__actions" @click.stop>
-              <el-tooltip v-if="canCreate" content="添加子分类" placement="top" :show-after="200">
-                <button
-                  type="button"
-                  class="relation-category-panel__action relation-category-panel__action--add"
-                  aria-label="添加子分类"
-                  @click="emit('create', data.id)"
-                >
-                  <el-icon><Plus /></el-icon>
-                </button>
-              </el-tooltip>
-              <el-tooltip v-if="canUpdate && !isRootCategory(data.id)" content="编辑分类" placement="top" :show-after="200">
-                <button
-                  type="button"
-                  class="relation-category-panel__action relation-category-panel__action--edit"
-                  aria-label="编辑分类"
-                  @click="emit('edit', data.id)"
-                >
-                  <el-icon><Edit /></el-icon>
-                </button>
-              </el-tooltip>
-              <el-tooltip v-if="canDelete && !isRootCategory(data.id)" content="删除分类" placement="top" :show-after="200">
-                <button
-                  type="button"
-                  class="relation-category-panel__action relation-category-panel__action--danger"
-                  aria-label="删除分类"
-                  @click="emit('delete', data.id)"
-                >
-                  <el-icon><Delete /></el-icon>
-                </button>
-              </el-tooltip>
+          <div class="relation-category-panel__tree-node">
+            <span v-if="isRelationNode(data)" class="relation-category-panel__relation-row" :title="data.label">
+              <span class="relation-category-panel__relation-dot" aria-hidden="true"></span>
+              <span class="relation-category-panel__relation-name">{{ data.label }}</span>
             </span>
-          </span>
+            <template v-else-if="isCategoryNode(data)">
+              <span class="relation-category-panel__tree-label" :title="data.label">
+                <el-icon><FolderOpened v-if="data.children?.length" /><CollectionTag v-else /></el-icon>
+                <span class="relation-category-panel__label">{{ data.label }}</span>
+                <em class="relation-category-panel__count">{{ data.relationCount }}</em>
+              </span>
+              <span v-if="canCreate || canUpdate || canDelete" class="relation-category-panel__actions" @click.stop>
+                <el-tooltip v-if="canCreate" content="添加子分类" placement="top" popper-class="aircas-popper" :show-after="200">
+                  <button
+                    type="button"
+                    class="relation-category-panel__action relation-category-panel__action--add"
+                    aria-label="添加子分类"
+                    @click="emit('create', data.id)"
+                  >
+                    <el-icon><Plus /></el-icon>
+                  </button>
+                </el-tooltip>
+                <el-tooltip v-if="canUpdate && !isRootCategory(data.id)" content="编辑分类" placement="top" popper-class="aircas-popper" :show-after="200">
+                  <button
+                    type="button"
+                    class="relation-category-panel__action relation-category-panel__action--edit"
+                    aria-label="编辑分类"
+                    @click="emit('edit', data.id)"
+                  >
+                    <el-icon><EditPen /></el-icon>
+                  </button>
+                </el-tooltip>
+                <el-tooltip v-if="canDelete && !isRootCategory(data.id)" content="删除分类" placement="top" popper-class="aircas-popper" :show-after="200">
+                  <button
+                    type="button"
+                    class="relation-category-panel__action relation-category-panel__action--danger"
+                    aria-label="删除分类"
+                    @click="emit('delete', data.id)"
+                  >
+                    <el-icon><Delete /></el-icon>
+                  </button>
+                </el-tooltip>
+              </span>
+            </template>
+          </div>
         </template>
       </el-tree>
       <el-empty v-if="displayTreeData.length && !hasSearchResult" description="暂无匹配分类" :image-size="54" />
@@ -76,7 +80,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import { Delete, Edit, Plus, Search } from "@element-plus/icons-vue";
+import { CollectionTag, Delete, EditPen, FolderOpened, Plus, Search } from "@element-plus/icons-vue";
 import type { TreeInstance, TreeNodeData } from "element-plus";
 import type { OntologyRelationCategoryNode, OntologyRelationClass } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
@@ -87,7 +91,7 @@ interface DisplayCategoryNode {
   id: string;
   label: string;
   relationCount: number;
-  children: DisplayTreeNode[];
+  children?: DisplayTreeNode[];
 }
 
 /** 关系分类树渲染用关系叶子节点，文案取关系名称。 */
@@ -96,7 +100,6 @@ interface DisplayRelationNode {
   id: string;
   label: string;
   categoryId: string;
-  children: DisplayTreeNode[];
 }
 
 type DisplayTreeNode = DisplayCategoryNode | DisplayRelationNode;
@@ -154,16 +157,16 @@ function enrich(nodes: OntologyRelationCategoryNode[]): DisplayCategoryNode[] {
         id: `rel-${item.id}`,
         label: item.displayName,
         categoryId: item.categoryId,
-        children: [],
       }));
     const ids = new Set(collectCategoryIds(node));
     const relationCount = props.relations.filter((item) => ids.has(item.categoryId)).length;
+    const children = [...childCategories, ...relationLeaves];
     return {
       kind: "category",
       id: node.id,
       label: node.label,
       relationCount,
-      children: [...childCategories, ...relationLeaves],
+      ...(children.length ? { children } : {}),
     };
   });
 }
@@ -195,11 +198,22 @@ function isRelationNode(value: unknown): value is DisplayRelationNode {
 function hasMatchingNode(nodes: DisplayTreeNode[], searchValue: string): boolean {
   return nodes.some((node) => {
     if (node.label.toLocaleLowerCase().includes(searchValue)) return true;
-    return isCategoryNode(node) ? hasMatchingNode(node.children, searchValue) : false;
+    return isCategoryNode(node) ? hasMatchingNode(node.children ?? [], searchValue) : false;
   });
 }
 
 const displayTreeData = computed(() => enrich(Array.isArray(props.treeData) ? props.treeData : []));
+
+/**
+ * @description 收集分类节点 id，供 el-tree 默认展开；关系叶子不展开。
+ * @param nodes 混合树节点。
+ * @returns 分类节点 id 列表。
+ */
+function collectDisplayCategoryIds(nodes: DisplayTreeNode[]): string[] {
+  return nodes.flatMap((node) => (isCategoryNode(node) ? [node.id, ...collectDisplayCategoryIds(node.children ?? [])] : []));
+}
+
+const defaultExpandedKeys = computed(() => collectDisplayCategoryIds(displayTreeData.value));
 const rootCategoryId = computed(() => displayTreeData.value[0]?.id ?? ROOT_RELATION_CATEGORY_ID);
 const hasSearchResult = computed(() => {
   const searchValue = keyword.value.trim().toLocaleLowerCase();
@@ -259,8 +273,8 @@ watch(
   overflow: hidden;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-divider);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
   flex-direction: column;
   gap: 8px;
 }
@@ -291,65 +305,75 @@ watch(
   --el-tree-node-hover-bg-color: var(--aircas-color-hover-background);
 }
 .relation-category-panel :deep(.el-tree-node__content) {
-  height: 30px;
+  min-height: 32px;
+  height: auto;
+  padding: 4px 0;
   border-radius: 4px;
+}
+.relation-category-panel :deep(.el-tree-node__content:hover) {
+  background: var(--aircas-color-hover-background);
 }
 .relation-category-panel :deep(.el-tree-node.is-current > .el-tree-node__content) {
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-card-background-active);
+  background: var(--aircas-color-active-background);
 }
-.relation-category-panel__node {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding-right: 4px;
-  font-size: 13px;
-}
-.relation-category-panel__node .fa {
-  font-size: 13px;
-  line-height: 1;
-  color: inherit;
+.relation-category-panel :deep(.el-tree-node__expand-icon) {
   flex-shrink: 0;
+  color: var(--aircas-color-text-secondary);
+}
+
+.relation-category-panel :deep(.el-tree-node__expand-icon.is-leaf) {
+  color: var(--aircas-color-transparent);
+}
+
+.relation-category-panel__tree-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+}
+.relation-category-panel__tree-label {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+  color: var(--aircas-color-text-secondary);
 }
 .relation-category-panel__label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .relation-category-panel__count {
-  display: inline-flex;
-  align-items: center;
   flex-shrink: 0;
   padding: 0 6px;
-  font-size: 12px;
-  line-height: 16px;
+  border-radius: 10px;
   color: var(--aircas-color-text-muted);
   border: 1px solid var(--aircas-color-border-soft);
-  border-radius: 8px;
   background: var(--aircas-color-input-background);
+  font-size: 11px;
+  font-style: normal;
 }
 .relation-category-panel__relation-row {
   display: inline-flex;
   min-width: 0;
   align-items: center;
-  gap: 8px;
-  padding-left: 4px;
+  gap: 6px;
   color: var(--aircas-color-text-secondary);
 }
 .relation-category-panel__relation-dot {
+  width: 6px;
+  height: 6px;
   flex-shrink: 0;
-  width: 8px;
-  height: 8px;
   border-radius: 50%;
   background: var(--aircas-color-accent-cyan);
-  box-shadow: 0 0 4px var(--aircas-color-accent-cyan-soft);
 }
 .relation-category-panel__relation-name {
   min-width: 0;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -363,7 +387,8 @@ watch(
   pointer-events: none;
   transition: opacity 0.15s ease;
 }
-.relation-category-panel :deep(.el-tree-node__content:hover) .relation-category-panel__actions {
+.relation-category-panel :deep(.el-tree-node__content:hover) .relation-category-panel__actions,
+.relation-category-panel :deep(.el-tree-node__content:focus-within) .relation-category-panel__actions {
   opacity: 1;
   pointer-events: auto;
 }
@@ -376,15 +401,25 @@ watch(
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  color: var(--aircas-color-text-inverse);
+  color: var(--aircas-color-text-primary);
+  border: 1px solid var(--aircas-color-border);
 }
 .relation-category-panel__action--add {
-  background: var(--aircas-color-button-primary-background);
+  color: var(--aircas-color-text-primary);
+  border-color: var(--aircas-color-accent-cyan);
+  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-accent-blue-fill));
+  box-shadow:
+    inset 0 0 10px var(--aircas-color-accent-cyan-fill),
+    0 0 8px var(--aircas-color-accent-cyan-soft);
 }
 .relation-category-panel__action--edit {
-  background: var(--aircas-color-accent-blue);
+  color: var(--aircas-color-accent-blue);
+  border-color: var(--aircas-color-accent-blue-border);
+  background: var(--aircas-color-accent-blue-soft);
 }
 .relation-category-panel__action--danger {
-  background: var(--aircas-color-danger);
+  color: var(--aircas-color-danger);
+  border-color: var(--aircas-color-danger);
+  background: var(--aircas-color-danger-background);
 }
 </style>

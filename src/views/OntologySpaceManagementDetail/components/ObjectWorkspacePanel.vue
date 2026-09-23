@@ -58,7 +58,7 @@
       :error="objectCreateError"
       :editing-item="editingObject"
       @submit-manual="createOntologyObject"
-      @submit-import="createOntologyObjects"
+      @submit-import="importOntologyObjects"
       @submit-edit="updateOntologyObject"
       @open-llm="openOntologyLlmBuilder"
     />
@@ -68,6 +68,13 @@
       :submitting="objectDeleteSubmitting"
       :error="objectDeleteError"
       @confirm="confirmDeleteOntologyObject"
+    />
+    <OntologyObjectExportDialog
+      v-model="objectExportVisible"
+      :object-name="exportingObject?.displayName ?? ''"
+      :submitting="objectExporting"
+      :error="objectExportError"
+      @confirm="confirmExportOntologyObject"
     />
   </section>
 </template>
@@ -86,6 +93,7 @@ import CategoryTreeRenameDialog from "./CategoryTreeRenameDialog.vue";
 import CategoryTreeDeleteDialog from "./CategoryTreeDeleteDialog.vue";
 import OntologyObjectCreateDialog from "./OntologyObjectCreateDialog.vue";
 import OntologyObjectDeleteDialog from "./OntologyObjectDeleteDialog.vue";
+import OntologyObjectExportDialog from "./OntologyObjectExportDialog.vue";
 import OntologyObjectList from "./OntologyObjectList.vue";
 import { useObjectWorkspaceCategoryActions } from "../composables/useObjectWorkspaceCategoryActions";
 import { useObjectWorkspaceObjectActions } from "../composables/useObjectWorkspaceObjectActions";
@@ -136,14 +144,20 @@ const {
   objectDeleteSubmitting,
   objectDeleteError,
   deletingObject,
+  objectExportVisible,
+  objectExporting,
+  objectExportError,
+  exportingObject,
   parentOptions,
   openOntologyObjectCreateDialog,
   openOntologyObjectEditDialog,
   openOntologyObjectDeleteDialog,
-  createOntologyObjects,
+  importOntologyObjects,
   createOntologyObject,
   updateOntologyObject,
   confirmDeleteOntologyObject,
+  openOntologyObjectExportDialog,
+  confirmExportOntologyObject,
   openOntologyLlmBuilder,
 } = objectActions;
 const selectedNodeId = ref("");
@@ -202,6 +216,10 @@ function handleAction(action: string, item?: OntologyObjectItem) {
     openOntologyObjectDeleteDialog(item);
     return;
   }
+  if (action === "export" && item) {
+    openOntologyObjectExportDialog(item);
+    return;
+  }
   if (action === "view" && item) {
     const query: Record<string, string> = {};
     if (spaceId.value) query.spaceId = spaceId.value;
@@ -243,8 +261,8 @@ function handleAction(action: string, item?: OntologyObjectItem) {
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   color: var(--aircas-color-text-muted);
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
 @media (max-width: 1000px) {

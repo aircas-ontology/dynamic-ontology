@@ -21,6 +21,7 @@
       :attribute-search="attributeSearch"
       :attribute-loading="attributeLoading"
       :attribute-error="attributeError"
+      :data-source-opening="dataSourceOpening"
       :visible-attributes="visibleAttributes"
       @update:attribute-search="attributeSearch = $event"
       @open-data-source="openDataSource"
@@ -85,9 +86,15 @@ import {
   autoBindOntologyPropertyDatasourceInterface,
   getOntologyDatasourceColumnsInterface,
   getOntologyDatasourceTablesInterface,
+  getOntologyPropertyDetailByOntologyIdInterface,
   putBatchUpdateOntologyPropertiesInterface,
 } from "@/apis";
-import type { BatchUpdateOntologyPropertiesParams, GetOntologyDatasourceColumnsData, GetOntologyDatasourceTablesData } from "@/types";
+import type {
+  BatchUpdateOntologyPropertiesParams,
+  GetOntologyDatasourceColumnsData,
+  GetOntologyDatasourceTablesData,
+  GetOntologyPropertyDetailByOntologyIdData,
+} from "@/types";
 import { useRoute } from "vue-router";
 import { useAttributeCategoryTree } from "../composables/useAttributeCategoryTree";
 import { useAttributePropertyList } from "../composables/useAttributePropertyList";
@@ -214,7 +221,9 @@ const {
 
 const dataSourceDialogVisible = ref(false);
 const dataSourceDialogRef = ref<InstanceType<typeof DataSourceAssociateDialog> | null>(null);
+const dataSourceOpening = ref(false);
 const dataSourceCatalog = ref<DataSourceDatabase[]>([]);
+const ontologyPropertyDetails = ref<GetOntologyPropertyDetailByOntologyIdData>([]);
 const dataSourceTableLoading = ref(false);
 const dataSourceTableError = ref("");
 const dataSourceColumnLoading = ref(false);
@@ -227,9 +236,36 @@ const ontologyPropertyMappings = computed<OntologyPropertyMappingItem[]>(() =>
     displayName: item.displayName,
     apiName: item.apiName,
     categoryName: findCategory(categories.value, item.categoryId)?.label ?? "未分类",
-    dataSource: null,
+    dataSource: resolvePropertyDataSourceBind(item.uniqueIdentifier),
   })),
 );
+
+/**
+ * @description 将属性信息中的数据源表和字段信息转换为关联弹窗连接。
+ * @param propertyId 属性唯一标识。
+ * @returns 可回显的属性数据源连接；属性信息或目录不完整时返回 null。
+ */
+function resolvePropertyDataSourceBind(propertyId: string): PropertyDataSourceBind | null {
+  const detail = ontologyPropertyDetails.value.find((item) => item.uniqueIdentifier === propertyId);
+  const dataSourceId = detail?.datasourceId?.trim() ?? "";
+  const columnName = detail?.datasourceColumnName?.trim() ?? "";
+  if (!detail || !dataSourceId || !columnName) return null;
+  for (const database of dataSourceCatalog.value) {
+    const table = database.tables.find((item) => item.dataSourceId === dataSourceId);
+    const field = table?.fields.find((item) => item.name === columnName);
+    if (!table || !field) continue;
+    return {
+      databaseId: database.id,
+      databaseName: database.name,
+      schemaName: table.schemaName,
+      tableId: table.id,
+      tableName: table.name,
+      fieldId: field.id,
+      fieldName: field.name,
+    };
+  }
+  return null;
+}
 
 /** @description 将数据源表分页记录转换为关联弹窗目录。 */
 function mapDatasourceTables(response: GetOntologyDatasourceTablesData): DataSourceDatabase[] {
@@ -253,18 +289,45 @@ function mapDatasourceColumns(data: GetOntologyDatasourceColumnsData): DataSourc
   return data.map((column) => ({ id: column.columnName, name: column.columnName, dataType: column.type || column.description || "" }));
 }
 
-/** @description 打开数据源关联弹窗并加载当前本体空间的数据源表。 */
-function openDataSource() {
-  dataSourceDialogVisible.value = true;
-  void loadDataSourceTables();
+/**
+ * @description 查询属性信息并整合已有数据源关联，完成初始连线后打开弹窗。
+ * @returns 查询和初始化完成后的 Promise。
+ */
+async function openDataSource() {
+  if (dataSourceOpening.value) return;
+  const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
+  if (!ontologyUniqueIdentifier) {
+    ElMessage.error("缺少本体对象标识，无法加载属性数据源关联。");
+    return;
+  }
+  dataSourceOpening.value = true;
+  dataSourceTableError.value = "";
+  dataSourceColumnError.value = "";
+  try {
+    const infoResponse = await getOntologyPropertyDetailByOntologyIdInterface({ ontologyUniqueIdentifier });
+    if (infoResponse.code !== 200) throw new Error(infoResponse.message || "属性信息查询失败");
+    ontologyPropertyDetails.value = infoResponse.data;
+    const tableLoaded = await loadDataSourceTables();
+    if (!tableLoaded) throw new Error(dataSourceTableError.value || "数据源查询失败");
+    await loadAssociatedDataSourceColumns();
+    dataSourceDialogVisible.value = true;
+  } catch (cause) {
+    ontologyPropertyDetails.value = [];
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "属性数据源关联查询失败，请重试。");
+  } finally {
+    dataSourceOpening.value = false;
+  }
 }
 
-/** @description 查询当前本体空间的数据源表列表。 */
-async function loadDataSourceTables() {
+/**
+ * @description 查询当前本体空间的数据源表列表。
+ * @returns 是否成功获得数据源表目录。
+ */
+async function loadDataSourceTables(): Promise<boolean> {
   const spaceId = Number(route.query.spaceId);
   if (!Number.isFinite(spaceId)) {
     dataSourceTableError.value = "缺少本体空间标识，无法加载数据源。";
-    return;
+    return false;
   }
   dataSourceTableLoading.value = true;
   dataSourceTableError.value = "";
@@ -272,32 +335,56 @@ async function loadDataSourceTables() {
     const response = await getOntologyDatasourceTablesInterface({ spaceId, keyword: "", pageNum: 1, pageSize: 1000 });
     if (response.code !== 200) throw new Error(response.message || "数据源查询失败");
     dataSourceCatalog.value = mapDatasourceTables(response.data);
+    return true;
   } catch (cause) {
     dataSourceCatalog.value = [];
     dataSourceTableError.value = cause instanceof Error && cause.message.trim() ? cause.message : "数据源查询失败，请重试。";
-    ElMessage.error(dataSourceTableError.value);
+    return false;
   } finally {
     dataSourceTableLoading.value = false;
   }
 }
 
-/** @description 按选中的数据源表查询字段信息。 */
-async function loadDataSourceColumns(_databaseId: string, tableId: string) {
+/**
+ * @description 按选中的数据源表查询字段信息。
+ * @param _databaseId 数据源目录标识，当前目录只有一个分组。
+ * @param tableId 数据源表标识。
+ * @param showError 查询失败时是否立即显示消息。
+ * @returns 是否成功获得字段列表。
+ */
+async function loadDataSourceColumns(_databaseId: string, tableId: string, showError = true): Promise<boolean> {
   const spaceId = Number(route.query.spaceId);
-  if (!Number.isFinite(spaceId) || !tableId) return;
+  if (!Number.isFinite(spaceId) || !tableId) return false;
   const table = dataSourceCatalog.value[0]?.tables.find((item) => item.id === tableId);
-  if (!table) return;
+  if (!table) return false;
   dataSourceColumnLoading.value = true;
   dataSourceColumnError.value = "";
   try {
     const response = await getOntologyDatasourceColumnsInterface({ spaceId, dataSourceId: table.dataSourceId });
     if (response.code !== 200) throw new Error(response.message || "字段查询失败");
     table.fields = mapDatasourceColumns(response.data);
+    return true;
   } catch (cause) {
     dataSourceColumnError.value = cause instanceof Error && cause.message.trim() ? cause.message : "字段查询失败，请重试。";
-    ElMessage.error(dataSourceColumnError.value);
+    if (showError) ElMessage.error(dataSourceColumnError.value);
+    return false;
   } finally {
     dataSourceColumnLoading.value = false;
+  }
+}
+
+/**
+ * @description 加载属性信息中已有连接所涉及的全部数据源表字段。
+ * @returns 全部已关联数据源字段完成加载后的 Promise。
+ */
+async function loadAssociatedDataSourceColumns(): Promise<void> {
+  const dataSourceIds = [...new Set(ontologyPropertyDetails.value.map((detail) => detail.datasourceId?.trim() ?? "").filter(Boolean))];
+  for (const dataSourceId of dataSourceIds) {
+    const database = dataSourceCatalog.value.find((item) => item.tables.some((table) => table.dataSourceId === dataSourceId));
+    const table = database?.tables.find((item) => item.dataSourceId === dataSourceId);
+    if (!database || !table) throw new Error(`未找到已关联的数据源表「${dataSourceId}」`);
+    const columnLoaded = await loadDataSourceColumns(database.id, table.id, false);
+    if (!columnLoaded) throw new Error(dataSourceColumnError.value || `数据源表「${dataSourceId}」字段查询失败`);
   }
 }
 
@@ -372,14 +459,8 @@ onMounted(async () => {
   min-width: 0;
   min-height: 0;
   flex: 1;
-  grid-template-columns: minmax(260px, 28%) minmax(0, 1fr);
+  grid-template-columns: 360px minmax(0, 1fr);
   gap: 8px;
-}
-
-@media (max-width: 980px) {
-  .ontology-object-attribute-panel {
-    grid-template-columns: 230px minmax(0, 1fr);
-  }
 }
 
 @media (max-width: 720px) {

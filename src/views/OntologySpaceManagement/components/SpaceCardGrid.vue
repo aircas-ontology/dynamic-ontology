@@ -74,13 +74,13 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
   gap: 12px;
   min-height: 320px;
   padding: 12px;
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 8px;
   overflow-y: auto;
-  background: linear-gradient(160deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  background: linear-gradient(160deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
   box-shadow:
-    inset 0 0 28px var(--aircas-color-border-shadow),
-    0 0 18px var(--aircas-color-blue-soft);
+    inset 0 0 28px var(--aircas-color-page-glow),
+    0 0 18px var(--aircas-color-accent-blue-soft);
 }
 
 .space-card {
@@ -91,8 +91,8 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
   gap: 8px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(140deg, var(--aircas-color-panel-background), var(--aircas-color-panel-overlay));
-  box-shadow: 0 2px 12px var(--aircas-color-border-shadow);
+  background: linear-gradient(140deg, var(--aircas-color-panel-background), var(--aircas-color-overlay));
+  box-shadow: 0 2px 12px var(--aircas-color-page-glow);
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -102,15 +102,15 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
 .space-card:hover {
   border-color: var(--aircas-color-accent-cyan);
   box-shadow:
-    0 0 16px var(--aircas-color-cyan-soft),
-    inset 0 0 14px var(--aircas-color-blue-soft);
+    0 0 16px var(--aircas-color-accent-cyan-soft),
+    inset 0 0 14px var(--aircas-color-accent-blue-soft);
   transform: translateY(-2px);
 }
 
 .space-card:hover .space-card__logo {
   transform: scale(1.05);
   border-color: var(--aircas-color-accent-cyan);
-  box-shadow: 0 0 14px var(--aircas-color-cyan-shadow);
+  box-shadow: 0 0 14px var(--aircas-color-accent-cyan-shadow);
 }
 
 .space-card__name {
@@ -128,10 +128,10 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
   height: 48px;
   flex-shrink: 0;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 8px;
   background: var(--aircas-color-section-header);
-  box-shadow: 0 0 12px var(--aircas-color-blue-soft);
+  box-shadow: 0 0 12px var(--aircas-color-accent-blue-soft);
   color: var(--aircas-color-accent-cyan);
   transition:
     transform 0.2s ease,
@@ -278,43 +278,43 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
 .space-card :deep(.space-actions > .el-button.el-button--primary.is-plain:first-child) {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-accent-cyan);
-  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-blue-fill));
+  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-accent-blue-fill));
   box-shadow:
-    inset 0 0 14px var(--aircas-color-cyan-fill),
-    0 0 10px var(--aircas-color-cyan-soft);
+    inset 0 0 14px var(--aircas-color-accent-cyan-fill),
+    0 0 10px var(--aircas-color-accent-cyan-soft);
 }
 
 .space-card :deep(.space-actions > .el-button.el-button--primary.is-plain:first-child:hover),
 .space-card :deep(.space-actions > .el-button.el-button--primary.is-plain:first-child:focus-visible) {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-accent-cyan);
-  background: linear-gradient(90deg, var(--aircas-color-hover-background), var(--aircas-color-cyan-soft));
-  box-shadow: 0 0 14px var(--aircas-color-cyan-shadow);
+  background: linear-gradient(90deg, var(--aircas-color-hover-background), var(--aircas-color-accent-cyan-soft));
+  box-shadow: 0 0 14px var(--aircas-color-accent-cyan-shadow);
 }
 
 .space-card :deep(.space-actions > .el-button.el-button--primary.is-plain:nth-child(2)) {
   color: var(--aircas-color-accent-blue);
-  border-color: var(--aircas-color-blue-border);
-  background: var(--aircas-color-blue-soft);
+  border-color: var(--aircas-color-accent-blue-border);
+  background: var(--aircas-color-accent-blue-soft);
 }
 
 .space-card :deep(.space-actions > .el-button.el-button--primary.is-plain:nth-child(2):hover),
 .space-card :deep(.space-actions > .el-button.el-button--primary.is-plain:nth-child(2):focus-visible) {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-accent-blue);
-  background: var(--aircas-color-blue-fill);
+  background: var(--aircas-color-accent-blue-fill);
 }
 
 .space-card :deep(.space-actions .el-dropdown .el-button.el-button--primary.is-plain) {
   color: var(--aircas-color-text-secondary);
   border-color: var(--aircas-color-border);
-  background: var(--aircas-color-panel-overlay-deep);
+  background: var(--aircas-color-overlay-deep);
 }
 
 .space-card :deep(.space-actions .el-dropdown .el-button.el-button--primary.is-plain:hover),
 .space-card :deep(.space-actions .el-dropdown .el-button.el-button--primary.is-plain:focus-visible) {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-border-highlight);
-  background: var(--aircas-color-panel-overlay-deep);
+  background: var(--aircas-color-overlay-deep);
 }
 </style>

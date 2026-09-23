@@ -28,7 +28,7 @@ test("object workspace routes create action to the dialog and separates manual a
   const objectActions = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
   assert.match(source, /:category-tree="workspaceTree"/);
   assert.match(source, /@submit-manual="createOntologyObject"/);
-  assert.match(source, /@submit-import="createOntologyObjects"/);
+  assert.match(source, /@submit-import="importOntologyObjects"/);
   assert.match(source, /if \(action === "create"\)/);
   assert.match(source, /useObjectWorkspaceObjectActions/);
   assert.match(objectActions, /createOntologyObjectInterface/);

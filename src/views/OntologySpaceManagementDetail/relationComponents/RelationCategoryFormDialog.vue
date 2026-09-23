@@ -17,8 +17,8 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button class="aircas-button" @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button class="aircas-button" type="primary" :loading="loading" @click="submitCategoryForm">确认</el-button>
+      <el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">取消</el-button>
+      <el-button class="aircas-button aircas-button--tone-primary" :loading="loading" @click="submitCategoryForm">确认</el-button>
     </template>
   </el-dialog>
 </template>
