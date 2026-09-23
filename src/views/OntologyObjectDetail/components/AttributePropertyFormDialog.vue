@@ -31,9 +31,9 @@
             v-model="draft.storageGroup"
             class="aircas-select"
             popper-class="aircas-select-popper"
-            :placeholder="editingAttributeId === null ? '请输入或选择存储分组' : '请选择存储分组'"
+            placeholder="请输入或选择存储分组"
             filterable
-            :allow-create="editingAttributeId === null"
+            allow-create
             default-first-option
           >
             <el-option v-for="group in storageGroups" :key="group.value" :label="group.label" :value="group.value" />
@@ -73,8 +73,8 @@
     </el-form>
     <p v-if="commandError" class="ontology-object-attribute-panel__dialog-error" role="alert">{{ commandError }}</p>
     <template #footer>
-      <el-button class="aircas-button" @click="$emit('update:visible', false)">取消</el-button>
-      <el-button class="aircas-button" type="primary" :loading="saving" @click="confirmSave">保存</el-button>
+      <el-button class="aircas-button aircas-button--tone-ghost" @click="$emit('update:visible', false)">取消</el-button>
+      <el-button class="aircas-button aircas-button--tone-primary" :loading="saving" @click="confirmSave">保存</el-button>
     </template>
   </el-dialog>
 </template>

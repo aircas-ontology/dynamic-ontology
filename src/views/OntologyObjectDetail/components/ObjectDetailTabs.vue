@@ -2,6 +2,7 @@
   <nav class="object-detail-tabs" aria-label="本体对象详情">
     <div class="object-detail-tabs__list" role="tablist">
       <template v-for="tab in visibleTabs" :key="tab.id">
+        <span v-if="tab.id === firstMenuTabId" class="object-detail-tabs__separator" aria-hidden="true" />
         <button
           type="button"
           class="object-detail-tabs__item"
@@ -48,6 +49,7 @@ const allTabs = computed(() => [
 ]);
 
 const visibleTabs = computed(() => allTabs.value.filter((tab) => props.availableTabs.includes(tab.id)));
+const firstMenuTabId = computed(() => (visibleTabs.value.some((tab) => tab.id === "object") ? visibleTabs.value.find((tab) => tab.id !== "object")?.id : ""));
 
 /**
  * @description 格式化 Tab 徽标计数；undefined 时显示占位符。
@@ -68,8 +70,8 @@ function formatCount(value: number | undefined): string {
   padding: 0 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-divider);
+  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
 }
 
 .object-detail-tabs__list {
@@ -78,6 +80,14 @@ function formatCount(value: number | undefined): string {
   gap: 4px;
   min-width: 0;
   overflow-x: auto;
+}
+
+.object-detail-tabs__separator {
+  width: 1px;
+  height: 20px;
+  flex-shrink: 0;
+  margin: 0 4px;
+  background: var(--aircas-color-border);
 }
 
 .object-detail-tabs__item {
@@ -100,6 +110,7 @@ function formatCount(value: number | undefined): string {
 
 .object-detail-tabs__item-object {
   max-width: 320px;
+  color: var(--aircas-color-text-primary);
   font-weight: 600;
 }
 
@@ -119,10 +130,11 @@ function formatCount(value: number | undefined): string {
   outline-offset: 2px;
 }
 
-.object-detail-tabs__item-active {
+.object-detail-tabs__item-active,
+.object-detail-tabs__item-active:hover {
   color: var(--aircas-color-accent-cyan);
   border-color: var(--aircas-color-border);
-  background: var(--aircas-color-accent-cyan-soft);
+  background: var(--aircas-color-cyan-soft);
   box-shadow: inset 0 -2px 0 var(--aircas-color-accent-cyan);
 }
 

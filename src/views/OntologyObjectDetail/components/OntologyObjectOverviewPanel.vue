@@ -1,11 +1,15 @@
 <template>
-  <section class="ontology-object-overview-panel" aria-label="对象资源统计">
+  <section class="ontology-object-overview-panel" aria-label="对象资源统计" :aria-busy="loading">
     <header class="ontology-object-overview-panel__header">
       <div>
         <h2>对象资源统计</h2>
         <p>当前对象关联的核心资源数量</p>
       </div>
+      <span v-if="loading" class="ontology-object-overview-panel__status"><AircasLoading>统计加载中...</AircasLoading></span>
     </header>
+
+    <el-alert v-if="error" class="ontology-object-overview-panel__error" :title="error" type="error" :closable="false" show-icon />
+    <el-button v-if="error" class="aircas-button" @click="emit('retry')">重试</el-button>
 
     <dl class="ontology-object-overview-panel__stats">
       <div v-for="item in statItems" :key="item.id" class="ontology-object-overview-panel__stat" :class="`ontology-object-overview-panel__stat--${item.tone}`">
@@ -22,12 +26,19 @@
 
 <script setup lang="ts">
 import { Collection, Connection, Grid, Share } from "@element-plus/icons-vue";
+import AircasLoading from "@/components/AircasLoading.vue";
 
 type OntologyObjectStatId = "entity" | "property" | "relation" | "behavior";
 type StatTone = "cyan" | "purple" | "blue" | "green";
 
 defineProps<{
   counts: Partial<Record<OntologyObjectStatId, number>>;
+  loading?: boolean;
+  error?: string;
+}>();
+
+const emit = defineEmits<{
+  retry: [];
 }>();
 
 const statItems: ReadonlyArray<{
@@ -42,6 +53,11 @@ const statItems: ReadonlyArray<{
   { id: "behavior", label: "行为", icon: Connection, tone: "green" },
 ];
 
+/**
+ * @description 格式化对象资源统计数量；没有数值时显示占位符。
+ * @param value 计数值。
+ * @returns 本地化后的数量或占位符。
+ */
 function formatCount(value: number | undefined): string {
   return value === undefined ? "—" : value.toLocaleString("zh-CN");
 }
@@ -63,6 +79,13 @@ function formatCount(value: number | undefined): string {
   border-radius: 8px;
   background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
   box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
+}
+
+.ontology-object-overview-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .ontology-object-overview-panel__header h2 {

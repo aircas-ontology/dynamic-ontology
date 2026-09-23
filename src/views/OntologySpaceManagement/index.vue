@@ -2,10 +2,11 @@
   <div class="ontology-space-management">
     <section class="ontology-space-management__overview">
       <WelcomePanel @create="openOntologySpaceForm()" />
-      <div class="ontology-space-management__stats">
+      <div class="ontology-space-management__stats" :aria-busy="overviewStatus === 'loading'">
         <StatCard v-for="stat in summaryStats" :key="stat.id" :stat="stat" />
       </div>
     </section>
+    <p v-if="overviewError" class="ontology-space-management__overview-error" role="alert">{{ overviewError }}</p>
     <SectionToolbar v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
     <div v-if="status === 'loading'" class="ontology-space-management__state" role="status"><AircasLoading>正在加载本体空间…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="ontology-space-management__state" role="alert">
@@ -27,7 +28,7 @@
       :space="activeSpace"
       :external-error="actionError"
       @save="submitOntologySpaceForm"
-      @open-conceptual="openConceptualModel"
+      @imported="completeOntologySpaceImport"
     />
     <SpaceCommandDialogs
       v-model:delete-visible="deleteVisible"
@@ -53,8 +54,23 @@ import WelcomePanel from "./components/WelcomePanel.vue";
 import { useSpaceManagement } from "./composables/useSpaceManagement";
 import { useSpaceManagementActions } from "./composables/useSpaceManagementActions";
 
-const { keyword, order, viewMode, page, pageSize, status, error, result, summaryStats, loadOntologySpaces, saveOntologySpace, removeOntologySpace } =
-  useSpaceManagement();
+const {
+  keyword,
+  order,
+  viewMode,
+  page,
+  pageSize,
+  status,
+  error,
+  overviewError,
+  overviewStatus,
+  result,
+  summaryStats,
+  loadOntologyOverviewCount,
+  loadOntologySpaces,
+  saveOntologySpace,
+  removeOntologySpace,
+} = useSpaceManagement();
 const {
   activeSpace,
   formVisible,
@@ -65,12 +81,14 @@ const {
   openOntologySpaceForm,
   handleOntologySpaceAction,
   submitOntologySpaceForm,
-  openConceptualModel,
   confirmDeleteOntologySpace,
   confirmExportOntologySpace,
+  completeOntologySpaceImport,
 } = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace, loadOntologySpaces });
 
-onMounted(loadOntologySpaces);
+onMounted(() => {
+  void Promise.all([loadOntologySpaces(), loadOntologyOverviewCount()]);
+});
 </script>
 
 <style scoped lang="scss">
@@ -104,6 +122,12 @@ onMounted(loadOntologySpaces);
   gap: 12px;
   min-height: 0;
   height: 100%;
+}
+
+.ontology-space-management__overview-error {
+  margin: 8px 4px 0;
+  color: var(--aircas-color-danger);
+  font-size: 12px;
 }
 
 .ontology-space-management__state {

@@ -179,6 +179,7 @@ export function useAttributeCategoryTree(options: { selectedCategoryId: Ref<stri
    * @param data 待删除分类
    */
   async function removeCategory(data: OntologyAttributeCategoryNode) {
+    if (data.isRoot) return;
     try {
       await ElMessageBox.confirm(`确认删除属性分类「${data.label}」吗？`, "删除属性分类", { type: "warning" });
       const ontologyIdentifier = String(route.params.objectId || "").trim();

@@ -24,9 +24,7 @@
 
 ```json
 {
-  "displayName": "海军本体空间",
-  "apiName": "navy_space",
-  "description": "通过概念模型画布创建的本体空间",
+  "spaceId": 8,
   "ontologies": [
     {
       "displayName": "驱逐舰",
@@ -73,29 +71,30 @@
 }
 ```
 
-| 字段                                   | 类型             | 必填 | 说明                                  |
-| -------------------------------------- | ---------------- | ---- | ------------------------------------- |
-| displayName                            | string           | 是   | 空间名称                              |
-| apiName                                | string           | 是   | 空间 API 名称                         |     |
-| description                            | string           | 否   | 空间描述                              |
-| ontologies                             | CanvasOntology[] | 否   | 画布中的本体对象列表                  |
-| ontologies[].displayName               | string           | 是   | 本体对象名称                          |
-| ontologies[].apiName                   | string           | 是   | 本体对象 API 名称                     |
-| ontologies[].description               | string           | 否   | 本体对象描述                          |     |
-| ontologies[].properties                | CanvasProperty[] | 否   | 本体对象属性列表                      |
-| ontologies[].properties[].displayName  | string           | 是   | 属性展示名称                          |
-| ontologies[].properties[].apiName      | string           | 是   | 属性 API 名称                         |
-| ontologies[].properties[].dataType     | string           | 否   | 数据类型枚举名称，不传默认 `String`   |
-| ontologies[].properties[].description  | string           | 否   | 属性描述                              |
-| ontologies[].properties[].isPrimaryKey | boolean          | 否   | 是否主键，不传默认 `false`            |
-| ontologies[].properties[].isTitleKey   | boolean          | 否   | 是否名称键，不传默认 `false`          |
-| ontologies[].properties[].defaultValue | string           | 否   | 属性默认值                            |
-| links                                  | CanvasLink[]     | 否   | 画布中的对象关系列表                  |
-| links[].name                           | string           | 是   | 关系名称                              |
-| links[].apiName                        | string           | 否   | 关系 API 名称，当前预留               |
-| links[].description                    | string           | 否   | 关系描述，当前预留                    |
-| links[].fromOntologyApiName            | string           | 是   | 源对象 API 名称，也兼容对象显示名称   |
-| links[].toOntologyApiName              | string           | 是   | 目标对象 API 名称，也兼容对象显示名称 |
+| 字段                                   | 类型             | 必填     | 说明                                                                    |
+| -------------------------------------- | ---------------- | -------- | ----------------------------------------------------------------------- |
+| spaceId                                | integer / int32  | 否       | 已有本体空间 id；传入后直接在该空间下创建对象、属性和关系，不再创建空间 |
+| displayName                            | string           | 条件必填 | 未传 `spaceId` 时的新建空间名称                                         |
+| apiName                                | string           | 条件必填 | 未传 `spaceId` 时的新建空间 API 名称                                    |
+| description                            | string           | 否       | 空间描述                                                                |
+| ontologies                             | CanvasOntology[] | 否       | 画布中的本体对象列表                                                    |
+| ontologies[].displayName               | string           | 是       | 本体对象名称                                                            |
+| ontologies[].apiName                   | string           | 是       | 本体对象 API 名称                                                       |
+| ontologies[].description               | string           | 否       | 本体对象描述                                                            |     |
+| ontologies[].properties                | CanvasProperty[] | 否       | 本体对象属性列表                                                        |
+| ontologies[].properties[].displayName  | string           | 是       | 属性展示名称                                                            |
+| ontologies[].properties[].apiName      | string           | 是       | 属性 API 名称                                                           |
+| ontologies[].properties[].dataType     | string           | 否       | 数据类型枚举名称，不传默认 `String`                                     |
+| ontologies[].properties[].description  | string           | 否       | 属性描述                                                                |
+| ontologies[].properties[].isPrimaryKey | boolean          | 否       | 是否主键，不传默认 `false`                                              |
+| ontologies[].properties[].isTitleKey   | boolean          | 否       | 是否名称键，不传默认 `false`                                            |
+| ontologies[].properties[].defaultValue | string           | 否       | 属性默认值                                                              |
+| links                                  | CanvasLink[]     | 否       | 画布中的对象关系列表                                                    |
+| links[].name                           | string           | 是       | 关系名称                                                                |
+| links[].apiName                        | string           | 否       | 关系 API 名称，当前预留                                                 |
+| links[].description                    | string           | 否       | 关系描述，当前预留                                                      |
+| links[].fromOntologyApiName            | string           | 是       | 源对象 API 名称，也兼容对象显示名称                                     |
+| links[].toOntologyApiName              | string           | 是       | 目标对象 API 名称，也兼容对象显示名称                                   |
 
 ## 输出参数
 
@@ -159,8 +158,9 @@ export interface CanvasLink {
 }
 
 export interface CreateOntologySpaceWithCanvasContentParams {
-  displayName: string;
-  apiName: string;
+  spaceId?: number;
+  displayName?: string;
+  apiName?: string;
   description?: string;
   ontologies?: CanvasOntology[];
   links?: CanvasLink[];

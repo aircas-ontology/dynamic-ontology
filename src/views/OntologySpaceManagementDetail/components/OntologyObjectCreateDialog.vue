@@ -166,7 +166,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   "submit-manual": [draft: OntologyObjectCreateDraft];
-  "submit-import": [drafts: OntologyObjectCreateDraft[]];
+  "submit-import": [file: File];
   "submit-edit": [draft: OntologyObjectCreateDraft];
   "open-llm": [];
 }>();
@@ -177,7 +177,7 @@ const modes = [
 ];
 const createMode = ref<CreateMode>("manual");
 const draft = reactive<OntologyObjectCreateDraft>({ apiName: "", displayName: "", description: "", iconUrl: "", categoryId: "", parentId: undefined });
-const importDrafts = ref<OntologyObjectCreateDraft[]>([]);
+const importFile = ref<File | null>(null);
 const importError = ref("");
 const validationError = ref("");
 const iconError = ref("");
@@ -207,7 +207,7 @@ watch([visible, () => props.editingItem], ([opened, editingItem]) => {
   draft.iconUrl = editingItem?.iconUrl ?? "";
   draft.parentId = undefined;
   draft.categoryId = editingItem?.categoryId ?? categoryTreeOptions.value[0]?.id ?? "";
-  importDrafts.value = [];
+  importFile.value = null;
   importError.value = "";
   validationError.value = "";
   iconError.value = "";
@@ -220,6 +220,7 @@ watch([visible, () => props.editingItem], ([opened, editingItem]) => {
 function selectCreateMode(mode: CreateMode) {
   createMode.value = mode;
   validationError.value = "";
+  importFile.value = null;
   importError.value = "";
 }
 
@@ -259,34 +260,12 @@ function clearIcon() {
 }
 
 /**
- * @description 解析导入文件并校验必填字段。
+ * @description 记录导入创建所选文件，确认时再提交给导入接口。
  * @param file Element Plus 上传文件。
- * @returns 文件解析流程的 Promise。
  */
-async function handleImportChange(file: UploadFile) {
+function handleImportChange(file: UploadFile) {
   importError.value = "";
-  try {
-    const parsed: unknown = JSON.parse((await file.raw?.text()) ?? "");
-    if (!Array.isArray(parsed) || !parsed.length) throw new Error("导入文件必须是非空数组");
-    const items = parsed.map((item: unknown) => {
-      if (!item || typeof item !== "object") throw new Error("导入数据格式不正确");
-      const value = item as Record<string, unknown>;
-      const apiName = typeof value.apiName === "string" ? value.apiName.trim() : "";
-      const displayName = typeof value.displayName === "string" ? value.displayName.trim() : "";
-      if (!apiName || !displayName) throw new Error("每条数据都必须包含 apiName 和 displayName");
-      return {
-        apiName,
-        displayName,
-        description: typeof value.description === "string" ? value.description : "",
-        iconUrl: typeof value.iconUrl === "string" ? value.iconUrl : "",
-        categoryId: typeof value.categoryId === "string" ? value.categoryId : String(value.categoryId ?? categoryTreeOptions.value[0]?.id ?? ""),
-      };
-    });
-    importDrafts.value = items;
-  } catch (cause) {
-    importDrafts.value = [];
-    importError.value = cause instanceof Error ? cause.message : "导入文件解析失败";
-  }
+  importFile.value = file.raw ?? null;
 }
 
 /** @description 下载当前项目可直接导入的本体 JSON 模板。 */
@@ -303,11 +282,11 @@ function downloadTemplate() {
 function submitCreate() {
   if (props.submitting || iconError.value) return;
   if (createMode.value === "import") {
-    if (importDrafts.value.length && !importError.value)
-      emit(
-        "submit-import",
-        importDrafts.value.map((item) => ({ ...item })),
-      );
+    if (!importFile.value) {
+      importError.value = "请先选择文件。";
+      return;
+    }
+    emit("submit-import", importFile.value);
     return;
   }
   if (!draft.apiName.trim() || !draft.displayName.trim() || !draft.categoryId) {

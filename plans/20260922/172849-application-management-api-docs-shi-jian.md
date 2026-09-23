@@ -2,7 +2,7 @@
 
 ## 需求理解
 
-按 `docs/20260922/应用管理接口Api-shijian.md` 拉取 OpenAPI 文档，新建「应用管理」菜单（与全文检索平级），主区以左右分栏展示接口列表与详情。数据标准为 OpenAPI 3.1（SpringDoc `/v3/api-docs`）。Mock 使用用户提供的 `src/mocks/apiDocsOntologyMock/mock.ts` 中的裸 OpenAPI JSON。
+按 `docs/20260922/getOntologyApiDocsApi-shijian.md` 拉取 OpenAPI 文档，新建「应用管理」菜单（与全文检索平级），主区以左右分栏展示接口列表与详情。数据标准为 OpenAPI 3.1（SpringDoc `/v3/api-docs`）。Mock 使用用户提供的 `src/mocks/apiDocsOntologyMock/mock.ts` 中的裸 OpenAPI JSON。
 
 ## 修改范围
 

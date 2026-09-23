@@ -86,14 +86,14 @@ import {
   autoBindOntologyPropertyDatasourceInterface,
   getOntologyDatasourceColumnsInterface,
   getOntologyDatasourceTablesInterface,
-  getOntologyPropertyByOntologyIdInterface,
+  getOntologyPropertyDetailByOntologyIdInterface,
   putBatchUpdateOntologyPropertiesInterface,
 } from "@/apis";
 import type {
   BatchUpdateOntologyPropertiesParams,
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceTablesData,
-  GetOntologyPropertyByOntologyIdData,
+  GetOntologyPropertyDetailByOntologyIdData,
 } from "@/types";
 import { useRoute } from "vue-router";
 import { useAttributeCategoryTree } from "../composables/useAttributeCategoryTree";
@@ -223,7 +223,7 @@ const dataSourceDialogVisible = ref(false);
 const dataSourceDialogRef = ref<InstanceType<typeof DataSourceAssociateDialog> | null>(null);
 const dataSourceOpening = ref(false);
 const dataSourceCatalog = ref<DataSourceDatabase[]>([]);
-const ontologyPropertyDetails = ref<GetOntologyPropertyByOntologyIdData>([]);
+const ontologyPropertyDetails = ref<GetOntologyPropertyDetailByOntologyIdData>([]);
 const dataSourceTableLoading = ref(false);
 const dataSourceTableError = ref("");
 const dataSourceColumnLoading = ref(false);
@@ -304,7 +304,7 @@ async function openDataSource() {
   dataSourceTableError.value = "";
   dataSourceColumnError.value = "";
   try {
-    const infoResponse = await getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier });
+    const infoResponse = await getOntologyPropertyDetailByOntologyIdInterface({ ontologyUniqueIdentifier });
     if (infoResponse.code !== 200) throw new Error(infoResponse.message || "属性信息查询失败");
     ontologyPropertyDetails.value = infoResponse.data;
     const tableLoaded = await loadDataSourceTables();
@@ -459,14 +459,8 @@ onMounted(async () => {
   min-width: 0;
   min-height: 0;
   flex: 1;
-  grid-template-columns: minmax(260px, 28%) minmax(0, 1fr);
+  grid-template-columns: 360px minmax(0, 1fr);
   gap: 8px;
-}
-
-@media (max-width: 980px) {
-  .ontology-object-attribute-panel {
-    grid-template-columns: 230px minmax(0, 1fr);
-  }
 }
 
 @media (max-width: 720px) {

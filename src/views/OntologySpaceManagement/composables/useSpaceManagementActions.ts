@@ -2,9 +2,9 @@ import { computed, ref, type Ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import type { OntologySpaceAction, OntologySpaceCommandStatus, OntologySpaceDraft, OntologySpaceItem } from "@/types";
-import { createOntologySpaceInterface, deleteOntologySpaceInterface, updateOntologySpaceInterface } from "@/apis";
-import { downloadSpaceJson } from "../utils/downloadSpaceJson";
-import { serializeSpace } from "../utils/spaceOperations";
+import { createOntologySpaceInterface, deleteOntologySpaceInterface, getExportOntologySpaceInterface, updateOntologySpaceInterface } from "@/apis";
+import { downloadSpaceFile } from "../utils/downloadSpaceJson";
+import { resolveExportOntologySpaceFileName } from "../utils/resolveExportOntologySpaceFileName";
 
 interface SpaceManagementActionOptions {
   keyword: Ref<string>;
@@ -47,16 +47,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   }
 
   /**
-   * @description 关闭空间创建弹窗并进入空间概念模型构建页。
-   */
-  function openConceptualModel() {
-    formVisible.value = false;
-    resetOntologySpaceCommandState();
-    void router.push({ name: "OntologyConceptualModelCreate" });
-  }
-
-  /**
-   * @description 处理空间列表行操作：进入、编辑、删除、导出或进入子空间构建页。
+   * @description 处理空间列表行操作：进入、编辑、概念构建、删除、导出或进入子空间构建页。
    * @param action 操作类型。
    * @param space 目标空间。
    */
@@ -71,6 +62,11 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
       deleteVisible.value = true;
     } else if (action === "export") {
       exportVisible.value = true;
+    } else if (action === "conceptual-model") {
+      void router.push({
+        name: "OntologyConceptualModelCreate",
+        query: { spaceId: space.id, spaceName: space.displayName, spaceApiName: space.apiName },
+      });
     } else {
       void router.push({
         name: "OntologySubspaceCreate",
@@ -163,21 +159,46 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   }
 
   /**
-   * @description 确认导出当前选中本体空间的 JSON 文件。
+   * @description 确认导出当前选中本体空间，下载接口返回的文件。
    */
-  function confirmExportOntologySpace() {
+  async function confirmExportOntologySpace() {
     if (!activeSpace.value || actionBusy.value) return;
+    const spaceId = Number(activeSpace.value.id);
+    if (!Number.isInteger(spaceId)) {
+      actionStatus.value = "error";
+      actionError.value = "缺少空间 id，无法导出。";
+      return;
+    }
     actionStatus.value = "submitting";
     actionError.value = "";
     try {
-      downloadSpaceJson(`${activeSpace.value.apiName}.json`, serializeSpace(activeSpace.value));
+      const file = await getExportOntologySpaceInterface({ spaceId });
+      const fileName = resolveExportOntologySpaceFileName({
+        contentDisposition: file.contentDisposition,
+        contentType: file.contentType,
+        apiName: activeSpace.value.apiName,
+        spaceId,
+      });
+      downloadSpaceFile(fileName, file.blob);
       exportVisible.value = false;
       actionStatus.value = "success";
       ElMessage.success("导出文件已生成");
-    } catch {
+    } catch (cause) {
       actionStatus.value = "error";
-      actionError.value = "导出失败，请重试。";
+      actionError.value = cause instanceof Error && cause.message.trim() ? cause.message : "导出失败，请重试。";
     }
+  }
+
+  /**
+   * @description 导入接口成功后关闭新建弹窗并刷新本体空间列表。
+   */
+  function completeOntologySpaceImport() {
+    formVisible.value = false;
+    actionError.value = "";
+    actionStatus.value = "success";
+    ElMessage.success("导入成功");
+    options.keyword.value = "";
+    void options.loadOntologySpaces();
   }
 
   return {
@@ -188,10 +209,10 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
     actionBusy,
     actionError,
     openOntologySpaceForm,
-    openConceptualModel,
     handleOntologySpaceAction,
     submitOntologySpaceForm,
     confirmDeleteOntologySpace,
     confirmExportOntologySpace,
+    completeOntologySpaceImport,
   };
 }

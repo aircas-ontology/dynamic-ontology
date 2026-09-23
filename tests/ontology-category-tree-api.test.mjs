@@ -91,11 +91,37 @@ test("category tree mapper omits the synthetic all section from the right object
     categoryId: 0,
     name: "全部",
     ontologyMetaInfos: [],
-    children: [{ categoryId: 1, name: "分类1", ontologyMetaInfos: [] }],
+    children: [
+      { categoryId: 1, name: "空分类", ontologyMetaInfos: [] },
+      { categoryId: 2, name: "分类1", ontologyMetaInfos: [{ uniqueIdentifier: "object-1", displayName: "本体1" }] },
+    ],
   });
   assert.deepEqual(
     sections.map((section) => section.name),
     ["分类1"],
+  );
+  assert.deepEqual(
+    sections[0]?.items.map((item) => item.displayName),
+    ["本体1"],
+  );
+});
+
+test("category tree mapper shows objects attached to the all-categories root", async () => {
+  const mapperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts", import.meta.url);
+  const { mapOntologyCategorySections } = await import(mapperUrl.href);
+  const sections = mapOntologyCategorySections({
+    categoryId: 0,
+    name: "全部",
+    ontologyMetaInfos: [{ uniqueIdentifier: "object-root", displayName: "根分类本体" }],
+    children: [{ categoryId: 1, name: "空分类", ontologyMetaInfos: [] }],
+  });
+  assert.deepEqual(
+    sections.map((section) => section.name),
+    ["全部"],
+  );
+  assert.deepEqual(
+    sections[0]?.items.map((item) => item.displayName),
+    ["根分类本体"],
   );
 });
 

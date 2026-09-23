@@ -2,11 +2,7 @@
   <nav class="workspace-type-tabs" aria-label="工作区类型">
     <div class="workspace-type-tabs__list" role="tablist">
       <template v-for="tab in visibleWorkspaceTabs" :key="tab.id">
-        <span
-          v-if="tab.id === 'object' && availableTabs.includes('overview')"
-          class="workspace-type-tabs__separator"
-          aria-hidden="true"
-        />
+        <span v-if="tab.id === 'object' && availableTabs.includes('overview')" class="workspace-type-tabs__separator" aria-hidden="true" />
         <button
           type="button"
           class="workspace-type-tabs__item"
@@ -48,9 +44,7 @@ const workspaceTabs = computed(() => [
   { id: "behavior-schedule" as const, label: "行为调度" },
 ]);
 
-const visibleWorkspaceTabs = computed(() =>
-  workspaceTabs.value.filter((tab) => props.availableTabs.includes(tab.id)),
-);
+const visibleWorkspaceTabs = computed(() => workspaceTabs.value.filter((tab) => props.availableTabs.includes(tab.id)));
 </script>
 
 <style lang="scss" scoped>
@@ -62,8 +56,8 @@ const visibleWorkspaceTabs = computed(() =>
   padding: 0 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-divider);
+  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
 }
 
 .workspace-type-tabs__list {

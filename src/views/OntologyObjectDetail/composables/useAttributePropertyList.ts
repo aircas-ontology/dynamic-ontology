@@ -17,6 +17,8 @@ import {
   isAttributeItem,
   mapOntologyPropertyItem,
   normalizeStorageGroupValue,
+  parseAttributeCategoryId,
+  resolveAttributeFormCategoryId,
 } from "../utils/attributePanelHelpers";
 
 /**
@@ -80,6 +82,7 @@ export function useAttributePropertyList(options: {
     displayName: [{ required: true, message: "请输入属性名称", trigger: "blur" }],
     apiName: [{ required: true, message: "请输入 API 名称", trigger: "blur" }],
     dataType: [{ required: true, message: "请选择数据类型", trigger: "change" }],
+    categoryId: [{ required: true, message: "请选择属性分类", trigger: "change" }],
     storageGroup: [
       { required: true, message: "请输入存储分组", trigger: ["blur", "change"] },
       { pattern: storageGroupPattern, message: "存储分组只能包含字母、数字和下划线", trigger: ["blur", "change"] },
@@ -133,8 +136,7 @@ export function useAttributePropertyList(options: {
 
   /** @description 将表单分类标识转换为接口需要的数字。 */
   function getDraftCategoryId(): number | undefined {
-    const categoryId = Number(draft.categoryId);
-    return Number.isFinite(categoryId) && categoryId > 0 ? categoryId : undefined;
+    return parseAttributeCategoryId(draft.categoryId);
   }
 
   /** @description 组装创建属性接口请求参数。 */
@@ -179,7 +181,7 @@ export function useAttributePropertyList(options: {
     Object.assign(draft, {
       displayName: "",
       apiName: "",
-      categoryId: selectedCategoryId.value === "all" ? "" : selectedCategoryId.value,
+      categoryId: resolveAttributeFormCategoryId(getCategories()),
       dataType: "String",
       storageGroup: "main",
       defaultValue: "",
@@ -204,7 +206,7 @@ export function useAttributePropertyList(options: {
     Object.assign(draft, {
       displayName: value.displayName,
       apiName: value.apiName,
-      categoryId: value.categoryId,
+      categoryId: resolveAttributeFormCategoryId(getCategories(), value.categoryId),
       dataType: value.dataType,
       storageGroup: normalizeStorageGroupValue(value.storageGroup),
       defaultValue: value.defaultValue,

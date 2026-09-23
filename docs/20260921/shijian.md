@@ -12,7 +12,7 @@ D:\projectcode\sthq\dynamic-ontology\docs\20260916\ontologyListApi-guoshengnan.m
 
 ## 具体步骤
 
-用户上传完图片后就根据"上传图片文件获取缩略图urlApi-shijian.md"文档调用接口，展示出图标缩略图，记录url地址，待调用创建空间接口时，把url放到'icon'参数中传递。
+用户上传完图片后就根据"uploadOntologyThumbnailApi-shijian.md"文档调用接口，展示出图标缩略图，记录url地址，待调用创建空间接口时，把url放到'icon'参数中传递。
 
 ## 注意事项
 

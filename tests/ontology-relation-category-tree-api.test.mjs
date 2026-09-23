@@ -157,8 +157,17 @@ test("relation workspace loads category tree api and maps links into relations",
   assert.match(panelSource, /添加关系分类/);
   assert.match(panelSource, /kind:\s*"relation"/);
   assert.match(panelSource, /item\.displayName/);
+  assert.match(panelSource, /FolderOpened v-if="data\.children\?\.length"/);
+  assert.match(panelSource, /CollectionTag/);
   assert.match(panelSource, /relation-category-panel__relation-row/);
   assert.match(panelSource, /relation-category-panel__relation-dot/);
+  assert.doesNotMatch(panelSource, /children:\s*\[\]/);
+  assert.doesNotMatch(panelSource, /default-expand-all/);
+  assert.match(panelSource, /:default-expanded-keys="defaultExpandedKeys"/);
+  assert.match(panelSource, /:expand-on-click-node="false"/);
+  assert.match(panelSource, /\.relation-category-panel__tree-node \{[\s\S]*?flex: 1;/);
+  assert.match(panelSource, /\.el-tree-node__expand-icon[\s\S]*flex-shrink:\s*0/);
+  assert.match(panelSource, /\.el-tree-node__expand-icon\.is-leaf[\s\S]*color:\s*var\(--aircas-color-transparent\)/);
   assert.doesNotMatch(workspaceSource, /createOntologySpaceRelationWorkspaceData\(\)/);
   assert.match(tableSource, /label="源本体"/);
   assert.match(tableSource, /label="目标本体"/);
