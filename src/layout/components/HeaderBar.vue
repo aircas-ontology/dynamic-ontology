@@ -5,8 +5,8 @@
       <h1>空天 · 灵枢</h1>
       <span class="header-bar__version">{{ version }}</span>
     </div>
-    <div class="header-bar__search" title="全局搜索暂未开放">
-      <el-input class="aircas-input" placeholder="检索空间、对象、实例、属性..." :prefix-icon="Search" ariaLabel="全局搜索（暂未开放）" disabled />
+    <div class="header-bar__search">
+      <OntologyGlobalSearchField placement="overlay" ariaLabel="全局搜索" placeholder="检索空间、对象、实例、属性..." />
     </div>
     <div class="header-bar__tools">
       <button type="button" class="header-bar__tool" :aria-label="dark ? '切换浅色主题' : '切换深色主题'" @click="toggleTheme">
@@ -43,7 +43,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { Bell, Moon, QuestionFilled, Search, Sunny, UserFilled } from "@element-plus/icons-vue";
+import { Bell, Moon, QuestionFilled, Sunny, UserFilled } from "@element-plus/icons-vue";
+import OntologyGlobalSearchField from "@/components/OntologyGlobalSearchField/OntologyGlobalSearchField.vue";
 import { LOGIN_ROUTE_NAME } from "@/router/authGuard";
 import { clearLoginToken } from "@/utils/authToken";
 

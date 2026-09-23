@@ -8,7 +8,6 @@
       <p class="api-docs-endpoint-detail__summary">{{ detail.summary || "未命名接口" }}</p>
       <div class="api-docs-endpoint-detail__meta">
         <span v-for="tag in detail.tags" :key="tag" class="api-docs-endpoint-detail__tag">{{ tag }}</span>
-        <span v-if="detail.operationId" class="api-docs-endpoint-detail__operation">{{ detail.operationId }}</span>
       </div>
     </header>
 
@@ -26,40 +25,43 @@
       </dl>
     </div>
 
-    <div class="api-docs-endpoint-detail__section">
-      <h3 class="api-docs-endpoint-detail__section-title">请求参数</h3>
-      <el-table
-        v-if="detail.parameters.length"
-        :data="detail.parameters"
-        class="aircas-table aircas-table--flat api-docs-endpoint-detail__table"
-        size="small"
-        empty-text="无请求参数"
-      >
-        <el-table-column prop="name" label="名称" min-width="120" />
-        <el-table-column prop="location" label="位置" width="88" />
-        <el-table-column prop="typeLabel" label="类型" min-width="120" />
-        <el-table-column label="必填" width="72">
-          <template #default="{ row }">{{ row.required ? "必填" : "可选" }}</template>
-        </el-table-column>
-        <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
-      </el-table>
-      <p v-else class="api-docs-endpoint-detail__empty">无请求参数</p>
-    </div>
+    <el-tabs v-model="activeTab" class="aircas-tabs api-docs-endpoint-detail__tabs">
+      <el-tab-pane label="请求参数" name="parameters">
+        <el-table
+          v-if="detail.parameters.length"
+          :data="detail.parameters"
+          class="aircas-table aircas-table--flat api-docs-endpoint-detail__table"
+          size="small"
+          empty-text="无请求参数"
+        >
+          <el-table-column prop="name" label="名称" min-width="120" />
+          <el-table-column prop="location" label="位置" width="88" />
+          <el-table-column prop="typeLabel" label="类型" min-width="120" />
+          <el-table-column label="必填" width="72">
+            <template #default="{ row }">{{ row.required ? "必填" : "可选" }}</template>
+          </el-table-column>
+          <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
+        </el-table>
+        <p v-else class="api-docs-endpoint-detail__empty">无请求参数</p>
+      </el-tab-pane>
 
-    <div class="api-docs-endpoint-detail__section">
-      <h3 class="api-docs-endpoint-detail__section-title">请求体</h3>
-      <p v-if="detail.requestBodyContentTypes.length" class="api-docs-endpoint-detail__body">
-        <span>{{ detail.requestBodyRequired ? "必填" : "可选" }}</span>
-        <span>{{ detail.requestBodyContentTypes.join(", ") }}</span>
-        <span v-if="detail.requestBodySchemaLabel">schema: {{ detail.requestBodySchemaLabel }}</span>
-      </p>
-      <p v-else class="api-docs-endpoint-detail__empty">无请求体</p>
-    </div>
+      <el-tab-pane label="请求体" name="body">
+        <p v-if="detail.requestBodyContentTypes.length" class="api-docs-endpoint-detail__body">
+          <span>{{ detail.requestBodyRequired ? "必填" : "可选" }}</span>
+          <span>{{ detail.requestBodyContentTypes.join(", ") }}</span>
+          <span v-if="detail.requestBodySchemaLabel">schema: {{ detail.requestBodySchemaLabel }}</span>
+        </p>
+        <p v-else class="api-docs-endpoint-detail__empty">无请求体</p>
+      </el-tab-pane>
 
-    <div class="api-docs-endpoint-detail__section">
-      <h3 class="api-docs-endpoint-detail__section-title">响应</h3>
-      <template v-if="detail.responses.length">
-        <el-table :data="detail.responses" class="aircas-table aircas-table--flat api-docs-endpoint-detail__table" size="small" empty-text="无响应定义">
+      <el-tab-pane label="响应" name="responses">
+        <el-table
+          v-if="detail.responses.length"
+          :data="detail.responses"
+          class="aircas-table aircas-table--flat api-docs-endpoint-detail__table"
+          size="small"
+          empty-text="无响应定义"
+        >
           <el-table-column prop="status" label="状态码" width="100" />
           <el-table-column prop="description" label="说明" min-width="160" show-overflow-tooltip />
           <el-table-column label="Content-Type" min-width="160">
@@ -67,17 +69,16 @@
           </el-table-column>
           <el-table-column prop="schemaLabel" label="Schema" min-width="180" show-overflow-tooltip />
         </el-table>
-        <div
-          v-for="response in detail.responses.filter((item) => item.schemaFields.length > 0)"
-          :key="`schema-${response.status}`"
-          class="api-docs-endpoint-detail__schema"
-        >
-          <h4 class="api-docs-endpoint-detail__schema-title">
-            {{ response.status }} 响应结构
-            <span v-if="response.schemaLabel" class="api-docs-endpoint-detail__schema-label">{{ response.schemaLabel }}</span>
+        <p v-else class="api-docs-endpoint-detail__empty">无响应定义</p>
+      </el-tab-pane>
+
+      <el-tab-pane label="200 响应结构" name="schema200">
+        <template v-if="responseSchema200 && responseSchema200.schemaFields.length">
+          <h4 v-if="responseSchema200.schemaLabel" class="api-docs-endpoint-detail__schema-title">
+            <span class="api-docs-endpoint-detail__schema-label">{{ responseSchema200.schemaLabel }}</span>
           </h4>
           <el-table
-            :data="response.schemaFields"
+            :data="responseSchema200.schemaFields"
             class="aircas-table aircas-table--flat api-docs-endpoint-detail__table api-docs-endpoint-detail__schema-table"
             size="small"
             row-key="id"
@@ -91,26 +92,41 @@
               </template>
             </el-table-column>
             <el-table-column prop="typeLabel" label="类型" min-width="140" show-overflow-tooltip />
-            <el-table-column label="必填" width="72">
-              <template #default="{ row }">{{ row.required ? "必填" : "可选" }}</template>
-            </el-table-column>
             <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
           </el-table>
-        </div>
-      </template>
-      <p v-else class="api-docs-endpoint-detail__empty">无响应定义</p>
-    </div>
+        </template>
+        <p v-else class="api-docs-endpoint-detail__empty">无 200 响应结构</p>
+      </el-tab-pane>
+    </el-tabs>
   </section>
   <div v-else class="api-docs-endpoint-detail api-docs-endpoint-detail--empty">请选择左侧接口查看详情</div>
 </template>
 
 <script setup lang="ts">
-import type { ApiDocsEndpointDetail, ApiDocsServiceInfo } from "@/types";
+import { computed, ref, watch } from "vue";
 
-defineProps<{
+import type { ApiDocsEndpointDetail, ApiDocsResponseRow, ApiDocsServiceInfo } from "@/types";
+
+const props = defineProps<{
   detail: ApiDocsEndpointDetail | null;
   serviceInfo: ApiDocsServiceInfo | null;
 }>();
+
+const activeTab = ref("parameters");
+
+const responseSchema200 = computed<ApiDocsResponseRow | null>(() => {
+  if (!props.detail) {
+    return null;
+  }
+  return props.detail.responses.find((item) => item.status === "200") ?? null;
+});
+
+watch(
+  () => props.detail?.id,
+  () => {
+    activeTab.value = "parameters";
+  },
+);
 </script>
 
 <style scoped lang="scss">
@@ -183,8 +199,7 @@ defineProps<{
   margin-top: 12px;
 }
 
-.api-docs-endpoint-detail__tag,
-.api-docs-endpoint-detail__operation {
+.api-docs-endpoint-detail__tag {
   padding: 2px 8px;
   border: 1px solid var(--aircas-color-border-soft);
   border-radius: 4px;
@@ -218,15 +233,25 @@ defineProps<{
   word-break: break-all;
 }
 
+.api-docs-endpoint-detail__tabs {
+  min-width: 0;
+  min-height: 0;
+}
+
+.api-docs-endpoint-detail__tabs :deep(.el-tabs__content) {
+  min-width: 0;
+  overflow: auto;
+}
+
+.api-docs-endpoint-detail__tabs :deep(.el-tab-pane) {
+  min-width: 0;
+}
+
 .api-docs-endpoint-detail__empty,
 .api-docs-endpoint-detail__body {
   margin: 0;
   color: var(--aircas-color-text-secondary);
   font-size: 13px;
-}
-
-.api-docs-endpoint-detail__schema {
-  margin-top: 12px;
 }
 
 .api-docs-endpoint-detail__schema-title {

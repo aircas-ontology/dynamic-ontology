@@ -7,7 +7,8 @@
       clearable
       filterable
       placeholder="按接口菜单筛选"
-      aria-label="按接口菜单筛选"
+      ariaLabel="按接口菜单筛选"
+      @clear="clearSelectedMenuTag"
     >
       <el-option v-for="tag in menuOptions" :key="tag" :label="tag" :value="tag" />
     </el-select>
@@ -78,8 +79,8 @@ const emit = defineEmits<{
   select: [endpointId: string];
 }>();
 
-/** 接口菜单（分组）筛选值。 */
-const selectedMenuTag = ref("");
+/** 接口菜单（分组）筛选值；清空后可能为 null，过滤时按空串处理。 */
+const selectedMenuTag = ref<string | null>("");
 
 /** 接口路径搜索关键字。 */
 const pathKeyword = ref("");
@@ -92,11 +93,19 @@ const menuOptions = computed(() => mapApiDocsEndpointMenuOptions(props.groups));
 const filteredGroups = computed(() => filterApiDocsEndpointGroups(props.groups, selectedMenuTag.value, pathKeyword.value));
 
 /**
+ * @description 清空菜单筛选，确保恢复为全部菜单。
+ */
+function clearSelectedMenuTag(): void {
+  selectedMenuTag.value = "";
+}
+
+/**
  * @description 判断当前是否处于筛选状态（菜单或路径关键字）。
  * @returns 是否正在筛选。
  */
 function hasActiveFilter(): boolean {
-  return Boolean(selectedMenuTag.value.trim() || pathKeyword.value.trim());
+  const menu = typeof selectedMenuTag.value === "string" ? selectedMenuTag.value.trim() : "";
+  return Boolean(menu || pathKeyword.value.trim());
 }
 
 /**

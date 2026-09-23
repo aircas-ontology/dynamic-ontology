@@ -39,13 +39,17 @@ export function mapApiDocsEndpointMenuOptions(groups: ApiDocsEndpointGroup[]): s
 /**
  * @description 按接口菜单与路径关键字过滤分组，去掉空分组。
  * @param groups 原始分组列表。
- * @param menuTag 选中的接口菜单 tag；空表示全部。
+ * @param menuTag 选中的接口菜单 tag；空 / null / undefined 表示全部。
  * @param pathKeyword 路径搜索关键字。
  * @returns 过滤后的分组列表。
  */
-export function filterApiDocsEndpointGroups(groups: ApiDocsEndpointGroup[], menuTag: string, pathKeyword: string): ApiDocsEndpointGroup[] {
-  const normalizedMenu = menuTag.trim();
-  const normalizedPathKeyword = pathKeyword.trim();
+export function filterApiDocsEndpointGroups(
+  groups: ApiDocsEndpointGroup[],
+  menuTag: string | null | undefined,
+  pathKeyword: string | null | undefined,
+): ApiDocsEndpointGroup[] {
+  const normalizedMenu = typeof menuTag === "string" ? menuTag.trim() : "";
+  const normalizedPathKeyword = typeof pathKeyword === "string" ? pathKeyword.trim() : "";
   const scopedGroups = normalizedMenu ? groups.filter((group) => group.tag === normalizedMenu) : groups;
   if (!normalizedPathKeyword) {
     return scopedGroups;

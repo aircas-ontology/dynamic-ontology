@@ -2,6 +2,7 @@ import { getExampleInterface } from "./exampleApi";
 import { postLoginInterface } from "./loginApi";
 import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
 import { getOntologyApiDocsInterface } from "./ontologyDocApi";
+import { postOntologyGlobalSearchInterface } from "./ontologySearchApi";
 import {
   createOntologySpaceInterface,
   createOntologySpaceWithCanvasContentInterface,
@@ -74,6 +75,7 @@ export {
   postCreateOntologyLinkInterface,
   postCreateOntologyRelationCategoryTreeInterface,
   postLoginInterface,
+  postOntologyGlobalSearchInterface,
   postUploadOntologyThumbnailInterface,
   putBatchUpdateOntologyPropertiesInterface,
   putUpdateOntologyCategoryNameInterface,
