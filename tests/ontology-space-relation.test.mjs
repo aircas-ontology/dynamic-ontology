@@ -201,17 +201,17 @@ test("space and object relation pages use the prototype panel and graph backgrou
     "utf8",
   );
   const graph = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationGraphView.vue", import.meta.url), "utf8");
-  const panelGradient = /linear-gradient\(135deg, var\(--aircas-color-panel-overlay\), var\(--aircas-color-panel-overlay-deep\)\)/;
+  const panelGradient = /linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/;
 
   assert.match(categoryPanel, panelGradient);
-  assert.match(categoryPanel, /box-shadow: inset 0 0 20px var\(--aircas-color-border-shadow\)/);
+  assert.match(categoryPanel, /box-shadow: inset 0 0 20px var\(--aircas-color-page-glow\)/);
   assert.match(categoryPanel, /background: var\(--aircas-color-active-background\)/);
   assert.match(workspace, panelGradient);
-  assert.match(workspace, /box-shadow: inset 0 0 18px var\(--aircas-color-border-shadow\)/);
-  assert.match(workspace, /\.space-relation-workspace__view-switch[\s\S]*background: var\(--aircas-color-panel-overlay-deep\)/);
+  assert.match(workspace, /box-shadow: inset 0 0 18px var\(--aircas-color-page-glow\)/);
+  assert.match(workspace, /\.space-relation-workspace__view-switch[\s\S]*background: var\(--aircas-color-overlay-deep\)/);
   assert.match(workspace, /\.space-relation-workspace__view-btn-active[\s\S]*background: var\(--aircas-color-active-background\)/);
-  assert.match(workspace, /\.space-relation-workspace__filter[\s\S]*background: var\(--aircas-color-panel-overlay-deep\)/);
-  assert.match(graph, /radial-gradient\([\s\S]*var\(--aircas-color-cyan-fill\)/);
+  assert.match(workspace, /\.space-relation-workspace__filter[\s\S]*background: var\(--aircas-color-overlay-deep\)/);
+  assert.match(graph, /radial-gradient\([\s\S]*var\(--aircas-color-accent-cyan-fill\)/);
   assert.match(graph, /\.relation-graph-view--holographic[\s\S]*background: var\(--aircas-color-page-background\)/);
   assert.match(graph, /color-mix\(in srgb, var\(--aircas-color-black\) 72%, transparent\)/);
 });
@@ -243,8 +243,8 @@ test("relation module buttons use the space management theme tones", () => {
   assert.match(workspace, /aircas-button aircas-button--tone-ghost[\s\S]*重置/);
   assert.match(workspace, /aircas-button aircas-button--tone-primary[\s\S]*重试/);
   assert.match(categoryPanel, /aircas-button aircas-button--tone-primary[\s\S]*添加关系分类/);
-  assert.match(categoryPanel, /action--add[\s\S]*linear-gradient\(90deg, var\(--aircas-color-active-background\), var\(--aircas-color-blue-fill\)\)/);
-  assert.match(categoryPanel, /action--edit[\s\S]*background: var\(--aircas-color-blue-soft\)/);
+  assert.match(categoryPanel, /action--add[\s\S]*linear-gradient\(90deg, var\(--aircas-color-active-background\), var\(--aircas-color-accent-blue-fill\)\)/);
+  assert.match(categoryPanel, /action--edit[\s\S]*background: var\(--aircas-color-accent-blue-soft\)/);
   assert.match(categoryPanel, /action--danger[\s\S]*background: var\(--aircas-color-danger-background\)/);
   assert.match(relationForm, /aircas-button aircas-button--tone-ghost[\s\S]*取消/);
   assert.match(relationForm, /aircas-button aircas-button--tone-primary[\s\S]*确认/);

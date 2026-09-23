@@ -162,21 +162,18 @@ test("attribute page uses the prototype panel, button, and table surfaces", () =
   const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
   const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
   const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
-  const panelGradient = /linear-gradient\(135deg, var\(--aircas-color-panel-overlay\), var\(--aircas-color-panel-overlay-deep\)\)/;
+  const panelGradient = /linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/;
 
   assert.match(treeSource, panelGradient);
-  assert.match(treeSource, /box-shadow: inset 0 0 20px var\(--aircas-color-border-shadow\)/);
+  assert.match(treeSource, /box-shadow: inset 0 0 20px var\(--aircas-color-page-glow\)/);
   assert.match(treeSource, /background: var\(--aircas-color-active-background\)/);
   assert.match(treeSource, /aircas-button aircas-button--tone-primary[\s\S]*创建分类/);
-  assert.match(treeSource, /tree-action is-edit[\s\S]*background: var\(--aircas-color-blue-soft\)/);
+  assert.match(treeSource, /tree-action is-edit[\s\S]*background: var\(--aircas-color-accent-blue-soft\)/);
   assert.match(tableSource, panelGradient);
-  assert.match(
-    tableSource,
-    /table-wrap[\s\S]*background: linear-gradient\(135deg, var\(--aircas-color-panel-overlay\), var\(--aircas-color-panel-overlay-deep\)\)/,
-  );
+  assert.match(tableSource, /table-wrap[\s\S]*background: linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
   assert.match(tableSource, /background-color: var\(--aircas-color-section-header\)/);
   assert.match(tableSource, /background-color: var\(--aircas-color-transparent\)/);
-  assert.match(tableSource, /background-color: var\(--aircas-color-blue-soft\) !important/);
+  assert.match(tableSource, /background-color: var\(--aircas-color-accent-blue-soft\) !important/);
   assert.match(tableSource, /aircas-button aircas-button--tone-ghost[\s\S]*关联数据源/);
   assert.match(tableSource, /aircas-button aircas-button--tone-primary[\s\S]*添加/);
   assert.match(formSource, /aircas-button aircas-button--tone-ghost[\s\S]*取消/);
@@ -193,6 +190,6 @@ test("attribute layout uses a 360px tree, zebra rows, and prototype detail tabs"
   assert.match(tableSource, /el-table__row--striped[\s\S]*background-color: var\(--aircas-color-panel-background-deep\) !important/);
   assert.match(tableSource, /tr > td\.el-table__cell[\s\S]*background-color: var\(--aircas-color-panel-background\) !important/);
   assert.match(tabsSource, /object-detail-tabs__separator/);
-  assert.match(tabsSource, /linear-gradient\(135deg, var\(--aircas-color-panel-overlay\), var\(--aircas-color-panel-overlay-deep\)\)/);
-  assert.match(tabsSource, /box-shadow: inset 0 0 20px var\(--aircas-color-border-shadow\)/);
+  assert.match(tabsSource, /linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
+  assert.match(tabsSource, /box-shadow: inset 0 0 20px var\(--aircas-color-page-glow\)/);
 });

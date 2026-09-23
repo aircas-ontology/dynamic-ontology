@@ -105,7 +105,7 @@
         <el-button class="aircas-button" :disabled="submitting" @click="downloadTemplate">下载模板</el-button>
       </div>
       <el-upload
-        class="ontology-object-create-dialog__upload"
+        class="aircas-upload ontology-object-create-dialog__upload"
         drag
         :auto-upload="false"
         accept=".json,application/json"
@@ -384,6 +384,21 @@ function submitCreate() {
 .ontology-object-create-dialog__upload {
   margin-top: 14px;
   text-align: center;
+}
+.ontology-object-create-dialog__upload :deep(.el-upload-dragger) {
+  width: 100%;
+  background-color: var(--aircas-color-input-background);
+  border: 1px dashed var(--aircas-color-border);
+}
+.ontology-object-create-dialog__upload :deep(.el-upload-dragger:hover),
+.ontology-object-create-dialog__upload :deep(.el-upload-dragger.is-dragover) {
+  border-color: var(--aircas-color-border-highlight);
+}
+.ontology-object-create-dialog__upload :deep(.el-upload-dragger:focus-visible) {
+  border-color: var(--aircas-color-focus-border);
+}
+.ontology-object-create-dialog__upload :deep(.el-upload-dragger .el-icon) {
+  color: var(--aircas-color-title);
 }
 .ontology-object-create-dialog__upload p {
   margin: 8px 0 4px;

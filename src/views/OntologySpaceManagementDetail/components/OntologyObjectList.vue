@@ -26,7 +26,7 @@
             <span class="ontology-object-list__visually-hidden">列表视图</span>
           </el-radio-button>
         </el-radio-group>
-        <el-button class="aircas-button aircas-button--tone-primary" @click="emit('action', 'create')"
+        <el-button class="aircas-button" type="primary" @click="emit('action', 'create')"
           ><el-icon><Plus /></el-icon>新建本体</el-button
         >
       </div>

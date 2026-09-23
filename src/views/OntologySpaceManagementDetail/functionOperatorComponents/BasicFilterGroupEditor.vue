@@ -1,7 +1,13 @@
 <template>
   <div class="basic-filter-group" :class="`basic-filter-group--depth-${depth}`">
     <div class="basic-filter-group__toolbar">
-      <el-select :model-value="group.logic" class="basic-filter-group__logic" style="width: 140px" @update:model-value="updateLogic">
+      <el-select
+        :model-value="group.logic"
+        class="aircas-select basic-filter-group__logic"
+        popper-class="aircas-select-popper"
+        style="width: 140px"
+        @update:model-value="updateLogic"
+      >
         <el-option v-for="item in BASIC_FILTER_LOGIC_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
       <div class="basic-filter-group__actions">
@@ -16,19 +22,25 @@
           <div class="basic-filter-row">
             <el-input
               :model-value="child.filter.propertyApiName"
-              class="basic-filter-row__property"
+              class="aircas-input basic-filter-row__property"
               maxlength="64"
               placeholder="输入变量名"
               @update:model-value="(value) => updateFilterProperty(index, value)"
             />
             <el-select
               :model-value="child.filter.valueType"
-              class="basic-filter-row__value-type"
+              class="aircas-select basic-filter-row__value-type"
+              popper-class="aircas-select-popper"
               @update:model-value="(value) => updateFilterValueType(index, value)"
             >
               <el-option v-for="item in BASIC_FILTER_VALUE_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
-            <el-select :model-value="child.filter.op" class="basic-filter-row__op" @update:model-value="(value) => updateFilterOp(index, value)">
+            <el-select
+              :model-value="child.filter.op"
+              class="aircas-select basic-filter-row__op"
+              popper-class="aircas-select-popper"
+              @update:model-value="(value) => updateFilterOp(index, value)"
+            >
               <el-option v-for="item in BASIC_FILTER_OP_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
             <div class="basic-filter-row__values">
@@ -36,11 +48,13 @@
                 <template v-if="child.filter.valueType === 'number'">
                   <el-input-number
                     :model-value="Number(child.filter.values?.[0] ?? 0)"
+                    class="basic-filter-row__number"
                     controls-position="right"
                     @update:model-value="(value) => updateFilterRange(index, 0, value ?? 0)"
                   />
                   <el-input-number
                     :model-value="Number(child.filter.values?.[1] ?? 0)"
+                    class="basic-filter-row__number"
                     controls-position="right"
                     @update:model-value="(value) => updateFilterRange(index, 1, value ?? 0)"
                   />
@@ -48,11 +62,13 @@
                 <template v-else>
                   <el-input
                     :model-value="String(child.filter.values?.[0] ?? '')"
+                    class="aircas-input"
                     placeholder="最小值"
                     @update:model-value="(value) => updateFilterRange(index, 0, value)"
                   />
                   <el-input
                     :model-value="String(child.filter.values?.[1] ?? '')"
+                    class="aircas-input"
                     placeholder="最大值"
                     @update:model-value="(value) => updateFilterRange(index, 1, value)"
                   />
@@ -62,6 +78,8 @@
                 <el-select
                   v-if="child.filter.valueType === 'boolean'"
                   :model-value="Boolean(child.filter.value)"
+                  class="aircas-select"
+                  popper-class="aircas-select-popper"
                   @update:model-value="(value) => updateFilterValue(index, Boolean(value))"
                 >
                   <el-option label="true" :value="true" />
@@ -70,13 +88,14 @@
                 <el-input-number
                   v-else-if="child.filter.valueType === 'number'"
                   :model-value="Number(child.filter.value ?? 0)"
+                  class="basic-filter-row__number"
                   controls-position="right"
-                  style="width: 100%"
                   @update:model-value="(value) => updateFilterValue(index, value ?? 0)"
                 />
                 <el-input
                   v-else
                   :model-value="String(child.filter.value ?? '')"
+                  class="aircas-input"
                   placeholder="输入值"
                   @update:model-value="(value) => updateFilterValue(index, value)"
                 />
@@ -328,7 +347,17 @@ function updateNestedGroup(index: number, group: BasicFilterDocument): void {
   padding: 8px;
   border: 1px dashed var(--aircas-color-border-soft);
   border-radius: 8px;
-  background: var(--aircas-color-panel-overlay);
+  background: var(--aircas-color-overlay);
+}
+
+.basic-filter-row__number {
+  width: 100%;
+  --el-fill-color-blank: var(--aircas-color-input-background);
+  --el-input-bg-color: var(--aircas-color-input-background);
+  --el-input-border-color: var(--aircas-color-border);
+  --el-input-hover-border-color: var(--aircas-color-border-highlight);
+  --el-input-focus-border-color: var(--aircas-color-focus-border);
+  --el-input-text-color: var(--aircas-color-text-primary);
 }
 
 .basic-filter-group__nested-header {

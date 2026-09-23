@@ -1,14 +1,14 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    class="function-operator-form-dialog"
+    class="aircas-dialog function-operator-form-dialog"
     :title="operator ? '编辑函数算子' : '新建函数算子'"
     width="min(960px, calc(100vw - 48px))"
     align-center
     destroy-on-close
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="function-operator-form">
+    <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="aircas-form function-operator-form">
       <section v-if="!operator" class="function-operator-form__section">
         <div class="function-operator-form__section-title">函数类型</div>
         <div class="function-operator-form__type-grid">
@@ -40,7 +40,7 @@
       </section>
 
       <section v-else class="function-operator-form__section function-operator-form__section--empty">
-        <el-empty description="该函数类型本阶段暂未开放，请选择基础函数" />
+        <el-empty class="aircas-empty" description="该函数类型本阶段暂未开放，请选择基础函数" />
       </section>
     </el-form>
 

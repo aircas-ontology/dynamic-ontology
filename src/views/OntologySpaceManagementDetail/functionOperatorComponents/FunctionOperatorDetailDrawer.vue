@@ -1,7 +1,7 @@
 <template>
   <el-drawer
     :model-value="modelValue"
-    class="function-operator-detail"
+    class="aircas-drawer function-operator-detail"
     :title="operator?.name || '函数算子详情'"
     size="520px"
     destroy-on-close
@@ -10,20 +10,20 @@
     <template v-if="operator">
       <div class="function-operator-detail__header">
         <div class="function-operator-detail__tags">
-          <el-tag :type="statusTagType(operator.status)" effect="dark">{{ statusLabel(operator.status) }}</el-tag>
-          <el-tag effect="plain">{{ typeLabel(operator.type) }}</el-tag>
+          <el-tag class="aircas-tag" :type="statusTagType(operator.status)" effect="dark">{{ statusLabel(operator.status) }}</el-tag>
+          <el-tag class="aircas-tag" effect="plain">{{ typeLabel(operator.type) }}</el-tag>
         </div>
         <span class="function-operator-detail__version">{{ operator.version }}</span>
       </div>
       <p class="function-operator-detail__description">{{ operator.description || "暂无说明" }}</p>
 
-      <el-descriptions :column="2" border size="small">
+      <el-descriptions class="aircas-descriptions function-operator-detail__meta" :column="2" border size="small">
         <el-descriptions-item label="协议">{{ operator.protocol }}</el-descriptions-item>
         <el-descriptions-item label="创建人">{{ operator.createdBy }}</el-descriptions-item>
         <el-descriptions-item label="更新时间">{{ operator.updatedAt }}</el-descriptions-item>
         <el-descriptions-item label="超时">{{ operator.timeout }} ms</el-descriptions-item>
         <el-descriptions-item label="测试状态">
-          <el-tag size="small" :type="operator.testStatus === 'passed' ? 'success' : operator.testStatus === 'failed' ? 'danger' : 'info'">
+          <el-tag class="aircas-tag" size="small" :type="operator.testStatus === 'passed' ? 'success' : operator.testStatus === 'failed' ? 'danger' : 'info'">
             {{ operator.testStatus === "passed" ? "已通过" : operator.testStatus === "failed" ? "未通过" : "未测试" }}
           </el-tag>
         </el-descriptions-item>
@@ -145,6 +145,26 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   margin: 0 0 12px;
   color: var(--aircas-color-text-secondary);
   font-size: 13px;
+}
+
+.function-operator-detail__meta {
+  --el-descriptions-item-bordered-label-background: var(--aircas-color-panel-background-deep);
+  --el-descriptions-table-border: 1px solid var(--aircas-color-border-soft);
+  --el-fill-color-blank: var(--aircas-color-input-background);
+}
+
+.function-operator-detail__meta :deep(.el-descriptions__body) {
+  background-color: var(--aircas-color-transparent);
+}
+
+.function-operator-detail__meta :deep(.el-descriptions__label.is-bordered-label) {
+  background: var(--aircas-color-panel-background-deep);
+  color: var(--aircas-color-text-secondary);
+}
+
+.function-operator-detail__meta :deep(.el-descriptions__content.is-bordered-content) {
+  background: var(--aircas-color-input-background);
+  color: var(--aircas-color-text-primary);
 }
 
 .function-operator-detail__section {

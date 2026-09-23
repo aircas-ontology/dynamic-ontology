@@ -37,6 +37,8 @@
         </el-select>
         <el-date-picker
           v-model="updatedRange"
+          class="aircas-input function-operator-panel__date"
+          popper-class="aircas-picker"
           type="daterange"
           value-format="YYYY-MM-DD"
           range-separator="至"
@@ -91,10 +93,10 @@
       <article v-for="operator in operators" :key="operator.id" class="function-operator-card" @click="openDetail(operator)">
         <div class="function-operator-card__header">
           <div class="function-operator-card__name">{{ operator.name }}</div>
-          <el-tag size="small" :type="statusTagType(operator.status)">{{ statusLabel(operator.status) }}</el-tag>
+          <el-tag class="aircas-tag" size="small" :type="statusTagType(operator.status)">{{ statusLabel(operator.status) }}</el-tag>
         </div>
         <div class="function-operator-card__meta">
-          <el-tag size="small" effect="plain">{{ typeLabel(operator.type) }}</el-tag>
+          <el-tag class="aircas-tag" size="small" effect="plain">{{ typeLabel(operator.type) }}</el-tag>
           <span>{{ operator.version }}</span>
         </div>
         <p class="function-operator-card__description">{{ operator.description || "暂无说明" }}</p>
@@ -125,7 +127,7 @@
       <el-table-column prop="name" label="函数名称" min-width="180" show-overflow-tooltip />
       <el-table-column label="类型" width="120">
         <template #default="{ row }">
-          <el-tag size="small" effect="plain">{{ typeLabel(asOperator(row).type) }}</el-tag>
+          <el-tag class="aircas-tag" size="small" effect="plain">{{ typeLabel(asOperator(row).type) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="protocol" label="协议" width="90" />
@@ -138,7 +140,7 @@
       <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
-          <el-tag size="small" :type="statusTagType(asOperator(row).status)">{{ statusLabel(asOperator(row).status) }}</el-tag>
+          <el-tag class="aircas-tag" size="small" :type="statusTagType(asOperator(row).status)">{{ statusLabel(asOperator(row).status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="updatedAt" label="最后更新" width="150" />
@@ -158,7 +160,8 @@
       v-if="total > 0"
       v-model:current-page="page"
       v-model:page-size="pageSize"
-      class="function-operator-panel__pagination"
+      class="aircas-pagination function-operator-panel__pagination"
+      popper-class="aircas-pagination-popper"
       layout="total, sizes, prev, pager, next"
       :total="total"
       :page-sizes="[8, 16, 32]"
@@ -350,6 +353,46 @@ function parameterSummary(parameters: FunctionOperatorParameter[]): string {
   width: 140px;
 }
 
+.function-operator-panel :deep(.function-operator-panel__date.el-date-editor) {
+  --el-input-text-color: var(--aircas-color-text-primary);
+  --el-input-bg-color: var(--aircas-color-input-background);
+  --el-input-border-color: var(--aircas-color-border);
+  --el-input-hover-border-color: var(--aircas-color-border-highlight);
+  --el-input-focus-border-color: var(--aircas-color-focus-border);
+  --el-input-placeholder-color: var(--aircas-color-text-placeholder);
+  --el-input-icon-color: var(--aircas-color-text-muted);
+  --el-fill-color-blank: var(--aircas-color-input-background);
+  --el-text-color-placeholder: var(--aircas-color-text-placeholder);
+  --el-text-color-regular: var(--aircas-color-text-primary);
+  background-color: var(--aircas-color-input-background);
+  box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+}
+
+.function-operator-panel :deep(.function-operator-panel__date.el-date-editor:hover) {
+  box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
+}
+
+.function-operator-panel :deep(.function-operator-panel__date.el-date-editor.is-active) {
+  box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
+}
+
+.function-operator-panel :deep(.function-operator-panel__date .el-range-input) {
+  color: var(--aircas-color-text-primary);
+  background-color: var(--aircas-color-transparent);
+}
+
+.function-operator-panel :deep(.function-operator-panel__date .el-range-input::placeholder) {
+  color: var(--aircas-color-text-placeholder);
+}
+
+.function-operator-panel :deep(.function-operator-panel__date .el-range-separator) {
+  color: var(--aircas-color-text-muted);
+}
+
+.function-operator-panel :deep(.function-operator-panel__date .el-icon) {
+  color: var(--aircas-color-text-muted);
+}
+
 .function-operator-panel__toolbar {
   display: flex;
   align-items: center;
@@ -394,7 +437,7 @@ function parameterSummary(parameters: FunctionOperatorParameter[]): string {
   border-color: var(--aircas-color-accent-cyan);
   background: var(--aircas-color-active-background);
   color: var(--aircas-color-text-primary);
-  box-shadow: 0 0 10px var(--aircas-color-cyan-soft);
+  box-shadow: 0 0 10px var(--aircas-color-accent-cyan-soft);
 }
 
 .function-operator-panel__view-icon {

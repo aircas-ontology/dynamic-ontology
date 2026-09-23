@@ -9,6 +9,13 @@ test("ontology object create dialog exposes prototype creation modes and require
   assert.match(source, /title="新建本体"/);
   assert.match(source, /手动创建/);
   assert.match(source, /导入创建/);
+  assert.match(source, /class="aircas-upload ontology-object-create-dialog__upload"/);
+  assert.match(
+    source,
+    /ontology-object-create-dialog__upload :deep\(\.el-upload-dragger\)[\s\S]*background-color: var\(--aircas-color-input-background\)[\s\S]*border: 1px dashed var\(--aircas-color-border\)/,
+  );
+  assert.match(source, /ontology-object-create-dialog__upload :deep\(\.el-upload-dragger:hover\)[\s\S]*border-color: var\(--aircas-color-border-highlight\)/);
+  assert.match(source, /ontology-object-create-dialog__upload :deep\(\.el-upload-dragger \.el-icon\)[\s\S]*color: var\(--aircas-color-title\)/);
   assert.match(source, /大模型构建/);
   assert.match(source, /API 名称/);
   assert.match(source, /显示名称/);

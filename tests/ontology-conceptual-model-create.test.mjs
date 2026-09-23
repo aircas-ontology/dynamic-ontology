@@ -28,12 +28,20 @@ test("conceptual model page exposes the prototype canvas areas and interactions"
   assert.doesNotMatch(source, /function startRelationPortDrag/);
   assert.match(source, /function fitCanvas/);
   assert.match(source, /function deleteSelected/);
-  assert.match(source, /空间名称/);
+  assert.match(source, /conceptual-model-create__space-field/);
+  assert.match(source, /conceptual-model-create__space-fields[\s\S]*<span>空间名称<\/span>[\s\S]*<span>API 名称<\/span>/);
   assert.match(source, /createOntologySpaceWithCanvasContentInterface/);
   assert.match(source, /buildCanvasSpaceParams/);
   assert.match(source, /mapCanvasDataType/);
   assert.match(source, /storageGroupOptions/);
   assert.match(source, /allow-create/);
+  const inspectorSelects = source.match(/<el-select[\s\S]*?<\/el-select>/g) || [];
+  assert.equal(inspectorSelects.length, 4);
+  for (const selectBlock of inspectorSelects) {
+    assert.match(selectBlock, /class="aircas-select"/);
+    assert.match(selectBlock, /popper-class="aircas-select-popper"/);
+    assert.doesNotMatch(selectBlock, /class="aircas-input"/);
+  }
   assert.match(source, /storageGroup: "main"/);
   assert.match(source, /storageGroup: attribute\.storageGroup/);
   assert.match(source, /spaceId/);

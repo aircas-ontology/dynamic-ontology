@@ -101,14 +101,14 @@
               ><el-input class="aircas-input" :model-value="selectedAttribute.apiName" @update:model-value="updateAttribute('apiName', $event)" /></el-form-item
             ><el-form-item label="数据类型"
               ><el-select
-                class="aircas-input"
+                class="aircas-select"
                 popper-class="aircas-select-popper"
                 :model-value="selectedAttribute.dataType"
                 @update:model-value="updateAttribute('dataType', $event)"
                 ><el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" /></el-select></el-form-item
             ><el-form-item label="存储分组"
               ><el-select
-                class="aircas-input"
+                class="aircas-select"
                 popper-class="aircas-select-popper"
                 :model-value="selectedAttribute.storageGroup"
                 filterable
@@ -144,7 +144,7 @@
               ><el-input class="aircas-input" :model-value="selectedRelation.apiName" @update:model-value="updateRelation('apiName', $event)" /></el-form-item
             ><el-form-item label="源对象"
               ><el-select
-                class="aircas-input"
+                class="aircas-select"
                 popper-class="aircas-select-popper"
                 clearable
                 :model-value="selectedRelation.sourceId"
@@ -152,7 +152,7 @@
                 ><el-option v-for="object in objects" :key="object.id" :label="object.displayName" :value="object.id" /></el-select></el-form-item
             ><el-form-item label="目标对象"
               ><el-select
-                class="aircas-input"
+                class="aircas-select"
                 popper-class="aircas-select-popper"
                 clearable
                 :model-value="selectedRelation.targetId"

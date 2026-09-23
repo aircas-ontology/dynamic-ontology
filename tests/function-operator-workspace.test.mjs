@@ -85,9 +85,53 @@ test("function operator panel wires workspace composable and basic form", () => 
   const panelSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel.vue");
   const formSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorFormDialog.vue");
   assert.match(panelSource, /useFunctionOperatorWorkspace/);
+  assert.match(panelSource, /<el-date-picker[\s\S]*class="aircas-input function-operator-panel__date"[\s\S]*popper-class="aircas-picker"/);
+  assert.match(
+    panelSource,
+    /:deep\(\.function-operator-panel__date\.el-date-editor\)[\s\S]*background-color: var\(--aircas-color-input-background\)[\s\S]*box-shadow: 0 0 0 1px var\(--aircas-color-border\) inset/,
+  );
+  assert.match(
+    panelSource,
+    /:deep\(\.function-operator-panel__date\.el-date-editor:hover\)[\s\S]*box-shadow: 0 0 0 1px var\(--aircas-color-border-highlight\) inset/,
+  );
+  assert.match(panelSource, /:deep\(\.function-operator-panel__date \.el-range-input\)[\s\S]*color: var\(--aircas-color-text-primary\)/);
+  assert.doesNotMatch(panelSource, /--aircas-color-cyan-soft/);
+  assert.equal((panelSource.match(/<el-tag/g) || []).length, 4);
+  assert.equal((panelSource.match(/class="aircas-tag"/g) || []).length, 4);
+  assert.match(panelSource, /class="aircas-pagination function-operator-panel__pagination"/);
+  assert.match(panelSource, /popper-class="aircas-pagination-popper"/);
   assert.match(panelSource, /FunctionOperatorFormDialog/);
   assert.match(panelSource, /FunctionOperatorDetailDrawer/);
   assert.doesNotMatch(panelSource, /运行配置/);
   assert.match(formSource, /FunctionOperatorBasicFilterBuilder/);
   assert.match(formSource, /本阶段暂未开放/);
+  assert.match(formSource, /class="aircas-dialog function-operator-form-dialog"/);
+  assert.match(formSource, /class="aircas-form function-operator-form"/);
+  assert.match(formSource, /class="aircas-empty"/);
+  const filterSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/BasicFilterGroupEditor.vue");
+  assert.equal((filterSource.match(/<el-select/g) || []).length, 4);
+  assert.equal((filterSource.match(/\sclass="aircas-select/g) || []).length, 4);
+  assert.equal((filterSource.match(/popper-class="aircas-select-popper"/g) || []).length, 4);
+  assert.equal((filterSource.match(/<el-input(?!-)/g) || []).length, 4);
+  assert.equal((filterSource.match(/class="aircas-input/g) || []).length, 4);
+  assert.match(filterSource, /background: var\(--aircas-color-overlay\)/);
+  assert.doesNotMatch(filterSource, /--aircas-color-panel-overlay/);
+  assert.match(filterSource, /basic-filter-row__number[\s\S]*--el-fill-color-blank: var\(--aircas-color-input-background\)/);
+  const drawerSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorDetailDrawer.vue");
+  assert.match(drawerSource, /class="aircas-drawer function-operator-detail"/);
+  assert.match(drawerSource, /class="aircas-descriptions function-operator-detail__meta"/);
+  assert.match(
+    drawerSource,
+    /function-operator-detail__meta[\s\S]*--el-descriptions-item-bordered-label-background: var\(--aircas-color-panel-background-deep\)/,
+  );
+  assert.match(
+    drawerSource,
+    /function-operator-detail__meta :deep\(\.el-descriptions__label.is-bordered-label\)[\s\S]*background: var\(--aircas-color-panel-background-deep\)/,
+  );
+  assert.match(
+    drawerSource,
+    /function-operator-detail__meta :deep\(\.el-descriptions__content.is-bordered-content\)[\s\S]*background: var\(--aircas-color-input-background\)/,
+  );
+  assert.equal((drawerSource.match(/<el-tag/g) || []).length, 3);
+  assert.equal((drawerSource.match(/class="aircas-tag"/g) || []).length, 3);
 });

@@ -31,6 +31,17 @@ test("space detail parent and child routes resolve under the workspace layout", 
 
   const subspaceRoute = router.resolve({ name: "OntologySubspaceCreate", params: { spaceId: "navy" } });
   assert.equal(subspaceRoute.path, "/workspace/ontology-space-management/navy/subspace-create");
+  assert.equal(subspaceRoute.matched.at(-1)?.components?.default.toString().includes("OntologySubspaceCreate"), true);
+});
+
+test("subspace create page keeps an empty shell", () => {
+  const source = readFileSync(new URL("../src/views/OntologySubspaceCreate/index.vue", import.meta.url), "utf8");
+  assert.match(source, /class="ontology-subspace-create"/);
+  assert.match(source, /aria-label="创建子空间"/);
+  assert.doesNotMatch(source, /分类体系树/);
+  assert.doesNotMatch(source, /el-tree/);
+  assert.doesNotMatch(source, /子空间名称/);
+  assert.doesNotMatch(source, /AI 助手/);
 });
 
 test("space detail parent redirects to overview for a space id", () => {
@@ -96,6 +107,6 @@ test("workspace type tabs keep prototype labels including function operator", ()
   assert.match(source, /函数算子/);
   assert.match(source, /行为调度/);
   assert.match(source, /workspace-type-tabs/);
-  assert.match(source, /background: linear-gradient\(135deg, var\(--aircas-color-panel-overlay\), var\(--aircas-color-panel-overlay-deep\)\)/);
-  assert.match(source, /box-shadow: inset 0 0 20px var\(--aircas-color-border-shadow\)/);
+  assert.match(source, /background: linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
+  assert.match(source, /box-shadow: inset 0 0 20px var\(--aircas-color-page-glow\)/);
 });

@@ -67,7 +67,7 @@ test("section toolbar uses name sort select and card-then-table view toggle", ()
   assert.match(source, /border-radius: 4px/);
   assert.match(
     source,
-    /section-toolbar__view\.aircas-radio-group :deep\(\.el-radio-button__original-radio:checked \+ \.el-radio-button__inner\)[\s\S]*border-color: var\(--aircas-color-accent-cyan\)[\s\S]*background: var\(--aircas-color-active-background\)[\s\S]*color: var\(--aircas-color-text-primary\)[\s\S]*box-shadow: 0 0 10px var\(--aircas-color-cyan-soft\)/,
+    /section-toolbar__view\.aircas-radio-group :deep\(\.el-radio-button__original-radio:checked \+ \.el-radio-button__inner\)[\s\S]*border-color: var\(--aircas-color-accent-cyan\)[\s\S]*background: var\(--aircas-color-active-background\)[\s\S]*color: var\(--aircas-color-text-primary\)[\s\S]*box-shadow: 0 0 10px var\(--aircas-color-accent-cyan-soft\)/,
   );
   const cardIndex = source.indexOf('value="card"');
   const tableIndex = source.indexOf('value="table"');
@@ -90,7 +90,7 @@ test("space cards follow the prototype frame, metrics, and footer", () => {
   const source = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SpaceCardGrid.vue", import.meta.url), "utf8");
   assert.match(source, /space-card__logo/);
   assert.match(source, /width: 48px/);
-  assert.match(source, /border: 1px solid var\(--aircas-color-cyan-border\)/);
+  assert.match(source, /border: 1px solid var\(--aircas-color-accent-cyan-border\)/);
   assert.match(source, /-webkit-line-clamp: 2/);
   assert.match(source, /border-top: 1px dashed var\(--aircas-color-border-soft\)/);
   assert.match(source, /grid-template-columns: 1fr 1fr/);
@@ -102,7 +102,7 @@ test("space cards follow the prototype frame, metrics, and footer", () => {
   assert.match(source, />规则/);
   assert.match(source, /--aircas-color-accent-blue/);
   assert.match(source, /--aircas-color-accent-purple/);
-  assert.match(source, /linear-gradient\(90deg, var\(--aircas-color-active-background\), var\(--aircas-color-blue-fill\)\)/);
+  assert.match(source, /linear-gradient\(90deg, var\(--aircas-color-active-background\), var\(--aircas-color-accent-blue-fill\)\)/);
 });
 
 test("space row actions share outlined primary buttons", () => {
