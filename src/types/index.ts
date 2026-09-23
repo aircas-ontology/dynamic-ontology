@@ -6,6 +6,16 @@ export type {
   BatchUpdateOntologyPropertyDatasource,
   BatchUpdateOntologyPropertyItem,
 } from "./apis/batchUpdateOntologyPropertiesType";
+export type {
+  CreateOntologyFunctionAggFunc,
+  CreateOntologyFunctionData,
+  CreateOntologyFunctionFilterCondition,
+  CreateOntologyFunctionFilterDataType,
+  CreateOntologyFunctionFilterNode,
+  CreateOntologyFunctionFilters,
+  CreateOntologyFunctionParams,
+  CreateOntologyFunctionQueryConfig,
+} from "./apis/createOntologyFunctionType";
 export type { CreateOntologyLinkParams } from "./apis/createOntologyLinkType";
 export type { CreateOntologyObjectArrTypeTreeParams } from "./apis/createOntologyObjectArrTypeTreeType";
 export type { CreateOntologyObjectData, CreateOntologyObjectParams } from "./apis/createOntologyObjectType";
@@ -32,6 +42,8 @@ export type {
   OntologyDatasourceColumnDescVO,
 } from "./apis/getOntologyDatasourceColumnsType";
 export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
+export type { GetOntologyFunctionListData, GetOntologyFunctionListItem, GetOntologyFunctionListParams } from "./apis/getOntologyFunctionListType";
+export type { GetOntologyMetaByObjectIdData, GetOntologyMetaByObjectIdParams } from "./apis/getOntologyMetaByObjectIdType";
 export type { GetOntologyMetaStatisticData, GetOntologyMetaStatisticParams, OntologyMetaStatisticVO } from "./apis/getOntologyMetaStatisticType";
 export type { GetOntologyObjectArrTypeTreeData, GetOntologyObjectArrTypeTreeParams } from "./apis/getOntologyObjectArrTypeTreeType";
 export type { GetOntologyObjectByCategoryIdData, GetOntologyObjectByCategoryIdParams, OntologyObjectQueryItem } from "./apis/getOntologyObjectByCategoryIdType";
@@ -119,6 +131,7 @@ export type {
   BasicFilterValueType,
 } from "./pages/ontologyFunctionOperatorBasicFilterType";
 export {
+  FUNCTION_OPERATOR_AGG_FUNC_OPTIONS,
   FUNCTION_OPERATOR_STATUS_LABELS,
   FUNCTION_OPERATOR_STATUS_OPTIONS,
   FUNCTION_OPERATOR_TYPE_LABELS,
@@ -126,6 +139,7 @@ export {
 } from "./pages/ontologyFunctionOperatorType";
 export type {
   FunctionOperator,
+  FunctionOperatorAggFunc,
   FunctionOperatorBasicAction,
   FunctionOperatorBasicDefinition,
   FunctionOperatorDefinition,

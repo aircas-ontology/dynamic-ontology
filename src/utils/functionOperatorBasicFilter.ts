@@ -6,6 +6,12 @@ import type {
   BasicFilterOp,
   BasicFilterValue,
   BasicFilterValueType,
+  CreateOntologyFunctionAggFunc,
+  CreateOntologyFunctionFilterCondition,
+  CreateOntologyFunctionFilterDataType,
+  CreateOntologyFunctionFilterNode,
+  CreateOntologyFunctionFilters,
+  CreateOntologyFunctionQueryConfig,
 } from "@/types";
 
 const OP_SET = new Set<string>(["EQ", "NEQ", "GT", "GTE", "LT", "LTE", "CONTAINS", "IS_NULL", "IS_NOT_NULL", "BETWEEN"]);
@@ -240,4 +246,84 @@ export function opNeedsValue(op: BasicFilterOp): boolean {
  */
 export function opNeedsRange(op: BasicFilterOp): boolean {
   return op === "BETWEEN";
+}
+
+/**
+ * @description 将表单 valueType 映射为创建接口 dataType。
+ * @param valueType 表单值类型。
+ * @returns 接口 dataType。
+ */
+function mapValueTypeToDataType(valueType: BasicFilterValueType): CreateOntologyFunctionFilterDataType {
+  if (valueType === "number") {
+    return "NUMBER";
+  }
+  if (valueType === "boolean") {
+    return "BOOLEAN";
+  }
+  return "STRING";
+}
+
+/**
+ * @description 将单条过滤条件转为创建接口 filter 结构。
+ * @param condition 表单过滤条件。
+ * @returns 接口过滤条件。
+ */
+function mapConditionToApiFilter(condition: BasicFilterCondition): CreateOntologyFunctionFilterCondition {
+  const next: CreateOntologyFunctionFilterCondition = {
+    propertyApiName: condition.propertyApiName.trim(),
+    op: condition.op,
+    dataType: mapValueTypeToDataType(condition.valueType || "string"),
+  };
+  if (condition.op === "BETWEEN") {
+    next.values = [...(condition.values ?? [])];
+  } else if (condition.op !== "IS_NULL" && condition.op !== "IS_NOT_NULL") {
+    next.value = condition.value;
+  }
+  return next;
+}
+
+/**
+ * @description 将过滤节点转为创建接口节点。
+ * @param node 表单节点。
+ * @returns 接口节点。
+ */
+function mapNodeToApiFilter(node: BasicFilterNode): CreateOntologyFunctionFilterNode {
+  if (node.type === "GROUP") {
+    return {
+      type: "GROUP",
+      group: mapGroupToApiFilters(node.group ?? { logic: "OR", children: [] }),
+    };
+  }
+  return {
+    type: "FILTER",
+    filter: mapConditionToApiFilter(node.filter ?? createEmptyBasicFilterCondition()),
+  };
+}
+
+/**
+ * @description 将过滤文档转为创建接口 filters。
+ * @param group 表单过滤组。
+ * @returns 接口 filters。
+ */
+function mapGroupToApiFilters(group: BasicFilterDocument): CreateOntologyFunctionFilters {
+  return {
+    logic: group.logic,
+    children: group.children.map(mapNodeToApiFilter),
+  };
+}
+
+/**
+ * @description 由参数配置文档构建创建接口 queryConfig；未选聚合类型时不带 aggFunc。
+ * @param doc 基础过滤文档。
+ * @param aggFunc 可选聚合类型；空字符串表示不传。
+ * @returns queryConfig 对象。
+ */
+export function buildOntologyFunctionQueryConfig(doc: BasicFilterDocument, aggFunc: CreateOntologyFunctionAggFunc | ""): CreateOntologyFunctionQueryConfig {
+  const queryConfig: CreateOntologyFunctionQueryConfig = {
+    filters: mapGroupToApiFilters(doc),
+  };
+  if (aggFunc) {
+    queryConfig.aggFunc = aggFunc;
+  }
+  return queryConfig;
 }

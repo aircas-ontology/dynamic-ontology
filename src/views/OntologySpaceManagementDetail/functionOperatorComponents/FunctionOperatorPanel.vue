@@ -1,12 +1,7 @@
 <template>
   <section class="function-operator-panel">
-    <header class="function-operator-panel__header">
-      <h2>函数算子</h2>
-      <el-button class="aircas-button" type="primary" @click="openCreate">新建函数</el-button>
-    </header>
-
     <div class="function-operator-panel__filters">
-      <div style="display: flex; align-items: center; gap: 8px">
+      <div class="function-operator-panel__filter-fields">
         <el-input v-model="filters.keyword" class="aircas-input function-operator-panel__keyword" clearable placeholder="按函数名称搜索" />
         <el-select
           v-model="filters.type"
@@ -47,7 +42,8 @@
         />
       </div>
 
-      <div style="display: flex; align-items: center; gap: 8px">
+      <div class="function-operator-panel__filter-actions">
+        <el-button class="aircas-button" type="primary" @click="openCreate">新建函数</el-button>
         <el-button class="aircas-button" type="primary" @click="applyFilters">查询</el-button>
         <el-button class="aircas-button" @click="resetFilters">重置</el-button>
       </div>
@@ -96,13 +92,10 @@
           <el-tag class="aircas-tag" size="small" :type="statusTagType(operator.status)">{{ statusLabel(operator.status) }}</el-tag>
         </div>
         <div class="function-operator-card__meta">
-          <el-tag class="aircas-tag" size="small" effect="plain">{{ typeLabel(operator.type) }}</el-tag>
+          <el-tag class="aircas-tag" size="small" effect="plain">{{ typeLabel(operator) }}</el-tag>
           <span>{{ operator.version }}</span>
         </div>
         <p class="function-operator-card__description">{{ operator.description || "暂无说明" }}</p>
-        <div class="function-operator-card__io">
-          输入 {{ parameterSummary(operator.inputParameters) }} <span>→</span> 输出 {{ parameterSummary(operator.outputParameters) }}
-        </div>
         <div class="function-operator-card__footer">
           <span>{{ operator.createdBy }}</span>
           <span>{{ operator.updatedAt }}</span>
@@ -127,16 +120,11 @@
       <el-table-column prop="name" label="函数名称" min-width="180" show-overflow-tooltip />
       <el-table-column label="类型" width="120">
         <template #default="{ row }">
-          <el-tag class="aircas-tag" size="small" effect="plain">{{ typeLabel(asOperator(row).type) }}</el-tag>
+          <el-tag class="aircas-tag" size="small" effect="plain">{{ typeLabel(asOperator(row)) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="protocol" label="协议" width="90" />
       <el-table-column prop="version" label="版本" width="100" />
-      <el-table-column label="输入 / 输出" min-width="200" show-overflow-tooltip>
-        <template #default="{ row }"
-          >{{ parameterSummary(asOperator(row).inputParameters) }} → {{ parameterSummary(asOperator(row).outputParameters) }}</template
-        >
-      </el-table-column>
       <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
@@ -205,7 +193,7 @@
 <script setup lang="ts">
 import type { TagProps } from "element-plus";
 
-import type { FunctionOperator, FunctionOperatorParameter, FunctionOperatorStatus, FunctionOperatorType } from "@/types";
+import type { FunctionOperator, FunctionOperatorStatus } from "@/types";
 import { FUNCTION_OPERATOR_STATUS_LABELS, FUNCTION_OPERATOR_STATUS_OPTIONS, FUNCTION_OPERATOR_TYPE_LABELS, FUNCTION_OPERATOR_TYPE_OPTIONS } from "@/types";
 
 import { useFunctionOperatorWorkspace } from "../composables/useFunctionOperatorWorkspace";
@@ -269,20 +257,29 @@ function setViewMode(value: unknown): void {
 }
 
 /**
- * @description 获取函数类型展示文案。
- * @param type 函数类型。
- * @returns 中文标签。
+ * @description 获取函数类型展示文案；CUSTOMIZE 与未知模型类型展示空。
+ * @param operator 算子。
+ * @returns 中文标签或空字符串。
  */
-function typeLabel(type: FunctionOperatorType): string {
-  return FUNCTION_OPERATOR_TYPE_LABELS[type];
+function typeLabel(operator: FunctionOperator): string {
+  if (operator.apiModelType === "CUSTOMIZE") {
+    return "";
+  }
+  if (operator.apiModelType === "BASIC_QUERY" || operator.type === "basic") {
+    return FUNCTION_OPERATOR_TYPE_LABELS.basic;
+  }
+  return FUNCTION_OPERATOR_TYPE_LABELS[operator.type] ?? "";
 }
 
 /**
- * @description 获取状态展示文案。
+ * @description 获取状态展示文案；缺省状态展示空。
  * @param status 状态。
- * @returns 中文标签。
+ * @returns 中文标签或空字符串。
  */
 function statusLabel(status: FunctionOperatorStatus): string {
+  if (!status) {
+    return "";
+  }
   return FUNCTION_OPERATOR_STATUS_LABELS[status];
 }
 
@@ -296,15 +293,6 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   if (status === "testing") return "warning";
   if (status === "disabled") return "info";
   return undefined;
-}
-
-/**
- * @description 汇总参数名称与类型。
- * @param parameters 参数列表。
- * @returns 摘要文案。
- */
-function parameterSummary(parameters: FunctionOperatorParameter[]): string {
-  return parameters.map((item) => `${item.name || "未命名"}:${item.type}`).join(", ") || "—";
 }
 </script>
 
@@ -323,19 +311,6 @@ function parameterSummary(parameters: FunctionOperatorParameter[]): string {
   background: var(--aircas-color-page-background);
 }
 
-.function-operator-panel__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.function-operator-panel__header h2 {
-  margin: 0;
-  color: var(--aircas-color-text-primary);
-  font-size: 16px;
-}
-
 .function-operator-panel__filters {
   min-width: 1150px;
   display: flex;
@@ -343,6 +318,13 @@ function parameterSummary(parameters: FunctionOperatorParameter[]): string {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.function-operator-panel__filter-fields,
+.function-operator-panel__filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .function-operator-panel__keyword {
@@ -514,7 +496,6 @@ function parameterSummary(parameters: FunctionOperatorParameter[]): string {
 }
 
 .function-operator-card__description,
-.function-operator-card__io,
 .function-operator-card__footer {
   margin: 0;
   color: var(--aircas-color-text-secondary);

@@ -2,10 +2,9 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 
+import { createOntologyFunctionInterface, getOntologyFunctionListInterface } from "@/apis";
 import {
-  createFunctionOperatorMock,
   deleteFunctionOperatorMock,
-  queryFunctionOperatorsMock,
   setFunctionOperatorStatusMock,
   testFunctionOperatorMock,
   updateFunctionOperatorMock,
@@ -19,6 +18,8 @@ import type {
   FunctionOperatorType,
   FunctionOperatorViewMode,
 } from "@/types";
+import { buildOntologyFunctionQueryConfig, parseBasicFilterConfig } from "@/utils/functionOperatorBasicFilter";
+import { mapOntologyFunctionListItem } from "@/utils/mapOntologyFunctionList";
 
 /**
  * @description 空间函数算子工作区：列表筛选、增删改、发布与测试（Mock）。
@@ -69,28 +70,7 @@ export function useFunctionOperatorWorkspace() {
   });
 
   /**
-   * @description 组装当前列表查询参数。
-   * @returns 查询对象。
-   */
-  function buildQuery(): FunctionOperatorQuery {
-    const [sortBy, sortOrder] = sortValue.value.split("-") as [FunctionOperatorQuery["sortBy"], FunctionOperatorQuery["sortOrder"]];
-    return {
-      spaceId: spaceId.value,
-      keyword: filters.keyword,
-      type: filters.type,
-      creator: filters.creator,
-      status: filters.status,
-      updatedFrom: updatedRange.value?.[0] || "",
-      updatedTo: updatedRange.value?.[1] || "",
-      page: page.value,
-      pageSize: pageSize.value,
-      sortBy,
-      sortOrder,
-    };
-  }
-
-  /**
-   * @description 加载函数算子列表。
+   * @description 加载函数算子列表（分页走后端；筛选暂在当前页客户端过滤）。
    */
   async function loadOperators(): Promise<void> {
     if (!spaceId.value) {
@@ -103,12 +83,51 @@ export function useFunctionOperatorWorkspace() {
     loading.value = true;
     errorMessage.value = "";
     try {
-      const pageData = queryFunctionOperatorsMock(buildQuery());
+      const response = await getOntologyFunctionListInterface({
+        pageNum: page.value,
+        pageSize: pageSize.value,
+      });
       if (disposed || requestId !== generation) {
         return;
       }
-      operators.value = pageData.records;
-      total.value = pageData.total;
+      if (response.code !== 200 || !response.data) {
+        throw new Error(response.message || "函数算子加载失败");
+      }
+      let records = response.data.records.map((item) => mapOntologyFunctionListItem(item, spaceId.value));
+      const keyword = filters.keyword.trim().toLowerCase();
+      if (keyword) {
+        records = records.filter(
+          (item) =>
+            item.name.toLowerCase().includes(keyword) || item.functionApi.toLowerCase().includes(keyword) || item.description.toLowerCase().includes(keyword),
+        );
+      }
+      if (filters.type) {
+        records = records.filter((item) => item.type === filters.type);
+      }
+      if (filters.creator) {
+        records = records.filter((item) => item.createdBy === filters.creator);
+      }
+      if (filters.status) {
+        records = records.filter((item) => item.status === filters.status);
+      }
+      if (updatedRange.value?.[0]) {
+        const from = updatedRange.value[0];
+        records = records.filter((item) => item.updatedAt.slice(0, 10) >= from);
+      }
+      if (updatedRange.value?.[1]) {
+        const to = updatedRange.value[1];
+        records = records.filter((item) => item.updatedAt.slice(0, 10) <= to);
+      }
+      const [sortBy, sortOrder] = sortValue.value.split("-") as [FunctionOperatorQuery["sortBy"], FunctionOperatorQuery["sortOrder"]];
+      const factor = sortOrder === "asc" ? 1 : -1;
+      records.sort((left, right) => {
+        if (sortBy === "name") {
+          return left.name.localeCompare(right.name, "zh-CN") * factor;
+        }
+        return left.updatedAt.localeCompare(right.updatedAt) * factor;
+      });
+      operators.value = records;
+      total.value = response.data.total;
       if (selectedOperator.value) {
         selectedOperator.value = operators.value.find((item) => item.id === selectedOperator.value?.id) ?? selectedOperator.value;
       }
@@ -174,21 +193,47 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 保存新建或编辑草稿。
+   * @description 保存新建或编辑草稿；新建走创建接口，编辑暂用本地 Mock。
    * @param draft 表单草稿。
    */
   async function saveOperator(draft: FunctionOperatorDraft): Promise<void> {
+    if (actionLoading.value) {
+      return;
+    }
     actionLoading.value = true;
     try {
-      const saved = draft.id ? updateFunctionOperatorMock(draft) : createFunctionOperatorMock(draft);
-      if (!saved) {
-        ElMessage.error("函数保存失败");
-        return;
+      if (draft.id) {
+        const saved = updateFunctionOperatorMock(draft);
+        if (!saved) {
+          ElMessage.error("函数保存失败");
+          return;
+        }
+        ElMessage.success("函数已更新");
+      } else {
+        if (draft.type !== "basic" || draft.definition.kind !== "basic") {
+          ElMessage.warning("请选择基础函数");
+          return;
+        }
+        const filtersDoc = parseBasicFilterConfig(draft.definition.parameterConfig);
+        const queryConfig = buildOntologyFunctionQueryConfig(filtersDoc, draft.definition.aggFunc || "");
+        const response = await createOntologyFunctionInterface({
+          functionApi: draft.functionApi.trim(),
+          displayName: draft.name.trim(),
+          description: draft.description.trim(),
+          type: "BASIC_QUERY",
+          ontologySpaceId: draft.spaceId,
+          queryConfig,
+        });
+        if (response.code !== 200) {
+          throw new Error(response.message || "函数创建失败");
+        }
+        ElMessage.success("函数草稿已保存");
       }
-      ElMessage.success(draft.id ? "函数已更新" : "函数草稿已保存");
       formVisible.value = false;
       formDraft.value = null;
       await loadOperators();
+    } catch (error) {
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数保存失败");
     } finally {
       actionLoading.value = false;
     }
