@@ -46,7 +46,8 @@ test("category tree mapping includes ontology metadata in object sections", () =
   const source = readSource("../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts");
   assert.match(source, /mapOntologyCategorySections/);
   assert.match(source, /node\.ontologyMetaInfos/);
-  assert.match(source, /objectNames:/);
+  assert.match(source, /objects:/);
+  assert.match(source, /meta\.uniqueIdentifier/);
   assert.match(source, /meta\.displayName/);
   assert.match(source, /propertyCount/);
 });
@@ -57,4 +58,13 @@ test("concept hierarchy tree renders object names below each category node", () 
   assert.match(source, /concept-hierarchy__object-row/);
   assert.match(source, /concept-hierarchy__object-dot/);
   assert.match(source, /concept-hierarchy__object-name/);
+});
+
+test("clicking a tree object node navigates to the object detail page", () => {
+  const treeSource = readSource("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue");
+  assert.match(treeSource, /"select-object": \[object: OntologyConceptObjectRef\]/);
+  assert.match(treeSource, /emit\("select-object", \{ uniqueIdentifier: value\.objectId, displayName: value\.label \}\)/);
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  assert.match(panelSource, /@select-object="openObjectDetailFromTree"/);
+  assert.match(panelSource, /name: "OntologyObjectDetail", params: \{ objectId \}/);
 });

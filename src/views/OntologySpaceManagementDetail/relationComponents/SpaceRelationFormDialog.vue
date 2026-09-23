@@ -15,7 +15,7 @@
       <el-form-item label="API 名称" required>
         <el-input v-model="apiName" class="aircas-input" maxlength="64" placeholder="请输入 API 名称" :disabled="mode === 'edit'" />
       </el-form-item>
-      <el-form-item v-if="categoryOptions.length" label="分类" :required="mode === 'edit'">
+      <el-form-item v-if="categoryOptions.length" label="分类" required>
         <el-tree-select
           v-model="categoryId"
           class="aircas-tree-select"
@@ -25,31 +25,30 @@
           :render-after-expand="false"
           node-key="id"
           :props="{ label: 'label', children: 'children' }"
-          :clearable="mode !== 'edit'"
           placeholder="请选择关系分类"
           style="width: 100%"
         />
       </el-form-item>
-      <el-form-item label="源本体" required>
+      <el-form-item label="源对象" required>
         <el-select
           v-model="sourceName"
           class="aircas-select"
           popper-class="aircas-select-popper"
           filterable
-          placeholder="请选择源本体对象"
+          placeholder="请选择源对象"
           style="width: 100%"
           :disabled="mode === 'edit'"
         >
           <el-option v-for="item in objectOptions" :key="`src-${item.value}`" :label="item.label" :value="item.value" />
         </el-select>
       </el-form-item>
-      <el-form-item label="目标本体" required>
+      <el-form-item label="目标对象" required>
         <el-select
           v-model="targetName"
           class="aircas-select"
           popper-class="aircas-select-popper"
           filterable
-          placeholder="请选择目标本体对象"
+          placeholder="请选择目标对象"
           style="width: 100%"
           :disabled="mode === 'edit'"
         >
@@ -142,7 +141,7 @@ watch(
 );
 
 /**
- * @description 提交关系表单：创建校验名称与源目标；编辑校验名称、分类与描述。
+ * @description 提交关系表单：有分类选项时新增和编辑都必须选择分类。
  */
 function submit() {
   const src = sourceName.value.trim();
@@ -151,9 +150,13 @@ function submit() {
   const trimmedCategoryId = categoryId.value.trim();
   const trimmedDescription = description.value.trim();
 
+  if (props.categoryOptions.length && !trimmedCategoryId) {
+    ElMessage.warning("请选择关系分类");
+    return;
+  }
   if (props.mode === "edit") {
-    if (!trimmedName || !trimmedCategoryId || !trimmedDescription) {
-      ElMessage.warning("请填写关系名称、分类和描述");
+    if (!trimmedName || !trimmedDescription) {
+      ElMessage.warning("请填写关系名称和描述");
       return;
     }
   } else if (!trimmedName || !apiName.value.trim() || !src || !tgt) {
@@ -161,7 +164,7 @@ function submit() {
   }
 
   if (src && tgt && src === tgt) {
-    ElMessage.warning("源本体与目标本体不能相同");
+    ElMessage.warning("源对象与目标对象不能相同");
     return;
   }
   loading.value = true;

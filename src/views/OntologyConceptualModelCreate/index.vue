@@ -179,6 +179,7 @@ import { useRoute, useRouter } from "vue-router";
 import { createOntologySpaceWithCanvasContentInterface } from "@/apis";
 import type { CanvasLink, CanvasOntology, CanvasProperty, CreateOntologySpaceWithCanvasContentParams } from "@/types";
 import ConceptualModelGraphCanvas from "./components/ConceptualModelGraphCanvas.vue";
+import { findConflictingConceptualAttributeKey, formatConceptualAttributeKeyConflictMessage } from "./utils/groupConceptualAttributes";
 import { removeRelationsConnectedToObject } from "./utils/removeRelationsConnectedToObject";
 type PaletteType = "object" | "attribute" | "relation";
 type Port = "top" | "right" | "bottom" | "left";
@@ -443,7 +444,22 @@ function updateObject(field: "apiName" | "displayName" | "description", value: s
 function updateAttribute(field: keyof Attribute, value: string | boolean | number) {
   const owner = objects.value.find((item) => item.attributes.some((attr) => attr.id === selectedAttribute.value?.id));
   const attr = owner?.attributes.find((item) => item.id === selectedAttribute.value?.id);
-  if (!attr) return;
+  if (!owner || !attr) return;
+  if (field === "isPrimary" || field === "isNameKey") {
+    const enabled = value === true;
+    if (!enabled) {
+      attr[field] = false;
+      return;
+    }
+    const kind = field === "isPrimary" ? "primary" : "name";
+    const conflict = findConflictingConceptualAttributeKey(owner.attributes, kind, attr.id);
+    if (conflict) {
+      ElMessage.warning(formatConceptualAttributeKeyConflictMessage(kind, conflict));
+      return;
+    }
+    attr[field] = true;
+    return;
+  }
   if (field === "storageGroup") {
     const group = String(value).trim();
     attr.storageGroup = group || "main";

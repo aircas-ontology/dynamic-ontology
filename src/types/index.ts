@@ -159,6 +159,7 @@ export type {
 export type {
   ManagementWorkspaceTab,
   OntologyConceptNode,
+  OntologyConceptObjectRef,
   OntologyObjectItem,
   OntologyObjectCreateDraft,
   OntologyObjectLocationTarget,

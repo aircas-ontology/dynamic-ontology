@@ -23,50 +23,50 @@
           </span>
         </div>
         <div class="space-relation-workspace__actions">
-          <div class="space-relation-workspace__view-switch" role="group" aria-label="展示方式">
-            <el-tooltip content="关系图" placement="top" popper-class="aircas-popper">
-              <button
-                type="button"
-                class="space-relation-workspace__view-btn"
-                :class="{ 'space-relation-workspace__view-btn-active': relationViewMode === 'graph' }"
-                aria-label="关系图"
-                :aria-pressed="relationViewMode === 'graph'"
-                @click="setRelationViewMode('graph')"
-              >
-                <el-icon><Share /></el-icon>
-              </button>
-            </el-tooltip>
-            <el-tooltip content="列表" placement="top" popper-class="aircas-popper">
-              <button
-                type="button"
-                class="space-relation-workspace__view-btn"
-                :class="{ 'space-relation-workspace__view-btn-active': relationViewMode === 'list' }"
-                aria-label="列表"
-                :aria-pressed="relationViewMode === 'list'"
-                @click="setRelationViewMode('list')"
-              >
-                <el-icon><Grid /></el-icon>
-              </button>
-            </el-tooltip>
+          <div class="space-relation-workspace__filter">
+            <el-select
+              v-model="draftSeedName"
+              filterable
+              clearable
+              placeholder="筛选对象（单选，结果以该对象为中心）"
+              class="aircas-select space-relation-workspace__filter-objects"
+              popper-class="aircas-select-popper"
+              @change="handleSeedChange"
+            >
+              <el-option v-for="item in relationObjectOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+            <el-button class="aircas-button aircas-button--tone-ghost" @click="resetFilter">重置</el-button>
           </div>
           <el-button class="aircas-button aircas-button--tone-primary" :icon="Plus" @click="openRelationCreate">添加</el-button>
+          <el-radio-group
+            :model-value="relationViewMode"
+            class="aircas-radio-group space-relation-workspace__view-switch"
+            ariaLabel="展示方式"
+            @update:model-value="handleRelationViewModeChange"
+          >
+            <el-tooltip content="关系图" placement="top" popper-class="aircas-popper">
+              <el-radio-button value="graph">
+                <svg class="space-relation-workspace__view-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="5" cy="6" r="1.8" />
+                  <circle cx="19" cy="6" r="1.8" />
+                  <circle cx="12" cy="18" r="1.8" />
+                  <path d="M6.6 7.2 11 16.4M17.4 7.2 13 16.4M6.8 6h10.4" />
+                </svg>
+                <span class="space-relation-workspace__visually-hidden">关系图视图</span>
+              </el-radio-button>
+            </el-tooltip>
+            <el-tooltip content="列表" placement="top" popper-class="aircas-popper">
+              <el-radio-button value="list">
+                <svg class="space-relation-workspace__view-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="16" rx="2" />
+                  <path d="M3 9h18M3 14h18M9 9v11M15 9v11" />
+                </svg>
+                <span class="space-relation-workspace__visually-hidden">列表视图</span>
+              </el-radio-button>
+            </el-tooltip>
+          </el-radio-group>
         </div>
       </header>
-
-      <div class="space-relation-workspace__filter">
-        <el-select
-          v-model="draftSeedName"
-          filterable
-          clearable
-          placeholder="筛选对象（单选，结果以该对象为中心）"
-          class="aircas-select space-relation-workspace__filter-objects"
-          popper-class="aircas-select-popper"
-          @change="handleSeedChange"
-        >
-          <el-option v-for="item in relationObjectOptions" :key="item.value" :label="item.label" :value="item.value" />
-        </el-select>
-        <el-button class="aircas-button aircas-button--tone-ghost" @click="resetFilter">重置</el-button>
-      </div>
 
       <div v-if="status === 'loading'" class="space-relation-workspace__state" role="status"><AircasLoading>加载中...</AircasLoading></div>
       <div v-else-if="status === 'error'" class="space-relation-workspace__state space-relation-workspace__state-error" role="alert">
@@ -93,8 +93,8 @@
               </el-table-column>
               <el-table-column prop="apiName" label="API 名称" min-width="140" show-overflow-tooltip />
               <el-table-column prop="categoryName" label="分类" min-width="110" show-overflow-tooltip />
-              <el-table-column prop="sourceName" label="源本体" min-width="140" show-overflow-tooltip />
-              <el-table-column prop="targetName" label="目标本体" min-width="120" show-overflow-tooltip />
+              <el-table-column prop="sourceName" label="源对象" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="targetName" label="目标对象" min-width="120" show-overflow-tooltip />
               <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
               <el-table-column label="操作" width="180" fixed="right">
                 <template #default="scope">
@@ -152,7 +152,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { Grid, Plus, Share } from "@element-plus/icons-vue";
+import { Plus } from "@element-plus/icons-vue";
 import type { CreateOntologyLinkParams, OntologyRelationClass, RelationClassWritePayload, UpdateOntologyLinkParams } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
 import {
@@ -228,6 +228,15 @@ watch(
 
 function asRelation(row: unknown): OntologyRelationClass {
   return row as OntologyRelationClass;
+}
+
+/**
+ * @description 处理关系视图切换，校验值合法后再更新视图模式
+ * @param value 单选按钮组抛出的原始值
+ * @returns
+ */
+function handleRelationViewModeChange(value: unknown) {
+  if (value === "graph" || value === "list") setRelationViewMode(value);
 }
 
 function handleSeedChange(value: string | number | boolean | undefined) {
@@ -559,57 +568,62 @@ async function handleRelationDelete() {
 .space-relation-workspace__actions {
   display: flex;
   align-items: center;
-  flex-shrink: 0;
+  justify-content: flex-end;
+  flex: 1;
+  min-width: 0;
+  gap: 8px;
+}
+.space-relation-workspace__filter {
+  display: flex;
+  align-items: center;
+  min-width: 0;
   gap: 8px;
 }
 .space-relation-workspace__view-switch {
   display: inline-flex;
   gap: 4px;
-  padding: 2px;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 6px;
-  background: var(--aircas-color-overlay-deep);
 }
-.space-relation-workspace__view-btn {
+.space-relation-workspace__view-switch.aircas-radio-group :deep(.el-radio-button__inner),
+.space-relation-workspace__view-switch.aircas-radio-group :deep(.el-radio-button:first-child .el-radio-button__inner),
+.space-relation-workspace__view-switch.aircas-radio-group :deep(.el-radio-button:last-child .el-radio-button__inner) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
-  height: 28px;
+  height: 32px;
   padding: 0;
-  border: 1px solid var(--aircas-color-transparent);
-  border-radius: 4px;
-  background: var(--aircas-color-transparent);
-  color: var(--aircas-color-text-secondary);
-  cursor: pointer;
-  opacity: 0.55;
-}
-.space-relation-workspace__view-btn:hover {
-  opacity: 0.85;
-  border-color: var(--aircas-color-border);
-  background: var(--aircas-color-accent-blue-soft);
-}
-.space-relation-workspace__view-btn-active {
-  opacity: 1;
-  border-color: var(--aircas-color-accent-cyan);
-  color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-active-background);
-  box-shadow:
-    inset 0 0 10px var(--aircas-color-accent-cyan-fill),
-    0 0 10px var(--aircas-color-accent-cyan-soft);
-}
-.space-relation-workspace__filter {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
   border: 1px solid var(--aircas-color-border);
-  border-radius: 8px;
-  background: var(--aircas-color-overlay-deep);
+  border-radius: 4px;
+  outline: none;
+  box-shadow: none;
+  background-color: var(--aircas-color-panel-background-deep);
+  color: var(--aircas-color-text-primary);
+}
+.space-relation-workspace__view-switch.aircas-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  border-color: var(--aircas-color-accent-cyan);
+  background: var(--aircas-color-active-background);
+  color: var(--aircas-color-text-primary);
+  box-shadow: 0 0 10px var(--aircas-color-accent-cyan-soft);
+}
+.space-relation-workspace__view-icon {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+.space-relation-workspace__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 .space-relation-workspace__filter-objects {
-  width: min(360px, 100%);
+  width: min(320px, 36vw);
 }
 .space-relation-workspace__state {
   display: flex;

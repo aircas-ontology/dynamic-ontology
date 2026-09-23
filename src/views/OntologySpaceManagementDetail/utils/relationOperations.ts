@@ -122,7 +122,7 @@ export function addRelation(data: SpaceRelationWorkspaceData, payload: RelationC
   const sourceName = payload.sourceName.trim();
   const targetName = payload.targetName.trim();
   if (!displayName || !apiName || !sourceName || !targetName) throw new Error("请完整填写关系信息");
-  if (sourceName === targetName) throw new Error("源本体与目标本体不能相同");
+  if (sourceName === targetName) throw new Error("源对象与目标对象不能相同");
   if (data.relations.some((item) => item.apiName === apiName)) throw new Error("API 名称已存在");
   const relations = [
     ...data.relations,
@@ -152,7 +152,7 @@ export function updateRelation(data: SpaceRelationWorkspaceData, payload: Relati
   const sourceName = payload.sourceName.trim();
   const targetName = payload.targetName.trim();
   if (!displayName || !apiName || !sourceName || !targetName) throw new Error("请完整填写关系信息");
-  if (sourceName === targetName) throw new Error("源本体与目标本体不能相同");
+  if (sourceName === targetName) throw new Error("源对象与目标对象不能相同");
   if (data.relations.some((item) => item.id !== payload.id && item.apiName === apiName)) {
     throw new Error("API 名称已存在");
   }

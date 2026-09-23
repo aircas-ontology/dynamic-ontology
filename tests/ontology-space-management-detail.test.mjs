@@ -34,13 +34,13 @@ test("space detail parent and child routes resolve under the workspace layout", 
   assert.equal(subspaceRoute.matched.at(-1)?.components?.default.toString().includes("OntologySubspaceCreate"), true);
 });
 
-test("subspace create page keeps an empty shell", () => {
+test("subspace create page composes left tree and right workspace panels", () => {
   const source = readFileSync(new URL("../src/views/OntologySubspaceCreate/index.vue", import.meta.url), "utf8");
   assert.match(source, /class="ontology-subspace-create"/);
   assert.match(source, /aria-label="创建子空间"/);
-  assert.doesNotMatch(source, /分类体系树/);
-  assert.doesNotMatch(source, /el-tree/);
-  assert.doesNotMatch(source, /子空间名称/);
+  assert.match(source, /SubspaceCreateTreePanel/);
+  assert.match(source, /SubspaceCreateWorkspacePanel/);
+  assert.doesNotMatch(source, /<el-tree/);
   assert.doesNotMatch(source, /AI 助手/);
 });
 

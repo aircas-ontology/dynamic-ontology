@@ -10,6 +10,7 @@
         :tree="workspaceTree"
         :selected-node-id="selectedNodeId"
         @select="selectNode"
+        @select-object="openObjectDetailFromTree"
         @create="openCategoryTreeCreateDialog"
         @create-child="openCategoryChildDialog"
         @rename="openCategoryRenameDialog"
@@ -84,7 +85,7 @@ import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { storeToRefs } from "pinia";
-import type { OntologyConceptNode, OntologyObjectItem, OntologyObjectLocationTarget, OntologyObjectViewMode } from "@/types";
+import type { OntologyConceptNode, OntologyConceptObjectRef, OntologyObjectItem, OntologyObjectLocationTarget, OntologyObjectViewMode } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 import ConceptHierarchyTree from "./ConceptHierarchyTree.vue";
 import CategoryTreeCreateDialog from "./CategoryTreeCreateDialog.vue";
@@ -196,6 +197,23 @@ function locateParent(item: OntologyObjectItem) {
  */
 function openOntologyLlmBuilderPage() {
   void router.push({ name: "OntologyLlmBuilder", params: { spaceId: spaceId.value } });
+}
+
+/**
+ * @description 从概念层级树点击对象节点跳转到对象详情页。
+ * @param object 被点击的对象引用，含对象唯一标识与显示名称。
+ */
+function openObjectDetailFromTree(object: OntologyConceptObjectRef) {
+  const objectId = object.uniqueIdentifier.trim();
+  if (!objectId) {
+    ElMessage.error("缺少对象唯一标识，无法进入对象详情。");
+    return;
+  }
+  const query: Record<string, string> = {};
+  if (spaceId.value) query.spaceId = spaceId.value;
+  if (spaceDisplayName.value.trim()) query.spaceName = spaceDisplayName.value.trim();
+  if (object.displayName.trim()) query.objectName = object.displayName.trim();
+  void router.push({ name: "OntologyObjectDetail", params: { objectId }, query });
 }
 
 /**
