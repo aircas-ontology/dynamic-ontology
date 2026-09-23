@@ -1192,10 +1192,8 @@ onBeforeUnmount(() => {
 .property-list__anchor-col {
   width: 12px;
 }
-</style>
 
-<style lang="scss">
-.property-datasource-mapping-dialog.el-dialog {
+:global(.property-datasource-mapping-dialog.el-dialog) {
   margin: 2vh auto !important;
   height: 96vh;
   max-height: 96vh;
@@ -1209,7 +1207,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.property-datasource-mapping-dialog .el-dialog__header {
+:global(.property-datasource-mapping-dialog .el-dialog__header) {
   flex-shrink: 0;
   position: relative;
   margin: 0;
@@ -1217,7 +1215,7 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid var(--aircas-color-border-soft);
 }
 
-.property-datasource-mapping-dialog .el-dialog__header::before {
+:global(.property-datasource-mapping-dialog .el-dialog__header::before) {
   position: absolute;
   top: 0;
   right: 0;
@@ -1227,20 +1225,20 @@ onBeforeUnmount(() => {
   background: linear-gradient(90deg, var(--aircas-color-accent-cyan), var(--aircas-color-accent-blue), var(--aircas-color-accent-purple));
 }
 
-.property-datasource-mapping-dialog .el-dialog__title {
+:global(.property-datasource-mapping-dialog .el-dialog__title) {
   color: var(--aircas-color-text-primary);
   font-size: 16px;
   font-weight: 650;
 }
 
-.property-datasource-mapping-dialog .el-dialog__body {
+:global(.property-datasource-mapping-dialog .el-dialog__body) {
   flex: 1;
   min-height: 0;
   overflow: hidden;
   padding: 12px 16px;
 }
 
-.property-datasource-mapping-dialog .el-dialog__footer {
+:global(.property-datasource-mapping-dialog .el-dialog__footer) {
   padding: 12px 20px 16px;
   border-top: 1px solid var(--aircas-color-border-soft);
 }

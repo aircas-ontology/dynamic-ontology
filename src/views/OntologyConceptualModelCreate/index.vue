@@ -94,11 +94,16 @@
             ><el-form-item label="API"
               ><el-input class="aircas-input" :model-value="selectedAttribute.apiName" @update:model-value="updateAttribute('apiName', $event)" /></el-form-item
             ><el-form-item label="数据类型"
-              ><el-select class="aircas-input" :model-value="selectedAttribute.dataType" @update:model-value="updateAttribute('dataType', $event)"
+              ><el-select
+                class="aircas-input"
+                popper-class="aircas-select-popper"
+                :model-value="selectedAttribute.dataType"
+                @update:model-value="updateAttribute('dataType', $event)"
                 ><el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" /></el-select></el-form-item
             ><el-form-item label="存储分组"
               ><el-select
                 class="aircas-input"
+                popper-class="aircas-select-popper"
                 :model-value="selectedAttribute.storageGroup"
                 filterable
                 allow-create
@@ -132,10 +137,20 @@
             ><el-form-item label="API 名称"
               ><el-input class="aircas-input" :model-value="selectedRelation.apiName" @update:model-value="updateRelation('apiName', $event)" /></el-form-item
             ><el-form-item label="源对象"
-              ><el-select class="aircas-input" clearable :model-value="selectedRelation.sourceId" @update:model-value="updateRelation('sourceId', $event)"
+              ><el-select
+                class="aircas-input"
+                popper-class="aircas-select-popper"
+                clearable
+                :model-value="selectedRelation.sourceId"
+                @update:model-value="updateRelation('sourceId', $event)"
                 ><el-option v-for="object in objects" :key="object.id" :label="object.displayName" :value="object.id" /></el-select></el-form-item
             ><el-form-item label="目标对象"
-              ><el-select class="aircas-input" clearable :model-value="selectedRelation.targetId" @update:model-value="updateRelation('targetId', $event)"
+              ><el-select
+                class="aircas-input"
+                popper-class="aircas-select-popper"
+                clearable
+                :model-value="selectedRelation.targetId"
+                @update:model-value="updateRelation('targetId', $event)"
                 ><el-option v-for="object in objects" :key="object.id" :label="object.displayName" :value="object.id" /></el-select></el-form-item
             ><el-form-item label="描述"
               ><el-input
@@ -593,10 +608,10 @@ async function saveConceptualModel() {
   gap: 14px;
   min-height: 72px;
   padding: 12px 14px;
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 8px;
-  background: linear-gradient(90deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: 0 0 24px var(--aircas-color-blue-soft);
+  background: linear-gradient(90deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: 0 0 24px var(--aircas-color-accent-blue-soft);
 }
 .conceptual-model-create__identity {
   flex: 1;
@@ -656,10 +671,10 @@ async function saveConceptualModel() {
 .conceptual-model-create__canvas-panel,
 .conceptual-model-create__inspector {
   min-width: 0;
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 8px;
-  background: linear-gradient(180deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-background-deep));
-  box-shadow: 0 0 18px var(--aircas-color-cyan-soft);
+  background: linear-gradient(180deg, var(--aircas-color-overlay), var(--aircas-color-panel-background-deep));
+  box-shadow: 0 0 18px var(--aircas-color-accent-cyan-soft);
   overflow: hidden;
 }
 .conceptual-model-create__palette,

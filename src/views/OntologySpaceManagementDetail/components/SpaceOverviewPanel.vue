@@ -66,8 +66,8 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
   overflow: auto;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
 .space-overview-panel__header {
@@ -151,11 +151,11 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
 }
 
 .space-overview-panel__stat--cyan {
-  --stat-glow: var(--aircas-color-cyan-soft);
+  --stat-glow: var(--aircas-color-accent-cyan-soft);
 }
 
 .space-overview-panel__stat--purple {
-  --stat-glow: var(--aircas-color-purple-soft);
+  --stat-glow: var(--aircas-color-accent-purple-soft);
 }
 
 .space-overview-panel__stat--purple .el-icon {
@@ -163,7 +163,7 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
 }
 
 .space-overview-panel__stat--blue {
-  --stat-glow: var(--aircas-color-blue-soft);
+  --stat-glow: var(--aircas-color-accent-blue-soft);
 }
 
 .space-overview-panel__stat--blue .el-icon {
@@ -171,7 +171,7 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
 }
 
 .space-overview-panel__stat--green {
-  --stat-glow: var(--aircas-color-green-soft);
+  --stat-glow: var(--aircas-color-accent-green-soft);
 }
 
 .space-overview-panel__stat--green .el-icon {
@@ -179,7 +179,7 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
 }
 
 .space-overview-panel__stat--orange {
-  --stat-glow: var(--aircas-color-orange-soft);
+  --stat-glow: var(--aircas-color-accent-orange-soft);
 }
 
 .space-overview-panel__stat--orange .el-icon {

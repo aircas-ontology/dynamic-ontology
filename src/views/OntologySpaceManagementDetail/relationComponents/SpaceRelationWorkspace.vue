@@ -24,7 +24,7 @@
         </div>
         <div class="space-relation-workspace__actions">
           <div class="space-relation-workspace__view-switch" role="group" aria-label="展示方式">
-            <el-tooltip content="关系图" placement="top">
+            <el-tooltip content="关系图" placement="top" popper-class="aircas-popper">
               <button
                 type="button"
                 class="space-relation-workspace__view-btn"
@@ -36,7 +36,7 @@
                 <el-icon><Share /></el-icon>
               </button>
             </el-tooltip>
-            <el-tooltip content="列表" placement="top">
+            <el-tooltip content="列表" placement="top" popper-class="aircas-popper">
               <button
                 type="button"
                 class="space-relation-workspace__view-btn"
@@ -537,8 +537,8 @@ async function handleRelationDelete() {
   padding: 8px 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 18px var(--aircas-color-border-shadow);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 18px var(--aircas-color-page-glow);
 }
 .space-relation-workspace__title {
   display: flex;
@@ -568,7 +568,7 @@ async function handleRelationDelete() {
   padding: 2px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 6px;
-  background: var(--aircas-color-panel-overlay-deep);
+  background: var(--aircas-color-overlay-deep);
 }
 .space-relation-workspace__view-btn {
   display: inline-flex;
@@ -587,7 +587,7 @@ async function handleRelationDelete() {
 .space-relation-workspace__view-btn:hover {
   opacity: 0.85;
   border-color: var(--aircas-color-border);
-  background: var(--aircas-color-blue-soft);
+  background: var(--aircas-color-accent-blue-soft);
 }
 .space-relation-workspace__view-btn-active {
   opacity: 1;
@@ -595,8 +595,8 @@ async function handleRelationDelete() {
   color: var(--aircas-color-accent-cyan);
   background: var(--aircas-color-active-background);
   box-shadow:
-    inset 0 0 10px var(--aircas-color-cyan-fill),
-    0 0 10px var(--aircas-color-cyan-soft);
+    inset 0 0 10px var(--aircas-color-accent-cyan-fill),
+    0 0 10px var(--aircas-color-accent-cyan-soft);
 }
 .space-relation-workspace__filter {
   display: flex;
@@ -606,7 +606,7 @@ async function handleRelationDelete() {
   padding: 8px 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: var(--aircas-color-panel-overlay-deep);
+  background: var(--aircas-color-overlay-deep);
 }
 .space-relation-workspace__filter-objects {
   width: min(360px, 100%);

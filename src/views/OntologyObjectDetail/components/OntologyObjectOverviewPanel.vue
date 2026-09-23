@@ -77,8 +77,8 @@ function formatCount(value: number | undefined): string {
   overflow: auto;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
 .ontology-object-overview-panel__header {
@@ -118,7 +118,7 @@ function formatCount(value: number | undefined): string {
   gap: 12px;
   border: 1px solid var(--aircas-color-border-soft);
   border-radius: 8px;
-  background: radial-gradient(circle at 100% 0, var(--aircas-color-cyan-soft), var(--aircas-color-transparent) 64%), var(--aircas-color-card-background);
+  background: radial-gradient(circle at 100% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 64%), var(--aircas-color-card-background);
 }
 
 .ontology-object-overview-panel__stat:hover {

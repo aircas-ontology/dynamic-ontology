@@ -395,10 +395,10 @@ defineExpose({ fit, zoomBy });
   padding: 20px 24px;
   flex-direction: column;
   gap: 8px;
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 10px;
   color: var(--aircas-color-text-secondary);
-  background: var(--aircas-color-panel-overlay);
+  background: var(--aircas-color-overlay);
   text-align: center;
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -408,34 +408,32 @@ defineExpose({ fit, zoomBy });
   color: var(--aircas-color-text-primary);
   font-size: 16px;
 }
-</style>
 
-<style lang="scss">
-.conceptual-model-graph__stage .x6-node foreignObject {
+.conceptual-model-graph__stage :deep(.x6-node foreignObject) {
   overflow: visible;
 }
 
-.conceptual-model-graph__stage .conceptual-model-node {
+.conceptual-model-graph__stage :deep(.conceptual-model-node) {
   display: flex;
   width: 100%;
   height: 100%;
   overflow: hidden;
   flex-direction: column;
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 10px;
   color: var(--aircas-color-text-primary);
-  background: linear-gradient(180deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-background-deep));
-  box-shadow: 0 0 18px var(--aircas-color-cyan-soft);
+  background: linear-gradient(180deg, var(--aircas-color-overlay), var(--aircas-color-panel-background-deep));
+  box-shadow: 0 0 18px var(--aircas-color-accent-cyan-soft);
 }
 
-.conceptual-model-graph__stage .conceptual-model-node.is-selected {
+.conceptual-model-graph__stage :deep(.conceptual-model-node.is-selected) {
   border-color: var(--aircas-color-accent-cyan);
   box-shadow:
-    0 0 22px var(--aircas-color-cyan-shadow),
-    inset 0 0 16px var(--aircas-color-cyan-fill);
+    0 0 22px var(--aircas-color-accent-cyan-shadow),
+    inset 0 0 16px var(--aircas-color-accent-cyan-fill);
 }
 
-.conceptual-model-graph__stage .conceptual-model-node__head {
+.conceptual-model-graph__stage :deep(.conceptual-model-node__head) {
   display: flex;
   padding: 10px 12px 8px;
   flex-direction: column;
@@ -443,24 +441,24 @@ defineExpose({ fit, zoomBy });
   background: var(--aircas-color-section-header);
 }
 
-.conceptual-model-graph__stage .conceptual-model-node__stereo {
+.conceptual-model-graph__stage :deep(.conceptual-model-node__stereo) {
   color: var(--aircas-color-accent-cyan);
   font-size: 11px;
   letter-spacing: 0.08em;
 }
 
-.conceptual-model-graph__stage .conceptual-model-node__head strong {
+.conceptual-model-graph__stage :deep(.conceptual-model-node__head strong) {
   font-size: 15px;
   line-height: 1.3;
 }
 
-.conceptual-model-graph__stage .conceptual-model-node__head em {
+.conceptual-model-graph__stage :deep(.conceptual-model-node__head em) {
   color: var(--aircas-color-text-muted);
   font-size: 11px;
   font-style: normal;
 }
 
-.conceptual-model-graph__stage .conceptual-model-node__attrs {
+.conceptual-model-graph__stage :deep(.conceptual-model-node__attrs) {
   display: flex;
   min-height: 28px;
   padding: 6px;
@@ -470,7 +468,7 @@ defineExpose({ fit, zoomBy });
   overflow: auto;
 }
 
-.conceptual-model-graph__stage .conceptual-model-node__attr {
+.conceptual-model-graph__stage :deep(.conceptual-model-node__attr) {
   display: flex;
   width: 100%;
   height: 26px;
@@ -487,46 +485,46 @@ defineExpose({ fit, zoomBy });
   cursor: pointer;
 }
 
-.conceptual-model-graph__stage .conceptual-model-node__attr.is-active,
-.conceptual-model-graph__stage .conceptual-model-node__attr:hover {
+.conceptual-model-graph__stage :deep(.conceptual-model-node__attr.is-active),
+.conceptual-model-graph__stage :deep(.conceptual-model-node__attr:hover) {
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-cyan-fill);
+  background: var(--aircas-color-accent-cyan-fill);
 }
 
-.conceptual-model-graph__stage .conceptual-model-node__attr em {
+.conceptual-model-graph__stage :deep(.conceptual-model-node__attr em) {
   color: var(--aircas-color-accent-purple);
   font-style: normal;
 }
 
-.conceptual-model-graph__stage .conceptual-model-node__empty {
+.conceptual-model-graph__stage :deep(.conceptual-model-node__empty) {
   padding: 8px;
   color: var(--aircas-color-text-muted);
   font-size: 12px;
 }
 
-.conceptual-model-graph__stage .conceptual-model-node__add {
+.conceptual-model-graph__stage :deep(.conceptual-model-node__add) {
   height: 32px;
   border: 0;
   border-top: 1px solid var(--aircas-color-border-soft);
   color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-blue-soft);
+  background: var(--aircas-color-accent-blue-soft);
   font-size: 12px;
   cursor: pointer;
 }
 
-.conceptual-model-graph__stage .conceptual-model-node__add:hover {
+.conceptual-model-graph__stage :deep(.conceptual-model-node__add:hover) {
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-cyan-fill);
+  background: var(--aircas-color-accent-cyan-fill);
 }
 
-.conceptual-model-graph__stage .x6-port-body {
+.conceptual-model-graph__stage :deep(.x6-port-body) {
   opacity: 0;
   transition: opacity 0.15s ease;
 }
 
-.conceptual-model-graph__stage .x6-node:hover .x6-port-body,
-.conceptual-model-graph__stage .x6-node.conceptual-model-node-selected .x6-port-body,
-.conceptual-model-graph__stage--wiring .x6-port-body {
+.conceptual-model-graph__stage :deep(.x6-node:hover .x6-port-body),
+.conceptual-model-graph__stage :deep(.x6-node.conceptual-model-node-selected .x6-port-body),
+.conceptual-model-graph__stage--wiring :deep(.x6-port-body) {
   opacity: 1;
 }
 </style>

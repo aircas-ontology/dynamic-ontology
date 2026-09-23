@@ -70,8 +70,8 @@ function formatCount(value: number | undefined): string {
   padding: 0 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
 .object-detail-tabs__list {
@@ -134,7 +134,7 @@ function formatCount(value: number | undefined): string {
 .object-detail-tabs__item-active:hover {
   color: var(--aircas-color-accent-cyan);
   border-color: var(--aircas-color-border);
-  background: var(--aircas-color-cyan-soft);
+  background: var(--aircas-color-accent-cyan-soft);
   box-shadow: inset 0 -2px 0 var(--aircas-color-accent-cyan);
 }
 
@@ -152,6 +152,6 @@ function formatCount(value: number | undefined): string {
 
 .object-detail-tabs__item-active .object-detail-tabs__count {
   color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-cyan-soft);
+  background: var(--aircas-color-accent-cyan-soft);
 }
 </style>

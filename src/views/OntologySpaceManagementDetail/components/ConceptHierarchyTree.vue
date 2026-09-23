@@ -43,12 +43,12 @@
               </span>
             </span>
             <span class="concept-hierarchy__create-child-wrap" @click.stop>
-              <el-tooltip content="新建子分类" placement="top" :show-after="200">
+              <el-tooltip content="新建子分类" placement="top" popper-class="aircas-popper" :show-after="200">
                 <button type="button" class="concept-hierarchy__create-child" aria-label="新建子分类" @click="openChildCategoryDialog(data)">
                   <el-icon><Plus /></el-icon>
                 </button>
               </el-tooltip>
-              <el-tooltip content="修改分类名称" placement="top" :show-after="200">
+              <el-tooltip content="修改分类名称" placement="top" popper-class="aircas-popper" :show-after="200">
                 <button
                   type="button"
                   class="concept-hierarchy__action concept-hierarchy__action--edit"
@@ -58,7 +58,7 @@
                   <el-icon><Edit /></el-icon>
                 </button>
               </el-tooltip>
-              <el-tooltip content="删除分类" placement="top" :show-after="200">
+              <el-tooltip content="删除分类" placement="top" popper-class="aircas-popper" :show-after="200">
                 <button
                   type="button"
                   class="concept-hierarchy__action concept-hierarchy__action--danger"
@@ -261,14 +261,14 @@ function openDeleteCategoryDialog(value: unknown) {
   padding: 12px;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 12% 0, var(--aircas-color-cyan-soft), var(--aircas-color-transparent) 42%),
-    linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+    radial-gradient(circle at 12% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 42%),
+    linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
   box-shadow:
-    inset 0 0 20px var(--aircas-color-border-shadow),
-    0 0 18px var(--aircas-color-blue-soft);
+    inset 0 0 20px var(--aircas-color-page-glow),
+    0 0 18px var(--aircas-color-accent-blue-soft);
 }
 
 .concept-hierarchy__header {

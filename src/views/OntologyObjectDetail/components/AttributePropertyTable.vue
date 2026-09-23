@@ -103,8 +103,8 @@ defineEmits<{
   padding: 8px 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 18px var(--aircas-color-border-shadow);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 18px var(--aircas-color-page-glow);
 }
 
 .ontology-object-attribute-panel__content-header h2 {
@@ -136,7 +136,7 @@ defineEmits<{
   overflow: hidden;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
 }
 
 .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat.el-table {
@@ -144,7 +144,7 @@ defineEmits<{
   --el-table-bg-color: var(--aircas-color-transparent);
   --el-table-tr-bg-color: var(--aircas-color-transparent);
   --el-table-header-bg-color: var(--aircas-color-section-header);
-  --el-table-row-hover-bg-color: var(--aircas-color-blue-soft);
+  --el-table-row-hover-bg-color: var(--aircas-color-accent-blue-soft);
   --el-table-border-color: var(--aircas-color-border-soft);
   --el-table-text-color: var(--aircas-color-text-primary);
   --el-table-header-text-color: var(--aircas-color-text-primary);
@@ -174,12 +174,12 @@ defineEmits<{
 
 .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__body tr:hover > td.el-table__cell),
 .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__body tr.hover-row > td.el-table__cell) {
-  background-color: var(--aircas-color-blue-soft) !important;
+  background-color: var(--aircas-color-accent-blue-soft) !important;
 }
 
 .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__fixed-right),
 .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__fixed-right-patch) {
-  background: var(--aircas-color-panel-overlay-deep);
+  background: var(--aircas-color-overlay-deep);
 }
 
 .ontology-object-attribute-panel__empty {

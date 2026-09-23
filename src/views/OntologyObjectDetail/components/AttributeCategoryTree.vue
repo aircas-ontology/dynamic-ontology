@@ -48,17 +48,17 @@
             </span>
           </template>
           <span v-if="isCategoryNode(data)" class="ontology-object-attribute-panel__tree-actions" @click.stop>
-            <el-tooltip content="添加子分类" placement="top" :show-after="200">
+            <el-tooltip content="添加子分类" placement="top" popper-class="aircas-popper" :show-after="200">
               <button type="button" class="ontology-object-attribute-panel__tree-action" aria-label="添加子分类" @click="$emit('create-category', data)">
                 <el-icon><Plus /></el-icon>
               </button>
             </el-tooltip>
-            <el-tooltip content="编辑分类" placement="top" :show-after="200">
+            <el-tooltip content="编辑分类" placement="top" popper-class="aircas-popper" :show-after="200">
               <button type="button" class="ontology-object-attribute-panel__tree-action is-edit" aria-label="编辑分类" @click="$emit('edit-category', data)">
                 <el-icon><EditPen /></el-icon>
               </button>
             </el-tooltip>
-            <el-tooltip v-if="!data.isRoot" content="删除分类" placement="top" :show-after="200">
+            <el-tooltip v-if="!data.isRoot" content="删除分类" placement="top" popper-class="aircas-popper" :show-after="200">
               <button
                 type="button"
                 class="ontology-object-attribute-panel__tree-action is-danger"
@@ -125,8 +125,8 @@ watch(
   overflow: hidden;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
 .ontology-object-attribute-panel__section-header h1 {
@@ -273,23 +273,23 @@ watch(
   place-items: center;
   color: var(--aircas-color-text-primary);
   border: 1px solid var(--aircas-color-accent-cyan);
-  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-blue-fill));
+  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-accent-blue-fill));
   box-shadow:
-    inset 0 0 10px var(--aircas-color-cyan-fill),
-    0 0 8px var(--aircas-color-cyan-soft);
+    inset 0 0 10px var(--aircas-color-accent-cyan-fill),
+    0 0 8px var(--aircas-color-accent-cyan-soft);
   cursor: pointer;
 }
 
 .ontology-object-attribute-panel__tree-action.is-edit {
   color: var(--aircas-color-accent-blue);
-  border-color: var(--aircas-color-blue-border);
-  background: var(--aircas-color-blue-soft);
+  border-color: var(--aircas-color-accent-blue-border);
+  background: var(--aircas-color-accent-blue-soft);
   box-shadow: none;
 }
 
 .ontology-object-attribute-panel__tree-action.is-danger {
   color: var(--aircas-color-danger);
-  border-color: var(--aircas-color-danger-border);
+  border-color: var(--aircas-color-danger);
   background: var(--aircas-color-danger-background);
   box-shadow: none;
 }

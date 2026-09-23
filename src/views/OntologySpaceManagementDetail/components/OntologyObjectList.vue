@@ -302,7 +302,7 @@ onBeforeUnmount(() => {
   border-color: var(--aircas-color-accent-cyan);
   background: var(--aircas-color-active-background);
   color: var(--aircas-color-text-primary);
-  box-shadow: 0 0 10px var(--aircas-color-cyan-soft);
+  box-shadow: 0 0 10px var(--aircas-color-accent-cyan-soft);
 }
 .ontology-object-list__view-icon {
   width: 14px;
@@ -338,8 +338,8 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border: 1px solid var(--aircas-color-border-soft);
   border-radius: 8px;
-  background: linear-gradient(180deg, var(--aircas-color-section-background), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 24px var(--aircas-color-border-shadow);
+  background: linear-gradient(180deg, var(--aircas-color-section-background), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 24px var(--aircas-color-page-glow);
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -373,9 +373,9 @@ onBeforeUnmount(() => {
 .ontology-object-section__header span {
   margin-left: auto;
   padding: 1px 8px;
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 999px;
-  background: var(--aircas-color-cyan-soft);
+  background: var(--aircas-color-accent-cyan-soft);
   color: var(--aircas-color-accent-cyan);
   font-size: 12px;
 }
@@ -394,7 +394,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   background: var(--aircas-color-card-background);
-  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -416,8 +416,8 @@ onBeforeUnmount(() => {
 .ontology-object-card:hover {
   border-color: var(--aircas-color-accent-cyan);
   box-shadow:
-    0 0 18px var(--aircas-color-accent-shadow),
-    inset 0 0 20px var(--aircas-color-border-shadow);
+    0 0 18px var(--aircas-color-accent-cyan-shadow),
+    inset 0 0 20px var(--aircas-color-page-glow);
 }
 
 .ontology-object-card__visual {
@@ -426,7 +426,7 @@ onBeforeUnmount(() => {
   place-items: center;
   overflow: hidden;
   color: var(--aircas-color-accent-cyan);
-  background: radial-gradient(circle at 50% 40%, var(--aircas-color-cyan-soft), var(--aircas-color-transparent) 58%), var(--aircas-color-section-header);
+  background: radial-gradient(circle at 50% 40%, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 58%), var(--aircas-color-section-header);
 }
 
 .ontology-object-card__visual::after {
@@ -434,7 +434,7 @@ onBeforeUnmount(() => {
   inset: 18% 12%;
   border-radius: 50%;
   content: "";
-  background: radial-gradient(circle, var(--aircas-color-blue-soft), var(--aircas-color-transparent) 70%);
+  background: radial-gradient(circle, var(--aircas-color-accent-blue-soft), var(--aircas-color-transparent) 70%);
   pointer-events: none;
 }
 
@@ -448,7 +448,7 @@ onBeforeUnmount(() => {
   width: 90%;
   height: 90%;
   object-fit: contain;
-  filter: drop-shadow(0 0 10px var(--aircas-color-accent-shadow));
+  filter: drop-shadow(0 0 10px var(--aircas-color-accent-cyan-shadow));
 }
 
 .ontology-object-card__visual .el-icon {
@@ -586,10 +586,10 @@ onBeforeUnmount(() => {
   ) {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-accent-cyan);
-  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-blue-fill));
+  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-accent-blue-fill));
   box-shadow:
-    inset 0 0 14px var(--aircas-color-cyan-fill),
-    0 0 10px var(--aircas-color-cyan-soft);
+    inset 0 0 14px var(--aircas-color-accent-cyan-fill),
+    0 0 10px var(--aircas-color-accent-cyan-soft);
 }
 
 .ontology-object-card__actions
@@ -606,8 +606,8 @@ onBeforeUnmount(() => {
   ):focus-visible {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-accent-cyan);
-  background: linear-gradient(90deg, var(--aircas-color-hover-background), var(--aircas-color-cyan-soft));
-  box-shadow: 0 0 14px var(--aircas-color-cyan-shadow);
+  background: linear-gradient(90deg, var(--aircas-color-hover-background), var(--aircas-color-accent-cyan-soft));
+  box-shadow: 0 0 14px var(--aircas-color-accent-cyan-shadow);
 }
 
 .ontology-object-card__actions
@@ -615,8 +615,8 @@ onBeforeUnmount(() => {
     .el-button--info
   ) {
   color: var(--aircas-color-accent-blue);
-  border-color: var(--aircas-color-blue-border);
-  background: var(--aircas-color-blue-soft);
+  border-color: var(--aircas-color-accent-blue-border);
+  background: var(--aircas-color-accent-blue-soft);
   box-shadow: none;
 }
 
@@ -634,7 +634,7 @@ onBeforeUnmount(() => {
   ):focus-visible {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-accent-blue);
-  background: var(--aircas-color-blue-fill);
+  background: var(--aircas-color-accent-blue-fill);
 }
 
 .ontology-object-card__actions
@@ -643,7 +643,7 @@ onBeforeUnmount(() => {
   ):not(.el-button--info) {
   color: var(--aircas-color-text-secondary);
   border-color: var(--aircas-color-border);
-  background: var(--aircas-color-panel-overlay-deep);
+  background: var(--aircas-color-overlay-deep);
   box-shadow: none;
 }
 
@@ -661,13 +661,13 @@ onBeforeUnmount(() => {
   ):not(.el-button--info):focus-visible {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-border-highlight);
-  background: var(--aircas-color-panel-overlay-deep);
-  box-shadow: 0 0 10px var(--aircas-color-blue-soft);
+  background: var(--aircas-color-overlay-deep);
+  box-shadow: 0 0 10px var(--aircas-color-accent-blue-soft);
 }
 
 .ontology-object-card__actions .ontology-object-action--delete.aircas-button.el-button.el-button--danger {
   color: var(--aircas-color-danger);
-  border-color: var(--aircas-color-danger-border);
+  border-color: var(--aircas-color-danger);
   background: var(--aircas-color-danger-background);
   box-shadow: inset 0 0 12px var(--aircas-color-danger-background);
 }
@@ -675,7 +675,7 @@ onBeforeUnmount(() => {
 .ontology-object-card__actions .ontology-object-action--delete.aircas-button.el-button.el-button--danger:hover,
 .ontology-object-card__actions .ontology-object-action--delete.aircas-button.el-button.el-button--danger:focus,
 .ontology-object-card__actions .ontology-object-action--delete.aircas-button.el-button.el-button--danger:focus-visible {
-  color: var(--aircas-color-danger-soft);
+  color: var(--aircas-color-danger);
   border-color: var(--aircas-color-danger);
   background: color-mix(in srgb, var(--aircas-color-danger) 32%, transparent);
   box-shadow: 0 0 12px color-mix(in srgb, var(--aircas-color-danger) 35%, transparent);

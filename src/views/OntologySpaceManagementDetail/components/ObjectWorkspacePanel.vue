@@ -261,8 +261,8 @@ function handleAction(action: string, item?: OntologyObjectItem) {
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   color: var(--aircas-color-text-muted);
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
 @media (max-width: 1000px) {

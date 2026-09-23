@@ -16,8 +16,8 @@ defineEmits<{ create: [] }>();
   height: 100%;
   min-height: 150px;
   border-radius: 8px;
-  background: linear-gradient(160deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 28px var(--aircas-color-border-shadow);
+  background: linear-gradient(160deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 28px var(--aircas-color-page-glow);
 }
 
 .welcome-panel::before {

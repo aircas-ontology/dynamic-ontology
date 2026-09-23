@@ -42,12 +42,21 @@
               <el-input v-model="draft.description" class="aircas-input" type="textarea" :rows="5" maxlength="1000" show-word-limit />
             </el-form-item>
             <el-form-item label="建模范围">
-              <el-select v-model="draft.scope" class="aircas-input" multiple filterable allow-create default-first-option ariaLabel="建模范围">
+              <el-select
+                v-model="draft.scope"
+                class="aircas-input"
+                popper-class="aircas-select-popper"
+                multiple
+                filterable
+                allow-create
+                default-first-option
+                ariaLabel="建模范围"
+              >
                 <el-option v-for="item in scopeOptions" :key="item" :label="item" :value="item" />
               </el-select>
             </el-form-item>
             <el-form-item label="输出目标">
-              <el-select v-model="draft.targets" class="aircas-input" multiple ariaLabel="输出目标">
+              <el-select v-model="draft.targets" class="aircas-input" popper-class="aircas-select-popper" multiple ariaLabel="输出目标">
                 <el-option v-for="item in targetOptions" :key="item" :label="item" :value="item" />
               </el-select>
             </el-form-item>
@@ -58,7 +67,7 @@
                 </el-radio-group>
               </el-form-item>
               <el-form-item label="语言">
-                <el-select v-model="draft.language" class="aircas-input" ariaLabel="语言"
+                <el-select v-model="draft.language" class="aircas-input" popper-class="aircas-select-popper" ariaLabel="语言"
                   ><el-option label="中文" value="中文" /><el-option label="English" value="English"
                 /></el-select>
               </el-form-item>
@@ -234,10 +243,10 @@ function openAssistant() {
 }
 .ontology-llm-builder__steps,
 .ontology-llm-builder__content {
-  border: 1px solid var(--aircas-color-cyan-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 .ontology-llm-builder__steps {
   display: flex;

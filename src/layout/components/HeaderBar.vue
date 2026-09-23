@@ -79,7 +79,7 @@ function logoutCurrentSession(command: string) {
   gap: 20px;
   padding: 0 15px;
   color: var(--aircas-color-text-primary);
-  background: linear-gradient(90deg, var(--aircas-color-header-start), var(--aircas-color-header-end));
+  background: linear-gradient(90deg, var(--aircas-color-page-background), var(--aircas-color-menu-background));
   border-bottom: 1px solid var(--aircas-color-border-soft);
 }
 

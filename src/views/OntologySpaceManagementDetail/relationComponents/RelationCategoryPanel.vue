@@ -38,7 +38,7 @@
                 <em class="relation-category-panel__count">{{ data.relationCount }}</em>
               </span>
               <span v-if="canCreate || canUpdate || canDelete" class="relation-category-panel__actions" @click.stop>
-                <el-tooltip v-if="canCreate" content="添加子分类" placement="top" :show-after="200">
+                <el-tooltip v-if="canCreate" content="添加子分类" placement="top" popper-class="aircas-popper" :show-after="200">
                   <button
                     type="button"
                     class="relation-category-panel__action relation-category-panel__action--add"
@@ -48,7 +48,7 @@
                     <el-icon><Plus /></el-icon>
                   </button>
                 </el-tooltip>
-                <el-tooltip v-if="canUpdate && !isRootCategory(data.id)" content="编辑分类" placement="top" :show-after="200">
+                <el-tooltip v-if="canUpdate && !isRootCategory(data.id)" content="编辑分类" placement="top" popper-class="aircas-popper" :show-after="200">
                   <button
                     type="button"
                     class="relation-category-panel__action relation-category-panel__action--edit"
@@ -58,7 +58,7 @@
                     <el-icon><EditPen /></el-icon>
                   </button>
                 </el-tooltip>
-                <el-tooltip v-if="canDelete && !isRootCategory(data.id)" content="删除分类" placement="top" :show-after="200">
+                <el-tooltip v-if="canDelete && !isRootCategory(data.id)" content="删除分类" placement="top" popper-class="aircas-popper" :show-after="200">
                   <button
                     type="button"
                     class="relation-category-panel__action relation-category-panel__action--danger"
@@ -273,8 +273,8 @@ watch(
   overflow: hidden;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-overlay), var(--aircas-color-panel-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-border-shadow);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
   flex-direction: column;
   gap: 8px;
 }
@@ -407,19 +407,19 @@ watch(
 .relation-category-panel__action--add {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-accent-cyan);
-  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-blue-fill));
+  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-accent-blue-fill));
   box-shadow:
-    inset 0 0 10px var(--aircas-color-cyan-fill),
-    0 0 8px var(--aircas-color-cyan-soft);
+    inset 0 0 10px var(--aircas-color-accent-cyan-fill),
+    0 0 8px var(--aircas-color-accent-cyan-soft);
 }
 .relation-category-panel__action--edit {
   color: var(--aircas-color-accent-blue);
-  border-color: var(--aircas-color-blue-border);
-  background: var(--aircas-color-blue-soft);
+  border-color: var(--aircas-color-accent-blue-border);
+  background: var(--aircas-color-accent-blue-soft);
 }
 .relation-category-panel__action--danger {
   color: var(--aircas-color-danger);
-  border-color: var(--aircas-color-danger-border);
+  border-color: var(--aircas-color-danger);
   background: var(--aircas-color-danger-background);
 }
 </style>
