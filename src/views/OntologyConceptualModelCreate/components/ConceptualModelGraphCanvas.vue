@@ -159,7 +159,7 @@ function syncGraph(): void {
         const position = existing.getPosition();
         if (position.x !== object.x || position.y !== object.y) existing.setPosition(object.x, object.y);
         existing.setData({ object, selected, selectedAttributeId }, { overwrite: true });
-        const height = conceptualObjectHeight(object.attributes.length);
+        const height = conceptualObjectHeight(object.attributes);
         if (existing.getSize().height !== height) existing.resize(CONCEPTUAL_OBJECT_WIDTH, height);
         graph?.findViewByCell(existing)?.container.classList.toggle("conceptual-model-node-selected", selected);
         return;
@@ -170,7 +170,7 @@ function syncGraph(): void {
         x: object.x,
         y: object.y,
         width: CONCEPTUAL_OBJECT_WIDTH,
-        height: conceptualObjectHeight(object.attributes.length),
+        height: conceptualObjectHeight(object.attributes),
         data: { object, selected, selectedAttributeId },
         zIndex: 2,
       });
@@ -466,6 +466,14 @@ defineExpose({ fit, zoomBy });
   flex-direction: column;
   gap: 4px;
   overflow: auto;
+}
+
+.conceptual-model-graph__stage :deep(.conceptual-model-node__group) {
+  height: 22px;
+  padding: 0 8px;
+  color: var(--aircas-color-text-muted);
+  font-size: 12px;
+  line-height: 22px;
 }
 
 .conceptual-model-graph__stage :deep(.conceptual-model-node__attr) {

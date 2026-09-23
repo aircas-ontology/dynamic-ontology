@@ -12,13 +12,16 @@ import type {
 } from "@/types";
 import {
   collectPropertyItemsFromTree,
+  findConflictingAttributeKey,
   flattenCategoryOptions,
   findCategory,
+  formatAttributeKeyConflictMessage,
   isAttributeItem,
   mapOntologyPropertyItem,
   normalizeStorageGroupValue,
   parseAttributeCategoryId,
   resolveAttributeFormCategoryId,
+  type AttributeKeyKind,
 } from "../utils/attributePanelHelpers";
 
 /**
@@ -226,6 +229,8 @@ export function useAttributePropertyList(options: {
       attributeCommandError.value = "缺少本体对象标识，无法保存属性。";
       return;
     }
+    if (draft.isPrimary && rejectDuplicateAttributeKey("primary")) return;
+    if (draft.isNameKey && rejectDuplicateAttributeKey("name")) return;
     savingAttribute.value = true;
     attributeCommandError.value = "";
     try {
@@ -266,6 +271,45 @@ export function useAttributePropertyList(options: {
     }
   }
 
+  /**
+   * @description 判断当前对象是否已有其他属性占用主键或名称键。
+   * @param kind 要设置的键类型。
+   * @returns 已存在冲突并已提示时返回 true。
+   */
+  function rejectDuplicateAttributeKey(kind: AttributeKeyKind): boolean {
+    const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
+    const conflict = findConflictingAttributeKey(collectPropertyItemsFromTree(getCategories(), ontologyUniqueIdentifier), kind, editingAttributeId.value);
+    if (!conflict) return false;
+    ElMessage.warning(formatAttributeKeyConflictMessage(kind, conflict));
+    return true;
+  }
+
+  /**
+   * @description 设置属性草稿的主键；对象里已有其他主键时提示并保持关闭。
+   * @param enabled 是否设为主键。
+   */
+  function updateDraftPrimaryKey(enabled: boolean) {
+    if (!enabled) {
+      draft.isPrimary = false;
+      return;
+    }
+    if (rejectDuplicateAttributeKey("primary")) return;
+    draft.isPrimary = true;
+  }
+
+  /**
+   * @description 设置属性草稿的名称键；对象里已有其他名称键时提示并保持关闭。
+   * @param enabled 是否设为名称键。
+   */
+  function updateDraftNameKey(enabled: boolean) {
+    if (!enabled) {
+      draft.isNameKey = false;
+      return;
+    }
+    if (rejectDuplicateAttributeKey("name")) return;
+    draft.isNameKey = true;
+  }
+
   return {
     dataTypes,
     storageGroups,
@@ -285,6 +329,8 @@ export function useAttributePropertyList(options: {
     openCreateAttribute,
     openEditAttribute,
     saveAttributeDraft,
+    updateDraftPrimaryKey,
+    updateDraftNameKey,
     removeAttribute,
   };
 }

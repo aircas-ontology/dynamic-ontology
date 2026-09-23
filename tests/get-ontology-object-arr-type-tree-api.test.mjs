@@ -92,6 +92,8 @@ test("object attribute panel queries the category tree with the route object ide
   assert.match(source, /categoryTreeError/);
   assert.match(source, /categoryTreeEmpty/);
   assert.match(treeSource, /暂无分类树数据/);
+  assert.match(treeSource, /<FolderOpened \/>/);
+  assert.doesNotMatch(treeSource, /CollectionTag/);
   assert.match(treeSource, /创建分类/);
   assert.match(source, /parentId: Number\(categoryParentId\.value\) \|\| 0/);
   assert.match(source, /categoryParentName/);

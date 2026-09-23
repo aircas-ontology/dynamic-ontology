@@ -92,6 +92,30 @@ test("data source mapping dialog delegates automatic binding to the parent", () 
   assert.doesNotMatch(source, /function autoAssociate\(\)/);
 });
 
+test("data source mapping tables mark primary and name keys beside field names", () => {
+  const dialog = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  const panel = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+
+  assert.match(dialog, /function formatDatasourceKeyMarks/);
+  assert.match(dialog, /marks\.push\("（主）"\)/);
+  assert.match(dialog, /marks\.push\("（名）"\)/);
+  assert.match(dialog, /\{\{ field\.name \}\}\{\{ formatDatasourceKeyMarks\(\{ isPrimary: field\.isPrimary \}\) \}\}/);
+  assert.match(dialog, /\{\{ property\.displayName \}\}\{\{ formatDatasourceKeyMarks\(property\) \}\}/);
+  assert.match(dialog, /\$\{field\.name\}\$\{formatDatasourceKeyMarks\(\{ isPrimary: field\.isPrimary \}\)\}/);
+  assert.match(dialog, /\$\{property\.displayName\}\$\{formatDatasourceKeyMarks\(property\)\} \(\$\{property\.apiName\}\)`/);
+  assert.match(panel, /isPrimary: column\.isPrimaryKey === true/);
+  assert.match(panel, /isPrimary: item\.isPrimary/);
+  assert.match(panel, /isNameKey: item\.isNameKey/);
+});
+
+test("data source mapping dialog dropdowns hide fields that are already associated", () => {
+  const source = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  assert.match(source, /filter\(\(field\) => !isFieldMapped\(databaseId, tableId, field\.id\)\)/);
+  assert.match(source, /const availableManualProperties = computed/);
+  assert.match(source, /!draftBinds\.value\.get\(property\.id\)/);
+  assert.match(source, /v-for="property in availableManualProperties"/);
+});
+
 test("attribute panel wires api catalog and all properties to the data source mapping dialog", () => {
   const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
   const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");

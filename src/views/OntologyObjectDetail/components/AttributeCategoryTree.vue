@@ -38,7 +38,7 @@
         <div class="ontology-object-attribute-panel__tree-node">
           <template v-if="isCategoryNode(data)">
             <span class="ontology-object-attribute-panel__tree-label">
-              <el-icon><FolderOpened v-if="data.children?.length" /><CollectionTag v-else /></el-icon>{{ data.label }}<em>{{ data.propertyCount }}</em>
+              <el-icon><FolderOpened /></el-icon>{{ data.label }}<em>{{ data.propertyCount }}</em>
             </span>
           </template>
           <template v-else>
@@ -77,7 +77,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { CollectionTag, Delete, EditPen, FolderOpened, Plus } from "@element-plus/icons-vue";
+import { Delete, EditPen, FolderOpened, Plus } from "@element-plus/icons-vue";
 import type { OntologyAttributeCategoryNode, OntologyAttributeTreeNode } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 

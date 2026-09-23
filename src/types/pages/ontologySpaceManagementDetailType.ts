@@ -52,11 +52,19 @@ export interface OntologyObjectSection {
   items: OntologyObjectItem[];
 }
 
+/** 概念层级树中本体对象的引用信息。 */
+export interface OntologyConceptObjectRef {
+  /** 对象唯一标识，用于跳转对象详情。 */
+  uniqueIdentifier: string;
+  /** 对象显示名称。 */
+  displayName: string;
+}
+
 export interface OntologyConceptNode {
   id: string;
   label: string;
   count: number;
-  objectNames?: string[];
+  objects?: OntologyConceptObjectRef[];
   targetCategoryId?: string;
   children: OntologyConceptNode[];
 }

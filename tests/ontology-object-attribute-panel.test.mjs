@@ -135,6 +135,38 @@ test("attribute form defaults category to the root and the root category cannot 
   assert.match(categorySource, /if \(data\.isRoot\) return/);
 });
 
+test("attribute form rejects a second primary key or name key on the same object", async () => {
+  const helperUrl = new URL("../src/views/OntologyObjectDetail/utils/attributePanelHelpers.ts", import.meta.url);
+  const { findConflictingAttributeKey, formatAttributeKeyConflictMessage } = await import(helperUrl.href);
+  const attributes = [
+    { uniqueIdentifier: "a", displayName: "飞机id", apiName: "planeId", isPrimary: true, isNameKey: false },
+    { uniqueIdentifier: "b", displayName: "飞机名称", apiName: "name", isPrimary: false, isNameKey: true },
+    { uniqueIdentifier: "c", displayName: "重量", apiName: "weight", isPrimary: false, isNameKey: false },
+  ];
+
+  assert.equal(findConflictingAttributeKey(attributes, "primary", null)?.uniqueIdentifier, "a");
+  assert.equal(findConflictingAttributeKey(attributes, "name", null)?.uniqueIdentifier, "b");
+  assert.equal(findConflictingAttributeKey(attributes, "primary", "a"), null);
+  assert.equal(findConflictingAttributeKey(attributes, "name", "b"), null);
+  assert.equal(findConflictingAttributeKey(attributes, "primary", "c")?.uniqueIdentifier, "a");
+  assert.equal(formatAttributeKeyConflictMessage("primary", attributes[0]), "当前对象已存在主键「飞机id」，不能同时设置两个主键");
+  assert.equal(formatAttributeKeyConflictMessage("name", attributes[1]), "当前对象已存在名称键「飞机名称」，不能同时设置两个名称键");
+
+  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  const listSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  assert.match(formSource, /@update:model-value="\$emit\('update-primary', \$event === true\)"/);
+  assert.match(formSource, /@update:model-value="\$emit\('update-name-key', \$event === true\)"/);
+  assert.match(listSource, /function updateDraftPrimaryKey/);
+  assert.match(listSource, /function updateDraftNameKey/);
+  assert.match(listSource, /findConflictingAttributeKey/);
+  assert.match(listSource, /ElMessage\.warning\(formatAttributeKeyConflictMessage/);
+  assert.match(listSource, /if \(draft\.isPrimary && rejectDuplicateAttributeKey\("primary"\)\) return/);
+  assert.match(listSource, /if \(draft\.isNameKey && rejectDuplicateAttributeKey\("name"\)\) return/);
+  assert.match(panelSource, /@update-primary="updateDraftPrimaryKey"/);
+  assert.match(panelSource, /@update-name-key="updateDraftNameKey"/);
+});
+
 test("attribute category is required when creating or editing a property", () => {
   const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
   const listSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");

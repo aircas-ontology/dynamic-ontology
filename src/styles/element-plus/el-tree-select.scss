@@ -39,11 +39,11 @@
     color: var(--aircas-color-text-primary);
   }
 
-  .el-select__wrapper.is-hovering:not(.is-focused) {
+  .el-select__wrapper.is-hovering:not(.is-focused):not(.is-disabled) {
     box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
   }
 
-  .el-select__wrapper.is-focused {
+  .el-select__wrapper.is-focused:not(.is-disabled) {
     box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
   }
 
@@ -51,6 +51,13 @@
     background-color: var(--aircas-color-panel-background);
     color: var(--aircas-color-text-disabled);
     box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+    cursor: not-allowed;
+
+    .el-select__placeholder,
+    .el-select__caret,
+    .el-select__suffix {
+      color: var(--aircas-color-text-disabled);
+    }
   }
 
   .el-select__placeholder {

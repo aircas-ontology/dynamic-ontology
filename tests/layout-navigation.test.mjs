@@ -26,3 +26,10 @@ test("breadcrumb shows a location pin and current page without a home crumb", ()
   assert.doesNotMatch(source, />首页</);
   assert.doesNotMatch(source, /公共消息/);
 });
+
+test("breadcrumb adds 创建子空间 after the current space name", () => {
+  const source = readFileSync(new URL("../src/layout/components/BreadcrumbBar.vue", import.meta.url), "utf8");
+  assert.match(source, /OntologySubspaceCreate/);
+  assert.match(source, /创建子空间/);
+  assert.match(source, /isSubspaceCreate[\s\S]*OntologySpaceManagementDetail[\s\S]*创建子空间/);
+});

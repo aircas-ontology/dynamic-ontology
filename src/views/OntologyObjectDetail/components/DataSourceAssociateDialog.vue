@@ -64,14 +64,24 @@
               placeholder="选择字段"
               :loading="fieldLoading"
             >
-              <el-option v-for="field in manualFieldOptions" :key="field.id" :label="field.name" :value="field.id" />
+              <el-option
+                v-for="field in manualFieldOptions"
+                :key="field.id"
+                :label="`${field.name}${formatDatasourceKeyMarks({ isPrimary: field.isPrimary })}`"
+                :value="field.id"
+              />
             </el-select>
           </label>
           <el-icon class="mapping-toolbar__connection"><Connection /></el-icon>
           <label>
             关联本体字段
             <el-select v-model="manualSelectedProperty" class="aircas-select" popper-class="aircas-select-popper" filterable placeholder="选择本体属性">
-              <el-option v-for="property in properties" :key="property.id" :label="`${property.displayName} (${property.apiName})`" :value="property.id" />
+              <el-option
+                v-for="property in availableManualProperties"
+                :key="property.id"
+                :label="`${property.displayName}${formatDatasourceKeyMarks(property)} (${property.apiName})`"
+                :value="property.id"
+              />
             </el-select>
           </label>
           <el-button class="aircas-button" type="primary" :disabled="!canAddManualBind || loading" @click="addManualBind">关联</el-button>
@@ -128,7 +138,9 @@
                       class="field-list__row"
                       :class="{ 'field-list__row-mapped': isFieldMapped(table.databaseId, table.table.id, field.id) }"
                     >
-                      <span :title="field.name">{{ field.name }}</span>
+                      <span :title="`${field.name}${formatDatasourceKeyMarks({ isPrimary: field.isPrimary })}`">
+                        {{ field.name }}{{ formatDatasourceKeyMarks({ isPrimary: field.isPrimary }) }}
+                      </span>
                       <span>{{ field.dataType || "—" }}</span>
                       <button
                         type="button"
@@ -165,7 +177,9 @@
                     :id="propAnchorId(property.id)"
                     :aria-label="`关联属性 ${property.displayName}`"
                   />
-                  <span :title="property.displayName">{{ property.displayName }}</span>
+                  <span :title="`${property.displayName}${formatDatasourceKeyMarks(property)}`">
+                    {{ property.displayName }}{{ formatDatasourceKeyMarks(property) }}
+                  </span>
                   <span :title="property.apiName">{{ property.apiName }}</span>
                   <span :title="property.categoryName">{{ property.categoryName }}</span>
                 </div>
@@ -240,6 +254,7 @@ interface OntologyDataSourceField {
   id: string;
   name: string;
   dataType: string;
+  isPrimary: boolean;
 }
 
 interface OntologyDataSourceTable {
@@ -270,6 +285,8 @@ interface OntologyPropertyClass {
   displayName: string;
   apiName: string;
   categoryName: string;
+  isPrimary: boolean;
+  isNameKey: boolean;
   dataSource: OntologyPropertyDataSourceBind | null;
 }
 
@@ -417,7 +434,16 @@ const manualFieldOptions = computed(() => {
   if (!manualSelectedTable.value) return [];
   const { databaseId, tableId } = parseManualTableKey(manualSelectedTable.value);
   const entry = flatTables.value.find((t) => t.databaseId === databaseId && t.table.id === tableId);
-  return entry?.table.fields ?? [];
+  return (entry?.table.fields ?? []).filter((field) => !isFieldMapped(databaseId, tableId, field.id));
+});
+const availableManualProperties = computed(() => props.properties.filter((property) => !draftBinds.value.get(property.id)));
+
+watch(manualFieldOptions, (fields) => {
+  if (!fields.some((field) => field.id === manualSelectedField.value)) manualSelectedField.value = "";
+});
+
+watch(availableManualProperties, (items) => {
+  if (!items.some((property) => property.id === manualSelectedProperty.value)) manualSelectedProperty.value = "";
 });
 
 const canAddManualBind = computed(() => {
@@ -431,6 +457,18 @@ const canAddManualBind = computed(() => {
   }
   return true;
 });
+
+/**
+ * @description 按主键和名称键生成字段名称后的标识。
+ * @param flags 主键与名称键标记。
+ * @returns （主）、（名）或两者拼接；都未标记时为空。
+ */
+function formatDatasourceKeyMarks(flags: { isPrimary?: boolean; isNameKey?: boolean }): string {
+  const marks: string[] = [];
+  if (flags.isPrimary) marks.push("（主）");
+  if (flags.isNameKey) marks.push("（名）");
+  return marks.join("");
+}
 
 function manualTableKey(databaseId: string, tableId: string): string {
   return `${databaseId}::${tableId}`;
