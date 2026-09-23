@@ -150,18 +150,6 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
   font-size: 12px;
 }
 
-.space-overview-panel__stat--cyan {
-  --stat-glow: var(--aircas-color-accent-cyan-soft);
-}
-
-.space-overview-panel__stat--purple {
-  --stat-glow: var(--aircas-color-accent-purple-soft);
-}
-
-.space-overview-panel__stat--purple .el-icon {
-  color: var(--aircas-color-accent-purple);
-}
-
 .space-overview-panel__stat--blue {
   --stat-glow: var(--aircas-color-accent-blue-soft);
 }

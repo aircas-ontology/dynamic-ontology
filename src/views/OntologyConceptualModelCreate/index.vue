@@ -8,8 +8,14 @@
         <p>拖拽 UML 对象构建空间骨架，保存后自动写入默认「全部」分类</p>
       </div>
       <div class="conceptual-model-create__space-fields">
-        <el-input v-model="spaceDisplayName" class="aircas-input" ariaLabel="空间名称" placeholder="空间名称" :readonly="hasRouteSpaceContext" />
-        <el-input v-model="spaceApiName" class="aircas-input" ariaLabel="空间 API 名称" placeholder="空间 API 名称" :readonly="hasRouteSpaceContext" />
+        <label class="conceptual-model-create__space-field">
+          <span>空间名称</span>
+          <el-input v-model="spaceDisplayName" class="aircas-input" ariaLabel="空间名称" placeholder="空间名称" :readonly="hasRouteSpaceContext" />
+        </label>
+        <label class="conceptual-model-create__space-field">
+          <span>API 名称</span>
+          <el-input v-model="spaceApiName" class="aircas-input" ariaLabel="空间 API 名称" placeholder="空间 API 名称" :readonly="hasRouteSpaceContext" />
+        </label>
       </div>
       <div class="conceptual-model-create__actions">
         <span>{{ zoom }}%</span><el-button class="aircas-button" size="small" @click="zoomOut">缩小</el-button
@@ -623,6 +629,16 @@ async function saveConceptualModel() {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
+.conceptual-model-create__space-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.conceptual-model-create__space-field span {
+  color: var(--aircas-color-text-muted);
+  font-size: 12px;
+}
 .conceptual-model-create__save-error {
   margin: 0;
   padding: 8px 12px;
@@ -650,9 +666,6 @@ async function saveConceptualModel() {
   color: var(--aircas-color-accent-cyan);
   font-size: 11px;
   letter-spacing: 0.12em;
-}
-.conceptual-model-create__space-input {
-  width: 190px;
 }
 .conceptual-model-create__actions {
   display: flex;
@@ -770,10 +783,6 @@ async function saveConceptualModel() {
   .conceptual-model-create__identity {
     order: 2;
     flex-basis: calc(100% - 80px);
-  }
-  .conceptual-model-create__space-input {
-    order: 3;
-    width: 100%;
   }
   .conceptual-model-create__actions {
     order: 4;
