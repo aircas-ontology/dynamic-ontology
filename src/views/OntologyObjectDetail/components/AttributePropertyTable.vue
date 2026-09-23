@@ -14,7 +14,7 @@
           ariaLabel="搜索属性"
           @update:model-value="$emit('update:attributeSearch', $event)"
         />
-        <el-button class="aircas-button" @click="$emit('open-data-source')">
+        <el-button class="aircas-button" :loading="dataSourceOpening" @click="$emit('open-data-source')">
           <el-icon><Connection /></el-icon>关联数据源
         </el-button>
         <el-button class="aircas-button" type="primary" @click="$emit('create-attribute')">
@@ -49,8 +49,8 @@
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <div class="ontology-object-attribute-panel__row-actions">
-              <el-button class="aircas-button" size="small" @click="$emit('edit-attribute', row)">编辑</el-button>
-              <el-button class="aircas-button" type="danger" size="small" @click="$emit('remove-attribute', row)">删除</el-button>
+              <el-button class="aircas-button aircas-button--tone-secondary" size="small" @click="$emit('edit-attribute', row)">编辑</el-button>
+              <el-button class="aircas-button aircas-button--tone-danger" type="danger" size="small" @click="$emit('remove-attribute', row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -70,6 +70,7 @@ defineProps<{
   attributeSearch: string;
   attributeLoading: boolean;
   attributeError: string;
+  dataSourceOpening: boolean;
   visibleAttributes: OntologyAttributeItem[];
 }>();
 

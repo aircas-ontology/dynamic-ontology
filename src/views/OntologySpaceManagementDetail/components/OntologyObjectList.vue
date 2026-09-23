@@ -3,15 +3,30 @@
     <header class="ontology-object-list__toolbar">
       <h1>本体空间总览</h1>
       <div class="ontology-object-list__toolbar-actions">
-        <div class="ontology-object-list__view-switch" role="group" aria-label="展示方式">
-          <el-button class="aircas-button" :type="viewMode === 'card' ? 'primary' : 'default'" @click="emit('update:viewMode', 'card')"
-            ><el-icon><Grid /></el-icon><span class="ontology-object-list__visually-hidden">卡片视图</span></el-button
-          >
-          <el-button class="aircas-button" :type="viewMode === 'table' ? 'primary' : 'default'" @click="emit('update:viewMode', 'table')"
-            ><el-icon><List /></el-icon><span class="ontology-object-list__visually-hidden">列表视图</span></el-button
-          >
-        </div>
-        <el-button class="aircas-button" type="primary" @click="emit('action', 'create')"
+        <el-radio-group
+          :model-value="viewMode"
+          class="aircas-radio-group ontology-object-list__view-switch"
+          ariaLabel="展示方式"
+          @update:model-value="setObjectListViewMode"
+        >
+          <el-radio-button value="card">
+            <svg class="ontology-object-list__view-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="8" height="8" rx="1.5" />
+              <rect x="13" y="3" width="8" height="8" rx="1.5" />
+              <rect x="3" y="13" width="8" height="8" rx="1.5" />
+              <rect x="13" y="13" width="8" height="8" rx="1.5" />
+            </svg>
+            <span class="ontology-object-list__visually-hidden">卡片视图</span>
+          </el-radio-button>
+          <el-radio-button value="table">
+            <svg class="ontology-object-list__view-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M3 9h18M3 14h18M9 9v11M15 9v11" />
+            </svg>
+            <span class="ontology-object-list__visually-hidden">列表视图</span>
+          </el-radio-button>
+        </el-radio-group>
+        <el-button class="aircas-button aircas-button--tone-primary" @click="emit('action', 'create')"
           ><el-icon><Plus /></el-icon>新建本体</el-button
         >
       </div>
@@ -72,22 +87,39 @@
                 </div>
               </dl>
               <footer class="ontology-object-card__actions">
-                <el-button class="aircas-button ontology-object-action ontology-object-action--view" size="small" @click="emit('action', 'view', item)"
-                  ><el-icon><View /></el-icon>详情</el-button
-                >
-                <el-button class="aircas-button ontology-object-action ontology-object-action--edit" size="small" @click="emit('action', 'edit', item)"
-                  ><el-icon><EditPen /></el-icon>编辑</el-button
-                >
-                <el-button class="aircas-button ontology-object-action ontology-object-action--export" size="small" @click="emit('action', 'export', item)"
-                  ><el-icon><Download /></el-icon>导出</el-button
-                >
+                <el-button class="aircas-button ontology-object-action ontology-object-action--view" size="small" @click="emit('action', 'view', item)">
+                  <svg class="ontology-object-action__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  详情
+                </el-button>
+                <el-button class="aircas-button ontology-object-action ontology-object-action--edit" size="small" @click="emit('action', 'edit', item)">
+                  <svg class="ontology-object-action__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 20h4.5L19 9.5 14.5 5 4 15.5V20z" />
+                    <path d="M12.5 7l4.5 4.5" />
+                  </svg>
+                  编辑
+                </el-button>
+                <el-button class="aircas-button ontology-object-action ontology-object-action--export" size="small" @click="emit('action', 'export', item)">
+                  <svg class="ontology-object-action__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 4v10M8 10l4 4 4-4" />
+                    <path d="M5 18h14" />
+                  </svg>
+                  导出
+                </el-button>
                 <el-button
                   class="aircas-button ontology-object-action ontology-object-action--delete"
                   size="small"
                   type="danger"
                   @click="emit('action', 'delete', item)"
-                  ><el-icon><Delete /></el-icon>删除</el-button
                 >
+                  <svg class="ontology-object-action__icon ontology-object-action__icon--filled" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8.8 3.6h6.4l.9 2.4H20.2v2.2H3.8V6h4.1L8.8 3.6z" />
+                    <path d="M6.6 9.2h10.8l-.95 10.5c-.12.95-.9 1.6-1.85 1.6H9.35c-.95 0-1.73-.65-1.85-1.6L6.6 9.2z" />
+                  </svg>
+                  删除
+                </el-button>
               </footer>
             </div>
           </article>
@@ -115,25 +147,25 @@
             <el-table-column label="操作" width="300" fixed="right">
               <template #default="{ row }">
                 <el-button
-                  class="aircas-button ontology-object-action ontology-object-action--view"
+                  class="aircas-button ontology-object-action ontology-object-action--view aircas-button--tone-primary"
                   size="small"
                   @click="emit('action', 'view', objectRow(row))"
                   >详情</el-button
                 >
                 <el-button
-                  class="aircas-button ontology-object-action ontology-object-action--edit"
+                  class="aircas-button ontology-object-action ontology-object-action--edit aircas-button--tone-secondary"
                   size="small"
                   @click="emit('action', 'edit', objectRow(row))"
                   >编辑</el-button
                 >
                 <el-button
-                  class="aircas-button ontology-object-action ontology-object-action--export"
+                  class="aircas-button ontology-object-action ontology-object-action--export aircas-button--tone-ghost"
                   size="small"
                   @click="emit('action', 'export', objectRow(row))"
                   >导出</el-button
                 >
                 <el-button
-                  class="aircas-button ontology-object-action ontology-object-action--delete"
+                  class="aircas-button ontology-object-action ontology-object-action--delete aircas-button--tone-danger"
                   size="small"
                   type="danger"
                   @click="emit('action', 'delete', objectRow(row))"
@@ -150,7 +182,7 @@
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from "vue";
-import { Connection, DataLine, Delete, Download, EditPen, Grid, List, Plus, Share, Ship, View } from "@element-plus/icons-vue";
+import { Connection, DataLine, Plus, Share, Ship } from "@element-plus/icons-vue";
 import type { OntologyObjectItem, OntologyObjectLocationTarget, OntologyObjectSection, OntologyObjectViewMode } from "@/types";
 
 const props = defineProps<{
@@ -181,6 +213,14 @@ function objectRow(row: unknown): OntologyObjectItem {
 
 function categoryAnchorId(categoryId: string) {
   return `ontology-category-${categoryId}`;
+}
+
+/**
+ * @description 仅接受卡片或列表视图值，并通知父组件切换对象展示方式。
+ * @param value 视图切换控件提交的未知值。
+ */
+function setObjectListViewMode(value: unknown) {
+  if (value === "card" || value === "table") emit("update:viewMode", value);
 }
 
 async function locateCategory(target: OntologyObjectLocationTarget | null) {
@@ -233,15 +273,43 @@ onBeforeUnmount(() => {
   font-size: 16px;
   font-weight: 600;
 }
-.ontology-object-list__toolbar-actions,
-.ontology-object-list__view-switch {
+.ontology-object-list__toolbar-actions {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+.ontology-object-list__view-switch {
+  display: inline-flex;
   gap: 4px;
 }
-.ontology-object-list__view-switch .el-button {
+.ontology-object-list__view-switch.aircas-radio-group :deep(.el-radio-button__inner),
+.ontology-object-list__view-switch.aircas-radio-group :deep(.el-radio-button:first-child .el-radio-button__inner),
+.ontology-object-list__view-switch.aircas-radio-group :deep(.el-radio-button:last-child .el-radio-button__inner) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
+  height: 32px;
   padding: 0;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 4px;
+  outline: none;
+  box-shadow: none;
+  background-color: var(--aircas-color-panel-background-deep);
+  color: var(--aircas-color-text-primary);
+}
+.ontology-object-list__view-switch.aircas-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  border-color: var(--aircas-color-accent-cyan);
+  background: var(--aircas-color-active-background);
+  color: var(--aircas-color-text-primary);
+  box-shadow: 0 0 10px var(--aircas-color-cyan-soft);
+}
+.ontology-object-list__view-icon {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
 }
 .ontology-object-list__visually-hidden {
   position: absolute;
@@ -477,13 +545,45 @@ onBeforeUnmount(() => {
   min-width: 0;
   margin: 0;
   padding: 0 5px;
+  overflow: hidden;
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.ontology-object-action.aircas-button.el-button {
+.ontology-object-card__actions .ontology-object-action.aircas-button.el-button {
+  height: 28px;
+  padding: 0 5px;
+}
+
+.ontology-object-action__icon {
+  width: 12px;
+  height: 12px;
+  margin-right: 3px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ontology-object-action__icon--filled {
+  fill: currentColor;
+  stroke: none;
+}
+
+.ontology-object-card__actions
+  .ontology-object-action.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ) {
   border-style: solid;
 }
 
-.ontology-object-action--view.aircas-button.el-button {
+.ontology-object-card__actions
+  .ontology-object-action--view.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ) {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-accent-cyan);
   background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-blue-fill));
@@ -492,52 +592,89 @@ onBeforeUnmount(() => {
     0 0 10px var(--aircas-color-cyan-soft);
 }
 
-.ontology-object-action--view.aircas-button.el-button:hover,
-.ontology-object-action--view.aircas-button.el-button:focus-visible {
+.ontology-object-card__actions
+  .ontology-object-action--view.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):hover,
+.ontology-object-card__actions
+  .ontology-object-action--view.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):focus,
+.ontology-object-card__actions
+  .ontology-object-action--view.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):focus-visible {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-accent-cyan);
   background: linear-gradient(90deg, var(--aircas-color-hover-background), var(--aircas-color-cyan-soft));
   box-shadow: 0 0 14px var(--aircas-color-cyan-shadow);
 }
 
-.ontology-object-action--edit.aircas-button.el-button {
+.ontology-object-card__actions
+  .ontology-object-action--edit.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ) {
   color: var(--aircas-color-accent-blue);
   border-color: var(--aircas-color-blue-border);
   background: var(--aircas-color-blue-soft);
   box-shadow: none;
 }
 
-.ontology-object-action--edit.aircas-button.el-button:hover,
-.ontology-object-action--edit.aircas-button.el-button:focus-visible {
+.ontology-object-card__actions
+  .ontology-object-action--edit.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):hover,
+.ontology-object-card__actions
+  .ontology-object-action--edit.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):focus,
+.ontology-object-card__actions
+  .ontology-object-action--edit.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):focus-visible {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-accent-blue);
   background: var(--aircas-color-blue-fill);
 }
 
-.ontology-object-action--export.aircas-button.el-button {
+.ontology-object-card__actions
+  .ontology-object-action--export.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info) {
   color: var(--aircas-color-text-secondary);
   border-color: var(--aircas-color-border);
   background: var(--aircas-color-panel-overlay-deep);
   box-shadow: none;
 }
 
-.ontology-object-action--export.aircas-button.el-button:hover,
-.ontology-object-action--export.aircas-button.el-button:focus-visible {
+.ontology-object-card__actions
+  .ontology-object-action--export.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info):hover,
+.ontology-object-card__actions
+  .ontology-object-action--export.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info):focus,
+.ontology-object-card__actions
+  .ontology-object-action--export.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info):focus-visible {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-border-highlight);
   background: var(--aircas-color-panel-overlay-deep);
   box-shadow: 0 0 10px var(--aircas-color-blue-soft);
 }
 
-.ontology-object-action--delete.aircas-button.el-button {
+.ontology-object-card__actions .ontology-object-action--delete.aircas-button.el-button.el-button--danger {
   color: var(--aircas-color-danger);
   border-color: var(--aircas-color-danger-border);
   background: var(--aircas-color-danger-background);
   box-shadow: inset 0 0 12px var(--aircas-color-danger-background);
 }
 
-.ontology-object-action--delete.aircas-button.el-button:hover,
-.ontology-object-action--delete.aircas-button.el-button:focus-visible {
+.ontology-object-card__actions .ontology-object-action--delete.aircas-button.el-button.el-button--danger:hover,
+.ontology-object-card__actions .ontology-object-action--delete.aircas-button.el-button.el-button--danger:focus,
+.ontology-object-card__actions .ontology-object-action--delete.aircas-button.el-button.el-button--danger:focus-visible {
   color: var(--aircas-color-danger-soft);
   border-color: var(--aircas-color-danger);
   background: color-mix(in srgb, var(--aircas-color-danger) 32%, transparent);

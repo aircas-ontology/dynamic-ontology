@@ -99,8 +99,12 @@
               <el-table-column label="操作" width="180" fixed="right">
                 <template #default="scope">
                   <div class="space-relation-workspace__row-actions">
-                    <el-button class="aircas-button" size="small" @click="openRelationEdit(asRelation(scope.row))">编辑</el-button>
-                    <el-button class="aircas-button" type="danger" size="small" @click="openRelationDelete(asRelation(scope.row))">删除</el-button>
+                    <el-button class="aircas-button aircas-button--tone-secondary" size="small" @click="openRelationEdit(asRelation(scope.row))"
+                      >编辑</el-button
+                    >
+                    <el-button class="aircas-button aircas-button--tone-danger" type="danger" size="small" @click="openRelationDelete(asRelation(scope.row))"
+                      >删除</el-button
+                    >
                   </div>
                 </template>
               </el-table-column>

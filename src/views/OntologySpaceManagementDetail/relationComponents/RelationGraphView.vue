@@ -229,19 +229,31 @@ watch(
   gap: 6px;
   height: 32px;
   padding: 0 10px;
-  border: 1px solid var(--aircas-color-transparent);
+  border: 1px solid var(--aircas-color-blue-border);
   border-radius: 4px;
-  color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-transparent);
+  color: var(--aircas-color-accent-blue);
+  background: var(--aircas-color-blue-soft);
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
 }
-.relation-graph-context-menu__item:hover {
-  border-color: var(--aircas-color-border);
-  background: var(--aircas-color-accent-blue-soft);
+.relation-graph-context-menu__item:hover,
+.relation-graph-context-menu__item:focus-visible {
+  color: var(--aircas-color-text-primary);
+  border-color: var(--aircas-color-accent-blue);
+  background: var(--aircas-color-blue-fill);
 }
 .relation-graph-context-menu__item-danger {
   color: var(--aircas-color-danger);
+  border-color: var(--aircas-color-danger-border);
+  background: var(--aircas-color-danger-background);
+  box-shadow: inset 0 0 12px var(--aircas-color-danger-background);
+}
+.relation-graph-context-menu__item-danger:hover,
+.relation-graph-context-menu__item-danger:focus-visible {
+  color: var(--aircas-color-danger-soft);
+  border-color: var(--aircas-color-danger);
+  background: color-mix(in srgb, var(--aircas-color-danger) 32%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--aircas-color-danger) 35%, transparent);
 }
 </style>

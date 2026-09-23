@@ -91,6 +91,25 @@ test("ontology property api exposes documented batch update contract", () => {
   assert.match(mockSource, /message: "SUCCESS"/);
 });
 
+test("ontology property api exposes property details with datasource fields", () => {
+  const apiSource = readSource("../src/apis/ontologyPropertyApi.ts");
+  const barrelSource = readSource("../src/apis/index.ts");
+  const typeSource = readSource("../src/types/apis/getOntologyPropertyDetailByOntologyIdType.ts");
+  const typeBarrelSource = readSource("../src/types/index.ts");
+
+  assert.match(typeSource, /ontologyUniqueIdentifier:\s*string/);
+  assert.match(typeSource, /export interface OntologyPropertyDetail/);
+  assert.match(typeSource, /datasourceId\?:\s*string/);
+  assert.match(typeSource, /datasourceColumnName\?:\s*string/);
+  assert.match(typeSource, /datasourceDescription\?:\s*string/);
+  assert.match(apiSource, /getOntologyPropertyDetailByOntologyIdInterface/);
+  assert.match(apiSource, /\/ontology\/property\/detail/);
+  assert.match(apiSource, /method: "get"/);
+  assert.match(apiSource, /params/);
+  assert.match(barrelSource, /getOntologyPropertyDetailByOntologyIdInterface/);
+  assert.match(typeBarrelSource, /GetOntologyPropertyDetailByOntologyIdData/);
+});
+
 test("attribute panel uses ontology property api for list and commands", () => {
   const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
   const helperSource = readSource("../src/views/OntologyObjectDetail/utils/attributePanelHelpers.ts");

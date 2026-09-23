@@ -40,6 +40,7 @@ import {
   deleteOntologyPropertyInterface,
   getOntologyPropertyByCategoryIdInterface,
   getOntologyPropertyByOntologyIdInterface,
+  getOntologyPropertyDetailByOntologyIdInterface,
   putBatchUpdateOntologyPropertiesInterface,
   updateOntologyPropertyInterface,
 } from "./ontologyPropertyApi";
@@ -66,6 +67,7 @@ export {
   getOntologyObjectByCategoryIdInterface,
   getOntologyPropertyByCategoryIdInterface,
   getOntologyPropertyByOntologyIdInterface,
+  getOntologyPropertyDetailByOntologyIdInterface,
   getOntologyDatasourceTablesInterface,
   getOntologyRelationCategoryTreeInterface,
   getOntologySpaceListInterface,

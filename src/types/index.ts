@@ -38,6 +38,11 @@ export type {
   GetOntologyPropertyByOntologyIdParams,
   OntologyPropertyInfo,
 } from "./apis/getOntologyPropertyByOntologyIdType";
+export type {
+  GetOntologyPropertyDetailByOntologyIdData,
+  GetOntologyPropertyDetailByOntologyIdParams,
+  OntologyPropertyDetail,
+} from "./apis/getOntologyPropertyDetailByOntologyIdType";
 export type { GetOntologySpaceStatisticData, GetOntologySpaceStatisticParams, OntologySpaceStatisticVO } from "./apis/getOntologySpaceStatisticType";
 export type { LoginData, LoginParams } from "./apis/loginType";
 export type {

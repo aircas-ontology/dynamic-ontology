@@ -12,6 +12,8 @@ import type {
   GetOntologyPropertyByCategoryIdParams,
   GetOntologyPropertyByOntologyIdData,
   GetOntologyPropertyByOntologyIdParams,
+  GetOntologyPropertyDetailByOntologyIdData,
+  GetOntologyPropertyDetailByOntologyIdParams,
   UpdateOntologyPropertyData,
   UpdateOntologyPropertyParams,
 } from "@/types";
@@ -80,6 +82,24 @@ export function getOntologyPropertyByCategoryIdInterface(
 ): Promise<ApiResponse<GetOntologyPropertyByCategoryIdData>> {
   return request<GetOntologyPropertyByCategoryIdData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/property/by_category",
+    method: "get",
+    params,
+  });
+}
+
+/**
+ * @description 根据本体唯一标识查询包含数据源信息的属性详情列表。
+ * 请求方式：GET `/ontology/property/detail`
+ *
+ * @param params 本体唯一标识查询参数。
+ * @param params.ontologyUniqueIdentifier 本体唯一标识。
+ * @returns 标准 API 响应，data 为包含数据源表和字段信息的属性详情列表。
+ */
+export function getOntologyPropertyDetailByOntologyIdInterface(
+  params: GetOntologyPropertyDetailByOntologyIdParams,
+): Promise<ApiResponse<GetOntologyPropertyDetailByOntologyIdData>> {
+  return request<GetOntologyPropertyDetailByOntologyIdData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/property/detail",
     method: "get",
     params,
   });

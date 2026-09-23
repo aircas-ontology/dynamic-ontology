@@ -1,9 +1,13 @@
 <template>
   <div class="space-actions">
-    <el-button class="aircas-button" type="primary" plain size="small" :icon="Right" @click="$emit('action', 'enter', space)">进入</el-button>
-    <el-button class="aircas-button" type="primary" plain size="small" :icon="Edit" @click="$emit('action', 'edit', space)">编辑</el-button>
+    <el-button class="aircas-button aircas-button--tone-primary" type="primary" plain size="small" :icon="Right" @click="$emit('action', 'enter', space)"
+      >进入</el-button
+    >
+    <el-button class="aircas-button aircas-button--tone-secondary" type="primary" plain size="small" :icon="Edit" @click="$emit('action', 'edit', space)"
+      >编辑</el-button
+    >
     <el-dropdown class="aircas-dropdown" popper-class="aircas-dropdown-popper" trigger="click" @command="command">
-      <el-button class="aircas-button" type="primary" plain size="small"
+      <el-button class="aircas-button aircas-button--tone-ghost" type="primary" plain size="small"
         >更多<el-icon> <ArrowDown /> </el-icon
       ></el-button>
       <template #dropdown>

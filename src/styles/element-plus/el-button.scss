@@ -176,6 +176,119 @@
   }
 }
 
+.aircas-button.el-button.aircas-button--tone-primary:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled),
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-primary:not(.is-disabled) {
+  color: var(--aircas-color-text-primary);
+  border-color: var(--aircas-color-accent-cyan);
+  border-style: solid;
+  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-blue-fill));
+  box-shadow:
+    inset 0 0 14px var(--aircas-color-cyan-fill),
+    0 0 10px var(--aircas-color-cyan-soft);
+}
+
+.aircas-button.el-button.aircas-button--tone-primary:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled):hover,
+.aircas-button.el-button.aircas-button--tone-primary:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled):focus,
+.aircas-button.el-button.aircas-button--tone-primary:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled):focus-visible,
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-primary:not(.is-disabled):hover,
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-primary:not(.is-disabled):focus,
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-primary:not(.is-disabled):focus-visible {
+  color: var(--aircas-color-text-primary);
+  border-color: var(--aircas-color-accent-cyan);
+  background: linear-gradient(90deg, var(--aircas-color-hover-background), var(--aircas-color-cyan-soft));
+  box-shadow: 0 0 14px var(--aircas-color-cyan-shadow);
+}
+
+.aircas-button.el-button.aircas-button--tone-secondary:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled),
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-secondary:not(.is-disabled) {
+  color: var(--aircas-color-accent-blue);
+  border-color: var(--aircas-color-blue-border);
+  border-style: solid;
+  background: var(--aircas-color-blue-soft);
+  box-shadow: none;
+}
+
+.aircas-button.el-button.aircas-button--tone-secondary:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled):hover,
+.aircas-button.el-button.aircas-button--tone-secondary:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled):focus,
+.aircas-button.el-button.aircas-button--tone-secondary:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled):focus-visible,
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-secondary:not(.is-disabled):hover,
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-secondary:not(.is-disabled):focus,
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-secondary:not(.is-disabled):focus-visible {
+  color: var(--aircas-color-text-primary);
+  border-color: var(--aircas-color-accent-blue);
+  background: var(--aircas-color-blue-fill);
+}
+
+.aircas-button.el-button.aircas-button--tone-ghost:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled),
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-ghost:not(.is-disabled) {
+  color: var(--aircas-color-text-secondary);
+  border-color: var(--aircas-color-border);
+  border-style: solid;
+  background: var(--aircas-color-panel-overlay-deep);
+  box-shadow: none;
+}
+
+.aircas-button.el-button.aircas-button--tone-ghost:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled):hover,
+.aircas-button.el-button.aircas-button--tone-ghost:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled):focus,
+.aircas-button.el-button.aircas-button--tone-ghost:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(
+    .el-button--info
+  ):not(.is-disabled):focus-visible,
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-ghost:not(.is-disabled):hover,
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-ghost:not(.is-disabled):focus,
+.aircas-button.el-button.el-button--primary.is-plain.aircas-button--tone-ghost:not(.is-disabled):focus-visible {
+  color: var(--aircas-color-text-primary);
+  border-color: var(--aircas-color-border-highlight);
+  background: var(--aircas-color-panel-overlay-deep);
+  box-shadow: 0 0 10px var(--aircas-color-blue-soft);
+}
+
+.aircas-button.el-button.el-button--danger.aircas-button--tone-danger:not(.is-disabled) {
+  color: var(--aircas-color-danger);
+  border-color: var(--aircas-color-danger-border);
+  border-style: solid;
+  background: var(--aircas-color-danger-background);
+  box-shadow: inset 0 0 12px var(--aircas-color-danger-background);
+}
+
+.aircas-button.el-button.el-button--danger.aircas-button--tone-danger:not(.is-disabled):hover,
+.aircas-button.el-button.el-button--danger.aircas-button--tone-danger:not(.is-disabled):focus,
+.aircas-button.el-button.el-button--danger.aircas-button--tone-danger:not(.is-disabled):focus-visible {
+  color: var(--aircas-color-danger-soft);
+  border-color: var(--aircas-color-danger);
+  background: color-mix(in srgb, var(--aircas-color-danger) 32%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--aircas-color-danger) 35%, transparent);
+}
+
+.aircas-button.el-button.el-button--small.aircas-button--tone-primary,
+.aircas-button.el-button.el-button--small.aircas-button--tone-secondary,
+.aircas-button.el-button.el-button--small.aircas-button--tone-ghost,
+.aircas-button.el-button.el-button--small.aircas-button--tone-danger {
+  height: 28px;
+  padding: 0 8px;
+}
+
 .el-dialog__footer,
 .el-drawer__footer {
   display: flex;
