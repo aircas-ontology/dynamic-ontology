@@ -112,12 +112,22 @@ test("filterApiDocsEndpointGroups supports menu tag dropdown filter", () => {
   const byMenuAndPath = filterApiDocsEndpointGroups(groups, "本体关系管理", "/link");
   assert.ok(byMenuAndPath.length === 1);
   assert.ok(byMenuAndPath[0]?.endpoints.every((item) => matchApiDocsEndpointPath(item.path, "/link")));
+  assert.equal(filterApiDocsEndpointGroups(groups, null, "").length, groups.length);
+  assert.equal(filterApiDocsEndpointGroups(groups, undefined, "").length, groups.length);
+});
+
+test("api docs endpoint list clears menu filter to empty string", () => {
+  const listSource = readSource("../src/views/ApplicationManagement/components/ApiDocsEndpointList.vue");
+  assert.match(listSource, /@clear="clearSelectedMenuTag"/);
+  assert.match(listSource, /function clearSelectedMenuTag/);
+  assert.match(listSource, /selectedMenuTag\.value = ""/);
 });
 
 test("application management page wires api docs composable and panels", () => {
   const pageSource = readSource("../src/views/ApplicationManagement/index.vue");
   const composableSource = readSource("../src/views/ApplicationManagement/composables/useApplicationApiDocs.ts");
   const listSource = readSource("../src/views/ApplicationManagement/components/ApiDocsEndpointList.vue");
+  const detailSource = readSource("../src/views/ApplicationManagement/components/ApiDocsEndpointDetail.vue");
   assert.match(pageSource, /useApplicationApiDocs/);
   assert.match(pageSource, /ApiDocsEndpointList/);
   assert.match(pageSource, /ApiDocsEndpointDetail/);
@@ -129,4 +139,10 @@ test("application management page wires api docs composable and panels", () => {
   assert.match(listSource, /按接口地址搜索/);
   assert.match(listSource, /按接口菜单筛选/);
   assert.match(listSource, /mapApiDocsEndpointMenuOptions/);
+  assert.match(detailSource, /aircas-tabs/);
+  assert.match(detailSource, /label="请求参数"/);
+  assert.match(detailSource, /label="请求体"/);
+  assert.match(detailSource, /label="响应"/);
+  assert.match(detailSource, /label="200 响应结构"/);
+  assert.match(detailSource, /status === "200"/);
 });

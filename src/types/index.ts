@@ -68,6 +68,7 @@ export type {
   OntologyCategoryTreeParams,
   UpdateOntologyCategoryNameParams,
 } from "./apis/ontologyCategoryTreeType";
+export type { OntologyGlobalSearchData, OntologyGlobalSearchItem, OntologyGlobalSearchParams } from "./apis/ontologyGlobalSearchType";
 export type { OntologySpaceListData, OntologySpaceListItem } from "./apis/ontologyManageType";
 export type {
   CreateOntologyRelationCategoryTreeParams,
@@ -106,6 +107,45 @@ export type {
   ConceptualModelSelectedAttribute,
   ConceptualModelSelection,
 } from "./pages/ontologyConceptualModelCreateType";
+export { BASIC_FILTER_LOGIC_OPTIONS, BASIC_FILTER_OP_OPTIONS, BASIC_FILTER_VALUE_TYPE_OPTIONS } from "./pages/ontologyFunctionOperatorBasicFilterType";
+export type {
+  BasicFilterCondition,
+  BasicFilterDocument,
+  BasicFilterGroup,
+  BasicFilterLogic,
+  BasicFilterNode,
+  BasicFilterOp,
+  BasicFilterValue,
+  BasicFilterValueType,
+} from "./pages/ontologyFunctionOperatorBasicFilterType";
+export {
+  FUNCTION_OPERATOR_STATUS_LABELS,
+  FUNCTION_OPERATOR_STATUS_OPTIONS,
+  FUNCTION_OPERATOR_TYPE_LABELS,
+  FUNCTION_OPERATOR_TYPE_OPTIONS,
+} from "./pages/ontologyFunctionOperatorType";
+export type {
+  FunctionOperator,
+  FunctionOperatorBasicAction,
+  FunctionOperatorBasicDefinition,
+  FunctionOperatorDefinition,
+  FunctionOperatorDraft,
+  FunctionOperatorPage,
+  FunctionOperatorParameter,
+  FunctionOperatorParameterField,
+  FunctionOperatorParameterType,
+  FunctionOperatorPlaceholderDefinition,
+  FunctionOperatorProtocol,
+  FunctionOperatorQuery,
+  FunctionOperatorSortBy,
+  FunctionOperatorSortOrder,
+  FunctionOperatorStatus,
+  FunctionOperatorTestResult,
+  FunctionOperatorTestStatus,
+  FunctionOperatorType,
+  FunctionOperatorVersion,
+  FunctionOperatorViewMode,
+} from "./pages/ontologyFunctionOperatorType";
 export type {
   OntologyAttributeCategoryNode,
   OntologyAttributeDraft,

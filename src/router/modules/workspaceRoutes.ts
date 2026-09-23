@@ -49,7 +49,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "function-operator",
             name: "OntologySpaceManagementDetailFunctionOperator",
-            component: emptyWorkspacePanel,
+            component: () => import("@/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel.vue"),
             meta: { title: "空间内管理", workspaceTab: "function-operator" },
           },
           {
