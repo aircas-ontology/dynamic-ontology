@@ -5,7 +5,7 @@
         <h2>空间资源统计</h2>
         <p>当前本体空间下的核心资源数量</p>
       </div>
-      <span v-if="loading" class="space-overview-panel__status">统计加载中...</span>
+      <span v-if="loading" class="space-overview-panel__status"><AircasLoading>统计加载中...</AircasLoading></span>
     </header>
 
     <el-alert v-if="error" class="space-overview-panel__error" :title="error" type="error" :closable="false" show-icon />
@@ -29,6 +29,7 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { Connection, Cpu, Grid, Share, Timer } from "@element-plus/icons-vue";
 import type { ManagementWorkspaceTab } from "@/types";
+import AircasLoading from "@/components/AircasLoading.vue";
 import { useSpaceOverview } from "../composables/useSpaceOverview";
 import { formatOverviewStat } from "../utils/overviewStats";
 
@@ -43,7 +44,7 @@ const statItems: ReadonlyArray<{ id: Exclude<ManagementWorkspaceTab, "overview">
   { id: "behavior-schedule", label: "行为调度", icon: Timer, tone: "orange" },
 ];
 function stat(id: Exclude<ManagementWorkspaceTab, "overview">) {
-  return formatOverviewStat(data.value?.counts[id], data.value?.availableTabs.includes(id) ?? true, loading.value);
+  return formatOverviewStat(data.value?.counts[id], loading.value);
 }
 function formatCount(id: Exclude<ManagementWorkspaceTab, "overview">) {
   return stat(id).value;
@@ -65,7 +66,8 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
   overflow: auto;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: var(--aircas-color-panel-background);
+  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
 .space-overview-panel__header {
@@ -115,7 +117,7 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
   gap: 12px;
   border: 1px solid var(--aircas-color-border-soft);
   border-radius: 8px;
-  background: var(--aircas-color-card-background);
+  background: radial-gradient(circle at 100% 0, var(--stat-glow), var(--aircas-color-transparent) 64%), var(--aircas-color-card-background);
 }
 
 .space-overview-panel__stat:hover {
@@ -148,16 +150,24 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
   font-size: 12px;
 }
 
-.space-overview-panel__stat--purple .el-icon {
-  color: var(--aircas-color-accent-purple);
+.space-overview-panel__stat--blue {
+  --stat-glow: var(--aircas-color-accent-blue-soft);
 }
 
 .space-overview-panel__stat--blue .el-icon {
   color: var(--aircas-color-accent-blue);
 }
 
+.space-overview-panel__stat--green {
+  --stat-glow: var(--aircas-color-accent-green-soft);
+}
+
 .space-overview-panel__stat--green .el-icon {
   color: var(--aircas-color-accent-green);
+}
+
+.space-overview-panel__stat--orange {
+  --stat-glow: var(--aircas-color-accent-orange-soft);
 }
 
 .space-overview-panel__stat--orange .el-icon {

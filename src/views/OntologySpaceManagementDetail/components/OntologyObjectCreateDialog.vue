@@ -67,14 +67,33 @@
         </el-form-item>
         <div class="ontology-object-create-dialog__grid">
           <el-form-item v-if="!editingItem" label="继承本体">
-            <el-select v-model="draft.parentId" class="aircas-input" clearable filterable placeholder="可选" :disabled="submitting">
+            <el-select
+              v-model="draft.parentId"
+              class="aircas-select"
+              popper-class="aircas-select-popper"
+              clearable
+              filterable
+              placeholder="可选"
+              :disabled="submitting"
+            >
               <el-option v-for="item in parentOptions" :key="item.id" :label="`${item.displayName} (${item.apiName})`" :value="item.id" />
             </el-select>
           </el-form-item>
           <el-form-item label="分类" required>
-            <el-select v-model="draft.categoryId" class="aircas-input" filterable placeholder="请选择分类" :disabled="submitting">
-              <el-option v-for="category in categories" :key="category.id" :label="category.name" :value="category.id" />
-            </el-select>
+            <el-tree-select
+              v-model="draft.categoryId"
+              class="aircas-tree-select"
+              popper-class="aircas-tree-select-popper"
+              :data="categoryTreeOptions"
+              check-strictly
+              filterable
+              :render-after-expand="false"
+              node-key="id"
+              :props="{ label: 'label', children: 'children' }"
+              placeholder="请选择分类"
+              :disabled="submitting"
+              style="width: 100%"
+            />
           </el-form-item>
         </div>
       </el-form>
@@ -86,7 +105,7 @@
         <el-button class="aircas-button" :disabled="submitting" @click="downloadTemplate">下载模板</el-button>
       </div>
       <el-upload
-        class="ontology-object-create-dialog__upload"
+        class="aircas-upload ontology-object-create-dialog__upload"
         drag
         :auto-upload="false"
         accept=".json,application/json"
@@ -120,14 +139,15 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { MagicStick, UploadFilled, Plus, Upload } from "@element-plus/icons-vue";
 import type { UploadFile } from "element-plus";
-import type { OntologyObjectCreateDraft, OntologyObjectItem } from "@/types";
+import type { OntologyConceptNode, OntologyObjectCreateDraft, OntologyObjectItem } from "@/types";
 
-interface CategoryOption {
+interface CategoryTreeOption {
   id: string;
-  name: string;
+  label: string;
+  children: CategoryTreeOption[];
 }
 interface ParentOption {
   id: string;
@@ -138,7 +158,7 @@ type CreateMode = "manual" | "import" | "llm";
 
 const visible = defineModel<boolean>({ required: true });
 const props = defineProps<{
-  categories: CategoryOption[];
+  categoryTree: OntologyConceptNode[];
   parentOptions: ParentOption[];
   submitting: boolean;
   error: string;
@@ -146,7 +166,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   "submit-manual": [draft: OntologyObjectCreateDraft];
-  "submit-import": [drafts: OntologyObjectCreateDraft[]];
+  "submit-import": [file: File];
   "submit-edit": [draft: OntologyObjectCreateDraft];
   "open-llm": [];
 }>();
@@ -157,11 +177,26 @@ const modes = [
 ];
 const createMode = ref<CreateMode>("manual");
 const draft = reactive<OntologyObjectCreateDraft>({ apiName: "", displayName: "", description: "", iconUrl: "", categoryId: "", parentId: undefined });
-const importDrafts = ref<OntologyObjectCreateDraft[]>([]);
+const importFile = ref<File | null>(null);
 const importError = ref("");
 const validationError = ref("");
 const iconError = ref("");
 const templateJson = JSON.stringify([{ apiName: "airplane", displayName: "飞机", description: "", iconUrl: "", categoryId: "1" }], null, 2);
+
+/**
+ * @description 将概念层级树映射为分类树选择数据，节点 id 使用分类提交 id。
+ * @param nodes 概念层级树节点。
+ * @returns 树选择选项。
+ */
+function mapCategoryTreeOptions(nodes: OntologyConceptNode[]): CategoryTreeOption[] {
+  return nodes.map((node) => ({
+    id: node.targetCategoryId ?? node.id,
+    label: node.label || `分类 ${node.id}`,
+    children: mapCategoryTreeOptions(node.children),
+  }));
+}
+
+const categoryTreeOptions = computed(() => mapCategoryTreeOptions(props.categoryTree));
 
 watch([visible, () => props.editingItem], ([opened, editingItem]) => {
   if (!opened) return;
@@ -171,8 +206,8 @@ watch([visible, () => props.editingItem], ([opened, editingItem]) => {
   draft.description = editingItem?.description ?? "";
   draft.iconUrl = editingItem?.iconUrl ?? "";
   draft.parentId = undefined;
-  draft.categoryId = editingItem?.categoryId ?? props.categories[0]?.id ?? "";
-  importDrafts.value = [];
+  draft.categoryId = editingItem?.categoryId ?? categoryTreeOptions.value[0]?.id ?? "";
+  importFile.value = null;
   importError.value = "";
   validationError.value = "";
   iconError.value = "";
@@ -185,6 +220,7 @@ watch([visible, () => props.editingItem], ([opened, editingItem]) => {
 function selectCreateMode(mode: CreateMode) {
   createMode.value = mode;
   validationError.value = "";
+  importFile.value = null;
   importError.value = "";
 }
 
@@ -224,34 +260,12 @@ function clearIcon() {
 }
 
 /**
- * @description 解析导入文件并校验必填字段。
+ * @description 记录导入创建所选文件，确认时再提交给导入接口。
  * @param file Element Plus 上传文件。
- * @returns 文件解析流程的 Promise。
  */
-async function handleImportChange(file: UploadFile) {
+function handleImportChange(file: UploadFile) {
   importError.value = "";
-  try {
-    const parsed: unknown = JSON.parse((await file.raw?.text()) ?? "");
-    if (!Array.isArray(parsed) || !parsed.length) throw new Error("导入文件必须是非空数组");
-    const items = parsed.map((item: unknown) => {
-      if (!item || typeof item !== "object") throw new Error("导入数据格式不正确");
-      const value = item as Record<string, unknown>;
-      const apiName = typeof value.apiName === "string" ? value.apiName.trim() : "";
-      const displayName = typeof value.displayName === "string" ? value.displayName.trim() : "";
-      if (!apiName || !displayName) throw new Error("每条数据都必须包含 apiName 和 displayName");
-      return {
-        apiName,
-        displayName,
-        description: typeof value.description === "string" ? value.description : "",
-        iconUrl: typeof value.iconUrl === "string" ? value.iconUrl : "",
-        categoryId: typeof value.categoryId === "string" ? value.categoryId : String(value.categoryId ?? props.categories[0]?.id ?? ""),
-      };
-    });
-    importDrafts.value = items;
-  } catch (cause) {
-    importDrafts.value = [];
-    importError.value = cause instanceof Error ? cause.message : "导入文件解析失败";
-  }
+  importFile.value = file.raw ?? null;
 }
 
 /** @description 下载当前项目可直接导入的本体 JSON 模板。 */
@@ -268,11 +282,11 @@ function downloadTemplate() {
 function submitCreate() {
   if (props.submitting || iconError.value) return;
   if (createMode.value === "import") {
-    if (importDrafts.value.length && !importError.value)
-      emit(
-        "submit-import",
-        importDrafts.value.map((item) => ({ ...item })),
-      );
+    if (!importFile.value) {
+      importError.value = "请先选择文件。";
+      return;
+    }
+    emit("submit-import", importFile.value);
     return;
   }
   if (!draft.apiName.trim() || !draft.displayName.trim() || !draft.categoryId) {
@@ -370,6 +384,21 @@ function submitCreate() {
 .ontology-object-create-dialog__upload {
   margin-top: 14px;
   text-align: center;
+}
+.ontology-object-create-dialog__upload :deep(.el-upload-dragger) {
+  width: 100%;
+  background-color: var(--aircas-color-input-background);
+  border: 1px dashed var(--aircas-color-border);
+}
+.ontology-object-create-dialog__upload :deep(.el-upload-dragger:hover),
+.ontology-object-create-dialog__upload :deep(.el-upload-dragger.is-dragover) {
+  border-color: var(--aircas-color-border-highlight);
+}
+.ontology-object-create-dialog__upload :deep(.el-upload-dragger:focus-visible) {
+  border-color: var(--aircas-color-focus-border);
+}
+.ontology-object-create-dialog__upload :deep(.el-upload-dragger .el-icon) {
+  color: var(--aircas-color-title);
 }
 .ontology-object-create-dialog__upload p {
   margin: 8px 0 4px;

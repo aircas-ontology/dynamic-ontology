@@ -22,22 +22,18 @@
 
 - 请求体：JSON 对象。
 
-| 字段                 | 类型            | 必填 | 说明                                             |
-| -------------------- | --------------- | ---- | ------------------------------------------------ |
-| uniqueIdentifier     | string          | 是   | 属性唯一标识，文档说明为 `uniqIdentifier`        |
-| datasource           | object          | 否   | 数据源属性请求，结构见 `PropertyDatasourceParam` |
-| schemaName           | string          | 是   | schema 名称                                      |
-| datasourceId         | string          | 是   | 数据源表名                                       |
-| datasourceColumnName | string          | 是   | 数据源列名                                       |
-| displayName          | string          | 是   | 属性名称                                         |
-| dataType             | string          | 是   | 数据类型                                         |
-| description          | string          | 否   | 属性描述                                         |
-| isTitleKey           | boolean         | 是   | 是否为名称键                                     |
-| isPrimaryKey         | boolean         | 是   | 是否为主键                                       |
-| defaultValue         | string          | 否   | 属性默认值                                       |
-| storageGroup         | string          | 是   | 属性存储分组                                     |
-| categoryId           | integer / int32 | 否   | 属性分类 id                                      |
-| metadata             | object          | 否   | 属性元数据，JSON 格式                            |
+| 字段             | 类型            | 必填 | 说明                                      |
+| ---------------- | --------------- | ---- | ----------------------------------------- |
+| uniqueIdentifier | string          | 是   | 属性唯一标识，文档说明为 `uniqIdentifier` |
+| displayName      | string          | 是   | 属性名称                                  |
+| apiName          | string          | 是   | 属性 API 名称                             |
+| dataType         | string          | 是   | 数据类型                                  |
+| description      | string          | 否   | 属性描述                                  |
+| isTitleKey       | boolean         | 是   | 是否为名称键                              |
+| isPrimaryKey     | boolean         | 是   | 是否为主键                                |
+| defaultValue     | string          | 否   | 属性默认值                                |
+| storageGroup     | string          | 是   | 属性存储分组                              |
+| categoryId       | integer / int32 | 否   | 属性分类 id                               |
 
 ## 输出参数
 
@@ -72,15 +68,10 @@
 文件：`src/types/apis/updateOntologyPropertyType.ts`
 
 ```ts
-import type { PropertyDatasourceParam } from "./createOntologyPropertyType";
-
 export interface UpdateOntologyPropertyParams {
   uniqueIdentifier: string;
-  datasource?: PropertyDatasourceParam;
-  schemaName: string;
-  datasourceId: string;
-  datasourceColumnName: string;
   displayName: string;
+  apiName: string;
   dataType: string;
   description?: string;
   isTitleKey: boolean;
@@ -88,7 +79,6 @@ export interface UpdateOntologyPropertyParams {
   defaultValue?: string;
   storageGroup: string;
   categoryId?: number;
-  metadata?: Record<string, unknown>;
 }
 
 export type UpdateOntologyPropertyData = undefined;

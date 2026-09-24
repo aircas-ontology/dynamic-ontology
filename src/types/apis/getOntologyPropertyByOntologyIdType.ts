@@ -5,7 +5,7 @@ export interface GetOntologyPropertyByOntologyIdParams {
 export interface OntologyPropertyInfo {
   displayName?: string;
   apiName?: string;
-  dataType?: string;
+  propertyType?: string;
   description?: string;
   isPrimaryKey?: boolean;
   isTitleKey?: boolean;
@@ -15,6 +15,9 @@ export interface OntologyPropertyInfo {
   storageGroup?: string;
   categoryId?: number;
   metadata?: Record<string, unknown>;
+  datasourceColumnName?: string;
+  datasourceId?: string;
+  datasourceDescription?: string;
 }
 
 export type GetOntologyPropertyByOntologyIdData = OntologyPropertyInfo[];

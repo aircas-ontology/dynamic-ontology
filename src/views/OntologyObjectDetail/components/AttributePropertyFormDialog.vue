@@ -14,7 +14,7 @@
           <el-input v-model="draft.displayName" class="aircas-input" placeholder="例如：任务优先级" />
         </el-form-item>
         <el-form-item label="API" prop="apiName">
-          <el-input v-model="draft.apiName" class="aircas-input" placeholder="例如：priority" />
+          <el-input v-model="draft.apiName" class="aircas-input" placeholder="例如：priority" :disabled="editingAttributeId !== null" />
         </el-form-item>
         <el-form-item label="属性分类" prop="categoryId" class="ontology-object-attribute-panel__form-full">
           <el-select v-model="draft.categoryId" class="aircas-select" popper-class="aircas-select-popper" placeholder="请选择属性分类">
@@ -27,7 +27,15 @@
           </el-select>
         </el-form-item>
         <el-form-item label="存储分组" prop="storageGroup">
-          <el-select v-model="draft.storageGroup" class="aircas-select" popper-class="aircas-select-popper" placeholder="请选择存储分组">
+          <el-select
+            v-model="draft.storageGroup"
+            class="aircas-select"
+            popper-class="aircas-select-popper"
+            placeholder="请输入或选择存储分组"
+            filterable
+            allow-create
+            default-first-option
+          >
             <el-option v-for="group in storageGroups" :key="group.value" :label="group.label" :value="group.value" />
           </el-select>
         </el-form-item>
@@ -65,8 +73,8 @@
     </el-form>
     <p v-if="commandError" class="ontology-object-attribute-panel__dialog-error" role="alert">{{ commandError }}</p>
     <template #footer>
-      <el-button class="aircas-button" @click="$emit('update:visible', false)">取消</el-button>
-      <el-button class="aircas-button" type="primary" :loading="saving" @click="confirmSave">保存</el-button>
+      <el-button class="aircas-button aircas-button--tone-ghost" @click="$emit('update:visible', false)">取消</el-button>
+      <el-button class="aircas-button aircas-button--tone-primary" :loading="saving" @click="confirmSave">保存</el-button>
     </template>
   </el-dialog>
 </template>

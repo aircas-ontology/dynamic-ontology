@@ -161,7 +161,7 @@ function handlerCloseAircasPanel() {
   border: 1px solid var(--aircas-color-border);
   border-radius: 4px;
   box-shadow: 0 0 3px 1px var(--aircas-color-border);
-  background-color: var(--aircas-color-background);
+  background-color: var(--aircas-color-panel-background);
 
   .panel-head {
     height: 38px;
@@ -169,7 +169,7 @@ function handlerCloseAircasPanel() {
     border-radius: 4px 4px 0px 0px;
     border-bottom: 1px solid var(--aircas-color-border);
     padding: 0 12px;
-    background: var(--aircas-color-background);
+    background: var(--aircas-color-panel-background-deep);
     display: flex;
     align-items: center;
     justify-content: space-between;

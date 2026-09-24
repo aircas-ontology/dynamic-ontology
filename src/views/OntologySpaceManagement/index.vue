@@ -2,12 +2,13 @@
   <div class="ontology-space-management">
     <section class="ontology-space-management__overview">
       <WelcomePanel @create="openOntologySpaceForm()" />
-      <div class="ontology-space-management__stats">
+      <div class="ontology-space-management__stats" :aria-busy="overviewStatus === 'loading'">
         <StatCard v-for="stat in summaryStats" :key="stat.id" :stat="stat" />
       </div>
     </section>
+    <p v-if="overviewError" class="ontology-space-management__overview-error" role="alert">{{ overviewError }}</p>
     <SectionToolbar v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
-    <div v-if="status === 'loading'" class="ontology-space-management__state" role="status">正在加载本体空间…</div>
+    <div v-if="status === 'loading'" class="ontology-space-management__state" role="status"><AircasLoading>正在加载本体空间…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="ontology-space-management__state" role="alert">
       <span>{{ error }}</span
       ><el-button class="aircas-button" type="primary" @click="loadOntologySpaces">重试</el-button>
@@ -27,7 +28,7 @@
       :space="activeSpace"
       :external-error="actionError"
       @save="submitOntologySpaceForm"
-      @open-conceptual="openConceptualModel"
+      @imported="completeOntologySpaceImport"
     />
     <SpaceCommandDialogs
       v-model:delete-visible="deleteVisible"
@@ -43,6 +44,7 @@
 
 <script setup lang="ts">
 import { onMounted } from "vue";
+import AircasLoading from "@/components/AircasLoading.vue";
 import SectionToolbar from "./components/SectionToolbar.vue";
 import SpaceCollection from "./components/SpaceCollection.vue";
 import SpaceCommandDialogs from "./components/SpaceCommandDialogs.vue";
@@ -52,8 +54,23 @@ import WelcomePanel from "./components/WelcomePanel.vue";
 import { useSpaceManagement } from "./composables/useSpaceManagement";
 import { useSpaceManagementActions } from "./composables/useSpaceManagementActions";
 
-const { keyword, order, viewMode, page, pageSize, status, error, result, summaryStats, loadOntologySpaces, saveOntologySpace, removeOntologySpace } =
-  useSpaceManagement();
+const {
+  keyword,
+  order,
+  viewMode,
+  page,
+  pageSize,
+  status,
+  error,
+  overviewError,
+  overviewStatus,
+  result,
+  summaryStats,
+  loadOntologyOverviewCount,
+  loadOntologySpaces,
+  saveOntologySpace,
+  removeOntologySpace,
+} = useSpaceManagement();
 const {
   activeSpace,
   formVisible,
@@ -64,12 +81,14 @@ const {
   openOntologySpaceForm,
   handleOntologySpaceAction,
   submitOntologySpaceForm,
-  openConceptualModel,
   confirmDeleteOntologySpace,
   confirmExportOntologySpace,
+  completeOntologySpaceImport,
 } = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace, loadOntologySpaces });
 
-onMounted(loadOntologySpaces);
+onMounted(() => {
+  void Promise.all([loadOntologySpaces(), loadOntologyOverviewCount()]);
+});
 </script>
 
 <style scoped lang="scss">
@@ -90,14 +109,25 @@ onMounted(loadOntologySpaces);
 .ontology-space-management__overview {
   display: grid;
   grid-template-columns: minmax(520px, 1.42fr) minmax(760px, 2.25fr);
-  gap: 10px;
+  align-items: stretch;
+  gap: 12px;
+  height: 150px;
   min-height: 150px;
+  min-width: 1200px;
 }
 
 .ontology-space-management__stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
+  min-height: 0;
+  height: 100%;
+}
+
+.ontology-space-management__overview-error {
+  margin: 8px 4px 0;
+  color: var(--aircas-color-danger);
+  font-size: 12px;
 }
 
 .ontology-space-management__state {
@@ -112,17 +142,17 @@ onMounted(loadOntologySpaces);
   background-color: var(--aircas-color-panel-background);
 }
 
-@media (max-width: 1440px) {
-  .ontology-space-management__overview {
-    grid-template-columns: minmax(430px, 1.2fr) minmax(700px, 2.2fr);
-  }
-}
+// @media (max-width: 1440px) {
+//   .ontology-space-management__overview {
+//     grid-template-columns: minmax(430px, 1.2fr) minmax(700px, 2.2fr);
+//   }
+// }
 
-@media (max-width: 1200px) {
-  .ontology-space-management__overview {
-    grid-template-columns: 1fr;
-  }
-}
+// @media (max-width: 1200px) {
+//   .ontology-space-management__overview {
+//     grid-template-columns: 1fr;
+//   }
+// }
 
 @media (max-width: 700px) {
   .ontology-space-management {

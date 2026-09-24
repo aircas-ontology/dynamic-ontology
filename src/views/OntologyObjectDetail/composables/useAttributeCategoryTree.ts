@@ -7,7 +7,7 @@ import {
   getOntologyObjectArrTypeTreeInterface,
   updateOntologyObjectArrTypeTreeInterface,
 } from "@/apis";
-import type { OntologyAttributeCategoryNode, OntologyAttributeItem } from "@/types";
+import type { OntologyAttributeCategoryNode, OntologyAttributeTreeNode } from "@/types";
 import { filterCategoryNode, findCategory, findCategoryParent, mapCategoryTreeNode } from "../utils/attributePanelHelpers";
 
 /**
@@ -17,12 +17,8 @@ import { filterCategoryNode, findCategory, findCategoryParent, mapCategoryTreeNo
  * @param options.onCategorySelected 选中分类后的回调（通常用于刷新属性列表）
  * @returns 分类树模板所需状态与操作方法
  */
-export function useAttributeCategoryTree(options: {
-  selectedCategoryId: Ref<string>;
-  attributes: Ref<OntologyAttributeItem[]>;
-  onCategorySelected: () => void;
-}) {
-  const { selectedCategoryId, attributes, onCategorySelected } = options;
+export function useAttributeCategoryTree(options: { selectedCategoryId: Ref<string>; onCategorySelected: () => void; onCategoryChanged: () => void }) {
+  const { selectedCategoryId, onCategorySelected, onCategoryChanged } = options;
   const route = useRoute();
   const categories = ref<OntologyAttributeCategoryNode[]>([]);
   const treeProps = { children: "children", label: "label" };
@@ -60,10 +56,12 @@ export function useAttributeCategoryTree(options: {
         categories.value = [];
         selectedCategoryId.value = "all";
         categoryTreeEmpty.value = true;
+        onCategoryChanged();
         return;
       }
-      const root = mapCategoryTreeNode(response.data, attributes.value);
+      const root = mapCategoryTreeNode(response.data);
       categories.value = [root];
+      onCategoryChanged();
     } catch (cause) {
       categoryTreeError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性分类查询失败，请重试。";
       ElMessage.error(categoryTreeError.value);
@@ -76,7 +74,8 @@ export function useAttributeCategoryTree(options: {
    * @description 选中属性分类并通知属性列表刷新。
    * @param data 被选中的分类节点
    */
-  function selectCategory(data: OntologyAttributeCategoryNode) {
+  function selectCategory(data: OntologyAttributeTreeNode) {
+    if (data.nodeType !== "category") return;
     selectedCategoryId.value = data.id;
     onCategorySelected();
   }
@@ -180,6 +179,7 @@ export function useAttributeCategoryTree(options: {
    * @param data 待删除分类
    */
   async function removeCategory(data: OntologyAttributeCategoryNode) {
+    if (data.isRoot) return;
     try {
       await ElMessageBox.confirm(`确认删除属性分类「${data.label}」吗？`, "删除属性分类", { type: "warning" });
       const ontologyIdentifier = String(route.params.objectId || "").trim();

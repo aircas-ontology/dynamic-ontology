@@ -24,8 +24,7 @@ test("delete ontology space api issues a DELETE to the manage domain space uri w
   assert.match(apiSource, /request<DeleteOntologySpaceData>\(\{/);
   assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/space\/" \+ params\.spaceId/);
   assert.match(apiSource, /method:\s*"delete"/);
-  assert.match(apiSource, /timeout: requestTimeoutMs,/);
-  assert.match(apiSource, /import \{ requestTimeoutMs \} from "@\/utils\/constants";/);
+  assert.doesNotMatch(apiSource, /timeout:/);
   assert.match(apiSource, /import type \{[\s\S]*DeleteOntologySpaceData[\s\S]*\} from "@\/types"/);
   assert.match(apiSource, /@description/);
 });

@@ -14,8 +14,8 @@ test("ontology space list api issues a GET to the manage domain space uri with t
   assert.match(apiSource, /request<OntologySpaceListData>\(\{/);
   assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/space"/);
   assert.match(apiSource, /method:\s*"get"/);
-  assert.match(apiSource, /timeout: requestTimeoutMs,/);
-  assert.match(apiSource, /import \{ requestTimeoutMs \} from "@\/utils\/constants";/);
+  assert.doesNotMatch(apiSource, /timeout:/);
+  assert.doesNotMatch(apiSource, /requestTimeoutMs/);
   assert.match(apiSource, /import type \{[\s\S]*OntologySpaceListData[\s\S]*\} from "@\/types"/);
   assert.match(apiSource, /@description/);
   assert.doesNotMatch(apiSource, /LOGIN_URL/);
@@ -76,6 +76,8 @@ test("api contract mock lives beside the page sample and mirrors the response sa
   assert.match(apiMockSource, /actionCount:\s*0/);
   assert.match(apiMockSource, /propertyCount:\s*7/);
   assert.match(apiMockSource, /linkCount:\s*0/);
+  assert.match(apiMockSource, /createTime:\s*"2026-09-21 10:47:32"/);
+  assert.match(apiMockSource, /updateTime:\s*"2026-09-21 10:47:32"/);
 });
 
 test("mapper converts contract list items into page ontology space items", async () => {
@@ -92,6 +94,8 @@ test("mapper converts contract list items into page ontology space items", async
     actionCount: 0,
     propertyCount: 7,
     linkCount: 0,
+    createTime: "2026-09-21 10:47:32",
+    updateTime: "2026-09-21 10:47:32",
   });
   assert.equal(mapped.id, "1");
   assert.equal(mapped.metrics.ontology, 2);
@@ -99,8 +103,8 @@ test("mapper converts contract list items into page ontology space items", async
   assert.equal(mapped.metrics.relation, 0);
   assert.equal(mapped.metrics.rule, 7);
   assert.equal(mapped.metrics.source, 0);
-  assert.equal(mapped.createdTime, "");
-  assert.equal(mapped.updatedTime, "");
+  assert.equal(mapped.createdTime, "2026-09-21 10:47:32");
+  assert.equal(mapped.updatedTime, "2026-09-21 10:47:32");
   assert.equal(mapped.category, "");
   assert.equal(mapped.isSubspace, false);
   assert.equal(mapped.parentSpaceDisplayName, "");
@@ -108,7 +112,7 @@ test("mapper converts contract list items into page ontology space items", async
 
 test("space management page maps successful list responses and falls back to page mock on failure", () => {
   const managementSource = readSource("../src/views/OntologySpaceManagement/composables/useSpaceManagement.ts");
-  assert.match(managementSource, /import \{ getOntologySpaceListInterface \} from "@\/apis";/);
+  assert.match(managementSource, /import \{ getOntologyOverviewCountInterface, getOntologySpaceListInterface \} from "@\/apis";/);
   assert.match(managementSource, /import \{ ontologySpaceListMock \} from "@\/mocks\/ontologySpaceListMock\/ontologySpaceListMock";/);
   assert.match(managementSource, /mapOntologySpaceList/);
   assert.match(managementSource, /getOntologySpaceListInterface\(\)/);

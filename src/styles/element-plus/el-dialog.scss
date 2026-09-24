@@ -7,11 +7,11 @@
 
 .aircas-dialog {
   &.el-dialog {
-    background-color: var(--aircas-color-menu-background, var(--aircas-color-panel-background));
+    background-color: var(--aircas-color-panel-background);
     border: 1px solid var(--aircas-color-border);
     border-radius: 4px;
     color: var(--aircas-color-text-primary);
-    box-shadow: var(--aircas-color-page-glow) 0 0 12px;
+    box-shadow: 0 10px 28px var(--aircas-color-page-glow);
 
     .el-dialog__header {
       border-bottom: 1px solid var(--aircas-color-border);

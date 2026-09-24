@@ -12,7 +12,6 @@
     <el-radio-group v-if="!space" :model-value="mode" @update:model-value="setMode" class="aircas-radio-group" :disabled="busy">
       <el-radio-button value="manual">手动创建</el-radio-button>
       <el-radio-button value="import">导入创建</el-radio-button>
-      <el-radio-button value="conceptual">基于概念模型创建</el-radio-button>
     </el-radio-group>
     <el-form v-if="mode === 'manual'" class="aircas-form space-form" label-position="top" :disabled="busy">
       <el-form-item label="API 名称（必填）"
@@ -31,41 +30,30 @@
       </el-form-item>
     </el-form>
     <div v-else-if="mode === 'import'" class="space-form">
-      <p>上传空间基本信息 JSON 文件，最大 2MB。</p>
+      <p>选择导入文件后点击确定。</p>
       <el-button class="aircas-button" link type="primary" :disabled="busy" @click="template">下载模板</el-button>
-      <label class="space-form__file">选择 JSON 文件<input type="file" accept=".json,application/json" :disabled="busy" @change="readJson" /></label>
-      <p v-if="imported">已读取：{{ imported.displayName }}</p>
+      <label class="space-form__file">选择文件<input type="file" :disabled="busy" @change="selectImportFile" /></label>
+      <p v-if="importFile">已选择：{{ importFile.name }}</p>
     </div>
-    <section v-else class="space-form space-form--conceptual" aria-label="概念模型创建">
-      <div class="space-form__conceptual-card">
-        <span class="space-form__conceptual-icon" aria-hidden="true">⌘</span>
-        <div>
-          <strong>空间概念模型构建</strong>
-          <p>通过 UML 组件拖拽和连线，快速构建空间中的本体对象、属性和关系。</p>
-        </div>
-      </div>
-      <div class="space-form__conceptual-points"><span>对象建模</span><span>属性配置</span><span>关系编排</span></div>
-      <p class="space-form__conceptual-note">进入建模画布后可以随时返回空间管理页面，当前模型数据暂存于本次页面会话。</p>
-    </section>
     <p v-if="error || externalError" class="space-form__error" role="alert">{{ error || externalError }}</p>
     <template #footer>
       <el-button class="aircas-button" :disabled="busy" @click="visible = false">取消</el-button>
-      <el-button v-if="mode === 'conceptual'" class="aircas-button" type="primary" @click="emit('open-conceptual')">进入概念建模画布</el-button>
-      <el-button v-else class="aircas-button" type="primary" :loading="busy" @click="submit">确定</el-button>
+      <el-button class="aircas-button" type="primary" :loading="busy" @click="submit">确定</el-button>
     </template>
   </el-dialog>
 </template>
 <script setup lang="ts">
 import { onScopeDispose, reactive, ref, watch } from "vue";
 import type { OntologySpaceDraft, OntologySpaceItem } from "@/types";
-import { parseSpaceImport, serializeSpace } from "../utils/spaceOperations";
+import { postImportOntologySpaceInterface, postUploadOntologyThumbnailInterface } from "@/apis";
+import { serializeSpace } from "../utils/spaceOperations";
 import { downloadSpaceJson } from "../utils/downloadSpaceJson";
 const props = defineProps<{ space: OntologySpaceItem | null; externalError: string }>();
 const visible = defineModel<boolean>({ required: true });
-const emit = defineEmits<{ save: [draft: OntologySpaceDraft]; "open-conceptual": [] }>();
-const mode = ref<"manual" | "import" | "conceptual">("manual");
+const emit = defineEmits<{ save: [draft: OntologySpaceDraft]; imported: [] }>();
+const mode = ref<"manual" | "import">("manual");
 const draft = reactive<OntologySpaceDraft>({ apiName: "", displayName: "", description: "", iconUrl: "" });
-const imported = ref<OntologySpaceDraft | null>(null);
+const importFile = ref<File | null>(null);
 const busy = ref(false);
 const error = ref("");
 let generation = 0;
@@ -82,75 +70,106 @@ watch(visible, () => {
       iconUrl: props.space?.iconUrl ?? "",
     });
     mode.value = "manual";
-    imported.value = null;
+    importFile.value = null;
     error.value = "";
     busy.value = false;
   }
 });
+/**
+ * @description 从文件选择事件中取出第一个文件。
+ * @param event 文件选择事件。
+ * @returns 选中的文件；未选中时为 undefined。
+ */
 function selectedFile(event: Event): File | undefined {
   return event.target instanceof HTMLInputElement ? event.target.files?.[0] : undefined;
 }
-async function readJson(event: Event) {
+/**
+ * @description 记录导入创建所选文件，确定时再提交给导入接口。
+ * @param event 文件选择事件。
+ */
+function selectImportFile(event: Event) {
   const file = selectedFile(event);
-  imported.value = null;
-  if (!file || busy.value) return;
-  if (file.size > 2 * 1024 * 1024) {
-    error.value = "文件不能超过 2MB。";
-    return;
-  }
-  busy.value = true;
-  error.value = "";
-  const current = ++generation;
-  try {
-    const text = await file.text();
-    if (current !== generation) return;
-    imported.value = parseSpaceImport(text);
-  } catch (cause) {
-    if (current === generation) error.value = cause instanceof Error ? cause.message : "文件读取失败。";
-  } finally {
-    if (current === generation) busy.value = false;
-  }
+  importFile.value = file ?? null;
+  if (file) error.value = "";
 }
+/**
+ * @description 上传空间图标并写入返回的缩略图 URL；创建与编辑共用此流程。
+ * @param event 文件选择事件。
+ */
 async function readIcon(event: Event) {
+  const input = event.target instanceof HTMLInputElement ? event.target : null;
   const file = selectedFile(event);
   if (!file || busy.value) return;
   if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 2 * 1024 * 1024) {
     error.value = "请选择不超过 2MB 的 PNG、JPEG 或 WEBP 图片。";
+    if (input) input.value = "";
     return;
   }
   busy.value = true;
   error.value = "";
   const current = ++generation;
   try {
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    let binary = "";
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    if (current === generation) draft.iconUrl = "data:" + file.type + ";base64," + btoa(binary);
-  } catch {
-    if (current === generation) error.value = "图片读取失败。";
+    const response = await postUploadOntologyThumbnailInterface({ image: file });
+    if (current !== generation) return;
+    if (response.code !== 200) {
+      error.value = response.message || "图标上传失败。";
+      return;
+    }
+    draft.iconUrl = response.data;
+  } catch (cause) {
+    if (current === generation) error.value = cause instanceof Error ? cause.message : "图标上传失败。";
   } finally {
+    if (input) input.value = "";
     if (current === generation) busy.value = false;
   }
 }
+/**
+ * @description 下载空间导入 JSON 模板。
+ */
 function template() {
   downloadSpaceJson("ontologySpaceTemplate.json", serializeSpace({ apiName: "example_space", displayName: "示例空间", description: "", iconUrl: "" }));
 }
+/**
+ * @description 校验并提交当前模式：手动创建提交草稿，导入创建提交所选文件。
+ */
 async function submit() {
-  if (busy.value || mode.value === "conceptual") return;
+  if (busy.value) return;
   error.value = "";
-  if (mode.value === "import" && !imported.value) {
-    error.value = "请先选择有效的 JSON 文件。";
+  if (mode.value === "import") {
+    if (!importFile.value) {
+      error.value = "请先选择文件。";
+      return;
+    }
+    busy.value = true;
+    const current = ++generation;
+    try {
+      const response = await postImportOntologySpaceInterface({ file: importFile.value });
+      if (current !== generation) return;
+      if (response.code !== 200) {
+        error.value = response.message || "导入失败，请重试。";
+        return;
+      }
+      emit("imported");
+    } catch (cause) {
+      if (current === generation) error.value = cause instanceof Error && cause.message.trim() ? cause.message : "导入失败，请重试。";
+    } finally {
+      if (current === generation) busy.value = false;
+    }
     return;
   }
   busy.value = true;
   const current = generation;
   await Promise.resolve();
   if (current !== generation) return;
-  emit("save", mode.value === "import" && imported.value ? imported.value : { ...draft });
+  emit("save", { ...draft });
   busy.value = false;
 }
+/**
+ * @description 切换创建模式并清空局部错误。
+ * @param value 单选组更新值。
+ */
 function setMode(value: unknown) {
-  if (value === "manual" || value === "import" || value === "conceptual") {
+  if (value === "manual" || value === "import") {
     mode.value = value;
     error.value = "";
   }
@@ -171,6 +190,35 @@ function setMode(value: unknown) {
   font-size: 12px;
 }
 
+.space-form__file input[type="file"] {
+  color: var(--aircas-color-text-secondary);
+}
+
+.space-form__file input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 4px;
+  background-color: var(--aircas-color-button-background);
+  color: var(--aircas-color-button-text);
+  cursor: pointer;
+}
+
+.space-form__file input[type="file"]::file-selector-button:hover {
+  background-color: var(--aircas-color-button-hover-background);
+  border-color: var(--aircas-color-border-highlight);
+}
+
+.space-form__file input[type="file"]:disabled {
+  color: var(--aircas-color-text-disabled);
+}
+
+.space-form__file input[type="file"]:disabled::file-selector-button {
+  background-color: var(--aircas-color-input-background);
+  border-color: var(--aircas-color-border-soft);
+  color: var(--aircas-color-text-disabled);
+  cursor: not-allowed;
+}
+
 .space-form__preview {
   width: 48px;
   height: 48px;
@@ -181,62 +229,6 @@ function setMode(value: unknown) {
 .space-form__error {
   color: var(--aircas-color-danger);
   margin-top: 12px;
-}
-
-.space-form--conceptual {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.space-form__conceptual-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px;
-  border: 1px solid var(--aircas-color-border-soft);
-  border-radius: 10px;
-  background: var(--aircas-color-panel-background-deep);
-}
-
-.space-form__conceptual-icon {
-  display: grid;
-  width: 48px;
-  height: 48px;
-  place-items: center;
-  border: 1px solid var(--aircas-color-accent-cyan);
-  border-radius: 12px;
-  color: var(--aircas-color-accent-cyan);
-  font-size: 28px;
-  box-shadow: 0 0 16px var(--aircas-color-accent-cyan-soft);
-}
-
-.space-form__conceptual-card strong {
-  color: var(--aircas-color-text-primary);
-  font-size: 16px;
-}
-
-.space-form__conceptual-card p,
-.space-form__conceptual-note {
-  margin: 6px 0 0;
-  color: var(--aircas-color-text-secondary);
-  font-size: 13px;
-}
-
-.space-form__conceptual-points {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.space-form__conceptual-points span {
-  padding: 10px 8px;
-  border: 1px solid var(--aircas-color-border-soft);
-  border-radius: 6px;
-  color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-panel-background);
-  text-align: center;
-  font-size: 12px;
 }
 
 input:focus-visible {
