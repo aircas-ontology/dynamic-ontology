@@ -126,8 +126,10 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.equal((filterSource.match(/<el-select/g) || []).length, 4);
   assert.equal((filterSource.match(/\sclass="aircas-select/g) || []).length, 4);
   assert.equal((filterSource.match(/popper-class="aircas-select-popper"/g) || []).length, 4);
-  assert.equal((filterSource.match(/<el-input(?!-)/g) || []).length, 4);
-  assert.equal((filterSource.match(/class="aircas-input/g) || []).length, 4);
+  assert.equal((filterSource.match(/<el-input(?!-)/g) || []).length, 5);
+  assert.equal((filterSource.match(/class="aircas-input/g) || []).length, 5);
+  assert.match(filterSource, /opNeedsList/);
+  assert.match(filterSource, /逗号分隔/);
   assert.match(filterSource, /background: var\(--aircas-color-overlay\)/);
   assert.doesNotMatch(filterSource, /--aircas-color-panel-overlay/);
   assert.match(filterSource, /basic-filter-row__number[\s\S]*--el-fill-color-blank: var\(--aircas-color-input-background\)/);

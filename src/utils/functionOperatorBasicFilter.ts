@@ -14,7 +14,23 @@ import type {
   CreateOntologyFunctionQueryConfig,
 } from "@/types";
 
-const OP_SET = new Set<string>(["EQ", "NEQ", "GT", "GTE", "LT", "LTE", "CONTAINS", "IS_NULL", "IS_NOT_NULL", "BETWEEN"]);
+const OP_SET = new Set<string>([
+  "EQ",
+  "NE",
+  "LIKE",
+  "LIKE_LEFT",
+  "LIKE_RIGHT",
+  "IN",
+  "NOT_IN",
+  "BETWEEN",
+  "NOT_BETWEEN",
+  "GT",
+  "GE",
+  "LT",
+  "LE",
+  "IS_NULL",
+  "IS_NOT_NULL",
+]);
 const VALUE_TYPE_SET = new Set<string>(["string", "number", "boolean"]);
 
 /**
@@ -120,10 +136,13 @@ function normalizeCondition(raw: unknown): BasicFilterCondition {
   const propertyApiName = typeof record.propertyApiName === "string" ? record.propertyApiName : "";
   const valueType = isValueType(record.valueType) ? record.valueType : "string";
   const condition: BasicFilterCondition = { op, propertyApiName, valueType };
-  if (op === "BETWEEN") {
+  if (opNeedsRange(op)) {
     const values = Array.isArray(record.values) ? record.values.map((item) => coerceValue(item, valueType)).slice(0, 2) : [];
     condition.values = [values[0] ?? defaultValueForType(valueType), values[1] ?? defaultValueForType(valueType)];
-  } else if (op !== "IS_NULL" && op !== "IS_NOT_NULL") {
+  } else if (opNeedsList(op)) {
+    const values = Array.isArray(record.values) ? record.values.map((item) => coerceValue(item, valueType)) : [];
+    condition.values = values.length ? values : [defaultValueForType(valueType)];
+  } else if (opNeedsValue(op)) {
     condition.value = isPrimitiveValue(record.value) || record.value !== undefined ? coerceValue(record.value, valueType) : defaultValueForType(valueType);
   }
   return condition;
@@ -192,10 +211,13 @@ function serializeCondition(condition: BasicFilterCondition): BasicFilterConditi
     propertyApiName: condition.propertyApiName.trim(),
     valueType: condition.valueType || "string",
   };
-  if (condition.op === "BETWEEN") {
+  if (opNeedsRange(condition.op)) {
     const values = condition.values ?? [defaultValueForType(next.valueType), defaultValueForType(next.valueType)];
     next.values = [coerceValue(values[0], next.valueType), coerceValue(values[1], next.valueType)];
-  } else if (condition.op !== "IS_NULL" && condition.op !== "IS_NOT_NULL") {
+  } else if (opNeedsList(condition.op)) {
+    const values = condition.values ?? [];
+    next.values = values.length ? values.map((item) => coerceValue(item, next.valueType)) : [defaultValueForType(next.valueType)];
+  } else if (opNeedsValue(condition.op)) {
     next.value = coerceValue(condition.value, next.valueType);
   }
   return next;
@@ -236,16 +258,25 @@ export function stringifyBasicFilterConfig(doc: BasicFilterDocument): string {
  * @returns 是否需要 value。
  */
 export function opNeedsValue(op: BasicFilterOp): boolean {
-  return op !== "IS_NULL" && op !== "IS_NOT_NULL";
+  return !opNeedsRange(op) && !opNeedsList(op) && op !== "IS_NULL" && op !== "IS_NOT_NULL";
 }
 
 /**
- * @description 判断运算符是否需要区间入参。
+ * @description 判断运算符是否需要区间入参（两个边界）。
  * @param op 运算符。
- * @returns 是否需要 values。
+ * @returns 是否需要长度为 2 的 values。
  */
 export function opNeedsRange(op: BasicFilterOp): boolean {
-  return op === "BETWEEN";
+  return op === "BETWEEN" || op === "NOT_BETWEEN";
+}
+
+/**
+ * @description 判断运算符是否需要列表入参（IN / NOT_IN）。
+ * @param op 运算符。
+ * @returns 是否需要 values 列表。
+ */
+export function opNeedsList(op: BasicFilterOp): boolean {
+  return op === "IN" || op === "NOT_IN";
 }
 
 /**
@@ -289,9 +320,9 @@ function mapConditionToApiFilter(condition: BasicFilterCondition): CreateOntolog
     op: condition.op,
     dataType: mapValueTypeToDataType(condition.valueType || "string"),
   };
-  if (condition.op === "BETWEEN") {
+  if (opNeedsRange(condition.op) || opNeedsList(condition.op)) {
     next.values = [...(condition.values ?? [])];
-  } else if (condition.op !== "IS_NULL" && condition.op !== "IS_NOT_NULL") {
+  } else if (opNeedsValue(condition.op)) {
     next.value = condition.value;
   }
   return next;
@@ -310,10 +341,13 @@ function mapApiFilterToCondition(filter: CreateOntologyFunctionFilterCondition):
     propertyApiName: filter.propertyApiName?.trim() || "",
     valueType,
   };
-  if (op === "BETWEEN") {
+  if (opNeedsRange(op)) {
     const values = Array.isArray(filter.values) ? filter.values.map((item) => coerceValue(item, valueType)).slice(0, 2) : [];
     condition.values = [values[0] ?? defaultValueForType(valueType), values[1] ?? defaultValueForType(valueType)];
-  } else if (op !== "IS_NULL" && op !== "IS_NOT_NULL") {
+  } else if (opNeedsList(op)) {
+    const values = Array.isArray(filter.values) ? filter.values.map((item) => coerceValue(item, valueType)) : [];
+    condition.values = values.length ? values : [defaultValueForType(valueType)];
+  } else if (opNeedsValue(op)) {
     condition.value = filter.value !== undefined ? coerceValue(filter.value, valueType) : defaultValueForType(valueType);
   }
   return condition;
