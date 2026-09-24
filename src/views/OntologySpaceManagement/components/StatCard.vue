@@ -34,6 +34,10 @@ const icons = { Box, Connection, Link, Share };
   box-shadow: inset 0 0 28px var(--aircas-color-page-glow);
 }
 
+:root[theme="light"] .stat-card.aircas-card {
+  background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .stat-card.aircas-card.stat-card--object {
   --stat-accent: var(--aircas-color-accent-green);
   --stat-fill: var(--aircas-color-accent-green-fill);

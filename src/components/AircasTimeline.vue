@@ -106,7 +106,8 @@ function draw(currentTime: number) {
 
   ctx.clearRect(0, 0, width, height);
 
-  ctx.fillStyle = getThemeColor("--aircas-color-overlay-deep");
+  const timelineSurface = document.documentElement.getAttribute("theme") === "light" ? "--aircas-color-card-background" : "--aircas-color-overlay-deep";
+  ctx.fillStyle = getThemeColor(timelineSurface);
   ctx.fillRect(0, 0, width, height);
 
   ctx.strokeStyle = getThemeColor("--aircas-color-text-primary");

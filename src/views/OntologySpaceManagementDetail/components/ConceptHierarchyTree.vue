@@ -268,6 +268,12 @@ function openDeleteCategoryDialog(value: unknown) {
     0 0 18px var(--aircas-color-accent-blue-soft);
 }
 
+:root[theme="light"] .concept-hierarchy {
+  background:
+    radial-gradient(circle at 12% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 42%),
+    linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .concept-hierarchy__header {
   display: flex;
   align-items: baseline;

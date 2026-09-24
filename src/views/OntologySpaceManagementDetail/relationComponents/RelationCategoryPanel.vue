@@ -278,6 +278,10 @@ watch(
   flex-direction: column;
   gap: 8px;
 }
+
+:root[theme="light"] .relation-category-panel {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
 .relation-category-panel__header {
   display: flex;
   align-items: baseline;

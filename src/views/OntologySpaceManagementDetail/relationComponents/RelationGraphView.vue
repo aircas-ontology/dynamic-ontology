@@ -184,6 +184,21 @@ watch(
       color-mix(in srgb, var(--aircas-color-overlay-deep) 55%, var(--aircas-color-panel-background) 45%)
     );
 }
+
+:root[theme="light"] .relation-graph-view:not(.relation-graph-view--holographic) {
+  background:
+    radial-gradient(
+      ellipse 80% 48% at 50% 72%,
+      color-mix(in srgb, var(--aircas-color-accent-cyan-fill) 90%, var(--aircas-color-transparent)) 0%,
+      var(--aircas-color-transparent) 70%
+    ),
+    radial-gradient(
+      ellipse 58% 42% at 50% 38%,
+      color-mix(in srgb, var(--aircas-color-accent-blue-fill) 80%, var(--aircas-color-transparent)) 0%,
+      var(--aircas-color-transparent) 65%
+    ),
+    linear-gradient(165deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
 .relation-graph-view__canvas {
   width: 100%;
   height: 100%;
@@ -237,6 +252,10 @@ watch(
   border-radius: 8px;
   background: var(--aircas-color-overlay-deep);
   box-shadow: 0 8px 24px var(--aircas-color-divider);
+}
+
+:root[theme="light"] .relation-graph-context-menu {
+  background: var(--aircas-color-card-background);
 }
 .relation-graph-context-menu__item {
   display: inline-flex;
