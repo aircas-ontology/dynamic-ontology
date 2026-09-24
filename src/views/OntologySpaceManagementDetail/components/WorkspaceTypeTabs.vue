@@ -60,6 +60,10 @@ const visibleWorkspaceTabs = computed(() => workspaceTabs.value.filter((tab) => 
   box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
+:root[theme="light"] .workspace-type-tabs {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .workspace-type-tabs__list {
   display: flex;
   align-items: center;

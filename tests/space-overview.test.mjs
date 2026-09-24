@@ -16,6 +16,10 @@ test("navy overview counts match existing space totals", () => {
 test("overview stat cards use a tinted background for each resource tone", () => {
   const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/SpaceOverviewPanel.vue", import.meta.url), "utf8");
   assert.match(source, /linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
+  assert.match(
+    source,
+    /:root\[theme="light"\] \.space-overview-panel[\s\S]*linear-gradient\(135deg, var\(--aircas-color-card-background\), var\(--aircas-color-panel-background-deep\)\)/,
+  );
   assert.match(source, /radial-gradient\(circle at 100% 0, var\(--stat-glow\), var\(--aircas-color-transparent\) 64%\)/);
   assert.match(source, /space-overview-panel__stat--cyan[\s\S]*--aircas-color-accent-cyan-soft/);
   assert.match(source, /space-overview-panel__stat--purple[\s\S]*--aircas-color-accent-purple-soft/);

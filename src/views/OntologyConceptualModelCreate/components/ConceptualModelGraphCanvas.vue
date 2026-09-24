@@ -159,7 +159,7 @@ function syncGraph(): void {
         const position = existing.getPosition();
         if (position.x !== object.x || position.y !== object.y) existing.setPosition(object.x, object.y);
         existing.setData({ object, selected, selectedAttributeId }, { overwrite: true });
-        const height = conceptualObjectHeight(object.attributes.length);
+        const height = conceptualObjectHeight(object.attributes);
         if (existing.getSize().height !== height) existing.resize(CONCEPTUAL_OBJECT_WIDTH, height);
         graph?.findViewByCell(existing)?.container.classList.toggle("conceptual-model-node-selected", selected);
         return;
@@ -170,7 +170,7 @@ function syncGraph(): void {
         x: object.x,
         y: object.y,
         width: CONCEPTUAL_OBJECT_WIDTH,
-        height: conceptualObjectHeight(object.attributes.length),
+        height: conceptualObjectHeight(object.attributes),
         data: { object, selected, selectedAttributeId },
         zIndex: 2,
       });
@@ -404,6 +404,10 @@ defineExpose({ fit, zoomBy });
   pointer-events: none;
 }
 
+:root[theme="light"] .conceptual-model-graph__empty {
+  background: var(--aircas-color-card-background);
+}
+
 .conceptual-model-graph__empty strong {
   color: var(--aircas-color-text-primary);
   font-size: 16px;
@@ -424,6 +428,10 @@ defineExpose({ fit, zoomBy });
   color: var(--aircas-color-text-primary);
   background: linear-gradient(180deg, var(--aircas-color-overlay), var(--aircas-color-panel-background-deep));
   box-shadow: 0 0 18px var(--aircas-color-accent-cyan-soft);
+}
+
+:root[theme="light"] .conceptual-model-graph__stage :deep(.conceptual-model-node) {
+  background: linear-gradient(180deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
 .conceptual-model-graph__stage :deep(.conceptual-model-node.is-selected) {
@@ -466,6 +474,14 @@ defineExpose({ fit, zoomBy });
   flex-direction: column;
   gap: 4px;
   overflow: auto;
+}
+
+.conceptual-model-graph__stage :deep(.conceptual-model-node__group) {
+  height: 22px;
+  padding: 0 8px;
+  color: var(--aircas-color-text-muted);
+  font-size: 12px;
+  line-height: 22px;
 }
 
 .conceptual-model-graph__stage :deep(.conceptual-model-node__attr) {

@@ -7,7 +7,7 @@ import {
   postImportOntologiesInterface,
   updateOntologyObjectInterface,
 } from "@/apis";
-import type { OntologyObjectCreateDraft, OntologyObjectItem, OntologyObjectWorkspace } from "@/types";
+import type { OntologyExportType, OntologyObjectCreateDraft, OntologyObjectItem, OntologyObjectWorkspace } from "@/types";
 import { downloadOntologyFile } from "../utils/downloadOntologyFile";
 import { collectCategoryOptions } from "../utils/objectWorkspace";
 import { resolveExportOntologyFileName } from "../utils/resolveExportOntologyFileName";
@@ -206,9 +206,10 @@ export function useObjectWorkspaceObjectActions(options: {
   }
 
   /**
-   * @description 确认导出当前本体对象，下载接口返回的 schema 与实例数据文件。
+   * @description 确认导出当前本体对象，按所选类型下载接口返回的文件。
+   * @param exportType 导出类型。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
    */
-  async function confirmExportOntologyObject() {
+  async function confirmExportOntologyObject(exportType: OntologyExportType) {
     const item = exportingObject.value;
     if (!item || objectExporting.value) return;
     const uniqueIdentifier = item.id.trim();
@@ -219,7 +220,7 @@ export function useObjectWorkspaceObjectActions(options: {
     objectExporting.value = true;
     objectExportError.value = "";
     try {
-      const file = await getExportOntologyInterface({ uniqueIdentifier });
+      const file = await getExportOntologyInterface({ uniqueIdentifier, exportType });
       const fileName = resolveExportOntologyFileName({
         contentDisposition: file.contentDisposition,
         contentType: file.contentType,

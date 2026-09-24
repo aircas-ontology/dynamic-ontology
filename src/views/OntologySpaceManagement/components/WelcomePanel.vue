@@ -20,6 +20,10 @@ defineEmits<{ create: [] }>();
   box-shadow: inset 0 0 28px var(--aircas-color-page-glow);
 }
 
+:root[theme="light"] .welcome-panel.aircas-card {
+  background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .welcome-panel::before {
   position: absolute;
   top: 0;

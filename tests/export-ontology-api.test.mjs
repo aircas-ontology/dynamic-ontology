@@ -8,16 +8,18 @@ const readSource = (relativePath) => {
   return readFileSync(fileUrl, "utf8");
 };
 
-test("export ontology api types cover the required uniqueIdentifier query", () => {
+test("export ontology api types cover the required uniqueIdentifier and exportType query", () => {
   const apiTypeSource = readSource("../src/types/apis/exportOntologyType.ts");
   const typeBarrelSource = readSource("../src/types/index.ts");
+  assert.match(apiTypeSource, /export type OntologyExportType = "SCHEMA" \| "INSTANCE"/);
   assert.match(apiTypeSource, /export interface ExportOntologyParams/);
   assert.match(apiTypeSource, /uniqueIdentifier:\s*string/);
+  assert.match(apiTypeSource, /exportType:\s*OntologyExportType/);
   assert.match(apiTypeSource, /export interface ExportOntologyFile/);
   assert.match(apiTypeSource, /blob:\s*Blob/);
   assert.match(apiTypeSource, /contentDisposition:\s*string/);
   assert.match(apiTypeSource, /contentType:\s*string/);
-  assert.match(typeBarrelSource, /export type \{ ExportOntologyFile, ExportOntologyParams \} from "\.\/apis\/exportOntologyType";/);
+  assert.match(typeBarrelSource, /export type \{ ExportOntologyFile, ExportOntologyParams, OntologyExportType \} from "\.\/apis\/exportOntologyType";/);
 });
 
 test("export ontology api gets the prefixed meta export uri as a blob", () => {
@@ -26,6 +28,7 @@ test("export ontology api gets the prefixed meta export uri as a blob", () => {
   assert.match(apiSource, /requestFull<Blob>\(\{/);
   assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/meta\/export"/);
   assert.match(apiSource, /method:\s*"get"/);
+  assert.match(apiSource, /params\.exportType 导出类型，必填。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。/);
   assert.match(apiSource, /params,/);
   assert.match(apiSource, /responseType:\s*"blob"/);
   assert.match(apiSource, /import type \{[\s\S]*ExportOntologyFile[\s\S]*ExportOntologyParams[\s\S]*\} from "@\/types"/);
@@ -45,15 +48,24 @@ test("object card and list export confirms before calling the ontology export ap
   const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
   const dialogSource = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectExportDialog.vue");
   assert.match(actionsSource, /function openOntologyObjectExportDialog/);
-  assert.match(actionsSource, /function confirmExportOntologyObject/);
-  assert.match(actionsSource, /getExportOntologyInterface\(\{ uniqueIdentifier \}\)/);
+  assert.match(actionsSource, /function confirmExportOntologyObject\(exportType: OntologyExportType\)/);
+  assert.match(actionsSource, /getExportOntologyInterface\(\{ uniqueIdentifier, exportType \}\)/);
   assert.match(actionsSource, /缺少本体对象标识，无法导出。/);
   assert.match(panelSource, /if \(action === "export" && item\) \{\s*openOntologyObjectExportDialog\(item\);\s*return;\s*\}/);
   assert.match(panelSource, /<OntologyObjectExportDialog/);
   assert.match(panelSource, /@confirm="confirmExportOntologyObject"/);
   assert.doesNotMatch(panelSource, /void exportOntologyObject\(item\)/);
   assert.match(dialogSource, /title="导出本体"/);
-  assert.match(dialogSource, /schema 与实例数据/);
+  assert.match(dialogSource, /导出「\{\{ objectName \}\}」。/);
+  assert.match(dialogSource, /SCHEMA：仅结构/);
+  assert.match(dialogSource, /INSTANCE：含实例数据/);
+  assert.match(dialogSource, /ref<OntologyExportType>\("INSTANCE"\)/);
+  assert.match(dialogSource, /exportType\.value = "INSTANCE"/);
+  assert.match(dialogSource, /class="aircas-radio-group ontology-object-export-dialog__export-type"/);
+  assert.match(dialogSource, /value="SCHEMA"/);
+  assert.match(dialogSource, /value="INSTANCE"/);
+  assert.match(dialogSource, /emit\('confirm', exportType\)/);
+  assert.doesNotMatch(dialogSource, /schema 与实例数据/);
   assert.match(dialogSource, />导出<\/el-button>/);
 });
 

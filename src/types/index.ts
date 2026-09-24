@@ -35,8 +35,8 @@ export type { DeleteOntologyObjectData, DeleteOntologyObjectParams } from "./api
 export type { DeleteOntologyPropertyData, DeleteOntologyPropertyParams } from "./apis/deleteOntologyPropertyType";
 export type { DeleteOntologySpaceData, DeleteOntologySpaceParams } from "./apis/deleteOntologySpaceType";
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
-export type { ExportOntologySpaceFile, ExportOntologySpaceParams } from "./apis/exportOntologySpaceType";
-export type { ExportOntologyFile, ExportOntologyParams } from "./apis/exportOntologyType";
+export type { ExportOntologySpaceFile, ExportOntologySpaceParams, OntologySpaceExportType } from "./apis/exportOntologySpaceType";
+export type { ExportOntologyFile, ExportOntologyParams, OntologyExportType } from "./apis/exportOntologyType";
 export type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceColumnsParams,
@@ -177,6 +177,7 @@ export type {
 export type {
   ManagementWorkspaceTab,
   OntologyConceptNode,
+  OntologyConceptObjectRef,
   OntologyObjectItem,
   OntologyObjectCreateDraft,
   OntologyObjectLocationTarget,

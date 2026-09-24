@@ -179,6 +179,7 @@ import { useRoute, useRouter } from "vue-router";
 import { createOntologySpaceWithCanvasContentInterface } from "@/apis";
 import type { CanvasLink, CanvasOntology, CanvasProperty, CreateOntologySpaceWithCanvasContentParams } from "@/types";
 import ConceptualModelGraphCanvas from "./components/ConceptualModelGraphCanvas.vue";
+import { findConflictingConceptualAttributeKey, formatConceptualAttributeKeyConflictMessage } from "./utils/groupConceptualAttributes";
 import { removeRelationsConnectedToObject } from "./utils/removeRelationsConnectedToObject";
 type PaletteType = "object" | "attribute" | "relation";
 type Port = "top" | "right" | "bottom" | "left";
@@ -443,7 +444,22 @@ function updateObject(field: "apiName" | "displayName" | "description", value: s
 function updateAttribute(field: keyof Attribute, value: string | boolean | number) {
   const owner = objects.value.find((item) => item.attributes.some((attr) => attr.id === selectedAttribute.value?.id));
   const attr = owner?.attributes.find((item) => item.id === selectedAttribute.value?.id);
-  if (!attr) return;
+  if (!owner || !attr) return;
+  if (field === "isPrimary" || field === "isNameKey") {
+    const enabled = value === true;
+    if (!enabled) {
+      attr[field] = false;
+      return;
+    }
+    const kind = field === "isPrimary" ? "primary" : "name";
+    const conflict = findConflictingConceptualAttributeKey(owner.attributes, kind, attr.id);
+    if (conflict) {
+      ElMessage.warning(formatConceptualAttributeKeyConflictMessage(kind, conflict));
+      return;
+    }
+    attr[field] = true;
+    return;
+  }
   if (field === "storageGroup") {
     const group = String(value).trim();
     attr.storageGroup = group || "main";
@@ -619,6 +635,10 @@ async function saveConceptualModel() {
   background: linear-gradient(90deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
   box-shadow: 0 0 24px var(--aircas-color-accent-blue-soft);
 }
+
+:root[theme="light"] .conceptual-model-create__topbar {
+  background: linear-gradient(90deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
 .conceptual-model-create__identity {
   flex: 1;
   min-width: 180px;
@@ -689,6 +709,12 @@ async function saveConceptualModel() {
   background: linear-gradient(180deg, var(--aircas-color-overlay), var(--aircas-color-panel-background-deep));
   box-shadow: 0 0 18px var(--aircas-color-accent-cyan-soft);
   overflow: hidden;
+}
+
+:root[theme="light"] .conceptual-model-create__palette,
+:root[theme="light"] .conceptual-model-create__canvas-panel,
+:root[theme="light"] .conceptual-model-create__inspector {
+  background: linear-gradient(180deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 .conceptual-model-create__palette,
 .conceptual-model-create__inspector {

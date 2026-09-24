@@ -33,7 +33,7 @@
             </span>
             <template v-else-if="isCategoryNode(data)">
               <span class="relation-category-panel__tree-label" :title="data.label">
-                <el-icon><FolderOpened v-if="data.children?.length" /><CollectionTag v-else /></el-icon>
+                <el-icon><FolderOpened /></el-icon>
                 <span class="relation-category-panel__label">{{ data.label }}</span>
                 <em class="relation-category-panel__count">{{ data.relationCount }}</em>
               </span>
@@ -80,7 +80,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import { CollectionTag, Delete, EditPen, FolderOpened, Plus, Search } from "@element-plus/icons-vue";
+import { Delete, EditPen, FolderOpened, Plus, Search } from "@element-plus/icons-vue";
 import type { TreeInstance, TreeNodeData } from "element-plus";
 import type { OntologyRelationCategoryNode, OntologyRelationClass } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
@@ -277,6 +277,10 @@ watch(
   box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
   flex-direction: column;
   gap: 8px;
+}
+
+:root[theme="light"] .relation-category-panel {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 .relation-category-panel__header {
   display: flex;

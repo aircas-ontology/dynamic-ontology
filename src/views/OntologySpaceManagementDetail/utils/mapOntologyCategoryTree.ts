@@ -18,7 +18,9 @@ function mapOntologyCategoryTreeNode(node: OntologyCategoryTreeNode): OntologyCo
     id,
     label: node.name ?? "",
     count: node.ontologyMetaInfos?.length ?? 0,
-    objectNames: (node.ontologyMetaInfos ?? []).map((meta) => meta.displayName).filter((name) => Boolean(name?.trim())),
+    objects: (node.ontologyMetaInfos ?? [])
+      .map((meta) => ({ uniqueIdentifier: meta.uniqueIdentifier ?? "", displayName: meta.displayName ?? "" }))
+      .filter((item) => Boolean(item.displayName.trim()) && Boolean(item.uniqueIdentifier.trim())),
     targetCategoryId: id,
     children: (node.children ?? []).map(mapOntologyCategoryTreeNode),
   };

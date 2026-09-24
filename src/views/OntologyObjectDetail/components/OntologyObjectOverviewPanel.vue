@@ -81,6 +81,10 @@ function formatCount(value: number | undefined): string {
   box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
+:root[theme="light"] .ontology-object-overview-panel {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .ontology-object-overview-panel__header {
   display: flex;
   align-items: center;

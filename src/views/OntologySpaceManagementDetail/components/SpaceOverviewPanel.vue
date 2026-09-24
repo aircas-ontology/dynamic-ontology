@@ -70,6 +70,10 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
   box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
+:root[theme="light"] .space-overview-panel {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .space-overview-panel__header {
   display: flex;
   align-items: center;
@@ -148,6 +152,22 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
 .space-overview-panel__stat small {
   color: var(--aircas-color-text-muted);
   font-size: 12px;
+}
+
+.space-overview-panel__stat--cyan {
+  --stat-glow: var(--aircas-color-accent-cyan-soft);
+}
+
+.space-overview-panel__stat--cyan .el-icon {
+  color: var(--aircas-color-accent-cyan);
+}
+
+.space-overview-panel__stat--purple {
+  --stat-glow: var(--aircas-color-accent-purple-soft);
+}
+
+.space-overview-panel__stat--purple .el-icon {
+  color: var(--aircas-color-accent-purple);
 }
 
 .space-overview-panel__stat--blue {

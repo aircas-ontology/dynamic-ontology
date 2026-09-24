@@ -60,6 +60,8 @@
       :command-error="attributeCommandError"
       :saving="savingAttribute"
       @update:visible="attributeDialogVisible = $event"
+      @update-primary="updateDraftPrimaryKey"
+      @update-name-key="updateDraftNameKey"
       @confirm="saveAttributeDraft"
     />
     <DataSourceAssociateDialog
@@ -110,6 +112,7 @@ interface DataSourceField {
   id: string;
   name: string;
   dataType: string;
+  isPrimary: boolean;
 }
 
 interface DataSourceTable {
@@ -141,6 +144,8 @@ interface OntologyPropertyMappingItem {
   displayName: string;
   apiName: string;
   categoryName: string;
+  isPrimary: boolean;
+  isNameKey: boolean;
   dataSource: PropertyDataSourceBind | null;
 }
 
@@ -216,6 +221,8 @@ const {
   openCreateAttribute,
   openEditAttribute,
   saveAttributeDraft,
+  updateDraftPrimaryKey,
+  updateDraftNameKey,
   removeAttribute,
 } = propertyApi;
 
@@ -236,6 +243,8 @@ const ontologyPropertyMappings = computed<OntologyPropertyMappingItem[]>(() =>
     displayName: item.displayName,
     apiName: item.apiName,
     categoryName: findCategory(categories.value, item.categoryId)?.label ?? "未分类",
+    isPrimary: item.isPrimary,
+    isNameKey: item.isNameKey,
     dataSource: resolvePropertyDataSourceBind(item.uniqueIdentifier),
   })),
 );
@@ -286,7 +295,12 @@ function mapDatasourceTables(response: GetOntologyDatasourceTablesData): DataSou
 
 /** @description 将接口字段记录转换为关联弹窗字段选项。 */
 function mapDatasourceColumns(data: GetOntologyDatasourceColumnsData): DataSourceField[] {
-  return data.map((column) => ({ id: column.columnName, name: column.columnName, dataType: column.type || column.description || "" }));
+  return data.map((column) => ({
+    id: column.columnName,
+    name: column.columnName,
+    dataType: column.type || column.description || "",
+    isPrimary: column.isPrimaryKey === true,
+  }));
 }
 
 /**

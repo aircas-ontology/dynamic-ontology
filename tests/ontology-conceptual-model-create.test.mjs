@@ -132,3 +132,77 @@ test("space creation dialog does not expose the conceptual model entry action", 
   assert.doesNotMatch(actionsSource, /function openConceptualModel/);
   assert.match(actionsSource, /name: "OntologyConceptualModelCreate"/);
 });
+
+test("conceptual model canvas groups attributes by storage and marks keys", async () => {
+  const graphSource = readSource("../src/views/OntologyConceptualModelCreate/utils/conceptualModelGraph.ts");
+  const helperSource = readSource("../src/views/OntologyConceptualModelCreate/utils/groupConceptualAttributes.ts");
+  const canvasSource = readSource("../src/views/OntologyConceptualModelCreate/components/ConceptualModelGraphCanvas.vue");
+  assert.match(helperSource, /function groupConceptualAttributesByStorage/);
+  assert.match(helperSource, /function formatConceptualAttributeKeyMarks/);
+  assert.match(graphSource, /groupConceptualAttributesByStorage/);
+  assert.match(graphSource, /formatConceptualAttributeKeyMarks/);
+  assert.match(graphSource, /conceptual-model-node__group/);
+  assert.match(canvasSource, /conceptualObjectHeight\(object\.attributes\)/);
+  assert.match(canvasSource, /conceptual-model-node__group/);
+  const helperUrl = new URL("../src/views/OntologyConceptualModelCreate/utils/groupConceptualAttributes.ts", import.meta.url);
+  const { groupConceptualAttributesByStorage, formatConceptualAttributeKeyMarks, conceptualObjectHeight } = await import(helperUrl.href);
+  const attribute = (id, storageGroup, isPrimary, isNameKey) => ({
+    id,
+    displayName: `attr_${id}`,
+    apiName: `attr_${id}`,
+    dataType: "String",
+    storageGroup,
+    isPrimary,
+    isNameKey,
+  });
+  const grouped = groupConceptualAttributesByStorage([
+    attribute(1, "detail", false, false),
+    attribute(2, "main", true, true),
+    attribute(3, "  ", false, false),
+    attribute(4, "detail", false, true),
+  ]);
+  assert.deepEqual(
+    grouped.map((group) => group.storageGroup),
+    ["main", "detail"],
+  );
+  assert.deepEqual(
+    grouped[0].attributes.map((item) => item.id),
+    [2, 3],
+  );
+  assert.deepEqual(
+    grouped[1].attributes.map((item) => item.id),
+    [1, 4],
+  );
+  assert.deepEqual(
+    groupConceptualAttributesByStorage([]).map((group) => group.storageGroup),
+    ["main"],
+  );
+  assert.equal(groupConceptualAttributesByStorage([])[0].attributes.length, 0);
+  assert.equal(formatConceptualAttributeKeyMarks({ isPrimary: true, isNameKey: false }), "（主）");
+  assert.equal(formatConceptualAttributeKeyMarks({ isPrimary: false, isNameKey: true }), "（名）");
+  assert.equal(formatConceptualAttributeKeyMarks({ isPrimary: true, isNameKey: true }), "（主）（名）");
+  assert.equal(formatConceptualAttributeKeyMarks({ isPrimary: false, isNameKey: false }), "");
+  assert.ok(conceptualObjectHeight([attribute(1, "main", false, false), attribute(2, "extra", false, false)]) > conceptualObjectHeight([]));
+});
+
+test("conceptual canvas rejects a second primary key or name key on the same object", async () => {
+  const helperUrl = new URL("../src/views/OntologyConceptualModelCreate/utils/groupConceptualAttributes.ts", import.meta.url);
+  const { findConflictingConceptualAttributeKey, formatConceptualAttributeKeyConflictMessage } = await import(helperUrl.href);
+  const attributes = [
+    { id: 1, displayName: "飞机id", apiName: "planeId", isPrimary: true, isNameKey: false },
+    { id: 2, displayName: "飞机名称", apiName: "name", isPrimary: false, isNameKey: true },
+    { id: 3, displayName: "重量", apiName: "weight", isPrimary: false, isNameKey: false },
+  ];
+
+  assert.equal(findConflictingConceptualAttributeKey(attributes, "primary", 3)?.id, 1);
+  assert.equal(findConflictingConceptualAttributeKey(attributes, "name", 3)?.id, 2);
+  assert.equal(findConflictingConceptualAttributeKey(attributes, "primary", 1), null);
+  assert.equal(findConflictingConceptualAttributeKey(attributes, "name", 2), null);
+  assert.equal(formatConceptualAttributeKeyConflictMessage("primary", attributes[0]), "当前对象已存在主键「飞机id」，不能同时设置两个主键");
+  assert.equal(formatConceptualAttributeKeyConflictMessage("name", attributes[1]), "当前对象已存在名称键「飞机名称」，不能同时设置两个名称键");
+
+  const pageSource = readSource("../src/views/OntologyConceptualModelCreate/index.vue");
+  const updateSource = pageSource.match(/function updateAttribute[\s\S]*?function registerStorageGroup/)?.[0] ?? "";
+  assert.match(updateSource, /findConflictingConceptualAttributeKey\(owner\.attributes/);
+  assert.match(updateSource, /ElMessage\.warning\(formatConceptualAttributeKeyConflictMessage/);
+});

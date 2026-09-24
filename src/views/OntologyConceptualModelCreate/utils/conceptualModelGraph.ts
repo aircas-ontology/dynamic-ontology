@@ -1,17 +1,18 @@
 import { Graph, Shape, type Edge } from "@antv/x6";
+import {
+  conceptualObjectHeight,
+  formatConceptualAttributeKeyMarks,
+  groupConceptualAttributesByStorage,
+  type ConceptualModelGraphAttribute,
+} from "./groupConceptualAttributes";
+
+export { conceptualObjectHeight, type ConceptualModelAttributeGroup, type ConceptualModelGraphAttribute } from "./groupConceptualAttributes";
 
 export const CONCEPTUAL_OBJECT_SHAPE = "conceptual-model-object";
 export const CONCEPTUAL_OBJECT_WIDTH = 240;
 export const CONCEPTUAL_RELATION_PORTS = ["top", "right", "bottom", "left"] as const;
 
 export type ConceptualModelGraphPort = (typeof CONCEPTUAL_RELATION_PORTS)[number];
-
-export interface ConceptualModelGraphAttribute {
-  id: number;
-  displayName: string;
-  apiName: string;
-  dataType: string;
-}
 
 export interface ConceptualModelGraphObject {
   id: number;
@@ -52,9 +53,6 @@ interface ConceptualModelNodeData {
   selectedAttributeId: number | null;
 }
 
-const HEADER_HEIGHT = 64;
-const ROW_HEIGHT = 26;
-const FOOTER_HEIGHT = 32;
 const ENDPOINT_HANDLE = "M 0 -7 a 7 7 0 1 1 0 14 a 7 7 0 1 1 0 -14";
 
 let htmlHandlers: ConceptualModelHtmlHandlers | null = null;
@@ -113,15 +111,6 @@ export function parseConceptualRelationCellId(cellId: string | undefined): numbe
 export function asRelationPort(value: string | null | undefined): ConceptualModelGraphPort | undefined {
   if (value === "top" || value === "right" || value === "bottom" || value === "left") return value;
   return undefined;
-}
-
-/**
- * @description 按属性数量计算对象节点高度。
- * @param attributeCount 属性条数。
- * @returns 节点高度。
- */
-export function conceptualObjectHeight(attributeCount: number): number {
-  return HEADER_HEIGHT + Math.max(attributeCount, 1) * ROW_HEIGHT + FOOTER_HEIGHT;
 }
 
 /**
@@ -352,14 +341,22 @@ function renderObjectHtml(data: ConceptualModelNodeData): HTMLElement {
   const wrap = document.createElement("div");
   const object = data.object;
   wrap.className = `conceptual-model-node${data.selected ? " is-selected" : ""}`;
-  const rows = object.attributes.length
-    ? object.attributes
-        .map((attribute) => {
-          const active = data.selectedAttributeId === attribute.id ? " is-active" : "";
-          return `<button type="button" class="conceptual-model-node__attr${active}" data-attribute-id="${attribute.id}"><span>+ ${escapeHtml(attribute.displayName || attribute.apiName)}</span><em>${escapeHtml(attribute.dataType)}</em></button>`;
-        })
-        .join("")
-    : `<div class="conceptual-model-node__empty">将属性拖到此处，或点击下方添加</div>`;
+  const rows = groupConceptualAttributesByStorage(object.attributes)
+    .map((group) => {
+      const header = `<div class="conceptual-model-node__group">${escapeHtml(group.storageGroup)}</div>`;
+      const body = group.attributes.length
+        ? group.attributes
+            .map((attribute) => {
+              const active = data.selectedAttributeId === attribute.id ? " is-active" : "";
+              const marks = formatConceptualAttributeKeyMarks(attribute);
+              const name = escapeHtml(attribute.displayName || attribute.apiName);
+              return `<button type="button" class="conceptual-model-node__attr${active}" data-attribute-id="${attribute.id}"><span>+ ${name}${marks}</span><em>${escapeHtml(attribute.dataType)}</em></button>`;
+            })
+            .join("")
+        : `<div class="conceptual-model-node__empty">将属性拖到此处，或点击下方添加</div>`;
+      return `${header}${body}`;
+    })
+    .join("");
   wrap.innerHTML = `
     <div class="conceptual-model-node__head">
       <span class="conceptual-model-node__stereo">&lt;&lt;object&gt;&gt;</span>
@@ -421,7 +418,7 @@ function registerConceptualModelShapes(): void {
     Shape.HTML.register({
       shape: CONCEPTUAL_OBJECT_SHAPE,
       width: CONCEPTUAL_OBJECT_WIDTH,
-      height: conceptualObjectHeight(0),
+      height: conceptualObjectHeight([]),
       effect: ["data"],
       html(cell) {
         return renderObjectHtml(cell.getData<ConceptualModelNodeData>());
