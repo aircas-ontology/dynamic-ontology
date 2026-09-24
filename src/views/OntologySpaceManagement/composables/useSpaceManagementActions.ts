@@ -1,7 +1,7 @@
 import { computed, ref, type Ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import type { OntologySpaceAction, OntologySpaceCommandStatus, OntologySpaceDraft, OntologySpaceItem } from "@/types";
+import type { OntologySpaceAction, OntologySpaceCommandStatus, OntologySpaceDraft, OntologySpaceExportType, OntologySpaceItem } from "@/types";
 import { createOntologySpaceInterface, deleteOntologySpaceInterface, getExportOntologySpaceInterface, updateOntologySpaceInterface } from "@/apis";
 import { downloadSpaceFile } from "../utils/downloadSpaceJson";
 import { resolveExportOntologySpaceFileName } from "../utils/resolveExportOntologySpaceFileName";
@@ -159,9 +159,10 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   }
 
   /**
-   * @description 确认导出当前选中本体空间，下载接口返回的文件。
+   * @description 确认导出当前选中本体空间，按所选类型下载接口返回的文件。
+   * @param exportType 导出类型。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
    */
-  async function confirmExportOntologySpace() {
+  async function confirmExportOntologySpace(exportType: OntologySpaceExportType) {
     if (!activeSpace.value || actionBusy.value) return;
     const spaceId = Number(activeSpace.value.id);
     if (!Number.isInteger(spaceId)) {
@@ -172,7 +173,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
     actionStatus.value = "submitting";
     actionError.value = "";
     try {
-      const file = await getExportOntologySpaceInterface({ spaceId });
+      const file = await getExportOntologySpaceInterface({ spaceId, exportType });
       const fileName = resolveExportOntologySpaceFileName({
         contentDisposition: file.contentDisposition,
         contentType: file.contentType,
