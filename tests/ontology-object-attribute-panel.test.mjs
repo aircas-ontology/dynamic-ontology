@@ -21,6 +21,12 @@ test("object attribute route resolves to the prototype attribute panel", () => {
   assert.match(String(route.matched.at(-1)?.components?.default), /OntologyObjectAttributePanel/);
 });
 
+test("object detail child router-view keys panel by objectId and route name", () => {
+  const source = readSource("../src/views/OntologyObjectDetail/index.vue");
+  assert.match(source, /router-view v-slot="\{ Component, route: childRoute \}"/);
+  assert.match(source, /:key="`\$\{String\(childRoute\.params\.objectId\)\}-\$\{String\(childRoute\.name\)\}`"/);
+});
+
 test("object attribute panel exposes category tree, property columns, and local actions", () => {
   const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
   const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");

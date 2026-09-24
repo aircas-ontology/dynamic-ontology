@@ -24,7 +24,7 @@
 当type值为"空间"时，返回字段中肯定有spaceId，对应跳转的路由为 /workspace/ontology-space-management/{spaceId}/overview
 当type值为"对象"时，返回字段中肯定有spaceId，对应跳转的路由为 workspace/ontology-space-management/{spaceId}/object
 
-当type值为"属性"时，返回字段中肯定有spaceId，对应跳转的路由为 /workspace/ontology-object/{uniqueIdentifier}/attribute?spaceId=11&spaceName={spaceName}&objectName={objectName}
+当type值为"属性"时，返回字段中肯定有uniqueIdentifier，对应跳转的路由为 /workspace/ontology-object/{uniqueIdentifier}/attribute?spaceId=11&spaceName={spaceName}&objectName={objectName}
 
 需要注意一个逻辑是：先根据objectid的值调用getInfoByObjectidApi-shijian.md 中的接口，然后获取到对象名称objectName和空间名称spaceName后拼接到完成地址再跳转
 
