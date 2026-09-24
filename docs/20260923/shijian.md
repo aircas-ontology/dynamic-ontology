@@ -23,4 +23,41 @@
 数据说明：data数组中返回的对象字段"name"和"type"字段是必返回字段，"desc"可能有也可能没有，有就展示，没有就展示为空。
 当type值为"空间"时，返回字段中肯定有spaceId，对应跳转的路由为 /workspace/ontology-space-management/{spaceId}/overview
 当type值为"对象"时，返回字段中肯定有spaceId，对应跳转的路由为 workspace/ontology-space-management/{spaceId}/object
-目前先实现这两个类型的跳转
+
+当type值为"属性"时，返回字段中肯定有uniqueIdentifier，对应跳转的路由为 /workspace/ontology-object/{uniqueIdentifier}/attribute?spaceId=11&spaceName={spaceName}&objectName={objectName}
+
+需要注意一个逻辑是：先根据objectid的值调用getInfoByObjectidApi-shijian.md 中的接口，然后获取到对象名称objectName和空间名称spaceName后拼接到完成地址再跳转
+
+当type值为"关系分组"时，返回字段中肯定有spaceId，对应跳转的路由为 /workspace/ontology-space-management/{spaceId}/relation
+
+目前先实现这四个类型的跳转
+
+## 3 新建函数算子功能开发
+
+## 功能描述
+
+使用 \dynamic-ontology\docs\20260923\6.createFunApi-shijian.md 接口文档开发新建函数算子功能,目前只需要开发基础函数即可，queryConfig参数说明：使用参数配置表单构建queryConfig.filters对象数据；配置规范（参考示例"filters": {
+"logic": "AND",
+"children": [
+{
+"type": "FILTER",
+"filter": {
+"propertyApiName": "status",
+"op": "EQ",
+"value": "1",
+"dataType": "STRING"
+}
+},
+{
+"type": "FILTER",
+"filter": {
+"propertyApiName": "amount",
+"op": "GT",
+"value": 100,
+"dataType": "NUMBER"
+}
+}
+]
+}）
+
+    queryConfig.aggFunc为聚合类型：SUM/COUNT/AVG/MAX/MIN/DISTINCT，需要新增一个下拉表单去选择 聚合类型 ，不选择择不传 queryConfig.aggFunc 参数

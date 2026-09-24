@@ -57,9 +57,12 @@ test("function operator mock seeds basic operators and supports create", () => {
   assert.ok(page.total >= 3);
   assert.ok(page.records.every((item) => item.type === "basic"));
 
+  assert.ok(page.records.every((item) => typeof item.functionApi === "string" && item.functionApi.length > 0));
+
   const created = createFunctionOperatorMock({
     spaceId: 99,
     name: "单元测试基础函数",
+    functionApi: "unit_test_basic_fn",
     type: "basic",
     protocol: "HTTP",
     version: "v1.0.0",
@@ -79,9 +82,11 @@ test("function operator mock seeds basic operators and supports create", () => {
   });
   assert.equal(created.type, "basic");
   assert.match(created.name, /单元测试基础函数/);
+  assert.equal(created.functionApi, "unit_test_basic_fn");
 });
 
 test("function operator panel wires workspace composable and basic form", () => {
+  const typeSource = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
   const panelSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel.vue");
   const formSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorFormDialog.vue");
   assert.match(panelSource, /useFunctionOperatorWorkspace/);
@@ -108,6 +113,12 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(formSource, /class="aircas-dialog function-operator-form-dialog"/);
   assert.match(formSource, /class="aircas-form function-operator-form"/);
   assert.match(formSource, /class="aircas-empty"/);
+  assert.match(formSource, /function-operator-form__name-grid/);
+  assert.match(formSource, /label="函数名称"[\s\S]*label="函数api名称"/);
+  assert.match(formSource, /prop="functionApi"/);
+  assert.match(formSource, /请输入函数api名称/);
+  assert.match(formSource, /v-model="form\.functionApi"[\s\S]*:disabled="Boolean\(operator\)"/);
+  assert.match(typeSource, /functionApi:\s*string/);
   const filterSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/BasicFilterGroupEditor.vue");
   assert.equal((filterSource.match(/<el-select/g) || []).length, 4);
   assert.equal((filterSource.match(/\sclass="aircas-select/g) || []).length, 4);

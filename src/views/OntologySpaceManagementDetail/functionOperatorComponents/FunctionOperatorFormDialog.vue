@@ -28,11 +28,21 @@
 
       <section v-if="form.type === 'basic'" class="function-operator-form__section">
         <div class="function-operator-form__section-title">通用配置</div>
-        <el-form-item label="函数名称" prop="name">
-          <el-input v-model="form.name" class="aircas-input" maxlength="64" placeholder="例如：目标识别算子" />
-        </el-form-item>
+        <div class="function-operator-form__name-grid">
+          <el-form-item label="函数名称" prop="name">
+            <el-input v-model="form.name" class="aircas-input" maxlength="64" placeholder="例如：目标识别算子" />
+          </el-form-item>
+          <el-form-item label="函数api名称" prop="functionApi">
+            <el-input v-model="form.functionApi" class="aircas-input" maxlength="64" placeholder="例如：target_recognition" :disabled="Boolean(operator)" />
+          </el-form-item>
+        </div>
         <el-form-item label="函数说明" prop="description">
           <el-input v-model="form.description" class="aircas-input" type="textarea" :rows="2" maxlength="240" show-word-limit />
+        </el-form-item>
+        <el-form-item v-if="form.definition.kind === 'basic'" label="聚合类型">
+          <el-select v-model="form.definition.aggFunc" class="aircas-select" popper-class="aircas-select-popper" clearable placeholder="请选择聚合类型">
+            <el-option v-for="item in FUNCTION_OPERATOR_AGG_FUNC_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </el-form-item>
         <el-form-item v-if="form.definition.kind === 'basic'" label="参数配置" prop="definition.parameterConfig">
           <FunctionOperatorBasicFilterBuilder v-model="form.definition.parameterConfig" />
@@ -56,7 +66,13 @@ import { reactive, ref, watch } from "vue";
 import type { FormInstance, FormRules } from "element-plus";
 import { ElMessage } from "element-plus";
 
-import { FUNCTION_OPERATOR_TYPE_OPTIONS, type FunctionOperator, type FunctionOperatorDraft, type FunctionOperatorType } from "@/types";
+import {
+  FUNCTION_OPERATOR_AGG_FUNC_OPTIONS,
+  FUNCTION_OPERATOR_TYPE_OPTIONS,
+  type FunctionOperator,
+  type FunctionOperatorDraft,
+  type FunctionOperatorType,
+} from "@/types";
 import { createEmptyBasicFilterDocument, stringifyBasicFilterConfig } from "@/utils/functionOperatorBasicFilter";
 
 import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBuilder.vue";
@@ -92,6 +108,7 @@ function createEmptyDraft(): FunctionOperatorDraft {
   return {
     spaceId: props.spaceId,
     name: "",
+    functionApi: "",
     type: "basic",
     protocol: "HTTP",
     version: "v1.0.0",
@@ -104,7 +121,7 @@ function createEmptyDraft(): FunctionOperatorDraft {
     timeout: 5000,
     retryCount: 0,
     retryInterval: 0,
-    definition: { kind: "basic", parameterConfig: createDefaultBasicParameterConfig() },
+    definition: { kind: "basic", parameterConfig: createDefaultBasicParameterConfig(), aggFunc: "" },
     dependencies: [],
     testStatus: "untested",
     testedAt: "",
@@ -121,6 +138,7 @@ function toDraft(operator: FunctionOperator): FunctionOperatorDraft {
     id: operator.id,
     spaceId: operator.spaceId,
     name: operator.name,
+    functionApi: operator.functionApi,
     type: operator.type,
     protocol: operator.protocol,
     version: operator.version,
@@ -144,6 +162,7 @@ const form = reactive<FunctionOperatorDraft>(createEmptyDraft());
 
 const rules: FormRules = {
   name: [{ required: true, message: "请输入函数名称", trigger: "blur" }],
+  functionApi: [{ required: true, message: "请输入函数api名称", trigger: "blur" }],
   description: [{ required: true, message: "请输入函数说明", trigger: "blur" }],
 };
 
@@ -154,7 +173,7 @@ const rules: FormRules = {
 function changeType(type: FunctionOperatorType): void {
   form.type = type;
   if (type === "basic") {
-    form.definition = { kind: "basic", parameterConfig: createDefaultBasicParameterConfig() };
+    form.definition = { kind: "basic", parameterConfig: createDefaultBasicParameterConfig(), aggFunc: "" };
     return;
   }
   form.definition = { kind: type };
@@ -179,9 +198,13 @@ async function submitDraft(): Promise<void> {
   emit("submit", {
     ...form,
     name: form.name.trim(),
+    functionApi: form.functionApi.trim(),
     description: form.description.trim(),
     type: "basic",
-    definition: { ...form.definition },
+    definition: {
+      ...form.definition,
+      aggFunc: form.definition.aggFunc || "",
+    },
   });
 }
 
@@ -208,6 +231,12 @@ watch(
   color: var(--aircas-color-text-primary);
   font-size: 14px;
   font-weight: 600;
+}
+
+.function-operator-form__name-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
 }
 
 .function-operator-form__type-grid {
@@ -246,5 +275,11 @@ watch(
 
 .function-operator-form__section--empty {
   padding: 24px 0;
+}
+
+@media (max-width: 640px) {
+  .function-operator-form__name-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

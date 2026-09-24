@@ -11,7 +11,7 @@
       <div class="function-operator-detail__header">
         <div class="function-operator-detail__tags">
           <el-tag class="aircas-tag" :type="statusTagType(operator.status)" effect="dark">{{ statusLabel(operator.status) }}</el-tag>
-          <el-tag class="aircas-tag" effect="plain">{{ typeLabel(operator.type) }}</el-tag>
+          <el-tag class="aircas-tag" effect="plain">{{ typeLabel(operator) }}</el-tag>
         </div>
         <span class="function-operator-detail__version">{{ operator.version }}</span>
       </div>
@@ -75,7 +75,7 @@
 <script setup lang="ts">
 import type { TagProps } from "element-plus";
 
-import type { FunctionOperator, FunctionOperatorStatus, FunctionOperatorType } from "@/types";
+import type { FunctionOperator, FunctionOperatorStatus } from "@/types";
 import { FUNCTION_OPERATOR_STATUS_LABELS, FUNCTION_OPERATOR_TYPE_LABELS } from "@/types";
 
 defineProps<{
@@ -92,20 +92,29 @@ const emit = defineEmits<{
 }>();
 
 /**
- * @description 获取函数类型展示文案。
- * @param type 函数类型。
- * @returns 中文标签。
+ * @description 获取函数类型展示文案；CUSTOMIZE 与未知模型类型展示空。
+ * @param operator 算子。
+ * @returns 中文标签或空字符串。
  */
-function typeLabel(type: FunctionOperatorType): string {
-  return FUNCTION_OPERATOR_TYPE_LABELS[type];
+function typeLabel(operator: FunctionOperator): string {
+  if (operator.apiModelType === "CUSTOMIZE") {
+    return "";
+  }
+  if (operator.apiModelType === "BASIC_QUERY" || operator.type === "basic") {
+    return FUNCTION_OPERATOR_TYPE_LABELS.basic;
+  }
+  return FUNCTION_OPERATOR_TYPE_LABELS[operator.type] ?? "";
 }
 
 /**
- * @description 获取状态展示文案。
+ * @description 获取状态展示文案；缺省状态展示空。
  * @param status 状态。
- * @returns 中文标签。
+ * @returns 中文标签或空字符串。
  */
 function statusLabel(status: FunctionOperatorStatus): string {
+  if (!status) {
+    return "";
+  }
   return FUNCTION_OPERATOR_STATUS_LABELS[status];
 }
 

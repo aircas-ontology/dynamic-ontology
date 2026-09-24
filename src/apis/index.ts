@@ -1,4 +1,5 @@
 import { getExampleInterface } from "./exampleApi";
+import { createOntologyFunctionInterface, getOntologyFunctionListInterface } from "./functionApi";
 import { postLoginInterface } from "./loginApi";
 import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
 import { getOntologyApiDocsInterface } from "./ontologyDocApi";
@@ -29,6 +30,7 @@ import {
 import {
   createOntologyObjectArrTypeTreeInterface,
   deleteOntologyObjectArrTypeTreeInterface,
+  getOntologyMetaByObjectIdInterface,
   getOntologyObjectArrTypeTreeInterface,
   updateOntologyObjectArrTypeTreeInterface,
 } from "./ontologyObjectArrManageApi";
@@ -54,6 +56,7 @@ import {
 
 export {
   autoBindOntologyPropertyDatasourceInterface,
+  createOntologyFunctionInterface,
   createOntologySpaceInterface,
   createOntologySpaceWithCanvasContentInterface,
   createOntologyObjectInterface,
@@ -72,6 +75,8 @@ export {
   getOntologyApiDocsInterface,
   getOntologyDatasourceColumnsInterface,
   getOntologyCategoryTreeInterface,
+  getOntologyFunctionListInterface,
+  getOntologyMetaByObjectIdInterface,
   getOntologyObjectArrTypeTreeInterface,
   getOntologyObjectByCategoryIdInterface,
   getOntologyPropertyByCategoryIdInterface,

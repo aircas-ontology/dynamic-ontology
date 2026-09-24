@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import { ontologyGlobalSearchMock } from "../src/mocks/ontologyGlobalSearchMock/ontologyGlobalSearchMock.ts";
-import { resolveOntologyGlobalSearchRoute } from "../src/utils/ontologyGlobalSearchRoute.ts";
+import { resolveOntologyGlobalSearchPropertyRoute, resolveOntologyGlobalSearchRoute } from "../src/utils/ontologyGlobalSearchRoute.ts";
 
 /**
  * @description 读取相对 tests 的源文件文本。
@@ -44,7 +44,7 @@ test("global search mock mirrors the documented success sample", () => {
   assert.ok(ontologyGlobalSearchMock.data.some((item) => item.type === "对象" && item.spaceId === 11));
 });
 
-test("resolveOntologyGlobalSearchRoute maps space and object types", () => {
+test("resolveOntologyGlobalSearchRoute maps space, object and relation-group types", () => {
   assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "sj测试", type: "空间", spaceId: 37 }), {
     name: "OntologySpaceManagementDetailOverview",
     params: { spaceId: "37" },
@@ -53,7 +53,32 @@ test("resolveOntologyGlobalSearchRoute maps space and object types", () => {
     name: "OntologySpaceManagementDetailObject",
     params: { spaceId: "11" },
   });
-  assert.equal(resolveOntologyGlobalSearchRoute({ name: "飞机id", type: "属性", spaceId: 46 }), null);
+  assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "a", type: "关系分组", spaceId: 11 }), {
+    name: "OntologySpaceManagementDetailRelation",
+    params: { spaceId: "11" },
+  });
+  assert.equal(resolveOntologyGlobalSearchRoute({ name: "飞机id", type: "属性", spaceId: 46, objectId: 106 }), null);
+});
+
+test("resolveOntologyGlobalSearchPropertyRoute uses meta uniqueIdentifier and names", () => {
+  assert.deepEqual(
+    resolveOntologyGlobalSearchPropertyRoute(
+      { name: "飞机id", type: "属性", spaceId: 11, objectId: 106 },
+      { id: 106, displayName: "飞机", spaceName: "测试-rwl", uniqueIdentifier: "246ef68e87524c33911b92af900700f9" },
+    ),
+    {
+      name: "OntologyObjectDetailAttribute",
+      params: { objectId: "246ef68e87524c33911b92af900700f9" },
+      query: { spaceId: "11", spaceName: "测试-rwl", objectName: "飞机" },
+    },
+  );
+});
+
+test("global search click handler fetches object meta before property navigation", () => {
+  const source = readSource("../src/composables/ontology/useOntologyGlobalSearch.ts");
+  assert.match(source, /getOntologyMetaByObjectIdInterface/);
+  assert.match(source, /resolveOntologyGlobalSearchPropertyRoute/);
+  assert.match(source, /item\.type === "属性"/);
 });
 
 test("full text search page and header wire OntologyGlobalSearchField", () => {

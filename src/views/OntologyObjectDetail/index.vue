@@ -3,8 +3,14 @@
     <div class="ontology-object-detail__layout">
       <ObjectDetailTabs :active-tab="activeTab" :available-tabs="availableTabs" :object-name="objectName" :counts="tabCounts" @update:active-tab="openTab" />
       <div class="ontology-object-detail__content">
-        <router-view v-slot="{ Component }">
-          <component v-if="Component" :is="Component as any" v-bind="detailChildProps" v-on="overviewListeners" />
+        <router-view v-slot="{ Component, route: childRoute }">
+          <component
+            v-if="Component"
+            :is="Component as any"
+            :key="`${String(childRoute.params.objectId)}-${String(childRoute.name)}`"
+            v-bind="detailChildProps"
+            v-on="overviewListeners"
+          />
         </router-view>
       </div>
     </div>
