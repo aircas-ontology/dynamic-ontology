@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
+import dayjs from "dayjs";
+
 import { mapOntologyFunctionListItem } from "../src/utils/mapOntologyFunctionList.ts";
 
 /**
@@ -20,11 +22,13 @@ test("get ontology function list types expose documented request and page fields
   assert.match(source, /export interface GetOntologyFunctionListParams/);
   assert.match(source, /pageNum\?: number/);
   assert.match(source, /pageSize\?: number/);
+  assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /export interface GetOntologyFunctionListItem/);
   assert.match(source, /functionApi: string/);
   assert.match(source, /displayName: string/);
   assert.match(source, /description: string/);
   assert.match(source, /type: string/);
+  assert.match(source, /updateTime: string/);
   assert.match(source, /export interface GetOntologyFunctionListData/);
   assert.match(source, /records: GetOntologyFunctionListItem\[\]/);
   assert.match(source, /total: number/);
@@ -51,6 +55,7 @@ test("get ontology function list mock mirrors the documented sample", () => {
   assert.match(source, /functionApi: "test"/);
   assert.match(source, /displayName: "测试函数"/);
   assert.match(source, /type: "BASIC_QUERY"/);
+  assert.match(source, /updateTime: "2026-09-24T03:35:18\.692\+00:00"/);
   assert.match(source, /functionApi: "addTwoNumbers"/);
   assert.match(source, /type: "CUSTOMIZE"/);
   assert.match(source, /total: 2/);
@@ -64,6 +69,7 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
       displayName: "测试函数",
       description: "测试函数说明",
       type: "BASIC_QUERY",
+      updateTime: "2026-09-24T03:35:18.692+00:00",
     },
     11,
   );
@@ -78,7 +84,7 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
   assert.equal(basic.version, "");
   assert.equal(basic.protocol, "");
   assert.equal(basic.createdBy, "");
-  assert.equal(basic.updatedAt, "");
+  assert.equal(basic.updatedAt, dayjs("2026-09-24T03:35:18.692+00:00").format("YYYY-MM-DD HH:mm:ss"));
   assert.deepEqual(basic.inputParameters, []);
   assert.deepEqual(basic.outputParameters, []);
 
@@ -88,11 +94,19 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
       displayName: "两数相加",
       description: "测试用：返回 a+b",
       type: "CUSTOMIZE",
+      updateTime: "",
     },
     11,
   );
   assert.equal(custom.apiModelType, "CUSTOMIZE");
   assert.equal(custom.type, "basic");
+  assert.equal(custom.updatedAt, "");
+});
+
+test("function operator panel displays updatedAt from list mapping", () => {
+  const panel = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel.vue");
+  assert.match(panel, /\{\{\s*operator\.updatedAt\s*\}\}/);
+  assert.match(panel, /prop="updatedAt"/);
 });
 
 test("function operator workspace loads list from getOntologyFunctionListInterface", () => {
@@ -101,6 +115,7 @@ test("function operator workspace loads list from getOntologyFunctionListInterfa
   assert.match(workspace, /getOntologyFunctionListInterface/);
   assert.match(workspace, /mapOntologyFunctionListItem/);
   assert.match(workspace, /pageNum/);
+  assert.match(workspace, /ontologySpaceId:\s*spaceId\.value/);
   assert.doesNotMatch(workspace, /queryFunctionOperatorsMock\(buildQuery\(\)\)/);
   assert.doesNotMatch(workspace, /createFunctionOperatorMock\(draft\)/);
   assert.match(panel, /apiModelType/);

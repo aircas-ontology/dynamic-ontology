@@ -1,28 +1,36 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage } from "element-plus";
 
-import { createOntologyFunctionInterface, getOntologyFunctionListInterface } from "@/apis";
 import {
-  deleteFunctionOperatorMock,
-  setFunctionOperatorStatusMock,
-  testFunctionOperatorMock,
-  updateFunctionOperatorMock,
-} from "@/mocks/functionOperatorMock/functionOperatorMock";
+  createOntologyFunctionInterface,
+  deleteOntologyFunctionInterface,
+  getOntologyCategoryTreeInterface,
+  getOntologyFunctionDetailInterface,
+  getOntologyFunctionListInterface,
+  getOntologyPropertyByOntologyIdInterface,
+  testOntologyFunctionInterface,
+  updateOntologyFunctionInterface,
+} from "@/apis";
+import { setFunctionOperatorStatusMock } from "@/mocks/functionOperatorMock/functionOperatorMock";
 import type {
   FunctionOperator,
   FunctionOperatorDraft,
   FunctionOperatorQuery,
   FunctionOperatorStatus,
-  FunctionOperatorTestResult,
   FunctionOperatorType,
   FunctionOperatorViewMode,
+  SpaceRelationObjectOption,
+  TestOntologyFunctionParams,
 } from "@/types";
 import { buildOntologyFunctionQueryConfig, parseBasicFilterConfig } from "@/utils/functionOperatorBasicFilter";
+import { mapOntologyFunctionDetailToDraft, mapOntologyFunctionDetailToOperator } from "@/utils/mapOntologyFunctionDetail";
 import { mapOntologyFunctionListItem } from "@/utils/mapOntologyFunctionList";
+import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestRequest } from "@/utils/mapOntologyFunctionTest";
 
+import { mapOntologyObjectsToRelationOptions } from "../utils/mapOntologyObjectsToRelationOptions";
 /**
- * @description 空间函数算子工作区：列表筛选、增删改、发布与测试（Mock）。
+ * @description 空间函数算子工作区：列表筛选、创建/修改/删除接口与发布测试（部分 Mock）。
  * @returns 工作区状态与操作方法。
  */
 export function useFunctionOperatorWorkspace() {
@@ -53,14 +61,27 @@ export function useFunctionOperatorWorkspace() {
 
   const selectedOperator = ref<FunctionOperator | null>(null);
   const detailVisible = ref(false);
+  const detailLoading = ref(false);
   const editingOperator = ref<FunctionOperator | null>(null);
   const formDraft = ref<FunctionOperatorDraft | null>(null);
   const formVisible = ref(false);
   const testVisible = ref(false);
   const testingOperator = ref<FunctionOperator | null>(null);
   const testInput = ref("{}");
-  const testResult = ref<FunctionOperatorTestResult | null>(null);
+  const testOutput = ref("");
   const testing = ref(false);
+  const testDetailLoading = ref(false);
+  const testObjectLoading = ref(false);
+  const testPropertyLoading = ref(false);
+  const testBindingKeys = ref<string[]>([]);
+  const testObjectOptions = ref<SpaceRelationObjectOption[]>([]);
+  const testPropertyOptions = ref<SpaceRelationObjectOption[]>([]);
+  const testSelectedOntologyId = ref("");
+  const testPropertyBindings = reactive<Record<string, string>>({});
+  const deleteVisible = ref(false);
+  const deleteSubmitting = ref(false);
+  const deleteError = ref("");
+  const deletingOperator = ref<FunctionOperator | null>(null);
   let disposed = false;
   let generation = 0;
 
@@ -86,6 +107,7 @@ export function useFunctionOperatorWorkspace() {
       const response = await getOntologyFunctionListInterface({
         pageNum: page.value,
         pageSize: pageSize.value,
+        ontologySpaceId: spaceId.value,
       });
       if (disposed || requestId !== generation) {
         return;
@@ -165,12 +187,29 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 打开详情抽屉。
+   * @description 打开详情抽屉：先展示列表行，再按 functionApi 拉取详情回填。
    * @param operator 目标算子。
    */
-  function openDetail(operator: FunctionOperator): void {
+  async function openDetail(operator: FunctionOperator): Promise<void> {
+    const functionApi = operator.functionApi.trim();
+    if (!functionApi) {
+      ElMessage.error("缺少函数 API 名称，无法查看详情");
+      return;
+    }
     selectedOperator.value = operator;
     detailVisible.value = true;
+    detailLoading.value = true;
+    try {
+      const response = await getOntologyFunctionDetailInterface({ functionApi });
+      if (response.code !== 200 || !response.data) {
+        throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数详情查询失败");
+      }
+      selectedOperator.value = mapOntologyFunctionDetailToOperator(response.data, operator);
+    } catch (error) {
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数详情查询失败");
+    } finally {
+      detailLoading.value = false;
+    }
   }
 
   /**
@@ -183,47 +222,69 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 打开编辑弹框。
+   * @description 打开编辑弹框：先打开表单，再按 functionApi 拉取详情回填；详情失败保留列表行数据并提示。
    * @param operator 目标算子。
    */
-  function openEdit(operator: FunctionOperator): void {
+  async function openEdit(operator: FunctionOperator): Promise<void> {
+    const functionApi = operator.functionApi.trim();
+    if (!functionApi) {
+      ElMessage.error("缺少函数 API 名称，无法编辑");
+      return;
+    }
     editingOperator.value = operator;
     formDraft.value = null;
     formVisible.value = true;
+    if (actionLoading.value) {
+      return;
+    }
+    actionLoading.value = true;
+    try {
+      const response = await getOntologyFunctionDetailInterface({ functionApi });
+      const message = typeof response.message === "string" ? response.message.trim() : "";
+      if (response.code !== 200 || !response.data) {
+        throw new Error(message || "函数详情查询失败");
+      }
+      formDraft.value = mapOntologyFunctionDetailToDraft(response.data, spaceId.value || operator.spaceId);
+    } catch (error) {
+      formDraft.value = null;
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数详情查询失败，已使用列表数据打开");
+    } finally {
+      actionLoading.value = false;
+    }
   }
 
   /**
-   * @description 保存新建或编辑草稿；新建走创建接口，编辑暂用本地 Mock。
+   * @description 保存新建或编辑草稿；无 editingOperator 走创建 POST，有则走修改 PUT。
    * @param draft 表单草稿。
    */
   async function saveOperator(draft: FunctionOperatorDraft): Promise<void> {
     if (actionLoading.value) {
       return;
     }
+    if (draft.type !== "basic" || draft.definition.kind !== "basic") {
+      ElMessage.warning("请选择基础函数");
+      return;
+    }
     actionLoading.value = true;
     try {
-      if (draft.id) {
-        const saved = updateFunctionOperatorMock(draft);
-        if (!saved) {
-          ElMessage.error("函数保存失败");
-          return;
+      const filtersDoc = parseBasicFilterConfig(draft.definition.parameterConfig);
+      const queryConfig = buildOntologyFunctionQueryConfig(filtersDoc, draft.definition.aggFunc || "");
+      const payload = {
+        functionApi: draft.functionApi.trim(),
+        displayName: draft.name.trim(),
+        description: draft.description.trim(),
+        type: "BASIC_QUERY" as const,
+        ontologySpaceId: draft.spaceId,
+        queryConfig,
+      };
+      if (editingOperator.value) {
+        const response = await updateOntologyFunctionInterface(payload);
+        if (response.code !== 200) {
+          throw new Error(response.message || "函数保存失败");
         }
         ElMessage.success("函数已更新");
       } else {
-        if (draft.type !== "basic" || draft.definition.kind !== "basic") {
-          ElMessage.warning("请选择基础函数");
-          return;
-        }
-        const filtersDoc = parseBasicFilterConfig(draft.definition.parameterConfig);
-        const queryConfig = buildOntologyFunctionQueryConfig(filtersDoc, draft.definition.aggFunc || "");
-        const response = await createOntologyFunctionInterface({
-          functionApi: draft.functionApi.trim(),
-          displayName: draft.name.trim(),
-          description: draft.description.trim(),
-          type: "BASIC_QUERY",
-          ontologySpaceId: draft.spaceId,
-          queryConfig,
-        });
+        const response = await createOntologyFunctionInterface(payload);
         if (response.code !== 200) {
           throw new Error(response.message || "函数创建失败");
         }
@@ -231,6 +292,7 @@ export function useFunctionOperatorWorkspace() {
       }
       formVisible.value = false;
       formDraft.value = null;
+      editingOperator.value = null;
       await loadOperators();
     } catch (error) {
       ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数保存失败");
@@ -240,23 +302,51 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 删除函数算子。
+   * @description 打开函数算子删除确认弹框。
    * @param operator 目标算子。
    */
-  async function removeOperator(operator: FunctionOperator): Promise<void> {
+  function openDeleteOperator(operator: FunctionOperator): void {
+    const functionApi = operator.functionApi.trim();
+    if (!functionApi) {
+      ElMessage.error("缺少函数 API 名称，无法删除");
+      return;
+    }
+    deleteError.value = "";
+    deletingOperator.value = operator;
+    deleteVisible.value = true;
+  }
+
+  /**
+   * @description 确认删除函数算子：按 functionApi 调删除接口并刷新列表。
+   */
+  async function confirmDeleteOperator(): Promise<void> {
+    if (deleteSubmitting.value) {
+      return;
+    }
+    const operator = deletingOperator.value;
+    const functionApi = operator?.functionApi.trim() ?? "";
+    if (!operator || !functionApi) {
+      deleteError.value = "缺少函数 API 名称，无法删除";
+      return;
+    }
+    deleteSubmitting.value = true;
+    deleteError.value = "";
     try {
-      await ElMessageBox.confirm(`确认删除函数「${operator.name}」吗？删除后不可恢复。`, "删除确认", { type: "warning" });
-    } catch {
-      return;
+      const response = await deleteOntologyFunctionInterface({ functionApi });
+      if (response.code !== 200) {
+        throw new Error(response.message.trim() || "函数删除失败");
+      }
+      deleteVisible.value = false;
+      deletingOperator.value = null;
+      detailVisible.value = false;
+      selectedOperator.value = null;
+      ElMessage.success("函数已删除");
+      await loadOperators();
+    } catch (error) {
+      deleteError.value = error instanceof Error && error.message.trim() ? error.message : "函数删除失败";
+    } finally {
+      deleteSubmitting.value = false;
     }
-    const ok = deleteFunctionOperatorMock(spaceId.value, operator.id);
-    if (!ok) {
-      ElMessage.error("函数删除失败");
-      return;
-    }
-    ElMessage.success("函数已删除");
-    detailVisible.value = false;
-    await loadOperators();
   }
 
   /**
@@ -276,51 +366,205 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 打开测试对话框并填充默认入参。
-   * @param operator 目标算子。
+   * @description 根据当前对象、绑定键与属性选择刷新测试请求 JSON 预览。
    */
-  function openTest(operator: FunctionOperator): void {
-    testingOperator.value = operator;
-    testInput.value = JSON.stringify(
-      Object.fromEntries(
-        operator.inputParameters.map((item) => [item.name, item.type === "number" ? 0 : item.type === "boolean" ? false : item.type === "object" ? {} : ""]),
-      ),
-      null,
-      2,
-    );
-    testResult.value = null;
-    testVisible.value = true;
+  function refreshTestRequestPreview(): void {
+    const functionApi = testingOperator.value?.functionApi.trim() ?? "";
+    if (!functionApi) {
+      testInput.value = "{}";
+      return;
+    }
+    const request = buildOntologyFunctionTestRequest({
+      functionApi,
+      ontologyIdentifier: testSelectedOntologyId.value,
+      bindingKeys: testBindingKeys.value,
+      propertyBindings: { ...testPropertyBindings },
+    });
+    testInput.value = `${JSON.stringify(request, null, 2)}\n`;
   }
 
   /**
-   * @description 运行函数测试。
+   * @description 清空属性绑定并按当前 bindingKeys 重建空选择。
    */
-  async function runTest(): Promise<void> {
-    if (!testingOperator.value) {
+  function resetTestPropertyBindings(): void {
+    for (const key of Object.keys(testPropertyBindings)) {
+      delete testPropertyBindings[key];
+    }
+    for (const key of testBindingKeys.value) {
+      testPropertyBindings[key] = "";
+    }
+  }
+
+  /**
+   * @description 加载当前空间下可选本体对象列表。
+   */
+  async function loadTestObjectOptions(): Promise<void> {
+    if (!spaceId.value) {
+      testObjectOptions.value = [];
       return;
     }
-    let payload: Record<string, unknown>;
+    testObjectLoading.value = true;
+    try {
+      const response = await getOntologyCategoryTreeInterface({ spaceId: String(spaceId.value) });
+      if (response.code !== 200 || !response.data) {
+        throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "对象列表加载失败");
+      }
+      testObjectOptions.value = mapOntologyObjectsToRelationOptions(response.data);
+    } catch (error) {
+      testObjectOptions.value = [];
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "对象列表加载失败");
+    } finally {
+      testObjectLoading.value = false;
+    }
+  }
+
+  /**
+   * @description 按所选本体加载属性选项，并刷新请求预览。
+   * @param ontologyIdentifier 本体唯一标识。
+   */
+  async function selectTestOntology(ontologyIdentifier: string): Promise<void> {
+    testSelectedOntologyId.value = ontologyIdentifier;
+    resetTestPropertyBindings();
+    testPropertyOptions.value = [];
+    refreshTestRequestPreview();
+    const id = ontologyIdentifier.trim();
+    if (!id) {
+      return;
+    }
+    testPropertyLoading.value = true;
+    try {
+      const response = await getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier: id });
+      if (response.code !== 200 || !response.data) {
+        throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "属性列表加载失败");
+      }
+      const options = new Map<string, SpaceRelationObjectOption>();
+      for (const item of response.data) {
+        const value = typeof item.apiName === "string" ? item.apiName.trim() : "";
+        if (!value || options.has(value)) {
+          continue;
+        }
+        const label = typeof item.displayName === "string" && item.displayName.trim() ? item.displayName.trim() : value;
+        options.set(value, { value, label });
+      }
+      testPropertyOptions.value = [...options.values()].sort((a, b) => a.label.localeCompare(b.label, "zh-CN") || a.value.localeCompare(b.value));
+    } catch (error) {
+      testPropertyOptions.value = [];
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "属性列表加载失败");
+    } finally {
+      testPropertyLoading.value = false;
+      refreshTestRequestPreview();
+    }
+  }
+
+  /**
+   * @description 更新单个 variableBindings 键对应的属性 apiName。
+   * @param bindingKey 绑定键。
+   * @param apiName 属性 apiName。
+   */
+  function updateTestPropertyBinding(bindingKey: string, apiName: string): void {
+    testPropertyBindings[bindingKey] = apiName;
+    refreshTestRequestPreview();
+  }
+
+  /**
+   * @description 打开测试对话框：拉详情生成绑定键，并加载空间对象列表。
+   * @param operator 目标算子。
+   */
+  async function openTest(operator: FunctionOperator): Promise<void> {
+    const functionApi = operator.functionApi.trim();
+    if (!functionApi) {
+      ElMessage.error("缺少函数 API 名称，无法测试");
+      return;
+    }
+    testingOperator.value = operator;
+    testBindingKeys.value = [];
+    testSelectedOntologyId.value = "";
+    testPropertyOptions.value = [];
+    testObjectOptions.value = [];
+    resetTestPropertyBindings();
+    testInput.value = "{}";
+    testOutput.value = "";
+    testVisible.value = true;
+    testDetailLoading.value = true;
+    try {
+      const response = await getOntologyFunctionDetailInterface({ functionApi });
+      if (response.code !== 200 || !response.data) {
+        throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数详情查询失败");
+      }
+      testBindingKeys.value = buildOntologyFunctionTestBindingKeys(response.data.params ?? []);
+      resetTestPropertyBindings();
+      refreshTestRequestPreview();
+      await loadTestObjectOptions();
+    } catch (error) {
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数详情查询失败");
+    } finally {
+      testDetailLoading.value = false;
+    }
+  }
+
+  /**
+   * @description 解析预览 JSON 并调用函数测试接口；将完整响应写入输出结果文本框。
+   */
+  async function runTest(): Promise<void> {
+    if (!testingOperator.value || testing.value) {
+      return;
+    }
+    let payload: TestOntologyFunctionParams;
     try {
       const parsed: unknown = JSON.parse(testInput.value);
       if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
         throw new Error("测试参数必须是 JSON 对象");
       }
-      payload = parsed as Record<string, unknown>;
+      const record = parsed as Record<string, unknown>;
+      const functionApi = typeof record.functionApi === "string" ? record.functionApi.trim() : "";
+      const ontologyIdentifier = typeof record.ontologyIdentifier === "string" ? record.ontologyIdentifier.trim() : "";
+      if (!functionApi) {
+        throw new Error("缺少 functionApi");
+      }
+      if (!ontologyIdentifier) {
+        throw new Error("请先选择对象");
+      }
+      const bindingsRaw = record.variableBindings;
+      if (typeof bindingsRaw !== "object" || bindingsRaw === null || Array.isArray(bindingsRaw)) {
+        throw new Error("variableBindings 必须是对象");
+      }
+      const variableBindings: Record<string, string> = {};
+      for (const [key, value] of Object.entries(bindingsRaw)) {
+        if (typeof value === "string" && value.trim()) {
+          variableBindings[key] = value.trim();
+        }
+      }
+      for (const key of testBindingKeys.value) {
+        if (!variableBindings[key]) {
+          throw new Error(`请为参数「${key}」选择属性`);
+        }
+      }
+      payload = {
+        functionApi,
+        ontologyIdentifier,
+        variableBindings,
+        pageNum: typeof record.pageNum === "number" ? record.pageNum : 1,
+        pageSize: typeof record.pageSize === "number" ? record.pageSize : 10,
+      };
     } catch (error) {
       ElMessage.error(error instanceof Error ? error.message : "测试参数格式错误");
       return;
     }
     testing.value = true;
+    testOutput.value = "";
     try {
-      const result = testFunctionOperatorMock(spaceId.value, testingOperator.value.id, payload);
-      testResult.value = result;
-      if (!result.success) {
-        ElMessage.error(result.message);
-      } else {
-        ElMessage.success(result.message);
+      const response = await testOntologyFunctionInterface(payload);
+      testOutput.value = `${JSON.stringify(response, null, 2)}\n`;
+      if (response.code !== 200) {
+        throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数测试失败");
       }
-      await loadOperators();
-      testingOperator.value = operators.value.find((item) => item.id === testingOperator.value?.id) ?? testingOperator.value;
+      ElMessage.success("测试成功");
+    } catch (error) {
+      const message = error instanceof Error && error.message.trim() ? error.message : "函数测试失败";
+      if (!testOutput.value.trim()) {
+        testOutput.value = `${JSON.stringify({ code: null, message, success: false, data: null }, null, 2)}\n`;
+      }
+      ElMessage.error(message);
     } finally {
       testing.value = false;
     }
@@ -356,14 +600,27 @@ export function useFunctionOperatorWorkspace() {
     creatorOptions,
     selectedOperator,
     detailVisible,
+    detailLoading,
     editingOperator,
     formDraft,
     formVisible,
     testVisible,
     testingOperator,
     testInput,
-    testResult,
+    testOutput,
     testing,
+    testDetailLoading,
+    testObjectLoading,
+    testPropertyLoading,
+    testBindingKeys,
+    testObjectOptions,
+    testPropertyOptions,
+    testSelectedOntologyId,
+    testPropertyBindings,
+    deleteVisible,
+    deleteSubmitting,
+    deleteError,
+    deletingOperator,
     loadOperators,
     resetFilters,
     applyFilters,
@@ -371,9 +628,12 @@ export function useFunctionOperatorWorkspace() {
     openCreate,
     openEdit,
     saveOperator,
-    removeOperator,
+    openDeleteOperator,
+    confirmDeleteOperator,
     togglePublish,
     openTest,
+    selectTestOntology,
+    updateTestPropertyBinding,
     runTest,
   };
 }

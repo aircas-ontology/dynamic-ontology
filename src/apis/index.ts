@@ -1,5 +1,12 @@
 import { getExampleInterface } from "./exampleApi";
-import { createOntologyFunctionInterface, getOntologyFunctionListInterface } from "./functionApi";
+import {
+  createOntologyFunctionInterface,
+  deleteOntologyFunctionInterface,
+  getOntologyFunctionDetailInterface,
+  getOntologyFunctionListInterface,
+  testOntologyFunctionInterface,
+  updateOntologyFunctionInterface,
+} from "./functionApi";
 import { postLoginInterface } from "./loginApi";
 import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
 import { getOntologyApiDocsInterface } from "./ontologyDocApi";
@@ -62,6 +69,7 @@ export {
   createOntologyObjectInterface,
   createOntologyObjectArrTypeTreeInterface,
   createOntologyPropertyInterface,
+  deleteOntologyFunctionInterface,
   deleteOntologyObjectArrTypeTreeInterface,
   deleteOntologyCategoryTreeInterface,
   deleteOntologyLinkInterface,
@@ -75,6 +83,7 @@ export {
   getOntologyApiDocsInterface,
   getOntologyDatasourceColumnsInterface,
   getOntologyCategoryTreeInterface,
+  getOntologyFunctionDetailInterface,
   getOntologyFunctionListInterface,
   getOntologyMetaByObjectIdInterface,
   getOntologyObjectArrTypeTreeInterface,
@@ -100,6 +109,8 @@ export {
   putUpdateOntologyCategoryNameInterface,
   putUpdateOntologyLinkInterface,
   putUpdateOntologyRelationCategoryNameInterface,
+  testOntologyFunctionInterface,
+  updateOntologyFunctionInterface,
   updateOntologySpaceInterface,
   updateOntologyObjectArrTypeTreeInterface,
   updateOntologyObjectInterface,

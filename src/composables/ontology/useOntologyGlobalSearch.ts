@@ -4,7 +4,11 @@ import { ElMessage } from "element-plus";
 
 import { getOntologyMetaByObjectIdInterface, postOntologyGlobalSearchInterface } from "@/apis";
 import type { OntologyGlobalSearchItem } from "@/types";
-import { resolveOntologyGlobalSearchPropertyRoute, resolveOntologyGlobalSearchRoute } from "@/utils/ontologyGlobalSearchRoute";
+import {
+  resolveOntologyGlobalSearchObjectRoute,
+  resolveOntologyGlobalSearchPropertyRoute,
+  resolveOntologyGlobalSearchRoute,
+} from "@/utils/ontologyGlobalSearchRoute";
 
 export type OntologyGlobalSearchStatus = "idle" | "loading" | "success" | "empty" | "error";
 
@@ -76,12 +80,12 @@ export function useOntologyGlobalSearch() {
   }
 
   /**
-   * @description 点击结果项：空间/对象/关系分组直接跳转；属性先查对象简要信息再拼路由。
+   * @description 点击结果项：空间/关系分组直接跳转；对象与属性先查对象简要信息再拼路由。
    * @param item 检索结果。
    * @returns 是否已发起跳转。
    */
   async function openOntologyGlobalSearchItem(item: OntologyGlobalSearchItem): Promise<boolean> {
-    if (item.type === "属性") {
+    if (item.type === "对象" || item.type === "属性") {
       if (item.objectId === undefined || item.objectId === null || !Number.isFinite(item.objectId)) {
         ElMessage.info("该类型暂不支持跳转");
         return false;
@@ -91,7 +95,8 @@ export function useOntologyGlobalSearch() {
         if (response.code !== 200 || !response.data) {
           throw new Error(response.message.trim() || "对象信息查询失败");
         }
-        const location = resolveOntologyGlobalSearchPropertyRoute(item, response.data);
+        const location =
+          item.type === "对象" ? resolveOntologyGlobalSearchObjectRoute(item, response.data) : resolveOntologyGlobalSearchPropertyRoute(item, response.data);
         if (!location) {
           ElMessage.info("该类型暂不支持跳转");
           return false;

@@ -1,6 +1,6 @@
 # 接口名称
 
-- 查询函数列表
+- 根据函数api获取函数详情
 
 ## 编译位置
 
@@ -16,7 +16,7 @@ mocks与types文件名自行语义化命名
 
 ## 接口uri
 
-- `/ontology/function/list`
+- `/ontology/function/detail`
 
 ## 请求方式
 
@@ -26,15 +26,11 @@ mocks与types文件名自行语义化命名
 
 - ```JSON
   {
-    "pageNum": "",
-    "pageSize": "",
-    "ontologySpaceId": "",
+    "functionApi": "",
   }
   ```
 
-- `pageNum`：【number，非必填】 默认1
-- `pageSize`：【number，非必填】 默认10
-- `ontologySpaceId`：【number，必填】 空间id
+- `functionApi`：【string，必填】 函数api
 
 ## 输出参数
 
@@ -43,26 +39,58 @@ mocks与types文件名自行语义化命名
   "code": 200,
   "message": "SUCCESS",
   "data": {
-    "records": [
+    "functionApi": "ss",
+    "displayName": "ss",
+    "description": "ss",
+    "model": "BASIC",
+    "type": "BASIC_QUERY",
+    "ontologySpaceId": 46,
+    "params": [
       {
-        "functionApi": "test",
-        "displayName": "测试函数",
-        "description": "测试函数说明",
-        "type": "BASIC_QUERY",
-        "updateTime": "2026-09-24T03:35:18.692+00:00"
+        "paramId": 25,
+        "paramName": "xingbie",
+        "paramType": "STRING",
+        "category": "INPUT",
+        "paramOrder": 1,
+        "description": "过滤条件",
+        "paramRole": "FILTER"
       },
       {
-        "functionApi": "addTwoNumbers",
-        "displayName": "两数相加",
-        "description": "测试用：返回 a+b",
-        "type": "CUSTOMIZE",
-        "updateTime": "2026-09-24T03:35:18.692+00:00"
+        "paramId": 26,
+        "paramName": "age",
+        "paramType": "STRING",
+        "category": "INPUT",
+        "paramOrder": 2,
+        "description": "过滤条件",
+        "paramRole": "FILTER"
+      },
+      {
+        "paramId": 27,
+        "paramName": "target",
+        "paramType": "STRING",
+        "category": "INPUT",
+        "paramOrder": 3,
+        "description": "聚合目标",
+        "paramRole": "AGGREGATION"
       }
     ],
-    "total": 2,
-    "size": 10,
-    "current": 1,
-    "pages": 1
+    "code": "{\"aggFunc\":null,\"targetProperty\":null,\"filters\":{\"logic\":\"AND\",\"children\":[{\"type\":\"FILTER\",\"filter\":{\"propertyApiName\":\"age\",\"op\":\"EQ\",\"value\":\"10\",\"values\":null,\"dataType\":\"STRING\"},\"group\":null}]}}",
+    "queryConfig": {
+      "filters": {
+        "logic": "AND",
+        "children": [
+          {
+            "type": "FILTER",
+            "filter": {
+              "propertyApiName": "age",
+              "op": "EQ",
+              "value": "10",
+              "dataType": "STRING"
+            }
+          }
+        ]
+      }
+    }
   }
 }
 ```

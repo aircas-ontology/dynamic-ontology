@@ -28,6 +28,7 @@ export type {
   CreateOntologySpaceWithCanvasContentData,
   CreateOntologySpaceWithCanvasContentParams,
 } from "./apis/createOntologySpaceWithCanvasContentType";
+export type { DeleteOntologyFunctionData, DeleteOntologyFunctionParams } from "./apis/deleteOntologyFunctionType";
 export type { DeleteOntologyLinkParams } from "./apis/deleteOntologyLinkType";
 export type { DeleteOntologyObjectArrTypeTreeParams } from "./apis/deleteOntologyObjectArrTypeTreeType";
 export type { DeleteOntologyObjectData, DeleteOntologyObjectParams } from "./apis/deleteOntologyObjectType";
@@ -42,6 +43,7 @@ export type {
   OntologyDatasourceColumnDescVO,
 } from "./apis/getOntologyDatasourceColumnsType";
 export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
+export type { GetOntologyFunctionDetailData, GetOntologyFunctionDetailParamItem, GetOntologyFunctionDetailParams } from "./apis/getOntologyFunctionDetailType";
 export type { GetOntologyFunctionListData, GetOntologyFunctionListItem, GetOntologyFunctionListParams } from "./apis/getOntologyFunctionListType";
 export type { GetOntologyMetaByObjectIdData, GetOntologyMetaByObjectIdParams } from "./apis/getOntologyMetaByObjectIdType";
 export type { GetOntologyMetaStatisticData, GetOntologyMetaStatisticParams, OntologyMetaStatisticVO } from "./apis/getOntologyMetaStatisticType";
@@ -91,6 +93,8 @@ export type {
   OntologyRelationCategoryTreeParams,
   UpdateOntologyRelationCategoryNameParams,
 } from "./apis/ontologyRelationCategoryTreeType";
+export type { TestOntologyFunctionData, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
+export type { UpdateOntologyFunctionData, UpdateOntologyFunctionParams } from "./apis/updateOntologyFunctionType";
 export type { UpdateOntologyLinkParams } from "./apis/updateOntologyLinkType";
 export type { UpdateOntologyObjectArrTypeTreeParams } from "./apis/updateOntologyObjectArrTypeTreeType";
 export type { UpdateOntologyObjectData, UpdateOntologyObjectParams } from "./apis/updateOntologyObjectType";
