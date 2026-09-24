@@ -344,6 +344,10 @@ onBeforeUnmount(() => {
     border-color 0.2s ease,
     box-shadow 0.2s ease;
 }
+
+:root[theme="light"] .ontology-object-section {
+  background: linear-gradient(180deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
 .ontology-object-section.is-active {
   border-color: var(--aircas-color-accent-cyan);
   box-shadow: 0 0 12px var(--aircas-color-accent-cyan-fill);
@@ -647,6 +651,14 @@ onBeforeUnmount(() => {
   box-shadow: none;
 }
 
+:root[theme="light"]
+  .ontology-object-card__actions
+  .ontology-object-action--export.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info) {
+  background: var(--aircas-color-panel-background);
+}
+
 .ontology-object-card__actions
   .ontology-object-action--export.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
     .el-button--danger
@@ -663,6 +675,24 @@ onBeforeUnmount(() => {
   border-color: var(--aircas-color-border-highlight);
   background: var(--aircas-color-overlay-deep);
   box-shadow: 0 0 10px var(--aircas-color-accent-blue-soft);
+}
+
+:root[theme="light"]
+  .ontology-object-card__actions
+  .ontology-object-action--export.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info):hover,
+:root[theme="light"]
+  .ontology-object-card__actions
+  .ontology-object-action--export.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info):focus,
+:root[theme="light"]
+  .ontology-object-card__actions
+  .ontology-object-action--export.aircas-button.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info):focus-visible {
+  background: var(--aircas-color-hover-background);
 }
 
 .ontology-object-card__actions .ontology-object-action--delete.aircas-button.el-button.el-button--danger {

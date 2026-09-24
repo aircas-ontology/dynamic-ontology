@@ -549,6 +549,10 @@ async function handleRelationDelete() {
   background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
   box-shadow: inset 0 0 18px var(--aircas-color-page-glow);
 }
+
+:root[theme="light"] .space-relation-workspace__header {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
 .space-relation-workspace__title {
   display: flex;
   min-width: 0;

@@ -63,6 +63,10 @@ function spaceRow(row: unknown): OntologySpaceItem {
     0 0 18px var(--aircas-color-accent-blue-soft);
 }
 
+:root[theme="light"] .space-table-view {
+  background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .space-table-view :deep(.el-table__header-wrapper th.el-table__cell) {
   background: linear-gradient(180deg, var(--aircas-color-section-header), var(--aircas-color-panel-background-deep));
   color: var(--aircas-color-text-primary);

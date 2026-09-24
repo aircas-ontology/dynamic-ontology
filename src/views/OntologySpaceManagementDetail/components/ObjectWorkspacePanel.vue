@@ -282,6 +282,9 @@ function handleAction(action: string, item?: OntologyObjectItem) {
   background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
   box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
+:root[theme="light"] .object-workspace-panel__state {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
 
 @media (max-width: 1000px) {
   .object-workspace-panel {

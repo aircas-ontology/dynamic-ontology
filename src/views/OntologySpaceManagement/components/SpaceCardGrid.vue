@@ -83,6 +83,10 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
     0 0 18px var(--aircas-color-accent-blue-soft);
 }
 
+:root[theme="light"] .space-card-grid {
+  background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .space-card {
   display: flex;
   min-width: 0;
@@ -97,6 +101,10 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.2s ease;
+}
+
+:root[theme="light"] .space-card {
+  background: linear-gradient(140deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
 .space-card:hover {
@@ -311,10 +319,19 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
   background: var(--aircas-color-overlay-deep);
 }
 
+:root[theme="light"] .space-card :deep(.space-actions .el-dropdown .el-button.el-button--primary.is-plain) {
+  background: var(--aircas-color-panel-background);
+}
+
 .space-card :deep(.space-actions .el-dropdown .el-button.el-button--primary.is-plain:hover),
 .space-card :deep(.space-actions .el-dropdown .el-button.el-button--primary.is-plain:focus-visible) {
   color: var(--aircas-color-text-primary);
   border-color: var(--aircas-color-border-highlight);
   background: var(--aircas-color-overlay-deep);
+}
+
+:root[theme="light"] .space-card :deep(.space-actions .el-dropdown .el-button.el-button--primary.is-plain:hover),
+:root[theme="light"] .space-card :deep(.space-actions .el-dropdown .el-button.el-button--primary.is-plain:focus-visible) {
+  background: var(--aircas-color-hover-background);
 }
 </style>

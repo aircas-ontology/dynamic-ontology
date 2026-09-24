@@ -131,6 +131,12 @@ watch(keyword, (value) => treeRef.value?.filter(value));
     0 0 18px var(--aircas-color-accent-blue-soft);
 }
 
+:root[theme="light"] .subspace-create-tree-panel {
+  background:
+    radial-gradient(circle at 12% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 42%),
+    linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .subspace-create-tree-panel__header {
   display: flex;
   align-items: baseline;

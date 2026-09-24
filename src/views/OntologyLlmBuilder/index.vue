@@ -248,6 +248,11 @@ function openAssistant() {
   background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
   box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
+
+:root[theme="light"] .ontology-llm-builder__steps,
+:root[theme="light"] .ontology-llm-builder__content {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
 .ontology-llm-builder__steps {
   display: flex;
   flex-direction: column;

@@ -635,6 +635,10 @@ async function saveConceptualModel() {
   background: linear-gradient(90deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
   box-shadow: 0 0 24px var(--aircas-color-accent-blue-soft);
 }
+
+:root[theme="light"] .conceptual-model-create__topbar {
+  background: linear-gradient(90deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
 .conceptual-model-create__identity {
   flex: 1;
   min-width: 180px;
@@ -705,6 +709,12 @@ async function saveConceptualModel() {
   background: linear-gradient(180deg, var(--aircas-color-overlay), var(--aircas-color-panel-background-deep));
   box-shadow: 0 0 18px var(--aircas-color-accent-cyan-soft);
   overflow: hidden;
+}
+
+:root[theme="light"] .conceptual-model-create__palette,
+:root[theme="light"] .conceptual-model-create__canvas-panel,
+:root[theme="light"] .conceptual-model-create__inspector {
+  background: linear-gradient(180deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 .conceptual-model-create__palette,
 .conceptual-model-create__inspector {

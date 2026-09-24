@@ -404,6 +404,10 @@ defineExpose({ fit, zoomBy });
   pointer-events: none;
 }
 
+:root[theme="light"] .conceptual-model-graph__empty {
+  background: var(--aircas-color-card-background);
+}
+
 .conceptual-model-graph__empty strong {
   color: var(--aircas-color-text-primary);
   font-size: 16px;
@@ -424,6 +428,10 @@ defineExpose({ fit, zoomBy });
   color: var(--aircas-color-text-primary);
   background: linear-gradient(180deg, var(--aircas-color-overlay), var(--aircas-color-panel-background-deep));
   box-shadow: 0 0 18px var(--aircas-color-accent-cyan-soft);
+}
+
+:root[theme="light"] .conceptual-model-graph__stage :deep(.conceptual-model-node) {
+  background: linear-gradient(180deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
 .conceptual-model-graph__stage :deep(.conceptual-model-node.is-selected) {

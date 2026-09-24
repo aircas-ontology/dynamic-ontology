@@ -35,9 +35,17 @@ test("overview welcome and stat cards share prototype height and overlay backgro
   const stat = readFileSync(new URL("../src/views/OntologySpaceManagement/components/StatCard.vue", import.meta.url), "utf8");
   assert.match(page, /\.ontology-space-management__overview[\s\S]*min-height: 150px/);
   assert.match(welcome, /min-height: 150px/);
-  assert.match(welcome, /linear-gradient/);
+  assert.match(welcome, /linear-gradient\(160deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
+  assert.match(
+    welcome,
+    /:root\[theme="light"\] \.welcome-panel\.aircas-card[\s\S]*linear-gradient\(160deg, var\(--aircas-color-card-background\), var\(--aircas-color-panel-background-deep\)\)/,
+  );
   assert.match(stat, /min-height: 150px/);
-  assert.match(stat, /linear-gradient/);
+  assert.match(stat, /linear-gradient\(160deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
+  assert.match(
+    stat,
+    /:root\[theme="light"\] \.stat-card\.aircas-card[\s\S]*linear-gradient\(160deg, var\(--aircas-color-card-background\), var\(--aircas-color-panel-background-deep\)\)/,
+  );
   assert.match(stat, /\.stat-card\.aircas-card\.stat-card--object[\s\S]*--aircas-color-accent-green/);
   assert.match(stat, /\.stat-card\.aircas-card\.stat-card--behavior[\s\S]*--aircas-color-accent-blue/);
   assert.match(stat, /\.stat-card\.aircas-card\.stat-card--relation[\s\S]*--aircas-color-accent-purple/);

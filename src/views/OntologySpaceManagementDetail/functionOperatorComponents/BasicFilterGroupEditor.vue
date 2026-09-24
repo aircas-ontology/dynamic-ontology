@@ -350,6 +350,10 @@ function updateNestedGroup(index: number, group: BasicFilterDocument): void {
   background: var(--aircas-color-overlay);
 }
 
+:root[theme="light"] .basic-filter-group__nested {
+  background: var(--aircas-color-panel-background);
+}
+
 .basic-filter-row__number {
   width: 100%;
   --el-fill-color-blank: var(--aircas-color-input-background);

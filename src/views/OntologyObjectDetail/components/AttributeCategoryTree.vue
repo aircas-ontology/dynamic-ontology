@@ -129,6 +129,10 @@ watch(
   box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
+:root[theme="light"] .ontology-object-attribute-panel__categories {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .ontology-object-attribute-panel__section-header h1 {
   margin: 0;
   color: var(--aircas-color-text-primary);
