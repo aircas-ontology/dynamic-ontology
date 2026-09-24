@@ -1,6 +1,6 @@
 # 接口名称
 
-- 查询函数列表
+- 函数算子修改函数
 
 ## 编译位置
 
@@ -16,25 +16,34 @@ mocks与types文件名自行语义化命名
 
 ## 接口uri
 
-- `/ontology/function/list`
+- `/ontology/function`
 
 ## 请求方式
 
-- GET
+- PUT
 
 ## 输入参数
 
 - ```JSON
   {
-    "pageNum": "",
-    "pageSize": "",
+    "functionApi": "",
+    "displayName": "",
+    "description": "",
+    "type": "",
     "ontologySpaceId": "",
+    "queryConfig":{
+      "aggFunc":"",
+      "filters":{}
+    }
   }
   ```
 
-- `pageNum`：【number，非必填】 默认1
-- `pageSize`：【number，非必填】 默认10
-- `ontologySpaceId`：【number，必填】 空间id
+- `functionApi`：【string，必填】 函数api
+- `displayName`：【string，必填】 函数名称
+- `description`：【string，必填】 描述
+- `type`：【string，必填】 函数模型,目前只有一个值BASIC_QUERY
+- `ontologySpaceId`：【number，必填】 所属本体空间 id
+- `queryConfig`：【object，非必填】 基础查询算子配置对象
 
 ## 输出参数
 
@@ -42,28 +51,6 @@ mocks与types文件名自行语义化命名
 {
   "code": 200,
   "message": "SUCCESS",
-  "data": {
-    "records": [
-      {
-        "functionApi": "test",
-        "displayName": "测试函数",
-        "description": "测试函数说明",
-        "type": "BASIC_QUERY",
-        "updateTime": "2026-09-24T03:35:18.692+00:00"
-      },
-      {
-        "functionApi": "addTwoNumbers",
-        "displayName": "两数相加",
-        "description": "测试用：返回 a+b",
-        "type": "CUSTOMIZE",
-        "updateTime": "2026-09-24T03:35:18.692+00:00"
-      }
-    ],
-    "total": 2,
-    "size": 10,
-    "current": 1,
-    "pages": 1
-  }
 }
 ```
 

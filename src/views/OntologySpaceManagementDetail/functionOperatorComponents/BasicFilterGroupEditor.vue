@@ -102,7 +102,7 @@
               </template>
               <span v-else class="basic-filter-row__value-placeholder">无需取值</span>
             </div>
-            <el-button type="danger" plain class="aircas-button" size="small" :disabled="group.children.length <= 1" @click="removeChild(index)">
+            <el-button type="danger" plain class="aircas-button basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
               删除
             </el-button>
           </div>
@@ -111,7 +111,7 @@
           <div class="basic-filter-group__nested">
             <div class="basic-filter-group__nested-header">
               <span>分组</span>
-              <el-button type="danger" plain class="aircas-button" size="small" :disabled="group.children.length <= 1" @click="removeChild(index)">
+              <el-button type="danger" plain class="aircas-button basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
                 删除分组
               </el-button>
             </div>
@@ -329,8 +329,9 @@ function updateNestedGroup(index: number, group: BasicFilterDocument): void {
 
 .basic-filter-row__values {
   display: flex;
-  flex: 1.2;
-  min-width: 140px;
+  flex: 0 1 160px;
+  min-width: 120px;
+  max-width: 200px;
   align-items: center;
   gap: 8px;
 }
@@ -352,12 +353,52 @@ function updateNestedGroup(index: number, group: BasicFilterDocument): void {
 
 .basic-filter-row__number {
   width: 100%;
+  max-width: 140px;
   --el-fill-color-blank: var(--aircas-color-input-background);
   --el-input-bg-color: var(--aircas-color-input-background);
   --el-input-border-color: var(--aircas-color-border);
   --el-input-hover-border-color: var(--aircas-color-border-highlight);
   --el-input-focus-border-color: var(--aircas-color-focus-border);
   --el-input-text-color: var(--aircas-color-text-primary);
+  --el-disabled-bg-color: var(--aircas-color-input-background);
+  --el-text-color-regular: var(--aircas-color-text-primary);
+}
+
+.basic-filter-row__number :deep(.el-input__wrapper) {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+  background-color: var(--aircas-color-input-background);
+  box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+}
+
+.basic-filter-row__number :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
+}
+
+.basic-filter-row__number :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
+}
+
+.basic-filter-row__number :deep(.el-input-number__decrease),
+.basic-filter-row__number :deep(.el-input-number__increase) {
+  width: 28px;
+  background: var(--aircas-color-panel-background-deep);
+  border-color: var(--aircas-color-border-soft);
+  color: var(--aircas-color-text-secondary);
+}
+
+.basic-filter-row__number :deep(.el-input-number__decrease:hover),
+.basic-filter-row__number :deep(.el-input-number__increase:hover) {
+  color: var(--aircas-color-text-primary);
+}
+
+.basic-filter-row__remove.aircas-button {
+  flex: 0 0 auto;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 12px;
+  margin-left: 0;
 }
 
 .basic-filter-group__nested-header {

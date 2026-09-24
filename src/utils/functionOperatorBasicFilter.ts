@@ -264,6 +264,21 @@ function mapValueTypeToDataType(valueType: BasicFilterValueType): CreateOntology
 }
 
 /**
+ * @description 将接口 dataType 映射为表单 valueType。
+ * @param dataType 接口数据类型。
+ * @returns 表单 valueType。
+ */
+function mapDataTypeToValueType(dataType: string | undefined): BasicFilterValueType {
+  if (dataType === "NUMBER") {
+    return "number";
+  }
+  if (dataType === "BOOLEAN") {
+    return "boolean";
+  }
+  return "string";
+}
+
+/**
  * @description 将单条过滤条件转为创建接口 filter 结构。
  * @param condition 表单过滤条件。
  * @returns 接口过滤条件。
@@ -280,6 +295,28 @@ function mapConditionToApiFilter(condition: BasicFilterCondition): CreateOntolog
     next.value = condition.value;
   }
   return next;
+}
+
+/**
+ * @description 将创建接口 filter 转为表单过滤条件。
+ * @param filter 接口过滤条件。
+ * @returns 表单过滤条件。
+ */
+function mapApiFilterToCondition(filter: CreateOntologyFunctionFilterCondition): BasicFilterCondition {
+  const valueType = mapDataTypeToValueType(filter.dataType);
+  const op = isOp(filter.op) ? filter.op : "EQ";
+  const condition: BasicFilterCondition = {
+    op,
+    propertyApiName: filter.propertyApiName?.trim() || "",
+    valueType,
+  };
+  if (op === "BETWEEN") {
+    const values = Array.isArray(filter.values) ? filter.values.map((item) => coerceValue(item, valueType)).slice(0, 2) : [];
+    condition.values = [values[0] ?? defaultValueForType(valueType), values[1] ?? defaultValueForType(valueType)];
+  } else if (op !== "IS_NULL" && op !== "IS_NOT_NULL") {
+    condition.value = filter.value !== undefined ? coerceValue(filter.value, valueType) : defaultValueForType(valueType);
+  }
+  return condition;
 }
 
 /**
@@ -301,6 +338,24 @@ function mapNodeToApiFilter(node: BasicFilterNode): CreateOntologyFunctionFilter
 }
 
 /**
+ * @description 将创建接口过滤节点转为表单节点。
+ * @param node 接口节点。
+ * @returns 表单节点。
+ */
+function mapApiFilterToNode(node: CreateOntologyFunctionFilterNode): BasicFilterNode {
+  if (node.type === "GROUP") {
+    return {
+      type: "GROUP",
+      group: mapApiFiltersToGroup(node.group ?? { logic: "OR", children: [] }),
+    };
+  }
+  return {
+    type: "FILTER",
+    filter: mapApiFilterToCondition(node.filter ?? { propertyApiName: "", op: "EQ", dataType: "STRING", value: "" }),
+  };
+}
+
+/**
  * @description 将过滤文档转为创建接口 filters。
  * @param group 表单过滤组。
  * @returns 接口 filters。
@@ -309,6 +364,18 @@ function mapGroupToApiFilters(group: BasicFilterDocument): CreateOntologyFunctio
   return {
     logic: group.logic,
     children: group.children.map(mapNodeToApiFilter),
+  };
+}
+
+/**
+ * @description 将创建接口 filters 转为表单过滤文档。
+ * @param group 接口 filters。
+ * @returns 表单过滤文档。
+ */
+function mapApiFiltersToGroup(group: CreateOntologyFunctionFilters): BasicFilterDocument {
+  return {
+    logic: group.logic === "OR" ? "OR" : "AND",
+    children: Array.isArray(group.children) && group.children.length ? group.children.map(mapApiFilterToNode) : createEmptyBasicFilterDocument().children,
   };
 }
 
@@ -326,4 +393,16 @@ export function buildOntologyFunctionQueryConfig(doc: BasicFilterDocument, aggFu
     queryConfig.aggFunc = aggFunc;
   }
   return queryConfig;
+}
+
+/**
+ * @description 将详情接口 queryConfig 转为表单基础过滤文档。
+ * @param queryConfig 详情或创建用的 queryConfig。
+ * @returns 表单过滤文档。
+ */
+export function mapOntologyFunctionQueryConfigToBasicFilter(queryConfig: CreateOntologyFunctionQueryConfig): BasicFilterDocument {
+  if (!queryConfig?.filters) {
+    return createEmptyBasicFilterDocument();
+  }
+  return mapApiFiltersToGroup(queryConfig.filters);
 }

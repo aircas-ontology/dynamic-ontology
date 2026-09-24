@@ -14,7 +14,7 @@
         <button type="button" class="ontology-global-search-results__item" @click="emit('select', item)">
           <div class="ontology-global-search-results__row">
             <strong class="ontology-global-search-results__name">{{ item.name }}</strong>
-            <el-tag size="small" effect="plain">{{ item.type }}</el-tag>
+            <el-tag class="aircas-tag" size="small" effect="plain">{{ item.type }}</el-tag>
           </div>
           <p class="ontology-global-search-results__desc">{{ item.desc?.trim() || "" }}</p>
         </button>

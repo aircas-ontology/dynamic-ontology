@@ -1,6 +1,6 @@
 # 接口名称
 
-- 查询函数列表
+- 函数算子删除函数
 
 ## 编译位置
 
@@ -16,25 +16,19 @@ mocks与types文件名自行语义化命名
 
 ## 接口uri
 
-- `/ontology/function/list`
+- `/ontology/function/delete/{functionApi}`
 
 ## 请求方式
 
-- GET
+- DELETE
 
 ## 输入参数
 
-- ```JSON
-  {
-    "pageNum": "",
-    "pageSize": "",
-    "ontologySpaceId": "",
-  }
+- ```
+    "functionApi": "",
   ```
 
-- `pageNum`：【number，非必填】 默认1
-- `pageSize`：【number，非必填】 默认10
-- `ontologySpaceId`：【number，必填】 空间id
+- `functionApi`：【string，必填】 函数api名称
 
 ## 输出参数
 
@@ -42,28 +36,6 @@ mocks与types文件名自行语义化命名
 {
   "code": 200,
   "message": "SUCCESS",
-  "data": {
-    "records": [
-      {
-        "functionApi": "test",
-        "displayName": "测试函数",
-        "description": "测试函数说明",
-        "type": "BASIC_QUERY",
-        "updateTime": "2026-09-24T03:35:18.692+00:00"
-      },
-      {
-        "functionApi": "addTwoNumbers",
-        "displayName": "两数相加",
-        "description": "测试用：返回 a+b",
-        "type": "CUSTOMIZE",
-        "updateTime": "2026-09-24T03:35:18.692+00:00"
-      }
-    ],
-    "total": 2,
-    "size": 10,
-    "current": 1,
-    "pages": 1
-  }
 }
 ```
 

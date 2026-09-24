@@ -22,9 +22,9 @@
 跳转方式：使用路由方式跳转。
 数据说明：data数组中返回的对象字段"name"和"type"字段是必返回字段，"desc"可能有也可能没有，有就展示，没有就展示为空。
 当type值为"空间"时，返回字段中肯定有spaceId，对应跳转的路由为 /workspace/ontology-space-management/{spaceId}/overview
-当type值为"对象"时，返回字段中肯定有spaceId，对应跳转的路由为 workspace/ontology-space-management/{spaceId}/object
+当type值为"对象"时，返回字段中肯定有spaceId和uniqueIdentifier，对应跳转的路由为 /workspace/ontology-object/{uniqueIdentifier}/object?spaceId={spaceId}&spaceName={spaceName}&objectName={objectName}
 
-当type值为"属性"时，返回字段中肯定有uniqueIdentifier，对应跳转的路由为 /workspace/ontology-object/{uniqueIdentifier}/attribute?spaceId=11&spaceName={spaceName}&objectName={objectName}
+当type值为"属性"时，返回字段中肯定有spaceId和uniqueIdentifier，对应跳转的路由为 /workspace/ontology-object/{uniqueIdentifier}/attribute?spaceId={spaceId}&spaceName={spaceName}&objectName={objectName}
 
 需要注意一个逻辑是：先根据objectid的值调用getInfoByObjectidApi-shijian.md 中的接口，然后获取到对象名称objectName和空间名称spaceName后拼接到完成地址再跳转
 

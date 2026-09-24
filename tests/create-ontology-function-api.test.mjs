@@ -90,8 +90,10 @@ test("function operator create form exposes aggFunc and workspace posts create a
   assert.match(typeSource, /aggFunc\?:/);
   assert.match(formSource, /聚合类型/);
   assert.match(formSource, /FUNCTION_OPERATOR_AGG_FUNC_OPTIONS|aggFunc/);
+  assert.match(formSource, /delete form\.id/);
   assert.match(workspaceSource, /createOntologyFunctionInterface/);
   assert.match(workspaceSource, /BASIC_QUERY/);
   assert.match(workspaceSource, /buildOntologyFunctionQueryConfig/);
-  assert.match(workspaceSource, /updateFunctionOperatorMock/);
+  assert.match(workspaceSource, /if \(editingOperator\.value\)/);
+  assert.doesNotMatch(workspaceSource, /if \(draft\.id\)/);
 });

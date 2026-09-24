@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from "vue";
+import { reactive, ref, toRaw, watch } from "vue";
 import type { FormInstance, FormRules } from "element-plus";
 import { ElMessage } from "element-plus";
 
@@ -151,7 +151,7 @@ function toDraft(operator: FunctionOperator): FunctionOperatorDraft {
     timeout: operator.timeout,
     retryCount: operator.retryCount,
     retryInterval: operator.retryInterval,
-    definition: structuredClone(operator.definition),
+    definition: structuredClone(toRaw(operator.definition)),
     dependencies: [...operator.dependencies],
     testStatus: operator.testStatus,
     testedAt: operator.testedAt,
@@ -163,9 +163,7 @@ const form = reactive<FunctionOperatorDraft>(createEmptyDraft());
 const rules: FormRules = {
   name: [{ required: true, message: "请输入函数名称", trigger: "blur" }],
   functionApi: [{ required: true, message: "请输入函数api名称", trigger: "blur" }],
-  description: [{ required: true, message: "请输入函数说明", trigger: "blur" }],
 };
-
 /**
  * @description 切换函数类型；非 basic 仅占位。
  * @param type 目标类型。
@@ -214,9 +212,12 @@ watch(
     if (!visible) {
       return;
     }
-    const next = props.draft ? structuredClone(props.draft) : props.operator ? toDraft(props.operator) : createEmptyDraft();
+    const next = props.draft ? (structuredClone(toRaw(props.draft)) as FunctionOperatorDraft) : props.operator ? toDraft(props.operator) : createEmptyDraft();
     next.spaceId = props.spaceId;
     Object.assign(form, next);
+    if (!next.id) {
+      delete form.id;
+    }
   },
 );
 </script>

@@ -3,7 +3,11 @@ import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import { ontologyGlobalSearchMock } from "../src/mocks/ontologyGlobalSearchMock/ontologyGlobalSearchMock.ts";
-import { resolveOntologyGlobalSearchPropertyRoute, resolveOntologyGlobalSearchRoute } from "../src/utils/ontologyGlobalSearchRoute.ts";
+import {
+  resolveOntologyGlobalSearchObjectRoute,
+  resolveOntologyGlobalSearchPropertyRoute,
+  resolveOntologyGlobalSearchRoute,
+} from "../src/utils/ontologyGlobalSearchRoute.ts";
 
 /**
  * @description 读取相对 tests 的源文件文本。
@@ -44,20 +48,31 @@ test("global search mock mirrors the documented success sample", () => {
   assert.ok(ontologyGlobalSearchMock.data.some((item) => item.type === "对象" && item.spaceId === 11));
 });
 
-test("resolveOntologyGlobalSearchRoute maps space, object and relation-group types", () => {
+test("resolveOntologyGlobalSearchRoute maps space and relation-group types", () => {
   assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "sj测试", type: "空间", spaceId: 37 }), {
     name: "OntologySpaceManagementDetailOverview",
     params: { spaceId: "37" },
   });
-  assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "对象A", type: "对象", spaceId: 11 }), {
-    name: "OntologySpaceManagementDetailObject",
-    params: { spaceId: "11" },
-  });
+  assert.equal(resolveOntologyGlobalSearchRoute({ name: "对象A", type: "对象", spaceId: 11, objectId: 9 }), null);
   assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "a", type: "关系分组", spaceId: 11 }), {
     name: "OntologySpaceManagementDetailRelation",
     params: { spaceId: "11" },
   });
   assert.equal(resolveOntologyGlobalSearchRoute({ name: "飞机id", type: "属性", spaceId: 46, objectId: 106 }), null);
+});
+
+test("resolveOntologyGlobalSearchObjectRoute uses meta uniqueIdentifier and names", () => {
+  assert.deepEqual(
+    resolveOntologyGlobalSearchObjectRoute(
+      { name: "测试本体对象-修改", type: "对象", spaceId: 11, objectId: 9 },
+      { id: 9, displayName: "测试本体对象-修改", spaceName: "测试空间", uniqueIdentifier: "ae6cca59ced9432189da4af315554957" },
+    ),
+    {
+      name: "OntologyObjectDetailObject",
+      params: { objectId: "ae6cca59ced9432189da4af315554957" },
+      query: { spaceId: "11", spaceName: "测试空间", objectName: "测试本体对象-修改" },
+    },
+  );
 });
 
 test("resolveOntologyGlobalSearchPropertyRoute uses meta uniqueIdentifier and names", () => {
@@ -74,19 +89,27 @@ test("resolveOntologyGlobalSearchPropertyRoute uses meta uniqueIdentifier and na
   );
 });
 
-test("global search click handler fetches object meta before property navigation", () => {
+test("global search click handler fetches object meta before object and property navigation", () => {
   const source = readSource("../src/composables/ontology/useOntologyGlobalSearch.ts");
   assert.match(source, /getOntologyMetaByObjectIdInterface/);
+  assert.match(source, /resolveOntologyGlobalSearchObjectRoute/);
   assert.match(source, /resolveOntologyGlobalSearchPropertyRoute/);
+  assert.match(source, /item\.type === "对象"/);
   assert.match(source, /item\.type === "属性"/);
 });
 
 test("full text search page and header wire OntologyGlobalSearchField", () => {
   const page = readSource("../src/views/FullTextSearch/index.vue");
   const header = readSource("../src/layout/components/HeaderBar.vue");
+  const field = readSource("../src/components/OntologyGlobalSearchField/OntologyGlobalSearchField.vue");
+  const resultList = readSource("../src/components/OntologyGlobalSearchField/OntologyGlobalSearchResultList.vue");
   assert.match(page, /OntologyGlobalSearchField/);
   assert.match(page, /placement=["']page["']/);
   assert.match(header, /OntologyGlobalSearchField/);
   assert.match(header, /placement=["']overlay["']/);
   assert.doesNotMatch(header, /全局搜索暂未开放/);
+  assert.match(field, /v-if="placement === ['"]page['"]"/);
+  assert.match(field, /@click="submitSearch"/);
+  assert.match(field, />检索<\/el-button>/);
+  assert.match(resultList, /class="aircas-tag"/);
 });

@@ -105,6 +105,9 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.equal((panelSource.match(/class="aircas-tag"/g) || []).length, 4);
   assert.match(panelSource, /class="aircas-pagination function-operator-panel__pagination"/);
   assert.match(panelSource, /popper-class="aircas-pagination-popper"/);
+  assert.match(panelSource, /function-operator-panel__cards[\s\S]*align-items:\s*start/);
+  assert.match(panelSource, /function-operator-card__description[\s\S]*-webkit-line-clamp:\s*2/);
+  assert.match(panelSource, /function-operator-card__actions[\s\S]*justify-content:\s*flex-end/);
   assert.match(panelSource, /FunctionOperatorFormDialog/);
   assert.match(panelSource, /FunctionOperatorDetailDrawer/);
   assert.doesNotMatch(panelSource, /运行配置/);
