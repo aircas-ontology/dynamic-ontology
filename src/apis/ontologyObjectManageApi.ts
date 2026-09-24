@@ -64,13 +64,14 @@ function readOntologyExportResponseHeader(headers: AxiosResponse["headers"], nam
 }
 
 /**
- * @description 导出单个本体，包含 schema 与实例数据。
+ * @description 按 exportType 导出单个本体。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
  *
  * 请求方式：GET `/ontology/meta/export`
  *
  * 在线文档未声明 JSON 响应体，成功结果按文件字节返回。
  * @param params 查询参数。
  * @param params.uniqueIdentifier 本体唯一标识，必填。
+ * @param {string} params.exportType 导出类型，必填。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
  * @returns 文件内容和用于命名的响应头。
  */
 export async function getExportOntologyInterface(params: ExportOntologyParams): Promise<ExportOntologyFile> {
