@@ -9,15 +9,20 @@ export type BasicFilterLogic = (typeof BASIC_FILTER_LOGIC_OPTIONS)[number]["valu
 
 export const BASIC_FILTER_OP_OPTIONS = [
   { value: "EQ", label: "等于 EQ" },
-  { value: "NEQ", label: "不等于 NEQ" },
+  { value: "NE", label: "不等于 NE" },
+  { value: "LIKE", label: "全模糊 LIKE" },
+  { value: "LIKE_LEFT", label: "左模糊 LIKE_LEFT" },
+  { value: "LIKE_RIGHT", label: "右模糊 LIKE_RIGHT" },
+  { value: "IN", label: "包含 IN" },
+  { value: "NOT_IN", label: "不包含 NOT_IN" },
+  { value: "BETWEEN", label: "区间内 BETWEEN" },
+  { value: "NOT_BETWEEN", label: "区间外 NOT_BETWEEN" },
   { value: "GT", label: "大于 GT" },
-  { value: "GTE", label: "大于等于 GTE" },
+  { value: "GE", label: "大于等于 GE" },
   { value: "LT", label: "小于 LT" },
-  { value: "LTE", label: "小于等于 LTE" },
-  { value: "CONTAINS", label: "包含 CONTAINS" },
+  { value: "LE", label: "小于等于 LE" },
   { value: "IS_NULL", label: "为空 IS_NULL" },
-  { value: "IS_NOT_NULL", label: "非空 IS_NOT_NULL" },
-  { value: "BETWEEN", label: "区间 BETWEEN" },
+  { value: "IS_NOT_NULL", label: "不为空 IS_NOT_NULL" },
 ] as const;
 
 export type BasicFilterOp = (typeof BASIC_FILTER_OP_OPTIONS)[number]["value"];

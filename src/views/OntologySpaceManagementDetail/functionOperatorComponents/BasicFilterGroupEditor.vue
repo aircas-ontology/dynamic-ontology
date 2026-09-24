@@ -74,6 +74,14 @@
                   />
                 </template>
               </template>
+              <template v-else-if="opNeedsList(child.filter.op)">
+                <el-input
+                  :model-value="formatFilterList(child.filter.values)"
+                  class="aircas-input"
+                  placeholder="多个值用英文逗号分隔"
+                  @update:model-value="(value) => updateFilterList(index, value)"
+                />
+              </template>
               <template v-else-if="opNeedsValue(child.filter.op)">
                 <el-select
                   v-if="child.filter.valueType === 'boolean'"
@@ -134,7 +142,7 @@ import {
   type BasicFilterValue,
   type BasicFilterValueType,
 } from "@/types";
-import { createEmptyBasicFilterGroup, createEmptyBasicFilterNode, opNeedsRange, opNeedsValue } from "@/utils/functionOperatorBasicFilter";
+import { createEmptyBasicFilterGroup, createEmptyBasicFilterNode, opNeedsList, opNeedsRange, opNeedsValue } from "@/utils/functionOperatorBasicFilter";
 
 defineOptions({ name: "BasicFilterGroupEditor" });
 
@@ -215,11 +223,18 @@ function updateFilterValueType(index: number, value: string | number | boolean |
   if (!child?.filter) return;
   const valueType = value as BasicFilterValueType;
   child.filter.valueType = valueType;
-  if (child.filter.op === "BETWEEN") {
+  if (opNeedsRange(child.filter.op)) {
     child.filter.values = [coerceToType(child.filter.values?.[0], valueType), coerceToType(child.filter.values?.[1], valueType)];
     delete child.filter.value;
-  } else if (child.filter.op !== "IS_NULL" && child.filter.op !== "IS_NOT_NULL") {
+  } else if (opNeedsList(child.filter.op)) {
+    const values = child.filter.values ?? [];
+    child.filter.values = values.length ? values.map((item) => coerceToType(item, valueType)) : [defaultValueForType(valueType)];
+    delete child.filter.value;
+  } else if (opNeedsValue(child.filter.op)) {
     child.filter.value = coerceToType(child.filter.value, valueType);
+    delete child.filter.values;
+  } else {
+    delete child.filter.value;
     delete child.filter.values;
   }
   publish(next);
@@ -232,19 +247,51 @@ function updateFilterOp(index: number, value: string | number | boolean | undefi
   const op = value as BasicFilterOp;
   const valueType = child.filter.valueType || "string";
   child.filter.op = op;
-  if (op === "BETWEEN") {
+  if (opNeedsRange(op)) {
     child.filter.values = [
       coerceToType(child.filter.values?.[0] ?? child.filter.value, valueType),
       coerceToType(child.filter.values?.[1] ?? defaultValueForType(valueType), valueType),
     ];
     delete child.filter.value;
+  } else if (opNeedsList(op)) {
+    const seed = child.filter.values?.length ? child.filter.values : child.filter.value !== undefined ? [child.filter.value] : [defaultValueForType(valueType)];
+    child.filter.values = seed.map((item) => coerceToType(item, valueType));
+    delete child.filter.value;
   } else if (op === "IS_NULL" || op === "IS_NOT_NULL") {
     delete child.filter.value;
     delete child.filter.values;
   } else {
-    child.filter.value = coerceToType(child.filter.value ?? defaultValueForType(valueType), valueType);
+    child.filter.value = coerceToType(child.filter.value ?? child.filter.values?.[0] ?? defaultValueForType(valueType), valueType);
     delete child.filter.values;
   }
+  publish(next);
+}
+
+/**
+ * @description 将列表运算符的 values 格式化为逗号分隔文本。
+ * @param values 列表值。
+ * @returns 展示文本。
+ */
+function formatFilterList(values: BasicFilterValue[] | undefined): string {
+  return (values ?? []).map((item) => String(item)).join(",");
+}
+
+/**
+ * @description 按英文逗号拆分列表输入并写回 values。
+ * @param index 子节点下标。
+ * @param raw 输入文本。
+ */
+function updateFilterList(index: number, raw: string | number): void {
+  const next = cloneGroup();
+  const child = next.children[index];
+  if (!child?.filter) return;
+  const valueType = child.filter.valueType || "string";
+  const parts = String(raw)
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+  child.filter.values = parts.length ? parts.map((item) => coerceToType(item, valueType)) : [defaultValueForType(valueType)];
+  delete child.filter.value;
   publish(next);
 }
 
