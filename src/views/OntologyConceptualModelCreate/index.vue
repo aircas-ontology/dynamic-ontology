@@ -236,7 +236,7 @@ const objects = ref<ModelObject[]>([{ id: 1, displayName: "Object_1", apiName: "
 const relations = ref<Relation[]>([]);
 const dataTypes = [
   "Boolean",
-  "Integer",
+  "Int",
   "Long",
   "Float",
   "Short",
@@ -260,7 +260,7 @@ const dataTypes = [
 const storageGroupOptions = ref(["main"]);
 const dataTypeMap: Record<string, string> = {
   字符串: "String",
-  整数: "Integer",
+  整数: "Int",
   小数: "Double",
   布尔: "Boolean",
   日期时间: "DateTime",

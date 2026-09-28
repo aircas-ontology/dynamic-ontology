@@ -90,7 +90,7 @@ test("attribute data type options use the complete backend enum values", () => {
   const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
   const expectedDataTypes = [
     "Boolean",
-    "Integer",
+    "Int",
     "Long",
     "Float",
     "Short",
