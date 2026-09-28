@@ -32,7 +32,7 @@
       :current-node-key="selectedCategoryId"
       :expand-on-click-node="false"
       :filter-node-method="filterCategoryNode"
-      @node-click="$emit('select-category', $event)"
+      @node-click="handleCategoryTreeNodeClick"
     >
       <template #default="{ data }">
         <div class="ontology-object-attribute-panel__tree-node">
@@ -78,7 +78,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { Delete, EditPen, FolderOpened, Plus } from "@element-plus/icons-vue";
-import type { OntologyAttributeCategoryNode, OntologyAttributeTreeNode } from "@/types";
+import type { OntologyAttributeCategoryNode, OntologyAttributePropertyTreeNode, OntologyAttributeTreeNode } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 
 const props = defineProps<{
@@ -92,9 +92,10 @@ const props = defineProps<{
   filterCategoryNode: (value: string, data: unknown) => boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   "update:categorySearch": [value: string];
   "select-category": [data: OntologyAttributeTreeNode];
+  "edit-attribute": [data: OntologyAttributePropertyTreeNode];
   "create-root": [];
   "create-category": [data: OntologyAttributeCategoryNode];
   "edit-category": [data: OntologyAttributeCategoryNode];
@@ -106,6 +107,18 @@ const treeRef = ref<{ filter: (value: string) => void }>();
 /** @description 判断树节点是否为属性分类节点。 */
 function isCategoryNode(value: unknown): value is OntologyAttributeCategoryNode {
   return Boolean(value && typeof value === "object" && "nodeType" in value && value.nodeType === "category");
+}
+
+/**
+ * @description 分类树节点点击：分类节点用于筛选属性列表，属性节点打开编辑弹窗。
+ * @param data 被点击的树节点
+ */
+function handleCategoryTreeNodeClick(data: OntologyAttributeTreeNode) {
+  if (data.nodeType === "property") {
+    emit("edit-attribute", data);
+    return;
+  }
+  emit("select-category", data);
 }
 
 watch(

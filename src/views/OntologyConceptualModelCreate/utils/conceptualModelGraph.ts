@@ -359,7 +359,6 @@ function renderObjectHtml(data: ConceptualModelNodeData): HTMLElement {
     .join("");
   wrap.innerHTML = `
     <div class="conceptual-model-node__head">
-      <span class="conceptual-model-node__stereo">&lt;&lt;object&gt;&gt;</span>
       <strong>${escapeHtml(object.displayName || "未命名对象")}</strong>
       <em>${escapeHtml(object.apiName || "apiName")}</em>
     </div>

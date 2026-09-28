@@ -100,6 +100,7 @@ interface DisplayRelationNode {
   id: string;
   label: string;
   categoryId: string;
+  relationId: string;
 }
 
 type DisplayTreeNode = DisplayCategoryNode | DisplayRelationNode;
@@ -125,6 +126,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   "select-node": [nodeId: string];
+  "edit-relation": [relationId: string];
   create: [parentId: string];
   edit: [categoryId: string];
   delete: [categoryId: string];
@@ -157,6 +159,7 @@ function enrich(nodes: OntologyRelationCategoryNode[]): DisplayCategoryNode[] {
         id: `rel-${item.id}`,
         label: item.displayName,
         categoryId: item.categoryId,
+        relationId: item.id,
       }));
     const ids = new Set(collectCategoryIds(node));
     const relationCount = props.relations.filter((item) => ids.has(item.categoryId)).length;
@@ -242,12 +245,12 @@ function filterNode(value: string, data: TreeNodeData): boolean {
 }
 
 /**
- * @description 点击分类时选中该分类；点击关系叶子时选中其所属分类。
+ * @description 点击分类时选中该分类；点击关系叶子时打开关系编辑弹窗。
  * @param data 被点击的混合树节点。
  */
 function handleNodeClick(data: DisplayTreeNode): void {
   if (isRelationNode(data)) {
-    emit("select-node", data.categoryId);
+    emit("edit-relation", data.relationId);
     return;
   }
   if (isCategoryNode(data)) {
