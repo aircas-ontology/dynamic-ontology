@@ -449,12 +449,6 @@ defineExpose({ fit, zoomBy });
   background: var(--aircas-color-section-header);
 }
 
-.conceptual-model-graph__stage :deep(.conceptual-model-node__stereo) {
-  color: var(--aircas-color-accent-cyan);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-}
-
 .conceptual-model-graph__stage :deep(.conceptual-model-node__head strong) {
   font-size: 15px;
   line-height: 1.3;

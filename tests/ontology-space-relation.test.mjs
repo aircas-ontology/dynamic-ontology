@@ -164,6 +164,24 @@ test("relation form category is required for create and edit", () => {
   assert.doesNotMatch(formSource, /:clearable="mode !== 'edit'"/);
 });
 
+test("clicking a relation leaf in the category tree opens the relation editor", () => {
+  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationCategoryPanel.vue", import.meta.url), "utf8");
+  const workspaceSource = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(panelSource, /"edit-relation": \[relationId: string\]/);
+  assert.match(panelSource, /relationId: item\.id/);
+  assert.match(panelSource, /function handleNodeClick/);
+  assert.match(panelSource, /emit\("edit-relation", data\.relationId\)/);
+  assert.match(panelSource, /emit\("select-node", data\.id\)/);
+  assert.doesNotMatch(panelSource, /emit\("select-node", data\.categoryId\)/);
+  assert.match(workspaceSource, /@edit-relation="openRelationFromTree"/);
+  assert.match(workspaceSource, /function openRelationFromTree/);
+  assert.match(workspaceSource, /openRelationEdit\(/);
+});
+
 test("object detail relation route reuses the space relation workspace component", () => {
   const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
   const route = router.resolve({
