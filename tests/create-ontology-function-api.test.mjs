@@ -25,6 +25,7 @@ test("create ontology function types expose the documented request fields", () =
   assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
   assert.match(source, /aggFunc\?: CreateOntologyFunctionAggFunc/);
+  assert.match(source, /targetProperty\?: string/);
   assert.match(source, /filters: CreateOntologyFunctionFilters/);
   assert.match(source, /dataType: CreateOntologyFunctionFilterDataType/);
   assert.match(source, /export type CreateOntologyFunctionData = null/);
@@ -72,6 +73,7 @@ test("buildOntologyFunctionQueryConfig maps filters dataType and omits empty agg
   );
   const withoutAgg = buildOntologyFunctionQueryConfig(doc, "");
   assert.equal("aggFunc" in withoutAgg, false);
+  assert.equal("targetProperty" in withoutAgg, false);
   assert.equal(withoutAgg.filters.logic, "AND");
   assert.equal(withoutAgg.filters.children[0]?.filter?.dataType, "STRING");
   assert.equal(withoutAgg.filters.children[1]?.filter?.dataType, "NUMBER");
@@ -81,19 +83,33 @@ test("buildOntologyFunctionQueryConfig maps filters dataType and omits empty agg
 
   const withAgg = buildOntologyFunctionQueryConfig(doc, "SUM");
   assert.equal(withAgg.aggFunc, "SUM");
+  assert.equal("targetProperty" in withAgg, false);
+
+  const withTarget = buildOntologyFunctionQueryConfig(doc, "SUM", "age");
+  assert.equal(withTarget.aggFunc, "SUM");
+  assert.equal(withTarget.targetProperty, "age");
+
+  const blankTarget = buildOntologyFunctionQueryConfig(doc, "SUM", "  ");
+  assert.equal("targetProperty" in blankTarget, false);
 });
 
-test("function operator create form exposes aggFunc and workspace posts create api", () => {
+test("function operator create form exposes aggFunc targetProperty and workspace posts create api", () => {
   const formSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorFormDialog.vue");
   const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useFunctionOperatorWorkspace.ts");
   const typeSource = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
   assert.match(typeSource, /aggFunc\?:/);
+  assert.match(typeSource, /targetProperty\?:/);
   assert.match(formSource, /聚合类型/);
+  assert.match(formSource, /聚合参数名/);
   assert.match(formSource, /FUNCTION_OPERATOR_AGG_FUNC_OPTIONS|aggFunc/);
+  assert.match(formSource, /targetProperty/);
+  assert.match(formSource, /function-operator-form__name-grid/);
+  assert.match(formSource, /:disabled="!form\.definition\.aggFunc"/);
   assert.match(formSource, /delete form\.id/);
   assert.match(workspaceSource, /createOntologyFunctionInterface/);
   assert.match(workspaceSource, /BASIC_QUERY/);
   assert.match(workspaceSource, /buildOntologyFunctionQueryConfig/);
+  assert.match(workspaceSource, /targetProperty/);
   assert.match(workspaceSource, /if \(editingOperator\.value\)/);
   assert.doesNotMatch(workspaceSource, /if \(draft\.id\)/);
 });

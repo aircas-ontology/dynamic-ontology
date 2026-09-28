@@ -30,6 +30,8 @@ export interface CreateOntologyFunctionFilters {
 export interface CreateOntologyFunctionQueryConfig {
   filters: CreateOntologyFunctionFilters;
   aggFunc?: CreateOntologyFunctionAggFunc;
+  /** 目标占位符名；未传时后端可自动生成为 target。 */
+  targetProperty?: string;
 }
 
 /** 创建函数算子请求参数。 */
