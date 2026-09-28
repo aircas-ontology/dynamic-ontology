@@ -16,6 +16,14 @@
             <strong class="ontology-global-search-results__name">{{ item.name }}</strong>
             <el-tag class="aircas-tag" size="small" effect="plain">{{ item.type }}</el-tag>
           </div>
+          <p v-if="(item.type === '对象' || item.type === '关系分组') && item.spaceName?.trim()" class="ontology-global-search-results__meta">
+            空间：{{ item.spaceName.trim() }}
+          </p>
+          <p v-else-if="item.type === '属性' && (item.spaceName?.trim() || item.ontologyName?.trim())" class="ontology-global-search-results__meta">
+            <template v-if="item.spaceName?.trim()">空间：{{ item.spaceName.trim() }}</template>
+            <template v-if="item.spaceName?.trim() && item.ontologyName?.trim()"> · </template>
+            <template v-if="item.ontologyName?.trim()">对象：{{ item.ontologyName.trim() }}</template>
+          </p>
           <p class="ontology-global-search-results__desc">{{ item.desc?.trim() || "" }}</p>
         </button>
       </li>
@@ -93,6 +101,16 @@ const emit = defineEmits<{
   color: var(--aircas-color-text-primary);
   font-size: 14px;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ontology-global-search-results__meta {
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: var(--aircas-color-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
