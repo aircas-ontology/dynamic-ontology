@@ -43,6 +43,8 @@ export const getOntologyFunctionDetailMock: ApiResponse<GetOntologyFunctionDetai
     ],
     code: '{"aggFunc":null,"targetProperty":null,"filters":{"logic":"AND","children":[{"type":"FILTER","filter":{"propertyApiName":"age","op":"EQ","value":"10","values":null,"dataType":"STRING"},"group":null}]}}',
     queryConfig: {
+      aggFunc: "SUM",
+      targetProperty: "target",
       filters: {
         logic: "AND",
         children: [

@@ -268,7 +268,7 @@ export function useFunctionOperatorWorkspace() {
     actionLoading.value = true;
     try {
       const filtersDoc = parseBasicFilterConfig(draft.definition.parameterConfig);
-      const queryConfig = buildOntologyFunctionQueryConfig(filtersDoc, draft.definition.aggFunc || "");
+      const queryConfig = buildOntologyFunctionQueryConfig(filtersDoc, draft.definition.aggFunc || "", draft.definition.targetProperty || "");
       const payload = {
         functionApi: draft.functionApi.trim(),
         displayName: draft.name.trim(),

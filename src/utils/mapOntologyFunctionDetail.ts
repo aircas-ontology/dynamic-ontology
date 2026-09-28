@@ -24,6 +24,15 @@ function resolveAggFunc(value: unknown): FunctionOperatorAggFunc | "" {
 }
 
 /**
+ * @description 解析详情中的聚合参数名；非字符串回落为空串。
+ * @param value queryConfig.targetProperty。
+ * @returns 表单聚合参数名或空串。
+ */
+function resolveTargetProperty(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/**
  * @description 将详情 paramType 映射为页面参数类型；未知回落为 string。
  * @param paramType 接口参数类型。
  * @returns 页面参数类型。
@@ -100,6 +109,7 @@ function resolveDetailParameterConfig(detail: GetOntologyFunctionDetailData): st
 export function mapOntologyFunctionDetailToDraft(detail: GetOntologyFunctionDetailData, fallbackSpaceId: number): FunctionOperatorDraft {
   const filtersDoc = detail.queryConfig ? mapOntologyFunctionQueryConfigToBasicFilter(detail.queryConfig) : createEmptyBasicFilterDocument();
   const aggFunc = resolveAggFunc(detail.queryConfig?.aggFunc);
+  const targetProperty = resolveTargetProperty(detail.queryConfig?.targetProperty);
   const spaceId = Number.isFinite(detail.ontologySpaceId) ? detail.ontologySpaceId : fallbackSpaceId;
   const functionApi = typeof detail.functionApi === "string" ? detail.functionApi.trim() : "";
   return {
@@ -124,6 +134,7 @@ export function mapOntologyFunctionDetailToDraft(detail: GetOntologyFunctionDeta
       kind: "basic",
       parameterConfig: stringifyBasicFilterConfig(filtersDoc),
       aggFunc,
+      targetProperty,
     },
     dependencies: [],
     testStatus: "untested",
@@ -165,6 +176,7 @@ export function mapOntologyFunctionDetailToOperator(detail: GetOntologyFunctionD
       kind: "basic",
       parameterConfig,
       aggFunc: resolveAggFunc(detail.queryConfig?.aggFunc),
+      targetProperty: resolveTargetProperty(detail.queryConfig?.targetProperty),
     },
     dependencies: [],
     testStatus: "untested",

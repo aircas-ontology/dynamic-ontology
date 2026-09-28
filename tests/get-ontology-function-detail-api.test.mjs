@@ -91,6 +91,8 @@ test("mapOntologyFunctionDetailToDraft fills basic form fields from detail", () 
       params: [],
       code: "{}",
       queryConfig: {
+        aggFunc: "SUM",
+        targetProperty: "age",
         filters: {
           logic: "AND",
           children: [{ type: "FILTER", filter: { propertyApiName: "age", op: "EQ", value: "10", dataType: "STRING" } }],
@@ -105,7 +107,8 @@ test("mapOntologyFunctionDetailToDraft fills basic form fields from detail", () 
   assert.equal(draft.type, "basic");
   assert.equal(draft.definition.kind, "basic");
   if (draft.definition.kind === "basic") {
-    assert.equal(draft.definition.aggFunc, "");
+    assert.equal(draft.definition.aggFunc, "SUM");
+    assert.equal(draft.definition.targetProperty, "age");
     assert.match(draft.definition.parameterConfig, /"propertyApiName": "age"/);
   }
 });

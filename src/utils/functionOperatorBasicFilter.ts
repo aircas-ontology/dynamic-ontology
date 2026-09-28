@@ -414,17 +414,26 @@ function mapApiFiltersToGroup(group: CreateOntologyFunctionFilters): BasicFilter
 }
 
 /**
- * @description 由参数配置文档构建创建接口 queryConfig；未选聚合类型时不带 aggFunc。
+ * @description 由参数配置文档构建创建/更新接口 queryConfig；未选聚合类型时不带 aggFunc / targetProperty。
  * @param doc 基础过滤文档。
  * @param aggFunc 可选聚合类型；空字符串表示不传。
+ * @param targetProperty 可选聚合参数名；仅在已选聚合类型且非空时写入。
  * @returns queryConfig 对象。
  */
-export function buildOntologyFunctionQueryConfig(doc: BasicFilterDocument, aggFunc: CreateOntologyFunctionAggFunc | ""): CreateOntologyFunctionQueryConfig {
+export function buildOntologyFunctionQueryConfig(
+  doc: BasicFilterDocument,
+  aggFunc: CreateOntologyFunctionAggFunc | "",
+  targetProperty: string = "",
+): CreateOntologyFunctionQueryConfig {
   const queryConfig: CreateOntologyFunctionQueryConfig = {
     filters: mapGroupToApiFilters(doc),
   };
   if (aggFunc) {
     queryConfig.aggFunc = aggFunc;
+    const trimmedTarget = targetProperty.trim();
+    if (trimmedTarget) {
+      queryConfig.targetProperty = trimmedTarget;
+    }
   }
   return queryConfig;
 }

@@ -76,6 +76,8 @@ mocks与types文件名自行语义化命名
     ],
     "code": "{\"aggFunc\":null,\"targetProperty\":null,\"filters\":{\"logic\":\"AND\",\"children\":[{\"type\":\"FILTER\",\"filter\":{\"propertyApiName\":\"age\",\"op\":\"EQ\",\"value\":\"10\",\"values\":null,\"dataType\":\"STRING\"},\"group\":null}]}}",
     "queryConfig": {
+      "aggFunc":"",
+      "targetProperty":"",
       "filters": {
         "logic": "AND",
         "children": [
