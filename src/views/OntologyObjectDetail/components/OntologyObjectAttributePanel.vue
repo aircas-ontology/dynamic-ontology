@@ -11,6 +11,7 @@
       :filter-category-node="filterCategoryNode"
       @update:category-search="categorySearch = $event"
       @select-category="selectCategory"
+      @edit-attribute="openAttributeFromTree"
       @create-root="openRootCategoryCreate"
       @create-category="openCategoryCreate"
       @edit-category="openCategoryEdit"
@@ -96,11 +97,12 @@ import type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceTablesData,
   GetOntologyPropertyDetailByOntologyIdData,
+  OntologyAttributePropertyTreeNode,
 } from "@/types";
 import { useRoute } from "vue-router";
 import { useAttributeCategoryTree } from "../composables/useAttributeCategoryTree";
 import { useAttributePropertyList } from "../composables/useAttributePropertyList";
-import { collectPropertyItemsFromTree, findCategory, filterCategoryNode } from "../utils/attributePanelHelpers";
+import { collectPropertyItemsFromTree, findCategory, filterCategoryNode, mapOntologyPropertyItem } from "../utils/attributePanelHelpers";
 import AttributeCategoryCreateDialog from "./AttributeCategoryCreateDialog.vue";
 import AttributeCategoryEditDialog from "./AttributeCategoryEditDialog.vue";
 import AttributeCategoryTree from "./AttributeCategoryTree.vue";
@@ -225,6 +227,14 @@ const {
   updateDraftNameKey,
   removeAttribute,
 } = propertyApi;
+
+/**
+ * @description 将分类树属性节点转为列表项并打开与表格编辑按钮相同的属性编辑弹窗。
+ * @param data 分类树中的属性节点
+ */
+function openAttributeFromTree(data: OntologyAttributePropertyTreeNode) {
+  openEditAttribute(mapOntologyPropertyItem(data.source, String(route.params.objectId || "")));
+}
 
 const dataSourceDialogVisible = ref(false);
 const dataSourceDialogRef = ref<InstanceType<typeof DataSourceAssociateDialog> | null>(null);

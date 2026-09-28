@@ -70,11 +70,27 @@ test("object attribute panel exposes category tree, property columns, and local 
   assert.match(helperSource, /const propertyChildren = \(node\.propertyInfos \?\? \[\]\)\.map\(mapPropertyTreeNode\)/);
 });
 
+test("clicking a property node in the category tree opens the attribute editor", () => {
+  const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
+  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+
+  assert.match(treeSource, /@node-click="handleCategoryTreeNodeClick"/);
+  assert.match(treeSource, /"edit-attribute": \[data: OntologyAttributePropertyTreeNode\]/);
+  assert.match(treeSource, /function handleCategoryTreeNodeClick/);
+  assert.match(treeSource, /data\.nodeType === "property"/);
+  assert.match(treeSource, /emit\("edit-attribute", data\)/);
+  assert.match(treeSource, /emit\("select-category", data\)/);
+  assert.match(panelSource, /@edit-attribute="openAttributeFromTree"/);
+  assert.match(panelSource, /function openAttributeFromTree/);
+  assert.match(panelSource, /mapOntologyPropertyItem\(data\.source/);
+  assert.match(panelSource, /openEditAttribute\(/);
+});
+
 test("attribute data type options use the complete backend enum values", () => {
   const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
   const expectedDataTypes = [
     "Boolean",
-    "Integer",
+    "Int",
     "Long",
     "Float",
     "Short",

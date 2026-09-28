@@ -94,7 +94,7 @@ test("conceptual model attribute data types match the object attribute form", ()
   const source = readSource("../src/views/OntologyConceptualModelCreate/index.vue");
   const expectedDataTypes = [
     "Boolean",
-    "Integer",
+    "Int",
     "Long",
     "Float",
     "Short",

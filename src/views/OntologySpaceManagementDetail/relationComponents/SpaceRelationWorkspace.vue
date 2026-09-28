@@ -8,6 +8,7 @@
       :can-update="true"
       :can-delete="true"
       @select-node="selectRelationCategory"
+      @edit-relation="openRelationFromTree"
       @create="openCategoryCreate"
       @edit="openCategoryEdit"
       @delete="openCategoryDelete"
@@ -379,6 +380,16 @@ function openRelationEdit(item: OntologyRelationClass) {
   relationFormMode.value = "edit";
   activeRelation.value = item;
   relationFormVisible.value = true;
+}
+
+/**
+ * @description 将分类树关系叶子转为列表项并打开与表格编辑按钮相同的关系编辑弹窗。
+ * @param relationId 关系 id。
+ */
+function openRelationFromTree(relationId: string) {
+  const item = relations.value.find((relation) => relation.id === relationId);
+  if (!item) return;
+  openRelationEdit(item);
 }
 
 function openRelationDelete(item: OntologyRelationClass) {
