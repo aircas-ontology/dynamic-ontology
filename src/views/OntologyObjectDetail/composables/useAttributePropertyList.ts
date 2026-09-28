@@ -40,7 +40,7 @@ export function useAttributePropertyList(options: {
   const route = useRoute();
   const dataTypes = [
     "Boolean",
-    "Integer",
+    "Int",
     "Long",
     "Float",
     "Short",
