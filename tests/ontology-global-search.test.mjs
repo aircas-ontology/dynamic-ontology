@@ -35,6 +35,12 @@ test("global search types and api are exported from public barrels", () => {
   assert.match(types, /OntologyGlobalSearchParams/);
   assert.match(types, /OntologyGlobalSearchItem/);
 
+  const typeSource = readSource("../src/types/apis/ontologyGlobalSearchType.ts");
+  assert.match(typeSource, /spaceName\?:/);
+  assert.match(typeSource, /uniqueIdentifier\?:/);
+  assert.match(typeSource, /ontologyUniqueIdentifier\?:/);
+  assert.match(typeSource, /ontologyName\?:/);
+
   const apis = readSource("../src/apis/index.ts");
   assert.match(apis, /postOntologyGlobalSearchInterface/);
 });
@@ -45,7 +51,13 @@ test("global search mock mirrors the documented success sample", () => {
   assert.equal(ontologyGlobalSearchMock.success, true);
   assert.ok(Array.isArray(ontologyGlobalSearchMock.data));
   assert.ok(ontologyGlobalSearchMock.data.some((item) => item.type === "空间" && item.spaceId === 37));
-  assert.ok(ontologyGlobalSearchMock.data.some((item) => item.type === "对象" && item.spaceId === 11));
+  assert.ok(ontologyGlobalSearchMock.data.some((item) => item.type === "对象" && item.spaceId === 11 && item.spaceName && item.uniqueIdentifier && item.name));
+  assert.ok(
+    ontologyGlobalSearchMock.data.some(
+      (item) => item.type === "属性" && item.spaceId === 46 && item.spaceName && item.ontologyName && item.ontologyUniqueIdentifier,
+    ),
+  );
+  assert.ok(ontologyGlobalSearchMock.data.some((item) => item.type === "关系分组" && item.spaceId === 11 && item.spaceName));
 });
 
 test("resolveOntologyGlobalSearchRoute maps space and relation-group types", () => {
@@ -61,37 +73,46 @@ test("resolveOntologyGlobalSearchRoute maps space and relation-group types", () 
   assert.equal(resolveOntologyGlobalSearchRoute({ name: "飞机id", type: "属性", spaceId: 46, objectId: 106 }), null);
 });
 
-test("resolveOntologyGlobalSearchObjectRoute uses meta uniqueIdentifier and names", () => {
+test("resolveOntologyGlobalSearchObjectRoute uses item uniqueIdentifier spaceName and name", () => {
   assert.deepEqual(
-    resolveOntologyGlobalSearchObjectRoute(
-      { name: "测试本体对象-修改", type: "对象", spaceId: 11, objectId: 9 },
-      { id: 9, displayName: "测试本体对象-修改", spaceName: "测试空间", uniqueIdentifier: "ae6cca59ced9432189da4af315554957" },
-    ),
+    resolveOntologyGlobalSearchObjectRoute({
+      name: "测试本体对象-修改",
+      type: "对象",
+      spaceId: 11,
+      spaceName: "测试空间",
+      uniqueIdentifier: "ae6cca59ced9432189da4af315554957",
+    }),
     {
       name: "OntologyObjectDetailObject",
       params: { objectId: "ae6cca59ced9432189da4af315554957" },
       query: { spaceId: "11", spaceName: "测试空间", objectName: "测试本体对象-修改" },
     },
   );
+  assert.equal(resolveOntologyGlobalSearchObjectRoute({ name: "缺字段", type: "对象", spaceId: 11 }), null);
 });
 
-test("resolveOntologyGlobalSearchPropertyRoute uses meta uniqueIdentifier and names", () => {
+test("resolveOntologyGlobalSearchPropertyRoute uses item ontologyUniqueIdentifier spaceName and ontologyName", () => {
   assert.deepEqual(
-    resolveOntologyGlobalSearchPropertyRoute(
-      { name: "飞机id", type: "属性", spaceId: 11, objectId: 106 },
-      { id: 106, displayName: "飞机", spaceName: "测试-rwl", uniqueIdentifier: "246ef68e87524c33911b92af900700f9" },
-    ),
+    resolveOntologyGlobalSearchPropertyRoute({
+      name: "飞机id",
+      type: "属性",
+      spaceId: 11,
+      spaceName: "测试-rwl",
+      ontologyName: "飞机",
+      ontologyUniqueIdentifier: "246ef68e87524c33911b92af900700f9",
+    }),
     {
       name: "OntologyObjectDetailAttribute",
       params: { objectId: "246ef68e87524c33911b92af900700f9" },
       query: { spaceId: "11", spaceName: "测试-rwl", objectName: "飞机" },
     },
   );
+  assert.equal(resolveOntologyGlobalSearchPropertyRoute({ name: "缺字段", type: "属性", spaceId: 11 }), null);
 });
 
-test("global search click handler fetches object meta before object and property navigation", () => {
+test("global search click handler navigates object and property without meta api", () => {
   const source = readSource("../src/composables/ontology/useOntologyGlobalSearch.ts");
-  assert.match(source, /getOntologyMetaByObjectIdInterface/);
+  assert.doesNotMatch(source, /getOntologyMetaByObjectIdInterface/);
   assert.match(source, /resolveOntologyGlobalSearchObjectRoute/);
   assert.match(source, /resolveOntologyGlobalSearchPropertyRoute/);
   assert.match(source, /item\.type === "对象"/);
@@ -112,4 +133,7 @@ test("full text search page and header wire OntologyGlobalSearchField", () => {
   assert.match(field, /@click="submitSearch"/);
   assert.match(field, />检索<\/el-button>/);
   assert.match(resultList, /class="aircas-tag"/);
+  assert.match(resultList, /item\.spaceName/);
+  assert.match(resultList, /item\.ontologyName/);
+  assert.match(resultList, /关系分组/);
 });

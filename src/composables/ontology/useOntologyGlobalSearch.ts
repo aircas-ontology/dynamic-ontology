@@ -2,7 +2,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 
-import { getOntologyMetaByObjectIdInterface, postOntologyGlobalSearchInterface } from "@/apis";
+import { postOntologyGlobalSearchInterface } from "@/apis";
 import type { OntologyGlobalSearchItem } from "@/types";
 import {
   resolveOntologyGlobalSearchObjectRoute,
@@ -80,35 +80,17 @@ export function useOntologyGlobalSearch() {
   }
 
   /**
-   * @description 点击结果项：空间/关系分组直接跳转；对象与属性先查对象简要信息再拼路由。
+   * @description 点击结果项：按类型直接拼路由跳转（对象/属性不再预查 meta）。
    * @param item 检索结果。
    * @returns 是否已发起跳转。
    */
   async function openOntologyGlobalSearchItem(item: OntologyGlobalSearchItem): Promise<boolean> {
-    if (item.type === "对象" || item.type === "属性") {
-      if (item.objectId === undefined || item.objectId === null || !Number.isFinite(item.objectId)) {
-        ElMessage.info("该类型暂不支持跳转");
-        return false;
-      }
-      try {
-        const response = await getOntologyMetaByObjectIdInterface({ objectId: item.objectId });
-        if (response.code !== 200 || !response.data) {
-          throw new Error(response.message.trim() || "对象信息查询失败");
-        }
-        const location =
-          item.type === "对象" ? resolveOntologyGlobalSearchObjectRoute(item, response.data) : resolveOntologyGlobalSearchPropertyRoute(item, response.data);
-        if (!location) {
-          ElMessage.info("该类型暂不支持跳转");
-          return false;
-        }
-        await router.push(location);
-        return true;
-      } catch (cause: unknown) {
-        ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "对象信息查询失败");
-        return false;
-      }
-    }
-    const location = resolveOntologyGlobalSearchRoute(item);
+    const location =
+      item.type === "对象"
+        ? resolveOntologyGlobalSearchObjectRoute(item)
+        : item.type === "属性"
+          ? resolveOntologyGlobalSearchPropertyRoute(item)
+          : resolveOntologyGlobalSearchRoute(item);
     if (!location) {
       ElMessage.info("该类型暂不支持跳转");
       return false;

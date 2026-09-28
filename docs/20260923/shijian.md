@@ -22,13 +22,18 @@
 跳转方式：使用路由方式跳转。
 数据说明：data数组中返回的对象字段"name"和"type"字段是必返回字段，"desc"可能有也可能没有，有就展示，没有就展示为空。
 当type值为"空间"时，返回字段中肯定有spaceId，对应跳转的路由为 /workspace/ontology-space-management/{spaceId}/overview
-当type值为"对象"时，返回字段中肯定有spaceId和uniqueIdentifier，对应跳转的路由为 /workspace/ontology-object/{uniqueIdentifier}/object?spaceId={spaceId}&spaceName={spaceName}&objectName={objectName}
 
-当type值为"属性"时，返回字段中肯定有spaceId和uniqueIdentifier，对应跳转的路由为 /workspace/ontology-object/{uniqueIdentifier}/attribute?spaceId={spaceId}&spaceName={spaceName}&objectName={objectName}
+当type值为"对象"时，返回字段中肯定有name,spaceId，spaceName和uniqueIdentifier，对应跳转的路由为 /workspace/ontology-object/{uniqueIdentifier}/object?spaceId={spaceId}&spaceName={spaceName}&objectName={name},要在查询列表中展示出空间名称字段spaceName。
 
-需要注意一个逻辑是：先根据objectid的值调用getInfoByObjectidApi-shijian.md 中的接口，然后获取到对象名称objectName和空间名称spaceName后拼接到完成地址再跳转
+注意：点击对象列表项后也不需要调用getInfoByObjectidApi-shijian.md 中的接口了，因为跳转路由中的参数现在已经补全了
 
-当type值为"关系分组"时，返回字段中肯定有spaceId，对应跳转的路由为 /workspace/ontology-space-management/{spaceId}/relation
+当type值为"属性"时，返回字段中肯定有spaceId，spaceName，ontologyName和ontologyUniqueIdentifier，对应跳转的路由为 /workspace/ontology-object/{ontologyUniqueIdentifier}/attribute?spaceId={spaceId}&spaceName={spaceName}&objectName={ontologyName},要在查询列表中展示出空间名称字段spaceName和对象名称字段ontologyName
+
+需要注意一个逻辑是：
+先根据objectid的值调用getInfoByObjectidApi-shijian.md 中的接口，然后获取到对象名称objectName和空间名称spaceName后拼接到完成地址再跳转（旧逻辑）
+现在不需要再调用这个接口了，因为跳转路由中的参数现在已经补全了，直接就能跳转（新逻辑）
+
+当type值为"关系分组"时，返回字段中肯定有spaceId，spaceName对应跳转的路由为 /workspace/ontology-space-management/{spaceId}/relation，要在查询列表中展示出空间名称字段spaceName
 
 目前先实现这四个类型的跳转
 

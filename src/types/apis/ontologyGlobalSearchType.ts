@@ -21,6 +21,14 @@ export interface OntologyGlobalSearchItem {
   desc?: string;
   /** 空间 id；空间/对象等类型时返回。 */
   spaceId?: number;
+  /** 空间名称；对象/属性/关系分组等类型时返回。 */
+  spaceName?: string;
+  /** 对象唯一标识；对象类型跳转路径参数。 */
+  uniqueIdentifier?: string;
+  /** 所属对象唯一标识；属性类型跳转路径参数。 */
+  ontologyUniqueIdentifier?: string;
+  /** 所属对象名称；属性类型时返回，用于 query.objectName。 */
+  ontologyName?: string;
   /** 对象 id。 */
   objectId?: number;
   /** 属性 id。 */
