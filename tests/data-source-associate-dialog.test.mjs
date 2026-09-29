@@ -67,6 +67,7 @@ test("data source mapping dialog defines local prototype types and exposes setLo
   assert.match(source, /interface PropertyDataSourceBindPayload/);
   assert.match(source, /defineExpose\(\{[\s\S]*setLoading/);
   assert.match(source, /completeSubmit/);
+  assert.match(source, /syncServerMappings/);
   assert.match(source, /emit\("submit", payloads\)/);
 });
 
@@ -138,19 +139,17 @@ test("attribute panel loads property datasource info before opening the dialog",
   const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
   const openSource = source.match(/async function openDataSource\(\)[\s\S]*?async function loadDataSourceTables/)?.[0] ?? "";
 
-  assert.match(source, /getOntologyPropertyByOntologyIdInterface/);
-  assert.match(source, /const ontologyPropertyDetails = ref<GetOntologyPropertyByOntologyIdData>/);
+  assert.match(source, /getOntologyPropertyDetailByOntologyIdInterface/);
+  assert.match(source, /const ontologyPropertyDetails = ref<GetOntologyPropertyDetailByOntologyIdData>/);
   assert.match(source, /function resolvePropertyDataSourceBind/);
   assert.match(source, /detail\.datasourceId/);
   assert.match(source, /detail\?\.datasourceColumnName/);
   assert.doesNotMatch(source, /dataSource:\s*null,/);
-  assert.match(openSource, /getOntologyPropertyByOntologyIdInterface\(\{ ontologyUniqueIdentifier \}\)/);
-  assert.match(openSource, /ontologyPropertyDetails\.value = infoResponse\.data/);
+  assert.match(openSource, /loadPropertyDataSourceDetails\(ontologyUniqueIdentifier\)/);
   assert.match(openSource, /await loadDataSourceTables\(\)/);
   assert.match(openSource, /await loadAssociatedDataSourceColumns\(\)/);
   assert.match(openSource, /dataSourceDialogVisible\.value = true/);
-  assert.doesNotMatch(openSource, /getOntologyPropertyDetailByOntologyIdInterface/);
-  assert.ok(openSource.indexOf("getOntologyPropertyByOntologyIdInterface") < openSource.indexOf("loadDataSourceTables"));
+  assert.ok(openSource.indexOf("loadPropertyDataSourceDetails") < openSource.indexOf("loadDataSourceTables"));
   assert.ok(openSource.indexOf("loadDataSourceTables") < openSource.indexOf("loadAssociatedDataSourceColumns"));
   assert.ok(openSource.indexOf("loadAssociatedDataSourceColumns") < openSource.indexOf("dataSourceDialogVisible.value = true"));
 });
@@ -173,9 +172,18 @@ test("attribute panel persists local datasource drafts only from dialog submit",
 
 test("attribute panel handles automatic datasource binding without closing the dialog", () => {
   const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const autoSource = source.match(/async function handleAutoDataSourceAssociate\(\)[\s\S]*?\n}/)?.[0] ?? "";
   assert.match(source, /autoBindOntologyPropertyDatasourceInterface/);
   assert.match(source, /@auto-associate="handleAutoDataSourceAssociate"/);
   assert.match(source, /const ontologyIdentifier = String\(route\.params\.objectId \|\| \"\"\)\.trim\(\)/);
-  assert.match(source, /自动关联数据源成功/);
-  assert.doesNotMatch(source, /dataSourceDialogVisible\.value = false;[\s\S]*自动关联数据源成功/);
+  assert.match(autoSource, /const tableLoaded = await loadDataSourceTables\(\)/);
+  assert.match(autoSource, /await loadPropertyDataSourceDetails\(ontologyIdentifier\)/);
+  assert.match(autoSource, /await loadAssociatedDataSourceColumns\(\)/);
+  assert.match(autoSource, /await nextTick\(\)/);
+  assert.match(autoSource, /dataSourceDialogRef\.value\?\.syncServerMappings\(\)/);
+  assert.match(autoSource, /自动关联数据源成功/);
+  assert.doesNotMatch(autoSource, /dataSourceDialogVisible\.value = false/);
+  assert.ok(autoSource.indexOf("loadDataSourceTables") < autoSource.indexOf("loadPropertyDataSourceDetails"));
+  assert.ok(autoSource.indexOf("loadPropertyDataSourceDetails") < autoSource.indexOf("loadAssociatedDataSourceColumns"));
+  assert.ok(autoSource.indexOf("loadAssociatedDataSourceColumns") < autoSource.indexOf("syncServerMappings"));
 });
