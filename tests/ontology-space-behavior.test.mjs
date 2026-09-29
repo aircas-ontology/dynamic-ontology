@@ -39,6 +39,31 @@ test("space behavior route mounts the behavior workspace instead of the empty pa
   assert.doesNotMatch(behaviorBlock[0], /emptyWorkspacePanel/);
 });
 
+test("object behavior route mounts its independent behavior workspace", () => {
+  const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
+  const route = router.resolve({ name: "OntologyObjectDetailBehavior", params: { objectId: "carrier-1" }, query: { spaceId: "46" } });
+  assert.equal(route.path, "/workspace/ontology-object/carrier-1/behavior");
+  assert.match(String(route.matched.at(-1)?.components?.default), /ObjectBehaviorWorkspace/);
+
+  const routeSource = readSource("../src/router/modules/workspaceRoutes.ts");
+  const objectBehaviorBlock = routeSource.match(/name:\s*"OntologyObjectDetailBehavior"[\s\S]*?objectDetailTab:\s*"behavior"/)?.[0] ?? "";
+  assert.match(objectBehaviorBlock, /OntologyObjectDetail\/behaviorComponents\/ObjectBehaviorWorkspace\.vue/);
+  assert.doesNotMatch(objectBehaviorBlock, /SpaceBehaviorWorkspace|emptyWorkspacePanel/);
+
+  const workspaceSource = readSource("../src/views/OntologyObjectDetail/behaviorComponents/ObjectBehaviorWorkspace.vue");
+  const composableSource = readSource("../src/views/OntologyObjectDetail/composables/useObjectBehaviorWorkspace.ts");
+  assert.match(workspaceSource, /ObjectBehaviorCategoryPanel/);
+  assert.match(workspaceSource, /ObjectBehaviorListPanel/);
+  assert.match(workspaceSource, /ObjectBehaviorFormDialog/);
+  assert.match(workspaceSource, /ObjectBehaviorDetailDrawer/);
+  assert.match(workspaceSource, /ObjectBehaviorStatusDialog/);
+  assert.match(workspaceSource, /ObjectBehaviorDeleteDialog/);
+  assert.match(workspaceSource, /grid-template-columns:\s*360px minmax\(0, 1fr\)/);
+  assert.doesNotMatch(workspaceSource, /OntologySpaceManagementDetail\/behaviorComponents/);
+  assert.match(composableSource, /route\.query\.spaceId/);
+  assert.doesNotMatch(composableSource, /useSpaceBehaviorWorkspace|spaceBehaviorOperations/);
+});
+
 test("space behavior workspace uses shared tree and relation table surfaces", () => {
   const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/SpaceBehaviorWorkspace.vue");
   const treeSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorCategoryPanel.vue");
