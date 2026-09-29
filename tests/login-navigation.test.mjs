@@ -90,11 +90,12 @@ test("business failure shows the server message without navigating", async () =>
   assert.equal(state.loginError.value, "用户名或密码错误");
 });
 
-test("transport failure is replaced by the command mock fallback and still enters the system", async () => {
-  // useLoginCommand 内部捕获传输失败并返回 mock 成功响应，页面侧 submitLogin 始终得到 code 200。
+test("transport failure surfaces as a login error and does not enter the system", async () => {
   const state = runHandler(`
     var pushes = [];
-    var submitLogin = async () => ({ code: 200, success: true, message: "登录成功", data: {} });
+    var submitLogin = async () => {
+      throw new Error("网络连接失败，请检查网络后重试。");
+    };
     var router = {
       push: async (target) => {
         pushes.push(target);
@@ -104,9 +105,9 @@ test("transport failure is replaced by the command mock fallback and still enter
   `);
 
   await state.onSubmit();
-  assert.equal(state.loginStatus.value, "success");
-  assert.equal(state.pushes.length, 1);
-  assert.equal(state.pushes[0].name, "OntologySpaceManagement");
+  assert.equal(state.loginStatus.value, "error");
+  assert.match(state.loginError.value, /网络连接失败/);
+  assert.equal(state.pushes.length, 0);
 });
 
 test("navigation errors are visible and allow retry", async () => {

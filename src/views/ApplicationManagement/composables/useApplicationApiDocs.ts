@@ -1,7 +1,6 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 
 import { getOntologyApiDocsInterface } from "@/apis";
-import { apiDocsOntologyMock } from "@/mocks/apiDocsOntologyMock/apiDocsOntologyMock";
 import type { ApiDocsEndpointDetail, ApiDocsEndpointGroup, ApiDocsEndpointItem, ApiDocsHttpMethod, ApiDocsServiceInfo, OntologyApiDocsData } from "@/types";
 import { RequestError } from "@/utils/request";
 
@@ -52,7 +51,7 @@ export function useApplicationApiDocs() {
   }
 
   /**
-   * @description 拉取 OpenAPI 文档；失败时回退 Mock，并默认选中首个接口。
+   * @description 拉取 OpenAPI 文档；失败时清空文档并提示错误，不回退 Mock。
    */
   async function loadOntologyApiDocs(): Promise<void> {
     const requestId = ++generation;
@@ -64,18 +63,20 @@ export function useApplicationApiDocs() {
         return;
       }
       apiDocs.value = response;
+      error.value = "";
+      if (!selectedId.value && flatEndpoints.value[0]) {
+        selectedId.value = flatEndpoints.value[0].id;
+      }
     } catch (cause) {
       if (disposed || requestId !== generation) {
         return;
       }
-      apiDocs.value = apiDocsOntologyMock;
-      error.value = cause instanceof RequestError ? cause.message : "接口文档加载失败，已展示本地样例。";
+      apiDocs.value = null;
+      selectedId.value = "";
+      error.value = cause instanceof RequestError ? cause.message : "接口文档加载失败，请重试。";
     } finally {
       if (!disposed && requestId === generation) {
         loading.value = false;
-        if (!selectedId.value && flatEndpoints.value[0]) {
-          selectedId.value = flatEndpoints.value[0].id;
-        }
       }
     }
   }

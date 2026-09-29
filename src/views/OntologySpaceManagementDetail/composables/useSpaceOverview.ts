@@ -1,7 +1,6 @@
 import { onScopeDispose, ref, watch, type Ref } from "vue";
 import type { ManagementWorkspaceTab, OntologySpaceOverview, OntologySpaceStatisticVO } from "@/types";
 import { getOntologySpaceStatisticInterface } from "@/apis";
-import { ontologySpaceManagementDetailMock } from "@/mocks/ontologySpaceManagementDetailMock/ontologySpaceManagementDetailMock";
 
 /** 统计接口字段到工作区 tab 的映射。 */
 const STATISTIC_FIELD_TO_TAB: ReadonlyArray<{ field: keyof OntologySpaceStatisticVO; tab: Exclude<ManagementWorkspaceTab, "overview"> }> = [
@@ -33,22 +32,23 @@ export function mapOntologySpaceStatistic(statistic: OntologySpaceStatisticVO): 
 }
 
 /**
- * @description 从后端统计接口加载空间概览；接口不可用时回退到本地 mock 数据。
+ * @description 从后端统计接口加载空间概览；失败时抛出错误，由调用方提示，不回退 Mock。
  * @param id 本体空间 id。
- * @returns 概览数据；接口与 mock 均无对应数据时返回 undefined。
+ * @returns 概览数据；成功但无业务 data 时返回 undefined。
  */
 async function loadSpaceOverviewFromApi(id: string): Promise<OntologySpaceOverview | undefined> {
   const spaceIdNumber = Number(id);
   if (!Number.isFinite(spaceIdNumber)) {
-    return ontologySpaceManagementDetailMock.find((item) => item.spaceId === id);
+    throw new Error("空间标识无效，无法加载统计数据。");
   }
-  try {
-    const response = await getOntologySpaceStatisticInterface({ spaceId: spaceIdNumber });
-    if (response.code === 200 && response.data) return mapOntologySpaceStatistic(response.data);
-  } catch {
-    // 接口不可用时回退到 mock。
+  const response = await getOntologySpaceStatisticInterface({ spaceId: spaceIdNumber });
+  if (response.code !== 200) {
+    throw new Error(response.message.trim() || "空间统计加载失败，请重试。");
   }
-  return ontologySpaceManagementDetailMock.find((item) => item.spaceId === id);
+  if (!response.data) {
+    return undefined;
+  }
+  return mapOntologySpaceStatistic(response.data);
 }
 
 export function useSpaceOverview(spaceId: Ref<string>, loader: (id: string) => Promise<OntologySpaceOverview | undefined> = loadSpaceOverviewFromApi) {
@@ -73,8 +73,10 @@ export function useSpaceOverview(spaceId: Ref<string>, loader: (id: string) => P
     try {
       const result = await loader(id);
       if (!disposed && request === generation) data.value = result;
-    } catch {
-      if (!disposed && request === generation) error.value = "空间统计加载失败，请重试。";
+    } catch (cause) {
+      if (!disposed && request === generation) {
+        error.value = cause instanceof Error && cause.message.trim() ? cause.message : "空间统计加载失败，请重试。";
+      }
     } finally {
       if (!disposed && request === generation) loading.value = false;
     }

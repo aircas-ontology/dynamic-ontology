@@ -110,15 +110,16 @@ test("mapper converts contract list items into page ontology space items", async
   assert.equal(mapped.parentSpaceDisplayName, "");
 });
 
-test("space management page maps successful list responses and falls back to page mock on failure", () => {
+test("space management page maps successful list responses and surfaces errors without mock fallback", () => {
   const managementSource = readSource("../src/views/OntologySpaceManagement/composables/useSpaceManagement.ts");
   assert.match(managementSource, /import \{ getOntologyOverviewCountInterface, getOntologySpaceListInterface \} from "@\/apis";/);
-  assert.match(managementSource, /import \{ ontologySpaceListMock \} from "@\/mocks\/ontologySpaceListMock\/ontologySpaceListMock";/);
   assert.match(managementSource, /mapOntologySpaceList/);
   assert.match(managementSource, /getOntologySpaceListInterface\(\)/);
   assert.match(managementSource, /response\.code === 200/);
-  assert.match(managementSource, /ontologySpaceListMock\.data/);
+  assert.doesNotMatch(managementSource, /ontologySpaceListMock/);
   assert.doesNotMatch(managementSource, /ontologySpaceManagementMock/);
+  assert.match(managementSource, /status\.value = "error"/);
+  assert.match(managementSource, /本体空间加载失败/);
 });
 
 test("space workspace detail resolves the current space from the list api", () => {
