@@ -132,7 +132,8 @@ test("application management page wires api docs composable and panels", () => {
   assert.match(pageSource, /ApiDocsEndpointList/);
   assert.match(pageSource, /ApiDocsEndpointDetail/);
   assert.match(composableSource, /getOntologyApiDocsInterface/);
-  assert.match(composableSource, /apiDocsOntologyMock/);
+  assert.doesNotMatch(composableSource, /apiDocsOntologyMock/);
+  assert.match(composableSource, /接口文档加载失败/);
   assert.match(listSource, /toggleGroupExpanded/);
   assert.match(listSource, /aria-expanded/);
   assert.match(listSource, /filterApiDocsEndpointGroups/);

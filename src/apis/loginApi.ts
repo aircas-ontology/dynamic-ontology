@@ -32,7 +32,7 @@ export function persistLoginToken(headers: AxiosResponse<LoginData>["headers"]):
  *
  * 请求方式：POST `DOMAIN_CONFIG.LOGIN_URL` + `/ontology/user/login`
  *
- * 超时由 request 统一控制；超时或传输失败由调用方决定是否回退模拟登录。
+ * 超时由 request 统一控制；超时或传输失败由调用方提示，不回退模拟登录。
  *
  * @param params 登录参数。
  * @param {string} params.username - 用户名
