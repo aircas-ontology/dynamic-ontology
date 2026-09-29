@@ -10,6 +10,9 @@
     color: var(--aircas-color-text-primary);
 
     .el-tree-node__content {
+      min-height: 32px;
+      height: auto;
+
       &:hover,
       &::selection {
         background-color: var(--aircas-color-hover-background);
