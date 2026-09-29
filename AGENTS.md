@@ -8,8 +8,6 @@
 - **【禁止】**：硬性要求，禁止执行。
 - **【优先】**：默认执行；确需偏离时在 Plan 中说明原因并获得用户确认。
 
-普通说明文字仅用于解释，不具有独立规则等级。
-
 规则按职责分层：
 
 1. 用户当前明确要求具有最高优先级。
@@ -20,22 +18,25 @@
 6. `plans/` 中的文件是已确认实施方案和历史记录，不作为长期规范。
 7. 通用最佳实践优先级最低。
 
-- 【必须】发现规则冲突时说明冲突及影响，等待用户确认后再执行。开发 Prompt 与现行规范冲突时同样适用。
-
 ---
 
 ## 2. 基本原则
 
 - 【必须】只修改当前任务明确涉及的内容。
-- 【禁止】顺带重构、批量格式化或调整与当前任务无关的内容。
-- 【必须】保持类型安全，不通过 `any`、无依据的类型断言或关闭检查规避类型问题。
+- 【必须】业务源码全部使用`typescript`，且保持类型安全，不通过 `any`、无依据的类型断言或关闭检查规避类型问题。
 - 【必须】修改受 Prettier 支持的文本文件前读取并遵守 `.vscode/settings.json`、`.prettierrc.json` 和 `.prettierignore`。
-- 【必须】格式化只覆盖当前任务明确涉及的文件；禁止无范围的写入式全仓格式化。
-- 【禁止】Codex 读取、修改、删除或提交 `html/` 生产构建目录。
-- 【禁止】大模型修改、删除或提交 `public/` 中的任何文件；只允许读取和检查，开发或发布人员自行维护该目录。
+- 【必须】格式化只覆盖当前任务明确涉及的文件。
 - 【必须】使用 Subagent 前获得用户确认。
-- 【必须】增量输出：只展示或描述发生变化的部分，不重复粘贴未修改代码或完整文件；Plan、验证证据、冲突和风险说明不受此限制。
 - 【必须】修改 `src/<directory>/` 前完整阅读并遵守该目录的 `readme.md`。
+- 【必须】发现规则冲突时说明冲突及影响，【必须】等待用户确认后再执行。
+- 【必须】Vue 使用 Vue 3、Composition API、`<script setup lang="ts">`。
+- 【禁止】顺带重构、批量格式化或调整与当前任务无关的内容。
+- 【禁止】文件、函数、变量等命名使用`javascript|java|python` 等语言的保留字段。
+- 【禁止】文件、函数、变量等命名使用中文。
+- 【禁止】读取、修改、删除或提交 `html/` 生产构建目录。
+- 【禁止】修改、删除 `public/` 目录内的文件。
+- 【优先】增量输出：只展示或描述发生变化的部分，不重复粘贴未修改代码或完整文件；Plan、验证证据、冲突和风险说明不受此限制。
+- 【优先】项目内部模块引用使用 `@/` 路径别名。
 
 > **核心原则：范围受控、类型安全、不触碰受保护产物。**
 
@@ -48,10 +49,44 @@
 1. 【必须】先阅读本文件，确定全仓库规则、受保护目录和技术约束。
 2. 【必须】查看 `git status --short`，区分用户已有修改与当前任务修改。
 3. 【必须】使用 `rg --files`、`rg` 和其他只读命令定位相关文件；检索时排除 `html/`。
-4. 【必须】修改 `src/<directory>/` 前完整阅读该目录的 `readme.md`。
-5. 【必须】涉及文件新增、删除、配置、依赖或行为变更时，先按项目规划流程确认范围并保存 Plan。
+4. 【必须】涉及文件新增、删除、配置、依赖或行为变更时，先按项目规划流程确认范围并保存 Plan。
 
 项目约束以仓库内本文件及其引用规范为准，不依赖会话临时注入的公共 Skill 或 ECC Codex Supplement。规则冲突时按第 1 节的优先级处理，无法自行消解时先说明影响并等待用户确认。
+
+---
+
+## 4. 项目结构与规范
+
+### 项目目录结构
+
+```text
+src/
+├─ apis/            HTTP 接口定义，按页面 / 业务域分类
+├─ assets/          构建期静态资源，按页面 / 业务域分类
+├─ components/      公共组件，由 register 统一注册
+├─ composables/     项目级全局 Vue composables，按共享范围或业务领域分类
+├─ example/         参考资料目录，不作为正式业务依赖，【禁止】在项目中直接 import 引用
+├─ layout/          公共布局
+├─ mocks/           样例数据，按页面 / 业务域分类，符合正式业务类型定义
+├─ models/          业务模型或 Class
+├─ router/          Vue Router
+├─ stores/          Pinia Store，Store 仅维护需要共享的业务状态，【禁止】直接操作 DOM
+├─ styles/          全局主题及公共样式
+├─ types/           TypeScript 类型，按页面 / 业务域分类，定义可复用业务类型
+├─ utils/           无业务状态的公共工具函数
+├─ views/           业务页面
+├─ App.vue          根组件
+└─ main.ts          入口文件
+
+public/             部署后静态资源与运行时配置，大模型只读
+├─ configs/         部署后可调整的运行时配置
+└─ data/            部署后可调整的运行时数据
+
+docs/                开发人员编写的待执行 Prompt
+plans/               已确认的实施 Plan 和历史记录
+html/                生产构建产物，【禁止】读取、修改、删除或提交
+.agents/             项目级 Agent 导航与 Skills
+```
 
 ### 仓库入口
 
@@ -72,54 +107,15 @@
 | 任务                         | 优先检查                                                                  |
 | ---------------------------- | ------------------------------------------------------------------------- |
 | 新增或调整页面               | `src/views/`、`src/router/`、`src/assets/pages/`、`src/types/pages/`      |
-| 新增后端接口                 | `src/apis/`、`src/types/apis/`、`src/utils/request.ts`                    |
-| 调整共享状态                 | `src/stores/`、相关领域类型和调用页面                                     |
-| 新增或调整全局 composable    | `src/composables/`、相关 Store、工具、类型和调用方                        |
+| 新增后端接口                 | `src/apis/`、`src/mocks/`、`src/types/apis/`、`src/utils/request.ts`      |
+| 调整共享状态                 | `src/stores/`、`src/types/`                                               |
+| 新增或调整全局 composable    | `src/composables/`、`src/stores/`、`src/types/`                           |
 | 修改公共组件                 | `src/components/`、`src/assets/components/`、`src/styles/`                |
-| 修改主题或 Element Plus 外观 | `src/styles/theme-*.css`、`src/styles/element-plus/`、组件局部样式        |
+| 修改主题或 Element Plus 外观 | `src/styles/theme-*.css`、`src/styles/element-plus/`                      |
 | 修改地图或三维能力           | `src/utils/initEarth.ts`、相关模型、组件或页面，并核对实例生命周期        |
 | 修改类型                     | `src/types/`、`src/types/index.ts`、`scripts/check-types-conventions.mjs` |
 | 修改构建配置                 | `vite.config.ts`、`tsconfig*.json`、`package.json`                        |
 | 增加或调整测试               | `tests/`、对应实现和 `package.json` scripts                               |
-
----
-
-## 4. 项目结构与规范
-
-**目录职责**: 本项目存放源代码，包含以下目录：
-
-```text
-src/
-├─ apis/             HTTP 接口定义，按页面 / 业务域分类
-├─ assets/          构建期静态资源，按页面 / 业务域分类
-├─ components/      公共组件，由 register 统一注册
-├─ composables/     项目级全局 Vue composables，按共享范围或业务领域分类
-├─ example/         参考资料目录，不作为正式业务依赖
-├─ layout/          公共布局
-├─ mocks/           样例数据，按页面 / 业务域分类，符合正式业务类型定义
-├─ models/          业务模型或 Class
-├─ router/          Vue Router
-├─ stores/          Pinia Store，Store 仅维护需要共享的业务状态，禁止直接操作 DOM
-├─ styles/          全局主题及公共样式
-├─ types/           TypeScript 类型，按页面 / 业务域分类，定义可复用业务类型
-├─ utils/           无业务状态的公共工具函数
-├─ views/           业务页面
-├─ App.vue          根组件
-└─ main.ts          入口文件
-
-public/             部署后静态资源与运行时配置，大模型只读
-├─ configs/         部署后可调整的运行时配置
-└─ data/            部署后可调整的运行时数据
-
-docs/                开发人员编写的待执行 Prompt
-plans/               已确认的实施 Plan 和历史记录
-html/                生产构建产物，Codex 禁止读取、修改、删除或提交
-.agents/            项目级 Agent 导航与 Skills
-```
-
-- 【必须】`src/` 业务源码使用 TypeScript。
-- 【必须】Vue 使用 Vue 3、Composition API、`<script setup lang="ts">`。
-- 【优先】项目内部模块引用使用 `@/` 路径别名。
 
 ### 函数规范
 
@@ -162,7 +158,33 @@ html/                生产构建产物，Codex 禁止读取、修改、删除�
 
 ---
 
-## 7. 测试与构建
+## 7. 测试与验证
+
+- 【必须】新功能、缺陷修复和行为变更采用 TDD：先编写或更新测试并确认失败，再完成最小实现，最终确认测试通过。
+- 【必须】涉及业务逻辑的代码变更执行 `npm test` 和 `npm run test:coverage`，测试必须全部通过，覆盖率不得低于项目规定的 80% 门槛。
+- 【必须】应用代码、类型、配置或依赖变更执行项目已有的 Lint、`npm run type-check` 和 `npm run build:verify`；禁止 Codex 使用会写入 `html/` 的 `npm run build` 进行验证。
+- 【必须】规范、Skill、主题变量或项目结构变更执行 `npm run check:project-conventions`；类型目录变更另执行 `npm run check:types-conventions`。
+- 【必须】修改受 Prettier 支持的文本文件后，仅对当前任务涉及文件执行 `npm run format:check -- <文件列表>`；需要自动格式化时仅执行 `npm run format -- <同一文件列表>`，禁止无关文件批量格式化。
+- 【优先】涉及关键用户流程、UI 交互、路由、状态管理、异步请求、拖拽、图表、地图或第三方组件运行时行为的修改，应增加或更新 E2E 测试。
+- 【优先】自动化测试无法充分覆盖的运行时行为，可执行针对本次修改的浏览器冒烟验证，仅检查页面加载、核心交互、Console Error 以及明显的运行时或布局异常；禁止默认遍历全部页面和功能。
+- 【必须】纯文档、Skill、静态资源整理及不改变行为的样式修改，可免除单元测试、覆盖率和 E2E 验证，但仍须执行与变更类型对应的规范、格式或项目检查。
+- 【必须】执行验证命令前以当前 `package.json` 的 `scripts` 为准，不臆造不存在的命令；项目未提供相应脚本时不得自行假定验证已完成。
+- 【必须】任何必需验证失败时不得视为任务完成；应修复失败，或在无法修复时明确记录失败项、原因及影响。
+- 【必须】交付前检查 `git diff --check`、任务相关 diff 和 `git status --short`，确认不存在计划外文件、调试代码、硬编码秘密或意外生成物。
+- 【人工验收】业务正确性、UI/UX、视觉效果、复杂边界场景及最终系统功能由人工负责最终验收。
+
+常用验证入口：
+
+```sh
+npm test
+npm run test:coverage
+npm run check:project-conventions
+npm run check:types-conventions
+npm run type-check
+npm run build:verify
+```
+
+> 其他验证命令（如 Lint、E2E）仅在 `package.json` 已定义对应 script 时执行。
 
 - 【必须】新功能、缺陷修复和行为变更采用 TDD：先运行失败测试，再完成最小实现并确认通过。
 - 【必须】有可执行测试的代码变更运行 `npm test` 和 `npm run test:coverage`，覆盖率不得低于项目现有 80% 门槛。
