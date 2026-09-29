@@ -21,7 +21,7 @@ export function validateSpace(draft: OntologySpaceDraft): OntologySpaceDraft {
   if (!value.displayName || value.displayName.length > 64) throw new Error("空间名称须为 1–64 个字符。");
   if (value.description.length > 256) throw new Error("空间描述不能超过 256 个字符。");
   if (value.iconUrl && !isAcceptedSpaceIconUrl(value.iconUrl)) {
-    throw new Error("空间图标须为 PNG、JPEG、WEBP 的内嵌图片，或 http(s) 缩略图地址。");
+    throw new Error("空间图标须为 PNG、JPEG 的内嵌图片，或 http(s) 缩略图地址。");
   }
   return value;
 }
@@ -32,7 +32,7 @@ export function validateSpace(draft: OntologySpaceDraft): OntologySpaceDraft {
  * @returns 合法时返回 true。
  */
 function isAcceptedSpaceIconUrl(iconUrl: string): boolean {
-  if (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(iconUrl)) return true;
+  if (/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(iconUrl)) return true;
   return /^https?:\/\//.test(iconUrl);
 }
 
