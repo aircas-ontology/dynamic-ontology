@@ -790,6 +790,24 @@ defineExpose({
     savedBinds.value = new Map(draftBinds.value);
     loading.value = false;
   },
+  /** @description 用父组件重新查询到的服务端数据重置映射基线并刷新连线。 */
+  syncServerMappings() {
+    initDraftBinds();
+    selectedLineId.value = "";
+    hoveredLineId.value = "";
+    manualSelectedTable.value = "";
+    manualSelectedField.value = "";
+    manualSelectedProperty.value = "";
+    selectedTableKeys.value = [
+      ...new Set(
+        props.properties.flatMap((property) => (property.dataSource ? [manualTableKey(property.dataSource.databaseId, property.dataSource.tableId)] : [])),
+      ),
+    ];
+    void nextTick(() => {
+      refreshLines();
+      window.setTimeout(() => refreshLines(), 50);
+    });
+  },
   /** @description 设置批量提交加载状态。 */
   setLoading(value: boolean) {
     loading.value = value;

@@ -174,6 +174,30 @@ export type {
   OntologyObjectDetailRouteName,
   OntologyObjectDetailTab,
 } from "./pages/ontologyObjectDetailType";
+export {
+  ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
+  SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
+  SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS,
+  SPACE_BEHAVIOR_STATUS_LABELS,
+  SPACE_BEHAVIOR_STATUS_OPERATION_LABELS,
+  SPACE_BEHAVIOR_STATUS_OPERATION_OPTIONS,
+  SPACE_BEHAVIOR_STATUS_OPTIONS,
+} from "./pages/ontologySpaceBehaviorType";
+export type {
+  SpaceBehaviorBasicAction,
+  SpaceBehaviorCategoryNode,
+  SpaceBehaviorDeletePreflight,
+  SpaceBehaviorDraft,
+  SpaceBehaviorItem,
+  SpaceBehaviorOperatorOption,
+  SpaceBehaviorParameter,
+  SpaceBehaviorReferenceCheckResult,
+  SpaceBehaviorStatus,
+  SpaceBehaviorStatusChangeDraft,
+  SpaceBehaviorStatusOperation,
+  SpaceBehaviorWorkspaceData,
+  SpaceBehaviorWorkspaceLoadStatus,
+} from "./pages/ontologySpaceBehaviorType";
 export type {
   ManagementWorkspaceTab,
   OntologyConceptNode,
