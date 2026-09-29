@@ -72,11 +72,11 @@ function resolveSchemaTypeLabel(schema: unknown): string {
 
 /**
  * @description 解析 `#/components/schemas/...` 引用或直接返回对象 schema。
- * @param document OpenAPI 文档。
+ * @param apiDocs OpenAPI 文档。
  * @param schema 原始 schema（可为 $ref）。
  * @returns 解析后的 schema 对象；无法解析时返回 null。
  */
-function resolveSchemaObject(document: OntologyApiDocsData, schema: unknown): Record<string, unknown> | null {
+function resolveSchemaObject(apiDocs: OntologyApiDocsData, schema: unknown): Record<string, unknown> | null {
   if (schema === null || typeof schema !== "object") {
     return null;
   }
@@ -84,7 +84,7 @@ function resolveSchemaObject(document: OntologyApiDocsData, schema: unknown): Re
   const ref = record.$ref;
   if (typeof ref === "string" && ref.startsWith("#/components/schemas/")) {
     const schemaName = ref.slice("#/components/schemas/".length);
-    const schemas = document.components?.schemas;
+    const schemas = apiDocs.components?.schemas;
     if (!schemas || typeof schemas !== "object") {
       return null;
     }
@@ -99,17 +99,17 @@ function resolveSchemaObject(document: OntologyApiDocsData, schema: unknown): Re
 
 /**
  * @description 将 object schema 的 properties 映射为 body 参数行；array 则展开 items。
- * @param document OpenAPI 文档。
+ * @param apiDocs OpenAPI 文档。
  * @param schema 请求体 schema。
  * @returns body 参数展示行。
  */
-function mapRequestBodySchemaParameters(document: OntologyApiDocsData, schema: unknown): ApiDocsParameterRow[] {
-  let resolved = resolveSchemaObject(document, schema);
+function mapRequestBodySchemaParameters(apiDocs: OntologyApiDocsData, schema: unknown): ApiDocsParameterRow[] {
+  let resolved = resolveSchemaObject(apiDocs, schema);
   if (!resolved) {
     return [];
   }
   if (resolved.type === "array") {
-    resolved = resolveSchemaObject(document, resolved.items) ?? resolved;
+    resolved = resolveSchemaObject(apiDocs, resolved.items) ?? resolved;
   }
   const properties = resolved.properties;
   if (properties === null || typeof properties !== "object") {
@@ -220,25 +220,25 @@ function readPropertyDescription(propertySchema: unknown): string {
 
 /**
  * @description 将 schema 展开为树形字段行；对象属性挂 children，数组元素挂在数组字段下，深度上限 3。
- * @param document OpenAPI 文档。
+ * @param apiDocs OpenAPI 文档。
  * @param schema 待展开 schema。
  * @param pathPrefix 完整路径前缀。
  * @param depth 当前展开深度。
  * @returns Schema 字段树。
  */
-function mapSchemaFields(document: OntologyApiDocsData, schema: unknown, pathPrefix = "", depth = 0): ApiDocsSchemaFieldRow[] {
+function mapSchemaFields(apiDocs: OntologyApiDocsData, schema: unknown, pathPrefix = "", depth = 0): ApiDocsSchemaFieldRow[] {
   if (depth > 3) {
     return [];
   }
-  const resolved = resolveSchemaObject(document, schema);
+  const resolved = resolveSchemaObject(apiDocs, schema);
   if (!resolved) {
     return [];
   }
   if (resolved.type === "array") {
     const itemPrefix = pathPrefix ? `${pathPrefix}[]` : "[]";
-    const itemResolved = resolveSchemaObject(document, resolved.items);
+    const itemResolved = resolveSchemaObject(apiDocs, resolved.items);
     if (itemResolved && (itemResolved.properties || itemResolved.type === "object" || itemResolved.type === "array")) {
-      return mapSchemaFields(document, resolved.items, itemPrefix, depth);
+      return mapSchemaFields(apiDocs, resolved.items, itemPrefix, depth);
     }
     return [
       {
@@ -267,14 +267,14 @@ function mapSchemaFields(document: OntologyApiDocsData, schema: unknown, pathPre
       required: requiredNames.has(name),
       description: readPropertyDescription(propertySchema),
     };
-    const nested = resolveSchemaObject(document, propertySchema);
+    const nested = resolveSchemaObject(apiDocs, propertySchema);
     if (nested?.type === "array") {
-      const itemChildren = mapSchemaFields(document, nested.items, `${path}[]`, depth + 1);
+      const itemChildren = mapSchemaFields(apiDocs, nested.items, `${path}[]`, depth + 1);
       if (itemChildren.length > 0) {
         row.children = itemChildren;
       }
     } else if (nested?.properties) {
-      const objectChildren = mapSchemaFields(document, propertySchema, path, depth + 1);
+      const objectChildren = mapSchemaFields(apiDocs, propertySchema, path, depth + 1);
       if (objectChildren.length > 0) {
         row.children = objectChildren;
       }
@@ -286,11 +286,11 @@ function mapSchemaFields(document: OntologyApiDocsData, schema: unknown, pathPre
 
 /**
  * @description 将 responses 对象映射为摘要行，并解析 Content Schema 字段。
- * @param document OpenAPI 文档。
+ * @param apiDocs OpenAPI 文档。
  * @param responses OpenAPI responses。
  * @returns 响应展示行。
  */
-function mapResponses(document: OntologyApiDocsData, responses: unknown): ApiDocsResponseRow[] {
+function mapResponses(apiDocs: OntologyApiDocsData, responses: unknown): ApiDocsResponseRow[] {
   if (responses === null || typeof responses !== "object") {
     return [];
   }
@@ -310,23 +310,23 @@ function mapResponses(document: OntologyApiDocsData, responses: unknown): ApiDoc
       description: readStringField(record, "description"),
       contentTypes,
       schemaLabel: resolveSchemaTypeLabel(schema),
-      schemaFields: mapSchemaFields(document, schema),
+      schemaFields: mapSchemaFields(apiDocs, schema),
     };
   });
 }
 
 /**
  * @description 从 OpenAPI 文档提取服务信息（标题、版本、首个 server）。
- * @param document OpenAPI 文档。
+ * @param apiDocs OpenAPI 文档。
  * @returns 服务信息视图模型。
  */
-export function mapApiDocsServiceInfo(document: OntologyApiDocsData): ApiDocsServiceInfo {
-  const firstServer = document.servers?.[0];
+export function mapApiDocsServiceInfo(apiDocs: OntologyApiDocsData): ApiDocsServiceInfo {
+  const firstServer = apiDocs.servers?.[0];
   return {
-    title: document.info.title,
-    description: document.info.description ?? "",
-    version: document.info.version,
-    openapi: document.openapi,
+    title: apiDocs.info.title,
+    description: apiDocs.info.description ?? "",
+    version: apiDocs.info.version,
+    openapi: apiDocs.openapi,
     serverUrl: firstServer?.url ?? "",
     serverDescription: firstServer?.description ?? "",
   };
@@ -334,13 +334,13 @@ export function mapApiDocsServiceInfo(document: OntologyApiDocsData): ApiDocsSer
 
 /**
  * @description 遍历 paths，生成按 tag 分组的接口列表（无顶层 tags 时用 operation.tags）。
- * @param document OpenAPI 文档。
+ * @param apiDocs OpenAPI 文档。
  * @returns 分组后的接口列表。
  */
-export function mapApiDocsEndpointGroups(document: OntologyApiDocsData): ApiDocsEndpointGroup[] {
+export function mapApiDocsEndpointGroups(apiDocs: OntologyApiDocsData): ApiDocsEndpointGroup[] {
   const groupMap = new Map<string, ApiDocsEndpointItem[]>();
 
-  for (const [path, pathItem] of Object.entries(document.paths)) {
+  for (const [path, pathItem] of Object.entries(apiDocs.paths)) {
     if (pathItem === null || typeof pathItem !== "object") {
       continue;
     }
@@ -370,7 +370,7 @@ export function mapApiDocsEndpointGroups(document: OntologyApiDocsData): ApiDocs
     }
   }
 
-  const preferredOrder = (document.tags ?? []).map((tag) => tag.name).filter((name): name is string => typeof name === "string" && name.length > 0);
+  const preferredOrder = (apiDocs.tags ?? []).map((tag) => tag.name).filter((name): name is string => typeof name === "string" && name.length > 0);
 
   const orderedNames = [
     ...preferredOrder.filter((name) => groupMap.has(name)),
@@ -385,13 +385,13 @@ export function mapApiDocsEndpointGroups(document: OntologyApiDocsData): ApiDocs
 
 /**
  * @description 按 method+path 解析接口详情（参数、请求体、响应）。
- * @param document OpenAPI 文档。
+ * @param apiDocs OpenAPI 文档。
  * @param method HTTP 方法。
  * @param path 接口路径。
  * @returns 详情视图模型；找不到时返回 null。
  */
-export function mapApiDocsEndpointDetail(document: OntologyApiDocsData, method: ApiDocsHttpMethod, path: string): ApiDocsEndpointDetail | null {
-  const pathItem = document.paths[path];
+export function mapApiDocsEndpointDetail(apiDocs: OntologyApiDocsData, method: ApiDocsHttpMethod, path: string): ApiDocsEndpointDetail | null {
+  const pathItem = apiDocs.paths[path];
   if (pathItem === null || typeof pathItem !== "object") {
     return null;
   }
@@ -403,7 +403,7 @@ export function mapApiDocsEndpointDetail(document: OntologyApiDocsData, method: 
   const pathParameters = mapParameters(pathItem.parameters);
   const operationParameters = mapParameters(operation.parameters);
   const requestBody = mapRequestBody(operation.requestBody);
-  const bodyParameters = mapRequestBodySchemaParameters(document, requestBody.schema);
+  const bodyParameters = mapRequestBodySchemaParameters(apiDocs, requestBody.schema);
   const rawTags = Array.isArray(operation.tags) ? operation.tags.filter((tag): tag is string => typeof tag === "string" && tag.length > 0) : [];
 
   return {
@@ -419,6 +419,6 @@ export function mapApiDocsEndpointDetail(document: OntologyApiDocsData, method: 
     requestBodyRequired: requestBody.required,
     requestBodyContentTypes: requestBody.contentTypes,
     requestBodySchemaLabel: requestBody.schemaLabel,
-    responses: mapResponses(document, operation.responses),
+    responses: mapResponses(apiDocs, operation.responses),
   };
 }

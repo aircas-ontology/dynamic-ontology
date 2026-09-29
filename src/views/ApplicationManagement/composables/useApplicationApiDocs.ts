@@ -12,7 +12,7 @@ import { mapApiDocsEndpointDetail, mapApiDocsEndpointGroups, mapApiDocsServiceIn
  * @returns 文档异步状态、分组列表、选中详情与选择操作。
  */
 export function useApplicationApiDocs() {
-  const document = ref<OntologyApiDocsData | null>(null);
+  const apiDocs = ref<OntologyApiDocsData | null>(null);
   const loading = ref(false);
   const error = ref("");
   const selectedId = ref("");
@@ -20,11 +20,11 @@ export function useApplicationApiDocs() {
   let generation = 0;
 
   const serviceInfo = computed<ApiDocsServiceInfo | null>(() => {
-    return document.value ? mapApiDocsServiceInfo(document.value) : null;
+    return apiDocs.value ? mapApiDocsServiceInfo(apiDocs.value) : null;
   });
 
   const endpointGroups = computed<ApiDocsEndpointGroup[]>(() => {
-    return document.value ? mapApiDocsEndpointGroups(document.value) : [];
+    return apiDocs.value ? mapApiDocsEndpointGroups(apiDocs.value) : [];
   });
 
   const flatEndpoints = computed<ApiDocsEndpointItem[]>(() => {
@@ -32,7 +32,7 @@ export function useApplicationApiDocs() {
   });
 
   const selectedDetail = computed<ApiDocsEndpointDetail | null>(() => {
-    if (!document.value || !selectedId.value) {
+    if (!apiDocs.value || !selectedId.value) {
       return null;
     }
     const [method, ...pathParts] = selectedId.value.split(":");
@@ -40,7 +40,7 @@ export function useApplicationApiDocs() {
     if (!method || !path) {
       return null;
     }
-    return mapApiDocsEndpointDetail(document.value, method as ApiDocsHttpMethod, path);
+    return mapApiDocsEndpointDetail(apiDocs.value, method as ApiDocsHttpMethod, path);
   });
 
   /**
@@ -63,12 +63,12 @@ export function useApplicationApiDocs() {
       if (disposed || requestId !== generation) {
         return;
       }
-      document.value = response;
+      apiDocs.value = response;
     } catch (cause) {
       if (disposed || requestId !== generation) {
         return;
       }
-      document.value = apiDocsOntologyMock;
+      apiDocs.value = apiDocsOntologyMock;
       error.value = cause instanceof RequestError ? cause.message : "接口文档加载失败，已展示本地样例。";
     } finally {
       if (!disposed && requestId === generation) {
@@ -89,7 +89,7 @@ export function useApplicationApiDocs() {
   });
 
   return {
-    document,
+    apiDocs,
     loading,
     error,
     selectedId,
