@@ -83,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import {
   autoBindOntologyPropertyDatasourceInterface,
@@ -328,9 +328,7 @@ async function openDataSource() {
   dataSourceTableError.value = "";
   dataSourceColumnError.value = "";
   try {
-    const infoResponse = await getOntologyPropertyDetailByOntologyIdInterface({ ontologyUniqueIdentifier });
-    if (infoResponse.code !== 200) throw new Error(infoResponse.message || "属性信息查询失败");
-    ontologyPropertyDetails.value = infoResponse.data;
+    await loadPropertyDataSourceDetails(ontologyUniqueIdentifier);
     const tableLoaded = await loadDataSourceTables();
     if (!tableLoaded) throw new Error(dataSourceTableError.value || "数据源查询失败");
     await loadAssociatedDataSourceColumns();
@@ -341,6 +339,16 @@ async function openDataSource() {
   } finally {
     dataSourceOpening.value = false;
   }
+}
+
+/**
+ * @description 查询当前本体属性及其数据源关联详情。
+ * @param ontologyUniqueIdentifier 本体唯一标识。
+ */
+async function loadPropertyDataSourceDetails(ontologyUniqueIdentifier: string): Promise<void> {
+  const infoResponse = await getOntologyPropertyDetailByOntologyIdInterface({ ontologyUniqueIdentifier });
+  if (infoResponse.code !== 200) throw new Error(infoResponse.message || "属性信息查询失败");
+  ontologyPropertyDetails.value = infoResponse.data;
 }
 
 /**
@@ -421,12 +429,21 @@ async function handleAutoDataSourceAssociate() {
     return;
   }
   autoDataSourceSubmitting.value = true;
+  let autoAssociationCompleted = false;
   try {
     const response = await autoBindOntologyPropertyDatasourceInterface({ ontologyIdentifier });
     if (response.code !== 200) throw new Error(response.message || "自动关联数据源失败");
+    autoAssociationCompleted = true;
+    const tableLoaded = await loadDataSourceTables();
+    if (!tableLoaded) throw new Error(dataSourceTableError.value || "数据源查询失败");
+    await loadPropertyDataSourceDetails(ontologyIdentifier);
+    await loadAssociatedDataSourceColumns();
+    await nextTick();
+    dataSourceDialogRef.value?.syncServerMappings();
     ElMessage.success("自动关联数据源成功");
   } catch (cause) {
-    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "自动关联数据源失败，请重试。");
+    const message = cause instanceof Error && cause.message.trim() ? cause.message : "自动关联数据源失败，请重试。";
+    ElMessage.error(autoAssociationCompleted ? `自动关联数据源已完成，但结果刷新失败：${message}` : message);
   } finally {
     autoDataSourceSubmitting.value = false;
   }
