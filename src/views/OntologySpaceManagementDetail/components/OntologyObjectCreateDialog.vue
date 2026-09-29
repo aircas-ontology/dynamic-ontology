@@ -51,17 +51,20 @@
           <div class="ontology-object-create-dialog__icon-field">
             <div v-if="draft.iconUrl" class="ontology-object-create-dialog__icon-preview">
               <img :src="draft.iconUrl" alt="本体图标预览" />
-              <el-button class="aircas-button" :disabled="submitting" @click="clearIcon">清除</el-button>
+              <el-button class="aircas-button" :disabled="submitting || iconUploading" @click="clearIcon">清除</el-button>
             </div>
             <el-upload
               :auto-upload="false"
               :show-file-list="false"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml,.png,.jpg,.jpeg,.webp,.svg"
+              accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+              :disabled="submitting || iconUploading"
               :on-change="handleIconChange"
             >
-              <el-button class="aircas-button" :disabled="submitting">{{ draft.iconUrl ? "重新选择" : "选择本地图片" }}</el-button>
+              <el-button class="aircas-button" :loading="iconUploading" :disabled="submitting || iconUploading">
+                {{ draft.iconUrl ? "重新选择" : "选择本地图片" }}
+              </el-button>
             </el-upload>
-            <span class="ontology-object-create-dialog__hint">可选，PNG / JPG / WEBP / SVG，不超过 2MB</span>
+            <span class="ontology-object-create-dialog__hint">可选，PNG / JPG，不超过 2MB</span>
             <p v-if="iconError" class="ontology-object-create-dialog__error" role="alert">{{ iconError }}</p>
           </div>
         </el-form-item>
@@ -142,6 +145,8 @@
 import { computed, reactive, ref, watch } from "vue";
 import { MagicStick, UploadFilled, Plus, Upload } from "@element-plus/icons-vue";
 import type { UploadFile } from "element-plus";
+
+import { postUploadOntologyThumbnailInterface } from "@/apis";
 import type { OntologyConceptNode, OntologyObjectCreateDraft, OntologyObjectItem } from "@/types";
 
 interface CategoryTreeOption {
@@ -181,6 +186,8 @@ const importFile = ref<File | null>(null);
 const importError = ref("");
 const validationError = ref("");
 const iconError = ref("");
+const iconUploading = ref(false);
+let iconUploadSerial = 0;
 const templateJson = JSON.stringify([{ apiName: "airplane", displayName: "飞机", description: "", iconUrl: "", categoryId: "1" }], null, 2);
 
 /**
@@ -211,6 +218,8 @@ watch([visible, () => props.editingItem], ([opened, editingItem]) => {
   importError.value = "";
   validationError.value = "";
   iconError.value = "";
+  iconUploading.value = false;
+  iconUploadSerial += 1;
 });
 
 /**
@@ -224,37 +233,50 @@ function selectCreateMode(mode: CreateMode) {
   importError.value = "";
 }
 
-/** @description 读取本地图片并返回预览数据地址。 */
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => (typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("读取图片失败")));
-    reader.onerror = () => reject(new Error("读取图片失败"));
-    reader.readAsDataURL(file);
-  });
-}
-
 /**
- * @description 校验并读取本地本体图标。
+ * @description 校验并上传本体图标，写入缩略图 URL（与空间图标上传一致）。
  * @param file Element Plus 上传文件。
- * @returns 图片读取流程的 Promise。
  */
-async function handleIconChange(file: UploadFile) {
+async function handleIconChange(file: UploadFile): Promise<void> {
   const raw = file.raw;
   iconError.value = "";
-  if (!raw || raw.size > 2 * 1024 * 1024 || (!/^(image\/(png|jpeg|webp|svg\+xml))$/i.test(raw.type) && !/\.(png|jpe?g|webp|svg)$/i.test(raw.name))) {
-    iconError.value = "仅支持不超过 2MB 的 PNG / JPG / WEBP / SVG 图片";
+  if (!raw || iconUploading.value || props.submitting) {
     return;
   }
+  if (raw.size > 2 * 1024 * 1024 || (!/^(image\/(png|jpeg))$/i.test(raw.type) && !/\.(png|jpe?g)$/i.test(raw.name))) {
+    iconError.value = "仅支持不超过 2MB 的 PNG / JPG 图片";
+    return;
+  }
+  const serial = ++iconUploadSerial;
+  iconUploading.value = true;
   try {
-    draft.iconUrl = await readFileAsDataUrl(raw);
-  } catch {
-    iconError.value = "图片读取失败，请重试";
+    const response = await postUploadOntologyThumbnailInterface({ image: raw });
+    if (serial !== iconUploadSerial) {
+      return;
+    }
+    if (response.code !== 200) {
+      iconError.value = typeof response.message === "string" && response.message.trim() ? response.message : "图标上传失败";
+      return;
+    }
+    draft.iconUrl = typeof response.data === "string" ? response.data : "";
+    if (!draft.iconUrl) {
+      iconError.value = "图标上传失败";
+    }
+  } catch (cause: unknown) {
+    if (serial === iconUploadSerial) {
+      iconError.value = cause instanceof Error && cause.message.trim() ? cause.message : "图标上传失败";
+    }
+  } finally {
+    if (serial === iconUploadSerial) {
+      iconUploading.value = false;
+    }
   }
 }
 
 /** @description 清除当前本体图标预览。 */
 function clearIcon() {
+  iconUploadSerial += 1;
+  iconUploading.value = false;
   draft.iconUrl = "";
   iconError.value = "";
 }
@@ -280,7 +302,7 @@ function downloadTemplate() {
 
 /** @description 校验当前创建模式并向父组件提交一个或多个本体草稿。 */
 function submitCreate() {
-  if (props.submitting || iconError.value) return;
+  if (props.submitting || iconError.value || iconUploading.value) return;
   if (createMode.value === "import") {
     if (!importFile.value) {
       importError.value = "请先选择文件。";

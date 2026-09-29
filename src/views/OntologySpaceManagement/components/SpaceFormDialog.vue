@@ -24,7 +24,7 @@
       <el-form-item label="空间图标">
         <img v-if="draft.iconUrl" :src="draft.iconUrl" class="space-form__preview" alt="空间图标预览" />
         <label class="space-form__file"
-          >选择图片（PNG/JPEG/WEBP，最大 2MB）<input type="file" accept="image/png,image/jpeg,image/webp" :disabled="busy" @change="readIcon"
+          >选择图片（PNG/JPEG，最大 2MB）<input type="file" accept="image/png,image/jpeg" :disabled="busy" @change="readIcon"
         /></label>
         <el-button v-if="draft.iconUrl" class="aircas-button" link @click="draft.iconUrl = ''">清除</el-button>
       </el-form-item>
@@ -100,8 +100,8 @@ async function readIcon(event: Event) {
   const input = event.target instanceof HTMLInputElement ? event.target : null;
   const file = selectedFile(event);
   if (!file || busy.value) return;
-  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 2 * 1024 * 1024) {
-    error.value = "请选择不超过 2MB 的 PNG、JPEG 或 WEBP 图片。";
+  if (!["image/png", "image/jpeg"].includes(file.type) || file.size > 2 * 1024 * 1024) {
+    error.value = "请选择不超过 2MB 的 PNG 或 JPEG 图片。";
     if (input) input.value = "";
     return;
   }
