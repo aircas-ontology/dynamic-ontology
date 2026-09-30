@@ -18,11 +18,11 @@
         </label>
       </div>
       <div class="conceptual-model-create__actions">
-        <span>{{ zoom }}%</span><el-button class="aircas-button" size="small" @click="zoomOut">缩小</el-button
-        ><el-button class="aircas-button" size="small" @click="zoomIn">放大</el-button
-        ><el-button class="aircas-button" size="small" @click="fitCanvas">适应画布</el-button
-        ><el-button class="aircas-button" type="danger" size="small" :disabled="!selected" @click="deleteSelected">删除选中</el-button
-        ><el-button class="aircas-button" type="primary" size="small" :loading="saving" @click="saveConceptualModel">保存</el-button>
+        <span>{{ zoom }}%</span><el-button class="aircas-button" size="small" @click="zoomOut">缩小</el-button>
+        <el-button class="aircas-button" size="small" @click="zoomIn">放大</el-button>
+        <el-button class="aircas-button" size="small" @click="fitCanvas">适应画布</el-button>
+        <el-button class="aircas-button" type="danger" size="small" :disabled="!selected" @click="deleteSelected">删除选中</el-button>
+        <el-button class="aircas-button" type="primary" size="small" :loading="saving" @click="saveConceptualModel">保存</el-button>
       </div>
     </header>
     <p v-if="saveError" class="conceptual-model-create__save-error" role="alert">{{ saveError }}</p>

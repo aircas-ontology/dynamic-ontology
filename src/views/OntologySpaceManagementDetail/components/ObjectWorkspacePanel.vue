@@ -85,7 +85,6 @@ import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { storeToRefs } from "pinia";
 import type { OntologyConceptNode, OntologyObjectItem, OntologyObjectLocationTarget, OntologyObjectViewMode } from "@/types";
-import AircasLoading from "@/components/AircasLoading.vue";
 import ConceptHierarchyTree from "./ConceptHierarchyTree.vue";
 import CategoryTreeCreateDialog from "./CategoryTreeCreateDialog.vue";
 import CategoryTreeChildDialog from "./CategoryTreeChildDialog.vue";

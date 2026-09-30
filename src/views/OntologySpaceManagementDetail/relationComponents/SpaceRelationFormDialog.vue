@@ -62,7 +62,7 @@
     </el-form>
     <template #footer>
       <el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button class="aircas-button aircas-button--tone-primary" :loading="loading" @click="submit">确认</el-button>
+      <el-button class="aircas-button aircas-button--tone-primary" :loading="loading" @click="submitRelationForm">确认</el-button>
     </template>
   </el-dialog>
 </template>
@@ -142,9 +142,9 @@ watch(
 );
 
 /**
- * @description 提交关系表单：创建校验名称与源目标；编辑校验名称、分类与描述。
+ * @description 校验并提交关系表单：创建校验名称与源目标；编辑校验名称、分类与描述，通过后向父组件抛出写入载荷。
  */
-function submit() {
+function submitRelationForm() {
   const src = sourceName.value.trim();
   const tgt = targetName.value.trim();
   const trimmedName = displayName.value.trim();
