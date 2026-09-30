@@ -2,6 +2,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import type {
   OntologyRelationCategoryNode,
+  OntologyRelationCategoryTreeParams,
   OntologyRelationClass,
   OntologySpaceRelationLoadStatus,
   RelationCategoryUpdatePayload,
@@ -18,7 +19,7 @@ import { getOntologyCategoryTreeInterface, getOntologyRelationCategoryTreeInterf
 import { filterRelationsBySourceObject } from "../utils/spaceRelationGraph";
 import { mapOntologyObjectsToRelationOptions } from "../utils/mapOntologyObjectsToRelationOptions";
 import { mapOntologyRelationCategoryTree, mapOntologyRelationLinks } from "../utils/mapOntologyRelationCategoryTree";
-import { resolveObjectRelationFilterSeed, resolveRelationSpaceId } from "../utils/resolveRelationRouteContext";
+import { resolveObjectRelationFilterSeed, resolveRelationOntologyUniqueIdentifierFrom, resolveRelationSpaceId } from "../utils/resolveRelationRouteContext";
 import {
   addRelation,
   addRelationCategory,
@@ -63,17 +64,20 @@ async function loadRelationObjectOptionsFromObjectTree(spaceId: string): Promise
 }
 
 /**
- * @description 按空间 id 查询关系分类树，并并行加载对象树上的本体对象选项；无关系树 data 时分类为空，对象选项仍可独立加载。
+ * @description 按空间 id 查询关系分类树，并并行加载对象树上的本体对象选项；对象页可附带 ontologyUniqueIdentifierFrom。
  * @param spaceId 路由空间 id。
+ * @param ontologyUniqueIdentifierFrom 对象详情页的本体唯一标识；空串表示空间页不传该参数。
  * @returns 关系工作区数据。
  */
-async function loadSpaceRelationWorkspaceFromApi(spaceId: string): Promise<SpaceRelationWorkspaceData> {
+async function loadSpaceRelationWorkspaceFromApi(spaceId: string, ontologyUniqueIdentifierFrom = ""): Promise<SpaceRelationWorkspaceData> {
   const id = spaceId.trim();
   if (!id) return createEmptySpaceRelationWorkspaceData();
-  const [relationResponse, objectOptions] = await Promise.all([
-    getOntologyRelationCategoryTreeInterface({ spaceId: id }),
-    loadRelationObjectOptionsFromObjectTree(id),
-  ]);
+  const params: OntologyRelationCategoryTreeParams = { spaceId: id };
+  const from = ontologyUniqueIdentifierFrom.trim();
+  if (from) {
+    params.ontologyUniqueIdentifierFrom = from;
+  }
+  const [relationResponse, objectOptions] = await Promise.all([getOntologyRelationCategoryTreeInterface(params), loadRelationObjectOptionsFromObjectTree(id)]);
   if (relationResponse.code !== 200) throw new Error(relationResponse.message || "关系分类体系树查询失败");
   if (isMissingOntologyRelationCategoryTreeData(relationResponse.data)) {
     return { categoryTree: [], relations: [], objectOptions };
@@ -100,6 +104,7 @@ export function useSpaceRelationWorkspace() {
   let generation = 0;
 
   const spaceId = computed(() => resolveRelationSpaceId(route));
+  const isObjectRelationPage = computed(() => Boolean(resolveRelationOntologyUniqueIdentifierFrom(route)));
   const relationCategoryTree = computed(() => workspace.value?.categoryTree ?? []);
   const relations = computed(() => workspace.value?.relations ?? []);
   const relationObjectOptions = computed<SpaceRelationObjectOption[]>(() => workspace.value?.objectOptions ?? []);
@@ -144,7 +149,7 @@ export function useSpaceRelationWorkspace() {
         status.value = "empty";
         return;
       }
-      const next = await loadSpaceRelationWorkspaceFromApi(spaceId.value);
+      const next = await loadSpaceRelationWorkspaceFromApi(spaceId.value, resolveRelationOntologyUniqueIdentifierFrom(route));
       if (request !== generation) return;
       workspace.value = next;
       selectedRelationCategoryId.value = next.categoryTree[0]?.id || ROOT_RELATION_CATEGORY_ID;
@@ -238,6 +243,7 @@ export function useSpaceRelationWorkspace() {
     status,
     errorMessage,
     spaceId,
+    isObjectRelationPage,
     relationCategoryTree,
     relations,
     relationObjectOptions,

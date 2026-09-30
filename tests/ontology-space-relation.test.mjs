@@ -115,12 +115,17 @@ test("relation object options mapper collects ontology meta display names from t
 
 test("relation workspace loads object options from the object category tree api", () => {
   const workspaceSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useSpaceRelationWorkspace.ts", import.meta.url), "utf8");
+  const pageSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue", import.meta.url), "utf8");
   const formSource = readFileSync(
     new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationFormDialog.vue", import.meta.url),
     "utf8",
   );
   assert.match(workspaceSource, /getOntologyCategoryTreeInterface/);
   assert.match(workspaceSource, /mapOntologyObjectsToRelationOptions/);
+  assert.match(workspaceSource, /isObjectRelationPage/);
+  assert.match(pageSource, /v-if="!isObjectRelationPage"/);
+  assert.match(pageSource, /筛选对象（单选，结果以该对象为中心）/);
+  assert.match(pageSource, /:object-options="relationObjectOptions"/);
   assert.doesNotMatch(formSource, /allow-create/);
   assert.match(formSource, /源对象与目标对象不能相同/);
   assert.match(formSource, /请选择源对象/);
@@ -197,9 +202,11 @@ test("object detail relation route reuses the space relation workspace component
 test("relation route context resolves space id and object filter seed", async () => {
   const helperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/resolveRelationRouteContext.ts", import.meta.url);
   assert.equal(existsSync(helperUrl), true);
-  const { resolveRelationSpaceId, resolveObjectRelationFilterSeed } = await import(helperUrl.href);
+  const { resolveRelationSpaceId, resolveObjectRelationFilterSeed, resolveRelationOntologyUniqueIdentifierFrom } = await import(helperUrl.href);
   assert.equal(resolveRelationSpaceId({ params: { spaceId: "12" }, query: {} }), "12");
   assert.equal(resolveRelationSpaceId({ params: {}, query: { spaceId: "46" } }), "46");
+  assert.equal(resolveRelationOntologyUniqueIdentifierFrom({ params: { objectId: "uid-plane" }, query: { spaceId: "46" } }), "uid-plane");
+  assert.equal(resolveRelationOntologyUniqueIdentifierFrom({ params: { spaceId: "12" }, query: {} }), "");
   assert.equal(
     resolveObjectRelationFilterSeed({ params: { objectId: "uid-plane" }, query: { objectName: "飞机" } }, [{ value: "uid-plane", label: "飞机" }]),
     "uid-plane",

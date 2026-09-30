@@ -24,7 +24,7 @@
           </span>
         </div>
         <div class="space-relation-workspace__actions">
-          <div class="space-relation-workspace__filter">
+          <div v-if="!isObjectRelationPage" class="space-relation-workspace__filter">
             <el-select
               v-model="draftSeedName"
               filterable
@@ -178,6 +178,7 @@ const {
   status,
   errorMessage,
   spaceId,
+  isObjectRelationPage,
   relationCategoryTree,
   relations,
   relationObjectOptions,
