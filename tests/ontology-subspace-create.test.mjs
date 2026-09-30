@@ -78,7 +78,16 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, /请在左侧勾选本体对象/);
   assert.match(source, /selectedObjects/);
   assert.match(source, /subspace-create-workspace__card/);
-  assert.match(source, /\.subspace-create-workspace__card \{[^}]*background: var\(--aircas-color-card-background-active\)/);
+  assert.match(source, /\.subspace-create-workspace__card \{[\s\S]*border: 1px solid var\(--aircas-color-border-soft\)/);
+  assert.match(source, /\.subspace-create-workspace__card \{[\s\S]*background: var\(--aircas-color-input-background\)/);
+  assert.match(source, /grid-template-columns: repeat\(auto-fill, minmax\(320px, 380px\)\)/);
+  assert.match(source, /:aria-label="`\$\{item\.label\}，\$\{item\.apiName\}`"/);
+  assert.match(source, /\.subspace-create-workspace__property-group \{[\s\S]*flex: 0 0 auto/);
+  assert.match(source, /\.subspace-create-workspace__property-filter\.el-date-editor[\s\S]*--el-input-bg-color: var\(--aircas-color-input-background\)/);
+  assert.match(source, /\.subspace-create-workspace__property-filter\.el-date-editor[\s\S]*\.el-range-input/);
+  assert.match(source, /\.subspace-create-workspace__property-filter\.el-input-number[\s\S]*\.el-input-number__increase/);
+  assert.match(source, /\.subspace-create-workspace__property-filter\.el-input-number[\s\S]*var\(--aircas-color-border-highlight\)/);
+  assert.match(source, /\.subspace-create-workspace__property-filter\.el-input-number[\s\S]*&\.is-disabled/);
   assert.match(source, /<Ship \/>/);
   assert.match(source, /v-if="currentStepIndex === 0 && selectedObjects.length"/);
   assert.match(source, /第二步：选择实例/);
@@ -121,6 +130,17 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.doesNotMatch(source, /#[0-9a-fA-F]{3,8}/);
   assert.doesNotMatch(source, /views\/OntologyLlmBuilder/);
   assert.doesNotMatch(source, /AI 助手/);
+});
+
+test("date picker panel remaps Aircas theme variables for range selection", () => {
+  const source = readSource("../src/styles/element-plus/el-date-picker.scss");
+  assert.match(source, /\.aircas-picker \{[\s\S]*\.el-picker-panel,[\s\S]*--el-datepicker-bg-color: var\(--aircas-color-menu-background\)/);
+  assert.match(source, /\.el-date-range-picker \{[\s\S]*--el-datepicker-active-color: var\(--aircas-color-accent-cyan\)/);
+  assert.match(source, /\.el-date-table td\.in-range/);
+  assert.match(source, /\.el-picker-panel__shortcut\.active[\s\S]*var\(--aircas-color-selected-background\)/);
+  assert.match(source, /\.el-time-panel[\s\S]*var\(--aircas-color-menu-background\)/);
+  assert.match(source, /\.el-picker-panel__btn:hover[\s\S]*var\(--aircas-color-border-highlight\)/);
+  assert.match(source, /\.el-time-spinner__item\.is-active[\s\S]*var\(--aircas-color-title\)/);
 });
 
 test("subspace create maps selected objects to property groups", () => {

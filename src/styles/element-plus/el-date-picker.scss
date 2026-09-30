@@ -37,9 +37,39 @@
 
   .el-picker-panel,
   .el-date-range-picker {
+    --el-datepicker-bg-color: var(--aircas-color-menu-background);
+    --el-datepicker-text-color: var(--aircas-color-text-primary);
+    --el-datepicker-off-text-color: var(--aircas-color-text-placeholder);
+    --el-datepicker-header-text-color: var(--aircas-color-text-secondary);
+    --el-datepicker-icon-color: var(--aircas-color-text-secondary);
+    --el-datepicker-border-color: var(--aircas-color-border);
+    --el-datepicker-inner-border-color: var(--aircas-color-border);
+    --el-datepicker-inrange-bg-color: var(--aircas-color-hover-background);
+    --el-datepicker-inrange-hover-bg-color: var(--aircas-color-active-background);
+    --el-datepicker-active-color: var(--aircas-color-accent-cyan);
+    --el-datepicker-hover-text-color: var(--aircas-color-title);
+
     background-color: var(--aircas-color-menu-background);
     color: var(--aircas-color-text-primary);
     border: none;
+  }
+
+  .el-picker-panel__shortcut.active {
+    background-color: var(--aircas-color-selected-background);
+    color: var(--aircas-color-title);
+  }
+
+  .el-picker-panel__btn {
+    border-color: var(--aircas-color-border);
+    background-color: var(--aircas-color-transparent);
+    color: var(--aircas-color-text-primary);
+  }
+
+  .el-picker-panel__btn:hover,
+  .el-picker-panel__btn:focus-visible {
+    border-color: var(--aircas-color-border-highlight);
+    color: var(--aircas-color-title);
+    outline: none;
   }
 
   .el-date-table th,
@@ -94,6 +124,29 @@
   .el-picker-panel__footer {
     background-color: var(--aircas-color-panel-background-deep);
     border-top: none;
+  }
+
+  .el-time-panel {
+    --el-datepicker-bg-color: var(--aircas-color-menu-background);
+    --el-datepicker-border-color: var(--aircas-color-border);
+    --el-text-color-regular: var(--aircas-color-text-primary);
+    --el-text-color-secondary: var(--aircas-color-text-secondary);
+    --el-text-color-disabled: var(--aircas-color-text-disabled);
+    --el-fill-color-light: var(--aircas-color-hover-background);
+    --el-color-primary: var(--aircas-color-accent-cyan);
+
+    background-color: var(--aircas-color-menu-background);
+    border-color: var(--aircas-color-border);
+  }
+
+  .el-time-spinner__item:hover:not(.is-disabled):not(.is-active),
+  .el-time-spinner__item.is-active:not(.is-disabled) {
+    background-color: var(--aircas-color-hover-background);
+    color: var(--aircas-color-title);
+  }
+
+  .el-time-spinner__item.is-disabled {
+    color: var(--aircas-color-text-disabled);
   }
 
   .el-popper__arrow::before {

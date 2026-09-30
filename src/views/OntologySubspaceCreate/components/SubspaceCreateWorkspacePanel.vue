@@ -45,7 +45,7 @@
         <strong v-else>{{ stepPanelCopy.summary }}</strong>
       </header>
       <div v-if="currentStepIndex === 0 && selectedObjects.length" class="subspace-create-workspace__cards">
-        <article v-for="item in selectedObjects" :key="item.id" class="subspace-create-workspace__card">
+        <article v-for="item in selectedObjects" :key="item.id" class="subspace-create-workspace__card" :aria-label="`${item.label}，${item.apiName}`">
           <el-icon class="subspace-create-workspace__card-icon"><Ship /></el-icon>
           <div class="subspace-create-workspace__card-body">
             <strong :title="item.label">{{ item.label }}</strong>
@@ -745,8 +745,8 @@ watch(
   min-height: 0;
   flex: 1;
   align-content: start;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 280px));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 380px));
+  gap: 12px;
   margin-top: 16px;
   overflow: auto;
 }
@@ -754,15 +754,22 @@ watch(
 .subspace-create-workspace__card {
   display: grid;
   min-width: 0;
-  grid-template-columns: 40px minmax(0, 1fr);
+  min-height: 100px;
+  box-sizing: border-box;
+  grid-template-columns: 56px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: var(--aircas-color-card-background-active);
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--aircas-color-border-soft);
+  border-radius: 8px;
+  background: var(--aircas-color-input-background);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
 }
 
 .subspace-create-workspace__card:hover {
+  border-color: var(--aircas-color-border-highlight);
   background: var(--aircas-color-selected-background);
 }
 
@@ -772,8 +779,12 @@ watch(
 }
 
 .subspace-create-workspace__card-icon {
-  color: var(--aircas-color-text-muted);
-  font-size: 28px;
+  display: grid;
+  width: 56px;
+  height: 40px;
+  place-items: center;
+  color: var(--aircas-color-accent-cyan);
+  font-size: 40px;
 }
 
 .subspace-create-workspace__card-body {
@@ -792,13 +803,13 @@ watch(
 
 .subspace-create-workspace__card-body strong {
   color: var(--aircas-color-text-primary);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
 }
 
 .subspace-create-workspace__card-body small {
   color: var(--aircas-color-text-muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .subspace-create-workspace__table {
@@ -826,6 +837,7 @@ watch(
 }
 
 .subspace-create-workspace__property-group {
+  flex: 0 0 auto;
   overflow: hidden;
   border: 1px solid var(--aircas-color-border-soft);
   border-radius: 8px;
@@ -881,5 +893,111 @@ watch(
 
 .subspace-create-workspace__property-filter {
   width: 100%;
+}
+
+.subspace-create-workspace__property-filter.el-date-editor {
+  --el-input-text-color: var(--aircas-color-text-primary);
+  --el-input-bg-color: var(--aircas-color-input-background);
+  --el-input-border-color: var(--aircas-color-border);
+  --el-input-hover-border-color: var(--aircas-color-border-highlight);
+  --el-input-focus-border-color: var(--aircas-color-focus-border);
+  --el-input-placeholder-color: var(--aircas-color-text-placeholder);
+  --el-input-icon-color: var(--aircas-color-text-muted);
+
+  :deep(.el-input__wrapper) {
+    background-color: var(--aircas-color-input-background);
+    box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+  }
+
+  :deep(.el-input__wrapper:hover:not(.is-disabled)) {
+    box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
+  }
+
+  :deep(.el-input__wrapper.is-focus) {
+    box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
+  }
+
+  :deep(.el-range-input) {
+    background-color: var(--aircas-color-transparent);
+    color: var(--aircas-color-text-primary);
+  }
+
+  :deep(.el-range-input::placeholder),
+  :deep(.el-range-separator),
+  :deep(.el-input__icon) {
+    color: var(--aircas-color-text-muted);
+  }
+
+  &.is-disabled {
+    :deep(.el-input__wrapper),
+    :deep(.el-range-input) {
+      background-color: var(--aircas-color-panel-background);
+      color: var(--aircas-color-text-disabled);
+      -webkit-text-fill-color: var(--aircas-color-text-disabled);
+    }
+  }
+}
+
+.subspace-create-workspace__property-filter.el-input-number {
+  --el-input-text-color: var(--aircas-color-text-primary);
+  --el-input-bg-color: var(--aircas-color-input-background);
+  --el-input-border-color: var(--aircas-color-border);
+  --el-input-hover-border-color: var(--aircas-color-border-highlight);
+  --el-input-focus-border-color: var(--aircas-color-focus-border);
+  --el-input-icon-color: var(--aircas-color-text-muted);
+
+  width: 100%;
+
+  :deep(.el-input__wrapper) {
+    background-color: var(--aircas-color-input-background);
+    box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+  }
+
+  :deep(.el-input__wrapper:hover:not(.is-disabled)) {
+    box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
+  }
+
+  :deep(.el-input__wrapper.is-focus) {
+    box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
+  }
+
+  :deep(.el-input__inner) {
+    color: var(--aircas-color-text-primary);
+  }
+
+  :deep(.el-input-number__increase),
+  :deep(.el-input-number__decrease) {
+    background-color: var(--aircas-color-panel-background);
+    border-color: var(--aircas-color-border-soft);
+    color: var(--aircas-color-text-muted);
+  }
+
+  :deep(.el-input-number__increase:hover),
+  :deep(.el-input-number__decrease:hover) {
+    background-color: var(--aircas-color-hover-background);
+    color: var(--aircas-color-title);
+  }
+
+  :deep(.el-input-number__increase.is-disabled),
+  :deep(.el-input-number__decrease.is-disabled) {
+    background-color: var(--aircas-color-panel-background);
+    color: var(--aircas-color-text-disabled);
+    cursor: not-allowed;
+  }
+
+  &.is-disabled {
+    :deep(.el-input__wrapper),
+    :deep(.el-input-number__increase),
+    :deep(.el-input-number__decrease) {
+      background-color: var(--aircas-color-panel-background);
+      border-color: var(--aircas-color-border-soft);
+      color: var(--aircas-color-text-disabled);
+    }
+
+    :deep(.el-input__inner) {
+      color: var(--aircas-color-text-disabled);
+      -webkit-text-fill-color: var(--aircas-color-text-disabled);
+    }
+  }
 }
 </style>
