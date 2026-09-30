@@ -49,6 +49,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "function-operator",
             name: "OntologySpaceManagementDetailFunctionOperator",
+            // 待修改component路径应为index.vue文件结尾
             component: () => import("@/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel.vue"),
             meta: { title: "空间内管理", workspaceTab: "function-operator" },
           },
@@ -100,6 +101,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "relation",
             name: "OntologyObjectDetailRelation",
+            // 待修改component路径应为index.vue文件结尾
             component: () => import("@/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue"),
             meta: { title: "本体对象详情", objectDetailTab: "relation" },
           },
