@@ -9,24 +9,19 @@ import type {
   OverviewCountVO,
 } from "@/types";
 import { getOntologyOverviewCountInterface, getOntologySpaceListInterface } from "@/apis";
-import { ontologySpaceListMock } from "@/mocks/ontologySpaceListMock/ontologySpaceListMock";
 import { mapOntologySpaceList } from "@/utils/mapOntologySpaceList";
 import { filterSpaces, removeSpace, saveSpace } from "../utils/spaceOperations";
 
 /**
- * @description 查询本体空间列表并映射为页面模型；远程不可用期间回退到本地页面样例数据。
- * @returns 本体空间数组的深拷贝，避免页面编辑污染样例数据。
+ * @description 查询本体空间列表并映射为页面模型；失败时抛出错误，由调用方提示，不回退 Mock。
+ * @returns 本体空间数组的深拷贝。
  */
 async function fetchOntologySpaces(): Promise<OntologySpaceItem[]> {
-  try {
-    const response = await getOntologySpaceListInterface();
-    if (response.code === 200) {
-      return structuredClone(mapOntologySpaceList(response.data));
-    }
-    throw new Error(`本体空间列表查询失败：${response.message}`);
-  } catch {
-    return structuredClone(ontologySpaceListMock.data);
+  const response = await getOntologySpaceListInterface();
+  if (response.code === 200) {
+    return structuredClone(mapOntologySpaceList(response.data));
   }
+  throw new Error(`本体空间列表查询失败：${response.message}`);
 }
 
 /** 本页独占的演示状态，离开页面后释放，数据不写入浏览器存储。 */
@@ -121,10 +116,10 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
       if (disposed) return;
       spaces.value = data;
       status.value = data.length ? "success" : "empty";
-    } catch {
+    } catch (cause) {
       if (!disposed) {
         status.value = "error";
-        error.value = "本体空间加载失败，请重试。";
+        error.value = cause instanceof Error && cause.message.trim() ? cause.message : "本体空间加载失败，请重试。";
       }
     } finally {
       pending = false;

@@ -40,8 +40,7 @@
 ```json
 {
   "code": 200,
-  "message": "SUCCESS",
-  "data": null
+  "message": "SUCCESS"
 }
 ```
 

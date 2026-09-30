@@ -16,7 +16,7 @@ test("login mock provides a bearer mock token alongside the success envelope", (
   assert.match(mockSource, /code: 200,/);
 });
 
-test("login request fails fast with a dedicated ten second timeout before fallback", () => {
+test("login request uses the shared ten second timeout without a dedicated fallback path", () => {
   const constantsSource = readSource("../src/utils/constants.ts");
   const requestSource = readSource("../src/utils/request.ts");
   assert.match(constantsSource, /export const requestTimeoutMs: number = 10000;/);
@@ -28,14 +28,14 @@ test("login request fails fast with a dedicated ten second timeout before fallba
   assert.doesNotMatch(apiSource, /LOGIN_REQUEST_TIMEOUT/);
 });
 
-test("login command calls the real api first and falls back to the mock token only on transport failure", () => {
+test("login command calls the real api and does not fall back to mock data on failure", () => {
   assert.match(commandSource, /import \{ postLoginInterface \} from "@\/apis";/);
-  assert.match(commandSource, /import \{ LOGIN_MOCK_TOKEN, loginMock \} from "@\/mocks\/loginMock\/loginMock";/);
-  assert.match(commandSource, /import \{ saveLoginToken \} from "@\/utils\/authToken";/);
   assert.match(commandSource, /export function useLoginCommand\(\)/);
-  assert.match(commandSource, /return await postLoginInterface\(params\)/);
-  assert.match(commandSource, /saveLoginToken\(LOGIN_MOCK_TOKEN\)/);
-  assert.match(commandSource, /structuredClone\(loginMock\)/);
+  assert.match(commandSource, /return postLoginInterface\(params\)/);
+  assert.doesNotMatch(commandSource, /from "@\/mocks\/loginMock\/loginMock"/);
+  assert.doesNotMatch(commandSource, /LOGIN_MOCK_TOKEN/);
+  assert.doesNotMatch(commandSource, /structuredClone\(loginMock\)/);
+  assert.doesNotMatch(commandSource, /saveLoginToken/);
   assert.match(commandSource, /@description/);
 });
 
@@ -48,35 +48,31 @@ test("login page submits through the login command and keeps the code 200 busine
 });
 
 /**
- * 从 composable 源码中提取真实的 submitLogin 函数体（去除 TS 注解），在 VM 中注入替身依赖执行，
- * 避免 Node 无法解析 "@/" 别名的问题。
+ * @description 从 composable 源码中提取真实的 submitLogin 函数体（去除 TS 注解），在 VM 中注入替身依赖执行。
+ * @param setupCode 注入到 VM 的依赖定义。
+ * @returns VM 状态对象。
  */
 function runSubmitLogin(setupCode) {
-  const rawFunction = commandSource.match(/async function submitLogin\(params: LoginParams\): Promise<ApiResponse<LoginData>> \{[\s\S]*?\n  \}/)[0];
+  const rawFunction = commandSource.match(/async function submitLogin\(params: LoginParams\): Promise<ApiResponse<LoginData>> \{[\s\S]*?\n  \}/)?.[0];
+  assert.ok(rawFunction, "submitLogin function body not found");
   const plainFunction = rawFunction.replace(
     /async function submitLogin\(params: LoginParams\): Promise<ApiResponse<LoginData>> \{/,
     "async function submitLogin(params) {",
   );
-  const state = {
-    loginMock: { code: 200, message: "登录成功", success: true, data: {} },
-    LOGIN_MOCK_TOKEN: "Bearer mock-login-token",
-    structuredClone: (value) => JSON.parse(JSON.stringify(value)),
-  };
+  const state = {};
   vm.createContext(state);
   vm.runInContext(setupCode, state);
   vm.runInContext(`${plainFunction}\nthis.__result = submitLogin({ username: "admin", password: "a123456" });`, state);
   return state;
 }
 
-test("submitLogin returns the real api response and skips the mock when the service is healthy", async () => {
+test("submitLogin returns the real api response when the service is healthy", async () => {
   const state = runSubmitLogin(`
     var requests = [];
-    var savedTokens = [];
     var postLoginInterface = async (params) => {
       requests.push(params);
       return { code: 200, message: "登录成功", success: true, data: { userId: 7 } };
     };
-    var saveLoginToken = (token) => savedTokens.push(token);
   `);
 
   const response = await state.__result;
@@ -84,24 +80,14 @@ test("submitLogin returns the real api response and skips the mock when the serv
   assert.equal(state.requests[0].username, "admin");
   assert.equal(state.requests[0].password, "a123456");
   assert.deepEqual(JSON.parse(JSON.stringify(response)), { code: 200, message: "登录成功", success: true, data: { userId: 7 } });
-  assert.equal(state.savedTokens.length, 0);
 });
 
-test("submitLogin persists the mock token and returns a detached mock success on transport failure", async () => {
+test("submitLogin propagates transport failure without mock success", async () => {
   const state = runSubmitLogin(`
-    var savedTokens = [];
     var postLoginInterface = async () => {
       throw new Error("网络连接失败，请检查网络后重试。");
     };
-    var saveLoginToken = (token) => savedTokens.push(token);
   `);
 
-  const response = await state.__result;
-  assert.equal(state.savedTokens.length, 1);
-  assert.equal(state.savedTokens[0], "Bearer mock-login-token");
-  assert.equal(response.code, 200);
-  assert.equal(response.message, "登录成功");
-  assert.notEqual(response, state.loginMock);
-  response.code = 500;
-  assert.equal(state.loginMock.code, 200);
+  await assert.rejects(() => state.__result, /网络连接失败/);
 });

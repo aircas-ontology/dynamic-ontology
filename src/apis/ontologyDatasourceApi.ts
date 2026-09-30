@@ -5,7 +5,6 @@ import type {
   GetOntologyDatasourceTablesData,
   GetOntologyDatasourceTablesParams,
 } from "@/types";
-import { requestTimeoutMs } from "@/utils/constants";
 import { request } from "@/utils/request";
 
 /**
@@ -19,7 +18,6 @@ export function getOntologyDatasourceTablesInterface(params: GetOntologyDatasour
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/datasource/table",
     method: "get",
     params,
-    timeout: requestTimeoutMs,
   });
 }
 
@@ -34,6 +32,5 @@ export function getOntologyDatasourceColumnsInterface(params: GetOntologyDatasou
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/datasource/column",
     method: "get",
     params,
-    timeout: requestTimeoutMs,
   });
 }

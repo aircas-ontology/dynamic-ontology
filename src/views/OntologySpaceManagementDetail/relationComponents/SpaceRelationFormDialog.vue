@@ -61,7 +61,7 @@
     </el-form>
     <template #footer>
       <el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button class="aircas-button aircas-button--tone-primary" :loading="loading" @click="submit">确认</el-button>
+      <el-button class="aircas-button aircas-button--tone-primary" :loading="loading" @click="submitRelationForm">确认</el-button>
     </template>
   </el-dialog>
 </template>
@@ -143,7 +143,7 @@ watch(
 /**
  * @description 提交关系表单：有分类选项时新增和编辑都必须选择分类。
  */
-function submit() {
+function submitRelationForm() {
   const src = sourceName.value.trim();
   const tgt = targetName.value.trim();
   const trimmedName = displayName.value.trim();

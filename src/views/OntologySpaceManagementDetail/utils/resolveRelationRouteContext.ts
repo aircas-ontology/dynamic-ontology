@@ -14,6 +14,15 @@ export function resolveRelationSpaceId(route: RouteLocationNormalizedLoaded): st
 }
 
 /**
+ * @description 解析对象详情关系页用于关系树请求的本体唯一标识；空间关系页返回空串。
+ * @param route 当前路由。
+ * @returns `params.objectId` 去空白后的值；非对象详情页为空串。
+ */
+export function resolveRelationOntologyUniqueIdentifierFrom(route: RouteLocationNormalizedLoaded): string {
+  return String(route.params.objectId || "").trim();
+}
+
+/**
  * @description 在对象详情关系 Tab 下，根据 objectId / objectName 解析默认源筛选种子（优先选项 value）。
  * @param route 当前路由。
  * @param objectOptions 关系对象下拉选项。

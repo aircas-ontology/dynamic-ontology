@@ -5,6 +5,7 @@
 ## 编译位置
 
 文件名自行语义化命名
+
 - apis：`src/apis/`
 - mocks：`src/mocks/`
 - types：`src/types/apis/`
@@ -33,7 +34,6 @@
   }
   ```
 - `spaceId`：【string，必填】 空间id
-
 
 ## 输出参数
 
@@ -122,7 +122,6 @@
 - `message`：【string】消息描述
 - `success`：【boolean】请求是否成功
 - `data`：【object】响应数据
-
 
 ## code
 

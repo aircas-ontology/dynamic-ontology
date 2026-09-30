@@ -5,7 +5,6 @@
         <h2>空间资源统计</h2>
         <p>当前本体空间下的核心资源数量</p>
       </div>
-      <span v-if="loading" class="space-overview-panel__status"><AircasLoading>统计加载中...</AircasLoading></span>
     </header>
 
     <el-alert v-if="error" class="space-overview-panel__error" :title="error" type="error" :closable="false" show-icon />
@@ -29,7 +28,6 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { Connection, Cpu, Grid, Share, Timer } from "@element-plus/icons-vue";
 import type { ManagementWorkspaceTab } from "@/types";
-import AircasLoading from "@/components/AircasLoading.vue";
 import { useSpaceOverview } from "../composables/useSpaceOverview";
 import { formatOverviewStat } from "../utils/overviewStats";
 
@@ -90,12 +88,6 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
 
 .space-overview-panel__header p {
   margin: 4px 0 0;
-  color: var(--aircas-color-text-muted);
-  font-size: 12px;
-}
-
-.space-overview-panel__status {
-  flex-shrink: 0;
   color: var(--aircas-color-text-muted);
   font-size: 12px;
 }
