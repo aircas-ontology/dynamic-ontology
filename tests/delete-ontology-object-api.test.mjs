@@ -21,7 +21,7 @@ test("delete ontology object api follows the documented DELETE path contract", (
 
   assert.match(apiSource, /export function deleteOntologyObjectInterface\(/);
   assert.match(apiSource, /Promise<ApiResponse<DeleteOntologyObjectData>>/);
-  assert.match(apiSource, /url:\s*`\$\{DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL\}\/meta\/\$\{encodeURIComponent\(params\.ontologyIdentifier\)\}`/);
+  assert.match(apiSource, /url:\s*`\$\{DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL\}\/ontology\/meta\/\$\{encodeURIComponent\(params\.ontologyIdentifier\)\}`/);
   assert.match(apiSource, /method:\s*"delete"/);
   assert.match(barrelSource, /deleteOntologyObjectInterface/);
   assert.match(typeSource, /ontologyIdentifier:\s*string/);

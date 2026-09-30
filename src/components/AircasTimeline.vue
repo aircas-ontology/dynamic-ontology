@@ -21,6 +21,7 @@
           <!-- el-date-picker 类型未声明 emits，用 v-on 对象语法绑定事件 -->
           <el-date-picker
             class="current-time"
+            popper-class="aircas-picker"
             v-model="timeShow"
             type="datetime"
             placeholder="设定开始时间"

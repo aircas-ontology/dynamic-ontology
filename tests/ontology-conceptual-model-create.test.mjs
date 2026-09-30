@@ -10,41 +10,74 @@ const readSource = (relativePath) => {
   return readFileSync(fileUrl, "utf8");
 };
 
-test("conceptual model page splits canvas areas into page components and composable", () => {
+test("conceptual model page exposes the prototype canvas areas and interactions", () => {
+  const source = readSource("../src/views/OntologyConceptualModelCreate/index.vue");
+  assert.match(source, /概念模型画布/);
+  assert.match(source, /UML 组件/);
+  assert.match(source, /对象关系/);
+  assert.match(source, /conceptual-model\/type/);
+  assert.match(source, /function addObject/);
+  assert.match(source, /function addAttribute/);
+  assert.match(source, /function addRelation/);
+  assert.match(source, /function updateObject/);
+  assert.match(source, /function updateAttribute/);
+  assert.match(source, /function updateRelation/);
+  assert.match(source, /ConceptualModelGraphCanvas/);
+  assert.match(source, /function addConnectedRelation/);
+  assert.match(source, /sourceId === targetId/);
+  assert.doesNotMatch(source, /function startRelationPortDrag/);
+  assert.match(source, /function fitCanvas/);
+  assert.match(source, /function deleteSelected/);
+  assert.match(source, /conceptual-model-create__space-field/);
+  assert.match(source, /conceptual-model-create__space-fields[\s\S]*<span>空间名称<\/span>[\s\S]*<span>API 名称<\/span>/);
+  assert.match(source, /createOntologySpaceWithCanvasContentInterface/);
+  assert.match(source, /buildCanvasSpaceParams/);
+  assert.match(source, /mapCanvasDataType/);
+  assert.match(source, /storageGroupOptions/);
+  assert.match(source, /allow-create/);
+  const inspectorSelects = source.match(/<el-select[\s\S]*?<\/el-select>/g) || [];
+  assert.equal(inspectorSelects.length, 4);
+  for (const selectBlock of inspectorSelects) {
+    assert.match(selectBlock, /class="aircas-select"/);
+    assert.match(selectBlock, /popper-class="aircas-select-popper"/);
+    assert.doesNotMatch(selectBlock, /class="aircas-input"/);
+  }
+  assert.match(source, /storageGroup: "main"/);
+  assert.match(source, /storageGroup: attribute\.storageGroup/);
+  assert.match(source, /spaceId/);
+  const graphSource = readSource("../src/views/OntologyConceptualModelCreate/utils/conceptualModelGraph.ts");
+  const canvasSource = readSource("../src/views/OntologyConceptualModelCreate/components/ConceptualModelGraphCanvas.vue");
+  assert.match(graphSource, /from "@antv\/x6"/);
+  assert.match(graphSource, /allowMulti:\s*true/);
+  assert.match(graphSource, /allowLoop:\s*false/);
+  assert.match(canvasSource, /edge:click/);
+  assert.match(canvasSource, /edge:connected/);
+  assert.match(canvasSource, /dispose\(\)/);
+  assert.match(canvasSource, /@drop="onDropPalette"/);
+});
+
+test("deleting an object also removes relation lines connected to it", async () => {
   const pageSource = readSource("../src/views/OntologyConceptualModelCreate/index.vue");
-  const canvasSource = readSource("../src/views/OntologyConceptualModelCreate/composables/useConceptualModelCanvas.ts");
-  const geometrySource = readSource("../src/views/OntologyConceptualModelCreate/utils/conceptualModelGeometry.ts");
-  const topbarSource = readSource("../src/views/OntologyConceptualModelCreate/components/ConceptualModelTopbar.vue");
-  const paletteSource = readSource("../src/views/OntologyConceptualModelCreate/components/ConceptualModelPalette.vue");
-  const stageSource = readSource("../src/views/OntologyConceptualModelCreate/components/ConceptualModelCanvas.vue");
-  const inspectorSource = readSource("../src/views/OntologyConceptualModelCreate/components/ConceptualModelInspector.vue");
-
-  assert.match(pageSource, /useConceptualModelCanvas/);
-  assert.match(pageSource, /ConceptualModelTopbar/);
-  assert.match(pageSource, /ConceptualModelPalette/);
-  assert.match(pageSource, /ConceptualModelCanvas/);
-  assert.match(pageSource, /ConceptualModelInspector/);
-
-  assert.match(topbarSource, /概念模型画布/);
-  assert.match(paletteSource, /UML 组件/);
-  assert.match(paletteSource, /对象关系/);
-  assert.match(stageSource, /@drop="\$emit\('drop-palette', \$event\)"|@drop="onDropPalette"/);
-  assert.match(stageSource, /conceptual-model-create__edge/);
-  assert.match(stageSource, /conceptual-model-create__edge-label/);
-  assert.match(stageSource, /conceptual-model-create__edge-port/);
-  assert.match(inspectorSource, /对象检查器/);
-
-  assert.match(canvasSource, /function addObject/);
-  assert.match(canvasSource, /function addAttribute/);
-  assert.match(canvasSource, /function addRelation/);
-  assert.match(canvasSource, /function updateObject/);
-  assert.match(canvasSource, /function updateAttribute/);
-  assert.match(canvasSource, /function updateRelation/);
-  assert.match(canvasSource, /function startRelationPortDrag/);
-  assert.match(canvasSource, /function fitCanvas/);
-  assert.match(canvasSource, /function deleteSelected/);
-  assert.match(geometrySource, /function objectPoint/);
-  assert.match(geometrySource, /function pointFor/);
+  assert.match(pageSource, /removeRelationsConnectedToObject\(relations\.value, item\.id\)/);
+  assert.doesNotMatch(pageSource, /relation\.sourceId = null/);
+  const helperUrl = new URL("../src/views/OntologyConceptualModelCreate/utils/removeRelationsConnectedToObject.ts", import.meta.url);
+  const { removeRelationsConnectedToObject } = await import(helperUrl.href);
+  const relations = [
+    { id: 1, sourceId: 1, targetId: 2 },
+    { id: 2, sourceId: 2, targetId: 3 },
+  ];
+  assert.deepEqual(
+    removeRelationsConnectedToObject(relations, 2).map((relation) => relation.id),
+    [],
+  );
+  assert.deepEqual(
+    removeRelationsConnectedToObject(relations, 1).map((relation) => relation.id),
+    [2],
+  );
+  assert.deepEqual(
+    removeRelationsConnectedToObject([{ id: 3, sourceId: 1, targetId: null }], 1).map((relation) => relation.id),
+    [],
+  );
 });
 
 test("conceptual model route resolves under the workspace layout", () => {
@@ -57,12 +90,45 @@ test("conceptual model route resolves under the workspace layout", () => {
   );
 });
 
-test("space creation dialog exposes the conceptual model entry action", () => {
+test("conceptual model attribute data types match the object attribute form", () => {
+  const source = readSource("../src/views/OntologyConceptualModelCreate/index.vue");
+  const expectedDataTypes = [
+    "Boolean",
+    "Integer",
+    "Long",
+    "Float",
+    "Short",
+    "Byte",
+    "Double",
+    "Decimal",
+    "String",
+    "Date",
+    "Array",
+    "Map",
+    "Vector",
+    "Timestamp",
+    "MediaReference",
+    "TimeSeries",
+    "Attachment",
+    "Geohash",
+    "Geoshape",
+    "Cipher",
+    "Ontology",
+  ];
+  const dataTypesSource = source.match(/const dataTypes = \[([\s\S]*?)\];/)?.[1] ?? "";
+  const actualDataTypes = [...dataTypesSource.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(actualDataTypes, expectedDataTypes);
+  assert.match(source, /dataType: "String"/);
+});
+
+test("space creation dialog does not expose the conceptual model entry action", () => {
   const dialogSource = readSource("../src/views/OntologySpaceManagement/components/SpaceFormDialog.vue");
   const pageSource = readSource("../src/views/OntologySpaceManagement/index.vue");
   const actionsSource = readSource("../src/views/OntologySpaceManagement/composables/useSpaceManagementActions.ts");
-  assert.match(dialogSource, /进入概念建模画布/);
-  assert.match(dialogSource, /open-conceptual/);
-  assert.match(pageSource, /@open-conceptual="openConceptualModel"/);
+  assert.doesNotMatch(dialogSource, /基于概念模型创建/);
+  assert.doesNotMatch(dialogSource, /进入概念建模画布/);
+  assert.doesNotMatch(dialogSource, /open-conceptual/);
+  assert.doesNotMatch(pageSource, /@open-conceptual="openConceptualModel"/);
+  assert.doesNotMatch(actionsSource, /function openConceptualModel/);
   assert.match(actionsSource, /name: "OntologyConceptualModelCreate"/);
 });

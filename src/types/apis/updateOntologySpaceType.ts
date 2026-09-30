@@ -2,7 +2,7 @@
 export interface UpdateOntologySpaceParams {
   displayName: string;
   spaceId: number;
-  icon?: string;
+  iconUrl?: string;
   description?: string;
 }
 

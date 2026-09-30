@@ -18,9 +18,12 @@ test("login mock provides a bearer mock token alongside the success envelope", (
 
 test("login request fails fast with a dedicated ten second timeout before fallback", () => {
   const constantsSource = readSource("../src/utils/constants.ts");
+  const requestSource = readSource("../src/utils/request.ts");
   assert.match(constantsSource, /export const requestTimeoutMs: number = 10000;/);
-  assert.match(apiSource, /import \{ requestTimeoutMs \} from "\.\.\/utils\/constants\.ts";/);
-  assert.match(apiSource, /timeout: requestTimeoutMs,/);
+  assert.match(requestSource, /import \{ requestTimeoutMs \} from "\.\/constants\.ts";/);
+  assert.match(requestSource, /timeout: requestTimeoutMs,/);
+  assert.doesNotMatch(apiSource, /timeout:/);
+  assert.doesNotMatch(apiSource, /requestTimeoutMs/);
   assert.match(apiSource, /postLoginInterface/);
   assert.doesNotMatch(apiSource, /LOGIN_REQUEST_TIMEOUT/);
 });

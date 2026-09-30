@@ -49,5 +49,10 @@
     .el-dropdown-menu__item--divided {
       border-top: 1px solid var(--aircas-color-divider);
     }
+
+    .el-popper__arrow::before {
+      background-color: var(--aircas-color-menu-background);
+      border: 1px solid var(--aircas-color-border);
+    }
   }
 }

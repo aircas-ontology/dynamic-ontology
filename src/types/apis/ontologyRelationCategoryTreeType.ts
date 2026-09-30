@@ -13,6 +13,9 @@ export interface OntologyRelationCategoryLink {
   ontologyNameFrom: string;
   ontologyUniqueIdentifierTo: string;
   ontologyNameTo: string;
+  ontologyIconFrom?: string;
+  apiName?: string;
+  description?: string;
 }
 
 /** 关系分类体系树节点；叶子可仅含 categoryId。 */

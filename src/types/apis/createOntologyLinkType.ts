@@ -5,6 +5,6 @@ export interface CreateOntologyLinkParams {
   ontologyUniqueIdentifierTo: string;
   categoryId?: number;
   apiName: string;
-  comment?: string;
+  description?: string;
   spaceId: number;
 }

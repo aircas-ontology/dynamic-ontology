@@ -30,13 +30,13 @@
   {
     "displayName": "xxx战场-11",
     "spaceId":8,
-    "icon": "",
+    "iconUrl": "",
     "description": "这是空间描述"
   }
   ```
 - `displayName`：【string，必填】 空间名称
 - `spaceId`：【number，必填】空间id
-- `icon`：【string，可选】空间图标url
+- `iconUrl`：【string，可选】空间图标url
 - `description`：【string，可选】空间描述
 
 ## 输出参数

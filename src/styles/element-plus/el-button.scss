@@ -9,9 +9,13 @@
 
 .aircas-button {
   &.el-button {
+    height: 32px;
+    margin: 0;
+    padding: 0 12px;
     border-radius: 4px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
     transition:
       background-color var(--el-transition-duration),
       border-color var(--el-transition-duration),
@@ -169,5 +173,26 @@
         color: var(--aircas-color-text-disabled);
       }
     }
+  }
+}
+
+.el-dialog__footer,
+.el-drawer__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+
+  .el-button {
+    margin: 0;
+  }
+}
+
+.el-message-box__btns {
+  gap: 8px;
+
+  .el-button {
+    margin-left: 0;
   }
 }

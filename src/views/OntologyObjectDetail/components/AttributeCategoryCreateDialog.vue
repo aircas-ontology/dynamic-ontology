@@ -26,8 +26,8 @@
     </el-form>
     <p v-if="error" class="ontology-object-attribute-panel__dialog-error" role="alert">{{ error }}</p>
     <template #footer>
-      <el-button class="aircas-button" :disabled="submitting" @click="$emit('update:visible', false)">取消</el-button>
-      <el-button class="aircas-button" type="primary" :loading="submitting" @click="$emit('confirm')">确认</el-button>
+      <el-button class="aircas-button aircas-button--tone-ghost" :disabled="submitting" @click="$emit('update:visible', false)">取消</el-button>
+      <el-button class="aircas-button aircas-button--tone-primary" :loading="submitting" @click="$emit('confirm')">确认</el-button>
     </template>
   </el-dialog>
 </template>

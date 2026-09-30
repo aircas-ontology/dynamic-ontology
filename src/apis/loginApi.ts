@@ -2,7 +2,6 @@ import type { AxiosResponse } from "axios";
 
 import type { ApiResponse, LoginData, LoginParams } from "@/types";
 import { saveLoginToken } from "../utils/authToken.ts";
-import { requestTimeoutMs } from "../utils/constants.ts";
 import { requestFull } from "../utils/request.ts";
 
 /**
@@ -33,7 +32,7 @@ export function persistLoginToken(headers: AxiosResponse<LoginData>["headers"]):
  *
  * 请求方式：POST `DOMAIN_CONFIG.LOGIN_URL` + `/ontology/user/login`
  *
- * 10 秒超时，超时或传输失败由调用方决定是否回退模拟登录。
+ * 超时由 request 统一控制；超时或传输失败由调用方决定是否回退模拟登录。
  *
  * @param params 登录参数。
  * @param {string} params.username - 用户名
@@ -44,7 +43,6 @@ export function postLoginInterface(params: LoginParams): Promise<ApiResponse<Log
   return requestFull<LoginData>({
     url: DOMAIN_CONFIG.LOGIN_URL + "/ontology/user/login",
     method: "post",
-    timeout: requestTimeoutMs,
     data: params,
   }).then(({ data, headers }) => {
     persistLoginToken(headers);

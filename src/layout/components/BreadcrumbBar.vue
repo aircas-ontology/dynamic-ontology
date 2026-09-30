@@ -1,7 +1,11 @@
 <template>
   <nav class="breadcrumb-bar" aria-label="页面路径">
+    <span class="breadcrumb-bar__pin" aria-hidden="true">
+      <el-icon>
+        <Location />
+      </el-icon>
+    </span>
     <el-breadcrumb class="aircas-breadcrumb">
-      <el-breadcrumb-item v-if="route.name !== 'Workspace'" :to="{ name: 'Workspace' }">首页</el-breadcrumb-item>
       <template v-if="isObjectDetail">
         <el-breadcrumb-item :to="{ name: 'OntologySpaceManagement' }">本体空间管理</el-breadcrumb-item>
         <el-breadcrumb-item v-if="spaceName" :to="{ name: 'OntologySpaceManagementDetail', params: { spaceId } }">{{ spaceName }}</el-breadcrumb-item>
@@ -19,6 +23,7 @@
 </template>
 <script setup lang="ts">
 import { computed } from "vue";
+import { Location } from "@element-plus/icons-vue";
 import { useRoute } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useOntologySpaceDetailStore } from "@/stores/useOntologySpaceDetailStore";
@@ -52,11 +57,18 @@ const objectDisplayName = computed(() => {
 </script>
 <style scoped lang="scss">
 .breadcrumb-bar {
-  height: 36px;
-  padding: 0 12px;
+  height: 30px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
-  background: var(--aircas-color-panel-background-deep);
-  border-bottom: 1px solid var(--aircas-color-border-soft);
+  gap: 8px;
+  background: var(--aircas-color-page-background);
+}
+
+.breadcrumb-bar__pin {
+  display: inline-flex;
+  align-items: center;
+  color: var(--aircas-color-accent-cyan);
+  font-size: 14px;
 }
 </style>

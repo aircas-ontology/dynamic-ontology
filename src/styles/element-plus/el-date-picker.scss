@@ -2,18 +2,46 @@
    Aircas · el-date-picker / el-picker-panel 覆盖
    --------------------------------------------------------------------------
    用法：`<el-date-picker popper-class="aircas-picker">` 或复用 aircas-popper。
-   面板一般经 el-popper 弹出，使用 popper-class 生效。
+   popper-class 挂在 .el-picker__popper 上，面板为内部 .el-picker-panel。
    ========================================================================== */
 
-.aircas-picker,
-.aircas-picker.el-picker-panel {
+.aircas-picker.el-picker__popper.el-popper,
+.aircas-picker.el-picker__popper,
+.aircas-picker.el-popper,
+.aircas-picker.el-picker-panel,
+.aircas-picker {
+  --el-bg-color-overlay: var(--aircas-color-menu-background);
+  --el-text-color-regular: var(--aircas-color-text-primary);
+  --el-text-color-primary: var(--aircas-color-text-primary);
+  --el-text-color-placeholder: var(--aircas-color-text-placeholder);
+  --el-border-color-light: var(--aircas-color-border);
+  --el-disabled-border-color: var(--aircas-color-border);
+  --el-fill-color-blank: var(--aircas-color-input-background);
+  --el-datepicker-bg-color: var(--aircas-color-menu-background);
+  --el-datepicker-text-color: var(--aircas-color-text-primary);
+  --el-datepicker-off-text-color: var(--aircas-color-text-placeholder);
+  --el-datepicker-header-text-color: var(--aircas-color-text-secondary);
+  --el-datepicker-icon-color: var(--aircas-color-text-secondary);
+  --el-datepicker-border-color: var(--aircas-color-border);
+  --el-datepicker-inner-border-color: var(--aircas-color-border);
+  --el-datepicker-inrange-bg-color: var(--aircas-color-hover-background);
+  --el-datepicker-inrange-hover-bg-color: var(--aircas-color-active-background);
+  --el-datepicker-active-color: var(--aircas-color-accent-cyan);
+  --el-datepicker-hover-text-color: var(--aircas-color-title);
+
   background-color: var(--aircas-color-menu-background);
   border: 1px solid var(--aircas-color-border);
   border-radius: 4px;
   color: var(--aircas-color-text-primary);
   box-shadow: var(--el-box-shadow-light);
 
-  // 表头 / 分隔
+  .el-picker-panel,
+  .el-date-range-picker {
+    background-color: var(--aircas-color-menu-background);
+    color: var(--aircas-color-text-primary);
+    border: none;
+  }
+
   .el-date-table th,
   .el-date-range-picker__time-header,
   .el-date-range-picker__content.is-left {
@@ -21,27 +49,42 @@
   }
 
   .el-date-picker__header-label,
+  .el-date-range-picker__header-label,
   .el-picker-panel__icon-btn {
     color: var(--aircas-color-text-secondary);
   }
 
-  // 日期单元格
-  .el-date-table td .el-date-table-cell div,
-  .el-date-table td.in-range div,
-  .el-date-table.is-week-mode .el-date-table__row:hover div {
+  .el-picker-panel__icon-btn:hover,
+  .el-date-picker__header-label:hover,
+  .el-date-range-picker__header-label:hover {
+    color: var(--aircas-color-title);
+  }
+
+  .el-date-table th {
+    color: var(--aircas-color-text-muted);
+  }
+
+  .el-date-table td.in-range .el-date-table-cell,
+  .el-date-table.is-week-mode .el-date-table__row:hover .el-date-table-cell {
     background-color: var(--aircas-color-hover-background);
   }
 
-  .el-date-table td.current:not(.disabled) .el-date-table-cell div {
+  .el-date-table td.available {
+    color: var(--aircas-color-text-primary);
+  }
+
+  .el-date-table td.current:not(.disabled) .el-date-table-cell__text,
+  .el-date-table td.start-date .el-date-table-cell__text,
+  .el-date-table td.end-date .el-date-table-cell__text {
     background-color: var(--aircas-color-selected-background);
     color: var(--aircas-color-title);
   }
 
-  .el-date-table td.today .el-date-table-cell div {
+  .el-date-table td.today .el-date-table-cell__text {
     color: var(--aircas-color-title);
   }
 
-  .el-date-table td.disabled div,
+  .el-date-table td.disabled .el-date-table-cell,
   .el-year-table td.disabled .cell,
   .el-month-table td.disabled .cell {
     background-color: var(--aircas-color-transparent);
@@ -51,5 +94,10 @@
   .el-picker-panel__footer {
     background-color: var(--aircas-color-panel-background-deep);
     border-top: none;
+  }
+
+  .el-popper__arrow::before {
+    background-color: var(--aircas-color-menu-background);
+    border: 1px solid var(--aircas-color-border);
   }
 }

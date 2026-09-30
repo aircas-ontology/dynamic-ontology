@@ -1,6 +1,14 @@
 import { computed, onScopeDispose, ref, watch } from "vue";
-import type { OntologySpaceDraft, OntologySpaceItem, OntologySpaceLoadStatus, OntologySpaceSortOrder, OntologySpaceSummary, OntologyViewMode } from "@/types";
-import { getOntologySpaceListInterface } from "@/apis";
+import type {
+  OntologySpaceDraft,
+  OntologySpaceItem,
+  OntologySpaceLoadStatus,
+  OntologySpaceSortOrder,
+  OntologySpaceSummary,
+  OntologyViewMode,
+  OverviewCountVO,
+} from "@/types";
+import { getOntologyOverviewCountInterface, getOntologySpaceListInterface } from "@/apis";
 import { ontologySpaceListMock } from "@/mocks/ontologySpaceListMock/ontologySpaceListMock";
 import { mapOntologySpaceList } from "@/utils/mapOntologySpaceList";
 import { filterSpaces, removeSpace, saveSpace } from "../utils/spaceOperations";
@@ -31,8 +39,12 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
   const pageSize = ref(10);
   const status = ref<OntologySpaceLoadStatus>("loading");
   const error = ref("");
+  const overviewCount = ref<OverviewCountVO>({});
+  const overviewStatus = ref<Exclude<OntologySpaceLoadStatus, "empty">>("loading");
+  const overviewError = ref("");
   let disposed = false;
   let pending = false;
+  let overviewPending = false;
   onScopeDispose(() => {
     disposed = true;
   });
@@ -51,11 +63,50 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
     },
   );
   const summaryStats = computed<OntologySpaceSummary[]>(() => [
-    { id: "space", label: "本体空间", value: spaces.value.length, icon: "Box" },
-    { id: "object", label: "本体对象", value: spaces.value.reduce((sum, space) => sum + space.metrics.ontology, 0), icon: "Connection" },
-    { id: "behavior", label: "行为数量", value: spaces.value.reduce((sum, space) => sum + space.metrics.behavior, 0), icon: "Share" },
-    { id: "relation", label: "关系", value: spaces.value.reduce((sum, space) => sum + space.metrics.relation, 0), icon: "Link" },
+    { id: "space", label: "本体空间", value: overviewCount.value.spaceCount ?? 0, icon: "Box" },
+    { id: "object", label: "本体对象", value: overviewCount.value.ontologyCount ?? 0, icon: "Connection" },
+    { id: "behavior", label: "行为数量", value: overviewCount.value.actionCount ?? 0, icon: "Share" },
+    { id: "relation", label: "关系", value: overviewCount.value.linkCount ?? 0, icon: "Link" },
   ]);
+
+  /**
+   * @description 判断概览统计接口响应是否为服务端约定的成功结果。
+   * @param code 接口响应业务码。
+   * @returns 业务码为 0 或 200 时返回 true。
+   */
+  function isOverviewCountSuccess(code: number): boolean {
+    return code === 0 || code === 200;
+  }
+
+  /**
+   * @description 查询本体服务概览统计数据；防止重复请求与卸载后回写。
+   */
+  async function loadOntologyOverviewCount() {
+    if (overviewPending || disposed) return;
+    overviewPending = true;
+    overviewStatus.value = "loading";
+    overviewError.value = "";
+    try {
+      const response = await getOntologyOverviewCountInterface();
+      if (disposed) return;
+      if (!isOverviewCountSuccess(response.code)) {
+        overviewCount.value = {};
+        overviewStatus.value = "error";
+        overviewError.value = response.message || "概览统计数据加载失败，请重试。";
+        return;
+      }
+      overviewCount.value = response.data ?? {};
+      overviewStatus.value = "success";
+    } catch (cause) {
+      if (!disposed) {
+        overviewCount.value = {};
+        overviewStatus.value = "error";
+        overviewError.value = cause instanceof Error && cause.message.trim() ? cause.message : "概览统计数据加载失败，请重试。";
+      }
+    } finally {
+      overviewPending = false;
+    }
+  }
 
   /**
    * @description 加载本体空间列表并更新页面状态；防止重复请求与卸载后回写。
@@ -108,8 +159,11 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
     pageSize,
     status,
     error,
+    overviewError,
+    overviewStatus,
     result,
     summaryStats,
+    loadOntologyOverviewCount,
     loadOntologySpaces,
     saveOntologySpace,
     removeOntologySpace,

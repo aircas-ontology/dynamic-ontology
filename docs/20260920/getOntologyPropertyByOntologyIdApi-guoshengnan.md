@@ -35,6 +35,8 @@
   "data": [
     {
       "displayName": "属性名称",
+      "apiName": "property_api",
+      "propertyType": "String",
       "description": "属性描述",
       "isPrimaryKey": false,
       "isTitleKey": false,
@@ -55,6 +57,8 @@
 | message                         | string          | 消息描述              |
 | data                            | array           | 本体属性信息列表      |
 | data[].displayName              | string          | 属性名称              |
+| data[].apiName                  | string          | 属性 API 名称         |
+| data[].propertyType             | string          | 属性数据类型          |
 | data[].description              | string          | 属性描述              |
 | data[].isPrimaryKey             | boolean         | 是否为主键            |
 | data[].isTitleKey               | boolean         | 是否为名称键          |
@@ -88,6 +92,8 @@ export interface GetOntologyPropertyByOntologyIdParams {
 
 export interface OntologyPropertyInfo {
   displayName?: string;
+  apiName?: string;
+  propertyType?: string;
   description?: string;
   isPrimaryKey?: boolean;
   isTitleKey?: boolean;

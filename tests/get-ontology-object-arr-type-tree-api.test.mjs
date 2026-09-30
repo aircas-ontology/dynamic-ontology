@@ -21,6 +21,7 @@ test("ontology object attribute category api follows the corrected GET contract"
   assert.match(apiSource, /params,/);
   assert.match(typeSource, /ontologyUniqueIdentifier: string/);
   assert.match(typeSource, /categoryId: number/);
+  assert.match(typeSource, /propertyInfos\?: OntologyPropertyInfo\[\]/);
   assert.match(typeSource, /children\?: GetOntologyObjectArrTypeTreeData\[\]/);
   assert.match(barrelSource, /getOntologyObjectArrTypeTreeInterface/);
   assert.match(typeBarrelSource, /GetOntologyObjectArrTypeTreeData/);

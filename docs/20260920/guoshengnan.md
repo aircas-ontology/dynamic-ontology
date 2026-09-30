@@ -43,6 +43,6 @@
 
 按照E:\资料\h数字5模块\project\dev-project\docs\20260920\createOntologyPropertyApi-guoshengnan.md接口说明对接属性创建功能，字段按照页面的来，少的默认空值。按照E:\资料\h数字5模块\project\dev-project\docs\20260920\getOntologyPropertyByCategoryIdApi-guoshengnan.md接口说明对接按分类查属性列表功能，点击左侧分类树节点，查询节点下属性列表。按照E:\资料\h数字5模块\project\dev-project\docs\20260920\getOntologyPropertyByOntologyIdApi-guoshengnan.md接口说明对接查询全部属性列表功能，进入属性页面默认查询全部属性列表。按照E:\资料\h数字5模块\project\dev-project\docs\20260920\updateOntologyPropertyApi-guoshengnan.md接口说明对接编辑属性接口，属性列表点击编辑按钮弹出编辑弹窗，修改信息保存调用编辑接口。按照E:\资料\h数字5模块\project\dev-project\docs\20260920\deleteOntologyPropertyApi-guoshengnan.md接口说明对接属性删除接口，点击属性列表的删除按钮，再次提示删除操作，点击确认后调用删除接口。
 
-## 4 本体大模型构建页面和子空间构建页面搭建
+## 5 本体大模型构建页面和子空间构建页面搭建
 
 根据原型http://localhost:36001/#/layout/ontology-space-management/navy/llm-builder构建本体大模型构建页面，页面入口为新建本体弹窗选择大模型构建点击按钮进入大模型构建跳转到大模型构建页面，要求样式和功能与原型保持一致。根据原型http://localhost:36001/#/layout/ontology-space-management/navy/subspace-create构建子空间构建页面，页面入口为空间管理页面空间列表更多按钮下的子空间页面进入子空间构建页面。

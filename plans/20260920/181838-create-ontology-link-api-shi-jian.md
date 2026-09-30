@@ -2,7 +2,7 @@
 
 ## 需求理解
 
-按 `docs/20260920/创建本体之间关系Api-shijian.md` 新增 POST `/ontology/link`，接线「添加关系」；`categoryId` 非必填；源/目标提交 `uniqueIdentifier`。
+按 `docs/20260920/createOntologyLinkApi-shijian.md` 新增 POST `/ontology/link`，接线「添加关系」；`categoryId` 非必填；源/目标提交 `uniqueIdentifier`。
 
 ## 修改范围
 

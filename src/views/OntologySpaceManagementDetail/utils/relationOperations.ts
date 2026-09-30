@@ -54,7 +54,6 @@ function refreshObjectOptions(data: SpaceRelationWorkspaceData): SpaceRelationOb
 
 export function addRelationCategory(data: SpaceRelationWorkspaceData, payload: RelationCategoryWritePayload): SpaceRelationWorkspaceData {
   const name = payload.name.trim();
-  const color = payload.color.trim();
   if (!name) throw new Error("分类名称不能为空");
   if (data.categoryTree.length === 0) {
     return {
@@ -63,7 +62,6 @@ export function addRelationCategory(data: SpaceRelationWorkspaceData, payload: R
         {
           id: createId("rel-cat"),
           label: name,
-          ...(color ? { color } : {}),
           children: [],
         },
       ],
@@ -79,7 +77,6 @@ export function addRelationCategory(data: SpaceRelationWorkspaceData, payload: R
   nextParent.children.push({
     id: createId("rel-cat"),
     label: name,
-    ...(color ? { color } : {}),
     children: [],
   });
   return { ...data, categoryTree: nextTree, objectOptions: refreshObjectOptions(data) };
@@ -87,7 +84,6 @@ export function addRelationCategory(data: SpaceRelationWorkspaceData, payload: R
 
 export function updateRelationCategory(data: SpaceRelationWorkspaceData, payload: RelationCategoryUpdatePayload): SpaceRelationWorkspaceData {
   const name = payload.name.trim();
-  const color = payload.color.trim();
   if (!name) throw new Error("分类名称不能为空");
   if (isRootRelationCategory(data.categoryTree, payload.id)) throw new Error("根分类不可编辑");
   const nextTree = structuredClone(data.categoryTree);
@@ -98,8 +94,6 @@ export function updateRelationCategory(data: SpaceRelationWorkspaceData, payload
     throw new Error("同级分类名称已存在");
   }
   node.label = name;
-  if (color) node.color = color;
-  else delete node.color;
   const relations = data.relations.map((item) => (item.categoryId === payload.id ? { ...item, categoryName: name } : item));
   return { categoryTree: nextTree, relations, objectOptions: buildObjectOptions(relations) };
 }

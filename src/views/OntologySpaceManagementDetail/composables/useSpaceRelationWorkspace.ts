@@ -15,9 +15,10 @@ import type {
 } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
 import { getOntologyCategoryTreeInterface, getOntologyRelationCategoryTreeInterface } from "@/apis";
-import { filterRelationsByHop } from "../utils/spaceRelationGraph";
+import { filterRelationsBySourceObject } from "../utils/spaceRelationGraph";
 import { mapOntologyObjectsToRelationOptions } from "../utils/mapOntologyObjectsToRelationOptions";
 import { mapOntologyRelationCategoryTree, mapOntologyRelationLinks } from "../utils/mapOntologyRelationCategoryTree";
+import { resolveObjectRelationFilterSeed, resolveRelationSpaceId } from "../utils/resolveRelationRouteContext";
 import {
   addRelation,
   addRelationCategory,
@@ -98,21 +99,36 @@ export function useSpaceRelationWorkspace() {
   });
   let generation = 0;
 
-  const spaceId = computed(() => String(route.params.spaceId || "").trim());
+  const spaceId = computed(() => resolveRelationSpaceId(route));
   const relationCategoryTree = computed(() => workspace.value?.categoryTree ?? []);
   const relations = computed(() => workspace.value?.relations ?? []);
   const relationObjectOptions = computed<SpaceRelationObjectOption[]>(() => workspace.value?.objectOptions ?? []);
   const selectedRelationCategoryLabel = computed(
     () => findRelationCategoryNode(relationCategoryTree.value, selectedRelationCategoryId.value)?.label || "全部关系",
   );
-  const relationCategoryOptions = computed(() => relationCategoryTree.value[0]?.children ?? []);
+  const relationCategoryOptions = computed(() => relationCategoryTree.value);
   const visibleSpaceRelations = computed(() => {
     const byCategory = filterRelationsByCategory(relations.value, relationCategoryTree.value, selectedRelationCategoryId.value);
     if (!relationFilter.value.applied) return byCategory;
-    return filterRelationsByHop(byCategory, relationFilter.value.seedNames, relationFilter.value.maxHop);
+    const selectedValue = relationFilter.value.seedNames[0] ?? "";
+    return filterRelationsBySourceObject(byCategory, selectedValue, relationObjectOptions.value);
   });
-  const graphSeedNames = computed(() => relationFilter.value.seedNames);
+  const graphSeedNames = computed(() => {
+    const selectedValue = relationFilter.value.seedNames[0]?.trim() ?? "";
+    if (!selectedValue) return [];
+    const matchedLabel = relationObjectOptions.value.find((item) => item.value === selectedValue)?.label.trim() ?? "";
+    return [matchedLabel || selectedValue];
+  });
   const graphMaxHop = computed(() => relationFilter.value.maxHop);
+
+  /**
+   * @description 对象详情关系 Tab 进入时，按当前对象默认应用源筛选；空间关系页不处理。
+   */
+  function applyDefaultObjectSourceFilter() {
+    const seed = resolveObjectRelationFilterSeed(route, relationObjectOptions.value);
+    if (!seed) return;
+    applyRelationFilter([seed]);
+  }
 
   /**
    * @description 按当前空间 id 加载关系分类树；无空间 id 时进入空状态，加载失败时保留错误信息。
@@ -133,6 +149,7 @@ export function useSpaceRelationWorkspace() {
       workspace.value = next;
       selectedRelationCategoryId.value = next.categoryTree[0]?.id || ROOT_RELATION_CATEGORY_ID;
       status.value = "ready";
+      applyDefaultObjectSourceFilter();
     } catch (cause) {
       if (request !== generation) return;
       workspace.value = null;
@@ -220,6 +237,7 @@ export function useSpaceRelationWorkspace() {
   return {
     status,
     errorMessage,
+    spaceId,
     relationCategoryTree,
     relations,
     relationObjectOptions,

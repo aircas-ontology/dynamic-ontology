@@ -74,10 +74,10 @@ export function useOntologyObjectWorkspace(
       if (disposed || request !== generation) return;
       workspace.value = result;
       status.value = result ? (result.sections.length ? "success" : "empty") : "empty";
-    } catch {
+    } catch (cause) {
       if (disposed || request !== generation) return;
       status.value = "error";
-      error.value = "本体对象加载失败，请重试。";
+      error.value = cause instanceof Error && cause.message.trim() ? cause.message : "本体对象加载失败，请重试。";
     }
   }
 

@@ -1,6 +1,6 @@
 # Plan：对接创建本体分类树接口
 
-确认依据：用户指定 `docs/20260918/创建本体分类树API-shijian.md`，并明确 name、parentId=0、spaceId。
+确认依据：用户指定 `docs/20260918/createOntologyCategoryTreeApi-shijian.md`，并明确 name、parentId=0、spaceId。
 
 ## 需求理解
 

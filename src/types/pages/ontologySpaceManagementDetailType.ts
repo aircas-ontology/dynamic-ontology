@@ -56,6 +56,7 @@ export interface OntologyConceptNode {
   id: string;
   label: string;
   count: number;
+  objectNames?: string[];
   targetCategoryId?: string;
   children: OntologyConceptNode[];
 }

@@ -17,7 +17,7 @@ test("update ontology object api follows the documented PUT contract", () => {
 
   assert.match(apiSource, /export function updateOntologyObjectInterface\(/);
   assert.match(apiSource, /Promise<ApiResponse<UpdateOntologyObjectData>>/);
-  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/meta"/);
+  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/meta"/);
   assert.match(apiSource, /method:\s*"put"/);
   assert.match(apiSource, /data: params/);
   assert.match(typeSource, /ontologyIdentifier:\s*string/);

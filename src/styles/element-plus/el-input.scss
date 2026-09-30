@@ -48,5 +48,10 @@
     .el-input__suffix {
       color: var(--aircas-color-text-muted);
     }
+
+    .el-input__count {
+      color: var(--aircas-color-text-muted);
+      background-color: var(--aircas-color-input-background);
+    }
   }
 }

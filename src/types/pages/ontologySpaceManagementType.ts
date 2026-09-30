@@ -27,7 +27,7 @@ export interface OntologySpaceItem extends OntologySpaceDraft {
 
 export type OntologySpaceSortOrder = "asc" | "desc";
 export type OntologyViewMode = "table" | "card";
-export type OntologySpaceAction = "enter" | "edit" | "subspace" | "export" | "delete";
+export type OntologySpaceAction = "enter" | "edit" | "subspace" | "conceptual-model" | "export" | "delete";
 export type OntologySpaceCommandStatus = "idle" | "submitting" | "success" | "error";
 export type OntologySpaceLoadStatus = "loading" | "success" | "empty" | "error";
 

@@ -25,12 +25,11 @@
     :close-on-press-escape="!busy"
     :show-close="!busy"
   >
-    <p>导出「{{ space?.displayName }}」的空间基本信息，文件可用于导入创建。</p>
-    <p class="space-command-dialogs__notice">对象结构与实体数据尚未接入，本次不包含这些内容。</p>
+    <p>导出「{{ space?.displayName }}」的分类树、本体 schema 与实例数据。</p>
     <p v-if="error" class="space-command-dialogs__error" role="alert">{{ error }}</p>
     <template #footer>
       <el-button class="aircas-button" :disabled="busy" @click="exportVisible = false">取消</el-button>
-      <el-button class="aircas-button" type="primary" :loading="busy" @click="emit('confirmExport')">导出 JSON</el-button>
+      <el-button class="aircas-button" type="primary" :loading="busy" @click="emit('confirmExport')">导出</el-button>
     </template>
   </el-dialog>
 </template>
@@ -50,12 +49,6 @@ const emit = defineEmits<{ confirmDelete: []; confirmExport: [] }>();
 </script>
 
 <style scoped lang="scss">
-.space-command-dialogs__notice {
-  margin-top: 12px;
-  color: var(--aircas-color-text-muted);
-  font-size: 12px;
-}
-
 .space-command-dialogs__error {
   margin-top: 12px;
   color: var(--aircas-color-danger);

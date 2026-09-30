@@ -16,8 +16,8 @@ export const ontologySpaceListApiMock: ApiResponse<OntologySpaceListData> = {
       actionCount: 0,
       propertyCount: 7,
       linkCount: 0,
-      createTime: "",
-      updateTime: "",
+      createTime: "2026-09-21 10:47:32",
+      updateTime: "2026-09-21 10:47:32",
     },
   ],
 };

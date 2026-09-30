@@ -1,5 +1,4 @@
 import type { ApiResponse, ExampleData, ExampleParams } from "@/types";
-import { requestTimeoutMs } from "@/utils/constants";
 import { request } from "@/utils/request";
 
 /**
@@ -23,6 +22,5 @@ export function getExampleInterface(params: ExampleParams): Promise<ApiResponse<
     url: DOMAIN_CONFIG.OCEAN_SERVER_URL + "/example",
     method: "get",
     params,
-    timeout: requestTimeoutMs,
   });
 }

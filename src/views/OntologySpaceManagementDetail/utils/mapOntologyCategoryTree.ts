@@ -8,7 +8,7 @@ import type {
 } from "@/types";
 
 /**
- * @description 将单个分类树节点映射为概念层级树节点；缺 name 用空串，count 为本节点 meta 条数。
+ * @description 将单个分类树节点映射为概念层级树节点；同时保留节点下本体对象显示名称。
  * @param node 接口分类节点。
  * @returns 页面概念树节点。
  */
@@ -18,6 +18,7 @@ function mapOntologyCategoryTreeNode(node: OntologyCategoryTreeNode): OntologyCo
     id,
     label: node.name ?? "",
     count: node.ontologyMetaInfos?.length ?? 0,
+    objectNames: (node.ontologyMetaInfos ?? []).map((meta) => meta.displayName).filter((name) => Boolean(name?.trim())),
     targetCategoryId: id,
     children: (node.children ?? []).map(mapOntologyCategoryTreeNode),
   };
@@ -40,8 +41,11 @@ export function mapOntologyCategoryTree(data: OntologyCategoryTreeData): Ontolog
 export function mapOntologyCategorySections(data: OntologyCategoryTreeData): OntologyObjectSection[] {
   const sections: OntologyObjectSection[] = [];
 
-  /** @description 递归遍历分类树并收集当前节点下的本体元信息。 @param node 当前分类树节点。 */
-  function visit(node: OntologyCategoryTreeNode, isRoot = false) {
+  /**
+   * @description 递归遍历分类树，有本体的分类写入对象列表分区，包含名为全部的根分类。
+   * @param node 当前分类树节点。
+   */
+  function visit(node: OntologyCategoryTreeNode) {
     const items: OntologyObjectItem[] = (node.ontologyMetaInfos ?? []).map((meta) => ({
       id: meta.uniqueIdentifier,
       categoryId: String(node.categoryId),
@@ -53,12 +57,12 @@ export function mapOntologyCategorySections(data: OntologyCategoryTreeData): Ont
       iconUrl: meta.icon ?? "",
       metrics: { attribute: meta.propertyCount, relation: meta.relationCount, behavior: meta.actionCount },
     }));
-    if (!(isRoot && (node.categoryId === 0 || node.name === "全部"))) {
+    if (items.length > 0) {
       sections.push({ categoryId: String(node.categoryId), name: node.name ?? `分类 ${node.categoryId}`, items });
     }
     (node.children ?? []).forEach((child) => visit(child));
   }
-  visit(data, true);
+  visit(data);
   return sections;
 }
 

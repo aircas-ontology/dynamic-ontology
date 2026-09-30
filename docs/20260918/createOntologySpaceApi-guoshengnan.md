@@ -30,13 +30,13 @@
   {
     "displayName": "xxx战场",
     "apiName": "space_a",
-    "icon": "",
+    "iconUrl": "",
     "description": "这是空间描述"
   }
   ```
 - `displayName`：【string，必填】 空间名称
 - `apiName`：【string，必填】空间api名称
-- `icon`：【string，可选】空间图标url
+- `iconUrl`：【string，可选】空间图标url
 - `description`：【string，可选】空间描述
 
 ## 输出参数

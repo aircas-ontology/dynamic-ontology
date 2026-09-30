@@ -33,7 +33,12 @@
           <el-input class="aircas-input" :model-value="selectedAttribute.apiName" @update:model-value="$emit('update-attribute', 'apiName', $event)" />
         </el-form-item>
         <el-form-item label="数据类型">
-          <el-select class="aircas-input" :model-value="selectedAttribute.dataType" @update:model-value="$emit('update-attribute', 'dataType', $event)">
+          <el-select
+            class="aircas-input"
+            popper-class="aircas-select-popper"
+            :model-value="selectedAttribute.dataType"
+            @update:model-value="$emit('update-attribute', 'dataType', $event)"
+          >
             <el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" />
           </el-select>
         </el-form-item>
@@ -68,12 +73,24 @@
           <el-input class="aircas-input" :model-value="selectedRelation.apiName" @update:model-value="$emit('update-relation', 'apiName', $event)" />
         </el-form-item>
         <el-form-item label="源对象">
-          <el-select class="aircas-input" clearable :model-value="selectedRelation.sourceId" @update:model-value="$emit('update-relation', 'sourceId', $event)">
+          <el-select
+            class="aircas-input"
+            popper-class="aircas-select-popper"
+            clearable
+            :model-value="selectedRelation.sourceId"
+            @update:model-value="$emit('update-relation', 'sourceId', $event)"
+          >
             <el-option v-for="object in objects" :key="object.id" :label="object.displayName" :value="object.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="目标对象">
-          <el-select class="aircas-input" clearable :model-value="selectedRelation.targetId" @update:model-value="$emit('update-relation', 'targetId', $event)">
+          <el-select
+            class="aircas-input"
+            popper-class="aircas-select-popper"
+            clearable
+            :model-value="selectedRelation.targetId"
+            @update:model-value="$emit('update-relation', 'targetId', $event)"
+          >
             <el-option v-for="object in objects" :key="object.id" :label="object.displayName" :value="object.id" />
           </el-select>
         </el-form-item>

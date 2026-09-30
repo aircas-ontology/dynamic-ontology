@@ -2,6 +2,8 @@ import type {
   ApiResponse,
   CreateOntologyObjectArrTypeTreeParams,
   DeleteOntologyObjectArrTypeTreeParams,
+  GetOntologyMetaByObjectIdData,
+  GetOntologyMetaByObjectIdParams,
   GetOntologyObjectArrTypeTreeData,
   GetOntologyObjectArrTypeTreeParams,
   UpdateOntologyObjectArrTypeTreeParams,
@@ -78,5 +80,21 @@ export function getOntologyObjectArrTypeTreeInterface(params: GetOntologyObjectA
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/property/category",
     method: "get",
     params,
+  });
+}
+
+/**
+ * @description 根据本体对象 id 查询对象简要信息（id、对象名称、空间名称、uniqueIdentifier）。
+ *
+ * 请求方式：GET `/ontology/meta/{objectid}`
+ *
+ * @param params 查询参数。
+ * @param params.objectId 本体对象 id。
+ * @returns 标准 API 响应，data 为对象简要信息。
+ */
+export function getOntologyMetaByObjectIdInterface(params: GetOntologyMetaByObjectIdParams): Promise<ApiResponse<GetOntologyMetaByObjectIdData>> {
+  return request<GetOntologyMetaByObjectIdData>({
+    url: `${DOMAIN_CONFIG.ONTOLOGYMANAGE_URL}/ontology/meta/${encodeURIComponent(String(params.objectId))}`,
+    method: "get",
   });
 }
