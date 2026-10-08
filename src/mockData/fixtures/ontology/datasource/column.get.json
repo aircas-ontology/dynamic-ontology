@@ -1,0 +1,9 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": [
+    { "columnName": "id", "description": "主键", "type": "BIGINT", "isPrimaryKey": true },
+    { "columnName": "name", "description": "名称", "type": "VARCHAR(255)", "isPrimaryKey": false }
+  ]
+}

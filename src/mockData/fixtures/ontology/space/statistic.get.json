@@ -1,0 +1,13 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": {
+    "spaceId": 1,
+    "ontologyCount": 2,
+    "linkCount": 0,
+    "functionCount": 2,
+    "actionCount": 0,
+    "actionSchedulingCount": 0
+  }
+}

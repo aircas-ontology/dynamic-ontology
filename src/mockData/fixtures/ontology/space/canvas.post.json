@@ -1,0 +1,8 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": {
+    "spaceId": 8
+  }
+}

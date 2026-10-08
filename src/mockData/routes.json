@@ -1,0 +1,270 @@
+[
+  {
+    "method": "POST",
+    "path": "/ontology/user/login",
+    "file": "fixtures/ontology/user/login.post.json",
+    "headers": {
+      "access-token": "mock-login-token"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/space",
+    "file": "fixtures/ontology/space.get.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/space",
+    "file": "fixtures/ontology/space.post.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/space",
+    "file": "fixtures/ontology/space.put.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/space/canvas",
+    "file": "fixtures/ontology/space/canvas.post.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/space/statistic",
+    "file": "fixtures/ontology/space/statistic.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/space/export",
+    "file": "fixtures/ontology/space/export.get.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/space/import",
+    "file": "fixtures/ontology/space/import.post.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/space/:spaceId",
+    "file": "fixtures/ontology/space/by-id.get.json"
+  },
+  {
+    "method": "DELETE",
+    "path": "/ontology/space/:spaceId",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/file/thumbnail",
+    "file": "fixtures/ontology/file/thumbnail.post.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/category/tree",
+    "file": "fixtures/ontology/category/tree.get.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/category",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/category",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "DELETE",
+    "path": "/ontology/category",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/link_category/tree",
+    "file": "fixtures/ontology/link_category/tree.get.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/link_category",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/link_category",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "DELETE",
+    "path": "/ontology/link_category",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/link",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/link",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "DELETE",
+    "path": "/ontology/link/:linkUniqIdentifier",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/overview/count",
+    "file": "fixtures/ontology/overview/count.get.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/function",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/function",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/function/list",
+    "file": "fixtures/ontology/function/list.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/function/detail",
+    "file": "fixtures/ontology/function/detail.get.json"
+  },
+  {
+    "method": "DELETE",
+    "path": "/ontology/function/delete/:functionApi",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/function/test",
+    "file": "fixtures/ontology/function/test.post.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/datasource/table",
+    "file": "fixtures/ontology/datasource/table.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/datasource/column",
+    "file": "fixtures/ontology/datasource/column.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/property/category",
+    "file": "fixtures/ontology/property/category.get.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/property/category",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/property/category",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "DELETE",
+    "path": "/ontology/property/category",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/property/auto_bind_datasource",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/property",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/property",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/property/batch",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/property/by_category",
+    "file": "fixtures/ontology/property/by_category.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/property/detail",
+    "file": "fixtures/ontology/property/detail.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/property/info",
+    "file": "fixtures/ontology/property/info.get.json"
+  },
+  {
+    "method": "DELETE",
+    "path": "/ontology/property/:id",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/meta/statistic",
+    "file": "fixtures/ontology/meta/statistic.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/meta/export",
+    "file": "fixtures/ontology/meta/export.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/meta/category",
+    "file": "fixtures/ontology/meta/category.get.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/meta",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/meta",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/meta/import",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/meta/:id",
+    "file": "fixtures/ontology/meta/by-id.get.json"
+  },
+  {
+    "method": "DELETE",
+    "path": "/ontology/meta/:ontologyIdentifier",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/search/global",
+    "file": "fixtures/ontology/search/global.post.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/v3/api-docs/ontology",
+    "file": "fixtures/ontology/v3/api-docs.ontology.get.json"
+  }
+]

@@ -1,0 +1,40 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": {
+    "categoryId": 24,
+    "name": "全部",
+    "children": [
+      {
+        "categoryId": 26,
+        "name": "隶属关系",
+        "children": [
+          {
+            "categoryId": 29,
+            "name": "附属"
+          }
+        ]
+      },
+      {
+        "categoryId": 30,
+        "name": "人员借调",
+        "links": [
+          {
+            "uniqueIdentifier": "f5dd661753f84476a652d120be86adb5",
+            "name": "借调",
+            "type": "OTHER",
+            "ontologyUniqueIdentifierFrom": "27499ff6432c425ea152909c768d860e",
+            "ontologyNameFrom": "班级1",
+            "ontologyUniqueIdentifierTo": "86371f5599e243aca485edac2bde8b22",
+            "ontologyNameTo": "班级2",
+            "ontologyIconFrom": "",
+            "apiName": "jiediao",
+            "description": "班级1借调班级2 语文老师",
+            "categoryId": 30
+          }
+        ]
+      }
+    ]
+  }
+}

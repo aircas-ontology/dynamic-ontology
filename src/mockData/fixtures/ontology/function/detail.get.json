@@ -1,0 +1,33 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": {
+    "functionApi": "ss",
+    "displayName": "ss",
+    "description": "ss",
+    "model": "BASIC",
+    "type": "BASIC_QUERY",
+    "ontologySpaceId": 46,
+    "params": [
+      {
+        "paramId": 25,
+        "paramName": "xingbie",
+        "paramType": "STRING",
+        "category": "INPUT",
+        "paramOrder": 1,
+        "description": "过滤条件",
+        "paramRole": "FILTER"
+      }
+    ],
+    "code": "{}",
+    "queryConfig": {
+      "aggFunc": "SUM",
+      "targetProperty": "target",
+      "filters": {
+        "logic": "AND",
+        "children": []
+      }
+    }
+  }
+}

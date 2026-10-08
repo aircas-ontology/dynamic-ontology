@@ -20,7 +20,18 @@ npm run dev
 npm run build
 ```
 
-`npm run build` 用于人工发布并输出到 `html/`；自动化构建验证使用 `npm run build:verify`。
+`npm run dev` 会并行启动 Vite 与本地 HTTP Mock 服务（`127.0.0.1:37003`）。`npm run build` 用于人工发布并输出到 `html/`；自动化构建验证使用 `npm run build:verify`。
+
+单独启动 Mock：`npm run mock`。从真实环境覆盖 GET fixture：`npm run mock:record`。
+
+本地要把登录和本体管理请求切到 Mock，请在 `public/configs/domainConfig.js` 中于 `ONTOLOGYMANAGE_URL` 后增加：
+
+```js
+  MOCK_SERVER_URL: "http://127.0.0.1:37003",
+  USE_MOCK: true,
+```
+
+切回真实服务时只把 `USE_MOCK` 改为 `false`。该文件由开发人员手工维护，不纳入大模型修改范围。
 
 ## 4、Skills
 

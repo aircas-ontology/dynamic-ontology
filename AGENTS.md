@@ -34,7 +34,7 @@
 - 【禁止】文件、函数、变量等命名使用`javascript|java|python` 等语言的保留字段。
 - 【禁止】文件、函数、变量等命名使用中文。
 - 【禁止】读取、修改、删除或提交 `html/` 生产构建目录。
-- 【禁止】修改、删除 `public/` 目录内的文件。
+- 【禁止】大模型修改、删除或提交 `public/` 中的任何文件；只允许读取和检查，开发或发布人员自行维护该目录。
 - 【优先】增量输出：只展示或描述发生变化的部分，不重复粘贴未修改代码或完整文件；Plan、验证证据、冲突和风险说明不受此限制。
 - 【优先】项目内部模块引用使用 `@/` 路径别名。
 
@@ -56,7 +56,8 @@ src/
 ├─ composables/     项目级全局 Vue composables，按共享范围或业务领域分类
 ├─ example/         参考资料目录，不作为正式业务依赖，【禁止】在项目中直接 import 引用
 ├─ layout/          公共布局
-├─ mocks/           样例数据，按页面 / 业务域分类，符合正式业务类型定义
+├─ mockData/        HTTP Mock 路由与接口响应 fixture，由本地 Mock 服务读取
+├─ mocks/           页面内样例数据，按页面 / 业务域分类，符合正式业务类型定义
 ├─ models/          业务模型或 Class
 ├─ router/          Vue Router
 ├─ stores/          Pinia Store，Store 仅维护需要共享的业务状态，【禁止】直接操作 DOM
@@ -79,32 +80,33 @@ html/                生产构建产物，【禁止】读取、修改、删除�
 
 ### 3.2. 仓库入口
 
-| 路径                    | 职责                                |
-| ----------------------- | ----------------------------------- |
-| `README.md`             | 项目简介、运行方式和推荐 Skill 来源 |
-| `package.json`          | 依赖、Node.js 版本和可执行脚本      |
-| `src/main.ts`           | Vue 应用启动入口                    |
-| `src/App.vue`           | 根组件                              |
-| `src/router/index.ts`   | 路由装配入口                        |
-| `src/styles/index.scss` | 全局样式聚合入口                    |
-| `vite.config.ts`        | Vite 与构建配置                     |
-| `tests/`                | Node 测试套件                       |
-| `scripts/`              | 项目约定检查与构建验证脚本          |
+| 路径                    | 职责                                     |
+| ----------------------- | ---------------------------------------- |
+| `README.md`             | 项目简介、运行方式和推荐 Skill 来源      |
+| `package.json`          | 依赖、Node.js 版本和可执行脚本           |
+| `src/main.ts`           | Vue 应用启动入口                         |
+| `src/App.vue`           | 根组件                                   |
+| `src/router/index.ts`   | 路由装配入口                             |
+| `src/styles/index.scss` | 全局样式聚合入口                         |
+| `vite.config.ts`        | Vite 与构建配置                          |
+| `tests/`                | Node 测试套件                            |
+| `scripts/`              | 约定检查、构建验证、本地 Mock 与开发入口 |
 
 ### 3.3. 常见任务定位
 
-| 任务                         | 优先检查                                                                  |
-| ---------------------------- | ------------------------------------------------------------------------- |
-| 新增或调整页面               | `src/views/`、`src/router/`、`src/assets/pages/`、`src/types/pages/`      |
-| 新增后端接口                 | `src/apis/`、`src/mocks/`、`src/types/apis/`、`src/utils/request.ts`      |
-| 调整共享状态                 | `src/stores/`、`src/types/`                                               |
-| 新增或调整全局 composable    | `src/composables/`、`src/stores/`、`src/types/`                           |
-| 修改公共组件                 | `src/components/`、`src/assets/components/`、`src/styles/`                |
-| 修改主题或 Element Plus 外观 | `src/styles/theme-*.css`、`src/styles/element-plus/`                      |
-| 修改地图或三维能力           | `src/utils/initEarth.ts`、相关模型、组件或页面，并核对实例生命周期        |
-| 修改类型                     | `src/types/`、`src/types/index.ts`、`scripts/check-types-conventions.mjs` |
-| 修改构建配置                 | `vite.config.ts`、`tsconfig*.json`、`package.json`                        |
-| 增加或调整测试               | `tests/`、对应实现和 `package.json` scripts                               |
+| 任务                         | 优先检查                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 新增或调整页面               | `src/views/`、`src/router/`、`src/assets/pages/`、`src/types/pages/`                                          |
+| 新增后端接口                 | `src/apis/`、`src/mocks/`、`src/mockData/`、`src/types/apis/`、`src/utils/request.ts`                         |
+| 调整本地 HTTP Mock           | `src/mockData/`、`scripts/mock-server.mjs`、`scripts/dev.mjs`、`public/configs/domainConfig.js`（仅人工修改） |
+| 调整共享状态                 | `src/stores/`、`src/types/`                                                                                   |
+| 新增或调整全局 composable    | `src/composables/`、`src/stores/`、`src/types/`                                                               |
+| 修改公共组件                 | `src/components/`、`src/assets/components/`、`src/styles/`                                                    |
+| 修改主题或 Element Plus 外观 | `src/styles/theme-*.css`、`src/styles/element-plus/`                                                          |
+| 修改地图或三维能力           | `src/utils/initEarth.ts`、相关模型、组件或页面，并核对实例生命周期                                            |
+| 修改类型                     | `src/types/`、`src/types/index.ts`、`scripts/check-types-conventions.mjs`                                     |
+| 修改构建配置                 | `vite.config.ts`、`tsconfig*.json`、`package.json`                                                            |
+| 增加或调整测试               | `tests/`、对应实现和 `package.json` scripts                                                                   |
 
 ### 3.4. 函数规范
 
