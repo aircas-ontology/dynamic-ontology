@@ -1,7 +1,5 @@
 import type { RouteRecordRaw } from "vue-router";
 
-const emptyWorkspacePanel = () => import("@/views/OntologySpaceManagementDetail/components/EmptyWorkspacePanel.vue");
-
 export const workspaceRoutes: RouteRecordRaw[] = [
   {
     path: "/workspace",
@@ -62,7 +60,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "behavior-schedule",
             name: "OntologySpaceManagementDetailBehaviorSchedule",
-            component: emptyWorkspacePanel,
+            component: () => import("@/views/OntologySpaceManagementDetail/behaviorScheduleComponents/SpaceBehaviorScheduleWorkspace.vue"),
             meta: { title: "空间内管理", workspaceTab: "behavior-schedule" },
           },
           {
