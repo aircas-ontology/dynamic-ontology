@@ -29,38 +29,37 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "overview",
             name: "OntologySpaceManagementDetailOverview",
-            component: () => import("@/views/OntologySpaceManagementDetail/components/SpaceOverviewPanel.vue"),
+            component: () => import("@/views/OntologySpaceManagementDetail/components/SpaceOverviewPanel/index.vue"),
             meta: { title: "空间内管理", workspaceTab: "overview" },
           },
           {
             path: "object",
             name: "OntologySpaceManagementDetailObject",
-            component: () => import("@/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue"),
+            component: () => import("@/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue"),
             meta: { title: "空间内管理", workspaceTab: "object" },
           },
           {
             path: "relation",
             name: "OntologySpaceManagementDetailRelation",
-            component: () => import("@/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue"),
+            component: () => import("@/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue"),
             meta: { title: "空间内管理", workspaceTab: "relation" },
           },
           {
             path: "function-operator",
             name: "OntologySpaceManagementDetailFunctionOperator",
-            // 待修改component路径应为index.vue文件结尾
-            component: () => import("@/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel.vue"),
+            component: () => import("@/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel/index.vue"),
             meta: { title: "空间内管理", workspaceTab: "function-operator" },
           },
           {
             path: "behavior",
             name: "OntologySpaceManagementDetailBehavior",
-            component: () => import("@/views/OntologySpaceManagementDetail/behaviorComponents/SpaceBehaviorWorkspace.vue"),
+            component: () => import("@/views/OntologySpaceManagementDetail/behaviorComponents/SpaceBehaviorWorkspace/index.vue"),
             meta: { title: "空间内管理", workspaceTab: "behavior" },
           },
           {
             path: "behavior-schedule",
             name: "OntologySpaceManagementDetailBehaviorSchedule",
-            component: () => import("@/views/OntologySpaceManagementDetail/behaviorScheduleComponents/SpaceBehaviorScheduleWorkspace.vue"),
+            component: () => import("@/views/OntologySpaceManagementDetail/behaviorScheduleComponents/SpaceBehaviorScheduleWorkspace/index.vue"),
             meta: { title: "空间内管理", workspaceTab: "behavior-schedule" },
           },
           {
@@ -87,26 +86,25 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "object",
             name: "OntologyObjectDetailObject",
-            component: () => import("@/views/OntologyObjectDetail/components/OntologyObjectOverviewPanel.vue"),
+            component: () => import("@/views/OntologyObjectDetail/components/OntologyObjectOverviewPanel/index.vue"),
             meta: { title: "本体对象详情", objectDetailTab: "object" },
           },
           {
             path: "attribute",
             name: "OntologyObjectDetailAttribute",
-            component: () => import("@/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue"),
+            component: () => import("@/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue"),
             meta: { title: "本体对象详情", objectDetailTab: "attribute" },
           },
           {
             path: "relation",
             name: "OntologyObjectDetailRelation",
-            // 待修改component路径应为index.vue文件结尾
-            component: () => import("@/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue"),
+            component: () => import("@/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue"),
             meta: { title: "本体对象详情", objectDetailTab: "relation" },
           },
           {
             path: "behavior",
             name: "OntologyObjectDetailBehavior",
-            component: () => import("@/views/OntologyObjectDetail/behaviorComponents/ObjectBehaviorWorkspace.vue"),
+            component: () => import("@/views/OntologyObjectDetail/behaviorComponents/ObjectBehaviorWorkspace/index.vue"),
             meta: { title: "本体对象详情", objectDetailTab: "behavior" },
           },
         ],

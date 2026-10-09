@@ -19,7 +19,7 @@ test("relation child route points to the space relation workspace component", ()
   const route = router.resolve({ name: "OntologySpaceManagementDetailRelation", params: { spaceId: "army" } });
   assert.equal(route.path, "/workspace/ontology-space-management/army/relation");
   const source = readFileSync(new URL("../src/router/modules/workspaceRoutes.ts", import.meta.url), "utf8");
-  assert.match(source, /SpaceRelationWorkspace\.vue/);
+  assert.match(source, /SpaceRelationWorkspace\/index\.vue/);
 });
 
 test("hop filter keeps only adjacent layers from the seed", () => {
@@ -115,7 +115,10 @@ test("relation object options mapper collects ontology meta display names from t
 
 test("relation workspace loads object options from the object category tree api", () => {
   const workspaceSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useSpaceRelationWorkspace.ts", import.meta.url), "utf8");
-  const pageSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue", import.meta.url), "utf8");
+  const pageSource = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue", import.meta.url),
+    "utf8",
+  );
   const formSource = readFileSync(
     new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationFormDialog.vue", import.meta.url),
     "utf8",
@@ -172,7 +175,7 @@ test("relation form category is required for create and edit", () => {
 test("clicking a relation leaf in the category tree opens the relation editor", () => {
   const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationCategoryPanel.vue", import.meta.url), "utf8");
   const workspaceSource = readFileSync(
-    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue", import.meta.url),
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue", import.meta.url),
     "utf8",
   );
 
@@ -196,7 +199,7 @@ test("object detail relation route reuses the space relation workspace component
   });
   assert.equal(route.path, "/workspace/ontology-object/obj-1/relation");
   const source = readFileSync(new URL("../src/router/modules/workspaceRoutes.ts", import.meta.url), "utf8");
-  assert.match(source, /name:\s*"OntologyObjectDetailRelation"[\s\S]*SpaceRelationWorkspace\.vue/);
+  assert.match(source, /name:\s*"OntologyObjectDetailRelation"[\s\S]*SpaceRelationWorkspace\/index\.vue/);
 });
 
 test("relation route context resolves space id and object filter seed", async () => {
@@ -219,7 +222,10 @@ test("relation route context resolves space id and object filter seed", async ()
 });
 
 test("space and object relation pages use the prototype panel and graph backgrounds", () => {
-  const workspace = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue", import.meta.url), "utf8");
+  const workspace = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue", import.meta.url),
+    "utf8",
+  );
   const categoryPanel = readFileSync(
     new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationCategoryPanel.vue", import.meta.url),
     "utf8",
@@ -249,7 +255,10 @@ test("space and object relation pages use the prototype panel and graph backgrou
 });
 
 test("relation module buttons use the space management theme tones", () => {
-  const workspace = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue", import.meta.url), "utf8");
+  const workspace = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue", import.meta.url),
+    "utf8",
+  );
   const categoryPanel = readFileSync(
     new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationCategoryPanel.vue", import.meta.url),
     "utf8",

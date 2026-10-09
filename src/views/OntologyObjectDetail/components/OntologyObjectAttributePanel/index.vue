@@ -100,15 +100,15 @@ import type {
   OntologyAttributePropertyTreeNode,
 } from "@/types";
 import { useRoute } from "vue-router";
-import { useAttributeCategoryTree } from "../composables/useAttributeCategoryTree";
-import { useAttributePropertyList } from "../composables/useAttributePropertyList";
-import { collectPropertyItemsFromTree, findCategory, filterCategoryNode, mapOntologyPropertyItem } from "../utils/attributePanelHelpers";
-import AttributeCategoryCreateDialog from "./AttributeCategoryCreateDialog.vue";
-import AttributeCategoryEditDialog from "./AttributeCategoryEditDialog.vue";
-import AttributeCategoryTree from "./AttributeCategoryTree.vue";
-import AttributePropertyFormDialog from "./AttributePropertyFormDialog.vue";
-import AttributePropertyTable from "./AttributePropertyTable.vue";
-import DataSourceAssociateDialog from "./DataSourceAssociateDialog.vue";
+import { useAttributeCategoryTree } from "../../composables/useAttributeCategoryTree";
+import { useAttributePropertyList } from "../../composables/useAttributePropertyList";
+import { collectPropertyItemsFromTree, findCategory, filterCategoryNode, mapOntologyPropertyItem } from "../../utils/attributePanelHelpers";
+import AttributeCategoryCreateDialog from "../AttributeCategoryCreateDialog.vue";
+import AttributeCategoryEditDialog from "../AttributeCategoryEditDialog.vue";
+import AttributeCategoryTree from "../AttributeCategoryTree.vue";
+import AttributePropertyFormDialog from "../AttributePropertyFormDialog.vue";
+import AttributePropertyTable from "../AttributePropertyTable.vue";
+import DataSourceAssociateDialog from "../DataSourceAssociateDialog.vue";
 
 interface DataSourceField {
   id: string;
@@ -273,7 +273,7 @@ function resolvePropertyDataSourceBind(propertyId: string): PropertyDataSourceBi
     const table = database.tables.find((item) => item.dataSourceId === dataSourceId);
     const field = table?.fields.find((item) => item.name === columnName);
     if (!table || !field) continue;
-  return {
+    return {
       databaseId: database.id,
       databaseName: database.name,
       schemaName: table.schemaName,
@@ -457,7 +457,7 @@ async function handleDataSourceSubmit(payloads: PropertyBindPayload[]) {
     if (!attribute) {
       dataSourceDialogRef.value?.setLoading(false);
       ElMessage.error("未找到待关联的本体属性，请重新打开弹窗后再试。");
-    return;
+      return;
     }
     params.push({
       uniqueIdentifier: attribute.uniqueIdentifier,

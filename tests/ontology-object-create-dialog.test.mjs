@@ -31,7 +31,7 @@ test("ontology object create dialog exposes prototype creation modes and require
 });
 
 test("object workspace routes create action to the dialog and separates manual api submission", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const source = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
   const objectActions = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
   assert.match(source, /:category-tree="workspaceTree"/);
   assert.match(source, /@submit-manual="createOntologyObject"/);
@@ -64,7 +64,7 @@ test("clicking a tree object node navigates to the object detail page", () => {
   const treeSource = readSource("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue");
   assert.match(treeSource, /"select-object": \[object: OntologyConceptObjectRef\]/);
   assert.match(treeSource, /emit\("select-object", \{ uniqueIdentifier: value\.objectId, displayName: value\.label \}\)/);
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
   assert.match(panelSource, /@select-object="openObjectDetailFromTree"/);
   assert.match(panelSource, /name: "OntologyObjectDetail", params: \{ objectId \}/);
 });

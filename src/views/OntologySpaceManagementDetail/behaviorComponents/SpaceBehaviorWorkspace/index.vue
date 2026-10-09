@@ -75,16 +75,16 @@ import { ElMessage } from "element-plus";
 import type { SpaceBehaviorDraft, SpaceBehaviorItem, SpaceBehaviorStatusChangeDraft } from "@/types";
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
-import { useSpaceBehaviorWorkspace } from "../composables/useSpaceBehaviorWorkspace";
-import { createSpaceBehaviorDeletePreflight, findSpaceBehaviorCategoryNode, flattenSpaceBehaviorCategoryOptions } from "../utils/spaceBehaviorOperations";
-import BehaviorCategoryPanel from "./BehaviorCategoryPanel.vue";
-import BehaviorListPanel from "./BehaviorListPanel.vue";
-import BehaviorCategoryFormDialog from "./BehaviorCategoryFormDialog.vue";
-import BehaviorCategoryDeleteDialog from "./BehaviorCategoryDeleteDialog.vue";
-import BehaviorFormDialog from "./BehaviorFormDialog.vue";
-import BehaviorDetailDrawer from "./BehaviorDetailDrawer.vue";
-import BehaviorStatusDialog from "./BehaviorStatusDialog.vue";
-import BehaviorDeleteDialog from "./BehaviorDeleteDialog.vue";
+import { useSpaceBehaviorWorkspace } from "../../composables/useSpaceBehaviorWorkspace";
+import { createSpaceBehaviorDeletePreflight, findSpaceBehaviorCategoryNode, flattenSpaceBehaviorCategoryOptions } from "../../utils/spaceBehaviorOperations";
+import BehaviorCategoryPanel from "../BehaviorCategoryPanel.vue";
+import BehaviorListPanel from "../BehaviorListPanel.vue";
+import BehaviorCategoryFormDialog from "../BehaviorCategoryFormDialog.vue";
+import BehaviorCategoryDeleteDialog from "../BehaviorCategoryDeleteDialog.vue";
+import BehaviorFormDialog from "../BehaviorFormDialog.vue";
+import BehaviorDetailDrawer from "../BehaviorDetailDrawer.vue";
+import BehaviorStatusDialog from "../BehaviorStatusDialog.vue";
+import BehaviorDeleteDialog from "../BehaviorDeleteDialog.vue";
 
 const {
   status,

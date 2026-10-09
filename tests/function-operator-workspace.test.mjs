@@ -26,7 +26,7 @@ test("function-operator route mounts FunctionOperatorPanel", () => {
     /path:\s*"function-operator"[\s\S]*?meta:\s*\{\s*title:\s*"空间内管理",\s*workspaceTab:\s*"function-operator"\s*\}/,
   );
   assert.ok(functionOperatorBlock, "function-operator route block missing");
-  assert.match(functionOperatorBlock[0], /FunctionOperatorPanel\.vue/);
+  assert.match(functionOperatorBlock[0], /FunctionOperatorPanel\/index\.vue/);
   assert.doesNotMatch(functionOperatorBlock[0], /emptyWorkspacePanel/);
 });
 
@@ -87,7 +87,7 @@ test("function operator mock seeds basic operators and supports create", () => {
 
 test("function operator panel wires workspace composable and basic form", () => {
   const typeSource = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel.vue");
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel/index.vue");
   const formSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorFormDialog.vue");
   assert.match(panelSource, /useFunctionOperatorWorkspace/);
   assert.match(panelSource, /<el-date-picker[\s\S]*class="aircas-input function-operator-panel__date"[\s\S]*popper-class="aircas-picker"/);

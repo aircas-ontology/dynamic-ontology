@@ -35,7 +35,7 @@ test("space behavior route mounts the behavior workspace instead of the empty pa
   const routeSource = readSource("../src/router/modules/workspaceRoutes.ts");
   const behaviorBlock = routeSource.match(/path:\s*"behavior"[\s\S]*?workspaceTab:\s*"behavior"/);
   assert.ok(behaviorBlock, "behavior route block missing");
-  assert.match(behaviorBlock[0], /SpaceBehaviorWorkspace\.vue/);
+  assert.match(behaviorBlock[0], /SpaceBehaviorWorkspace\/index\.vue/);
   assert.doesNotMatch(behaviorBlock[0], /emptyWorkspacePanel/);
 });
 
@@ -47,10 +47,10 @@ test("object behavior route mounts its independent behavior workspace", () => {
 
   const routeSource = readSource("../src/router/modules/workspaceRoutes.ts");
   const objectBehaviorBlock = routeSource.match(/name:\s*"OntologyObjectDetailBehavior"[\s\S]*?objectDetailTab:\s*"behavior"/)?.[0] ?? "";
-  assert.match(objectBehaviorBlock, /OntologyObjectDetail\/behaviorComponents\/ObjectBehaviorWorkspace\.vue/);
+  assert.match(objectBehaviorBlock, /OntologyObjectDetail\/behaviorComponents\/ObjectBehaviorWorkspace\/index\.vue/);
   assert.doesNotMatch(objectBehaviorBlock, /SpaceBehaviorWorkspace|emptyWorkspacePanel/);
 
-  const workspaceSource = readSource("../src/views/OntologyObjectDetail/behaviorComponents/ObjectBehaviorWorkspace.vue");
+  const workspaceSource = readSource("../src/views/OntologyObjectDetail/behaviorComponents/ObjectBehaviorWorkspace/index.vue");
   const composableSource = readSource("../src/views/OntologyObjectDetail/composables/useObjectBehaviorWorkspace.ts");
   assert.match(workspaceSource, /ObjectBehaviorCategoryPanel/);
   assert.match(workspaceSource, /ObjectBehaviorListPanel/);
@@ -65,7 +65,7 @@ test("object behavior route mounts its independent behavior workspace", () => {
 });
 
 test("space behavior workspace uses shared tree and relation table surfaces", () => {
-  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/SpaceBehaviorWorkspace.vue");
+  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/SpaceBehaviorWorkspace/index.vue");
   const treeSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorCategoryPanel.vue");
   const listSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorListPanel.vue");
 
@@ -93,7 +93,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   const formSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorFormDialog.vue");
   const drawerSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorDetailDrawer.vue");
   const deleteSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorDeleteDialog.vue");
-  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/SpaceBehaviorWorkspace.vue");
+  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/SpaceBehaviorWorkspace/index.vue");
 
   assert.match(formSource, /创建行为/);
   assert.match(formSource, /草稿配置/);

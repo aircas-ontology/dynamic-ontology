@@ -28,8 +28,8 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { Connection, Cpu, Grid, Share, Timer } from "@element-plus/icons-vue";
 import type { ManagementWorkspaceTab } from "@/types";
-import { useSpaceOverview } from "../composables/useSpaceOverview";
-import { formatOverviewStat } from "../utils/overviewStats";
+import { useSpaceOverview } from "../../composables/useSpaceOverview";
+import { formatOverviewStat } from "../../utils/overviewStats";
 
 const route = useRoute();
 const spaceId = computed(() => String(route.params.spaceId || ""));

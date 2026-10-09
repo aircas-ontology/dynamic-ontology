@@ -16,15 +16,20 @@ src/views/
 └─ <PageName>/
    ├─ index.vue
    ├─ components/
+   │  └─ <RoutePanelName>/
+   │     └─ index.vue
    ├─ <business>Components/
+   │  └─ <RoutePanelName>/
+   │     └─ index.vue
    ├─ composables/
    └─ utils/
 ```
 
 - 【必须】每个页面目录包含一个 `index.vue`，作为页面主入口并统一引入、组合页面内部组件。
 - 【必须】页面目录和页面组件文件使用 PascalCase，入口使用生态约定的 `index.vue`。
+- 【必须】被路由直接挂载的面板（含嵌套子路由）使用 `<PanelName>/index.vue`，路由懒加载路径以 `index.vue` 结尾；非路由挂载的私有子组件可保持单文件 `.vue`。
 - 【优先】页面私有组件按业务职责放入 `components`、`<business>Components` 等目录，只在确有拆分需要时创建。
-- 【优先】不同业务组件目录之间避免互相引用，由 `index.vue` 负责组合；确需共同使用的页面私有组件应调整到双方都可依赖的页面级 `components` 中。
+- 【优先】不同业务组件目录之间避免互相引用，由页面 `index.vue` 负责组合；确需共同使用的页面私有组件应调整到双方都可依赖的页面级 `components` 中。
 - 【必须】页面专属工具函数放入页面的 `utils`，页面专属 composables 放入页面的 `composables`。
 - 【必须】页面专属资源统一放入 `src/assets/pages/<pageName>`，其中资源目录使用小驼峰。
 - 【禁止】新建 `src/views/<PageName>/assets`。

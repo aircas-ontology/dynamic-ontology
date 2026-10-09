@@ -165,14 +165,14 @@ import {
   putUpdateOntologyRelationCategoryNameInterface,
 } from "@/apis";
 import AircasLoading from "@/components/AircasLoading.vue";
-import { useSpaceRelationWorkspace } from "../composables/useSpaceRelationWorkspace";
-import { collectCategoryIds, findRelationCategoryNode } from "../utils/relationOperations";
-import RelationCategoryPanel from "./RelationCategoryPanel.vue";
-import RelationGraphView from "./RelationGraphView.vue";
-import RelationCategoryFormDialog from "./RelationCategoryFormDialog.vue";
-import RelationCategoryDeleteDialog from "./RelationCategoryDeleteDialog.vue";
-import RelationDeleteDialog from "./RelationDeleteDialog.vue";
-import SpaceRelationFormDialog from "./SpaceRelationFormDialog.vue";
+import { useSpaceRelationWorkspace } from "../../composables/useSpaceRelationWorkspace";
+import { collectCategoryIds, findRelationCategoryNode } from "../../utils/relationOperations";
+import RelationCategoryPanel from "../RelationCategoryPanel.vue";
+import RelationGraphView from "../RelationGraphView.vue";
+import RelationCategoryFormDialog from "../RelationCategoryFormDialog.vue";
+import RelationCategoryDeleteDialog from "../RelationCategoryDeleteDialog.vue";
+import RelationDeleteDialog from "../RelationDeleteDialog.vue";
+import SpaceRelationFormDialog from "../SpaceRelationFormDialog.vue";
 
 const {
   status,

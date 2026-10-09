@@ -29,7 +29,7 @@ test("update ontology object api follows the documented PUT contract", () => {
 });
 
 test("object edit action opens a prefilled dialog and refreshes after success", () => {
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
   const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
   const dialogSource = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectCreateDialog.vue");
 

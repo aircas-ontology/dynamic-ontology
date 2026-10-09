@@ -21,7 +21,7 @@ src/mockData/
 ```
 
 - 【必须】`routes.json` 声明 `method`、`path`、`file`；登录路由可附带 `headers`。
-- 【必须】fixture 文件使用 kebab-case 或接口语义文件名，并以 `.json` 结尾。
+- 【必须】fixture 文件使用接口语义文件名，文件名规范`***.get|post|put|delete.json`。
 - 【优先】写接口首批复用 `fixtures/common/success.json`，不在 Mock 服务内落盘修改数据。
 
 ## 3. 路由匹配

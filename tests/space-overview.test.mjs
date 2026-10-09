@@ -21,7 +21,7 @@ test("space overview loader does not fall back to mock data on failure", () => {
   assert.match(source, /空间统计加载失败/);
 });
 test("overview stat cards use a tinted background for each resource tone", () => {
-  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/SpaceOverviewPanel.vue", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/SpaceOverviewPanel/index.vue", import.meta.url), "utf8");
   assert.match(source, /linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
   assert.match(
     source,

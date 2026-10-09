@@ -49,7 +49,7 @@ describe("create ontology link api", () => {
   });
 
   test("relation workspace create posts link api then reloads workspace", () => {
-    const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue");
+    const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue");
     assert.match(workspaceSource, /postCreateOntologyLinkInterface/);
     assert.match(workspaceSource, /ontologyUniqueIdentifierFrom/);
     assert.match(workspaceSource, /ontologyUniqueIdentifierTo/);

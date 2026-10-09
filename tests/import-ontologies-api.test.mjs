@@ -56,7 +56,7 @@ test("import ontologies mock uses the structural empty data object", () => {
 test("object create dialog import mode submits the selected file to the import api", () => {
   const dialogSource = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectCreateDialog.vue");
   const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
   assert.match(dialogSource, /emit\(\s*"submit-import",\s*importFile\.value\s*\)/);
   assert.match(dialogSource, /请先选择文件。/);
   assert.doesNotMatch(dialogSource, /JSON\.parse/);

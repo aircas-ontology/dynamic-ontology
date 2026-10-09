@@ -45,7 +45,7 @@ test("apis barrel exports the ontology export interface in dictionary order", ()
 
 test("object card and list export confirms before calling the ontology export api", () => {
   const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
   const dialogSource = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectExportDialog.vue");
   assert.match(actionsSource, /function openOntologyObjectExportDialog/);
   assert.match(actionsSource, /function confirmExportOntologyObject\(exportType: OntologyExportType\)/);

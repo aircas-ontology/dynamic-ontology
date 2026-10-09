@@ -28,7 +28,7 @@ test("object detail child router-view keys panel by objectId and route name", ()
 });
 
 test("object attribute panel exposes category tree, property columns, and local actions", () => {
-  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
   const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
   const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
   const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
@@ -72,7 +72,7 @@ test("object attribute panel exposes category tree, property columns, and local 
 
 test("clicking a property node in the category tree opens the attribute editor", () => {
   const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
-  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
 
   assert.match(treeSource, /@node-click="handleCategoryTreeNodeClick"/);
   assert.match(treeSource, /"edit-attribute": \[data: OntologyAttributePropertyTreeNode\]/);
@@ -170,7 +170,7 @@ test("attribute form rejects a second primary key or name key on the same object
 
   const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
   const listSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
-  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
   assert.match(formSource, /@update:model-value="\$emit\('update-primary', \$event === true\)"/);
   assert.match(formSource, /@update:model-value="\$emit\('update-name-key', \$event === true\)"/);
   assert.match(listSource, /function updateDraftPrimaryKey/);
@@ -235,7 +235,7 @@ test("attribute page uses the prototype panel, button, and table surfaces", () =
 });
 
 test("attribute layout uses a 360px tree, zebra rows, and prototype detail tabs", () => {
-  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
   const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
   const tabsSource = readSource("../src/views/OntologyObjectDetail/components/ObjectDetailTabs.vue");
 

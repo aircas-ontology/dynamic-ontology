@@ -70,7 +70,7 @@ test("missing category tree data opens an add dialog instead of a load error", (
     new URL("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts", import.meta.url),
     "utf8",
   );
-  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue", import.meta.url), "utf8");
+  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue", import.meta.url), "utf8");
   const treeSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue", import.meta.url), "utf8");
   const dialogSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/CategoryTreeCreateDialog.vue", import.meta.url), "utf8");
   assert.match(workspaceSource, /isMissingOntologyCategoryTreeData/);
@@ -86,7 +86,7 @@ test("missing category tree data opens an add dialog instead of a load error", (
 test("root concept node opens a child category name dialog", () => {
   const treeSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue", import.meta.url), "utf8");
   const dialogSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/CategoryTreeChildDialog.vue", import.meta.url), "utf8");
-  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue", import.meta.url), "utf8");
+  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue", import.meta.url), "utf8");
   const actionsSource = readFileSync(
     new URL("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts", import.meta.url),
     "utf8",
@@ -117,7 +117,7 @@ test("object workspace composable loads the category tree api instead of navy mo
 });
 
 test("object workspace panel delegates category and object commands to split composables", () => {
-  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue", import.meta.url), "utf8");
+  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue", import.meta.url), "utf8");
   const categoryActionsSource = readFileSync(
     new URL("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts", import.meta.url),
     "utf8",

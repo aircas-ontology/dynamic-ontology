@@ -104,14 +104,14 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
 });
 
 test("function operator panel displays updatedAt from list mapping", () => {
-  const panel = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel.vue");
+  const panel = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel/index.vue");
   assert.match(panel, /\{\{\s*operator\.updatedAt\s*\}\}/);
   assert.match(panel, /prop="updatedAt"/);
 });
 
 test("function operator workspace loads list from getOntologyFunctionListInterface", () => {
   const workspace = readSource("../src/views/OntologySpaceManagementDetail/composables/useFunctionOperatorWorkspace.ts");
-  const panel = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel.vue");
+  const panel = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel/index.vue");
   assert.match(workspace, /getOntologyFunctionListInterface/);
   assert.match(workspace, /mapOntologyFunctionListItem/);
   assert.match(workspace, /pageNum/);

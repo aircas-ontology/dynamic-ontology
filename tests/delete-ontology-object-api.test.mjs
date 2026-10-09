@@ -29,7 +29,7 @@ test("delete ontology object api follows the documented DELETE path contract", (
 });
 
 test("object delete action opens a confirmation dialog and refreshes after success", () => {
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
+  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
   const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
   const dialogSource = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectDeleteDialog.vue");
 

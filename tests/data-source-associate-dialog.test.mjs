@@ -95,7 +95,7 @@ test("data source mapping dialog delegates automatic binding to the parent", () 
 
 test("data source mapping tables mark primary and name keys beside field names", () => {
   const dialog = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
-  const panel = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const panel = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
 
   assert.match(dialog, /function formatDatasourceKeyMarks/);
   assert.match(dialog, /marks\.push\("（主）"\)/);
@@ -118,9 +118,9 @@ test("data source mapping dialog dropdowns hide fields that are already associat
 });
 
 test("attribute panel wires api catalog and all properties to the data source mapping dialog", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
   const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
-  assert.match(source, /import DataSourceAssociateDialog from "\.\/DataSourceAssociateDialog\.vue"/);
+  assert.match(source, /import DataSourceAssociateDialog from "\.\.\/DataSourceAssociateDialog\.vue"/);
   assert.match(source, /const dataSourceDialogVisible = ref\(false\)/);
   assert.match(source, /:catalog="dataSourceCatalog"/);
   assert.match(source, /:properties="ontologyPropertyMappings"/);
@@ -136,7 +136,7 @@ test("attribute panel wires api catalog and all properties to the data source ma
 });
 
 test("attribute panel loads property datasource info before opening the dialog", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
   const openSource = source.match(/async function openDataSource\(\)[\s\S]*?async function loadDataSourceTables/)?.[0] ?? "";
 
   assert.match(source, /getOntologyPropertyDetailByOntologyIdInterface/);
@@ -155,7 +155,7 @@ test("attribute panel loads property datasource info before opening the dialog",
 });
 
 test("attribute panel persists local datasource drafts only from dialog submit", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
   const submitSource = source.match(/async function handleDataSourceSubmit[\s\S]*?\n}/)?.[0] ?? "";
 
   assert.match(source, /putBatchUpdateOntologyPropertiesInterface/);
@@ -171,7 +171,7 @@ test("attribute panel persists local datasource drafts only from dialog submit",
 });
 
 test("attribute panel handles automatic datasource binding without closing the dialog", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel.vue");
+  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
   const autoSource = source.match(/async function handleAutoDataSourceAssociate\(\)[\s\S]*?\n}/)?.[0] ?? "";
   assert.match(source, /autoBindOntologyPropertyDatasourceInterface/);
   assert.match(source, /@auto-associate="handleAutoDataSourceAssociate"/);

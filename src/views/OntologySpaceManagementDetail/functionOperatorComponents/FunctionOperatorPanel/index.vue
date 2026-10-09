@@ -239,10 +239,10 @@ import type { FunctionOperator, FunctionOperatorStatus } from "@/types";
 import { FUNCTION_OPERATOR_STATUS_LABELS, FUNCTION_OPERATOR_STATUS_OPTIONS, FUNCTION_OPERATOR_TYPE_LABELS, FUNCTION_OPERATOR_TYPE_OPTIONS } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 
-import { useFunctionOperatorWorkspace } from "../composables/useFunctionOperatorWorkspace";
-import FunctionOperatorDeleteDialog from "./FunctionOperatorDeleteDialog.vue";
-import FunctionOperatorDetailDrawer from "./FunctionOperatorDetailDrawer.vue";
-import FunctionOperatorFormDialog from "./FunctionOperatorFormDialog.vue";
+import { useFunctionOperatorWorkspace } from "../../composables/useFunctionOperatorWorkspace";
+import FunctionOperatorDeleteDialog from "../FunctionOperatorDeleteDialog.vue";
+import FunctionOperatorDetailDrawer from "../FunctionOperatorDetailDrawer.vue";
+import FunctionOperatorFormDialog from "../FunctionOperatorFormDialog.vue";
 
 const {
   spaceId,
