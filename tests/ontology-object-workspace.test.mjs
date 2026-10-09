@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { workspaceRoutes } from "../src/router/modules/workspaceRoutes.ts";
-import { filterConceptTree, findObjectWorkspace, makeCategoryLocationTarget } from "../src/views/OntologySpaceManagementDetail/utils/objectWorkspace.ts";
+import { filterConceptTree, findObjectWorkspace, makeCategoryLocationTarget } from "../src/views/ObjectWorkspacePanel/utils/objectWorkspace.ts";
 
 const sampleWorkspaces = [
   {
@@ -66,13 +66,10 @@ test("concept tree search retains matching ancestors and category anchor request
 });
 
 test("missing category tree data opens an add dialog instead of a load error", () => {
-  const workspaceSource = readFileSync(
-    new URL("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts", import.meta.url),
-    "utf8",
-  );
-  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue", import.meta.url), "utf8");
-  const treeSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue", import.meta.url), "utf8");
-  const dialogSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/CategoryTreeCreateDialog.vue", import.meta.url), "utf8");
+  const workspaceSource = readFileSync(new URL("../src/views/ObjectWorkspacePanel/composables/useOntologyObjectWorkspace.ts", import.meta.url), "utf8");
+  const panelSource = readFileSync(new URL("../src/views/ObjectWorkspacePanel/index.vue", import.meta.url), "utf8");
+  const treeSource = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/ConceptHierarchyTree.vue", import.meta.url), "utf8");
+  const dialogSource = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/CategoryTreeCreateDialog.vue", import.meta.url), "utf8");
   assert.match(workspaceSource, /isMissingOntologyCategoryTreeData/);
   assert.match(workspaceSource, /createEmptyObjectWorkspace\(id\)/);
   assert.match(treeSource, /添加分类树/);
@@ -84,13 +81,10 @@ test("missing category tree data opens an add dialog instead of a load error", (
 });
 
 test("root concept node opens a child category name dialog", () => {
-  const treeSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue", import.meta.url), "utf8");
-  const dialogSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/CategoryTreeChildDialog.vue", import.meta.url), "utf8");
-  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue", import.meta.url), "utf8");
-  const actionsSource = readFileSync(
-    new URL("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts", import.meta.url),
-    "utf8",
-  );
+  const treeSource = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/ConceptHierarchyTree.vue", import.meta.url), "utf8");
+  const dialogSource = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/CategoryTreeChildDialog.vue", import.meta.url), "utf8");
+  const panelSource = readFileSync(new URL("../src/views/ObjectWorkspacePanel/index.vue", import.meta.url), "utf8");
+  const actionsSource = readFileSync(new URL("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceCategoryActions.ts", import.meta.url), "utf8");
   assert.doesNotMatch(treeSource, /isRootConceptNode/);
   assert.match(treeSource, /openChildCategoryDialog\(data\)/);
   assert.match(treeSource, /aria-label="新建子分类"/);
@@ -107,7 +101,7 @@ test("root concept node opens a child category name dialog", () => {
 });
 
 test("object workspace composable loads the category tree api instead of navy mock data", () => {
-  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../src/views/ObjectWorkspacePanel/composables/useOntologyObjectWorkspace.ts", import.meta.url), "utf8");
   assert.match(source, /getOntologyCategoryTreeInterface/);
   assert.match(source, /mapOntologyCategoryTree/);
   assert.match(source, /mapOntologyCategorySections/);
@@ -117,13 +111,13 @@ test("object workspace composable loads the category tree api instead of navy mo
 });
 
 test("object workspace panel delegates category and object commands to split composables", () => {
-  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue", import.meta.url), "utf8");
+  const panelSource = readFileSync(new URL("../src/views/ObjectWorkspacePanel/index.vue", import.meta.url), "utf8");
   const categoryActionsSource = readFileSync(
-    new URL("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts", import.meta.url),
+    new URL("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceCategoryActions.ts", import.meta.url),
     "utf8",
   );
   const objectActionsSource = readFileSync(
-    new URL("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts", import.meta.url),
+    new URL("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceObjectActions.ts", import.meta.url),
     "utf8",
   );
   assert.match(panelSource, /useObjectWorkspaceCategoryActions/);

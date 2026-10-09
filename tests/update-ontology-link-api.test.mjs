@@ -43,8 +43,8 @@ describe("update ontology link api", () => {
   });
 
   test("relation workspace edit puts link api then reloads workspace", () => {
-    const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue");
-    const formSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationFormDialog.vue");
+    const workspaceSource = readSource("../src/views/SpaceRelationWorkspace/index.vue");
+    const formSource = readSource("../src/views/SpaceRelationWorkspace/components/SpaceRelationFormDialog.vue");
     assert.match(workspaceSource, /putUpdateOntologyLinkInterface/);
     assert.match(workspaceSource, /uniqueIdentifier/);
     assert.match(workspaceSource, /await loadSpaceRelationWorkspace\(\)/);

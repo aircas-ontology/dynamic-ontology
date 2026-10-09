@@ -5,20 +5,20 @@ import test from "node:test";
 const readSource = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), "utf8");
 
 test("object cards hide the parent ontology row when none is available", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectList.vue");
+  const source = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue");
   assert.match(source, /parentDisplayName !== '无'/);
   assert.doesNotMatch(source, /父本体：—/);
   assert.doesNotMatch(source, /ontology-object-card__parent--placeholder/);
 });
 
 test("object table operation column keeps all actions on one line", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectList.vue");
+  const source = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue");
   assert.match(source, /<el-table-column label="操作" width="300" fixed="right">/);
   assert.match(source, /white-space:\s*nowrap/);
 });
 
 test("object card and table actions use the prototype button colors", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectList.vue");
+  const source = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue");
   assert.equal((source.match(/class="aircas-button ontology-object-action ontology-object-action--view"/g) || []).length, 1);
   assert.equal((source.match(/class="aircas-button ontology-object-action ontology-object-action--edit"/g) || []).length, 1);
   assert.equal((source.match(/class="aircas-button ontology-object-action ontology-object-action--export"/g) || []).length, 1);
@@ -40,7 +40,7 @@ test("object card and table actions use the prototype button colors", () => {
 });
 
 test("object list view switch matches the space list and create uses the detail tone", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectList.vue");
+  const source = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue");
   assert.match(source, /class="aircas-radio-group ontology-object-list__view-switch"/);
   assert.match(source, /el-radio-button value="card"/);
   assert.match(source, /el-radio-button value="table"/);
@@ -56,7 +56,7 @@ test("object list view switch matches the space list and create uses the detail 
 });
 
 test("object cards use the prototype inset background and image glow", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectList.vue");
+  const source = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue");
   assert.match(source, /background: var\(--aircas-color-card-background\)/);
   assert.match(source, /box-shadow: inset 0 0 20px var\(--aircas-color-page-glow\)/);
   assert.match(

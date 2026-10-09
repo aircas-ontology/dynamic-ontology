@@ -94,8 +94,8 @@ test("buildOntologyFunctionQueryConfig maps filters dataType and omits empty agg
 });
 
 test("function operator create form exposes aggFunc targetProperty and workspace posts create api", () => {
-  const formSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorFormDialog.vue");
-  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useFunctionOperatorWorkspace.ts");
+  const formSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue");
+  const workspaceSource = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
   const typeSource = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
   assert.match(typeSource, /aggFunc\?:/);
   assert.match(typeSource, /targetProperty\?:/);

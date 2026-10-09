@@ -27,10 +27,10 @@ test("ontology object query api follows the category endpoint contract", () => {
 });
 
 test("object workspace maps category tree metadata and anchors selected categories", () => {
-  const composableSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts");
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
-  const listSource = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectList.vue");
-  const mapperSource = readSource("../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts");
+  const composableSource = readSource("../src/views/ObjectWorkspacePanel/composables/useOntologyObjectWorkspace.ts");
+  const panelSource = readSource("../src/views/ObjectWorkspacePanel/index.vue");
+  const listSource = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue");
+  const mapperSource = readSource("../src/views/ObjectWorkspacePanel/utils/mapOntologyCategoryTree.ts");
 
   assert.match(composableSource, /mapOntologyCategorySections/);
   assert.doesNotMatch(composableSource, /getOntologyObjectByCategoryIdInterface/);

@@ -87,8 +87,8 @@ test("function operator mock seeds basic operators and supports create", () => {
 
 test("function operator panel wires workspace composable and basic form", () => {
   const typeSource = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel/index.vue");
-  const formSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorFormDialog.vue");
+  const panelSource = readSource("../src/views/FunctionOperatorPanel/index.vue");
+  const formSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue");
   assert.match(panelSource, /useFunctionOperatorWorkspace/);
   assert.match(panelSource, /<el-date-picker[\s\S]*class="aircas-input function-operator-panel__date"[\s\S]*popper-class="aircas-picker"/);
   assert.match(
@@ -122,7 +122,7 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(formSource, /请输入函数api名称/);
   assert.match(formSource, /v-model="form\.functionApi"[\s\S]*:disabled="Boolean\(operator\)"/);
   assert.match(typeSource, /functionApi:\s*string/);
-  const filterSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/BasicFilterGroupEditor.vue");
+  const filterSource = readSource("../src/views/FunctionOperatorPanel/components/BasicFilterGroupEditor.vue");
   assert.equal((filterSource.match(/<el-select/g) || []).length, 4);
   assert.equal((filterSource.match(/\sclass="aircas-select/g) || []).length, 4);
   assert.equal((filterSource.match(/popper-class="aircas-select-popper"/g) || []).length, 4);
@@ -133,7 +133,7 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(filterSource, /background: var\(--aircas-color-overlay\)/);
   assert.doesNotMatch(filterSource, /--aircas-color-panel-overlay/);
   assert.match(filterSource, /basic-filter-row__number[\s\S]*--el-fill-color-blank: var\(--aircas-color-input-background\)/);
-  const drawerSource = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorDetailDrawer.vue");
+  const drawerSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorDetailDrawer.vue");
   assert.match(drawerSource, /class="aircas-drawer function-operator-detail"/);
   assert.match(drawerSource, /class="aircas-descriptions function-operator-detail__meta"/);
   assert.match(

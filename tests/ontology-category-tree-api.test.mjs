@@ -65,7 +65,7 @@ test("category tree mock mirrors the contract sample with success message", () =
 });
 
 test("category tree mapper builds concept nodes with empty name and local meta count", async () => {
-  const mapperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts", import.meta.url);
+  const mapperUrl = new URL("../src/views/ObjectWorkspacePanel/utils/mapOntologyCategoryTree.ts", import.meta.url);
   assert.equal(existsSync(mapperUrl), true, "missing mapper file");
   const { mapOntologyCategoryTree } = await import(mapperUrl.href);
   const tree = mapOntologyCategoryTree({
@@ -85,7 +85,7 @@ test("category tree mapper builds concept nodes with empty name and local meta c
 });
 
 test("category tree mapper omits the synthetic all section from the right object list", async () => {
-  const mapperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts", import.meta.url);
+  const mapperUrl = new URL("../src/views/ObjectWorkspacePanel/utils/mapOntologyCategoryTree.ts", import.meta.url);
   const { mapOntologyCategorySections } = await import(mapperUrl.href);
   const sections = mapOntologyCategorySections({
     categoryId: 0,
@@ -107,7 +107,7 @@ test("category tree mapper omits the synthetic all section from the right object
 });
 
 test("category tree mapper shows objects attached to the all-categories root", async () => {
-  const mapperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts", import.meta.url);
+  const mapperUrl = new URL("../src/views/ObjectWorkspacePanel/utils/mapOntologyCategoryTree.ts", import.meta.url);
   const { mapOntologyCategorySections } = await import(mapperUrl.href);
   const sections = mapOntologyCategorySections({
     categoryId: 0,
@@ -126,7 +126,7 @@ test("category tree mapper shows objects attached to the all-categories root", a
 });
 
 test("object workspace loads category tree api into the left tree and maps metadata sections", () => {
-  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useOntologyObjectWorkspace.ts");
+  const workspaceSource = readSource("../src/views/ObjectWorkspacePanel/composables/useOntologyObjectWorkspace.ts");
   assert.match(workspaceSource, /getOntologyCategoryTreeInterface/);
   assert.match(workspaceSource, /mapOntologyCategoryTree/);
   assert.match(workspaceSource, /sections:\s*\[\]/);
@@ -137,7 +137,7 @@ test("create category tree api posts name, parentId and spaceId to the category 
   const apiSource = readSource("../src/apis/ontologyManageApi.ts");
   const typeSource = readSource("../src/types/apis/ontologyCategoryTreeType.ts");
   const mockSource = readSource("../src/mocks/ontologyCategoryTreeMock/ontologyCategoryTreeMock.ts");
-  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts");
+  const actionsSource = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceCategoryActions.ts");
   assert.match(
     apiSource,
     /export function postCreateOntologyCategoryTreeInterface\(payload: CreateOntologyCategoryTreeParams\): Promise<ApiResponse<undefined>>/,
@@ -158,7 +158,7 @@ test("delete category tree api sends spaceId and categoryId with delete", () => 
   const apiSource = readSource("../src/apis/ontologyManageApi.ts");
   const typeSource = readSource("../src/types/apis/ontologyCategoryTreeType.ts");
   const mockSource = readSource("../src/mocks/ontologyCategoryTreeMock/ontologyCategoryTreeMock.ts");
-  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts");
+  const actionsSource = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceCategoryActions.ts");
   assert.match(apiSource, /export function deleteOntologyCategoryTreeInterface\(payload: DeleteOntologyCategoryTreeParams\): Promise<ApiResponse<undefined>>/);
   assert.match(apiSource, /method:\s*"delete"/);
   assert.match(apiSource, /data: payload/);
@@ -174,7 +174,7 @@ test("update category name api puts spaceId, categoryId and name to the category
   const apiSource = readSource("../src/apis/ontologyManageApi.ts");
   const typeSource = readSource("../src/types/apis/ontologyCategoryTreeType.ts");
   const mockSource = readSource("../src/mocks/ontologyCategoryTreeMock/ontologyCategoryTreeMock.ts");
-  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceCategoryActions.ts");
+  const actionsSource = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceCategoryActions.ts");
   const barrelSource = readSource("../src/apis/index.ts");
   assert.match(
     apiSource,

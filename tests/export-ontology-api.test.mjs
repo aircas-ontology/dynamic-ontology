@@ -44,9 +44,9 @@ test("apis barrel exports the ontology export interface in dictionary order", ()
 });
 
 test("object card and list export confirms before calling the ontology export api", () => {
-  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
-  const dialogSource = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectExportDialog.vue");
+  const actionsSource = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceObjectActions.ts");
+  const panelSource = readSource("../src/views/ObjectWorkspacePanel/index.vue");
+  const dialogSource = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectExportDialog.vue");
   assert.match(actionsSource, /function openOntologyObjectExportDialog/);
   assert.match(actionsSource, /function confirmExportOntologyObject\(exportType: OntologyExportType\)/);
   assert.match(actionsSource, /getExportOntologyInterface\(\{ uniqueIdentifier, exportType \}\)/);
@@ -70,7 +70,7 @@ test("object card and list export confirms before calling the ontology export ap
 });
 
 test("ontology export file name prefers content disposition and falls back by content type", async () => {
-  const resolverUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/resolveExportOntologyFileName.ts", import.meta.url);
+  const resolverUrl = new URL("../src/views/ObjectWorkspacePanel/utils/resolveExportOntologyFileName.ts", import.meta.url);
   const { resolveExportOntologyFileName } = await import(resolverUrl.href);
   assert.equal(
     resolveExportOntologyFileName({

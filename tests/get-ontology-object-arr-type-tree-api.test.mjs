@@ -82,9 +82,9 @@ test("ontology object attribute category delete api follows the DELETE contract"
 });
 
 test("object attribute panel queries the category tree with the route object identifier", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributeCategoryTree.ts");
-  const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
-  const createDialogSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryCreateDialog.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributeCategoryTree.ts");
+  const treeSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeCategoryTree.vue");
+  const createDialogSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeCategoryCreateDialog.vue");
   assert.match(source, /getOntologyObjectArrTypeTreeInterface/);
   assert.match(source, /useRoute/);
   assert.match(source, /ontologyUniqueIdentifier/);

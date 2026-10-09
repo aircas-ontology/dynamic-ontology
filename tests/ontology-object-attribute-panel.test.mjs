@@ -28,13 +28,13 @@ test("object detail child router-view keys panel by objectId and route name", ()
 });
 
 test("object attribute panel exposes category tree, property columns, and local actions", () => {
-  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
-  const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
-  const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
-  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
-  const categoryApiSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributeCategoryTree.ts");
-  const propertyApiSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
-  const helperSource = readSource("../src/views/OntologyObjectDetail/utils/attributePanelHelpers.ts");
+  const panelSource = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
+  const treeSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeCategoryTree.vue");
+  const tableSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyTable.vue");
+  const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
+  const categoryApiSource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributeCategoryTree.ts");
+  const propertyApiSource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
+  const helperSource = readSource("../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts");
 
   assert.match(panelSource, /<AttributeCategoryTree/);
   assert.match(panelSource, /<AttributePropertyTable/);
@@ -71,8 +71,8 @@ test("object attribute panel exposes category tree, property columns, and local 
 });
 
 test("clicking a property node in the category tree opens the attribute editor", () => {
-  const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
-  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
+  const treeSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeCategoryTree.vue");
+  const panelSource = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
 
   assert.match(treeSource, /@node-click="handleCategoryTreeNodeClick"/);
   assert.match(treeSource, /"edit-attribute": \[data: OntologyAttributePropertyTreeNode\]/);
@@ -87,7 +87,7 @@ test("clicking a property node in the category tree opens the attribute editor",
 });
 
 test("attribute data type options use the complete backend enum values", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
   const expectedDataTypes = [
     "Boolean",
     "Int",
@@ -117,10 +117,10 @@ test("attribute data type options use the complete backend enum values", () => {
 });
 
 test("attribute form defaults category to the root and the root category cannot be deleted", async () => {
-  const listSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
-  const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
-  const categorySource = readSource("../src/views/OntologyObjectDetail/composables/useAttributeCategoryTree.ts");
-  const helperUrl = new URL("../src/views/OntologyObjectDetail/utils/attributePanelHelpers.ts", import.meta.url);
+  const listSource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
+  const treeSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeCategoryTree.vue");
+  const categorySource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributeCategoryTree.ts");
+  const helperUrl = new URL("../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts", import.meta.url);
   const { findFirstCategoryId, findRootCategoryId, parseAttributeCategoryId, resolveAttributeFormCategoryId } = await import(helperUrl.href);
   const categories = [
     {
@@ -152,7 +152,7 @@ test("attribute form defaults category to the root and the root category cannot 
 });
 
 test("attribute form rejects a second primary key or name key on the same object", async () => {
-  const helperUrl = new URL("../src/views/OntologyObjectDetail/utils/attributePanelHelpers.ts", import.meta.url);
+  const helperUrl = new URL("../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts", import.meta.url);
   const { findConflictingAttributeKey, formatAttributeKeyConflictMessage } = await import(helperUrl.href);
   const attributes = [
     { uniqueIdentifier: "a", displayName: "飞机id", apiName: "planeId", isPrimary: true, isNameKey: false },
@@ -168,9 +168,9 @@ test("attribute form rejects a second primary key or name key on the same object
   assert.equal(formatAttributeKeyConflictMessage("primary", attributes[0]), "当前对象已存在主键「飞机id」，不能同时设置两个主键");
   assert.equal(formatAttributeKeyConflictMessage("name", attributes[1]), "当前对象已存在名称键「飞机名称」，不能同时设置两个名称键");
 
-  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
-  const listSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
-  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
+  const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
+  const listSource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
+  const panelSource = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
   assert.match(formSource, /@update:model-value="\$emit\('update-primary', \$event === true\)"/);
   assert.match(formSource, /@update:model-value="\$emit\('update-name-key', \$event === true\)"/);
   assert.match(listSource, /function updateDraftPrimaryKey/);
@@ -184,21 +184,21 @@ test("attribute form rejects a second primary key or name key on the same object
 });
 
 test("attribute category is required when creating or editing a property", () => {
-  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
-  const listSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
+  const listSource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
   assert.match(formSource, /label="属性分类" prop="categoryId"/);
   assert.match(listSource, /categoryId:\s*\[\{ required: true, message: "请选择属性分类", trigger: "change" \}\]/);
   assert.match(listSource, /categoryId === undefined \? \{\} : \{ categoryId \}/);
 });
 
 test("attribute API name is disabled only while editing", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
   assert.match(source, /v-model="draft\.apiName"[\s\S]*?:disabled="editingAttributeId !== null"/);
 });
 
 test("attribute storage group accepts custom input and deduplicates values from all properties", () => {
-  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
-  const listSource = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
+  const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
+  const listSource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
   assert.match(formSource, /v-model="draft\.storageGroup"[\s\S]*?filterable[\s\S]*?allow-create/);
   assert.match(formSource, /请输入或选择存储分组/);
   assert.doesNotMatch(formSource, /:allow-create="editingAttributeId === null"/);
@@ -213,9 +213,9 @@ test("attribute storage group accepts custom input and deduplicates values from 
 });
 
 test("attribute page uses the prototype panel, button, and table surfaces", () => {
-  const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
-  const treeSource = readSource("../src/views/OntologyObjectDetail/components/AttributeCategoryTree.vue");
-  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  const tableSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyTable.vue");
+  const treeSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeCategoryTree.vue");
+  const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
   const panelGradient = /linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/;
 
   assert.match(treeSource, panelGradient);
@@ -235,8 +235,8 @@ test("attribute page uses the prototype panel, button, and table surfaces", () =
 });
 
 test("attribute layout uses a 360px tree, zebra rows, and prototype detail tabs", () => {
-  const panelSource = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
-  const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
+  const panelSource = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
+  const tableSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyTable.vue");
   const tabsSource = readSource("../src/views/OntologyObjectDetail/components/ObjectDetailTabs.vue");
 
   assert.match(panelSource, /grid-template-columns: 360px minmax\(0, 1fr\)/);

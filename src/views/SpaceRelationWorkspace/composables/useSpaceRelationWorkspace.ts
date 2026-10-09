@@ -17,7 +17,7 @@ import type {
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
 import { getOntologyCategoryTreeInterface, getOntologyRelationCategoryTreeInterface } from "@/apis";
 import { filterRelationsBySourceObject } from "../utils/spaceRelationGraph";
-import { mapOntologyObjectsToRelationOptions } from "../utils/mapOntologyObjectsToRelationOptions";
+import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
 import { mapOntologyRelationCategoryTree, mapOntologyRelationLinks } from "../utils/mapOntologyRelationCategoryTree";
 import { resolveObjectRelationFilterSeed, resolveRelationOntologyUniqueIdentifierFrom, resolveRelationSpaceId } from "../utils/resolveRelationRouteContext";
 import {

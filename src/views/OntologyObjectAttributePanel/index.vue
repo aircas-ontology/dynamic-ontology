@@ -100,15 +100,15 @@ import type {
   OntologyAttributePropertyTreeNode,
 } from "@/types";
 import { useRoute } from "vue-router";
-import { useAttributeCategoryTree } from "../../composables/useAttributeCategoryTree";
-import { useAttributePropertyList } from "../../composables/useAttributePropertyList";
-import { collectPropertyItemsFromTree, findCategory, filterCategoryNode, mapOntologyPropertyItem } from "../../utils/attributePanelHelpers";
-import AttributeCategoryCreateDialog from "../AttributeCategoryCreateDialog.vue";
-import AttributeCategoryEditDialog from "../AttributeCategoryEditDialog.vue";
-import AttributeCategoryTree from "../AttributeCategoryTree.vue";
-import AttributePropertyFormDialog from "../AttributePropertyFormDialog.vue";
-import AttributePropertyTable from "../AttributePropertyTable.vue";
-import DataSourceAssociateDialog from "../DataSourceAssociateDialog.vue";
+import { useAttributeCategoryTree } from "./composables/useAttributeCategoryTree";
+import { useAttributePropertyList } from "./composables/useAttributePropertyList";
+import { collectPropertyItemsFromTree, findCategory, filterCategoryNode, mapOntologyPropertyItem } from "./utils/attributePanelHelpers";
+import AttributeCategoryCreateDialog from "./components/AttributeCategoryCreateDialog.vue";
+import AttributeCategoryEditDialog from "./components/AttributeCategoryEditDialog.vue";
+import AttributeCategoryTree from "./components/AttributeCategoryTree.vue";
+import AttributePropertyFormDialog from "./components/AttributePropertyFormDialog.vue";
+import AttributePropertyTable from "./components/AttributePropertyTable.vue";
+import DataSourceAssociateDialog from "./components/DataSourceAssociateDialog.vue";
 
 interface DataSourceField {
   id: string;

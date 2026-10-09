@@ -85,7 +85,7 @@ test("buildOntologyFunctionQueryConfig maps IN and NOT_BETWEEN to values", () =>
 });
 
 test("basic filter editor wires list and range helpers", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/BasicFilterGroupEditor.vue");
+  const source = readSource("../src/views/FunctionOperatorPanel/components/BasicFilterGroupEditor.vue");
   assert.match(source, /opNeedsList/);
   assert.match(source, /opNeedsRange/);
   assert.match(source, /updateFilterList/);

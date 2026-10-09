@@ -39,8 +39,8 @@ test("create ontology object mock mirrors the documented success envelope", () =
 });
 
 test("object workspace submits manual creation through the api and reloads after success", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
-  const panel = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
+  const source = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceObjectActions.ts");
+  const panel = readSource("../src/views/ObjectWorkspacePanel/index.vue");
   assert.match(source, /createOntologyObjectInterface/);
   assert.match(source, /await createOntologyObjectInterface/);
   assert.match(panel, /@submit-manual="createOntologyObject"/);

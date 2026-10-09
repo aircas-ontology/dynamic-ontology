@@ -114,7 +114,7 @@ test("mapOntologyFunctionDetailToDraft fills basic form fields from detail", () 
 });
 
 test("function operator openEdit fetches detail before opening form", () => {
-  const workspace = readSource("../src/views/OntologySpaceManagementDetail/composables/useFunctionOperatorWorkspace.ts");
+  const workspace = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
   assert.match(workspace, /getOntologyFunctionDetailInterface/);
   assert.match(workspace, /mapOntologyFunctionDetailToDraft/);
   assert.match(workspace, /async function openEdit/);
@@ -203,8 +203,8 @@ test("mapOntologyFunctionDetailToOperator fills input params from detail", () =>
 });
 
 test("function operator openDetail fetches detail for drawer", () => {
-  const workspace = readSource("../src/views/OntologySpaceManagementDetail/composables/useFunctionOperatorWorkspace.ts");
-  const drawer = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorDetailDrawer.vue");
+  const workspace = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
+  const drawer = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorDetailDrawer.vue");
   assert.match(workspace, /async function openDetail/);
   assert.match(workspace, /mapOntologyFunctionDetailToOperator/);
   assert.match(workspace, /detailLoading/);

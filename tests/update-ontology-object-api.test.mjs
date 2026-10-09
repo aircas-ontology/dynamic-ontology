@@ -29,9 +29,9 @@ test("update ontology object api follows the documented PUT contract", () => {
 });
 
 test("object edit action opens a prefilled dialog and refreshes after success", () => {
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
-  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
-  const dialogSource = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectCreateDialog.vue");
+  const panelSource = readSource("../src/views/ObjectWorkspacePanel/index.vue");
+  const actionsSource = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceObjectActions.ts");
+  const dialogSource = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue");
 
   assert.match(actionsSource, /updateOntologyObjectInterface/);
   assert.match(actionsSource, /editingObject/);

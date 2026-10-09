@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { ontologySpaceManagementDetailMock } from "../src/mocks/ontologySpaceManagementDetailMock/ontologySpaceManagementDetailMock.ts";
-import { formatOverviewStat } from "../src/views/OntologySpaceManagementDetail/utils/overviewStats.ts";
+import { formatOverviewStat } from "../src/views/SpaceOverviewPanel/utils/overviewStats.ts";
 test("navy overview counts match existing space totals", () => {
   const data = ontologySpaceManagementDetailMock.find((item) => item.spaceId === "navy");
   assert.equal(data.counts.object, 22);
@@ -15,13 +15,13 @@ test("navy overview counts match existing space totals", () => {
 });
 
 test("space overview loader does not fall back to mock data on failure", () => {
-  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useSpaceOverview.ts", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../src/views/SpaceOverviewPanel/composables/useSpaceOverview.ts", import.meta.url), "utf8");
   assert.doesNotMatch(source, /ontologySpaceManagementDetailMock/);
   assert.match(source, /getOntologySpaceStatisticInterface/);
   assert.match(source, /空间统计加载失败/);
 });
 test("overview stat cards use a tinted background for each resource tone", () => {
-  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/SpaceOverviewPanel/index.vue", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../src/views/SpaceOverviewPanel/index.vue", import.meta.url), "utf8");
   assert.match(source, /linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
   assert.match(
     source,

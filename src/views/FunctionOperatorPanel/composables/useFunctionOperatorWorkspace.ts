@@ -28,7 +28,7 @@ import { mapOntologyFunctionDetailToDraft, mapOntologyFunctionDetailToOperator }
 import { mapOntologyFunctionListItem } from "@/utils/mapOntologyFunctionList";
 import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestRequest } from "@/utils/mapOntologyFunctionTest";
 
-import { mapOntologyObjectsToRelationOptions } from "../utils/mapOntologyObjectsToRelationOptions";
+import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
 /**
  * @description 空间函数算子工作区：列表筛选、创建/修改/删除接口与发布测试（部分 Mock）。
  * @returns 工作区状态与操作方法。

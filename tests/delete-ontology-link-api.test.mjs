@@ -36,7 +36,7 @@ describe("delete ontology link api", () => {
   });
 
   test("relation workspace delete calls link api then reloads for table and graph", () => {
-    const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue");
+    const workspaceSource = readSource("../src/views/SpaceRelationWorkspace/index.vue");
     assert.match(workspaceSource, /@delete="openRelationDelete"/);
     assert.match(workspaceSource, /openRelationDelete\(asRelation\(scope\.row\)\)/);
     assert.match(workspaceSource, /deleteOntologyLinkInterface/);

@@ -5,7 +5,7 @@ import { test } from "node:test";
 const readSource = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), "utf8");
 
 test("data source mapping dialog uses prototype class, width and non-dismissable modal", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
   assert.match(source, /class="property-datasource-mapping-dialog aircas-dialog"/);
   assert.match(source, /title="关联数据源"/);
   assert.match(source, /width="92vw"/);
@@ -15,7 +15,7 @@ test("data source mapping dialog uses prototype class, width and non-dismissable
 });
 
 test("data source mapping dialog toolbar exposes selects and action buttons", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
   assert.match(source, /选择数据源/);
   assert.match(source, /关联数据源/);
   assert.match(source, /关联数据源字段/);
@@ -28,7 +28,7 @@ test("data source mapping dialog toolbar exposes selects and action buttons", ()
 });
 
 test("data source mapping dialog renders prototype workspace, panels and svg lines", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
   assert.match(source, /property-datasource-mapping-dialog__workspace/);
   assert.match(source, /property-datasource-mapping-dialog__panels/);
   assert.match(source, /property-datasource-mapping-dialog__source/);
@@ -39,7 +39,7 @@ test("data source mapping dialog renders prototype workspace, panels and svg lin
 });
 
 test("data source mapping dialog renders mind-node tables, field-list and property-list with anchors", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
   assert.match(source, /mind-node mind-node-table/);
   assert.match(source, /mind-node__toggle/);
   assert.match(source, /mind-node__badge/);
@@ -51,7 +51,7 @@ test("data source mapping dialog renders mind-node tables, field-list and proper
 });
 
 test("data source mapping dialog operation cache panel exposes submit and hint text", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
   assert.match(source, /操作缓存/);
   assert.match(source, /项待提交/);
   assert.match(source, /图中双击连线可临时删除，提交后保存。/);
@@ -60,7 +60,7 @@ test("data source mapping dialog operation cache panel exposes submit and hint t
 });
 
 test("data source mapping dialog defines local prototype types and exposes setLoading", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
   assert.match(source, /interface OntologyDataSourceDatabase/);
   assert.match(source, /interface OntologyPropertyClass/);
   assert.match(source, /interface OntologyPropertyDataSourceBind/);
@@ -72,7 +72,7 @@ test("data source mapping dialog defines local prototype types and exposes setLo
 });
 
 test("data source mapping dialog keeps manual edits local until submit", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
   const addManualBindSource = source.match(/function addManualBind\(\)[\s\S]*?function removeBind/)?.[0] ?? "";
   const removeBindSource = source.match(/function removeBind[\s\S]*?const dragPreviewPath/)?.[0] ?? "";
 
@@ -86,7 +86,7 @@ test("data source mapping dialog keeps manual edits local until submit", () => {
 });
 
 test("data source mapping dialog delegates automatic binding to the parent", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
   assert.match(source, /auto-associate/);
   assert.match(source, /emit\('auto-associate'\)/);
   assert.match(source, /@click="emit\('auto-associate'\)"/);
@@ -94,8 +94,8 @@ test("data source mapping dialog delegates automatic binding to the parent", () 
 });
 
 test("data source mapping tables mark primary and name keys beside field names", () => {
-  const dialog = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
-  const panel = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
+  const dialog = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
+  const panel = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
 
   assert.match(dialog, /function formatDatasourceKeyMarks/);
   assert.match(dialog, /marks\.push\("（主）"\)/);
@@ -110,7 +110,7 @@ test("data source mapping tables mark primary and name keys beside field names",
 });
 
 test("data source mapping dialog dropdowns hide fields that are already associated", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/DataSourceAssociateDialog.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
   assert.match(source, /filter\(\(field\) => !isFieldMapped\(databaseId, tableId, field\.id\)\)/);
   assert.match(source, /const availableManualProperties = computed/);
   assert.match(source, /!draftBinds\.value\.get\(property\.id\)/);
@@ -118,9 +118,9 @@ test("data source mapping dialog dropdowns hide fields that are already associat
 });
 
 test("attribute panel wires api catalog and all properties to the data source mapping dialog", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
-  const tableSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
-  assert.match(source, /import DataSourceAssociateDialog from "\.\.\/DataSourceAssociateDialog\.vue"/);
+  const source = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
+  const tableSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyTable.vue");
+  assert.match(source, /import DataSourceAssociateDialog from "\.\/components\/DataSourceAssociateDialog\.vue"/);
   assert.match(source, /const dataSourceDialogVisible = ref\(false\)/);
   assert.match(source, /:catalog="dataSourceCatalog"/);
   assert.match(source, /:properties="ontologyPropertyMappings"/);
@@ -136,7 +136,7 @@ test("attribute panel wires api catalog and all properties to the data source ma
 });
 
 test("attribute panel loads property datasource info before opening the dialog", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
   const openSource = source.match(/async function openDataSource\(\)[\s\S]*?async function loadDataSourceTables/)?.[0] ?? "";
 
   assert.match(source, /getOntologyPropertyDetailByOntologyIdInterface/);
@@ -155,7 +155,7 @@ test("attribute panel loads property datasource info before opening the dialog",
 });
 
 test("attribute panel persists local datasource drafts only from dialog submit", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
   const submitSource = source.match(/async function handleDataSourceSubmit[\s\S]*?\n}/)?.[0] ?? "";
 
   assert.match(source, /putBatchUpdateOntologyPropertiesInterface/);
@@ -171,7 +171,7 @@ test("attribute panel persists local datasource drafts only from dialog submit",
 });
 
 test("attribute panel handles automatic datasource binding without closing the dialog", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/components/OntologyObjectAttributePanel/index.vue");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
   const autoSource = source.match(/async function handleAutoDataSourceAssociate\(\)[\s\S]*?\n}/)?.[0] ?? "";
   assert.match(source, /autoBindOntologyPropertyDatasourceInterface/);
   assert.match(source, /@auto-associate="handleAutoDataSourceAssociate"/);

@@ -69,16 +69,16 @@ import { ElMessage } from "element-plus";
 import type { SpaceBehaviorDraft, SpaceBehaviorItem, SpaceBehaviorStatusChangeDraft } from "@/types";
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
-import { useObjectBehaviorWorkspace } from "../../composables/useObjectBehaviorWorkspace";
-import { findObjectBehaviorCategoryNode, flattenObjectBehaviorCategoryOptions } from "../../utils/objectBehaviorOperations";
-import ObjectBehaviorCategoryDeleteDialog from "../ObjectBehaviorCategoryDeleteDialog.vue";
-import ObjectBehaviorCategoryFormDialog from "../ObjectBehaviorCategoryFormDialog.vue";
-import ObjectBehaviorCategoryPanel from "../ObjectBehaviorCategoryPanel.vue";
-import ObjectBehaviorDeleteDialog from "../ObjectBehaviorDeleteDialog.vue";
-import ObjectBehaviorDetailDrawer from "../ObjectBehaviorDetailDrawer.vue";
-import ObjectBehaviorFormDialog from "../ObjectBehaviorFormDialog.vue";
-import ObjectBehaviorListPanel from "../ObjectBehaviorListPanel.vue";
-import ObjectBehaviorStatusDialog from "../ObjectBehaviorStatusDialog.vue";
+import { useObjectBehaviorWorkspace } from "./composables/useObjectBehaviorWorkspace";
+import { findObjectBehaviorCategoryNode, flattenObjectBehaviorCategoryOptions } from "./utils/objectBehaviorOperations";
+import ObjectBehaviorCategoryDeleteDialog from "./components/ObjectBehaviorCategoryDeleteDialog.vue";
+import ObjectBehaviorCategoryFormDialog from "./components/ObjectBehaviorCategoryFormDialog.vue";
+import ObjectBehaviorCategoryPanel from "./components/ObjectBehaviorCategoryPanel.vue";
+import ObjectBehaviorDeleteDialog from "./components/ObjectBehaviorDeleteDialog.vue";
+import ObjectBehaviorDetailDrawer from "./components/ObjectBehaviorDetailDrawer.vue";
+import ObjectBehaviorFormDialog from "./components/ObjectBehaviorFormDialog.vue";
+import ObjectBehaviorListPanel from "./components/ObjectBehaviorListPanel.vue";
+import ObjectBehaviorStatusDialog from "./components/ObjectBehaviorStatusDialog.vue";
 const {
   status,
   errorMessage,

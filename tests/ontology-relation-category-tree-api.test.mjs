@@ -63,7 +63,7 @@ test("relation category tree mock mirrors the SUCCESS sample", () => {
 });
 
 test("relation category tree mapper builds page nodes from categoryId and name", async () => {
-  const mapperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/mapOntologyRelationCategoryTree.ts", import.meta.url);
+  const mapperUrl = new URL("../src/views/SpaceRelationWorkspace/utils/mapOntologyRelationCategoryTree.ts", import.meta.url);
   assert.equal(existsSync(mapperUrl), true, "missing mapper file");
   const { mapOntologyRelationCategoryTree, mapOntologyRelationLinks } = await import(mapperUrl.href);
   const treeData = {
@@ -148,9 +148,9 @@ test("relation category tree mapper builds page nodes from categoryId and name",
 });
 
 test("relation workspace loads category tree api and maps links into relations", () => {
-  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useSpaceRelationWorkspace.ts");
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/RelationCategoryPanel.vue");
-  const tableSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue");
+  const workspaceSource = readSource("../src/views/SpaceRelationWorkspace/composables/useSpaceRelationWorkspace.ts");
+  const panelSource = readSource("../src/views/SpaceRelationWorkspace/components/RelationCategoryPanel.vue");
+  const tableSource = readSource("../src/views/SpaceRelationWorkspace/index.vue");
   assert.match(workspaceSource, /getOntologyRelationCategoryTreeInterface/);
   assert.match(workspaceSource, /mapOntologyRelationCategoryTree/);
   assert.match(workspaceSource, /mapOntologyRelationLinks/);
@@ -208,7 +208,7 @@ test("create relation category api posts spaceId parentId and name to link_categ
 });
 
 test("relation workspace create category posts api then reloads and does not send color", () => {
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue");
+  const panelSource = readSource("../src/views/SpaceRelationWorkspace/index.vue");
   assert.match(panelSource, /postCreateOntologyRelationCategoryTreeInterface/);
   assert.match(panelSource, /parentId:\s*numericParentId/);
   assert.match(panelSource, /categoryParentId\.value\.trim\(\) === "" \? 0 : Number\(categoryParentId\.value\)/);
@@ -236,7 +236,7 @@ test("update relation category name api puts spaceId categoryId and name to link
 });
 
 test("relation workspace edit category puts api then reloads and does not send color", () => {
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue");
+  const panelSource = readSource("../src/views/SpaceRelationWorkspace/index.vue");
   assert.match(panelSource, /putUpdateOntologyRelationCategoryNameInterface/);
   assert.match(panelSource, /categoryId:\s*numericCategoryId/);
   assert.match(
@@ -269,7 +269,7 @@ test("delete relation category api deletes spaceId and categoryId on link_catego
 });
 
 test("relation workspace delete category calls api then reloads", () => {
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue");
+  const panelSource = readSource("../src/views/SpaceRelationWorkspace/index.vue");
   assert.match(panelSource, /deleteOntologyRelationCategoryTreeInterface/);
   assert.match(panelSource, /deleteOntologyRelationCategoryTreeInterface\(\{\s*spaceId:\s*numericSpaceId,\s*categoryId:\s*numericCategoryId,\s*\}\)/);
   assert.match(panelSource, /分类已删除/);

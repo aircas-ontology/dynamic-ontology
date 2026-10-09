@@ -5,7 +5,7 @@ import { test } from "node:test";
 const readSource = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), "utf8");
 
 test("ontology object create dialog exposes prototype creation modes and required fields", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectCreateDialog.vue");
+  const source = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue");
   assert.match(source, /title="新建本体"/);
   assert.match(source, /手动创建/);
   assert.match(source, /导入创建/);
@@ -31,8 +31,8 @@ test("ontology object create dialog exposes prototype creation modes and require
 });
 
 test("object workspace routes create action to the dialog and separates manual api submission", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
-  const objectActions = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
+  const source = readSource("../src/views/ObjectWorkspacePanel/index.vue");
+  const objectActions = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceObjectActions.ts");
   assert.match(source, /:category-tree="workspaceTree"/);
   assert.match(source, /@submit-manual="createOntologyObject"/);
   assert.match(source, /@submit-import="importOntologyObjects"/);
@@ -43,7 +43,7 @@ test("object workspace routes create action to the dialog and separates manual a
 });
 
 test("category tree mapping includes ontology metadata in object sections", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/utils/mapOntologyCategoryTree.ts");
+  const source = readSource("../src/views/ObjectWorkspacePanel/utils/mapOntologyCategoryTree.ts");
   assert.match(source, /mapOntologyCategorySections/);
   assert.match(source, /node\.ontologyMetaInfos/);
   assert.match(source, /objects:/);
@@ -53,7 +53,7 @@ test("category tree mapping includes ontology metadata in object sections", () =
 });
 
 test("concept hierarchy tree renders object names below each category node", () => {
-  const source = readSource("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue");
+  const source = readSource("../src/views/ObjectWorkspacePanel/components/ConceptHierarchyTree.vue");
   assert.match(source, /isObjectNode\(data\)/);
   assert.match(source, /concept-hierarchy__object-row/);
   assert.match(source, /concept-hierarchy__object-dot/);
@@ -61,10 +61,10 @@ test("concept hierarchy tree renders object names below each category node", () 
 });
 
 test("clicking a tree object node navigates to the object detail page", () => {
-  const treeSource = readSource("../src/views/OntologySpaceManagementDetail/components/ConceptHierarchyTree.vue");
+  const treeSource = readSource("../src/views/ObjectWorkspacePanel/components/ConceptHierarchyTree.vue");
   assert.match(treeSource, /"select-object": \[object: OntologyConceptObjectRef\]/);
   assert.match(treeSource, /emit\("select-object", \{ uniqueIdentifier: value\.objectId, displayName: value\.label \}\)/);
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel/index.vue");
+  const panelSource = readSource("../src/views/ObjectWorkspacePanel/index.vue");
   assert.match(panelSource, /@select-object="openObjectDetailFromTree"/);
   assert.match(panelSource, /name: "OntologyObjectDetail", params: \{ objectId \}/);
 });

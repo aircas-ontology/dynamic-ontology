@@ -16,11 +16,11 @@ test("shared action tones cover primary, secondary, ghost, and danger buttons", 
 });
 
 test("list and table actions use the shared button tones", () => {
-  const objectList = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectList.vue");
-  const attributeTable = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
-  const relationWorkspace = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace/index.vue");
+  const objectList = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue");
+  const attributeTable = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyTable.vue");
+  const relationWorkspace = readSource("../src/views/SpaceRelationWorkspace/index.vue");
   const spaceActions = readSource("../src/views/OntologySpaceManagement/components/SpaceActions.vue");
-  const relationGraph = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/RelationGraphView.vue");
+  const relationGraph = readSource("../src/views/SpaceRelationWorkspace/components/RelationGraphView.vue");
 
   assert.match(objectList, /ontology-object-action--view aircas-button--tone-primary/);
   assert.match(objectList, /ontology-object-action--edit aircas-button--tone-secondary/);

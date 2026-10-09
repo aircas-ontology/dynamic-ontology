@@ -75,8 +75,8 @@ test("buildOntologyFunctionTestRequest assembles functionApi ontologyIdentifier 
 });
 
 test("function operator openTest loads detail and runTest shows output panel", () => {
-  const workspace = readSource("../src/views/OntologySpaceManagementDetail/composables/useFunctionOperatorWorkspace.ts");
-  const panel = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel/index.vue");
+  const workspace = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
+  const panel = readSource("../src/views/FunctionOperatorPanel/index.vue");
   assert.match(workspace, /getOntologyFunctionDetailInterface/);
   assert.match(workspace, /testOntologyFunctionInterface/);
   assert.match(workspace, /async function openTest/);

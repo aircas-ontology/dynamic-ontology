@@ -25,7 +25,7 @@ src/router/
 
 - 【必须】路由记录使用 `RouteRecordRaw` 等 Vue Router 类型，类型导入使用 `import type`。
 - 【必须】页面组件默认使用动态 import 懒加载；布局等首屏公共骨架可静态导入。
-- 【必须】路由 `component` 懒加载路径以 `index.vue` 结尾（页面入口或路由挂载面板的 `<Name>/index.vue`）。
+- 【必须】路由 `component` 懒加载路径以 `src/views/<PageName>/index.vue` 结尾。
 - 【必须】模块通过 `index.ts` 显式装配，禁止模块产生隐式注册副作用。
 - 【优先】稳定的业务元信息建立类型声明，不在守卫中读取未经类型约束的字段。
 
