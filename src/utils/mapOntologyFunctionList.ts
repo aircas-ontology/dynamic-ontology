@@ -1,4 +1,20 @@
+import dayjs from "dayjs";
+
 import type { FunctionOperator, GetOntologyFunctionListItem } from "@/types";
+
+/**
+ * @description 将列表 updateTime 格式化为页面展示用更新时间；非法值回落为空串。
+ * @param updateTime 接口 ISO 时间字符串。
+ * @returns `YYYY-MM-DD HH:mm:ss` 或空串。
+ */
+function formatOntologyFunctionUpdateTime(updateTime: string | undefined): string {
+  const raw = typeof updateTime === "string" ? updateTime.trim() : "";
+  if (!raw) {
+    return "";
+  }
+  const parsed = dayjs(raw);
+  return parsed.isValid() ? parsed.format("YYYY-MM-DD HH:mm:ss") : "";
+}
 
 /**
  * @description 将函数列表接口记录映射为页面 FunctionOperator；契约未返回字段置空。
@@ -19,7 +35,7 @@ export function mapOntologyFunctionListItem(item: GetOntologyFunctionListItem, s
     protocol: "",
     version: "",
     createdBy: "",
-    updatedAt: "",
+    updatedAt: formatOntologyFunctionUpdateTime(item.updateTime),
     status: "",
     category: "",
     inputParameters: [],

@@ -76,6 +76,8 @@ test("missing category tree data opens an add dialog instead of a load error", (
   assert.match(workspaceSource, /isMissingOntologyCategoryTreeData/);
   assert.match(workspaceSource, /createEmptyObjectWorkspace\(id\)/);
   assert.match(treeSource, /添加分类树/);
+  assert.match(treeSource, /<FolderOpened \/>/);
+  assert.doesNotMatch(treeSource, /CollectionTag/);
   assert.match(dialogSource, /主分类名称/);
   assert.match(dialogSource, /class="aircas-dialog"/);
   assert.doesNotMatch(dialogSource, /getOntology/);

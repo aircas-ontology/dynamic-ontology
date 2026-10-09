@@ -74,6 +74,14 @@
                   />
                 </template>
               </template>
+              <template v-else-if="opNeedsList(child.filter.op)">
+                <el-input
+                  :model-value="formatFilterList(child.filter.values)"
+                  class="aircas-input"
+                  placeholder="多个值用英文逗号分隔"
+                  @update:model-value="(value) => updateFilterList(index, value)"
+                />
+              </template>
               <template v-else-if="opNeedsValue(child.filter.op)">
                 <el-select
                   v-if="child.filter.valueType === 'boolean'"
@@ -102,7 +110,7 @@
               </template>
               <span v-else class="basic-filter-row__value-placeholder">无需取值</span>
             </div>
-            <el-button type="danger" plain class="aircas-button" size="small" :disabled="group.children.length <= 1" @click="removeChild(index)">
+            <el-button type="danger" plain class="aircas-button basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
               删除
             </el-button>
           </div>
@@ -111,7 +119,7 @@
           <div class="basic-filter-group__nested">
             <div class="basic-filter-group__nested-header">
               <span>分组</span>
-              <el-button type="danger" plain class="aircas-button" size="small" :disabled="group.children.length <= 1" @click="removeChild(index)">
+              <el-button type="danger" plain class="aircas-button basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
                 删除分组
               </el-button>
             </div>
@@ -134,7 +142,7 @@ import {
   type BasicFilterValue,
   type BasicFilterValueType,
 } from "@/types";
-import { createEmptyBasicFilterGroup, createEmptyBasicFilterNode, opNeedsRange, opNeedsValue } from "@/utils/functionOperatorBasicFilter";
+import { createEmptyBasicFilterGroup, createEmptyBasicFilterNode, opNeedsList, opNeedsRange, opNeedsValue } from "@/utils/functionOperatorBasicFilter";
 
 defineOptions({ name: "BasicFilterGroupEditor" });
 
@@ -215,11 +223,18 @@ function updateFilterValueType(index: number, value: string | number | boolean |
   if (!child?.filter) return;
   const valueType = value as BasicFilterValueType;
   child.filter.valueType = valueType;
-  if (child.filter.op === "BETWEEN") {
+  if (opNeedsRange(child.filter.op)) {
     child.filter.values = [coerceToType(child.filter.values?.[0], valueType), coerceToType(child.filter.values?.[1], valueType)];
     delete child.filter.value;
-  } else if (child.filter.op !== "IS_NULL" && child.filter.op !== "IS_NOT_NULL") {
+  } else if (opNeedsList(child.filter.op)) {
+    const values = child.filter.values ?? [];
+    child.filter.values = values.length ? values.map((item) => coerceToType(item, valueType)) : [defaultValueForType(valueType)];
+    delete child.filter.value;
+  } else if (opNeedsValue(child.filter.op)) {
     child.filter.value = coerceToType(child.filter.value, valueType);
+    delete child.filter.values;
+  } else {
+    delete child.filter.value;
     delete child.filter.values;
   }
   publish(next);
@@ -232,19 +247,51 @@ function updateFilterOp(index: number, value: string | number | boolean | undefi
   const op = value as BasicFilterOp;
   const valueType = child.filter.valueType || "string";
   child.filter.op = op;
-  if (op === "BETWEEN") {
+  if (opNeedsRange(op)) {
     child.filter.values = [
       coerceToType(child.filter.values?.[0] ?? child.filter.value, valueType),
       coerceToType(child.filter.values?.[1] ?? defaultValueForType(valueType), valueType),
     ];
     delete child.filter.value;
+  } else if (opNeedsList(op)) {
+    const seed = child.filter.values?.length ? child.filter.values : child.filter.value !== undefined ? [child.filter.value] : [defaultValueForType(valueType)];
+    child.filter.values = seed.map((item) => coerceToType(item, valueType));
+    delete child.filter.value;
   } else if (op === "IS_NULL" || op === "IS_NOT_NULL") {
     delete child.filter.value;
     delete child.filter.values;
   } else {
-    child.filter.value = coerceToType(child.filter.value ?? defaultValueForType(valueType), valueType);
+    child.filter.value = coerceToType(child.filter.value ?? child.filter.values?.[0] ?? defaultValueForType(valueType), valueType);
     delete child.filter.values;
   }
+  publish(next);
+}
+
+/**
+ * @description 将列表运算符的 values 格式化为逗号分隔文本。
+ * @param values 列表值。
+ * @returns 展示文本。
+ */
+function formatFilterList(values: BasicFilterValue[] | undefined): string {
+  return (values ?? []).map((item) => String(item)).join(",");
+}
+
+/**
+ * @description 按英文逗号拆分列表输入并写回 values。
+ * @param index 子节点下标。
+ * @param raw 输入文本。
+ */
+function updateFilterList(index: number, raw: string | number): void {
+  const next = cloneGroup();
+  const child = next.children[index];
+  if (!child?.filter) return;
+  const valueType = child.filter.valueType || "string";
+  const parts = String(raw)
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+  child.filter.values = parts.length ? parts.map((item) => coerceToType(item, valueType)) : [defaultValueForType(valueType)];
+  delete child.filter.value;
   publish(next);
 }
 
@@ -329,8 +376,9 @@ function updateNestedGroup(index: number, group: BasicFilterDocument): void {
 
 .basic-filter-row__values {
   display: flex;
-  flex: 1.2;
-  min-width: 140px;
+  flex: 0 1 160px;
+  min-width: 120px;
+  max-width: 200px;
   align-items: center;
   gap: 8px;
 }
@@ -350,14 +398,58 @@ function updateNestedGroup(index: number, group: BasicFilterDocument): void {
   background: var(--aircas-color-overlay);
 }
 
+:root[theme="light"] .basic-filter-group__nested {
+  background: var(--aircas-color-panel-background);
+}
+
 .basic-filter-row__number {
   width: 100%;
+  max-width: 140px;
   --el-fill-color-blank: var(--aircas-color-input-background);
   --el-input-bg-color: var(--aircas-color-input-background);
   --el-input-border-color: var(--aircas-color-border);
   --el-input-hover-border-color: var(--aircas-color-border-highlight);
   --el-input-focus-border-color: var(--aircas-color-focus-border);
   --el-input-text-color: var(--aircas-color-text-primary);
+  --el-disabled-bg-color: var(--aircas-color-input-background);
+  --el-text-color-regular: var(--aircas-color-text-primary);
+}
+
+.basic-filter-row__number :deep(.el-input__wrapper) {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+  background-color: var(--aircas-color-input-background);
+  box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+}
+
+.basic-filter-row__number :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
+}
+
+.basic-filter-row__number :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
+}
+
+.basic-filter-row__number :deep(.el-input-number__decrease),
+.basic-filter-row__number :deep(.el-input-number__increase) {
+  width: 28px;
+  background: var(--aircas-color-panel-background-deep);
+  border-color: var(--aircas-color-border-soft);
+  color: var(--aircas-color-text-secondary);
+}
+
+.basic-filter-row__number :deep(.el-input-number__decrease:hover),
+.basic-filter-row__number :deep(.el-input-number__increase:hover) {
+  color: var(--aircas-color-text-primary);
+}
+
+.basic-filter-row__remove.aircas-button {
+  flex: 0 0 auto;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 12px;
+  margin-left: 0;
 }
 
 .basic-filter-group__nested-header {

@@ -1,0 +1,34 @@
+{
+  "code": 200,
+  "message": "查询成功",
+  "success": true,
+  "data": {
+    "categoryId": 1,
+    "name": "舰船",
+    "ontologyMetaInfos": [
+      {
+        "uniqueIdentifier": "d3e1b0c27f29452eb7cadd1f51eac535",
+        "createTime": "2026-09-17 11:15:13",
+        "updateTime": "2026-09-17 11:15:13",
+        "latestQueryTime": "2026-09-17 11:15:13",
+        "displayName": "舰船",
+        "description": "我方舰船",
+        "apiName": "ship",
+        "metaGroupId": [],
+        "spaceId": 1,
+        "ontologyCategoryId": 1,
+        "entityCount": 0,
+        "relationCount": 1,
+        "propertyCount": 4,
+        "actionCount": 0
+      }
+    ],
+    "children": [
+      {
+        "categoryId": 2,
+        "name": "航空母舰",
+        "children": []
+      }
+    ]
+  }
+}

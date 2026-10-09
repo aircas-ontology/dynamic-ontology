@@ -5,7 +5,9 @@
   "type": "module",
   "packageManager": "npm@11.17.0",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --open",
+    "dev": "node scripts/dev.mjs",
+    "mock": "node scripts/mock-server.mjs",
+    "mock:record": "node scripts/record-mock-from-api.mjs",
     "test": "node --test --experimental-strip-types tests/*.test.mjs",
     "test:coverage": "node --test --experimental-strip-types --experimental-test-coverage --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80 tests/*.test.mjs",
     "format": "prettier --write --ignore-unknown",

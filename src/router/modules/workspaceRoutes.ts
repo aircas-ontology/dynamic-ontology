@@ -1,7 +1,5 @@
 import type { RouteRecordRaw } from "vue-router";
 
-const emptyWorkspacePanel = () => import("@/views/OntologySpaceManagementDetail/components/EmptyWorkspacePanel.vue");
-
 export const workspaceRoutes: RouteRecordRaw[] = [
   {
     path: "/workspace",
@@ -56,13 +54,13 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "behavior",
             name: "OntologySpaceManagementDetailBehavior",
-            component: emptyWorkspacePanel,
+            component: () => import("@/views/OntologySpaceManagementDetail/behaviorComponents/SpaceBehaviorWorkspace.vue"),
             meta: { title: "空间内管理", workspaceTab: "behavior" },
           },
           {
             path: "behavior-schedule",
             name: "OntologySpaceManagementDetailBehaviorSchedule",
-            component: emptyWorkspacePanel,
+            component: () => import("@/views/OntologySpaceManagementDetail/behaviorScheduleComponents/SpaceBehaviorScheduleWorkspace.vue"),
             meta: { title: "空间内管理", workspaceTab: "behavior-schedule" },
           },
           {
@@ -108,7 +106,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "behavior",
             name: "OntologyObjectDetailBehavior",
-            component: emptyWorkspacePanel,
+            component: () => import("@/views/OntologyObjectDetail/behaviorComponents/ObjectBehaviorWorkspace.vue"),
             meta: { title: "本体对象详情", objectDetailTab: "behavior" },
           },
         ],

@@ -55,7 +55,7 @@
             inline-prompt
             active-text="是"
             inactive-text="否"
-            @update:model-value="draft.isPrimary = $event === true"
+            @update:model-value="$emit('update-primary', $event === true)"
           />
         </div>
         <div class="ontology-object-attribute-panel__switch-field">
@@ -66,7 +66,7 @@
             inline-prompt
             active-text="是"
             inactive-text="否"
-            @update:model-value="draft.isNameKey = $event === true"
+            @update:model-value="$emit('update-name-key', $event === true)"
           />
         </div>
       </div>
@@ -98,6 +98,8 @@ defineProps<{
 
 const emit = defineEmits<{
   "update:visible": [value: boolean];
+  "update-primary": [enabled: boolean];
+  "update-name-key": [enabled: boolean];
   confirm: [];
 }>();
 

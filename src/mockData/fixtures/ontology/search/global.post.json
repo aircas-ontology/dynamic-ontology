@@ -1,0 +1,13 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": [
+    {
+      "name": "xxx战场",
+      "type": "空间",
+      "desc": "这是空间描述",
+      "spaceId": 1
+    }
+  ]
+}

@@ -10,4 +10,4 @@ export const geoAltitudeKm: number = 35786; // 同步轨道高度（km）
 export const auKm: number = 149597870.7; // 天文单位（km）
 export const jdUnixEpoch: number = 2440587.5; // Unix 纪元对应的儒略日
 export const msPerDay: number = 86400000; // 一天的毫秒数
-export const requestTimeoutMs: number = 10000; // 接口请求超时时间（毫秒）
+export const requestTimeoutMs: number = 100000; // 接口请求超时时间（毫秒）

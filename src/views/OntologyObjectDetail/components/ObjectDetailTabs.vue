@@ -74,6 +74,10 @@ function formatCount(value: number | undefined): string {
   box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
 }
 
+:root[theme="light"] .object-detail-tabs {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .object-detail-tabs__list {
   display: flex;
   align-items: center;

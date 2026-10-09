@@ -1,0 +1,15 @@
+{
+  "code": 0,
+  "message": "",
+  "success": true,
+  "data": {
+    "spaceCount": 1,
+    "ontologyCount": 2,
+    "groupCount": 0,
+    "actionSchedulingCount": 0,
+    "actionCount": 0,
+    "functionCount": 2,
+    "propertyCount": 7,
+    "linkCount": 0
+  }
+}

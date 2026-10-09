@@ -1,16 +1,19 @@
 <template>
   <div class="ontology-global-search" :class="`ontology-global-search--${placement}`" ref="rootRef">
-    <el-input
-      v-model="keyword"
-      class="aircas-input ontology-global-search__input"
-      :placeholder="placeholder"
-      :prefix-icon="Search"
-      clearable
-      :ariaLabel="ariaLabel"
-      @keydown.enter.prevent="submitSearch"
-      @clear="handleClear"
-      @focus="openOverlayIfHasState"
-    />
+    <div class="ontology-global-search__bar">
+      <el-input
+        v-model="keyword"
+        class="aircas-input ontology-global-search__input"
+        :placeholder="placeholder"
+        :prefix-icon="Search"
+        clearable
+        :ariaLabel="ariaLabel"
+        @keydown.enter.prevent="submitSearch"
+        @clear="handleClear"
+        @focus="openOverlayIfHasState"
+      />
+      <el-button v-if="placement === 'page'" class="aircas-button ontology-global-search__submit" type="primary" @click="submitSearch">检索</el-button>
+    </div>
 
     <div v-if="placement === 'overlay' && overlayVisible" class="ontology-global-search__dropdown" role="listbox" aria-label="检索结果">
       <OntologyGlobalSearchResultList :status="status" :error-message="errorMessage" :results="results" @select="handleSelect" @retry="submitSearch" />
@@ -135,8 +138,25 @@ onUnmounted(() => {
   gap: 16px;
 }
 
+.ontology-global-search__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.ontology-global-search--page .ontology-global-search__bar {
+  width: min(720px, 100%);
+}
+
 .ontology-global-search--page .ontology-global-search__input {
-  width: min(640px, 100%);
+  flex: 1;
+  min-width: 0;
+}
+
+.ontology-global-search__submit {
+  flex-shrink: 0;
 }
 
 .ontology-global-search--overlay .ontology-global-search__input {

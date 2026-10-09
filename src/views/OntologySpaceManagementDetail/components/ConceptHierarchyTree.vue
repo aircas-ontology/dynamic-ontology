@@ -33,8 +33,7 @@
         <template v-else>
           <span class="concept-hierarchy__node">
             <el-icon>
-              <FolderOpened v-if="hasChildren(data)" />
-              <CollectionTag v-else />
+              <FolderOpened />
             </el-icon>
             <span class="concept-hierarchy__content">
               <span class="concept-hierarchy__heading">
@@ -78,8 +77,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { CollectionTag, Delete, Edit, FolderOpened, Plus, Search } from "@element-plus/icons-vue";
-import type { OntologyConceptNode } from "@/types";
+import { Delete, Edit, FolderOpened, Plus, Search } from "@element-plus/icons-vue";
+import type { OntologyConceptNode, OntologyConceptObjectRef } from "@/types";
 
 /** el-tree 渲染用的本地节点类型；分类和对象在同一个 children 数组里混合。 */
 interface ConceptCategoryTreeNode {
@@ -95,6 +94,7 @@ interface ConceptObjectTreeNode {
   kind: "object";
   id: string;
   label: string;
+  objectId: string;
   children: ConceptTreeNode[];
 }
 
@@ -107,7 +107,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   select: [node: OntologyConceptNode];
-  "select-object": [name: string];
+  "select-object": [object: OntologyConceptObjectRef];
   create: [];
   createChild: [categoryId: string];
   rename: [categoryId: string, name: string];
@@ -127,10 +127,11 @@ const treeNodeProps = {
  * @returns 渲染用的分类节点，children 中混入子分类和对象节点。
  */
 function transformCategoryNode(node: OntologyConceptNode): ConceptCategoryTreeNode {
-  const objectNodes: ConceptObjectTreeNode[] = (node.objectNames ?? []).map((name, index) => ({
+  const objectNodes: ConceptObjectTreeNode[] = (node.objects ?? []).map((objectRef, index) => ({
     kind: "object",
-    id: `${node.id}-obj-${index}`,
-    label: name,
+    id: objectRef.uniqueIdentifier || `${node.id}-obj-${index}`,
+    label: objectRef.displayName,
+    objectId: objectRef.uniqueIdentifier,
     children: [],
   }));
   const childCategoryNodes: ConceptCategoryTreeNode[] = (node.children ?? []).map((child) => transformCategoryNode(child));
@@ -203,7 +204,7 @@ function findOriginalCategoryNode(nodes: OntologyConceptNode[], id: string): Ont
 
 function handleNodeClick(value: unknown) {
   if (isObjectNode(value)) {
-    emit("select-object", value.label);
+    emit("select-object", { uniqueIdentifier: value.objectId, displayName: value.label });
     return;
   }
   if (isCategoryNode(value)) {
@@ -218,10 +219,6 @@ function nodeLabel(value: unknown) {
 
 function nodeCount(value: unknown) {
   return isCategoryNode(value) ? value.count : 0;
-}
-
-function hasChildren(value: unknown) {
-  return isCategoryNode(value) && value.children.length > 0;
 }
 
 /**
@@ -269,6 +266,12 @@ function openDeleteCategoryDialog(value: unknown) {
   box-shadow:
     inset 0 0 20px var(--aircas-color-page-glow),
     0 0 18px var(--aircas-color-accent-blue-soft);
+}
+
+:root[theme="light"] .concept-hierarchy {
+  background:
+    radial-gradient(circle at 12% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 42%),
+    linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
 .concept-hierarchy__header {

@@ -115,16 +115,21 @@ test("relation object options mapper collects ontology meta display names from t
 
 test("relation workspace loads object options from the object category tree api", () => {
   const workspaceSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useSpaceRelationWorkspace.ts", import.meta.url), "utf8");
+  const pageSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue", import.meta.url), "utf8");
   const formSource = readFileSync(
     new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationFormDialog.vue", import.meta.url),
     "utf8",
   );
   assert.match(workspaceSource, /getOntologyCategoryTreeInterface/);
   assert.match(workspaceSource, /mapOntologyObjectsToRelationOptions/);
+  assert.match(workspaceSource, /isObjectRelationPage/);
+  assert.match(pageSource, /v-if="!isObjectRelationPage"/);
+  assert.match(pageSource, /筛选对象（单选，结果以该对象为中心）/);
+  assert.match(pageSource, /:object-options="relationObjectOptions"/);
   assert.doesNotMatch(formSource, /allow-create/);
-  assert.match(formSource, /源本体与目标本体不能相同/);
-  assert.match(formSource, /请选择源本体对象/);
-  assert.match(formSource, /请选择目标本体对象/);
+  assert.match(formSource, /源对象与目标对象不能相同/);
+  assert.match(formSource, /请选择源对象/);
+  assert.match(formSource, /请选择目标对象/);
 });
 
 test("relation form create only prefills categoryId when default is in category options", () => {
@@ -149,20 +154,37 @@ test("relation form disables api name when editing", () => {
     "utf8",
   );
   assert.match(formSource, /placeholder="请输入 API 名称"\s*:disabled="mode === 'edit'"/);
-  assert.match(formSource, /:clearable="mode !== 'edit'"/);
-  assert.match(formSource, /placeholder="请选择源本体对象"[\s\S]*?:disabled="mode === 'edit'"/);
-  assert.match(formSource, /placeholder="请选择目标本体对象"[\s\S]*?:disabled="mode === 'edit'"/);
+  assert.match(formSource, /placeholder="请选择源对象"[\s\S]*?:disabled="mode === 'edit'"/);
+  assert.match(formSource, /placeholder="请选择目标对象"[\s\S]*?:disabled="mode === 'edit'"/);
 });
 
-test("relation form category is optional and create submit does not require categoryId", () => {
+test("relation form category is required for create and edit", () => {
   const formSource = readFileSync(
     new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationFormDialog.vue", import.meta.url),
     "utf8",
   );
-  const pageTypeSource = readFileSync(new URL("../src/types/pages/ontologySpaceRelationType.ts", import.meta.url), "utf8");
-  assert.match(formSource, /<el-form-item v-if="categoryOptions\.length" label="分类"/);
-  assert.doesNotMatch(formSource, /!categoryId\.value/);
-  assert.match(pageTypeSource, /categoryId\?:\s*string/);
+  assert.match(formSource, /<el-form-item v-if="categoryOptions\.length" label="分类" required>/);
+  assert.match(formSource, /categoryOptions\.length && !trimmedCategoryId/);
+  assert.match(formSource, /请选择关系分类/);
+  assert.doesNotMatch(formSource, /:clearable="mode !== 'edit'"/);
+});
+
+test("clicking a relation leaf in the category tree opens the relation editor", () => {
+  const panelSource = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/relationComponents/RelationCategoryPanel.vue", import.meta.url), "utf8");
+  const workspaceSource = readFileSync(
+    new URL("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(panelSource, /"edit-relation": \[relationId: string\]/);
+  assert.match(panelSource, /relationId: item\.id/);
+  assert.match(panelSource, /function handleNodeClick/);
+  assert.match(panelSource, /emit\("edit-relation", data\.relationId\)/);
+  assert.match(panelSource, /emit\("select-node", data\.id\)/);
+  assert.doesNotMatch(panelSource, /emit\("select-node", data\.categoryId\)/);
+  assert.match(workspaceSource, /@edit-relation="openRelationFromTree"/);
+  assert.match(workspaceSource, /function openRelationFromTree/);
+  assert.match(workspaceSource, /openRelationEdit\(/);
 });
 
 test("object detail relation route reuses the space relation workspace component", () => {
@@ -180,9 +202,11 @@ test("object detail relation route reuses the space relation workspace component
 test("relation route context resolves space id and object filter seed", async () => {
   const helperUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/resolveRelationRouteContext.ts", import.meta.url);
   assert.equal(existsSync(helperUrl), true);
-  const { resolveRelationSpaceId, resolveObjectRelationFilterSeed } = await import(helperUrl.href);
+  const { resolveRelationSpaceId, resolveObjectRelationFilterSeed, resolveRelationOntologyUniqueIdentifierFrom } = await import(helperUrl.href);
   assert.equal(resolveRelationSpaceId({ params: { spaceId: "12" }, query: {} }), "12");
   assert.equal(resolveRelationSpaceId({ params: {}, query: { spaceId: "46" } }), "46");
+  assert.equal(resolveRelationOntologyUniqueIdentifierFrom({ params: { objectId: "uid-plane" }, query: { spaceId: "46" } }), "uid-plane");
+  assert.equal(resolveRelationOntologyUniqueIdentifierFrom({ params: { spaceId: "12" }, query: {} }), "");
   assert.equal(
     resolveObjectRelationFilterSeed({ params: { objectId: "uid-plane" }, query: { objectName: "飞机" } }, [{ value: "uid-plane", label: "飞机" }]),
     "uid-plane",
@@ -208,9 +232,17 @@ test("space and object relation pages use the prototype panel and graph backgrou
   assert.match(categoryPanel, /background: var\(--aircas-color-active-background\)/);
   assert.match(workspace, panelGradient);
   assert.match(workspace, /box-shadow: inset 0 0 18px var\(--aircas-color-page-glow\)/);
-  assert.match(workspace, /\.space-relation-workspace__view-switch[\s\S]*background: var\(--aircas-color-overlay-deep\)/);
-  assert.match(workspace, /\.space-relation-workspace__view-btn-active[\s\S]*background: var\(--aircas-color-active-background\)/);
-  assert.match(workspace, /\.space-relation-workspace__filter[\s\S]*background: var\(--aircas-color-overlay-deep\)/);
+  assert.match(
+    workspace,
+    /\.space-relation-workspace__view-switch\.aircas-radio-group :deep\(\.el-radio-button__inner\)[\s\S]*background-color: var\(--aircas-color-panel-background-deep\)/,
+  );
+  assert.match(
+    workspace,
+    /__view-switch\.aircas-radio-group :deep\(\.el-radio-button__original-radio:checked \+ \.el-radio-button__inner\)[\s\S]*border-color: var\(--aircas-color-accent-cyan\)/,
+  );
+  assert.match(workspace, /\.space-relation-workspace__filter[\s\S]*display: flex/);
+  const actions = workspace.match(/class="space-relation-workspace__actions"[\s\S]*?<\/header>/)?.[0] ?? "";
+  assert.match(actions, /space-relation-workspace__filter[\s\S]*添加[\s\S]*space-relation-workspace__view-switch/);
   assert.match(graph, /radial-gradient\([\s\S]*var\(--aircas-color-accent-cyan-fill\)/);
   assert.match(graph, /\.relation-graph-view--holographic[\s\S]*background: var\(--aircas-color-page-background\)/);
   assert.match(graph, /color-mix\(in srgb, var\(--aircas-color-black\) 72%, transparent\)/);

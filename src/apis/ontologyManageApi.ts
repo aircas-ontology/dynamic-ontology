@@ -172,6 +172,7 @@ export function getOntologyCategoryTreeInterface(params: OntologyCategoryTreePar
  *
  * @param params 查询参数。
  * @param {string} params.spaceId 必填空间 id。
+ * @param {string} [params.ontologyUniqueIdentifierFrom] 可选本体对象唯一标识；传入时仅返回该本体关联的关系。
  * @returns 标准 API 响应，data 为关系分类体系单根节点；无 data 时表示关系树为空。
  */
 export function getOntologyRelationCategoryTreeInterface(params: OntologyRelationCategoryTreeParams): Promise<ApiResponse<OntologyRelationCategoryTreeData>> {
@@ -241,13 +242,14 @@ function readExportResponseHeader(headers: AxiosResponse["headers"], name: strin
 }
 
 /**
- * @description 导出本体空间，包含分类树、全部本体 schema 与实例数据。
+ * @description 按 exportType 导出本体空间。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
  *
  * 请求方式：GET `/ontology/space/export`
  *
  * 在线文档未声明 JSON 响应体，成功结果按文件字节返回。
  * @param params 查询参数。
  * @param {number} params.spaceId 本体空间 id，必填。
+ * @param {string} params.exportType 导出类型，必填。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
  * @returns 文件内容和用于命名的响应头。
  */
 export async function getExportOntologySpaceInterface(params: ExportOntologySpaceParams): Promise<ExportOntologySpaceFile> {

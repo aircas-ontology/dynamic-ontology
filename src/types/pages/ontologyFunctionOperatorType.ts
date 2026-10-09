@@ -45,6 +45,8 @@ export interface FunctionOperatorBasicDefinition {
   parameterConfig: string;
   /** 可选聚合类型；空表示创建时不传 queryConfig.aggFunc。 */
   aggFunc?: FunctionOperatorAggFunc | "";
+  /** 可选聚合参数名；对应 queryConfig.targetProperty。 */
+  targetProperty?: string;
   basicAction?: FunctionOperatorBasicAction;
   objectId?: string;
   objectName?: string;

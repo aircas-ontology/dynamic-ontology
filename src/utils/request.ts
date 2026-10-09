@@ -3,6 +3,7 @@ import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from "axio
 import type { ApiResponse } from "@/types";
 import { clearLoginToken, getAccessTokenHeader } from "./authToken.ts";
 import { requestTimeoutMs } from "./constants.ts";
+import { resolveServiceRequestUrl } from "./resolveServiceRequestUrl.ts";
 
 declare module "axios" {
   interface AxiosRequestConfig {
@@ -78,11 +79,28 @@ export function normalizeRequestError(error: unknown): RequestError {
 }
 
 /**
- * @description 请求拦截器：已登录时为每个业务请求统一注入 `access-token: Bearer <token>`，未登录不写入该头。
+ * @description 在 USE_MOCK 打开时把登录与本体管理请求改写到 Mock 主机。
+ * @param config axios 内部请求配置。
+ * @returns 改写 url 后的请求配置。
+ */
+export function applyMockServiceUrl(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
+  const domainConfig = typeof DOMAIN_CONFIG === "undefined" ? undefined : DOMAIN_CONFIG;
+  config.url = resolveServiceRequestUrl(config.url ?? "", {
+    USE_MOCK: domainConfig?.USE_MOCK,
+    MOCK_SERVER_URL: domainConfig?.MOCK_SERVER_URL,
+    LOGIN_URL: domainConfig?.LOGIN_URL,
+    ONTOLOGYMANAGE_URL: domainConfig?.ONTOLOGYMANAGE_URL,
+  });
+  return config;
+}
+
+/**
+ * @description 请求拦截器：先按开关改写 Mock 地址，再在已登录时注入 `access-token: Bearer <token>`。
  * @param config axios 内部请求配置。
  * @returns 补充鉴权头后的请求配置。
  */
 export function authorizeRequest(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
+  applyMockServiceUrl(config);
   const accessToken = getAccessTokenHeader();
   if (accessToken) {
     config.headers.set("access-token", accessToken);

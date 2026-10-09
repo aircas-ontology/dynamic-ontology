@@ -57,6 +57,8 @@ test("space actions expose conceptual model build with current space context", (
   const actionsSource = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SpaceActions.vue", import.meta.url), "utf8");
   const composableSource = readFileSync(new URL("../src/views/OntologySpaceManagement/composables/useSpaceManagementActions.ts", import.meta.url), "utf8");
   assert.match(actionsSource, /command="conceptual-model"/);
+  assert.match(actionsSource, /v-if="canBuildConceptualModel"/);
+  assert.match(actionsSource, /metrics\.ontology === 0/);
   assert.match(actionsSource, /value === "conceptual-model"/);
   assert.match(composableSource, /action === "conceptual-model"/);
   assert.match(composableSource, /name: "OntologyConceptualModelCreate"/);

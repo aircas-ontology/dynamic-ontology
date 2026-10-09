@@ -18,4 +18,8 @@ const DOMAIN_CONFIG = {
   ONTOLOGYMANAGE_URL:"http://172.16.18.58:37002",//本体管理
   //ONTOLOGYMANAGE_URL:"/serviceApi",//本体管理
 
+
+  MOCK_SERVER_URL: "http://127.0.0.1:37003", // Mock HTTP 服务，与 npm run dev 一起启动
+  USE_MOCK: false, // true=走 Mock；false=走上面的真实 LOGIN / ONTOLOGY 地址
+
 };

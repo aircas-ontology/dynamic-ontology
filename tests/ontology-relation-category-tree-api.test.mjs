@@ -20,6 +20,7 @@ test("relation category tree api issues a GET to link_category tree uri with spa
   assert.match(apiSource, /params,/);
   assert.doesNotMatch(apiSource, /timeout:/);
   assert.match(apiSource, /@param \{string\} params\.spaceId/);
+  assert.match(apiSource, /@param \{string\} \[params\.ontologyUniqueIdentifierFrom\]/);
   assert.match(barrelSource, /getOntologyRelationCategoryTreeInterface/);
 });
 
@@ -28,6 +29,7 @@ test("relation category tree types cover params, links, and recursive children",
   const barrelSource = readSource("../src/types/index.ts");
   assert.match(typeSource, /export interface OntologyRelationCategoryTreeParams/);
   assert.match(typeSource, /spaceId:\s*string/);
+  assert.match(typeSource, /ontologyUniqueIdentifierFrom\?:\s*string/);
   assert.match(typeSource, /export interface OntologyRelationCategoryLink/);
   assert.match(typeSource, /uniqueIdentifier:\s*string/);
   assert.match(typeSource, /ontologyNameFrom:\s*string/);
@@ -154,11 +156,13 @@ test("relation workspace loads category tree api and maps links into relations",
   assert.match(workspaceSource, /mapOntologyRelationLinks/);
   assert.match(workspaceSource, /relations:\s*mapOntologyRelationLinks\(relationResponse\.data\)/);
   assert.match(workspaceSource, /isMissingOntologyRelationCategoryTreeData|data == null|data === undefined/);
+  assert.match(workspaceSource, /resolveRelationOntologyUniqueIdentifierFrom/);
+  assert.match(workspaceSource, /ontologyUniqueIdentifierFrom/);
   assert.match(panelSource, /添加关系分类/);
   assert.match(panelSource, /kind:\s*"relation"/);
   assert.match(panelSource, /item\.displayName/);
-  assert.match(panelSource, /FolderOpened v-if="data\.children\?\.length"/);
-  assert.match(panelSource, /CollectionTag/);
+  assert.match(panelSource, /<FolderOpened \/>/);
+  assert.doesNotMatch(panelSource, /CollectionTag/);
   assert.match(panelSource, /relation-category-panel__relation-row/);
   assert.match(panelSource, /relation-category-panel__relation-dot/);
   assert.doesNotMatch(panelSource, /children:\s*\[\]/);
@@ -169,8 +173,8 @@ test("relation workspace loads category tree api and maps links into relations",
   assert.match(panelSource, /\.el-tree-node__expand-icon[\s\S]*flex-shrink:\s*0/);
   assert.match(panelSource, /\.el-tree-node__expand-icon\.is-leaf[\s\S]*color:\s*var\(--aircas-color-transparent\)/);
   assert.doesNotMatch(workspaceSource, /createOntologySpaceRelationWorkspaceData\(\)/);
-  assert.match(tableSource, /label="源本体"/);
-  assert.match(tableSource, /label="目标本体"/);
+  assert.match(tableSource, /label="源对象"/);
+  assert.match(tableSource, /label="目标对象"/);
   assert.match(tableSource, /prop="apiName"/);
   assert.match(tableSource, /prop="categoryName"/);
   assert.match(tableSource, /prop="description"/);

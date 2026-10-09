@@ -107,6 +107,10 @@ defineEmits<{
   box-shadow: inset 0 0 18px var(--aircas-color-page-glow);
 }
 
+:root[theme="light"] .ontology-object-attribute-panel__content-header {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
+
 .ontology-object-attribute-panel__content-header h2 {
   margin: 0;
   color: var(--aircas-color-text-primary);
@@ -137,6 +141,10 @@ defineEmits<{
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+}
+
+:root[theme="light"] .ontology-object-attribute-panel__table-wrap {
+  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
 .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat.el-table {
@@ -180,6 +188,11 @@ defineEmits<{
 .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__fixed-right),
 .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__fixed-right-patch) {
   background: var(--aircas-color-overlay-deep);
+}
+
+:root[theme="light"] .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__fixed-right),
+:root[theme="light"] .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__fixed-right-patch) {
+  background: var(--aircas-color-card-background);
 }
 
 .ontology-object-attribute-panel__empty {

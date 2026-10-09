@@ -39,11 +39,30 @@
         <el-form-item label="函数说明" prop="description">
           <el-input v-model="form.description" class="aircas-input" type="textarea" :rows="2" maxlength="240" show-word-limit />
         </el-form-item>
-        <el-form-item v-if="form.definition.kind === 'basic'" label="聚合类型">
-          <el-select v-model="form.definition.aggFunc" class="aircas-select" popper-class="aircas-select-popper" clearable placeholder="请选择聚合类型">
-            <el-option v-for="item in FUNCTION_OPERATOR_AGG_FUNC_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
+        <div v-if="form.definition.kind === 'basic'" class="function-operator-form__name-grid">
+          <el-form-item label="聚合类型">
+            <el-select
+              v-model="form.definition.aggFunc"
+              class="aircas-select"
+              popper-class="aircas-select-popper"
+              clearable
+              placeholder="请选择聚合类型"
+              @clear="clearTargetProperty"
+              @change="onAggFuncChange"
+            >
+              <el-option v-for="item in FUNCTION_OPERATOR_AGG_FUNC_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="聚合参数名">
+            <el-input
+              v-model="form.definition.targetProperty"
+              class="aircas-input"
+              maxlength="64"
+              placeholder="例如：target"
+              :disabled="!form.definition.aggFunc"
+            />
+          </el-form-item>
+        </div>
         <el-form-item v-if="form.definition.kind === 'basic'" label="参数配置" prop="definition.parameterConfig">
           <FunctionOperatorBasicFilterBuilder v-model="form.definition.parameterConfig" />
         </el-form-item>
@@ -62,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from "vue";
+import { reactive, ref, toRaw, watch } from "vue";
 import type { FormInstance, FormRules } from "element-plus";
 import { ElMessage } from "element-plus";
 
@@ -121,7 +140,7 @@ function createEmptyDraft(): FunctionOperatorDraft {
     timeout: 5000,
     retryCount: 0,
     retryInterval: 0,
-    definition: { kind: "basic", parameterConfig: createDefaultBasicParameterConfig(), aggFunc: "" },
+    definition: { kind: "basic", parameterConfig: createDefaultBasicParameterConfig(), aggFunc: "", targetProperty: "" },
     dependencies: [],
     testStatus: "untested",
     testedAt: "",
@@ -151,7 +170,7 @@ function toDraft(operator: FunctionOperator): FunctionOperatorDraft {
     timeout: operator.timeout,
     retryCount: operator.retryCount,
     retryInterval: operator.retryInterval,
-    definition: structuredClone(operator.definition),
+    definition: structuredClone(toRaw(operator.definition)),
     dependencies: [...operator.dependencies],
     testStatus: operator.testStatus,
     testedAt: operator.testedAt,
@@ -163,9 +182,7 @@ const form = reactive<FunctionOperatorDraft>(createEmptyDraft());
 const rules: FormRules = {
   name: [{ required: true, message: "请输入函数名称", trigger: "blur" }],
   functionApi: [{ required: true, message: "请输入函数api名称", trigger: "blur" }],
-  description: [{ required: true, message: "请输入函数说明", trigger: "blur" }],
 };
-
 /**
  * @description 切换函数类型；非 basic 仅占位。
  * @param type 目标类型。
@@ -173,10 +190,33 @@ const rules: FormRules = {
 function changeType(type: FunctionOperatorType): void {
   form.type = type;
   if (type === "basic") {
-    form.definition = { kind: "basic", parameterConfig: createDefaultBasicParameterConfig(), aggFunc: "" };
+    form.definition = { kind: "basic", parameterConfig: createDefaultBasicParameterConfig(), aggFunc: "", targetProperty: "" };
     return;
   }
   form.definition = { kind: type };
+}
+
+/**
+ * @description 清空聚合参数名（清除聚合类型时调用）。
+ */
+function clearTargetProperty(): void {
+  if (form.definition.kind !== "basic") {
+    return;
+  }
+  form.definition.targetProperty = "";
+}
+
+/**
+ * @description 聚合类型变更：未选中时清空聚合参数名。
+ * @param value 当前聚合类型。
+ */
+function onAggFuncChange(value: string | number | boolean | undefined): void {
+  if (form.definition.kind !== "basic") {
+    return;
+  }
+  if (!value) {
+    form.definition.targetProperty = "";
+  }
 }
 
 /**
@@ -195,6 +235,7 @@ async function submitDraft(): Promise<void> {
     ElMessage.warning("请配置参数");
     return;
   }
+  const aggFunc = form.definition.aggFunc || "";
   emit("submit", {
     ...form,
     name: form.name.trim(),
@@ -203,7 +244,8 @@ async function submitDraft(): Promise<void> {
     type: "basic",
     definition: {
       ...form.definition,
-      aggFunc: form.definition.aggFunc || "",
+      aggFunc,
+      targetProperty: aggFunc ? (form.definition.targetProperty || "").trim() : "",
     },
   });
 }
@@ -214,9 +256,12 @@ watch(
     if (!visible) {
       return;
     }
-    const next = props.draft ? structuredClone(props.draft) : props.operator ? toDraft(props.operator) : createEmptyDraft();
+    const next = props.draft ? (structuredClone(toRaw(props.draft)) as FunctionOperatorDraft) : props.operator ? toDraft(props.operator) : createEmptyDraft();
     next.spaceId = props.spaceId;
     Object.assign(form, next);
+    if (!next.id) {
+      delete form.id;
+    }
   },
 );
 </script>

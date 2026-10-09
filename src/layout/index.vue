@@ -8,6 +8,7 @@
         <main class="layout-page"><router-view /></main>
       </section>
     </div>
+    <AiAssistantDrawer />
   </div>
 </template>
 <script setup lang="ts">
@@ -15,6 +16,7 @@ import { ref } from "vue";
 import HeaderBar from "./components/HeaderBar.vue";
 import NavigationMenu from "./components/NavigationMenu.vue";
 import BreadcrumbBar from "./components/BreadcrumbBar.vue";
+import AiAssistantDrawer from "./components/AiAssistantDrawer.vue";
 const collapsed = ref(true);
 </script>
 <style scoped lang="scss">

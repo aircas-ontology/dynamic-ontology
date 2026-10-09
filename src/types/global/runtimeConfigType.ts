@@ -9,6 +9,10 @@ declare global {
     readonly OCEAN_ANALYSIS_SERVER_URL: string;
     readonly LOGIN_URL: string;
     readonly ONTOLOGYMANAGE_URL: string;
+    /** 本地 HTTP Mock 服务地址，由开发人员在 domainConfig.js 中维护。 */
+    readonly MOCK_SERVER_URL?: string;
+    /** 为 true 时将登录与本体管理请求改写到 MOCK_SERVER_URL。 */
+    readonly USE_MOCK?: boolean;
   }
 
   interface SystemConfig {

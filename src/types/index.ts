@@ -28,20 +28,22 @@ export type {
   CreateOntologySpaceWithCanvasContentData,
   CreateOntologySpaceWithCanvasContentParams,
 } from "./apis/createOntologySpaceWithCanvasContentType";
+export type { DeleteOntologyFunctionData, DeleteOntologyFunctionParams } from "./apis/deleteOntologyFunctionType";
 export type { DeleteOntologyLinkParams } from "./apis/deleteOntologyLinkType";
 export type { DeleteOntologyObjectArrTypeTreeParams } from "./apis/deleteOntologyObjectArrTypeTreeType";
 export type { DeleteOntologyObjectData, DeleteOntologyObjectParams } from "./apis/deleteOntologyObjectType";
 export type { DeleteOntologyPropertyData, DeleteOntologyPropertyParams } from "./apis/deleteOntologyPropertyType";
 export type { DeleteOntologySpaceData, DeleteOntologySpaceParams } from "./apis/deleteOntologySpaceType";
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
-export type { ExportOntologySpaceFile, ExportOntologySpaceParams } from "./apis/exportOntologySpaceType";
-export type { ExportOntologyFile, ExportOntologyParams } from "./apis/exportOntologyType";
+export type { ExportOntologySpaceFile, ExportOntologySpaceParams, OntologySpaceExportType } from "./apis/exportOntologySpaceType";
+export type { ExportOntologyFile, ExportOntologyParams, OntologyExportType } from "./apis/exportOntologyType";
 export type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceColumnsParams,
   OntologyDatasourceColumnDescVO,
 } from "./apis/getOntologyDatasourceColumnsType";
 export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
+export type { GetOntologyFunctionDetailData, GetOntologyFunctionDetailParamItem, GetOntologyFunctionDetailParams } from "./apis/getOntologyFunctionDetailType";
 export type { GetOntologyFunctionListData, GetOntologyFunctionListItem, GetOntologyFunctionListParams } from "./apis/getOntologyFunctionListType";
 export type { GetOntologyMetaByObjectIdData, GetOntologyMetaByObjectIdParams } from "./apis/getOntologyMetaByObjectIdType";
 export type { GetOntologyMetaStatisticData, GetOntologyMetaStatisticParams, OntologyMetaStatisticVO } from "./apis/getOntologyMetaStatisticType";
@@ -91,6 +93,8 @@ export type {
   OntologyRelationCategoryTreeParams,
   UpdateOntologyRelationCategoryNameParams,
 } from "./apis/ontologyRelationCategoryTreeType";
+export type { TestOntologyFunctionData, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
+export type { UpdateOntologyFunctionData, UpdateOntologyFunctionParams } from "./apis/updateOntologyFunctionType";
 export type { UpdateOntologyLinkParams } from "./apis/updateOntologyLinkType";
 export type { UpdateOntologyObjectArrTypeTreeParams } from "./apis/updateOntologyObjectArrTypeTreeType";
 export type { UpdateOntologyObjectData, UpdateOntologyObjectParams } from "./apis/updateOntologyObjectType";
@@ -170,9 +174,34 @@ export type {
   OntologyObjectDetailRouteName,
   OntologyObjectDetailTab,
 } from "./pages/ontologyObjectDetailType";
+export {
+  ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
+  SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
+  SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS,
+  SPACE_BEHAVIOR_STATUS_LABELS,
+  SPACE_BEHAVIOR_STATUS_OPERATION_LABELS,
+  SPACE_BEHAVIOR_STATUS_OPERATION_OPTIONS,
+  SPACE_BEHAVIOR_STATUS_OPTIONS,
+} from "./pages/ontologySpaceBehaviorType";
+export type {
+  SpaceBehaviorBasicAction,
+  SpaceBehaviorCategoryNode,
+  SpaceBehaviorDeletePreflight,
+  SpaceBehaviorDraft,
+  SpaceBehaviorItem,
+  SpaceBehaviorOperatorOption,
+  SpaceBehaviorParameter,
+  SpaceBehaviorReferenceCheckResult,
+  SpaceBehaviorStatus,
+  SpaceBehaviorStatusChangeDraft,
+  SpaceBehaviorStatusOperation,
+  SpaceBehaviorWorkspaceData,
+  SpaceBehaviorWorkspaceLoadStatus,
+} from "./pages/ontologySpaceBehaviorType";
 export type {
   ManagementWorkspaceTab,
   OntologyConceptNode,
+  OntologyConceptObjectRef,
   OntologyObjectItem,
   OntologyObjectCreateDraft,
   OntologyObjectLocationTarget,

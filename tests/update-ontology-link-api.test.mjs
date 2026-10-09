@@ -50,6 +50,7 @@ describe("update ontology link api", () => {
     assert.match(workspaceSource, /await loadSpaceRelationWorkspace\(\)/);
     assert.doesNotMatch(workspaceSource, /editRelationClass\(\{/);
     assert.match(formSource, /:disabled="mode === 'edit'"/);
-    assert.match(formSource, /:clearable="mode !== 'edit'"/);
+    assert.match(formSource, /label="分类" required/);
+    assert.doesNotMatch(formSource, /:clearable="mode !== 'edit'"/);
   });
 });

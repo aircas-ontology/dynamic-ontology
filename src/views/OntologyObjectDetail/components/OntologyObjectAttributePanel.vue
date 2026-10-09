@@ -11,6 +11,7 @@
       :filter-category-node="filterCategoryNode"
       @update:category-search="categorySearch = $event"
       @select-category="selectCategory"
+      @edit-attribute="openAttributeFromTree"
       @create-root="openRootCategoryCreate"
       @create-category="openCategoryCreate"
       @edit-category="openCategoryEdit"
@@ -60,6 +61,8 @@
       :command-error="attributeCommandError"
       :saving="savingAttribute"
       @update:visible="attributeDialogVisible = $event"
+      @update-primary="updateDraftPrimaryKey"
+      @update-name-key="updateDraftNameKey"
       @confirm="saveAttributeDraft"
     />
     <DataSourceAssociateDialog
@@ -80,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import {
   autoBindOntologyPropertyDatasourceInterface,
@@ -94,11 +97,12 @@ import type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceTablesData,
   GetOntologyPropertyDetailByOntologyIdData,
+  OntologyAttributePropertyTreeNode,
 } from "@/types";
 import { useRoute } from "vue-router";
 import { useAttributeCategoryTree } from "../composables/useAttributeCategoryTree";
 import { useAttributePropertyList } from "../composables/useAttributePropertyList";
-import { collectPropertyItemsFromTree, findCategory, filterCategoryNode } from "../utils/attributePanelHelpers";
+import { collectPropertyItemsFromTree, findCategory, filterCategoryNode, mapOntologyPropertyItem } from "../utils/attributePanelHelpers";
 import AttributeCategoryCreateDialog from "./AttributeCategoryCreateDialog.vue";
 import AttributeCategoryEditDialog from "./AttributeCategoryEditDialog.vue";
 import AttributeCategoryTree from "./AttributeCategoryTree.vue";
@@ -110,6 +114,7 @@ interface DataSourceField {
   id: string;
   name: string;
   dataType: string;
+  isPrimary: boolean;
 }
 
 interface DataSourceTable {
@@ -141,6 +146,8 @@ interface OntologyPropertyMappingItem {
   displayName: string;
   apiName: string;
   categoryName: string;
+  isPrimary: boolean;
+  isNameKey: boolean;
   dataSource: PropertyDataSourceBind | null;
 }
 
@@ -216,8 +223,18 @@ const {
   openCreateAttribute,
   openEditAttribute,
   saveAttributeDraft,
+  updateDraftPrimaryKey,
+  updateDraftNameKey,
   removeAttribute,
 } = propertyApi;
+
+/**
+ * @description 将分类树属性节点转为列表项并打开与表格编辑按钮相同的属性编辑弹窗。
+ * @param data 分类树中的属性节点
+ */
+function openAttributeFromTree(data: OntologyAttributePropertyTreeNode) {
+  openEditAttribute(mapOntologyPropertyItem(data.source, String(route.params.objectId || "")));
+}
 
 const dataSourceDialogVisible = ref(false);
 const dataSourceDialogRef = ref<InstanceType<typeof DataSourceAssociateDialog> | null>(null);
@@ -236,6 +253,8 @@ const ontologyPropertyMappings = computed<OntologyPropertyMappingItem[]>(() =>
     displayName: item.displayName,
     apiName: item.apiName,
     categoryName: findCategory(categories.value, item.categoryId)?.label ?? "未分类",
+    isPrimary: item.isPrimary,
+    isNameKey: item.isNameKey,
     dataSource: resolvePropertyDataSourceBind(item.uniqueIdentifier),
   })),
 );
@@ -254,7 +273,7 @@ function resolvePropertyDataSourceBind(propertyId: string): PropertyDataSourceBi
     const table = database.tables.find((item) => item.dataSourceId === dataSourceId);
     const field = table?.fields.find((item) => item.name === columnName);
     if (!table || !field) continue;
-    return {
+  return {
       databaseId: database.id,
       databaseName: database.name,
       schemaName: table.schemaName,
@@ -286,7 +305,12 @@ function mapDatasourceTables(response: GetOntologyDatasourceTablesData): DataSou
 
 /** @description 将接口字段记录转换为关联弹窗字段选项。 */
 function mapDatasourceColumns(data: GetOntologyDatasourceColumnsData): DataSourceField[] {
-  return data.map((column) => ({ id: column.columnName, name: column.columnName, dataType: column.type || column.description || "" }));
+  return data.map((column) => ({
+    id: column.columnName,
+    name: column.columnName,
+    dataType: column.type || column.description || "",
+    isPrimary: column.isPrimaryKey === true,
+  }));
 }
 
 /**
@@ -304,9 +328,7 @@ async function openDataSource() {
   dataSourceTableError.value = "";
   dataSourceColumnError.value = "";
   try {
-    const infoResponse = await getOntologyPropertyDetailByOntologyIdInterface({ ontologyUniqueIdentifier });
-    if (infoResponse.code !== 200) throw new Error(infoResponse.message || "属性信息查询失败");
-    ontologyPropertyDetails.value = infoResponse.data;
+    await loadPropertyDataSourceDetails(ontologyUniqueIdentifier);
     const tableLoaded = await loadDataSourceTables();
     if (!tableLoaded) throw new Error(dataSourceTableError.value || "数据源查询失败");
     await loadAssociatedDataSourceColumns();
@@ -317,6 +339,16 @@ async function openDataSource() {
   } finally {
     dataSourceOpening.value = false;
   }
+}
+
+/**
+ * @description 查询当前本体属性及其数据源关联详情。
+ * @param ontologyUniqueIdentifier 本体唯一标识。
+ */
+async function loadPropertyDataSourceDetails(ontologyUniqueIdentifier: string): Promise<void> {
+  const infoResponse = await getOntologyPropertyDetailByOntologyIdInterface({ ontologyUniqueIdentifier });
+  if (infoResponse.code !== 200) throw new Error(infoResponse.message || "属性信息查询失败");
+  ontologyPropertyDetails.value = infoResponse.data;
 }
 
 /**
@@ -397,12 +429,21 @@ async function handleAutoDataSourceAssociate() {
     return;
   }
   autoDataSourceSubmitting.value = true;
+  let autoAssociationCompleted = false;
   try {
     const response = await autoBindOntologyPropertyDatasourceInterface({ ontologyIdentifier });
     if (response.code !== 200) throw new Error(response.message || "自动关联数据源失败");
+    autoAssociationCompleted = true;
+    const tableLoaded = await loadDataSourceTables();
+    if (!tableLoaded) throw new Error(dataSourceTableError.value || "数据源查询失败");
+    await loadPropertyDataSourceDetails(ontologyIdentifier);
+    await loadAssociatedDataSourceColumns();
+    await nextTick();
+    dataSourceDialogRef.value?.syncServerMappings();
     ElMessage.success("自动关联数据源成功");
   } catch (cause) {
-    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "自动关联数据源失败，请重试。");
+    const message = cause instanceof Error && cause.message.trim() ? cause.message : "自动关联数据源失败，请重试。";
+    ElMessage.error(autoAssociationCompleted ? `自动关联数据源已完成，但结果刷新失败：${message}` : message);
   } finally {
     autoDataSourceSubmitting.value = false;
   }
@@ -416,7 +457,7 @@ async function handleDataSourceSubmit(payloads: PropertyBindPayload[]) {
     if (!attribute) {
       dataSourceDialogRef.value?.setLoading(false);
       ElMessage.error("未找到待关联的本体属性，请重新打开弹窗后再试。");
-      return;
+    return;
     }
     params.push({
       uniqueIdentifier: attribute.uniqueIdentifier,

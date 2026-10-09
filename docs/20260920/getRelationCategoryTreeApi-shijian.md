@@ -27,9 +27,11 @@ mocks与types文件名自行语义化命名
 - ```JSON
   {
     "spaceId": "1",
+    "ontologyUniqueIdentifierFrom": "",
   }
   ```
 - `spaceId`：【string，必填】 空间id
+- `ontologyUniqueIdentifierFrom`：【string，非必填】 本体对象唯一标识，选填；传入时仅返回该本体关联的关系
 
 ## 输出参数
 

@@ -106,7 +106,7 @@
           <el-button class="aircas-button" text size="small" @click="togglePublish(operator)">
             {{ operator.status === "published" ? "下线" : "发布" }}
           </el-button>
-          <el-button class="aircas-button" text type="danger" size="small" @click="removeOperator(operator)">删除</el-button>
+          <el-button class="aircas-button" text size="small" @click="openDeleteOperator(operator)">删除</el-button>
         </div>
       </article>
     </div>
@@ -139,12 +139,13 @@
           <el-button class="aircas-button" link @click.stop="togglePublish(asOperator(row))">{{
             asOperator(row).status === "published" ? "下线" : "发布"
           }}</el-button>
-          <el-button class="aircas-button" link type="danger" @click.stop="removeOperator(asOperator(row))">删除</el-button>
+          <el-button class="aircas-button" link type="danger" @click.stop="openDeleteOperator(asOperator(row))">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
     <el-pagination
+      background
       v-if="total > 0"
       v-model:current-page="page"
       v-model:page-size="pageSize"
@@ -157,14 +158,7 @@
       @size-change="loadOperators"
     />
 
-    <FunctionOperatorDetailDrawer
-      v-model="detailVisible"
-      :operator="selectedOperator"
-      @test="selectedOperator && openTest(selectedOperator)"
-      @edit="selectedOperator && openEdit(selectedOperator)"
-      @delete="selectedOperator && removeOperator(selectedOperator)"
-      @publish="selectedOperator && togglePublish(selectedOperator)"
-    />
+    <FunctionOperatorDetailDrawer v-model="detailVisible" :operator="selectedOperator" :loading="detailLoading" />
     <FunctionOperatorFormDialog
       v-model="formVisible"
       :operator="editingOperator"
@@ -173,18 +167,66 @@
       :loading="actionLoading"
       @submit="saveOperator"
     />
+    <FunctionOperatorDeleteDialog
+      v-model="deleteVisible"
+      :operator-name="deletingOperator?.name ?? ''"
+      :submitting="deleteSubmitting"
+      :error="deleteError"
+      @confirm="confirmDeleteOperator"
+    />
 
-    <el-dialog v-model="testVisible" title="函数算子测试" width="640px" destroy-on-close>
+    <el-dialog v-model="testVisible" class="aircas-dialog function-operator-test" title="函数算子测试" width="960px" append-to-body destroy-on-close>
       <p class="function-operator-panel__test-title">{{ testingOperator?.name }}</p>
-      <el-input v-model="testInput" class="aircas-input" type="textarea" :rows="8" placeholder="请输入 JSON 测试参数" />
-      <div v-if="testResult" class="function-operator-panel__test-result" :class="{ 'is-error': !testResult.success }">
-        <strong>{{ testResult.message }}</strong>
-        <pre>{{ testResult.output }}</pre>
-        <span>耗时 {{ testResult.duration }} ms</span>
+      <div class="function-operator-test__body">
+        <p v-if="testDetailLoading" class="function-operator-test__state" role="status"><AircasLoading>正在加载函数详情...</AircasLoading></p>
+        <el-form v-else label-position="top" class="aircas-form function-operator-test__form">
+          <el-form-item label="选择对象">
+            <el-select
+              :model-value="testSelectedOntologyId"
+              class="aircas-select"
+              popper-class="aircas-select-popper"
+              filterable
+              clearable
+              :loading="testObjectLoading"
+              placeholder="请选择当前空间下的本体对象"
+              @update:model-value="selectTestOntology(String($event ?? ''))"
+            >
+              <el-option v-for="item in testObjectOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item v-for="bindingKey in testBindingKeys" :key="bindingKey" :label="`参数 ${bindingKey}`">
+            <el-select
+              :model-value="testPropertyBindings[bindingKey] ?? ''"
+              class="aircas-select"
+              popper-class="aircas-select-popper"
+              filterable
+              clearable
+              :disabled="!testSelectedOntologyId"
+              :loading="testPropertyLoading"
+              placeholder="请选择属性 apiName"
+              @update:model-value="updateTestPropertyBinding(bindingKey, String($event ?? ''))"
+            >
+              <el-option
+                v-for="item in testPropertyOptions"
+                :key="`${bindingKey}-${item.value}`"
+                :label="`${item.label}（${item.value}）`"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+          <div class="function-operator-test__io">
+            <el-form-item label="请求参数" class="function-operator-test__io-item">
+              <el-input v-model="testInput" class="aircas-input" type="textarea" :rows="12" placeholder="完整测试请求 JSON" />
+            </el-form-item>
+            <el-form-item label="输出结果" class="function-operator-test__io-item">
+              <el-input :model-value="testOutput" class="aircas-input" type="textarea" :rows="12" readonly placeholder="运行测试后展示接口响应" />
+            </el-form-item>
+          </div>
+        </el-form>
       </div>
       <template #footer>
         <el-button class="aircas-button" @click="testVisible = false">取消</el-button>
-        <el-button class="aircas-button" type="primary" :loading="testing" @click="runTest">运行测试</el-button>
+        <el-button class="aircas-button" type="primary" :loading="testing" :disabled="testDetailLoading" @click="runTest">运行测试</el-button>
       </template>
     </el-dialog>
   </section>
@@ -195,8 +237,10 @@ import type { TagProps } from "element-plus";
 
 import type { FunctionOperator, FunctionOperatorStatus } from "@/types";
 import { FUNCTION_OPERATOR_STATUS_LABELS, FUNCTION_OPERATOR_STATUS_OPTIONS, FUNCTION_OPERATOR_TYPE_LABELS, FUNCTION_OPERATOR_TYPE_OPTIONS } from "@/types";
+import AircasLoading from "@/components/AircasLoading.vue";
 
 import { useFunctionOperatorWorkspace } from "../composables/useFunctionOperatorWorkspace";
+import FunctionOperatorDeleteDialog from "./FunctionOperatorDeleteDialog.vue";
 import FunctionOperatorDetailDrawer from "./FunctionOperatorDetailDrawer.vue";
 import FunctionOperatorFormDialog from "./FunctionOperatorFormDialog.vue";
 
@@ -216,14 +260,27 @@ const {
   creatorOptions,
   selectedOperator,
   detailVisible,
+  detailLoading,
   editingOperator,
   formDraft,
   formVisible,
   testVisible,
   testingOperator,
   testInput,
-  testResult,
+  testOutput,
   testing,
+  testDetailLoading,
+  testObjectLoading,
+  testPropertyLoading,
+  testBindingKeys,
+  testObjectOptions,
+  testPropertyOptions,
+  testSelectedOntologyId,
+  testPropertyBindings,
+  deleteVisible,
+  deleteSubmitting,
+  deleteError,
+  deletingOperator,
   loadOperators,
   resetFilters,
   applyFilters,
@@ -231,9 +288,12 @@ const {
   openCreate,
   openEdit,
   saveOperator,
-  removeOperator,
+  openDeleteOperator,
+  confirmDeleteOperator,
   togglePublish,
   openTest,
+  selectTestOntology,
+  updateTestPropertyBinding,
   runTest,
 } = useFunctionOperatorWorkspace();
 
@@ -312,12 +372,16 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
 }
 
 .function-operator-panel__filters {
-  min-width: 1150px;
+  min-width: 1250px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--aircas-color-border-soft);
+  border-radius: 8px;
+  background: var(--aircas-color-panel-overlay);
 }
 
 .function-operator-panel__filter-fields,
@@ -456,6 +520,8 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
 .function-operator-panel__cards {
   display: grid;
   flex: 1;
+  align-items: start;
+  align-content: start;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
   min-width: 0;
@@ -471,7 +537,7 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   padding: 12px;
   border: 1px solid var(--aircas-color-border-soft);
   border-radius: 8px;
-  background: var(--aircas-color-panel-background-deep);
+  background: var(--aircas-color-card-background);
   cursor: pointer;
 }
 
@@ -481,12 +547,19 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
 
 .function-operator-card__header,
 .function-operator-card__meta,
-.function-operator-card__footer,
-.function-operator-card__actions {
+.function-operator-card__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.function-operator-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .function-operator-card__name {
@@ -495,7 +568,17 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   font-weight: 600;
 }
 
-.function-operator-card__description,
+.function-operator-card__description {
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .function-operator-card__footer {
   margin: 0;
   color: var(--aircas-color-text-secondary);
@@ -518,24 +601,31 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   font-size: 14px;
 }
 
-.function-operator-panel__test-result {
-  margin-top: 12px;
-  padding: 8px;
-  border: 1px solid var(--aircas-color-border-soft);
-  border-radius: 4px;
-  background: var(--aircas-color-panel-background-deep);
+.function-operator-test__body {
+  min-height: 120px;
+}
+
+.function-operator-test__state {
+  margin: 0;
   color: var(--aircas-color-text-secondary);
-  font-size: 12px;
+  font-size: 13px;
 }
 
-.function-operator-panel__test-result.is-error {
-  border-color: var(--aircas-color-danger);
-  color: var(--aircas-color-danger);
+.function-operator-test__form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.function-operator-panel__test-result pre {
-  margin: 8px 0;
-  white-space: pre-wrap;
-  word-break: break-word;
+.function-operator-test__io {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.function-operator-test__io-item {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-bottom: 0;
 }
 </style>

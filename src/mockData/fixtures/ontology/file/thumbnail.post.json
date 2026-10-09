@@ -1,0 +1,6 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": "http://127.0.0.1:37003/mock-thumbnail.png"
+}

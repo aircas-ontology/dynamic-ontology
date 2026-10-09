@@ -164,6 +164,50 @@ export function isAttributeItem(value: unknown): value is OntologyAttributeItem 
   return "uniqueIdentifier" in value && typeof value.uniqueIdentifier === "string";
 }
 
+/** 属性主键或名称键。 */
+export type AttributeKeyKind = "primary" | "name";
+
+/** 参与主键和名称键冲突判断的属性。 */
+export interface AttributeKeyOwner {
+  uniqueIdentifier: string;
+  displayName: string;
+  apiName: string;
+  isPrimary: boolean;
+  isNameKey: boolean;
+}
+
+/**
+ * @description 查找当前对象里已经占用主键或名称键的其他属性。
+ * @param attributes 当前对象的全部属性。
+ * @param kind 要设置的键类型。
+ * @param editingAttributeId 正在编辑的属性标识；新增时为空。
+ * @returns 已占用该键的其他属性；没有冲突时返回 null。
+ */
+export function findConflictingAttributeKey(
+  attributes: AttributeKeyOwner[],
+  kind: AttributeKeyKind,
+  editingAttributeId: string | null,
+): AttributeKeyOwner | null {
+  return (
+    attributes.find((item) => {
+      if (editingAttributeId && item.uniqueIdentifier === editingAttributeId) return false;
+      return kind === "primary" ? item.isPrimary : item.isNameKey;
+    }) ?? null
+  );
+}
+
+/**
+ * @description 生成主键或名称键重复时的提示文案。
+ * @param kind 冲突的键类型。
+ * @param attribute 已经占用该键的属性。
+ * @returns 提示用户不能再设置第二个主键或名称键。
+ */
+export function formatAttributeKeyConflictMessage(kind: AttributeKeyKind, attribute: Pick<AttributeKeyOwner, "displayName" | "apiName">): string {
+  const name = attribute.displayName.trim() || attribute.apiName.trim() || "未命名属性";
+  const label = kind === "primary" ? "主键" : "名称键";
+  return `当前对象已存在${label}「${name}」，不能同时设置两个${label}`;
+}
+
 /** @description 递归收集分类节点及其子分类中的属性。 */
 export function collectPropertyItemsFromTree(nodes: OntologyAttributeTreeNode[], ontologyUniqueIdentifier: string): OntologyAttributeItem[] {
   const items: OntologyAttributeItem[] = [];

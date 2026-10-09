@@ -1,6 +1,6 @@
 import type { ApiResponse, OntologyGlobalSearchData } from "@/types";
 
-/** 全局检索成功样例（与契约输出样例一致）。 */
+/** 全局检索成功样例（与契约输出样例一致，并补齐对象/属性直跳字段）。 */
 export const ontologyGlobalSearchMock: ApiResponse<OntologyGlobalSearchData> = {
   code: 200,
   message: "SUCCESS",
@@ -17,6 +17,8 @@ export const ontologyGlobalSearchMock: ApiResponse<OntologyGlobalSearchData> = {
       type: "对象",
       desc: "这是修改后的本体描述",
       spaceId: 11,
+      spaceName: "测试空间",
+      uniqueIdentifier: "ae6cca59ced9432189da4af315554957",
       objectId: 9,
     },
     {
@@ -24,6 +26,9 @@ export const ontologyGlobalSearchMock: ApiResponse<OntologyGlobalSearchData> = {
       type: "属性",
       desc: "飞机id",
       spaceId: 46,
+      spaceName: "测试-rwl",
+      ontologyName: "飞机",
+      ontologyUniqueIdentifier: "246ef68e87524c33911b92af900700f9",
       objectId: 106,
       propertyId: 243,
     },
@@ -38,6 +43,8 @@ export const ontologyGlobalSearchMock: ApiResponse<OntologyGlobalSearchData> = {
     {
       name: "a",
       type: "关系分组",
+      spaceId: 11,
+      spaceName: "测试空间",
     },
   ],
 };
