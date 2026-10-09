@@ -7,7 +7,7 @@
       clearable
       filterable
       placeholder="按接口菜单筛选"
-      ariaLabel="按接口菜单筛选"
+      aria-label="按接口菜单筛选"
       @clear="clearSelectedMenuTag"
     >
       <el-option v-for="tag in menuOptions" :key="tag" :label="tag" :value="tag" />
@@ -35,10 +35,11 @@
           :aria-controls="`api-docs-group-${group.tag}`"
           @click="toggleGroupExpanded(group.tag)"
         >
-          <el-icon class="api-docs-endpoint-list__group-icon" aria-hidden="true">
-            <ArrowDown v-if="isGroupExpanded(group.tag)" />
-            <ArrowRight v-else />
-          </el-icon>
+          <span aria-hidden="true"
+            ><el-icon class="api-docs-endpoint-list__group-icon">
+              <ArrowDown v-if="isGroupExpanded(group.tag)" />
+              <ArrowRight v-else /> </el-icon
+          ></span>
           <span class="api-docs-endpoint-list__group-title">{{ group.tag }}</span>
           <span class="api-docs-endpoint-list__group-count">{{ group.endpoints.length }}</span>
         </button>

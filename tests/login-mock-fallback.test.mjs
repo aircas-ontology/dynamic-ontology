@@ -3,6 +3,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
+/**
+ * @description 读取当前测试直接相关的源码。
+ * @param {string} path 相对测试目录的文件路径。
+ * @returns {string} 源码内容。
+ */
 const readSource = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 
 const mockSource = readSource("../src/mocks/loginMock/loginMock.ts");
@@ -16,10 +21,10 @@ test("login mock provides a bearer mock token alongside the success envelope", (
   assert.match(mockSource, /code: 200,/);
 });
 
-test("login request uses the shared ten second timeout without a dedicated fallback path", () => {
+test("login request uses the shared hundred second timeout without a dedicated fallback path", () => {
   const constantsSource = readSource("../src/utils/constants.ts");
   const requestSource = readSource("../src/utils/request.ts");
-  assert.match(constantsSource, /export const requestTimeoutMs: number = 10000;/);
+  assert.match(constantsSource, /export const requestTimeoutMs: number = 100000;/);
   assert.match(requestSource, /import \{ requestTimeoutMs \} from "\.\/constants\.ts";/);
   assert.match(requestSource, /timeout: requestTimeoutMs,/);
   assert.doesNotMatch(apiSource, /timeout:/);

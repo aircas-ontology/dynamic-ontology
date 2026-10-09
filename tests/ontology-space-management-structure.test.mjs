@@ -118,6 +118,6 @@ test("space row actions share outlined primary buttons", () => {
   assert.equal((source.match(/type="primary" plain/g) || []).length, 3);
   assert.match(source, /:icon="Right"/);
   assert.match(source, /:icon="Edit"/);
-  assert.match(source, />更多/);
+  assert.match(source, />\s*更多\s*</);
   assert.doesNotMatch(source, /aircas-button--edit/);
 });

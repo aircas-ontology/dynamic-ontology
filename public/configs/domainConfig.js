@@ -10,16 +10,12 @@ const DOMAIN_CONFIG = {
   OCEAN_SERVER_URL: "http://192.168.53.45:5000", // 南海先导
   OCEAN_ANALYSIS_SERVER_URL: "http://192.168.53.42:16411", // 南海先导-软件所分析模型
 
-
-
   //接口地址
-  LOGIN_URL:"http://172.16.18.58:37002",//登录
+  LOGIN_URL: "http://172.16.18.58:37002", //登录
   // ONTOLOGYMANAGE_URL:"http://172.16.29.255:37002",//本体管理
-  ONTOLOGYMANAGE_URL:"http://172.16.18.58:37002",//本体管理
+  ONTOLOGYMANAGE_URL: "http://172.16.18.58:37002", //本体管理
   //ONTOLOGYMANAGE_URL:"/serviceApi",//本体管理
-
 
   MOCK_SERVER_URL: "http://127.0.0.1:37003", // Mock HTTP 服务，与 npm run dev 一起启动
   USE_MOCK: false, // true=走 Mock；false=走上面的真实 LOGIN / ONTOLOGY 地址
-
 };

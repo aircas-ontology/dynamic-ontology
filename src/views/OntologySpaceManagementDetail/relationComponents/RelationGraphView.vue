@@ -6,14 +6,21 @@
     @click="closeMenu"
     @contextmenu.prevent
   >
-    <el-empty v-if="!safeItems.length" description="暂无关系类" :image-size="72" />
-    <div v-show="safeItems.length" ref="canvasRef" class="relation-graph-view__canvas" aria-label="关系三维图" />
+    <div v-if="graphStatus === 'error'" class="relation-graph-view__status" role="alert">
+      <p>{{ graphError }}</p>
+      <el-button class="aircas-button" type="primary" @click="retryRelationGraph">重试关系图</el-button>
+    </div>
+    <div v-else-if="graphStatus === 'initializing' && safeItems.length" class="relation-graph-view__status" role="status">
+      <AircasLoading>正在初始化关系图…</AircasLoading>
+    </div>
+    <el-empty v-else-if="!safeItems.length" description="暂无关系类" :image-size="72" />
+    <div v-show="safeItems.length && graphStatus !== 'error'" ref="canvasRef" class="relation-graph-view__canvas" aria-label="关系三维图" />
     <template v-if="layoutMode === 'network'">
       <div class="relation-graph-view__noise" aria-hidden="true" />
       <div class="relation-graph-view__scanlines" aria-hidden="true" />
       <div class="relation-graph-view__vignette" aria-hidden="true" />
     </template>
-    <div v-if="safeItems.length && layoutMode === 'network'" class="relation-graph-view__hint">
+    <div v-if="safeItems.length && graphStatus === 'ready' && layoutMode === 'network'" class="relation-graph-view__hint">
       拖拽旋转 · 滚轮缩放 · 悬停查看关系<span v-if="!readonly"> · 右键连线编辑</span>
     </div>
     <div
@@ -36,8 +43,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Delete, Edit } from "@element-plus/icons-vue";
+import AircasLoading from "@/components/AircasLoading.vue";
+import { createRelationGraphLifecycle } from "../composables/useRelationGraphLifecycle";
 import type { OntologyRelationClass, RelationGraphLayoutMode } from "@/types";
-import { createRelationGraph3d, type RelationGraph3dApi } from "../composables/useRelationGraph3d";
+import { createRelationGraph3d, type RelationGraph3dData } from "../composables/useRelationGraph3d";
 
 const props = withDefaults(
   defineProps<{
@@ -64,7 +73,17 @@ const emit = defineEmits<{
 
 const rootRef = ref<HTMLElement | null>(null);
 const canvasRef = ref<HTMLElement | null>(null);
-let graphApi: RelationGraph3dApi | null = null;
+const graphLifecycle = createRelationGraphLifecycle<RelationGraph3dData>(() => {
+  if (!canvasRef.value) throw new Error("关系图容器尚未就绪，请重试。");
+  return createRelationGraph3d({
+    container: canvasRef.value,
+    onEdgeContextMenu: (relationId, clientX, clientY) => {
+      if (props.readonly || !relationMap.value.has(relationId)) return;
+      openMenuForRelation(relationId, clientX, clientY);
+    },
+  });
+});
+const { status: graphStatus, error: graphError } = graphLifecycle;
 let resizeObserver: ResizeObserver | null = null;
 
 const contextMenu = ref({ visible: false, x: 0, y: 0, relationId: "" });
@@ -75,10 +94,17 @@ const relationMap = computed(() => {
   return map;
 });
 
+/** @description 关闭关系菜单。 */
 function closeMenu() {
   contextMenu.value = { visible: false, x: 0, y: 0, relationId: "" };
 }
 
+/**
+ * @description 定位指定关系的上下文菜单。
+ * @param relationId 关系标识。
+ * @param clientX 指针横坐标。
+ * @param clientY 指针纵坐标。
+ */
 function openMenuForRelation(relationId: string, clientX: number, clientY: number) {
   if (props.readonly || !rootRef.value) return;
   const rect = rootRef.value.getBoundingClientRect();
@@ -90,48 +116,49 @@ function openMenuForRelation(relationId: string, clientX: number, clientY: numbe
   };
 }
 
+/** @description 触发当前关系的编辑操作。 */
 function handleEdit() {
   const relation = relationMap.value.get(contextMenu.value.relationId);
   closeMenu();
   if (relation) emit("edit", relation);
 }
 
+/** @description 触发当前关系的删除操作。 */
 function handleDelete() {
   const relation = relationMap.value.get(contextMenu.value.relationId);
   closeMenu();
   if (relation) emit("delete", relation);
 }
 
-async function syncGraph() {
-  const api = graphApi;
-  if (!api) return;
-  await api.setData({
+/**
+ * @description 读取最新关系数据与布局参数。
+ * @returns 当前关系图数据。
+ */
+function getRelationGraphData(): RelationGraph3dData {
+  return {
     items: safeItems.value,
     layoutMode: props.layoutMode,
     seedNames: props.seedNames,
     maxHop: props.maxHop,
     categoryColors: props.categoryColors,
-  });
-  if (graphApi !== api) return;
-  api.resize();
+  };
 }
 
-function ensureGraph() {
-  if (graphApi || !canvasRef.value) return;
-  graphApi = createRelationGraph3d({
-    container: canvasRef.value,
-    onEdgeContextMenu: (relationId, clientX, clientY) => {
-      if (props.readonly || !relationMap.value.has(relationId)) return;
-      openMenuForRelation(relationId, clientX, clientY);
-    },
-  });
+/** @description 更新关系图，错误由生命周期模块转为页面反馈。 */
+async function syncGraph(): Promise<void> {
+  await graphLifecycle.update(getRelationGraphData());
+}
+
+/** @description 用户重试时清除菜单并重建关系图。 */
+async function retryRelationGraph(): Promise<void> {
+  closeMenu();
+  await graphLifecycle.retry(getRelationGraphData());
 }
 
 onMounted(() => {
-  ensureGraph();
   void syncGraph();
   if (canvasRef.value) {
-    resizeObserver = new ResizeObserver(() => graphApi?.resize());
+    resizeObserver = new ResizeObserver(() => graphLifecycle.resize());
     resizeObserver.observe(canvasRef.value);
   }
 });
@@ -139,8 +166,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   resizeObserver?.disconnect();
   resizeObserver = null;
-  graphApi?.dispose();
-  graphApi = null;
+  graphLifecycle.dispose();
 });
 
 watch(
@@ -149,7 +175,6 @@ watch(
     closeMenu();
     void nextTick(async () => {
       if (!canvasRef.value) return;
-      ensureGraph();
       await syncGraph();
     });
   },
@@ -158,6 +183,21 @@ watch(
 </script>
 
 <style lang="scss" scoped>
+.relation-graph-view__status {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  color: var(--aircas-color-text-primary);
+  background: var(--aircas-color-panel-background);
+  text-align: center;
+}
+
 .relation-graph-view {
   position: relative;
   display: flex;

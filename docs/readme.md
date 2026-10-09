@@ -13,4 +13,4 @@
 - 【必须】`sequence` 从 `1` 开始按目录内执行顺序递增，`topic` 使用 camelCase。
 - 【禁止】把 Prompt 当作全局项目规范或已确认 Plan。
 
-API Prompt 示例参考 [`1.ontologySearchApi.md`](20260914/1.ontologySearchApi.md)。
+API Prompt 示例参考 [`seventrap.ontologySearchApi.md`](20260914/seventrap.ontologySearchApi.md)。

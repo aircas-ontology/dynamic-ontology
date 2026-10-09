@@ -16,8 +16,8 @@
 
 涉及：
 
-- [src/apis/loginApi.ts:15](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/src/apis/loginApi.ts:15)
-- [src/utils/request.ts:67](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/src/utils/request.ts:67)
+- [src/apis/loginApi.ts:15](../src/apis/loginApi.ts)
+- [src/utils/request.ts:67](../src/utils/request.ts)
 
 问题：
 
@@ -35,8 +35,8 @@
 
 涉及：
 
-- [src/views/OntologyObjectDetail/index.vue:7](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/src/views/OntologyObjectDetail/index.vue:7)
-- [src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue:241](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue:241)
+- [src/views/OntologyObjectDetail/index.vue:7](../src/views/OntologyObjectDetail/index.vue)
+- [src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue:241](../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue)
 
 问题：
 
@@ -52,8 +52,8 @@
 
 涉及：
 
-- [src/views/OntologyObjectDetail/components/ObjectDetailTabs.vue:143](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/src/views/OntologyObjectDetail/components/ObjectDetailTabs.vue:143)
-- [src/views/OntologyObjectDetail/components/OntologyObjectOverviewPanel.vue:64](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/src/views/OntologyObjectDetail/components/OntologyObjectOverviewPanel.vue:64)
+- [src/views/OntologyObjectDetail/components/ObjectDetailTabs.vue:143](../src/views/OntologyObjectDetail/components/ObjectDetailTabs.vue)
+- [src/views/OntologyObjectDetail/components/OntologyObjectOverviewPanel.vue:64](../src/views/OntologyObjectDetail/components/OntologyObjectOverviewPanel.vue)
 
 缺少变量：
 
@@ -71,8 +71,8 @@
 
 涉及：
 
-- [src/views/OntologySpaceManagementDetail/composables/useRelationGraph3d.ts:218](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/src/views/OntologySpaceManagementDetail/composables/useRelationGraph3d.ts:218)
-- [src/views/OntologySpaceManagementDetail/relationComponents/RelationGraphView.vue:113](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/src/views/OntologySpaceManagementDetail/relationComponents/RelationGraphView.vue:113)
+- [src/views/OntologySpaceManagementDetail/composables/useRelationGraph3d.ts:218](../src/views/OntologySpaceManagementDetail/composables/useRelationGraph3d.ts)
+- [src/views/OntologySpaceManagementDetail/relationComponents/RelationGraphView.vue:113](../src/views/OntologySpaceManagementDetail/relationComponents/RelationGraphView.vue)
 
 问题：
 
@@ -92,8 +92,8 @@
 
 涉及：
 
-- [tests/login-api.test.mjs:54](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/tests/login-api.test.mjs:54)
-- [tests/request.test.mjs:69](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/tests/request.test.mjs:69)
+- [tests/login-api.test.mjs:54](../tests/login-api.test.mjs)
+- [tests/request.test.mjs:69](../tests/request.test.mjs)
 
 当前测试要求 `Authorization`，实现使用 `access-token`。应先确认后端真实契约，再同步实现和测试。
 
@@ -101,8 +101,8 @@
 
 涉及：
 
-- [src/views/FullTextSearch/index.vue:7](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/src/views/FullTextSearch/index.vue:7)
-- [tests/full-text-search.test.mjs:17](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/tests/full-text-search.test.mjs:17)
+- [src/views/FullTextSearch/index.vue:7](../src/views/FullTextSearch/index.vue)
+- [tests/full-text-search.test.mjs:17](../tests/full-text-search.test.mjs)
 
 实现使用中文顿号 `、`，测试要求逗号 `，`。需统一产品文案和测试。
 
@@ -110,8 +110,8 @@
 
 涉及：
 
-- [tests/remediation-conventions.test.mjs:26](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/tests/remediation-conventions.test.mjs:26)
-- [src/layout/index.vue](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/src/layout/index.vue)
+- [tests/remediation-conventions.test.mjs:26](../tests/remediation-conventions.test.mjs)
+- [src/layout/index.vue](../src/layout/index.vue)
 
 当前目录规范明确允许默认布局使用 `index.vue`，因此不应直接删除该文件。应修改测试，或先确认布局重命名方案。
 
@@ -119,9 +119,9 @@
 
 涉及：
 
-- [.vscode/settings.json:5](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/.vscode/settings.json:5)
-- [.agents/README.md](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/.agents/README.md)
-- [docs/readme.md](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/docs/readme.md)
+- [.vscode/settings.json:5](../.vscode/settings.json)
+- [.agents/README.md](../.agents/README.md)
+- [docs/readme.md](../docs/readme.md)
 
 问题：
 
@@ -151,7 +151,7 @@
 
 ## 中优先级代码问题
 
-- [src/views/OntologySpaceManagement/composables/useSpaceManagement.ts:19](/Users/xhp/projects/02-WebStorm/26-ontology/dynamic-ontology/src/views/OntologySpaceManagement/composables/useSpaceManagement.ts:19)：远程请求失败时直接回退 Mock，并将状态标记为成功，用户无法知道看到的是样例数据。
+- [src/views/OntologySpaceManagement/composables/useSpaceManagement.ts:19](../src/views/OntologySpaceManagement/composables/useSpaceManagement.ts)：远程请求失败时直接回退 Mock，并将状态标记为成功，用户无法知道看到的是样例数据。
 - 多个具名函数缺少根规范要求的 JSDoc，例如 `AircasPanel.vue`、`AircasTimeline.vue`、`HeaderBar.vue`、`SpaceFormDialog.vue`、`RelationGraphView.vue` 中的部分函数。
 - 多处 Element Plus 组件使用 `ariaLabel`，建议统一核对为实际可输出的 `aria-label` 属性，避免辅助技术无法读取标签。
 - `src/utils/request.ts` 中 `resolveResponseData` 声明返回 `AxiosResponse`，但实际可能返回 `response.data`，接口类型与运行时行为不一致，应重新定义拦截器返回类型。

@@ -94,7 +94,7 @@ export async function getExportOntologyInterface(params: ExportOntologyParams): 
 /**
  * @description 根据分类查询本体对象列表；不传分类 id 时查询全部本体对象。
  *
- * 请求方式：GET `/meta/category`
+ * 请求方式：GET `/ontology/meta/category`
  *
  * @param params 可选的分类查询参数。
  * @param params.categoryId 分类 id，不传时查询全部本体对象。

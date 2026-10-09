@@ -57,8 +57,8 @@ test("object card and list export confirms before calling the ontology export ap
   assert.doesNotMatch(panelSource, /void exportOntologyObject\(item\)/);
   assert.match(dialogSource, /title="导出本体"/);
   assert.match(dialogSource, /导出「\{\{ objectName \}\}」。/);
-  assert.match(dialogSource, /SCHEMA：仅结构/);
-  assert.match(dialogSource, /INSTANCE：含实例数据/);
+  assert.match(dialogSource, /<el-radio[^>]*value="SCHEMA"[^>]*>\s*仅结构\s*<\/el-radio>/);
+  assert.match(dialogSource, /<el-radio[^>]*value="INSTANCE"[^>]*>\s*含实例数据\s*<\/el-radio>/);
   assert.match(dialogSource, /ref<OntologyExportType>\("INSTANCE"\)/);
   assert.match(dialogSource, /exportType\.value = "INSTANCE"/);
   assert.match(dialogSource, /class="aircas-radio-group ontology-object-export-dialog__export-type"/);

@@ -53,8 +53,8 @@ test("space export confirmation calls the export api instead of local json", () 
   assert.match(actionsSource, /getExportOntologySpaceInterface\(\{ spaceId, exportType \}\)/);
   assert.doesNotMatch(actionsSource, /serializeSpace/);
   assert.match(dialogSource, /导出「\{\{ space\?\.displayName \}\}」。/);
-  assert.match(dialogSource, /SCHEMA：仅结构/);
-  assert.match(dialogSource, /INSTANCE：含实例数据/);
+  assert.match(dialogSource, /<el-radio[^>]*value="SCHEMA"[^>]*>\s*仅结构\s*<\/el-radio>/);
+  assert.match(dialogSource, /<el-radio[^>]*value="INSTANCE"[^>]*>\s*含实例数据\s*<\/el-radio>/);
   assert.match(dialogSource, /ref<OntologySpaceExportType>\("INSTANCE"\)/);
   assert.match(dialogSource, /exportType\.value = "INSTANCE"/);
   assert.match(dialogSource, /class="aircas-radio-group space-command-dialogs__export-type"/);
