@@ -56,8 +56,13 @@ const dark = ref(document.documentElement.getAttribute("theme") !== "light");
  * @description 在暗色和浅色主题之间切换，并写回文档根节点的 theme 属性。
  */
 function toggleTheme() {
-  dark.value = !dark.value;
-  document.documentElement.setAttribute("theme", dark.value ? "dark" : "light");
+  if (dark.value) {
+    document.documentElement.classList.remove("dark");
+    dark.value = false;
+  } else {
+    document.documentElement.classList.add("dark");
+    dark.value = true;
+  }
 }
 
 /**
