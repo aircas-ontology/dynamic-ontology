@@ -4,10 +4,10 @@
       <h2>分类体系树</h2>
       <span>已选 {{ selectedCount }} 个</span>
     </header>
-    <el-input v-model="keyword" class="aircas-input subspace-create-tree-panel__search" clearable placeholder="搜索本体对象" ariaLabel="搜索本体对象" />
+    <el-input v-model="keyword" class="subspace-create-tree-panel__search" clearable placeholder="搜索本体对象" ariaLabel="搜索本体对象" />
     <el-tree
       ref="treeRef"
-      class="aircas-tree subspace-create-tree-panel__tree"
+      class="subspace-create-tree-panel__tree"
       node-key="id"
       show-checkbox
       highlight-current
@@ -121,19 +121,19 @@ watch(keyword, (value) => treeRef.value?.filter(value));
   flex-direction: column;
   padding: 12px;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 12% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 42%),
-    linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+    radial-gradient(circle at 12% 0, var(--aircas-color-effect-primary-soft), transparent 42%),
+    linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
   box-shadow:
-    inset 0 0 20px var(--aircas-color-page-glow),
-    0 0 18px var(--aircas-color-accent-blue-soft);
+    inset 0 0 20px var(--aircas-color-effect-page-glow),
+    0 0 18px var(--aircas-color-effect-blue-soft);
 }
 
-:root[theme="light"] .subspace-create-tree-panel {
+:root:not(.dark) .subspace-create-tree-panel {
   background:
-    radial-gradient(circle at 12% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 42%),
+    radial-gradient(circle at 12% 0, var(--aircas-color-effect-primary-soft), transparent 42%),
     linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
@@ -153,7 +153,7 @@ watch(keyword, (value) => treeRef.value?.filter(value));
 }
 
 .subspace-create-tree-panel__header span {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 
@@ -167,78 +167,16 @@ watch(keyword, (value) => treeRef.value?.filter(value));
   flex: 1;
   overflow: auto;
   padding-right: 4px;
-  background: var(--aircas-color-transparent);
-  --el-tree-text-color: var(--aircas-color-text-secondary);
-  --el-tree-expand-icon-color: var(--aircas-color-text-muted);
-  --el-checkbox-bg-color: var(--aircas-color-input-background);
-  --el-checkbox-input-border: var(--aircas-color-border);
-  --el-checkbox-checked-bg-color: var(--aircas-color-accent-cyan);
-  --el-checkbox-checked-input-border-color: var(--aircas-color-accent-cyan);
-  --el-checkbox-checked-icon-color: var(--aircas-color-page-background);
+  background: transparent;
 }
 
 .subspace-create-tree-panel__tree :deep(.el-tree-node__content) {
   height: 32px;
-  color: var(--aircas-color-text-secondary);
 }
 
 .subspace-create-tree-panel__tree :deep(.el-tree-node__label) {
   overflow: hidden;
-  color: var(--aircas-color-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.subspace-create-tree-panel__tree :deep(.el-tree-node__expand-icon) {
-  color: var(--aircas-color-text-muted);
-}
-
-.subspace-create-tree-panel__tree :deep(.el-tree-node__content:hover),
-.subspace-create-tree-panel__tree :deep(.el-tree-node:focus > .el-tree-node__content) {
-  color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-hover-background);
-}
-
-.subspace-create-tree-panel__tree :deep(.el-tree-node__content:hover .el-tree-node__label) {
-  color: var(--aircas-color-text-primary);
-}
-
-.subspace-create-tree-panel__tree :deep(.el-tree-node.is-checked > .el-tree-node__content),
-.subspace-create-tree-panel__tree :deep(.el-tree-node.is-current > .el-tree-node__content) {
-  color: var(--aircas-color-title);
-  background: var(--aircas-color-accent-cyan-fill);
-}
-
-.subspace-create-tree-panel__tree :deep(.el-tree-node.is-checked > .el-tree-node__content .el-tree-node__label),
-.subspace-create-tree-panel__tree :deep(.el-tree-node.is-current > .el-tree-node__content .el-tree-node__label) {
-  color: var(--aircas-color-title);
-}
-
-.subspace-create-tree-panel__tree :deep(.el-tree-node.is-checked > .el-tree-node__content:hover),
-.subspace-create-tree-panel__tree :deep(.el-tree-node.is-current > .el-tree-node__content:hover) {
-  color: var(--aircas-color-title);
-  background: var(--aircas-color-accent-cyan-soft);
-}
-
-.subspace-create-tree-panel__tree :deep(.el-checkbox__inner:hover) {
-  border-color: var(--aircas-color-border-highlight);
-}
-
-.subspace-create-tree-panel__tree :deep(.el-checkbox__input.is-checked .el-checkbox__inner),
-.subspace-create-tree-panel__tree :deep(.el-checkbox__input.is-indeterminate .el-checkbox__inner) {
-  background-color: var(--aircas-color-accent-cyan);
-  border-color: var(--aircas-color-accent-cyan);
-}
-
-.subspace-create-tree-panel__tree :deep(.el-checkbox__input.is-checked .el-checkbox__inner::after) {
-  border-color: var(--aircas-color-page-background);
-}
-
-.subspace-create-tree-panel__tree :deep(.el-checkbox__input.is-indeterminate .el-checkbox__inner::before) {
-  background-color: var(--aircas-color-page-background);
-}
-
-.subspace-create-tree-panel__tree :deep(.el-checkbox__input.is-focus .el-checkbox__inner) {
-  border-color: var(--aircas-color-border-highlight);
 }
 </style>

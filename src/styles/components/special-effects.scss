@@ -1,0 +1,32 @@
+// 仅项目特有渐变和非对称边框通过特殊类启用。
+.el-button.aircas-button--gradient {
+  --el-button-text-color: var(--aircas-color-text-primary);
+  --el-button-hover-text-color: var(--aircas-color-text-primary);
+  --el-button-border-color: var(--aircas-color-primary);
+  --el-button-hover-border-color: var(--aircas-color-primary);
+  --el-button-active-border-color: var(--aircas-color-primary);
+  color: var(--aircas-color-text-primary);
+  background: linear-gradient(90deg, var(--aircas-color-active), var(--aircas-color-effect-blue-fill));
+  box-shadow:
+    inset 0 0 14px var(--aircas-color-effect-primary-fill),
+    0 0 10px var(--aircas-color-effect-primary-soft);
+}
+
+.el-button.aircas-button--gradient:not(.is-disabled):hover,
+.el-button.aircas-button--gradient:not(.is-disabled):focus-visible,
+.el-button.aircas-button--gradient:not(.is-disabled):active {
+  color: var(--aircas-color-text-primary);
+  background: linear-gradient(90deg, var(--aircas-color-hover), var(--aircas-color-effect-primary-soft));
+  box-shadow: 0 0 14px var(--aircas-color-effect-primary-shadow);
+}
+
+.el-button.aircas-button--gradient.is-disabled {
+  background: var(--el-disabled-bg-color);
+  border-color: var(--el-disabled-border-color);
+  color: var(--el-disabled-text-color);
+  box-shadow: none;
+}
+
+.el-table.aircas-table--accent-header th.el-table__cell {
+  border-bottom: 2px solid var(--aircas-color-primary);
+}

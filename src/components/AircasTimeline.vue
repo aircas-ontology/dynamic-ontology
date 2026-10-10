@@ -21,7 +21,6 @@
           <!-- el-date-picker 类型未声明 emits，用 v-on 对象语法绑定事件 -->
           <el-date-picker
             class="current-time"
-            popper-class="aircas-picker"
             v-model="timeShow"
             type="datetime"
             placeholder="设定开始时间"
@@ -50,14 +49,16 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import { RefreshRight, VideoPause, VideoPlay } from "@element-plus/icons-vue";
 import dayjs from "dayjs";
 
 import { createTimeEngine } from "@/utils/initTimeEngine";
+import { useDocumentTheme } from "@/composables/shared/useDocumentTheme";
 import AircasPanel from "./AircasPanel.vue";
 
 const emit = defineEmits<{ close: [] }>();
+const { isDark } = useDocumentTheme();
 
 const aircasTimelineRef = ref<HTMLCanvasElement | null>(null);
 const stepScales = [1000, 60 * 1000, 60 * 60 * 1000, 24 * 60 * 60 * 1000];
@@ -97,16 +98,25 @@ onUnmounted(() => {
   timelineInstance.dispose();
 });
 
+/**
+ * @description 读取时间轴使用的根节点主题颜色。
+ * @param variableName 主题颜色令牌。
+ * @returns CSS 颜色。
+ */
 function getThemeColor(variableName: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
 }
 
+/**
+ * @description 依据当前主题和时间绘制时间轴刻度。
+ * @param currentTime 当前时间戳。
+ */
 function draw(currentTime: number) {
   if (!ctx) return;
 
   ctx.clearRect(0, 0, width, height);
 
-  const timelineSurface = document.documentElement.getAttribute("theme") === "light" ? "--aircas-color-card-background" : "--aircas-color-overlay-deep";
+  const timelineSurface = isDark.value ? "--aircas-color-panel-background-deep" : "--aircas-color-card-background";
   ctx.fillStyle = getThemeColor(timelineSurface);
   ctx.fillRect(0, 0, width, height);
 
@@ -150,6 +160,8 @@ function draw(currentTime: number) {
   speed.value = timelineInstance.speed;
   timeShow.value = currentTime;
 }
+
+watch(isDark, () => draw(timelineInstance.getTime()));
 
 function setStep(index: number) {
   stepIndex.value = index;
@@ -264,7 +276,7 @@ function handlePanelClose() {
 
   button {
     font-size: 14px;
-    background: var(--aircas-color-selected-background);
+    background: var(--aircas-color-active);
     width: 60px;
     height: 28px;
     outline: none;
@@ -275,15 +287,15 @@ function handlePanelClose() {
     transition: all 0.3s;
 
     &:hover {
-      background: var(--aircas-color-hover-background);
+      background: var(--aircas-color-hover);
     }
 
     &.active {
-      background: var(--aircas-color-active-background);
+      background: var(--aircas-color-active);
     }
 
     &:focus-visible {
-      outline: 2px solid var(--aircas-color-focus-border);
+      outline: 2px solid var(--aircas-color-primary);
       outline-offset: 2px;
     }
   }
@@ -336,7 +348,7 @@ header {
       border: 0;
       border-radius: 3px;
       color: var(--aircas-color-text-primary);
-      background: var(--aircas-color-transparent);
+      background: transparent;
       cursor: pointer;
       transition: all 0.3s;
       display: flex;
@@ -345,11 +357,11 @@ header {
       user-select: none;
 
       &:hover {
-        background: var(--aircas-color-hover-background);
+        background: var(--aircas-color-hover);
       }
 
       &:focus-visible {
-        outline: 2px solid var(--aircas-color-focus-border);
+        outline: 2px solid var(--aircas-color-primary);
         outline-offset: 2px;
       }
 
@@ -372,26 +384,13 @@ footer {
   }
 }
 
-:deep(.aircas-timeline) {
-  .current-time {
-    .el-input__prefix {
-      display: none;
-    }
+.current-time :deep(.el-input__prefix) {
+  display: none;
+}
 
-    .el-input__wrapper {
-      box-shadow: none;
-
-      &:hover {
-        box-shadow: 0 0 0 1px var(--el-input-hover-border-color) inset;
-      }
-
-      .el-input__inner {
-        padding-left: 15px;
-        font-weight: bolder;
-        font-size: 18px;
-        color: var(--aircas-color-text-primary);
-      }
-    }
-  }
+.current-time :deep(.el-input__inner) {
+  padding-left: 15px;
+  font-weight: bolder;
+  font-size: 18px;
 }
 </style>

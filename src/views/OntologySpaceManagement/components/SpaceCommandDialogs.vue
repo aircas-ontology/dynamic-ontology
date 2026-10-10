@@ -1,7 +1,6 @@
 <template>
   <el-dialog
     v-model="deleteVisible"
-    class="aircas-dialog"
     title="删除本体空间"
     width="min(460px, 94vw)"
     :close-on-click-modal="false"
@@ -11,14 +10,13 @@
     <p>确认删除「{{ space?.displayName }}」本体空间数据？</p>
     <p v-if="error" class="space-command-dialogs__error" role="alert">{{ error }}</p>
     <template #footer>
-      <el-button class="aircas-button" :disabled="busy" @click="deleteVisible = false">取消</el-button>
-      <el-button class="aircas-button" type="danger" :loading="busy" @click="emit('confirmDelete')">删除</el-button>
+      <el-button :disabled="busy" @click="deleteVisible = false">取消</el-button>
+      <el-button type="danger" :loading="busy" @click="emit('confirmDelete')">删除</el-button>
     </template>
   </el-dialog>
 
   <el-dialog
     v-model="exportVisible"
-    class="aircas-dialog"
     title="导出本体空间"
     width="min(460px, 94vw)"
     :close-on-click-modal="!busy"
@@ -31,18 +29,18 @@
     </ul>
     <el-radio-group
       :model-value="exportType"
-      class="aircas-radio-group space-command-dialogs__export-type"
+      class="space-command-dialogs__export-type"
       :disabled="busy"
       ariaLabel="导出类型"
       @update:model-value="setOntologySpaceExportType"
     >
-      <el-radio class="aircas-radio" value="SCHEMA">仅结构</el-radio>
-      <el-radio class="aircas-radio" value="INSTANCE">含实例数据</el-radio>
+      <el-radio value="SCHEMA">仅结构</el-radio>
+      <el-radio value="INSTANCE">含实例数据</el-radio>
     </el-radio-group>
     <p v-if="error" class="space-command-dialogs__error" role="alert">{{ error }}</p>
     <template #footer>
-      <el-button class="aircas-button" :disabled="busy" @click="exportVisible = false">取消</el-button>
-      <el-button class="aircas-button" type="primary" :loading="busy" @click="emit('confirmExport', exportType)">导出</el-button>
+      <el-button :disabled="busy" @click="exportVisible = false">取消</el-button>
+      <el-button type="primary" :loading="busy" @click="emit('confirmExport', exportType)">导出</el-button>
     </template>
   </el-dialog>
 </template>

@@ -10,7 +10,7 @@ test("menu supports collapse and shows space management without a home entry", (
   assert.match(compiled.content, /update:collapsed/);
   assert.doesNotMatch(source, /index="\/workspace"/);
   assert.match(source, /index="\/workspace\/ontology-space-management"/);
-  assert.match(source, /aircas-menu/);
+  assert.match(source, /<el-menu\b/);
 });
 
 test("menu includes full text search entry with named route", () => {
@@ -74,7 +74,7 @@ test("layout opens an AI assistant drawer from a bottom-right launcher", () => {
   const launcherStyle = drawer.match(/\.ai-assistant-launcher \{[^}]*\}/)?.[0] ?? "";
   assert.match(launcherStyle, /border: 1px solid var\(--aircas-color-border\)/);
   assert.match(launcherStyle, /color: var\(--aircas-color-text-primary\)/);
-  assert.match(launcherStyle, /background: color-mix\(in srgb, var\(--aircas-color-accent-cyan\) 60%, transparent\)/);
+  assert.match(launcherStyle, /background: color-mix\(in srgb, var\(--aircas-color-primary\) 60%, transparent\)/);
   assert.doesNotMatch(launcherStyle, /opacity:/);
-  assert.match(launcherStyle, /box-shadow: 0 8px 20px var\(--aircas-color-divider\)/);
+  assert.match(launcherStyle, /box-shadow: 0 8px 20px var\(--aircas-color-border-light\)/);
 });

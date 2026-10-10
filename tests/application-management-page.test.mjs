@@ -140,7 +140,7 @@ test("application management page wires api docs composable and panels", () => {
   assert.match(listSource, /按接口地址搜索/);
   assert.match(listSource, /按接口菜单筛选/);
   assert.match(listSource, /mapApiDocsEndpointMenuOptions/);
-  assert.match(detailSource, /aircas-tabs/);
+  assert.match(detailSource, /<el-tabs\b/);
   assert.match(detailSource, /label="请求参数"/);
   assert.match(detailSource, /label="请求体"/);
   assert.match(detailSource, /label="响应"/);

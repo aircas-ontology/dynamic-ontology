@@ -30,22 +30,21 @@
               filterable
               clearable
               placeholder="筛选对象（单选，结果以该对象为中心）"
-              class="aircas-select space-relation-workspace__filter-objects"
-              popper-class="aircas-select-popper"
+              class="space-relation-workspace__filter-objects"
               @change="handleSeedChange"
             >
               <el-option v-for="item in relationObjectOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
-            <el-button class="aircas-button aircas-button--tone-ghost" @click="resetFilter">重置</el-button>
+            <el-button @click="resetFilter">重置</el-button>
           </div>
-          <el-button class="aircas-button aircas-button--tone-primary" :icon="Plus" @click="openRelationCreate">添加</el-button>
+          <el-button :icon="Plus" @click="openRelationCreate">添加</el-button>
           <el-radio-group
             :model-value="relationViewMode"
-            class="aircas-radio-group space-relation-workspace__view-switch"
+            class="space-relation-workspace__view-switch"
             ariaLabel="展示方式"
             @update:model-value="handleRelationViewModeChange"
           >
-            <el-tooltip content="关系图" placement="top" popper-class="aircas-popper">
+            <el-tooltip content="关系图" placement="top">
               <el-radio-button value="graph">
                 <svg class="space-relation-workspace__view-icon" viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="5" cy="6" r="1.8" />
@@ -56,7 +55,7 @@
                 <span class="space-relation-workspace__visually-hidden">关系图视图</span>
               </el-radio-button>
             </el-tooltip>
-            <el-tooltip content="列表" placement="top" popper-class="aircas-popper">
+            <el-tooltip content="列表" placement="top">
               <el-radio-button value="list">
                 <svg class="space-relation-workspace__view-icon" viewBox="0 0 24 24" aria-hidden="true">
                   <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -72,7 +71,7 @@
       <div v-if="status === 'loading'" class="space-relation-workspace__state" role="status"><AircasLoading>加载中...</AircasLoading></div>
       <div v-else-if="status === 'error'" class="space-relation-workspace__state space-relation-workspace__state-error" role="alert">
         <span>{{ errorMessage }}</span>
-        <el-button class="aircas-button aircas-button--tone-primary" @click="loadSpaceRelationWorkspace">重试</el-button>
+        <el-button @click="loadSpaceRelationWorkspace">重试</el-button>
       </div>
       <template v-else>
         <RelationGraphView
@@ -86,7 +85,7 @@
         />
         <template v-else>
           <div v-if="visibleSpaceRelations.length" class="space-relation-workspace__table-wrap">
-            <el-table :data="visibleSpaceRelations" stripe height="100%" class="aircas-table aircas-table--flat space-relation-workspace__table">
+            <el-table :data="visibleSpaceRelations" stripe height="100%" class="aircas-table--accent-header space-relation-workspace__table">
               <el-table-column label="关系名称" min-width="140" show-overflow-tooltip>
                 <template #default="{ row }"
                   ><span class="space-relation-workspace__name">{{ row.displayName }}</span></template
@@ -100,12 +99,8 @@
               <el-table-column label="操作" width="180" fixed="right">
                 <template #default="scope">
                   <div class="space-relation-workspace__row-actions">
-                    <el-button class="aircas-button aircas-button--tone-secondary" size="small" @click="openRelationEdit(asRelation(scope.row))"
-                      >编辑</el-button
-                    >
-                    <el-button class="aircas-button aircas-button--tone-danger" type="danger" size="small" @click="openRelationDelete(asRelation(scope.row))"
-                      >删除</el-button
-                    >
+                    <el-button size="small" @click="openRelationEdit(asRelation(scope.row))">编辑</el-button>
+                    <el-button type="danger" size="small" @click="openRelationDelete(asRelation(scope.row))">删除</el-button>
                   </div>
                 </template>
               </el-table-column>
@@ -558,11 +553,11 @@ async function handleRelationDelete() {
   padding: 8px 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 18px var(--aircas-color-page-glow);
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 18px var(--aircas-color-effect-page-glow);
 }
 
-:root[theme="light"] .space-relation-workspace__header {
+:root:not(.dark) .space-relation-workspace__header {
   background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 .space-relation-workspace__title {
@@ -578,7 +573,7 @@ async function handleRelationDelete() {
   font-weight: 600;
 }
 .space-relation-workspace__title span {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 .space-relation-workspace__actions {
@@ -599,27 +594,15 @@ async function handleRelationDelete() {
   display: inline-flex;
   gap: 4px;
 }
-.space-relation-workspace__view-switch.aircas-radio-group :deep(.el-radio-button__inner),
-.space-relation-workspace__view-switch.aircas-radio-group :deep(.el-radio-button:first-child .el-radio-button__inner),
-.space-relation-workspace__view-switch.aircas-radio-group :deep(.el-radio-button:last-child .el-radio-button__inner) {
+.space-relation-workspace__view-switch :deep(.el-radio-button__inner),
+.space-relation-workspace__view-switch :deep(.el-radio-button:first-child .el-radio-button__inner),
+.space-relation-workspace__view-switch :deep(.el-radio-button:last-child .el-radio-button__inner) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 4px;
-  outline: none;
-  box-shadow: none;
-  background-color: var(--aircas-color-panel-background-deep);
-  color: var(--aircas-color-text-primary);
-}
-.space-relation-workspace__view-switch.aircas-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  border-color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-active-background);
-  color: var(--aircas-color-text-primary);
-  box-shadow: 0 0 10px var(--aircas-color-accent-cyan-soft);
 }
 .space-relation-workspace__view-icon {
   width: 14px;
@@ -647,11 +630,11 @@ async function handleRelationDelete() {
   justify-content: center;
   gap: 12px;
   min-height: 160px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 14px;
 }
 .space-relation-workspace__state-error {
-  color: var(--aircas-color-accent-orange);
+  color: var(--aircas-color-warning);
 }
 .space-relation-workspace__table-wrap {
   min-width: 0;

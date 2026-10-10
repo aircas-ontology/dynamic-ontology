@@ -19,6 +19,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Graph, type Edge } from "@antv/x6";
+import { useDocumentTheme } from "@/composables/shared/useDocumentTheme";
 import {
   CONCEPTUAL_OBJECT_SHAPE,
   CONCEPTUAL_OBJECT_WIDTH,
@@ -71,6 +72,7 @@ const emit = defineEmits<{
 }>();
 
 const canvasRef = ref<HTMLElement | null>(null);
+const { isDark } = useDocumentTheme();
 let graph: Graph | null = null;
 let syncingGraph = false;
 let skipNextSync = false;
@@ -299,6 +301,7 @@ function initGraph(): void {
   const container = canvasRef.value;
   if (!container || graph) return;
   graph = createConceptualModelGraph(container);
+  refreshGraphGridTheme();
   setConceptualModelHtmlHandlers({
     onSelectObject: (objectId) => emit("select", { kind: "object", id: objectId }),
     onSelectAttribute: (_objectId, attributeId) => emit("select", { kind: "attribute", id: attributeId }),
@@ -349,6 +352,23 @@ onMounted(() => {
   void nextTick(() => initGraph());
 });
 
+/**
+ * @description 根据根节点主题重新绘制缓存网格，不修改节点、连线、选中和缩放状态。
+ */
+function refreshGraphGridTheme(): void {
+  if (!graph) return;
+  const colors = getComputedStyle(document.documentElement);
+  graph.drawGrid({
+    type: "doubleMesh",
+    args: [
+      { color: `rgba(${colors.getPropertyValue("--aircas-color-primary-rgb").trim()}, 0.06)`, thickness: 1 },
+      { color: colors.getPropertyValue("--aircas-color-border-light").trim(), thickness: 1, factor: 5 },
+    ],
+  });
+}
+
+watch(isDark, refreshGraphGridTheme);
+
 onBeforeUnmount(() => {
   setWiring(false);
   setConceptualModelHtmlHandlers(null);
@@ -395,16 +415,16 @@ defineExpose({ fit, zoomBy });
   padding: 20px 24px;
   flex-direction: column;
   gap: 8px;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 10px;
   color: var(--aircas-color-text-secondary);
-  background: var(--aircas-color-overlay);
+  background: var(--aircas-color-panel-background);
   text-align: center;
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
 
-:root[theme="light"] .conceptual-model-graph__empty {
+:root:not(.dark) .conceptual-model-graph__empty {
   background: var(--aircas-color-card-background);
 }
 
@@ -423,22 +443,22 @@ defineExpose({ fit, zoomBy });
   height: 100%;
   overflow: hidden;
   flex-direction: column;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 10px;
   color: var(--aircas-color-text-primary);
-  background: linear-gradient(180deg, var(--aircas-color-overlay), var(--aircas-color-panel-background-deep));
-  box-shadow: 0 0 18px var(--aircas-color-accent-cyan-soft);
+  background: linear-gradient(180deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: 0 0 18px var(--aircas-color-effect-primary-soft);
 }
 
-:root[theme="light"] .conceptual-model-graph__stage :deep(.conceptual-model-node) {
+:root:not(.dark) .conceptual-model-graph__stage :deep(.conceptual-model-node) {
   background: linear-gradient(180deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
 .conceptual-model-graph__stage :deep(.conceptual-model-node.is-selected) {
-  border-color: var(--aircas-color-accent-cyan);
+  border-color: var(--aircas-color-primary);
   box-shadow:
-    0 0 22px var(--aircas-color-accent-cyan-shadow),
-    inset 0 0 16px var(--aircas-color-accent-cyan-fill);
+    0 0 22px var(--aircas-color-effect-primary-shadow),
+    inset 0 0 16px var(--aircas-color-effect-primary-fill);
 }
 
 .conceptual-model-graph__stage :deep(.conceptual-model-node__head) {
@@ -455,7 +475,7 @@ defineExpose({ fit, zoomBy });
 }
 
 .conceptual-model-graph__stage :deep(.conceptual-model-node__head em) {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 11px;
   font-style: normal;
 }
@@ -473,7 +493,7 @@ defineExpose({ fit, zoomBy });
 .conceptual-model-graph__stage :deep(.conceptual-model-node__group) {
   height: 22px;
   padding: 0 8px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   line-height: 22px;
 }
@@ -498,33 +518,33 @@ defineExpose({ fit, zoomBy });
 .conceptual-model-graph__stage :deep(.conceptual-model-node__attr.is-active),
 .conceptual-model-graph__stage :deep(.conceptual-model-node__attr:hover) {
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-accent-cyan-fill);
+  background: var(--aircas-color-effect-primary-fill);
 }
 
 .conceptual-model-graph__stage :deep(.conceptual-model-node__attr em) {
-  color: var(--aircas-color-accent-purple);
+  color: var(--aircas-color-category-purple);
   font-style: normal;
 }
 
 .conceptual-model-graph__stage :deep(.conceptual-model-node__empty) {
   padding: 8px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 
 .conceptual-model-graph__stage :deep(.conceptual-model-node__add) {
   height: 32px;
   border: 0;
-  border-top: 1px solid var(--aircas-color-border-soft);
-  color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-accent-blue-soft);
+  border-top: 1px solid var(--aircas-color-border-light);
+  color: var(--aircas-color-primary);
+  background: var(--aircas-color-effect-blue-soft);
   font-size: 12px;
   cursor: pointer;
 }
 
 .conceptual-model-graph__stage :deep(.conceptual-model-node__add:hover) {
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-accent-cyan-fill);
+  background: var(--aircas-color-effect-primary-fill);
 }
 
 .conceptual-model-graph__stage :deep(.x6-port-body) {

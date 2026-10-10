@@ -6,17 +6,16 @@
         <span>对象内行为 · {{ total }} 条</span>
       </div>
       <div class="object-behavior-list-panel__filters">
-        <el-input v-model="keywordModel" class="aircas-input" clearable placeholder="按行为名称搜索" />
-        <el-select v-model="statusModel" class="aircas-select" clearable placeholder="行为状态"
+        <el-input v-model="keywordModel" clearable placeholder="按行为名称搜索" />
+        <el-select v-model="statusModel" clearable placeholder="行为状态"
           ><el-option v-for="item in SPACE_BEHAVIOR_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value"
         /></el-select>
-        <el-button class="aircas-button aircas-button--tone-primary" @click="emit('query')">查询</el-button
-        ><el-button class="aircas-button aircas-button--tone-ghost" @click="emit('reset')">重置</el-button
-        ><el-button class="aircas-button aircas-button--tone-primary" :icon="Plus" @click="emit('create')">新建行为</el-button>
+        <el-button @click="emit('query')">查询</el-button><el-button @click="emit('reset')">重置</el-button
+        ><el-button :icon="Plus" @click="emit('create')">新建行为</el-button>
       </div>
     </header>
     <div v-if="items.length" class="object-behavior-list-panel__table">
-      <el-table :data="items" stripe height="100%" class="aircas-table aircas-table--flat">
+      <el-table :data="items" stripe height="100%" class="aircas-table--accent-header">
         <el-table-column label="行为名称" min-width="140"
           ><template #default="{ row }"
             ><strong>{{ asItem(row).displayName }}</strong></template
@@ -30,7 +29,7 @@
         >
         <el-table-column label="状态" width="100"
           ><template #default="{ row }"
-            ><el-tag class="aircas-tag" size="small">{{ SPACE_BEHAVIOR_STATUS_LABELS[asItem(row).status] }}</el-tag></template
+            ><el-tag size="small">{{ SPACE_BEHAVIOR_STATUS_LABELS[asItem(row).status] }}</el-tag></template
           ></el-table-column
         >
         <el-table-column label="更新时间" width="160"
@@ -39,10 +38,10 @@
         <el-table-column label="操作" width="220" fixed="right"
           ><template #default="{ row }"
             ><div class="object-behavior-list-panel__actions">
-              <el-button class="aircas-button aircas-button--tone-ghost" size="small" @click="emit('view', asItem(row))">查看</el-button
-              ><el-button class="aircas-button aircas-button--tone-secondary" size="small" @click="emit('edit', asItem(row))">编辑</el-button
-              ><el-dropdown class="aircas-dropdown" trigger="click" @command="handleCommand($event, asItem(row))"
-                ><el-button class="aircas-button aircas-button--tone-ghost" size="small"
+              <el-button size="small" @click="emit('view', asItem(row))">查看</el-button
+              ><el-button size="small" @click="emit('edit', asItem(row))">编辑</el-button
+              ><el-dropdown trigger="click" @command="handleCommand($event, asItem(row))"
+                ><el-button size="small"
                   >更多<el-icon><ArrowDown /></el-icon></el-button
                 ><template #dropdown
                   ><el-dropdown-menu
@@ -58,7 +57,6 @@
     <el-empty v-else description="暂无行为" />
     <el-pagination
       v-if="total"
-      class="aircas-pagination"
       background
       layout="total, sizes, prev, pager, next"
       :total="total"
@@ -130,7 +128,7 @@ function handleCommand(command: string, item: SpaceBehaviorItem): void {
   padding: 8px 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
   gap: 12px;
 }
 .object-behavior-list-panel h2 {
@@ -139,7 +137,7 @@ function handleCommand(command: string, item: SpaceBehaviorItem): void {
   font-size: 16px;
 }
 .object-behavior-list-panel header span {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 .object-behavior-list-panel__filters,

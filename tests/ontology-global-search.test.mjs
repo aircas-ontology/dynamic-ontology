@@ -132,7 +132,7 @@ test("full text search page and header wire OntologyGlobalSearchField", () => {
   assert.match(field, /v-if="placement === ['"]page['"]"/);
   assert.match(field, /@click="submitSearch"/);
   assert.match(field, />检索<\/el-button>/);
-  assert.match(resultList, /class="aircas-tag"/);
+  assert.match(resultList, /<el-tag\b/);
   assert.match(resultList, /item\.spaceName/);
   assert.match(resultList, /item\.ontologyName/);
   assert.match(resultList, /关系分组/);

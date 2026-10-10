@@ -1,13 +1,11 @@
 <template>
   <div class="space-actions">
-    <el-button class="aircas-button aircas-button--tone-primary" type="primary" plain size="small" :icon="Right" @click="$emit('action', 'enter', space)">
+    <el-button :class="{ 'aircas-button--gradient': gradient }" type="primary" plain size="small" :icon="Right" @click="$emit('action', 'enter', space)">
       进入
     </el-button>
-    <el-button class="aircas-button aircas-button--tone-secondary" type="primary" plain size="small" :icon="Edit" @click="$emit('action', 'edit', space)">
-      编辑
-    </el-button>
-    <el-dropdown class="aircas-dropdown" popper-class="aircas-dropdown-popper" trigger="click" @command="command">
-      <el-button class="aircas-button aircas-button--tone-ghost" type="primary" plain size="small">
+    <el-button type="primary" plain size="small" :icon="Edit" @click="$emit('action', 'edit', space)"> 编辑 </el-button>
+    <el-dropdown trigger="click" @command="command">
+      <el-button type="primary" plain size="small">
         更多
         <el-icon>
           <ArrowDown />
@@ -28,7 +26,7 @@
 import { computed } from "vue";
 import { ArrowDown, Edit, Right } from "@element-plus/icons-vue";
 import type { OntologySpaceAction, OntologySpaceItem } from "@/types";
-const props = defineProps<{ space: OntologySpaceItem }>();
+const props = defineProps<{ space: OntologySpaceItem; gradient?: boolean }>();
 const emit = defineEmits<{ action: [action: OntologySpaceAction, space: OntologySpaceItem] }>();
 const canBuildConceptualModel = computed(() => props.space.metrics.ontology === 0);
 /**

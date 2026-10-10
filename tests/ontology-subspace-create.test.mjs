@@ -17,21 +17,17 @@ test("subspace create tree panel uses public tree and filter controls", () => {
   const source = readSource("../src/views/OntologySubspaceCreate/components/SubspaceCreateTreePanel.vue");
   assert.match(source, /分类体系树/);
   assert.match(source, /已选 \{\{ selectedCount \}\} 个/);
-  assert.match(source, /class="aircas-input /);
+  assert.match(source, /<el-input\b/);
   assert.match(source, /placeholder="搜索本体对象"/);
   assert.doesNotMatch(source, /全选对象/);
   assert.doesNotMatch(source, /清空选择/);
-  assert.match(source, /class="aircas-tree /);
+  assert.match(source, /<el-tree\b/);
   assert.match(source, /highlight-current/);
-  assert.match(source, /--el-checkbox-checked-bg-color: var\(--aircas-color-accent-cyan\)/);
-  assert.match(source, /:deep\(\.el-tree-node\.is-checked > \.el-tree-node__content\)[\s\S]*color: var\(--aircas-color-title\)/);
-  assert.match(source, /:deep\(\.el-tree-node\.is-checked > \.el-tree-node__content\)[\s\S]*background: var\(--aircas-color-accent-cyan-fill\)/);
-  assert.match(source, /--el-tree-text-color: var\(--aircas-color-text-secondary\)/);
-  assert.match(source, /:deep\(\.el-tree-node__label\)[\s\S]*color: var\(--aircas-color-text-secondary\)/);
-  assert.match(source, /:deep\(\.el-tree-node__expand-icon\)[\s\S]*color: var\(--aircas-color-text-muted\)/);
-  assert.match(source, /border: 1px solid var\(--aircas-color-accent-cyan-border\)/);
-  assert.match(source, /linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
   assert.match(source, /show-checkbox/);
+  assert.match(source, /<el-tree/);
+
+  assert.match(source, /border: 1px solid var\(--aircas-color-effect-primary-border\)/);
+  assert.match(source, /linear-gradient\(135deg, var\(--aircas-color-panel-background\), var\(--aircas-color-panel-background-deep\)\)/);
   assert.match(source, /apiName: "carrier_ford"/);
   assert.match(source, /getCheckedNodes\(true\)/);
   assert.match(source, /function syncSelectedTreeObjects/);
@@ -45,7 +41,7 @@ test("subspace create tree panel uses public tree and filter controls", () => {
 
 test("subspace create workspace panel uses public form empty and actions", () => {
   const source = readSource("../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue");
-  assert.match(source, /class="aircas-button"/);
+  assert.match(source, /<el-button\b/);
   assert.match(source, />返回</);
   assert.match(source, /v-if="currentStepIndex > 0"/);
   assert.match(source, /emit\('previous'\)/);
@@ -54,11 +50,11 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, />下一步</);
   assert.match(source, />创建</);
   assert.match(source, /currentStepIndex/);
-  assert.match(source, /class="aircas-form /);
+  assert.match(source, /<el-form\b/);
   assert.match(source, /子空间名称/);
   assert.match(source, /API 名称/);
-  assert.match(source, /class="aircas-input"/);
-  assert.doesNotMatch(source, /\.el-input__wrapper\) \{[\s\S]*background: var\(--aircas-color-transparent\)/);
+  assert.match(source, /<el-input\b/);
+  assert.doesNotMatch(source, /\.el-input__wrapper\) \{[\s\S]*background: transparent/);
   assert.match(source, /选择对象/);
   assert.match(source, /选择实例/);
   assert.match(source, /配置属性/);
@@ -68,31 +64,27 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, /:aria-current="resolveStepStatus\(index\) === 'process' \? 'step' : undefined"/);
   assert.match(source, /subspace-create-workspace__step-index/);
   assert.doesNotMatch(source, /\.subspace-create-workspace__steps \{[\s\S]*border-radius: 999px/);
-  assert.match(source, /li\.is-finish[\s\S]*color: var\(--aircas-color-title\)/);
+  assert.match(source, /li\.is-finish[\s\S]*color: var\(--aircas-color-primary\)/);
   assert.match(source, /li\.is-process[\s\S]*color: var\(--aircas-color-text-primary\)/);
-  assert.match(source, /li\.is-wait[\s\S]*color: var\(--aircas-color-text-muted\)/);
-  assert.match(source, /li\.is-finish \.subspace-create-workspace__step-index[\s\S]*background: var\(--aircas-color-accent-cyan\)/);
-  assert.match(source, /li\.is-process \.subspace-create-workspace__step-index::after[\s\S]*background: var\(--aircas-color-accent-cyan\)/);
+  assert.match(source, /li\.is-wait[\s\S]*color: var\(--aircas-color-text-secondary\)/);
+  assert.match(source, /li\.is-finish \.subspace-create-workspace__step-index[\s\S]*background: var\(--aircas-color-primary\)/);
+  assert.match(source, /li\.is-process \.subspace-create-workspace__step-index::after[\s\S]*background: var\(--aircas-color-primary\)/);
   assert.match(source, /第一步：选择对象/);
-  assert.match(source, /class="aircas-empty"/);
+  assert.match(source, /<el-empty\b/);
   assert.match(source, /请在左侧勾选本体对象/);
   assert.match(source, /selectedObjects/);
   assert.match(source, /subspace-create-workspace__card/);
-  assert.match(source, /\.subspace-create-workspace__card \{[\s\S]*border: 1px solid var\(--aircas-color-border-soft\)/);
+  assert.match(source, /\.subspace-create-workspace__card \{[\s\S]*border: 1px solid var\(--aircas-color-border-light\)/);
   assert.match(source, /\.subspace-create-workspace__card \{[\s\S]*background: var\(--aircas-color-input-background\)/);
   assert.match(source, /grid-template-columns: repeat\(auto-fill, minmax\(320px, 380px\)\)/);
   assert.match(source, /:aria-label="`\$\{item\.label\}，\$\{item\.apiName\}`"/);
   assert.match(source, /\.subspace-create-workspace__property-group \{[\s\S]*flex: 0 0 auto/);
-  assert.match(source, /\.subspace-create-workspace__property-filter\.el-date-editor[\s\S]*--el-input-bg-color: var\(--aircas-color-input-background\)/);
-  assert.match(source, /\.subspace-create-workspace__property-filter\.el-date-editor[\s\S]*\.el-range-input/);
-  assert.match(source, /\.subspace-create-workspace__property-filter\.el-input-number[\s\S]*\.el-input-number__increase/);
-  assert.match(source, /\.subspace-create-workspace__property-filter\.el-input-number[\s\S]*var\(--aircas-color-border-highlight\)/);
-  assert.match(source, /\.subspace-create-workspace__property-filter\.el-input-number[\s\S]*&\.is-disabled/);
+  assert.match(source, /subspace-create-workspace__property-filter/);
   assert.match(source, /<Ship \/>/);
   assert.match(source, /v-if="currentStepIndex === 0 && selectedObjects.length"/);
   assert.match(source, /第二步：选择实例/);
   assert.match(source, /选择纳入子空间的对象实例/);
-  assert.match(source, /class="aircas-table aircas-table--flat /);
+  assert.match(source, /class="aircas-table--accent-header /);
   assert.match(source, /type="selection"/);
   assert.match(source, /实例名称/);
   assert.match(source, /所属对象/);
@@ -106,11 +98,12 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, /数据类型/);
   assert.match(source, /筛选条件/);
   assert.match(source, /'daterange'/);
-  assert.match(source, /popper-class="aircas-picker"/);
+
+  assert.doesNotMatch(source, /popper-class="aircas-[^" ]+"/);
   assert.match(source, /el-input-number/);
   assert.doesNotMatch(source, /验证条件/);
-  assert.match(source, /class="aircas-checkbox"/);
-  assert.match(source, /class="aircas-tag"/);
+  assert.match(source, /<el-checkbox\b/);
+  assert.match(source, /<el-tag\b/);
   assert.match(source, /function selectObjectProperties/);
   assert.match(source, /第四步：选择关系/);
   assert.match(source, /选择纳入子空间的对象关系/);
@@ -124,7 +117,7 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, /class="subspace-create-workspace__header subspace-create-workspace__panel"/);
   assert.match(source, /class="subspace-create-workspace__steps subspace-create-workspace__panel"/);
   assert.match(source, /class="subspace-create-workspace__empty subspace-create-workspace__panel"/);
-  assert.match(source, /\.subspace-create-workspace__panel \{[\s\S]*border: 1px solid var\(--aircas-color-accent-cyan-border\)/);
+  assert.match(source, /\.subspace-create-workspace__panel \{[\s\S]*border: 1px solid var\(--aircas-color-effect-primary-border\)/);
   assert.match(source, /\.subspace-create-workspace__panel \{[\s\S]*background: var\(--aircas-color-panel-background\)/);
   assert.match(source, /\.subspace-create-workspace \{[\s\S]*width: 100%/);
   assert.doesNotMatch(source, /#[0-9a-fA-F]{3,8}/);
@@ -133,14 +126,10 @@ test("subspace create workspace panel uses public form empty and actions", () =>
 });
 
 test("date picker panel remaps Aircas theme variables for range selection", () => {
-  const source = readSource("../src/styles/element-plus/el-date-picker.scss");
-  assert.match(source, /\.aircas-picker \{[\s\S]*\.el-picker-panel,[\s\S]*--el-datepicker-bg-color: var\(--aircas-color-menu-background\)/);
-  assert.match(source, /\.el-date-range-picker \{[\s\S]*--el-datepicker-active-color: var\(--aircas-color-accent-cyan\)/);
-  assert.match(source, /\.el-date-table td\.in-range/);
-  assert.match(source, /\.el-picker-panel__shortcut\.active[\s\S]*var\(--aircas-color-selected-background\)/);
-  assert.match(source, /\.el-time-panel[\s\S]*var\(--aircas-color-menu-background\)/);
-  assert.match(source, /\.el-picker-panel__btn:hover[\s\S]*var\(--aircas-color-border-highlight\)/);
-  assert.match(source, /\.el-time-spinner__item\.is-active[\s\S]*var\(--aircas-color-title\)/);
+  const source = readSource("../src/styles/variables.scss");
+  assert.match(source, /--el-bg-color-overlay: var\(--aircas-color-panel-background\)/);
+  assert.match(source, /--el-color-#\{\$type\}: var\(--aircas-color-#\{\$type\}\)/);
+  assert.match(source, /--el-fill-color-light: var\(--aircas-color-hover\)/);
 });
 
 test("subspace create maps selected objects to property groups", () => {

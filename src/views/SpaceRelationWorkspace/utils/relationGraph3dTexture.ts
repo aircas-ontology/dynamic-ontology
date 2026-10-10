@@ -11,12 +11,7 @@ function ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number
   return `${result}${ellipsis}`;
 }
 
-export function createRelationEdgeLabelTexture(
-  title: string,
-  subtitle: string,
-  color: string,
-  highlighted: boolean,
-): THREE.CanvasTexture {
+export function createRelationEdgeLabelTexture(title: string, subtitle: string, color: string, highlighted: boolean): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
   canvas.height = 72;
@@ -41,19 +36,24 @@ export function createRelationEdgeLabelTexture(
   return texture;
 }
 
+/**
+ * @description 从当前主题分类令牌和次级文本色生成低饱和关系色。
+ * @param index 分类色序号。
+ * @returns Three.js 可识别的实际颜色。
+ */
 export function resolveSoftCategoryColor(index: number): string {
   const keys = [
-    "--aircas-color-accent-cyan",
-    "--aircas-color-accent-blue",
-    "--aircas-color-accent-purple",
-    "--aircas-color-accent-green",
-    "--aircas-color-accent-orange",
-    "--aircas-color-gold",
-    "--aircas-color-border-highlight",
+    "--aircas-color-primary",
+    "--aircas-color-category-blue",
+    "--aircas-color-category-purple",
+    "--aircas-color-success",
+    "--aircas-color-warning",
+    "--aircas-color-warning",
+    "--aircas-color-primary",
   ] as const;
   const key = keys[index % keys.length] ?? keys[0];
-  const base = themeColor(key) || "#4dd2ff";
-  const muted = themeColor("--aircas-color-text-muted") || "#9db6c8";
+  const base = themeColor(key);
+  const muted = themeColor("--aircas-color-text-secondary");
   return mixHex(base, muted, 0.28);
 }
 

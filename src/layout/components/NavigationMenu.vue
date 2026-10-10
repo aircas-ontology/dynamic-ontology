@@ -12,7 +12,7 @@
         <span v-if="!collapsed">收起菜单</span>
       </button>
     </div>
-    <el-menu class="aircas-menu navigation-menu__list" :default-active="route.path" :collapse="collapsed" :collapse-transition="false" router>
+    <el-menu class="navigation-menu__list" :default-active="route.path" :collapse="collapsed" :collapse-transition="false" router>
       <el-menu-item index="/workspace/ontology-space-management" :route="{ name: 'OntologySpaceManagement' }">
         <el-icon><Box /></el-icon>
         <template #title>本体空间管理</template>
@@ -43,12 +43,12 @@ const route = useRoute();
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
-  border-right: 1px solid var(--aircas-color-border-soft);
+  border-right: 1px solid var(--aircas-color-border-light);
   background-color: var(--aircas-color-background);
 }
 .navigation-menu__control {
   padding: 6px;
-  border-bottom: 1px solid var(--aircas-color-border-soft);
+  border-bottom: 1px solid var(--aircas-color-border-light);
   background: var(--aircas-color-panel-background-deep);
 }
 .navigation-menu__toggle {
@@ -59,22 +59,20 @@ const route = useRoute();
   width: 100%;
   height: 28px;
   border: 0;
-  background: var(--aircas-color-transparent);
+  background: transparent;
   color: var(--aircas-color-text-secondary);
   font: inherit;
   font-size: 12px;
   cursor: pointer;
 }
 .navigation-menu__toggle:hover {
-  background: var(--aircas-color-hover-background);
+  background: var(--aircas-color-hover);
 }
 .navigation-menu__toggle:focus-visible {
-  outline: 2px solid var(--aircas-color-accent-cyan);
+  outline: 2px solid var(--aircas-color-primary);
   outline-offset: -2px;
 }
 .navigation-menu__list {
-  --el-menu-item-height: 48px;
-  --el-menu-base-level-padding: 18px;
   flex: 1;
   width: 100%;
   min-height: 0;
@@ -85,7 +83,6 @@ const route = useRoute();
   font-size: 13px;
 }
 :deep(.el-menu-item:focus-visible) {
-  outline: 2px solid var(--aircas-color-accent-cyan);
   outline-offset: -2px;
 }
 </style>

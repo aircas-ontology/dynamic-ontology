@@ -1,18 +1,12 @@
 <template>
   <div class="basic-filter-group" :class="`basic-filter-group--depth-${depth}`">
     <div class="basic-filter-group__toolbar">
-      <el-select
-        :model-value="group.logic"
-        class="aircas-select basic-filter-group__logic"
-        popper-class="aircas-select-popper"
-        style="width: 140px"
-        @update:model-value="updateLogic"
-      >
+      <el-select :model-value="group.logic" class="basic-filter-group__logic" style="width: 140px" @update:model-value="updateLogic">
         <el-option v-for="item in BASIC_FILTER_LOGIC_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
       <div class="basic-filter-group__actions">
-        <el-button class="aircas-button" size="small" @click="addFilter">+ 条件</el-button>
-        <el-button v-if="depth < 3" class="aircas-button" size="small" @click="addGroup">+ 分组</el-button>
+        <el-button size="small" @click="addFilter">+ 条件</el-button>
+        <el-button v-if="depth < 3" size="small" @click="addGroup">+ 分组</el-button>
       </div>
     </div>
 
@@ -22,25 +16,19 @@
           <div class="basic-filter-row">
             <el-input
               :model-value="child.filter.propertyApiName"
-              class="aircas-input basic-filter-row__property"
+              class="basic-filter-row__property"
               maxlength="64"
               placeholder="输入变量名"
               @update:model-value="(value) => updateFilterProperty(index, value)"
             />
             <el-select
               :model-value="child.filter.valueType"
-              class="aircas-select basic-filter-row__value-type"
-              popper-class="aircas-select-popper"
+              class="basic-filter-row__value-type"
               @update:model-value="(value) => updateFilterValueType(index, value)"
             >
               <el-option v-for="item in BASIC_FILTER_VALUE_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
-            <el-select
-              :model-value="child.filter.op"
-              class="aircas-select basic-filter-row__op"
-              popper-class="aircas-select-popper"
-              @update:model-value="(value) => updateFilterOp(index, value)"
-            >
+            <el-select :model-value="child.filter.op" class="basic-filter-row__op" @update:model-value="(value) => updateFilterOp(index, value)">
               <el-option v-for="item in BASIC_FILTER_OP_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
             <div class="basic-filter-row__values">
@@ -62,13 +50,11 @@
                 <template v-else>
                   <el-input
                     :model-value="String(child.filter.values?.[0] ?? '')"
-                    class="aircas-input"
                     placeholder="最小值"
                     @update:model-value="(value) => updateFilterRange(index, 0, value)"
                   />
                   <el-input
                     :model-value="String(child.filter.values?.[1] ?? '')"
-                    class="aircas-input"
                     placeholder="最大值"
                     @update:model-value="(value) => updateFilterRange(index, 1, value)"
                   />
@@ -77,7 +63,6 @@
               <template v-else-if="opNeedsList(child.filter.op)">
                 <el-input
                   :model-value="formatFilterList(child.filter.values)"
-                  class="aircas-input"
                   placeholder="多个值用英文逗号分隔"
                   @update:model-value="(value) => updateFilterList(index, value)"
                 />
@@ -86,8 +71,6 @@
                 <el-select
                   v-if="child.filter.valueType === 'boolean'"
                   :model-value="Boolean(child.filter.value)"
-                  class="aircas-select"
-                  popper-class="aircas-select-popper"
                   @update:model-value="(value) => updateFilterValue(index, Boolean(value))"
                 >
                   <el-option label="true" :value="true" />
@@ -103,14 +86,13 @@
                 <el-input
                   v-else
                   :model-value="String(child.filter.value ?? '')"
-                  class="aircas-input"
                   placeholder="输入值"
                   @update:model-value="(value) => updateFilterValue(index, value)"
                 />
               </template>
               <span v-else class="basic-filter-row__value-placeholder">无需取值</span>
             </div>
-            <el-button type="danger" plain class="aircas-button basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
+            <el-button type="danger" plain class="basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
               删除
             </el-button>
           </div>
@@ -119,7 +101,7 @@
           <div class="basic-filter-group__nested">
             <div class="basic-filter-group__nested-header">
               <span>分组</span>
-              <el-button type="danger" plain class="aircas-button basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
+              <el-button type="danger" plain class="basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
                 删除分组
               </el-button>
             </div>
@@ -329,7 +311,7 @@ function updateNestedGroup(index: number, group: BasicFilterDocument): void {
   flex-direction: column;
   gap: 10px;
   padding: 10px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
   background: var(--aircas-color-card-background);
 }
@@ -384,7 +366,7 @@ function updateNestedGroup(index: number, group: BasicFilterDocument): void {
 }
 
 .basic-filter-row__value-placeholder {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 
@@ -393,58 +375,32 @@ function updateNestedGroup(index: number, group: BasicFilterDocument): void {
   flex-direction: column;
   gap: 8px;
   padding: 8px;
-  border: 1px dashed var(--aircas-color-border-soft);
+  border: 1px dashed var(--aircas-color-border-light);
   border-radius: 8px;
-  background: var(--aircas-color-overlay);
+  background: var(--aircas-color-panel-background);
 }
 
-:root[theme="light"] .basic-filter-group__nested {
+:root:not(.dark) .basic-filter-group__nested {
   background: var(--aircas-color-panel-background);
 }
 
 .basic-filter-row__number {
   width: 100%;
   max-width: 140px;
-  --el-fill-color-blank: var(--aircas-color-input-background);
-  --el-input-bg-color: var(--aircas-color-input-background);
-  --el-input-border-color: var(--aircas-color-border);
-  --el-input-hover-border-color: var(--aircas-color-border-highlight);
-  --el-input-focus-border-color: var(--aircas-color-focus-border);
-  --el-input-text-color: var(--aircas-color-text-primary);
-  --el-disabled-bg-color: var(--aircas-color-input-background);
-  --el-text-color-regular: var(--aircas-color-text-primary);
 }
 
 .basic-filter-row__number :deep(.el-input__wrapper) {
   height: 32px;
   min-height: 32px;
   padding: 0 8px;
-  background-color: var(--aircas-color-input-background);
-  box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
-}
-
-.basic-filter-row__number :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
-}
-
-.basic-filter-row__number :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
 }
 
 .basic-filter-row__number :deep(.el-input-number__decrease),
 .basic-filter-row__number :deep(.el-input-number__increase) {
   width: 28px;
-  background: var(--aircas-color-panel-background-deep);
-  border-color: var(--aircas-color-border-soft);
-  color: var(--aircas-color-text-secondary);
 }
 
-.basic-filter-row__number :deep(.el-input-number__decrease:hover),
-.basic-filter-row__number :deep(.el-input-number__increase:hover) {
-  color: var(--aircas-color-text-primary);
-}
-
-.basic-filter-row__remove.aircas-button {
+.basic-filter-row__remove {
   flex: 0 0 auto;
   height: 32px;
   min-height: 32px;

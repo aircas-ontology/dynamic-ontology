@@ -1,21 +1,21 @@
 <template>
   <main class="subspace-create-workspace" aria-label="子空间创建内容">
     <header class="subspace-create-workspace__header subspace-create-workspace__panel">
-      <el-button class="aircas-button" @click="emit('back')">返回</el-button>
+      <el-button @click="emit('back')">返回</el-button>
       <span>父空间：{{ parentSpaceName }}</span>
       <div class="subspace-create-workspace__header-actions">
-        <el-button v-if="currentStepIndex > 0" class="aircas-button" @click="emit('previous')">上一步</el-button>
-        <el-button v-if="currentStepIndex < flowSteps.length - 1" class="aircas-button" type="primary" @click="emit('next')">下一步</el-button>
-        <el-button v-else class="aircas-button" type="primary" @click="emit('create')">创建</el-button>
+        <el-button v-if="currentStepIndex > 0" @click="emit('previous')">上一步</el-button>
+        <el-button v-if="currentStepIndex < flowSteps.length - 1" type="primary" @click="emit('next')">下一步</el-button>
+        <el-button v-else type="primary" @click="emit('create')">创建</el-button>
       </div>
     </header>
 
-    <el-form class="aircas-form subspace-create-workspace__form" label-position="left" label-width="88px">
+    <el-form class="subspace-create-workspace__form" label-position="left" label-width="88px">
       <el-form-item label="子空间名称">
-        <el-input :model-value="spaceName" class="aircas-input" ariaLabel="子空间名称" @update:model-value="emit('update:spaceName', String($event ?? ''))" />
+        <el-input :model-value="spaceName" ariaLabel="子空间名称" @update:model-value="emit('update:spaceName', String($event ?? ''))" />
       </el-form-item>
       <el-form-item label="API 名称">
-        <el-input :model-value="apiName" class="aircas-input" ariaLabel="API 名称" @update:model-value="emit('update:apiName', String($event ?? ''))" />
+        <el-input :model-value="apiName" ariaLabel="API 名称" @update:model-value="emit('update:apiName', String($event ?? ''))" />
       </el-form-item>
     </el-form>
 
@@ -39,8 +39,8 @@
           <p>{{ stepPanelCopy.description }}</p>
         </div>
         <div v-if="currentStepIndex === 2" class="subspace-create-workspace__property-actions">
-          <el-button class="aircas-button" size="small" @click="emit('selectAllProperties')">全选属性</el-button>
-          <el-button class="aircas-button" size="small" @click="emit('clearProperties')">取消全选</el-button>
+          <el-button size="small" @click="emit('selectAllProperties')">全选属性</el-button>
+          <el-button size="small" @click="emit('clearProperties')">取消全选</el-button>
         </div>
         <strong v-else>{{ stepPanelCopy.summary }}</strong>
       </header>
@@ -56,7 +56,7 @@
       <el-table
         v-else-if="currentStepIndex === 1 && instanceRows.length"
         ref="instanceTableRef"
-        class="aircas-table aircas-table--flat subspace-create-workspace__table"
+        class="aircas-table--accent-header subspace-create-workspace__table"
         :data="instanceRows"
         row-key="id"
         stripe
@@ -74,17 +74,12 @@
               <strong>{{ group.objectLabel }}</strong>
               <span>{{ countSelectedObjectProperties(group.objectId) }} / {{ group.properties.length }} 个属性</span>
             </div>
-            <el-button class="aircas-button" size="small" @click="selectObjectProperties(group.objectId)">全选</el-button>
+            <el-button size="small" @click="selectObjectProperties(group.objectId)">全选</el-button>
           </header>
-          <el-table class="aircas-table aircas-table--flat subspace-create-workspace__property-table" :data="group.properties" row-key="id" stripe>
+          <el-table class="aircas-table--accent-header subspace-create-workspace__property-table" :data="group.properties" row-key="id" stripe>
             <el-table-column label="选择" width="72">
               <template v-slot:default="{ row }">
-                <el-checkbox
-                  class="aircas-checkbox"
-                  :model-value="isObjectPropertySelected(row)"
-                  ariaLabel="选择属性"
-                  @change="toggleObjectProperty(row, $event)"
-                />
+                <el-checkbox :model-value="isObjectPropertySelected(row)" ariaLabel="选择属性" @change="toggleObjectProperty(row, $event)" />
               </template>
             </el-table-column>
             <el-table-column label="属性名称" min-width="180">
@@ -97,7 +92,7 @@
             </el-table-column>
             <el-table-column label="数据类型" width="140">
               <template v-slot:default="{ row }">
-                <el-tag class="aircas-tag" size="small">{{ readObjectProperty(row).dataType }}</el-tag>
+                <el-tag size="small">{{ readObjectProperty(row).dataType }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column label="筛选条件" min-width="280">
@@ -105,8 +100,7 @@
                 <el-date-picker
                   v-if="resolvePropertyFilterKind(row) === 'dateRange' || resolvePropertyFilterKind(row) === 'dateTimeRange'"
                   :model-value="readPropertyDateRange(row)"
-                  class="aircas-input subspace-create-workspace__property-filter"
-                  popper-class="aircas-picker"
+                  class="subspace-create-workspace__property-filter"
                   :type="resolvePropertyFilterKind(row) === 'dateTimeRange' ? 'datetimerange' : 'daterange'"
                   :value-format="resolvePropertyFilterKind(row) === 'dateTimeRange' ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD'"
                   range-separator="至"
@@ -124,8 +118,7 @@
                 <el-select
                   v-else-if="resolvePropertyFilterKind(row) === 'boolean'"
                   :model-value="readPropertyFilterBoolean(row)"
-                  class="aircas-select subspace-create-workspace__property-filter"
-                  popper-class="aircas-select-popper"
+                  class="subspace-create-workspace__property-filter"
                   clearable
                   placeholder="请选择"
                   @update:model-value="updatePropertyFilterBoolean(row, $event)"
@@ -136,7 +129,7 @@
                 <el-input
                   v-else
                   :model-value="readPropertyFilterText(row)"
-                  class="aircas-input subspace-create-workspace__property-filter"
+                  class="subspace-create-workspace__property-filter"
                   clearable
                   placeholder="请输入筛选内容"
                   ariaLabel="筛选条件"
@@ -150,7 +143,7 @@
       <el-table
         v-else-if="currentStepIndex === 3 && relationRows.length"
         ref="relationTableRef"
-        class="aircas-table aircas-table--flat subspace-create-workspace__table"
+        class="aircas-table--accent-header subspace-create-workspace__table"
         :data="relationRows"
         row-key="id"
         stripe
@@ -162,7 +155,7 @@
         <el-table-column prop="sourceLabel" label="源对象" min-width="220" show-overflow-tooltip />
         <el-table-column prop="targetLabel" label="目标对象" min-width="220" show-overflow-tooltip />
       </el-table>
-      <el-empty v-else class="aircas-empty" :description="resolveEmptyDescription()" />
+      <el-empty v-else :description="resolveEmptyDescription()" />
     </section>
   </main>
 </template>
@@ -573,7 +566,7 @@ watch(
 }
 
 .subspace-create-workspace__panel {
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 8px;
   background: var(--aircas-color-panel-background);
 }
@@ -641,7 +634,7 @@ watch(
 }
 
 .subspace-create-workspace__steps li.is-finish {
-  color: var(--aircas-color-title);
+  color: var(--aircas-color-primary);
 }
 
 .subspace-create-workspace__steps li.is-process {
@@ -649,7 +642,7 @@ watch(
 }
 
 .subspace-create-workspace__steps li.is-wait {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
 }
 
 .subspace-create-workspace__step-index {
@@ -658,14 +651,14 @@ watch(
   height: 16px;
   flex-shrink: 0;
   place-items: center;
-  border: 1px solid var(--aircas-color-text-muted);
+  border: 1px solid var(--aircas-color-text-secondary);
   border-radius: 50%;
-  background: var(--aircas-color-transparent);
+  background: transparent;
 }
 
 .subspace-create-workspace__steps li.is-finish .subspace-create-workspace__step-index {
-  border-color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-accent-cyan);
+  border-color: var(--aircas-color-primary);
+  background: var(--aircas-color-primary);
 }
 
 .subspace-create-workspace__steps li.is-finish .subspace-create-workspace__step-index::after {
@@ -687,7 +680,7 @@ watch(
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--aircas-color-accent-cyan);
+  background: var(--aircas-color-primary);
 }
 
 .subspace-create-workspace__step-arrow {
@@ -695,8 +688,8 @@ watch(
   right: 0;
   width: 8px;
   height: 8px;
-  border-top: 1px solid var(--aircas-color-text-muted);
-  border-right: 1px solid var(--aircas-color-text-muted);
+  border-top: 1px solid var(--aircas-color-text-secondary);
+  border-right: 1px solid var(--aircas-color-text-secondary);
   transform: rotate(45deg);
 }
 
@@ -730,12 +723,12 @@ watch(
 }
 
 .subspace-create-workspace__empty-header strong {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   font-weight: 400;
 }
 
-.subspace-create-workspace__empty :deep(.aircas-empty) {
+.subspace-create-workspace__empty :deep(.el-empty) {
   min-height: 0;
   flex: 1;
 }
@@ -760,7 +753,7 @@ watch(
   align-items: center;
   gap: 16px;
   padding: 16px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
   background: var(--aircas-color-input-background);
   transition:
@@ -769,12 +762,12 @@ watch(
 }
 
 .subspace-create-workspace__card:hover {
-  border-color: var(--aircas-color-border-highlight);
-  background: var(--aircas-color-selected-background);
+  border-color: var(--aircas-color-primary);
+  background: var(--aircas-color-active);
 }
 
 .subspace-create-workspace__card:focus-visible {
-  outline: 2px solid var(--aircas-color-accent-cyan);
+  outline: 2px solid var(--aircas-color-primary);
   outline-offset: 2px;
 }
 
@@ -783,7 +776,7 @@ watch(
   width: 56px;
   height: 40px;
   place-items: center;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 40px;
 }
 
@@ -808,7 +801,7 @@ watch(
 }
 
 .subspace-create-workspace__card-body small {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 14px;
 }
 
@@ -839,7 +832,7 @@ watch(
 .subspace-create-workspace__property-group {
   flex: 0 0 auto;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
 }
 
@@ -849,7 +842,7 @@ watch(
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  background: var(--aircas-color-card-background-active);
+  background: var(--aircas-color-active);
 }
 
 .subspace-create-workspace__property-group-header strong {
@@ -859,7 +852,7 @@ watch(
 
 .subspace-create-workspace__property-group-header span {
   margin-left: 8px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 
@@ -887,7 +880,7 @@ watch(
 }
 
 .subspace-create-workspace__property-name small {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 
@@ -896,108 +889,17 @@ watch(
 }
 
 .subspace-create-workspace__property-filter.el-date-editor {
-  --el-input-text-color: var(--aircas-color-text-primary);
-  --el-input-bg-color: var(--aircas-color-input-background);
-  --el-input-border-color: var(--aircas-color-border);
-  --el-input-hover-border-color: var(--aircas-color-border-highlight);
-  --el-input-focus-border-color: var(--aircas-color-focus-border);
-  --el-input-placeholder-color: var(--aircas-color-text-placeholder);
-  --el-input-icon-color: var(--aircas-color-text-muted);
-
-  :deep(.el-input__wrapper) {
-    background-color: var(--aircas-color-input-background);
-    box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
-  }
-
-  :deep(.el-input__wrapper:hover:not(.is-disabled)) {
-    box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
-  }
-
-  :deep(.el-input__wrapper.is-focus) {
-    box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
-  }
-
-  :deep(.el-range-input) {
-    background-color: var(--aircas-color-transparent);
-    color: var(--aircas-color-text-primary);
-  }
-
-  :deep(.el-range-input::placeholder),
-  :deep(.el-range-separator),
-  :deep(.el-input__icon) {
-    color: var(--aircas-color-text-muted);
-  }
-
   &.is-disabled {
-    :deep(.el-input__wrapper),
-    :deep(.el-range-input) {
-      background-color: var(--aircas-color-panel-background);
-      color: var(--aircas-color-text-disabled);
-      -webkit-text-fill-color: var(--aircas-color-text-disabled);
-    }
   }
 }
 
 .subspace-create-workspace__property-filter.el-input-number {
-  --el-input-text-color: var(--aircas-color-text-primary);
-  --el-input-bg-color: var(--aircas-color-input-background);
-  --el-input-border-color: var(--aircas-color-border);
-  --el-input-hover-border-color: var(--aircas-color-border-highlight);
-  --el-input-focus-border-color: var(--aircas-color-focus-border);
-  --el-input-icon-color: var(--aircas-color-text-muted);
-
-  width: 100%;
-
-  :deep(.el-input__wrapper) {
-    background-color: var(--aircas-color-input-background);
-    box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
-  }
-
-  :deep(.el-input__wrapper:hover:not(.is-disabled)) {
-    box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
-  }
-
-  :deep(.el-input__wrapper.is-focus) {
-    box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
-  }
-
-  :deep(.el-input__inner) {
-    color: var(--aircas-color-text-primary);
-  }
-
-  :deep(.el-input-number__increase),
-  :deep(.el-input-number__decrease) {
-    background-color: var(--aircas-color-panel-background);
-    border-color: var(--aircas-color-border-soft);
-    color: var(--aircas-color-text-muted);
-  }
-
-  :deep(.el-input-number__increase:hover),
-  :deep(.el-input-number__decrease:hover) {
-    background-color: var(--aircas-color-hover-background);
-    color: var(--aircas-color-title);
-  }
-
   :deep(.el-input-number__increase.is-disabled),
   :deep(.el-input-number__decrease.is-disabled) {
-    background-color: var(--aircas-color-panel-background);
-    color: var(--aircas-color-text-disabled);
     cursor: not-allowed;
   }
 
   &.is-disabled {
-    :deep(.el-input__wrapper),
-    :deep(.el-input-number__increase),
-    :deep(.el-input-number__decrease) {
-      background-color: var(--aircas-color-panel-background);
-      border-color: var(--aircas-color-border-soft);
-      color: var(--aircas-color-text-disabled);
-    }
-
-    :deep(.el-input__inner) {
-      color: var(--aircas-color-text-disabled);
-      -webkit-text-fill-color: var(--aircas-color-text-disabled);
-    }
   }
 }
 </style>

@@ -1,7 +1,6 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    class="aircas-dialog"
     title="本体行为状态管理"
     width="520px"
     :close-on-click-modal="false"
@@ -9,15 +8,15 @@
   >
     <el-form v-if="behavior" label-position="top"
       ><el-form-item label="目标操作" required
-        ><el-select v-model="operation" class="aircas-select"
+        ><el-select v-model="operation"
           ><el-option v-for="item in operations" :key="item" :label="SPACE_BEHAVIOR_STATUS_OPERATION_LABELS[item]" :value="item" /></el-select></el-form-item
       ><el-form-item label="操作原因" required
-        ><el-input v-model="reason" class="aircas-input" type="textarea" :rows="4" maxlength="2400" placeholder="说明发布、停用或转草稿的原因" /></el-form-item
+        ><el-input v-model="reason" type="textarea" :rows="4" maxlength="2400" placeholder="说明发布、停用或转草稿的原因" /></el-form-item
       ><el-alert title="引用检查通过" type="success" :closable="false" description="当前无行为树或调度引用。"
     /></el-form>
     <template #footer
-      ><el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">取消</el-button
-      ><el-button class="aircas-button aircas-button--tone-primary" :disabled="!reason.trim()" @click="submitStatusChange">确认变更</el-button></template
+      ><el-button @click="emit('update:modelValue', false)">取消</el-button
+      ><el-button :disabled="!reason.trim()" @click="submitStatusChange">确认变更</el-button></template
     >
   </el-dialog>
 </template>

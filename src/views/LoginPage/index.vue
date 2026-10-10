@@ -222,8 +222,8 @@ async function onSubmit() {
   flex-direction: column;
   color: var(--aircas-color-text-primary);
   background:
-    radial-gradient(circle at 12% 18%, var(--aircas-color-accent-blue-soft), transparent 32%),
-    radial-gradient(circle at 82% 78%, var(--aircas-color-accent-cyan-soft), transparent 34%),
+    radial-gradient(circle at 12% 18%, var(--aircas-color-effect-blue-soft), transparent 32%),
+    radial-gradient(circle at 82% 78%, var(--aircas-color-effect-primary-soft), transparent 34%),
     linear-gradient(135deg, var(--aircas-color-page-background), var(--aircas-color-panel-background-deep));
 }
 
@@ -232,7 +232,8 @@ async function onSubmit() {
   inset: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(var(--aircas-color-accent-cyan-soft) 1px, transparent 1px), linear-gradient(145deg, var(--aircas-color-accent-blue-soft), transparent 58%);
+    radial-gradient(var(--aircas-color-effect-primary-soft) 1px, transparent 1px),
+    linear-gradient(145deg, var(--aircas-color-effect-blue-soft), transparent 58%);
   background-size:
     30px 30px,
     auto;
@@ -271,10 +272,10 @@ async function onSubmit() {
   height: 68px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 16px;
-  background: var(--aircas-color-accent-cyan-fill);
-  box-shadow: 0 0 24px var(--aircas-color-accent-cyan-shadow);
+  background: var(--aircas-color-effect-primary-fill);
+  box-shadow: 0 0 24px var(--aircas-color-effect-primary-shadow);
 }
 
 .brand-logo img {
@@ -287,12 +288,12 @@ async function onSubmit() {
 
 .brand h1 {
   margin: 0;
-  color: var(--aircas-color-accent-green);
+  color: var(--aircas-color-primary);
   font-size: 30px;
   font-weight: 700;
   letter-spacing: 0.08em;
   line-height: 1.2;
-  text-shadow: 0 0 12px var(--aircas-color-accent-green-shadow);
+  text-shadow: 0 0 12px var(--aircas-color-effect-success-shadow);
 }
 
 .headline {
@@ -310,7 +311,7 @@ async function onSubmit() {
 
   p {
     margin: 0;
-    color: var(--aircas-color-accent-cyan);
+    color: var(--aircas-color-primary);
     font-size: 17px;
     letter-spacing: 0.18em;
   }
@@ -374,12 +375,12 @@ async function onSubmit() {
   max-width: 460px;
   justify-self: end;
   padding: 34px 32px 28px;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 20px;
   background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
   box-shadow:
-    0 24px 60px var(--aircas-color-accent-blue-shadow),
-    inset 0 1px 0 var(--aircas-color-accent-cyan-soft);
+    0 24px 60px var(--aircas-color-effect-blue-shadow),
+    inset 0 1px 0 var(--aircas-color-effect-primary-soft);
 
   h3 {
     margin: 0 0 26px;
@@ -409,7 +410,7 @@ async function onSubmit() {
   input {
     width: 100%;
     min-height: 48px;
-    border: 1px solid var(--aircas-color-border-soft);
+    border: 1px solid var(--aircas-color-border-light);
     border-radius: 10px;
     padding: 12px 44px 12px 44px;
     outline: none;
@@ -422,13 +423,13 @@ async function onSubmit() {
       background-color 0.2s ease;
 
     &::placeholder {
-      color: var(--aircas-color-text-placeholder);
+      color: var(--aircas-color-text-secondary);
     }
 
     &:focus {
-      border-color: var(--aircas-color-focus-border);
+      border-color: var(--aircas-color-primary);
       background: var(--aircas-color-panel-background);
-      box-shadow: 0 0 0 3px var(--aircas-color-accent-cyan-soft);
+      box-shadow: 0 0 0 3px var(--aircas-color-effect-primary-soft);
     }
   }
 }
@@ -486,12 +487,12 @@ async function onSubmit() {
 
   &:hover,
   &:focus-visible {
-    color: var(--aircas-color-accent-cyan);
-    background: var(--aircas-color-accent-cyan-soft);
+    color: var(--aircas-color-primary);
+    background: var(--aircas-color-effect-primary-soft);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--aircas-color-accent-cyan);
+    outline: 2px solid var(--aircas-color-primary);
     outline-offset: 2px;
   }
 
@@ -511,12 +512,12 @@ async function onSubmit() {
   margin-top: 6px;
   border: 0;
   border-radius: 10px;
-  color: var(--aircas-color-text-inverse);
+  color: var(--aircas-color-on-accent);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.28em;
-  background: linear-gradient(100deg, var(--aircas-color-accent-cyan), var(--aircas-color-accent-blue));
-  box-shadow: 0 10px 24px var(--aircas-color-accent-blue-shadow);
+  background: linear-gradient(100deg, var(--aircas-color-primary), var(--aircas-color-category-blue));
+  box-shadow: 0 10px 24px var(--aircas-color-effect-blue-shadow);
   cursor: pointer;
   transition:
     transform 0.2s ease,
@@ -525,23 +526,23 @@ async function onSubmit() {
 
   &:hover {
     filter: brightness(1.08);
-    box-shadow: 0 14px 30px var(--aircas-color-accent-blue-shadow);
+    box-shadow: 0 14px 30px var(--aircas-color-effect-blue-shadow);
     transform: translateY(-2px);
   }
 
   &:active {
-    box-shadow: 0 6px 14px var(--aircas-color-accent-blue-shadow);
+    box-shadow: 0 6px 14px var(--aircas-color-effect-blue-shadow);
     transform: translateY(0);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--aircas-color-accent-cyan);
+    outline: 2px solid var(--aircas-color-primary);
     outline-offset: 3px;
   }
 
   &:disabled {
     color: var(--aircas-color-text-disabled);
-    background: var(--aircas-color-selected-background);
+    background: var(--aircas-color-active);
     box-shadow: none;
     cursor: not-allowed;
     transform: none;
@@ -560,7 +561,7 @@ async function onSubmit() {
 
   span {
     height: 1px;
-    background: linear-gradient(90deg, transparent, var(--aircas-color-accent-cyan), transparent);
+    background: linear-gradient(90deg, transparent, var(--aircas-color-primary), transparent);
   }
 
   p {
@@ -578,16 +579,16 @@ async function onSubmit() {
 
   li {
     padding: 12px 6px;
-    border: 1px solid var(--aircas-color-accent-cyan-border);
+    border: 1px solid var(--aircas-color-effect-primary-border);
     border-radius: 10px;
     text-align: center;
-    background: var(--aircas-color-accent-cyan-fill);
+    background: var(--aircas-color-effect-primary-fill);
   }
 
   strong {
     display: block;
     margin-bottom: 4px;
-    color: var(--aircas-color-accent-green);
+    color: var(--aircas-color-primary);
     font-size: 14px;
   }
 
@@ -602,7 +603,7 @@ async function onSubmit() {
   width: 20px;
   height: 20px;
   margin-bottom: 6px;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
 
   svg {
     width: 100%;
@@ -619,7 +620,7 @@ async function onSubmit() {
   position: relative;
   z-index: 1;
   margin-top: 16px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   text-align: center;
 }

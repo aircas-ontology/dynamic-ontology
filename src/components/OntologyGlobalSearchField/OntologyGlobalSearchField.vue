@@ -3,7 +3,7 @@
     <div class="ontology-global-search__bar">
       <el-input
         v-model="keyword"
-        class="aircas-input ontology-global-search__input"
+        class="ontology-global-search__input"
         :placeholder="placeholder"
         :prefix-icon="Search"
         clearable
@@ -12,7 +12,7 @@
         @clear="handleClear"
         @focus="openOverlayIfHasState"
       />
-      <el-button v-if="placement === 'page'" class="aircas-button ontology-global-search__submit" type="primary" @click="submitSearch">检索</el-button>
+      <el-button v-if="placement === 'page'" class="ontology-global-search__submit" type="primary" @click="submitSearch">检索</el-button>
     </div>
 
     <div v-if="placement === 'overlay' && overlayVisible" class="ontology-global-search__dropdown" role="listbox" aria-label="检索结果">
@@ -182,7 +182,7 @@ onUnmounted(() => {
   width: min(720px, 100%);
   min-height: 120px;
   padding: 8px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
   background: var(--aircas-color-panel-background-deep);
 }

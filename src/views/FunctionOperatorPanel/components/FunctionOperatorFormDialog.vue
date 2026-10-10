@@ -1,14 +1,14 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    class="aircas-dialog function-operator-form-dialog"
+    class="function-operator-form-dialog"
     :title="operator ? '编辑函数算子' : '新建函数算子'"
     width="min(960px, calc(100vw - 48px))"
     align-center
     destroy-on-close
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="aircas-form function-operator-form">
+    <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="function-operator-form">
       <section v-if="!operator" class="function-operator-form__section">
         <div class="function-operator-form__section-title">函数类型</div>
         <div class="function-operator-form__type-grid">
@@ -30,37 +30,23 @@
         <div class="function-operator-form__section-title">通用配置</div>
         <div class="function-operator-form__name-grid">
           <el-form-item label="函数名称" prop="name">
-            <el-input v-model="form.name" class="aircas-input" maxlength="64" placeholder="例如：目标识别算子" />
+            <el-input v-model="form.name" maxlength="64" placeholder="例如：目标识别算子" />
           </el-form-item>
           <el-form-item label="函数api名称" prop="functionApi">
-            <el-input v-model="form.functionApi" class="aircas-input" maxlength="64" placeholder="例如：target_recognition" :disabled="Boolean(operator)" />
+            <el-input v-model="form.functionApi" maxlength="64" placeholder="例如：target_recognition" :disabled="Boolean(operator)" />
           </el-form-item>
         </div>
         <el-form-item label="函数说明" prop="description">
-          <el-input v-model="form.description" class="aircas-input" type="textarea" :rows="2" maxlength="240" show-word-limit />
+          <el-input v-model="form.description" type="textarea" :rows="2" maxlength="240" show-word-limit />
         </el-form-item>
         <div v-if="form.definition.kind === 'basic'" class="function-operator-form__name-grid">
           <el-form-item label="聚合类型">
-            <el-select
-              v-model="form.definition.aggFunc"
-              class="aircas-select"
-              popper-class="aircas-select-popper"
-              clearable
-              placeholder="请选择聚合类型"
-              @clear="clearTargetProperty"
-              @change="onAggFuncChange"
-            >
+            <el-select v-model="form.definition.aggFunc" clearable placeholder="请选择聚合类型" @clear="clearTargetProperty" @change="onAggFuncChange">
               <el-option v-for="item in FUNCTION_OPERATOR_AGG_FUNC_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
           <el-form-item label="聚合参数名">
-            <el-input
-              v-model="form.definition.targetProperty"
-              class="aircas-input"
-              maxlength="64"
-              placeholder="例如：target"
-              :disabled="!form.definition.aggFunc"
-            />
+            <el-input v-model="form.definition.targetProperty" maxlength="64" placeholder="例如：target" :disabled="!form.definition.aggFunc" />
           </el-form-item>
         </div>
         <el-form-item v-if="form.definition.kind === 'basic'" label="参数配置" prop="definition.parameterConfig">
@@ -69,13 +55,13 @@
       </section>
 
       <section v-else class="function-operator-form__section function-operator-form__section--empty">
-        <el-empty class="aircas-empty" description="该函数类型本阶段暂未开放，请选择基础函数" />
+        <el-empty description="该函数类型本阶段暂未开放，请选择基础函数" />
       </section>
     </el-form>
 
     <template #footer>
-      <el-button class="aircas-button" @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button class="aircas-button" type="primary" :loading="loading" :disabled="form.type !== 'basic'" @click="submitDraft"> 保存 </el-button>
+      <el-button @click="emit('update:modelValue', false)">取消</el-button>
+      <el-button type="primary" :loading="loading" :disabled="form.type !== 'basic'" @click="submitDraft"> 保存 </el-button>
     </template>
   </el-dialog>
 </template>
@@ -296,7 +282,7 @@ watch(
   gap: 4px;
   min-height: 72px;
   padding: 10px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 6px;
   background: var(--aircas-color-panel-background-deep);
   color: var(--aircas-color-text-primary);
@@ -314,8 +300,8 @@ watch(
 }
 
 .function-operator-form__type-card.is-active {
-  border-color: var(--aircas-color-accent-cyan);
-  box-shadow: inset 0 0 0 1px var(--aircas-color-accent-cyan);
+  border-color: var(--aircas-color-primary);
+  box-shadow: inset 0 0 0 1px var(--aircas-color-primary);
 }
 
 .function-operator-form__section--empty {
