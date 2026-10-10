@@ -4,7 +4,7 @@
 @use "../common/spacing";
 @use "../common/radius";
 @use "../common/shadow";
-@use "../common/special-colors";
+@use "../common/color-special";
 
 :root.dark {
   color-scheme: dark;
@@ -14,5 +14,5 @@
   @include spacing.emit();
   @include radius.emit();
   @include shadow.emit(shadow.$dark);
-  @include special-colors.emit(true);
+  @include color-special.emit(true);
 }

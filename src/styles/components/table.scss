@@ -8,3 +8,7 @@
   --el-table-tr-bg-color: var(--aircas-color-card-background);
   --el-table-expanded-cell-bg-color: var(--aircas-color-panel-background);
 }
+
+.el-table.aircas-table--accent-header th.el-table__cell {
+  border-bottom: 2px solid var(--aircas-color-primary);
+}

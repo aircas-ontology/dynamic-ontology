@@ -11,7 +11,7 @@
 - 公共组件注册：`src/components/register.ts`
 - 图标与图片资源：`src/assets/pages/`、`src/assets/layouts/`、`src/assets/components/` 和 `src/assets/common/`
 
-先搜索新版 `--aircas-*` 变量。现有变量无法表达明确需求时，按规划流程确认功能域限定变量，在 common/_special-colors.scss 集中定义并由暗亮主题同名输出。根节点 .dark 启用暗色，移除恢复亮色；浮层自动继承根节点主题。
+先搜索新版 `--aircas-*` 变量。现有变量无法表达明确需求时，按规划流程确认功能域限定变量，在 common/_color-special.scss 集中定义并由暗亮主题同名输出。根节点 .dark 启用暗色，移除恢复亮色；浮层自动继承根节点主题。
 
 ## 视觉基准
 

@@ -28,7 +28,7 @@ src/styles/
 - 【必须】根节点 `.dark` 启用暗色，移除该类启用亮色；响应式消费者使用 `useDocumentTheme`，不读取 theme 属性。
 - 【必须】优先使用新版 `--aircas-*` 语义令牌；普通业务样式禁止硬编码 HEX、RGB、HSL、white、black。
 - 【必须】原始颜色集中在 common 中维护。新增功能域颜色须纳入已确认 Plan，并在暗亮主题中同名成对输出。
-- 【必须】必要分类色与效果色集中在 `common/_special-colors.scss`；效果色优先从新版颜色派生。
+- 【必须】必要分类色与效果色集中在 `common/_color-special.scss`；效果色优先从新版颜色派生。
 - 【禁止】新增重复、一次性或无业务语义的颜色令牌。
 - 【必须】区分面板背景与遮罩 overlay 的用途；Element Plus 映射由 variables.scss 统一维护。
 
@@ -36,6 +36,7 @@ src/styles/
 
 - 【必须】普通 Element Plus 组件使用官方 Props 和新版默认外观，无需 aircas 组件 class 或主题 popper-class。
 - 【必须】仅项目特有渐变、非对称边框使用明确的特殊 class。复用例外在 components 中独立封装，局部例外留在所属组件。
+- 【必须】`components/` 中的默认适配与可复用特殊效果按组件名归入同名 SCSS 文件，如按钮归入 `button.scss`、表格归入 `table.scss`；禁止跨组件集中维护特殊效果。
 - 【优先】只有公开 API 和变量无法满足时才使用最小 :deep()，定位稳定公开 class。
 - 【禁止】依赖内部 DOM 层级、动态生成类名或脆弱的 first-child/nth-child 外观选择器。
 
@@ -70,19 +71,18 @@ import "@/styles/index.scss";
 
 ### 样式层级与颜色
 
-| 层级         | 位置                                | 职责                                            |
-| ------------ | ----------------------------------- | ----------------------------------------------- |
-| 设计令牌     | common/_*.scss                      | 颜色、字号、尺寸、间距、圆角和阴影              |
-| 暗亮主题     | themes/dark.scss、themes/light.scss | 按根 class 输出同名令牌                         |
-| 官方变量映射 | variables.scss                      | 将 Aircas 语义映射到当前 Element Plus 的 --el-* |
-| 默认适配     | components/button.scss 等           | 变量无法处理的最小默认适配                      |
-| 特殊效果     | components/special-effects.scss     | 显式启用的渐变和非对称边框                      |
-| 聚合入口     | index.scss                          | 加载顺序、基础样式和滚动条                      |
+| 层级         | 位置                                  | 职责                                            |
+| ------------ | ------------------------------------- | ----------------------------------------------- |
+| 设计令牌     | common/_*.scss                        | 颜色、字号、尺寸、间距、圆角和阴影              |
+| 暗亮主题     | themes/dark.scss、themes/light.scss   | 按根 class 输出同名令牌                         |
+| 官方变量映射 | variables.scss                        | 将 Aircas 语义映射到当前 Element Plus 的 --el-* |
+| 组件外观     | components/button.scss、table.scss 等 | 按组件维护最小默认适配及显式启用的特殊效果      |
+| 聚合入口     | index.scss                            | 加载顺序、基础样式和滚动条                      |
 
 - 【必须】普通颜色优先选用 primary、success、warning、danger、info、text-*、border、border-light、hover、active 及背景令牌。
 - 【必须】面板使用 panel-background、panel-background-deep、card-background；overlay 系列专用于遮罩，不按旧变量同名机械替换。
 - 【必须】业务样式禁止原始 HEX、RGB、HSL、white、black；transparent 可直接使用。
-- 【必须】新版没有且需要保留视觉区分的蓝紫分类色使用 category-blue、category-purple，集中定义在 common/_special-colors.scss。
+- 【必须】新版没有且需要保留视觉区分的蓝紫分类色使用 category-blue、category-purple，集中定义在 common/_color-special.scss。
 - 【必须】复用光晕、透明填充等效果使用 effect-* 令牌，优先通过新版颜色派生。新增特殊颜色必须有明确用途、经 Plan 确认、暗亮同名输出。
 - 【必须】Three.js、Canvas 和缓存 SVG 网格读取实际颜色值，不能将未解析的 var() 直接传给颜色解析器。
 

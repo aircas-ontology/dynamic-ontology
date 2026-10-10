@@ -26,18 +26,21 @@
         <template #title>应用管理</template>
       </el-menu-item>
     </el-menu>
+    <AiAssistantDrawer />
   </aside>
 </template>
 
 <script setup lang="ts">
 import { useRoute } from "vue-router";
 import { Box, Document, Expand, Fold, Search } from "@element-plus/icons-vue";
+import AiAssistantDrawer from "@/layout/components/AiAssistantDrawer.vue";
 const collapsed = defineModel<boolean>("collapsed", { default: true });
 const route = useRoute();
 </script>
 
 <style scoped lang="scss">
 .navigation-menu {
+  position: relative;
   display: flex;
   min-width: 0;
   min-height: 0;

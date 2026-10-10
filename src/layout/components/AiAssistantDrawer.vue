@@ -1,10 +1,10 @@
 <template>
-  <button v-show="!visible" class="ai-assistant-launcher" type="button" aria-label="打开 AI 助手" @click="visible = true">
+  <el-button v-bind="assistantButtonAttributes" class="ai-assistant-launcher" @click="visible = !visible">
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M5 6.5h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" />
     </svg>
-  </button>
-  <el-drawer v-model="visible" class="ai-assistant-drawer" title="AI 助手" direction="rtl" size="620px" :modal="false" append-to-body>
+  </el-button>
+  <el-drawer v-model="visible" class="ai-assistant-drawer" title="AI 助手" direction="rtl" size="620px" :modal="false" modal-penetrable append-to-body>
     <div class="ai-assistant-drawer__panel">
       <div ref="stageRef" class="ai-assistant-drawer__stage">
         <div v-if="messages.length" class="ai-assistant-drawer__conversation">
@@ -67,7 +67,8 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
+import type { ButtonHTMLAttributes } from "vue";
 
 interface AssistantChatMessage {
   role: "user" | "assistant";
@@ -86,6 +87,10 @@ const promptReplies: Record<string, string> = {
   导出行为调度和规则库: "可导出当前行为调度及其规则库，内容包含触发条件与对应规则，便于在其他空间复用。导出前请确认调度范围和规则是否完整。",
 };
 const visible = ref(false);
+const assistantButtonAttributes = computed<Pick<ButtonHTMLAttributes, "aria-label" | "aria-expanded">>(() => ({
+  "aria-label": visible.value ? "关闭 AI 助手" : "打开 AI 助手",
+  "aria-expanded": visible.value,
+}));
 const draft = ref("");
 const messages = ref<AssistantChatMessage[]>([]);
 const stageRef = ref<HTMLElement | null>(null);
@@ -135,28 +140,15 @@ watch(messages, () => {
 </script>
 
 <style scoped lang="scss">
-.ai-assistant-launcher {
-  position: fixed;
-  right: 24px;
+.el-button.ai-assistant-launcher {
+  position: absolute;
+  left: 50%;
   bottom: 24px;
   z-index: 20;
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 50%;
-  color: var(--aircas-color-text-primary);
-  background: color-mix(in srgb, var(--aircas-color-primary) 60%, transparent);
-  box-shadow: 0 8px 20px var(--aircas-color-border-light);
-  cursor: pointer;
-}
-
-.ai-assistant-launcher:hover,
-.ai-assistant-launcher:focus-visible {
-  border-color: var(--aircas-color-primary);
-  color: var(--aircas-color-primary);
-  outline: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  transform: translateX(-50%);
 }
 
 .ai-assistant-launcher svg,
@@ -169,6 +161,11 @@ watch(messages, () => {
   stroke-width: 1.6;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+
+.ai-assistant-launcher svg {
+  width: 25px;
+  height: 25px;
 }
 
 .ai-assistant-drawer:deep(.el-drawer__body) {
