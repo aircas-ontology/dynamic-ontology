@@ -21,17 +21,17 @@ let nextCategorySeq = 1;
 let nextUpdatedMinute = 40;
 
 /**
- * @description æé è¡ä¸ºåæ°èç¹ã
- * @param parameter åæ°å­æ®µã
- * @returns å®æ´åæ°ã
+ * @description 构造行为参数节点。
+ * @param parameter 参数字段。
+ * @returns 完整参数。
  */
 function createBehaviorParameter(parameter: Omit<SpaceBehaviorParameter, "children"> & { children?: SpaceBehaviorParameter[] }): SpaceBehaviorParameter {
   return { ...parameter, children: parameter.children ?? [] };
 }
 
 /**
- * @description çæç¦ç¹çº§èªæ¯å¯¹è±¡çè¾å¥åæ° Mockã
- * @returns è¾å¥åæ°æ ã
+ * @description 生成福特级航母对象的输入参数 Mock。
+ * @returns 输入参数树。
  */
 function createCarrierInputParameters(): SpaceBehaviorParameter[] {
   return [
@@ -41,9 +41,9 @@ function createCarrierInputParameters(): SpaceBehaviorParameter[] {
       path: "attributes",
       type: "object",
       required: true,
-      description: "å¯¹è±¡å±æ§",
-      sourceLabel: "å¯¹è±¡å±æ§",
-      bindLabel: "å¯¹è±¡ / å±æ§",
+      description: "对象属性",
+      sourceLabel: "对象属性",
+      bindLabel: "对象 / 属性",
       configured: true,
       children: [
         createBehaviorParameter({
@@ -52,9 +52,9 @@ function createCarrierInputParameters(): SpaceBehaviorParameter[] {
           path: "attributes.position",
           type: "object",
           required: false,
-          description: "å¯¹è±¡å½åä½ç½®",
-          sourceLabel: "å¯¹è±¡å±æ§",
-          bindLabel: "é©±éè° DDG-105 / å½åä½ç½® Â· object",
+          description: "对象当前位置",
+          sourceLabel: "对象属性",
+          bindLabel: "驱逐舰 DDG-105 / 当前位置 · object",
           configured: true,
         }),
         createBehaviorParameter({
@@ -63,9 +63,9 @@ function createCarrierInputParameters(): SpaceBehaviorParameter[] {
           path: "attributes.speed",
           type: "number",
           required: false,
-          description: "å¯¹è±¡å½åèªé",
-          sourceLabel: "å¯¹è±¡å±æ§",
-          bindLabel: "å¯¹è±¡å½åèªé",
+          description: "对象当前航速",
+          sourceLabel: "对象属性",
+          bindLabel: "对象当前航速",
           configured: true,
         }),
         createBehaviorParameter({
@@ -74,9 +74,9 @@ function createCarrierInputParameters(): SpaceBehaviorParameter[] {
           path: "attributes.visible",
           type: "boolean",
           required: false,
-          description: "å¯¹è±¡æ¯å¦å¯è§",
-          sourceLabel: "å¤é¨è¾å¥",
-          bindLabel: "å¤é¨è¾å¥ï¼å¯éï¼",
+          description: "对象是否可见",
+          sourceLabel: "外部输入",
+          bindLabel: "外部输入（可选）",
           configured: false,
         }),
       ],
@@ -85,8 +85,8 @@ function createCarrierInputParameters(): SpaceBehaviorParameter[] {
 }
 
 /**
- * @description çæç¦ç¹çº§èªæ¯å¯¹è±¡çè¾åºåæ° Mockã
- * @returns è¾åºåæ°åè¡¨ã
+ * @description 生成福特级航母对象的输出参数 Mock。
+ * @returns 输出参数列表。
  */
 function createCarrierOutputParameters(): SpaceBehaviorParameter[] {
   return [
@@ -96,9 +96,9 @@ function createCarrierOutputParameters(): SpaceBehaviorParameter[] {
       path: "objectId",
       type: "string",
       required: true,
-      description: "å¯¹è±¡å¯ä¸æ è¯",
-      sourceLabel: "è¿åå­æ®µ",
-      bindLabel: "objectId â é©±éè° DDG-105 / å¯¹è±¡æ è¯",
+      description: "对象唯一标识",
+      sourceLabel: "返回字段",
+      bindLabel: "objectId → 驱逐舰 DDG-105 / 对象标识",
       configured: true,
     }),
     createBehaviorParameter({
@@ -107,9 +107,9 @@ function createCarrierOutputParameters(): SpaceBehaviorParameter[] {
       path: "object.position",
       type: "object",
       required: false,
-      description: "å¯¹è±¡å½åä½ç½®",
-      sourceLabel: "è¿åå­æ®µ",
-      bindLabel: "ä»è¿åç»æ",
+      description: "对象当前位置",
+      sourceLabel: "返回字段",
+      bindLabel: "仅返回结果",
       configured: true,
     }),
     createBehaviorParameter({
@@ -118,9 +118,9 @@ function createCarrierOutputParameters(): SpaceBehaviorParameter[] {
       path: "object.speed",
       type: "number",
       required: false,
-      description: "å¯¹è±¡å½åèªé",
-      sourceLabel: "è¿åå­æ®µ",
-      bindLabel: "ä»è¿åç»æ",
+      description: "对象当前航速",
+      sourceLabel: "返回字段",
+      bindLabel: "仅返回结果",
       configured: true,
     }),
   ];
@@ -129,91 +129,91 @@ function createCarrierOutputParameters(): SpaceBehaviorParameter[] {
 const operatorCatalog: SpaceBehaviorOperatorOption[] = [
   {
     id: "operator-create-cvn",
-    name: "æ°å¢ç¦ç¹çº§èªç©ºæ¯è°(CVN)åºç¡æä½",
+    name: "新增福特级航空母舰(CVN)基础操作",
     version: "v1.0.0",
     basicAction: "create",
-    objectName: "ç¦ç¹çº§èªç©ºæ¯è°(CVN)",
+    objectName: "福特级航空母舰(CVN)",
     inputParameters: createCarrierInputParameters(),
     outputParameters: createCarrierOutputParameters(),
   },
   {
     id: "operator-update-cvn",
-    name: "æ´æ°ç¦ç¹çº§èªç©ºæ¯è°(CVN)åºç¡æä½",
+    name: "更新福特级航空母舰(CVN)基础操作",
     version: "v1.0.0",
     basicAction: "update",
-    objectName: "ç¦ç¹çº§èªç©ºæ¯è°(CVN)",
+    objectName: "福特级航空母舰(CVN)",
     inputParameters: createCarrierInputParameters(),
     outputParameters: createCarrierOutputParameters(),
   },
   {
     id: "operator-delete-cvn",
-    name: "å é¤ç¦ç¹çº§èªç©ºæ¯è°(CVN)åºç¡æä½",
+    name: "删除福特级航空母舰(CVN)基础操作",
     version: "v1.0.0",
     basicAction: "delete",
-    objectName: "ç¦ç¹çº§èªç©ºæ¯è°(CVN)",
+    objectName: "福特级航空母舰(CVN)",
     inputParameters: createCarrierInputParameters(),
     outputParameters: createCarrierOutputParameters(),
   },
   {
     id: "operator-query-cvn",
-    name: "æ¥è¯¢ç¦ç¹çº§èªç©ºæ¯è°(CVN)åºç¡æä½",
+    name: "查询福特级航空母舰(CVN)基础操作",
     version: "v1.0.0",
     basicAction: "query",
-    objectName: "ç¦ç¹çº§èªç©ºæ¯è°(CVN)",
+    objectName: "福特级航空母舰(CVN)",
     inputParameters: createCarrierInputParameters(),
     outputParameters: createCarrierOutputParameters(),
   },
   {
     id: "operator-create-ddg",
-    name: "æ°å¢é¿å©Â·ä¼¯åçº§é©±éè°(DDG)åºç¡æä½",
+    name: "新增阿利·伯克级驱逐舰(DDG)基础操作",
     version: "v1.0.0",
     basicAction: "create",
-    objectName: "é¿å©Â·ä¼¯åçº§é©±éè°(DDG)",
+    objectName: "阿利·伯克级驱逐舰(DDG)",
     inputParameters: createCarrierInputParameters(),
     outputParameters: createCarrierOutputParameters(),
   },
   {
     id: "operator-create-f22",
-    name: "æ°å¢F-22æææºåºç¡æä½",
+    name: "新增F-22战斗机基础操作",
     version: "v1.0.0",
     basicAction: "create",
-    objectName: "F-22æææº",
+    objectName: "F-22战斗机",
     inputParameters: createCarrierInputParameters(),
     outputParameters: createCarrierOutputParameters(),
   },
   {
     id: "operator-update-f22",
-    name: "æ´æ°F-22æææºåºç¡æä½",
+    name: "更新F-22战斗机基础操作",
     version: "v1.0.0",
     basicAction: "update",
-    objectName: "F-22æææº",
+    objectName: "F-22战斗机",
     inputParameters: createCarrierInputParameters(),
     outputParameters: createCarrierOutputParameters(),
   },
   {
     id: "operator-query-b2",
-    name: "æ¥è¯¢B-2è½°ç¸æºåºç¡æä½",
+    name: "查询B-2轰炸机基础操作",
     version: "v1.0.0",
     basicAction: "query",
-    objectName: "B-2è½°ç¸æº",
+    objectName: "B-2轰炸机",
     inputParameters: createCarrierInputParameters(),
     outputParameters: createCarrierOutputParameters(),
   },
 ];
 
 /**
- * @description æå½æ°ç®å­åç§°æ¥æ¾ç®å­éé¡¹ã
- * @param name ç®å­åç§°ã
- * @returns ç®å­éé¡¹ï¼æªæ¾å°æ¶è¿å nullã
+ * @description 按函数算子名称查找算子选项。
+ * @param name 算子名称。
+ * @returns 算子选项；未找到时返回 null。
  */
 function findOperatorByName(name: string): SpaceBehaviorOperatorOption | null {
   return operatorCatalog.find((item) => item.name === name) ?? null;
 }
 
 /**
- * @description ç»è£ä¸æ¡ç§å­è¡ä¸ºã
- * @param input è¡ä¸ºå³é®å­æ®µã
- * @returns å®æ´è¡ä¸ºè®°å½ã
+ * @description 组装一条种子行为。
+ * @param input 行为关键字段。
+ * @returns 完整行为记录。
  */
 function createSeedBehavior(input: {
   id: string;
@@ -239,13 +239,13 @@ function createSeedBehavior(input: {
     basicAction: input.basicAction,
     objectName: operator?.objectName ?? "",
     behaviorApiName: input.id.replaceAll("-", "_"),
-    executionPeriod: "â",
+    executionPeriod: "—",
     singleObject: true,
     executionCount: 0,
-    successRate: "â",
-    publisher: input.status === "published" ? "ç³»ç»ç®¡çå" : "",
+    successRate: "—",
+    publisher: input.status === "published" ? "系统管理员" : "",
     publishedAt: input.status === "published" ? "2025-05-21 09:20" : "",
-    changeNote: `åå§å${input.displayName}`,
+    changeNote: `初始化${input.displayName}`,
     statusLogs: [],
     inputParameters: structuredClone(operator?.inputParameters ?? []),
     outputParameters: structuredClone(operator?.outputParameters ?? []),
@@ -254,19 +254,19 @@ function createSeedBehavior(input: {
 }
 
 /**
- * @description çææ¬å°æ¼ç¤ºç¨çç©ºé´è¡ä¸ºç§å­æ°æ®ã
- * @returns æªåå count çå·¥ä½åºå¿«ç§ã
+ * @description 生成本地演示用的空间行为种子数据。
+ * @returns 未回写 count 的工作区快照。
  */
 function createSpaceBehaviorSeedData(): SpaceBehaviorWorkspaceData {
   return {
     categoryTree: [
       {
         id: ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
-        label: "åºç¡æä½",
+        label: "基础操作",
         count: 0,
         children: [
-          { id: "ship-basic", label: "è°è¹åºç¡", count: 0, children: [] },
-          { id: "plane-basic", label: "é£æºåºç¡", count: 0, children: [] },
+          { id: "ship-basic", label: "舰船基础", count: 0, children: [] },
+          { id: "plane-basic", label: "飞机基础", count: 0, children: [] },
         ],
       },
     ],
@@ -274,9 +274,9 @@ function createSpaceBehaviorSeedData(): SpaceBehaviorWorkspaceData {
       createSeedBehavior({
         id: "behavior-create-cvn",
         categoryId: "ship-basic",
-        displayName: "æ°å¢å¯¹è±¡è¡ä¸º",
-        functionOperatorName: "æ°å¢ç¦ç¹çº§èªç©ºæ¯è°(CVN)åºç¡æä½",
-        description: "æ°å¢ç¦ç¹çº§èªç©ºæ¯è°(CVN)å¯¹è±¡çåºç¡æä½ã",
+        displayName: "新增对象行为",
+        functionOperatorName: "新增福特级航空母舰(CVN)基础操作",
+        description: "新增福特级航空母舰(CVN)对象的基础操作。",
         status: "published",
         updatedAt: "2026-09-29 09:31",
         basicAction: "create",
@@ -284,9 +284,9 @@ function createSpaceBehaviorSeedData(): SpaceBehaviorWorkspaceData {
       createSeedBehavior({
         id: "behavior-update-cvn",
         categoryId: "ship-basic",
-        displayName: "æ´æ°å¯¹è±¡è¡ä¸º",
-        functionOperatorName: "æ´æ°ç¦ç¹çº§èªç©ºæ¯è°(CVN)åºç¡æä½",
-        description: "æ´æ°ç¦ç¹çº§èªç©ºæ¯è°(CVN)å¯¹è±¡çåºç¡æä½ã",
+        displayName: "更新对象行为",
+        functionOperatorName: "更新福特级航空母舰(CVN)基础操作",
+        description: "更新福特级航空母舰(CVN)对象的基础操作。",
         status: "published",
         updatedAt: "2026-09-29 09:31",
         basicAction: "update",
@@ -294,9 +294,9 @@ function createSpaceBehaviorSeedData(): SpaceBehaviorWorkspaceData {
       createSeedBehavior({
         id: "behavior-delete-cvn",
         categoryId: "ship-basic",
-        displayName: "å é¤å¯¹è±¡è¡ä¸º",
-        functionOperatorName: "å é¤ç¦ç¹çº§èªç©ºæ¯è°(CVN)åºç¡æä½",
-        description: "å é¤ç¦ç¹çº§èªç©ºæ¯è°(CVN)å¯¹è±¡çåºç¡æä½ã",
+        displayName: "删除对象行为",
+        functionOperatorName: "删除福特级航空母舰(CVN)基础操作",
+        description: "删除福特级航空母舰(CVN)对象的基础操作。",
         status: "published",
         updatedAt: "2026-09-29 09:31",
         basicAction: "delete",
@@ -304,9 +304,9 @@ function createSpaceBehaviorSeedData(): SpaceBehaviorWorkspaceData {
       createSeedBehavior({
         id: "behavior-query-cvn",
         categoryId: "ship-basic",
-        displayName: "æ¥è¯¢å¯¹è±¡è¡ä¸º",
-        functionOperatorName: "æ¥è¯¢ç¦ç¹çº§èªç©ºæ¯è°(CVN)åºç¡æä½",
-        description: "æ¥è¯¢ç¦ç¹çº§èªç©ºæ¯è°(CVN)å¯¹è±¡çåºç¡æä½ã",
+        displayName: "查询对象行为",
+        functionOperatorName: "查询福特级航空母舰(CVN)基础操作",
+        description: "查询福特级航空母舰(CVN)对象的基础操作。",
         status: "published",
         updatedAt: "2026-09-29 09:31",
         basicAction: "query",
@@ -314,9 +314,9 @@ function createSpaceBehaviorSeedData(): SpaceBehaviorWorkspaceData {
       createSeedBehavior({
         id: "behavior-create-ddg",
         categoryId: "ship-basic",
-        displayName: "æ°å¢é©±éè°è¡ä¸º",
-        functionOperatorName: "æ°å¢é¿å©Â·ä¼¯åçº§é©±éè°(DDG)åºç¡æä½",
-        description: "æ°å¢é¿å©Â·ä¼¯åçº§é©±éè°(DDG)å¯¹è±¡çåºç¡æä½ã",
+        displayName: "新增驱逐舰行为",
+        functionOperatorName: "新增阿利·伯克级驱逐舰(DDG)基础操作",
+        description: "新增阿利·伯克级驱逐舰(DDG)对象的基础操作。",
         status: "published",
         updatedAt: "2026-09-28 16:20",
         basicAction: "create",
@@ -324,9 +324,9 @@ function createSpaceBehaviorSeedData(): SpaceBehaviorWorkspaceData {
       createSeedBehavior({
         id: "behavior-create-f22",
         categoryId: "plane-basic",
-        displayName: "æ°å¢æææºè¡ä¸º",
-        functionOperatorName: "æ°å¢F-22æææºåºç¡æä½",
-        description: "æ°å¢F-22æææºå¯¹è±¡çåºç¡æä½ã",
+        displayName: "新增战斗机行为",
+        functionOperatorName: "新增F-22战斗机基础操作",
+        description: "新增F-22战斗机对象的基础操作。",
         status: "published",
         updatedAt: "2026-09-28 15:10",
         basicAction: "create",
@@ -334,9 +334,9 @@ function createSpaceBehaviorSeedData(): SpaceBehaviorWorkspaceData {
       createSeedBehavior({
         id: "behavior-update-f22",
         categoryId: "plane-basic",
-        displayName: "æ´æ°æææºè¡ä¸º",
-        functionOperatorName: "æ´æ°F-22æææºåºç¡æä½",
-        description: "æ´æ°F-22æææºå¯¹è±¡çåºç¡æä½ã",
+        displayName: "更新战斗机行为",
+        functionOperatorName: "更新F-22战斗机基础操作",
+        description: "更新F-22战斗机对象的基础操作。",
         status: "draft",
         updatedAt: "2026-09-27 11:08",
         basicAction: "update",
@@ -344,9 +344,9 @@ function createSpaceBehaviorSeedData(): SpaceBehaviorWorkspaceData {
       createSeedBehavior({
         id: "behavior-query-b2",
         categoryId: "plane-basic",
-        displayName: "æ¥è¯¢è½°ç¸æºè¡ä¸º",
-        functionOperatorName: "æ¥è¯¢B-2è½°ç¸æºåºç¡æä½",
-        description: "æ¥è¯¢B-2è½°ç¸æºå¯¹è±¡çåºç¡æä½ã",
+        displayName: "查询轰炸机行为",
+        functionOperatorName: "查询B-2轰炸机基础操作",
+        description: "查询B-2轰炸机对象的基础操作。",
         status: "published",
         updatedAt: "2026-09-26 18:42",
         basicAction: "query",
@@ -356,9 +356,9 @@ function createSpaceBehaviorSeedData(): SpaceBehaviorWorkspaceData {
 }
 
 /**
- * @description è¯»åæåå§åæå®ç©ºé´çè¡ä¸ºå·¥ä½åºã
- * @param spaceId ç©ºé´ idã
- * @returns å¯åå·¥ä½åºæ°æ®ã
+ * @description 读取或初始化指定空间的行为工作区。
+ * @param spaceId 空间 id。
+ * @returns 可变工作区数据。
  */
 function getOrCreateSpaceBehaviorWorkspace(spaceId: string): SpaceBehaviorWorkspaceData {
   const cached = workspaceStore.get(spaceId);
@@ -370,8 +370,8 @@ function getOrCreateSpaceBehaviorWorkspace(spaceId: string): SpaceBehaviorWorksp
 }
 
 /**
- * @description çæå¯éå¤çæ¬å°æ´æ°æ¶é´ï¼é¿åä¾èµç³»ç»æ¶éã
- * @returns `YYYY-MM-DD HH:mm` ææ¬ã
+ * @description 生成可重复的本地更新时间，避免依赖系统时钟。
+ * @returns `YYYY-MM-DD HH:mm` 文本。
  */
 function formatSpaceBehaviorUpdatedAt(): string {
   nextUpdatedMinute += 1;
@@ -379,27 +379,27 @@ function formatSpaceBehaviorUpdatedAt(): string {
 }
 
 /**
- * @description ååºå¯å³èçåºç¡å½æ°ç®å­ã
- * @returns ç®å­éé¡¹ã
+ * @description 列出可关联的基础函数算子。
+ * @returns 算子选项。
  */
 export function listSpaceBehaviorOperatorOptionsMock(): SpaceBehaviorOperatorOption[] {
   return structuredClone(operatorCatalog);
 }
 
 /**
- * @description æ¥è¯¢æå®ç©ºé´çè¡ä¸ºå·¥ä½åºå¿«ç§ã
- * @param spaceId ç©ºé´ idã
- * @returns åç±»æ ä¸è¡ä¸ºåè¡¨ã
+ * @description 查询指定空间的行为工作区快照。
+ * @param spaceId 空间 id。
+ * @returns 分类树与行为列表。
  */
 export function querySpaceBehaviorWorkspaceMock(spaceId: string): SpaceBehaviorWorkspaceData {
   return structuredClone(getOrCreateSpaceBehaviorWorkspace(spaceId));
 }
 
 /**
- * @description æèç¨¿åç®å­ç®å½ç»è£ä¸æ¡è¡ä¸ºè®°å½ã
- * @param draft è¡ä¸ºèç¨¿ã
- * @param id è¡ä¸º idã
- * @returns å®æ´è¡ä¸ºã
+ * @description 按草稿和算子目录组装一条行为记录。
+ * @param draft 行为草稿。
+ * @param id 行为 id。
+ * @returns 完整行为。
  */
 function buildBehaviorFromDraft(draft: SpaceBehaviorDraft, id: string): SpaceBehaviorItem {
   const operator = operatorCatalog.find((item) => item.id === draft.functionOperatorId) ?? findOperatorByName(draft.functionOperatorName);
@@ -416,13 +416,13 @@ function buildBehaviorFromDraft(draft: SpaceBehaviorDraft, id: string): SpaceBeh
     basicAction: draft.basicAction ?? operator?.basicAction ?? "create",
     objectName: operator?.objectName ?? "",
     behaviorApiName: id.replaceAll("-", "_"),
-    executionPeriod: "â",
+    executionPeriod: "—",
     singleObject: true,
     executionCount: 0,
-    successRate: "â",
+    successRate: "—",
     publisher: "",
     publishedAt: "",
-    changeNote: draft.changeNote?.trim() || draft.description || `åå»º${draft.displayName}`,
+    changeNote: draft.changeNote?.trim() || draft.description || `创建${draft.displayName}`,
     statusLogs: [],
     inputParameters: structuredClone(operator?.inputParameters ?? []),
     outputParameters: structuredClone(operator?.outputParameters ?? []),
@@ -431,10 +431,10 @@ function buildBehaviorFromDraft(draft: SpaceBehaviorDraft, id: string): SpaceBeh
 }
 
 /**
- * @description å¨æå®ç©ºé´æ¬å°æ°å¢è¡ä¸ºã
- * @param spaceId ç©ºé´ idã
- * @param draft è¡ä¸ºèç¨¿ã
- * @returns æ°å¢åçè¡ä¸ºã
+ * @description 在指定空间本地新增行为。
+ * @param spaceId 空间 id。
+ * @param draft 行为草稿。
+ * @returns 新增后的行为。
  */
 export function createSpaceBehaviorMock(spaceId: string, draft: SpaceBehaviorDraft): SpaceBehaviorItem {
   const workspace = getOrCreateSpaceBehaviorWorkspace(spaceId);
@@ -445,11 +445,11 @@ export function createSpaceBehaviorMock(spaceId: string, draft: SpaceBehaviorDra
 }
 
 /**
- * @description æ´æ°æå®ç©ºé´åçè¡ä¸ºã
- * @param spaceId ç©ºé´ idã
- * @param behaviorId è¡ä¸º idã
- * @param draft è¡ä¸ºèç¨¿ã
- * @returns æ´æ°åçè¡ä¸ºï¼æªæ¾å°æ¶è¿å nullã
+ * @description 更新指定空间内的行为。
+ * @param spaceId 空间 id。
+ * @param behaviorId 行为 id。
+ * @param draft 行为草稿。
+ * @returns 更新后的行为；未找到时返回 null。
  */
 export function updateSpaceBehaviorMock(spaceId: string, behaviorId: string, draft: SpaceBehaviorDraft): SpaceBehaviorItem | null {
   const workspace = getOrCreateSpaceBehaviorWorkspace(spaceId);
@@ -465,11 +465,11 @@ export function updateSpaceBehaviorMock(spaceId: string, behaviorId: string, dra
 }
 
 /**
- * @description ä»åæ´æå®è¡ä¸ºçç¶æï¼ä¸æ¹ IDãåæ°åå¼ç¨ã
- * @param spaceId ç©ºé´ idã
- * @param behaviorId è¡ä¸º idã
- * @param draft ç¶æåæ´èç¨¿ã
- * @returns æ´æ°åçè¡ä¸ºï¼æªæ¾å°æ¶è¿å nullã
+ * @description 仅变更指定行为的状态，不改 ID、参数和引用。
+ * @param spaceId 空间 id。
+ * @param behaviorId 行为 id。
+ * @param draft 状态变更草稿。
+ * @returns 更新后的行为；未找到时返回 null。
  */
 export function applySpaceBehaviorStatusChangeMock(spaceId: string, behaviorId: string, draft: SpaceBehaviorStatusChangeDraft): SpaceBehaviorItem | null {
   const workspace = getOrCreateSpaceBehaviorWorkspace(spaceId);
@@ -483,10 +483,10 @@ export function applySpaceBehaviorStatusChangeMock(spaceId: string, behaviorId: 
 }
 
 /**
- * @description å é¤æå®ç©ºé´åçè¡ä¸ºã
- * @param spaceId ç©ºé´ idã
- * @param behaviorId è¡ä¸º idã
- * @returns æ¯å¦å é¤æåã
+ * @description 删除指定空间内的行为。
+ * @param spaceId 空间 id。
+ * @param behaviorId 行为 id。
+ * @returns 是否删除成功。
  */
 export function deleteSpaceBehaviorMock(spaceId: string, behaviorId: string): boolean {
   const workspace = getOrCreateSpaceBehaviorWorkspace(spaceId);
@@ -498,11 +498,11 @@ export function deleteSpaceBehaviorMock(spaceId: string, behaviorId: string): bo
 }
 
 /**
- * @description å¨æå®åç±»ä¸æ°å¢å­åç±»ã
- * @param spaceId ç©ºé´ idã
- * @param parentId ç¶åç±» idã
- * @param label åç±»åç§°ã
- * @returns æ°å¢åç±»ï¼ç¶åç±»ä¸å­å¨æ¶è¿å nullã
+ * @description 在指定分类下新增子分类。
+ * @param spaceId 空间 id。
+ * @param parentId 父分类 id。
+ * @param label 分类名称。
+ * @returns 新增分类；父分类不存在时返回 null。
  */
 export function createSpaceBehaviorCategoryMock(spaceId: string, parentId: string, label: string): SpaceBehaviorWorkspaceData["categoryTree"][number] | null {
   const workspace = getOrCreateSpaceBehaviorWorkspace(spaceId);
@@ -520,11 +520,11 @@ export function createSpaceBehaviorCategoryMock(spaceId: string, parentId: strin
 }
 
 /**
- * @description éå½åæå®è¡ä¸ºåç±»ã
- * @param spaceId ç©ºé´ idã
- * @param categoryId åç±» idã
- * @param label æ°åç§°ã
- * @returns æ¯å¦æ´æ°æåã
+ * @description 重命名指定行为分类。
+ * @param spaceId 空间 id。
+ * @param categoryId 分类 id。
+ * @param label 新名称。
+ * @returns 是否更新成功。
  */
 export function updateSpaceBehaviorCategoryMock(spaceId: string, categoryId: string, label: string): boolean {
   const workspace = getOrCreateSpaceBehaviorWorkspace(spaceId);
@@ -535,10 +535,10 @@ export function updateSpaceBehaviorCategoryMock(spaceId: string, categoryId: str
 }
 
 /**
- * @description å é¤ç©ºåç±»ï¼æ ¹åç±»ãå«å­åç±»æä»æè¡ä¸ºæ¶æç»ã
- * @param spaceId ç©ºé´ idã
- * @param categoryId åç±» idã
- * @returns å é¤ç»æä¸å¤±è´¥åå ã
+ * @description 删除空分类；根分类、含子分类或仍挂行为时拒绝。
+ * @param spaceId 空间 id。
+ * @param categoryId 分类 id。
+ * @returns 删除结果与失败原因。
  */
 export function deleteSpaceBehaviorCategoryMock(
   spaceId: string,
@@ -557,10 +557,10 @@ export function deleteSpaceBehaviorCategoryMock(
 }
 
 /**
- * @description å¨å¯ååç±»æ ä¸­æ¥æ¾èç¹ã
- * @param nodes åç±»æ ã
- * @param categoryId åç±» idã
- * @returns å¹éèç¹ï¼æªæ¾å°æ¶è¿å nullã
+ * @description 在可变分类树中查找节点。
+ * @param nodes 分类树。
+ * @param categoryId 分类 id。
+ * @returns 匹配节点；未找到时返回 null。
  */
 function findMutableCategory(nodes: SpaceBehaviorWorkspaceData["categoryTree"], categoryId: string): SpaceBehaviorWorkspaceData["categoryTree"][number] | null {
   for (const node of nodes) {
@@ -572,10 +572,10 @@ function findMutableCategory(nodes: SpaceBehaviorWorkspaceData["categoryTree"], 
 }
 
 /**
- * @description ä»å¯ååç±»æ ä¸­ç§»é¤èç¹ã
- * @param nodes åç±»æ ã
- * @param categoryId åç±» idã
- * @returns æ¯å¦ç§»é¤æåã
+ * @description 从可变分类树中移除节点。
+ * @param nodes 分类树。
+ * @param categoryId 分类 id。
+ * @returns 是否移除成功。
  */
 function removeMutableCategory(nodes: SpaceBehaviorWorkspaceData["categoryTree"], categoryId: string): boolean {
   const index = nodes.findIndex((node) => node.id === categoryId);
