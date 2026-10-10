@@ -6,7 +6,7 @@ const readSource = (relativePath) => readFileSync(new URL(relativePath, import.m
 
 test("data source mapping dialog uses prototype class, width and non-dismissable modal", () => {
   const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
-  assert.match(source, /class="property-datasource-mapping-dialog aircas-dialog"/);
+  assert.match(source, /class="property-datasource-mapping-dialog"/);
   assert.match(source, /title="关联数据源"/);
   assert.match(source, /width="92vw"/);
   assert.match(source, /:close-on-click-modal="false"/);

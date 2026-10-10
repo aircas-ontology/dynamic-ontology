@@ -7,17 +7,17 @@
       </div>
       <div class="ontology-object-attribute-panel__toolbar">
         <el-input
-          class="aircas-input ontology-object-attribute-panel__search"
+          class="ontology-object-attribute-panel__search"
           :model-value="attributeSearch"
           clearable
           placeholder="搜索属性 API 或描述"
           ariaLabel="搜索属性"
           @update:model-value="$emit('update:attributeSearch', $event)"
         />
-        <el-button class="aircas-button aircas-button--tone-ghost" :loading="dataSourceOpening" @click="$emit('open-data-source')">
+        <el-button :loading="dataSourceOpening" @click="$emit('open-data-source')">
           <el-icon><Connection /></el-icon>关联数据源
         </el-button>
-        <el-button class="aircas-button aircas-button--tone-primary" @click="$emit('create-attribute')">
+        <el-button @click="$emit('create-attribute')">
           <el-icon><Plus /></el-icon>添加
         </el-button>
       </div>
@@ -26,13 +26,7 @@
     <p v-if="attributeLoading" class="ontology-object-attribute-panel__table-state"><AircasLoading>正在加载属性...</AircasLoading></p>
     <p v-else-if="attributeError" class="ontology-object-attribute-panel__table-state is-error" role="alert">{{ attributeError }}</p>
     <div v-else-if="visibleAttributes.length" class="ontology-object-attribute-panel__table-wrap">
-      <el-table
-        :data="visibleAttributes"
-        class="aircas-table aircas-table--flat ontology-object-attribute-panel__table"
-        height="100%"
-        stripe
-        row-key="uniqueIdentifier"
-      >
+      <el-table :data="visibleAttributes" class="ontology-object-attribute-panel__table" height="100%" stripe row-key="uniqueIdentifier">
         <el-table-column prop="displayName" label="属性名称" min-width="150" show-overflow-tooltip />
         <el-table-column prop="apiName" label="API" min-width="150" show-overflow-tooltip />
         <el-table-column prop="dataType" label="数据类型" width="110" />
@@ -50,8 +44,8 @@
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <div class="ontology-object-attribute-panel__row-actions">
-              <el-button class="aircas-button aircas-button--tone-secondary" size="small" @click="$emit('edit-attribute', row)">编辑</el-button>
-              <el-button class="aircas-button aircas-button--tone-danger" type="danger" size="small" @click="$emit('remove-attribute', row)">删除</el-button>
+              <el-button size="small" @click="$emit('edit-attribute', row)">编辑</el-button>
+              <el-button type="danger" size="small" @click="$emit('remove-attribute', row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -103,11 +97,11 @@ defineEmits<{
   padding: 8px 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 18px var(--aircas-color-page-glow);
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 18px var(--aircas-color-effect-page-glow);
 }
 
-:root[theme="light"] .ontology-object-attribute-panel__content-header {
+:root:not(.dark) .ontology-object-attribute-panel__content-header {
   background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
@@ -119,7 +113,7 @@ defineEmits<{
 
 .ontology-object-attribute-panel__content-header p {
   margin: 4px 0 0;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 
@@ -140,59 +134,20 @@ defineEmits<{
   overflow: hidden;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
 }
 
-:root[theme="light"] .ontology-object-attribute-panel__table-wrap {
+:root:not(.dark) .ontology-object-attribute-panel__table-wrap {
   background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
-.ontology-object-attribute-panel__table.aircas-table.aircas-table--flat.el-table {
+.ontology-object-attribute-panel__table {
   width: 100%;
-  --el-table-bg-color: var(--aircas-color-transparent);
-  --el-table-tr-bg-color: var(--aircas-color-transparent);
-  --el-table-header-bg-color: var(--aircas-color-section-header);
-  --el-table-row-hover-bg-color: var(--aircas-color-accent-blue-soft);
-  --el-table-border-color: var(--aircas-color-border-soft);
-  --el-table-text-color: var(--aircas-color-text-primary);
-  --el-table-header-text-color: var(--aircas-color-text-primary);
-  background-color: var(--aircas-color-transparent);
 }
 
 .ontology-object-attribute-panel__row-actions {
   display: inline-flex;
   gap: 8px;
-}
-
-.ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(th.el-table__cell) {
-  background-color: var(--aircas-color-section-header);
-  background-image: none;
-  border-bottom: 1px solid var(--aircas-color-border-soft);
-  color: var(--aircas-color-text-primary);
-}
-
-.ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__body tr > td.el-table__cell) {
-  background-color: var(--aircas-color-panel-background) !important;
-  color: var(--aircas-color-text-primary);
-}
-
-.ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__body tr.el-table__row--striped > td.el-table__cell) {
-  background-color: var(--aircas-color-panel-background-deep) !important;
-}
-
-.ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__body tr:hover > td.el-table__cell),
-.ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__body tr.hover-row > td.el-table__cell) {
-  background-color: var(--aircas-color-accent-blue-soft) !important;
-}
-
-.ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__fixed-right),
-.ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__fixed-right-patch) {
-  background: var(--aircas-color-overlay-deep);
-}
-
-:root[theme="light"] .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__fixed-right),
-:root[theme="light"] .ontology-object-attribute-panel__table.aircas-table.aircas-table--flat :deep(.el-table__fixed-right-patch) {
-  background: var(--aircas-color-card-background);
 }
 
 .ontology-object-attribute-panel__empty {
@@ -205,7 +160,7 @@ defineEmits<{
   margin: 0;
   flex: 1;
   place-items: center;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   text-align: center;
 }

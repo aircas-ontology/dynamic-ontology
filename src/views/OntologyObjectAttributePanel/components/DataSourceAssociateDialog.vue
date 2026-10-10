@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    class="property-datasource-mapping-dialog aircas-dialog"
+    class="property-datasource-mapping-dialog"
     title="关联数据源"
     width="92vw"
     append-to-body
@@ -16,8 +16,6 @@
             选择数据源
             <el-select
               v-model="selectedTableKeys"
-              class="aircas-select"
-              popper-class="aircas-select-popper"
               multiple
               collapse-tags
               collapse-tags-tooltip
@@ -37,8 +35,6 @@
             关联数据源
             <el-select
               :model-value="manualSelectedTable"
-              class="aircas-select"
-              popper-class="aircas-select-popper"
               filterable
               clearable
               placeholder="选择数据表"
@@ -55,15 +51,7 @@
           </label>
           <label>
             关联数据源字段
-            <el-select
-              v-model="manualSelectedField"
-              class="aircas-select"
-              popper-class="aircas-select-popper"
-              filterable
-              :disabled="!manualSelectedTable"
-              placeholder="选择字段"
-              :loading="fieldLoading"
-            >
+            <el-select v-model="manualSelectedField" filterable :disabled="!manualSelectedTable" placeholder="选择字段" :loading="fieldLoading">
               <el-option
                 v-for="field in manualFieldOptions"
                 :key="field.id"
@@ -75,7 +63,7 @@
           <el-icon class="mapping-toolbar__connection"><Connection /></el-icon>
           <label>
             关联本体字段
-            <el-select v-model="manualSelectedProperty" class="aircas-select" popper-class="aircas-select-popper" filterable placeholder="选择本体属性">
+            <el-select v-model="manualSelectedProperty" filterable placeholder="选择本体属性">
               <el-option
                 v-for="property in availableManualProperties"
                 :key="property.id"
@@ -84,14 +72,12 @@
               />
             </el-select>
           </label>
-          <el-button class="aircas-button" type="primary" :disabled="!canAddManualBind || loading" @click="addManualBind">关联</el-button>
+          <el-button type="primary" :disabled="!canAddManualBind || loading" @click="addManualBind">关联</el-button>
         </div>
         <p v-if="tableError || fieldError" class="mapping-toolbar__error" role="alert">{{ tableError || fieldError }}</p>
         <div class="mapping-toolbar__actions">
-          <el-button class="aircas-button" :loading="autoAssociateLoading" :disabled="loading || autoAssociateLoading" @click="emit('auto-associate')"
-            >自动关联数据源</el-button
-          >
-          <span title="暂未开放"><el-button class="aircas-button" disabled>跳转到数据管道</el-button></span>
+          <el-button :loading="autoAssociateLoading" :disabled="loading || autoAssociateLoading" @click="emit('auto-associate')">自动关联数据源</el-button>
+          <span title="暂未开放"><el-button disabled>跳转到数据管道</el-button></span>
         </div>
       </header>
       <div class="mapping-layout" :class="{ 'mapping-layout--saving': loading }">
@@ -238,7 +224,7 @@
           </div>
           <div class="mapping-pending__footer">
             <span>已关联 {{ mappedCount }} / {{ properties.length }}</span>
-            <el-button class="aircas-button" type="primary" :loading="loading" :disabled="!pendingOperations.length" @click="handleConfirm"> 提交 </el-button>
+            <el-button type="primary" :loading="loading" :disabled="!pendingOperations.length" @click="handleConfirm"> 提交 </el-button>
           </div>
         </aside>
       </div>
@@ -318,11 +304,11 @@ interface FlatTable {
 }
 
 const LINE_COLOR_VARS = [
-  "var(--aircas-color-accent-cyan)",
-  "var(--aircas-color-accent-blue)",
-  "var(--aircas-color-accent-purple)",
-  "var(--aircas-color-accent-orange)",
-  "var(--aircas-color-accent-green)",
+  "var(--aircas-color-primary)",
+  "var(--aircas-color-category-blue)",
+  "var(--aircas-color-category-purple)",
+  "var(--aircas-color-warning)",
+  "var(--aircas-color-success)",
 ] as const;
 
 const props = defineProps<{
@@ -572,7 +558,7 @@ function isFieldMapped(databaseId: string, tableId: string, fieldId: string): bo
 function colorForTable(databaseId: string, tableId: string): string {
   const tableIndex = flatTables.value.findIndex((item) => item.databaseId === databaseId && item.table.id === tableId);
   const colorIndex = tableIndex >= 0 ? tableIndex % LINE_COLOR_VARS.length : 0;
-  return LINE_COLOR_VARS[colorIndex] ?? "var(--aircas-color-accent-cyan)";
+  return LINE_COLOR_VARS[colorIndex] ?? "var(--aircas-color-primary)";
 }
 
 function parentMappedCount(parentId: string): number {
@@ -893,7 +879,7 @@ onBeforeUnmount(() => {
   color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
-.mapping-toolbar__inputs label :deep(.aircas-select) {
+.mapping-toolbar__inputs label :deep(.el-select) {
   width: 100%;
 }
 .mapping-toolbar__inputs label:first-child {
@@ -902,7 +888,7 @@ onBeforeUnmount(() => {
 .mapping-toolbar__connection {
   align-self: flex-end;
   height: 32px;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 24px;
   line-height: 32px;
 }
@@ -944,12 +930,12 @@ onBeforeUnmount(() => {
 }
 .mapping-pending header span {
   font-size: 12px;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
 }
 .mapping-pending__hint {
   font-size: 12px;
   line-height: 1.6;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
 }
 .mapping-pending__list {
   flex: 1;
@@ -960,17 +946,17 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 10px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--aircas-color-border-soft);
+  border-bottom: 1px solid var(--aircas-color-border-light);
   color: var(--aircas-color-text-secondary);
   font-size: 13px;
   overflow-wrap: anywhere;
 }
 .mapping-pending__item b {
-  color: var(--aircas-color-accent-green);
+  color: var(--aircas-color-success);
   font-size: 18px;
 }
 .mapping-pending__item.is-remove b {
-  color: var(--aircas-color-accent-orange);
+  color: var(--aircas-color-warning);
 }
 .mapping-pending__item > span {
   flex: 1;
@@ -985,14 +971,14 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 20px;
   cursor: pointer;
 }
 .mapping-pending__undo:hover,
 .mapping-pending__undo:focus-visible {
-  color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-accent-cyan-soft);
+  color: var(--aircas-color-primary);
+  background: var(--aircas-color-effect-primary-soft);
 }
 .mapping-pending__footer {
   display: flex;
@@ -1011,8 +997,8 @@ onBeforeUnmount(() => {
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 18% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 42%),
-    radial-gradient(circle at 82% 12%, var(--aircas-color-accent-purple-soft), var(--aircas-color-transparent) 36%),
+    radial-gradient(circle at 18% 0, var(--aircas-color-effect-primary-soft), transparent 42%),
+    radial-gradient(circle at 82% 12%, var(--aircas-color-effect-purple-soft), transparent 36%),
     linear-gradient(160deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
 }
 
@@ -1067,12 +1053,12 @@ onBeforeUnmount(() => {
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   background: var(--aircas-color-card-background);
-  box-shadow: inset 0 0 12px var(--aircas-color-border-soft);
+  box-shadow: inset 0 0 12px var(--aircas-color-border-light);
 }
 
 .mind-node-has-maps {
-  border-color: var(--aircas-color-accent-cyan);
-  box-shadow: 0 0 10px var(--aircas-color-accent-cyan-soft);
+  border-color: var(--aircas-color-primary);
+  box-shadow: 0 0 10px var(--aircas-color-effect-primary-soft);
 }
 
 .mind-node__map-count {
@@ -1084,7 +1070,7 @@ onBeforeUnmount(() => {
   padding: 0 4px;
   border-radius: 9px;
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-accent-blue);
+  background: var(--aircas-color-category-blue);
   font-size: 11px;
   font-weight: 700;
 }
@@ -1096,7 +1082,7 @@ onBeforeUnmount(() => {
 }
 
 .mind-node-table {
-  border-color: var(--aircas-color-border-highlight);
+  border-color: var(--aircas-color-primary);
 }
 
 .mapping-line {
@@ -1121,7 +1107,7 @@ onBeforeUnmount(() => {
 
 .mapping-line-preview {
   pointer-events: none;
-  stroke: var(--aircas-color-accent-blue);
+  stroke: var(--aircas-color-category-blue);
   stroke-dasharray: 6 4;
 }
 
@@ -1134,7 +1120,7 @@ onBeforeUnmount(() => {
   padding: 0;
   border: 1px solid var(--aircas-color-border);
   border-radius: 4px;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   background: var(--aircas-color-panel-background-deep);
   font-size: 12px;
   line-height: 1;
@@ -1143,8 +1129,8 @@ onBeforeUnmount(() => {
 }
 
 .mind-node__toggle:hover {
-  border-color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-accent-cyan-soft);
+  border-color: var(--aircas-color-primary);
+  background: var(--aircas-color-effect-primary-soft);
 }
 
 .mind-node__badge {
@@ -1155,7 +1141,7 @@ onBeforeUnmount(() => {
   height: 22px;
   border-radius: 4px;
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-accent-blue-fill);
+  background: var(--aircas-color-effect-blue-fill);
   font-size: 11px;
   font-weight: 700;
 }
@@ -1196,16 +1182,16 @@ onBeforeUnmount(() => {
 
 .field-list__header,
 .property-list__header {
-  border-bottom: 1px solid var(--aircas-color-border-soft);
+  border-bottom: 1px solid var(--aircas-color-border-light);
   background: var(--aircas-color-section-header);
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   font-weight: 650;
 }
 
 .field-list__row,
 .property-list__row {
-  border-top: 1px solid var(--aircas-color-border-soft);
+  border-top: 1px solid var(--aircas-color-border-light);
   color: var(--aircas-color-text-primary);
   font-size: 12px;
 }
@@ -1219,13 +1205,13 @@ onBeforeUnmount(() => {
 
 .field-list__row-mapped,
 .property-list__row-mapped {
-  background: var(--aircas-color-accent-cyan-soft);
+  background: var(--aircas-color-effect-primary-soft);
 }
 
 .field-list__empty,
 .property-list__empty {
   padding: 16px 12px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   text-align: center;
 }
@@ -1234,14 +1220,14 @@ onBeforeUnmount(() => {
   width: 12px;
   height: 12px;
   padding: 0;
-  border: 1px solid var(--aircas-color-accent-cyan);
+  border: 1px solid var(--aircas-color-primary);
   border-radius: 50%;
-  background: var(--aircas-color-accent-blue);
+  background: var(--aircas-color-category-blue);
   cursor: crosshair;
 }
 
 .mapping-anchor:hover {
-  box-shadow: 0 0 8px var(--aircas-color-accent-cyan-shadow);
+  box-shadow: 0 0 8px var(--aircas-color-effect-primary-shadow);
 }
 
 .field-list__anchor-col,
@@ -1256,10 +1242,10 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 10px;
   background: linear-gradient(160deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
-  box-shadow: 0 0 28px var(--aircas-color-accent-blue-soft);
+  box-shadow: 0 0 28px var(--aircas-color-effect-blue-soft);
   overflow: hidden;
 }
 
@@ -1268,7 +1254,6 @@ onBeforeUnmount(() => {
   position: relative;
   margin: 0;
   padding: 16px 20px 12px;
-  border-bottom: 1px solid var(--aircas-color-border-soft);
 }
 
 :global(.property-datasource-mapping-dialog .el-dialog__header::before) {
@@ -1278,11 +1263,10 @@ onBeforeUnmount(() => {
   left: 0;
   height: 2px;
   content: "";
-  background: linear-gradient(90deg, var(--aircas-color-accent-cyan), var(--aircas-color-accent-blue), var(--aircas-color-accent-purple));
+  background: linear-gradient(90deg, var(--aircas-color-primary), var(--aircas-color-category-blue), var(--aircas-color-category-purple));
 }
 
 :global(.property-datasource-mapping-dialog .el-dialog__title) {
-  color: var(--aircas-color-text-primary);
   font-size: 16px;
   font-weight: 650;
 }
@@ -1296,6 +1280,5 @@ onBeforeUnmount(() => {
 
 :global(.property-datasource-mapping-dialog .el-dialog__footer) {
   padding: 12px 20px 16px;
-  border-top: 1px solid var(--aircas-color-border-soft);
 }
 </style>

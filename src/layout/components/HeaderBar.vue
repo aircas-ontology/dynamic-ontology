@@ -25,7 +25,7 @@
           <QuestionFilled />
         </el-icon>
       </button>
-      <el-dropdown class="aircas-dropdown" popper-class="aircas-dropdown-popper" trigger="click" @command="logoutCurrentSession">
+      <el-dropdown trigger="click" @command="logoutCurrentSession">
         <button type="button" class="header-bar__user" aria-label="访客菜单">
           <el-icon :size="20"><UserFilled /></el-icon>
           <span>访客</span>
@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { useDocumentTheme } from "@/composables/shared/useDocumentTheme";
 import { useRouter } from "vue-router";
 import { Bell, Moon, QuestionFilled, Sunny, UserFilled } from "@element-plus/icons-vue";
 import OntologyGlobalSearchField from "@/components/OntologyGlobalSearchField/OntologyGlobalSearchField.vue";
@@ -50,20 +50,7 @@ import { clearLoginToken } from "@/utils/authToken";
 
 const version = SYSTEM_CONFIG.version;
 const router = useRouter();
-const dark = ref(document.documentElement.getAttribute("theme") !== "light");
-
-/**
- * @description 在暗色和浅色主题之间切换，并写回文档根节点的 theme 属性。
- */
-function toggleTheme() {
-  if (dark.value) {
-    document.documentElement.classList.remove("dark");
-    dark.value = false;
-  } else {
-    document.documentElement.classList.add("dark");
-    dark.value = true;
-  }
-}
+const { isDark: dark, toggleTheme } = useDocumentTheme();
 
 /**
  * @description 退出当前会话：清除浏览器中的登录令牌，并替换到登录页，避免返回已退出的页面。
@@ -85,8 +72,8 @@ function logoutCurrentSession(command: string) {
   gap: 20px;
   padding: 0 15px;
   color: var(--aircas-color-text-primary);
-  background: linear-gradient(90deg, var(--aircas-color-page-background), var(--aircas-color-menu-background));
-  border-bottom: 1px solid var(--aircas-color-border-soft);
+  background: linear-gradient(90deg, var(--aircas-color-page-background), var(--aircas-color-panel-background));
+  border-bottom: 1px solid var(--aircas-color-border-light);
 }
 
 .header-bar__brand {
@@ -117,17 +104,13 @@ function logoutCurrentSession(command: string) {
   border: 1px solid var(--aircas-color-border);
   border-radius: 12px;
   font-size: 12px;
-  color: var(--aircas-color-title);
+  color: var(--aircas-color-primary);
   background: var(--aircas-color-background);
 }
 
 .header-bar__search {
   flex: 0 1 640px;
   min-width: 180px;
-}
-
-.header-bar__search .aircas-input {
-  --el-input-border-radius: 20px;
 }
 
 .header-bar__tools {
@@ -141,13 +124,13 @@ function logoutCurrentSession(command: string) {
   display: inline-flex;
   padding: 4px;
   border: 0;
-  background: var(--aircas-color-transparent);
+  background: transparent;
   color: inherit;
   cursor: pointer;
 }
 
 .header-bar__tool:hover {
-  background: var(--aircas-color-hover-background);
+  background: var(--aircas-color-hover);
 }
 
 .header-bar__tool:disabled {
@@ -156,7 +139,7 @@ function logoutCurrentSession(command: string) {
 }
 
 .header-bar__tool:focus-visible {
-  outline: 2px solid var(--aircas-color-accent-cyan);
+  outline: 2px solid var(--aircas-color-primary);
   outline-offset: 2px;
 }
 
@@ -166,18 +149,18 @@ function logoutCurrentSession(command: string) {
   gap: 8px;
   padding: 0;
   border: 0;
-  background: var(--aircas-color-transparent);
+  background: transparent;
   color: inherit;
   font-size: 14px;
   cursor: pointer;
 }
 
 .header-bar__user:hover {
-  color: var(--aircas-color-title);
+  color: var(--aircas-color-primary);
 }
 
 .header-bar__user:focus-visible {
-  outline: 2px solid var(--aircas-color-accent-cyan);
+  outline: 2px solid var(--aircas-color-primary);
   outline-offset: 2px;
 }
 
@@ -185,7 +168,7 @@ function logoutCurrentSession(command: string) {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--aircas-color-selected-background);
+  background: var(--aircas-color-active);
 }
 
 @media (max-width: 900px) {

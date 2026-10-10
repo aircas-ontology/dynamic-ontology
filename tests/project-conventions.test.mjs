@@ -148,10 +148,10 @@ test("login exposes command states and blocks repeated submission", async () => 
 });
 
 test("drawer uses only defined public shadow variables", async () => {
-  const drawerSource = await readFile("src/styles/element-plus/el-drawer.scss", "utf8");
+  const drawerSource = await readFile("src/styles/variables.scss", "utf8");
 
   assert.doesNotMatch(drawerSource, /--aircas-shadow-default/);
-  assert.match(drawerSource, /--el-box-shadow-light/);
+  assert.match(drawerSource, /--el-box-shadow-light: var\(--aircas-shadow-popup\)/);
 });
 
 test("API implementation skill remains a single-contract orchestrator", async () => {

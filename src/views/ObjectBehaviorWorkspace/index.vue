@@ -12,7 +12,7 @@
       <div v-if="status === 'loading'" class="object-behavior-workspace__state" role="status"><AircasLoading>正在加载对象行为…</AircasLoading></div>
       <div v-else-if="status === 'error'" class="object-behavior-workspace__state" role="alert">
         <span>{{ errorMessage }}</span
-        ><el-button class="aircas-button aircas-button--tone-primary" @click="loadObjectBehaviorWorkspace">重试</el-button>
+        ><el-button @click="loadObjectBehaviorWorkspace">重试</el-button>
       </div>
       <el-empty v-else-if="status === 'empty'" description="暂无可用行为数据" /><ObjectBehaviorListPanel
         v-else

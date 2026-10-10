@@ -9,7 +9,7 @@
 
     <el-alert v-if="error" class="space-overview-panel__error" :title="error" type="error" :closable="false" show-icon />
 
-    <el-button v-if="error" class="aircas-button" @click="loadSpaceOverview">重试</el-button>
+    <el-button v-if="error" @click="loadSpaceOverview">重试</el-button>
     <dl class="space-overview-panel__stats">
       <div v-for="item in statItems" :key="item.id" class="space-overview-panel__stat" :class="`space-overview-panel__stat--${item.tone}`">
         <dt>
@@ -64,11 +64,11 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
   overflow: auto;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-effect-page-glow);
 }
 
-:root[theme="light"] .space-overview-panel {
+:root:not(.dark) .space-overview-panel {
   background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
@@ -88,7 +88,7 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
 
 .space-overview-panel__header p {
   margin: 4px 0 0;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 
@@ -111,13 +111,13 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
   flex-direction: column;
   justify-content: center;
   gap: 12px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
-  background: radial-gradient(circle at 100% 0, var(--stat-glow), var(--aircas-color-transparent) 64%), var(--aircas-color-card-background);
+  background: radial-gradient(circle at 100% 0, var(--stat-glow), transparent 64%), var(--aircas-color-card-background);
 }
 
 .space-overview-panel__stat:hover {
-  border-color: var(--aircas-color-border-highlight);
+  border-color: var(--aircas-color-primary);
 }
 
 .space-overview-panel__stat dt {
@@ -129,7 +129,7 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
 }
 
 .space-overview-panel__stat .el-icon {
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 20px;
 }
 
@@ -142,48 +142,48 @@ function formatNote(id: Exclude<ManagementWorkspaceTab, "overview">) {
 }
 
 .space-overview-panel__stat small {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 
 .space-overview-panel__stat--cyan {
-  --stat-glow: var(--aircas-color-accent-cyan-soft);
+  --stat-glow: var(--aircas-color-effect-primary-soft);
 }
 
 .space-overview-panel__stat--cyan .el-icon {
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
 }
 
 .space-overview-panel__stat--purple {
-  --stat-glow: var(--aircas-color-accent-purple-soft);
+  --stat-glow: var(--aircas-color-effect-purple-soft);
 }
 
 .space-overview-panel__stat--purple .el-icon {
-  color: var(--aircas-color-accent-purple);
+  color: var(--aircas-color-category-purple);
 }
 
 .space-overview-panel__stat--blue {
-  --stat-glow: var(--aircas-color-accent-blue-soft);
+  --stat-glow: var(--aircas-color-effect-blue-soft);
 }
 
 .space-overview-panel__stat--blue .el-icon {
-  color: var(--aircas-color-accent-blue);
+  color: var(--aircas-color-category-blue);
 }
 
 .space-overview-panel__stat--green {
-  --stat-glow: var(--aircas-color-accent-green-soft);
+  --stat-glow: var(--aircas-color-effect-success-soft);
 }
 
 .space-overview-panel__stat--green .el-icon {
-  color: var(--aircas-color-accent-green);
+  color: var(--aircas-color-success);
 }
 
 .space-overview-panel__stat--orange {
-  --stat-glow: var(--aircas-color-accent-orange-soft);
+  --stat-glow: var(--aircas-color-effect-warning-soft);
 }
 
 .space-overview-panel__stat--orange .el-icon {
-  color: var(--aircas-color-accent-orange);
+  color: var(--aircas-color-warning);
 }
 
 @media (max-width: 1440px) {

@@ -56,8 +56,8 @@ test("object attribute panel exposes category tree, property columns, and local 
   assert.match(formSource, /prop="displayName"/);
   assert.match(formSource, /placeholder="例如：任务优先级"/);
   assert.match(formSource, /请选择属性分类/);
-  assert.match(formSource, /class="aircas-select" popper-class="aircas-select-popper"/);
-  assert.match(formSource, /class="aircas-switch"/);
+  assert.match(formSource, /<el-select\b/);
+  assert.match(formSource, /<el-switch\b/);
   assert.match(categoryApiSource, /function openCategoryCreate/);
   assert.match(categoryApiSource, /function openCategoryEdit/);
   assert.match(categoryApiSource, /deleteOntologyObjectArrTypeTreeInterface/);
@@ -216,22 +216,23 @@ test("attribute page uses the prototype panel, button, and table surfaces", () =
   const tableSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyTable.vue");
   const treeSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeCategoryTree.vue");
   const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
-  const panelGradient = /linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/;
+  const panelGradient = /linear-gradient\(135deg, var\(--aircas-color-panel-background\), var\(--aircas-color-panel-background-deep\)\)/;
 
   assert.match(treeSource, panelGradient);
-  assert.match(treeSource, /box-shadow: inset 0 0 20px var\(--aircas-color-page-glow\)/);
-  assert.match(treeSource, /background: var\(--aircas-color-active-background\)/);
-  assert.match(treeSource, /aircas-button aircas-button--tone-primary[\s\S]*创建分类/);
-  assert.match(treeSource, /tree-action is-edit[\s\S]*background: var\(--aircas-color-accent-blue-soft\)/);
+  assert.match(treeSource, /box-shadow: inset 0 0 20px var\(--aircas-color-effect-page-glow\)/);
+  assert.match(treeSource, /<el-tree/);
+  assert.match(treeSource, /<el-button[\s\S]*创建分类/);
+  assert.match(treeSource, /tree-action is-edit[\s\S]*background: var\(--aircas-color-effect-blue-soft\)/);
   assert.match(tableSource, panelGradient);
-  assert.match(tableSource, /table-wrap[\s\S]*background: linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
-  assert.match(tableSource, /background-color: var\(--aircas-color-section-header\)/);
-  assert.match(tableSource, /background-color: var\(--aircas-color-transparent\)/);
-  assert.match(tableSource, /background-color: var\(--aircas-color-accent-blue-soft\) !important/);
-  assert.match(tableSource, /aircas-button aircas-button--tone-ghost[\s\S]*关联数据源/);
-  assert.match(tableSource, /aircas-button aircas-button--tone-primary[\s\S]*添加/);
-  assert.match(formSource, /aircas-button aircas-button--tone-ghost[\s\S]*取消/);
-  assert.match(formSource, /aircas-button aircas-button--tone-primary[\s\S]*保存/);
+  assert.match(
+    tableSource,
+    /table-wrap[\s\S]*background: linear-gradient\(135deg, var\(--aircas-color-panel-background\), var\(--aircas-color-panel-background-deep\)\)/,
+  );
+  assert.match(tableSource, /<el-table/);
+  assert.match(tableSource, /<el-button[\s\S]*关联数据源/);
+  assert.match(tableSource, /<el-button[\s\S]*添加/);
+  assert.match(formSource, /<el-button[\s\S]*取消/);
+  assert.match(formSource, /<el-button[\s\S]*保存/);
 });
 
 test("attribute layout uses a 360px tree, zebra rows, and prototype detail tabs", () => {
@@ -241,9 +242,8 @@ test("attribute layout uses a 360px tree, zebra rows, and prototype detail tabs"
 
   assert.match(panelSource, /grid-template-columns: 360px minmax\(0, 1fr\)/);
   assert.match(tableSource, /stripe/);
-  assert.match(tableSource, /el-table__row--striped[\s\S]*background-color: var\(--aircas-color-panel-background-deep\) !important/);
-  assert.match(tableSource, /tr > td\.el-table__cell[\s\S]*background-color: var\(--aircas-color-panel-background\) !important/);
+  assert.match(tableSource, /<el-table/);
   assert.match(tabsSource, /object-detail-tabs__separator/);
-  assert.match(tabsSource, /linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
-  assert.match(tabsSource, /box-shadow: inset 0 0 20px var\(--aircas-color-page-glow\)/);
+  assert.match(tabsSource, /linear-gradient\(135deg, var\(--aircas-color-panel-background\), var\(--aircas-color-panel-background-deep\)\)/);
+  assert.match(tabsSource, /box-shadow: inset 0 0 20px var\(--aircas-color-effect-page-glow\)/);
 });

@@ -1,13 +1,11 @@
 <template>
   <section class="space-collection" aria-label="本体空间列表">
-    <el-empty v-if="!spaces.length" class="aircas-empty" description="暂无本体空间，请创建空间或调整搜索条件" />
+    <el-empty v-if="!spaces.length" description="暂无本体空间，请创建空间或调整搜索条件" />
     <SpaceTableView v-else-if="viewMode === 'table'" :spaces="spaces" @action="forward" />
     <SpaceCardGrid v-else :spaces="spaces" @action="forward" />
     <footer v-if="total" class="space-collection__pagination">
       <span>共 {{ total }} 条</span>
       <el-pagination
-        class="aircas-pagination"
-        popper-class="aircas-pagination-popper"
         background
         layout="prev, pager, next, sizes"
         :total="total"
@@ -74,7 +72,7 @@ function forward(action: OntologySpaceAction, space: OntologySpaceItem) {
   font-size: 12px;
 }
 
-.space-collection__pagination .aircas-pagination {
+.space-collection__pagination {
   max-width: 100%;
   row-gap: 8px;
   flex-wrap: wrap;

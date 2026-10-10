@@ -2,28 +2,22 @@
   <section class="behavior-schedule-workspace" aria-label="行为调度管理">
     <div class="behavior-schedule-workspace__toolbar">
       <div class="behavior-schedule-workspace__filters">
-        <el-input v-model="keyword" class="aircas-input behavior-schedule-workspace__keyword" clearable placeholder="调度名称">
+        <el-input v-model="keyword" class="behavior-schedule-workspace__keyword" clearable placeholder="调度名称">
           <template #prefix
             ><el-icon><Search /></el-icon
           ></template>
         </el-input>
-        <el-select
-          v-model="strategy"
-          class="aircas-select behavior-schedule-workspace__strategy"
-          popper-class="aircas-select-popper"
-          clearable
-          placeholder="调度策略"
-        >
+        <el-select v-model="strategy" class="behavior-schedule-workspace__strategy" clearable placeholder="调度策略">
           <el-option v-for="item in strategies" :key="item" :label="item" :value="item" />
         </el-select>
-        <el-button class="aircas-button aircas-button--tone-primary" @click="applyFilters">查询</el-button>
-        <el-button class="aircas-button aircas-button--tone-ghost" @click="resetFilters">重置</el-button>
+        <el-button @click="applyFilters">查询</el-button>
+        <el-button @click="resetFilters">重置</el-button>
       </div>
-      <el-button class="aircas-button aircas-button--tone-primary" :icon="Plus" @click="showPendingMessage('新建调度')">新建调度</el-button>
+      <el-button :icon="Plus" @click="showPendingMessage('新建调度')">新建调度</el-button>
     </div>
 
     <div class="behavior-schedule-workspace__table-wrap">
-      <el-table :data="filteredSchedules" class="aircas-table aircas-table--flat behavior-schedule-workspace__table" height="100%" stripe>
+      <el-table :data="filteredSchedules" class="aircas-table--accent-header behavior-schedule-workspace__table" height="100%" stripe>
         <el-table-column label="调度名称" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="behavior-schedule-workspace__name">{{ row.name }}</span>
@@ -31,7 +25,7 @@
         </el-table-column>
         <el-table-column label="调度策略" width="110">
           <template #default="{ row }">
-            <el-tag class="aircas-tag" size="small" effect="plain">{{ row.strategy }}</el-tag>
+            <el-tag size="small" effect="plain">{{ row.strategy }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="target" label="关联对象" min-width="140" show-overflow-tooltip />
@@ -41,10 +35,10 @@
         <el-table-column label="操作" width="300">
           <template #default>
             <div class="behavior-schedule-workspace__row-actions">
-              <el-button class="aircas-button aircas-button--tone-ghost" size="small" @click="showPendingMessage('查看')">查看</el-button>
-              <el-button class="aircas-button aircas-button--tone-secondary" size="small" @click="showPendingMessage('编辑')">编辑</el-button>
-              <el-button class="aircas-button aircas-button--tone-ghost" size="small" @click="showPendingMessage('调用日志')">调用日志</el-button>
-              <el-button class="aircas-button aircas-button--tone-danger" size="small" @click="showPendingMessage('删除')">删除</el-button>
+              <el-button size="small" @click="showPendingMessage('查看')">查看</el-button>
+              <el-button size="small" @click="showPendingMessage('编辑')">编辑</el-button>
+              <el-button size="small" @click="showPendingMessage('调用日志')">调用日志</el-button>
+              <el-button size="small" @click="showPendingMessage('删除')">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -169,11 +163,11 @@ function showPendingMessage(action: string) {
   padding: 8px 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 18px var(--aircas-color-page-glow);
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 18px var(--aircas-color-effect-page-glow);
 }
 
-:root[theme="light"] .behavior-schedule-workspace__toolbar {
+:root:not(.dark) .behavior-schedule-workspace__toolbar {
   background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 .behavior-schedule-workspace__filters {

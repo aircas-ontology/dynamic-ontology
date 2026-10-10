@@ -1,7 +1,7 @@
 <template>
   <div class="conceptual-model-create">
     <header class="conceptual-model-create__topbar">
-      <el-button class="aircas-button" @click="goBack">返回</el-button>
+      <el-button @click="goBack">返回</el-button>
       <div class="conceptual-model-create__identity">
         <span class="conceptual-model-create__eyebrow">空间概念模型</span>
         <h1>概念模型画布</h1>
@@ -10,19 +10,19 @@
       <div class="conceptual-model-create__space-fields">
         <label class="conceptual-model-create__space-field">
           <span>空间名称</span>
-          <el-input v-model="spaceDisplayName" class="aircas-input" ariaLabel="空间名称" placeholder="空间名称" :readonly="hasRouteSpaceContext" />
+          <el-input v-model="spaceDisplayName" ariaLabel="空间名称" placeholder="空间名称" :readonly="hasRouteSpaceContext" />
         </label>
         <label class="conceptual-model-create__space-field">
           <span>API 名称</span>
-          <el-input v-model="spaceApiName" class="aircas-input" ariaLabel="空间 API 名称" placeholder="空间 API 名称" :readonly="hasRouteSpaceContext" />
+          <el-input v-model="spaceApiName" ariaLabel="空间 API 名称" placeholder="空间 API 名称" :readonly="hasRouteSpaceContext" />
         </label>
       </div>
       <div class="conceptual-model-create__actions">
-        <span>{{ zoom }}%</span><el-button class="aircas-button" size="small" @click="zoomOut">缩小</el-button>
-        <el-button class="aircas-button" size="small" @click="zoomIn">放大</el-button>
-        <el-button class="aircas-button" size="small" @click="fitCanvas">适应画布</el-button>
-        <el-button class="aircas-button" type="danger" size="small" :disabled="!selected" @click="deleteSelected">删除选中</el-button>
-        <el-button class="aircas-button" type="primary" size="small" :loading="saving" @click="saveConceptualModel">保存</el-button>
+        <span>{{ zoom }}%</span><el-button size="small" @click="zoomOut">缩小</el-button>
+        <el-button size="small" @click="zoomIn">放大</el-button>
+        <el-button size="small" @click="fitCanvas">适应画布</el-button>
+        <el-button type="danger" size="small" :disabled="!selected" @click="deleteSelected">删除选中</el-button>
+        <el-button type="primary" size="small" :loading="saving" @click="saveConceptualModel">保存</el-button>
       </div>
     </header>
     <p v-if="saveError" class="conceptual-model-create__save-error" role="alert">{{ saveError }}</p>
@@ -72,44 +72,31 @@
         <template v-if="selectedObject"
           ><h2>对象检查器</h2>
           <small>对齐对象创建表单的核心字段</small
-          ><el-form class="aircas-form" label-position="top"
+          ><el-form label-position="top"
             ><el-form-item label="API 名称"
-              ><el-input class="aircas-input" :model-value="selectedObject.apiName" @update:model-value="updateObject('apiName', $event)" /></el-form-item
+              ><el-input :model-value="selectedObject.apiName" @update:model-value="updateObject('apiName', $event)" /></el-form-item
             ><el-form-item label="显示名称"
-              ><el-input
-                class="aircas-input"
-                :model-value="selectedObject.displayName"
-                @update:model-value="updateObject('displayName', $event)" /></el-form-item
+              ><el-input :model-value="selectedObject.displayName" @update:model-value="updateObject('displayName', $event)" /></el-form-item
             ><el-form-item label="描述"
               ><el-input
-                class="aircas-input"
                 type="textarea"
                 :rows="3"
                 :model-value="selectedObject.description"
                 @update:model-value="updateObject('description', $event)" /></el-form-item></el-form
-          ><el-button class="aircas-button" type="primary" @click="addAttribute(selectedObject.id)">添加属性</el-button></template
+          ><el-button type="primary" @click="addAttribute(selectedObject.id)">添加属性</el-button></template
         ><template v-else-if="selectedAttribute"
           ><h2>属性检查器</h2>
           <small>所属对象：{{ selectedAttribute.owner }}</small
-          ><el-form class="aircas-form" label-position="top"
+          ><el-form label-position="top"
             ><el-form-item label="属性名称"
-              ><el-input
-                class="aircas-input"
-                :model-value="selectedAttribute.displayName"
-                @update:model-value="updateAttribute('displayName', $event)" /></el-form-item
+              ><el-input :model-value="selectedAttribute.displayName" @update:model-value="updateAttribute('displayName', $event)" /></el-form-item
             ><el-form-item label="API"
-              ><el-input class="aircas-input" :model-value="selectedAttribute.apiName" @update:model-value="updateAttribute('apiName', $event)" /></el-form-item
+              ><el-input :model-value="selectedAttribute.apiName" @update:model-value="updateAttribute('apiName', $event)" /></el-form-item
             ><el-form-item label="数据类型"
-              ><el-select
-                class="aircas-select"
-                popper-class="aircas-select-popper"
-                :model-value="selectedAttribute.dataType"
-                @update:model-value="updateAttribute('dataType', $event)"
+              ><el-select :model-value="selectedAttribute.dataType" @update:model-value="updateAttribute('dataType', $event)"
                 ><el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" /></el-select></el-form-item
             ><el-form-item label="存储分组"
               ><el-select
-                class="aircas-select"
-                popper-class="aircas-select-popper"
                 :model-value="selectedAttribute.storageGroup"
                 filterable
                 allow-create
@@ -118,13 +105,9 @@
                 @change="registerStorageGroup"
                 ><el-option v-for="group in storageGroupOptions" :key="group" :label="group" :value="group" /></el-select></el-form-item
             ><el-form-item label="默认值"
-              ><el-input
-                class="aircas-input"
-                :model-value="selectedAttribute.defaultValue"
-                @update:model-value="updateAttribute('defaultValue', $event)" /></el-form-item
+              ><el-input :model-value="selectedAttribute.defaultValue" @update:model-value="updateAttribute('defaultValue', $event)" /></el-form-item
             ><el-form-item label="属性描述"
               ><el-input
-                class="aircas-input"
                 type="textarea"
                 :rows="2"
                 :model-value="selectedAttribute.description"
@@ -134,33 +117,19 @@
         ><template v-else-if="selectedRelation"
           ><h2>关系检查器</h2>
           <small>拖动两端连到对象四边圆点，或在此选择源/目标</small
-          ><el-form class="aircas-form" label-position="top"
+          ><el-form label-position="top"
             ><el-form-item label="关系名称"
-              ><el-input
-                class="aircas-input"
-                :model-value="selectedRelation.displayName"
-                @update:model-value="updateRelation('displayName', $event)" /></el-form-item
+              ><el-input :model-value="selectedRelation.displayName" @update:model-value="updateRelation('displayName', $event)" /></el-form-item
             ><el-form-item label="API 名称"
-              ><el-input class="aircas-input" :model-value="selectedRelation.apiName" @update:model-value="updateRelation('apiName', $event)" /></el-form-item
+              ><el-input :model-value="selectedRelation.apiName" @update:model-value="updateRelation('apiName', $event)" /></el-form-item
             ><el-form-item label="源对象"
-              ><el-select
-                class="aircas-select"
-                popper-class="aircas-select-popper"
-                clearable
-                :model-value="selectedRelation.sourceId"
-                @update:model-value="updateRelation('sourceId', $event)"
+              ><el-select clearable :model-value="selectedRelation.sourceId" @update:model-value="updateRelation('sourceId', $event)"
                 ><el-option v-for="object in objects" :key="object.id" :label="object.displayName" :value="object.id" /></el-select></el-form-item
             ><el-form-item label="目标对象"
-              ><el-select
-                class="aircas-select"
-                popper-class="aircas-select-popper"
-                clearable
-                :model-value="selectedRelation.targetId"
-                @update:model-value="updateRelation('targetId', $event)"
+              ><el-select clearable :model-value="selectedRelation.targetId" @update:model-value="updateRelation('targetId', $event)"
                 ><el-option v-for="object in objects" :key="object.id" :label="object.displayName" :value="object.id" /></el-select></el-form-item
             ><el-form-item label="描述"
               ><el-input
-                class="aircas-input"
                 type="textarea"
                 :rows="3"
                 :model-value="selectedRelation.description"
@@ -630,13 +599,13 @@ async function saveConceptualModel() {
   gap: 14px;
   min-height: 72px;
   padding: 12px 14px;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 8px;
-  background: linear-gradient(90deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: 0 0 24px var(--aircas-color-accent-blue-soft);
+  background: linear-gradient(90deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: 0 0 24px var(--aircas-color-effect-blue-soft);
 }
 
-:root[theme="light"] .conceptual-model-create__topbar {
+:root:not(.dark) .conceptual-model-create__topbar {
   background: linear-gradient(90deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 .conceptual-model-create__identity {
@@ -656,7 +625,7 @@ async function saveConceptualModel() {
   gap: 4px;
 }
 .conceptual-model-create__space-field span {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 .conceptual-model-create__save-error {
@@ -665,7 +634,7 @@ async function saveConceptualModel() {
   border: 1px solid var(--aircas-color-danger);
   border-radius: 6px;
   color: var(--aircas-color-danger);
-  background: var(--aircas-color-danger-background);
+  background: var(--aircas-color-effect-danger-fill);
   font-size: 12px;
 }
 .conceptual-model-create h1,
@@ -683,7 +652,7 @@ async function saveConceptualModel() {
   font-size: 12px;
 }
 .conceptual-model-create__eyebrow {
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 11px;
   letter-spacing: 0.12em;
 }
@@ -704,16 +673,16 @@ async function saveConceptualModel() {
 .conceptual-model-create__canvas-panel,
 .conceptual-model-create__inspector {
   min-width: 0;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 8px;
-  background: linear-gradient(180deg, var(--aircas-color-overlay), var(--aircas-color-panel-background-deep));
-  box-shadow: 0 0 18px var(--aircas-color-accent-cyan-soft);
+  background: linear-gradient(180deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: 0 0 18px var(--aircas-color-effect-primary-soft);
   overflow: hidden;
 }
 
-:root[theme="light"] .conceptual-model-create__palette,
-:root[theme="light"] .conceptual-model-create__canvas-panel,
-:root[theme="light"] .conceptual-model-create__inspector {
+:root:not(.dark) .conceptual-model-create__palette,
+:root:not(.dark) .conceptual-model-create__canvas-panel,
+:root:not(.dark) .conceptual-model-create__inspector {
   background: linear-gradient(180deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 .conceptual-model-create__palette,
@@ -727,7 +696,7 @@ async function saveConceptualModel() {
   gap: 10px;
   margin: 10px 0;
   padding: 10px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
   color: var(--aircas-color-text-primary);
   background: var(--aircas-color-panel-background-deep);
@@ -735,7 +704,7 @@ async function saveConceptualModel() {
   cursor: grab;
 }
 .conceptual-model-create__palette-item:hover {
-  border-color: var(--aircas-color-accent-cyan);
+  border-color: var(--aircas-color-primary);
 }
 .conceptual-model-create__palette-item span:nth-child(2) {
   display: flex;
@@ -744,7 +713,7 @@ async function saveConceptualModel() {
   gap: 4px;
 }
 .conceptual-model-create__palette-item small {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 11px;
 }
 .conceptual-model-create__glyph {
@@ -752,14 +721,14 @@ async function saveConceptualModel() {
   width: 72px;
   height: 52px;
   place-items: center;
-  border: 1px solid var(--aircas-color-accent-cyan);
+  border: 1px solid var(--aircas-color-primary);
   border-radius: 6px;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 10px;
 }
 .conceptual-model-create__glyph.is-attribute {
   border-style: dashed;
-  color: var(--aircas-color-accent-purple);
+  color: var(--aircas-color-category-purple);
 }
 .conceptual-model-create__glyph.is-relation {
   border: 0;
@@ -767,7 +736,7 @@ async function saveConceptualModel() {
 }
 .conceptual-model-create__palette-note {
   padding: 12px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
   background: var(--aircas-color-panel-background-deep);
   line-height: 1.7;
@@ -780,14 +749,14 @@ async function saveConceptualModel() {
   margin: 0 0 5px;
 }
 .conceptual-model-create__inspector small {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 .conceptual-model-create__inspector-empty {
   display: grid;
   min-height: 200px;
   place-items: center;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   text-align: center;
   font-size: 12px;
 }

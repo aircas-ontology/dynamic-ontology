@@ -5,7 +5,7 @@
         <Location />
       </el-icon>
     </span>
-    <el-breadcrumb class="aircas-breadcrumb">
+    <el-breadcrumb>
       <template v-if="isObjectDetail">
         <el-breadcrumb-item :to="{ name: 'OntologySpaceManagement' }">本体空间管理</el-breadcrumb-item>
         <el-breadcrumb-item v-if="spaceName" :to="{ name: 'OntologySpaceManagementDetail', params: { spaceId } }">{{ spaceName }}</el-breadcrumb-item>
@@ -86,7 +86,7 @@ const objectDisplayName = computed(() => {
 .breadcrumb-bar__pin {
   display: inline-flex;
   align-items: center;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 14px;
 }
 </style>

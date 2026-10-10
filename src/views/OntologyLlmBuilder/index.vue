@@ -5,7 +5,7 @@
         <p class="ontology-llm-builder__eyebrow">ONTOLOGY COPILOT</p>
         <h1>大模型构建本体流程 <span>OntoPilot</span></h1>
       </div>
-      <el-button class="aircas-button" @click="goBack">返回空间</el-button>
+      <el-button @click="goBack">返回空间</el-button>
     </div>
 
     <div class="ontology-llm-builder__layout">
@@ -35,39 +35,30 @@
               <h2>定义本体对象</h2>
               <p>用自然语言明确对象目标与边界</p>
             </div>
-            <el-button class="aircas-button" @click="goBack">返回空间</el-button>
+            <el-button @click="goBack">返回空间</el-button>
           </header>
-          <el-form class="aircas-form ontology-llm-builder__form" label-position="top">
+          <el-form class="ontology-llm-builder__form" label-position="top">
             <el-form-item label="建模任务描述（自然语言）" required>
-              <el-input v-model="draft.description" class="aircas-input" type="textarea" :rows="5" maxlength="1000" show-word-limit />
+              <el-input v-model="draft.description" type="textarea" :rows="5" maxlength="1000" show-word-limit />
             </el-form-item>
             <el-form-item label="建模范围">
-              <el-select
-                v-model="draft.scope"
-                class="aircas-input"
-                popper-class="aircas-select-popper"
-                multiple
-                filterable
-                allow-create
-                default-first-option
-                ariaLabel="建模范围"
-              >
+              <el-select v-model="draft.scope" multiple filterable allow-create default-first-option ariaLabel="建模范围">
                 <el-option v-for="item in scopeOptions" :key="item" :label="item" :value="item" />
               </el-select>
             </el-form-item>
             <el-form-item label="输出目标">
-              <el-select v-model="draft.targets" class="aircas-input" popper-class="aircas-select-popper" multiple ariaLabel="输出目标">
+              <el-select v-model="draft.targets" multiple ariaLabel="输出目标">
                 <el-option v-for="item in targetOptions" :key="item" :label="item" :value="item" />
               </el-select>
             </el-form-item>
             <div class="ontology-llm-builder__form-grid">
               <el-form-item label="目标粒度">
-                <el-radio-group :model-value="draft.granularity" class="aircas-radio-group" @update:model-value="setGranularity">
+                <el-radio-group :model-value="draft.granularity" @update:model-value="setGranularity">
                   <el-radio value="class">类级</el-radio><el-radio value="subclass">子类级</el-radio><el-radio value="instance">实例级</el-radio>
                 </el-radio-group>
               </el-form-item>
               <el-form-item label="语言">
-                <el-select v-model="draft.language" class="aircas-input" popper-class="aircas-select-popper" ariaLabel="语言"
+                <el-select v-model="draft.language" ariaLabel="语言"
                   ><el-option label="中文" value="中文" /><el-option label="English" value="English"
                 /></el-select>
               </el-form-item>
@@ -95,12 +86,12 @@
           <span class="ontology-llm-builder__placeholder-number">{{ currentStep + 1 }}</span>
           <h2>{{ currentStepInfo.title }}</h2>
           <p>{{ currentStepInfo.description }}。完成第一步后可继续配置此阶段。</p>
-          <el-button class="aircas-button" type="primary" @click="goNext">继续下一步</el-button>
+          <el-button type="primary" @click="goNext">继续下一步</el-button>
         </section>
 
         <footer class="ontology-llm-builder__footer">
-          <el-button class="aircas-button" :disabled="currentStep === 0" @click="goPrevious">上一步</el-button>
-          <el-button class="aircas-button" type="primary" @click="goNext">{{ currentStep === steps.length - 1 ? "完成构建" : "下一步" }}</el-button>
+          <el-button :disabled="currentStep === 0" @click="goPrevious">上一步</el-button>
+          <el-button type="primary" @click="goNext">{{ currentStep === steps.length - 1 ? "完成构建" : "下一步" }}</el-button>
         </footer>
       </main>
     </div>
@@ -224,13 +215,13 @@ function openAssistant() {
 }
 .ontology-llm-builder__heading h1 span {
   margin-left: 8px;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 13px;
   font-weight: 500;
 }
 .ontology-llm-builder__eyebrow {
   margin: 0;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 11px;
   letter-spacing: 0.12em;
 }
@@ -243,14 +234,14 @@ function openAssistant() {
 }
 .ontology-llm-builder__steps,
 .ontology-llm-builder__content {
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-effect-page-glow);
 }
 
-:root[theme="light"] .ontology-llm-builder__steps,
-:root[theme="light"] .ontology-llm-builder__content {
+:root:not(.dark) .ontology-llm-builder__steps,
+:root:not(.dark) .ontology-llm-builder__content {
   background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 .ontology-llm-builder__steps {
@@ -264,23 +255,23 @@ function openAssistant() {
   align-items: flex-start;
   gap: 10px;
   padding: 10px 8px;
-  border: 1px solid var(--aircas-color-transparent);
+  border: 1px solid transparent;
   border-radius: 7px;
   color: var(--aircas-color-text-secondary);
-  background: var(--aircas-color-transparent);
+  background: transparent;
   text-align: left;
   cursor: pointer;
 }
 .ontology-llm-builder__step:hover,
 .ontology-llm-builder__step:focus-visible {
-  border-color: var(--aircas-color-border-soft);
-  background: var(--aircas-color-hover-background);
+  border-color: var(--aircas-color-border-light);
+  background: var(--aircas-color-hover);
   outline: none;
 }
 .ontology-llm-builder__step.is-active {
-  border-color: var(--aircas-color-accent-cyan);
+  border-color: var(--aircas-color-primary);
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-accent-cyan-soft);
+  background: var(--aircas-color-effect-primary-soft);
 }
 .ontology-llm-builder__step.is-complete .ontology-llm-builder__step-index {
   color: var(--aircas-color-success);
@@ -291,9 +282,9 @@ function openAssistant() {
   height: 22px;
   flex: none;
   place-items: center;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 50%;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 11px;
 }
 .ontology-llm-builder__step strong,
@@ -305,7 +296,7 @@ function openAssistant() {
 }
 .ontology-llm-builder__step small {
   margin-top: 3px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 11px;
   line-height: 1.4;
 }
@@ -352,14 +343,14 @@ function openAssistant() {
 }
 .ontology-llm-builder__chips button {
   padding: 6px 10px;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 14px;
-  color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-accent-cyan-soft);
+  color: var(--aircas-color-primary);
+  background: var(--aircas-color-effect-primary-soft);
   cursor: pointer;
 }
 .ontology-llm-builder__chips button:hover {
-  background: var(--aircas-color-accent-cyan-fill);
+  background: var(--aircas-color-effect-primary-fill);
 }
 .ontology-llm-builder__recommendation-block ul {
   display: grid;
@@ -373,7 +364,7 @@ function openAssistant() {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 10px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 6px;
   color: var(--aircas-color-text-secondary);
   font-size: 12px;
@@ -395,9 +386,9 @@ function openAssistant() {
   width: 52px;
   height: 52px;
   place-items: center;
-  border: 1px solid var(--aircas-color-accent-cyan);
+  border: 1px solid var(--aircas-color-primary);
   border-radius: 50%;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 20px;
 }
 .ontology-llm-builder__placeholder h2 {
@@ -414,7 +405,7 @@ function openAssistant() {
   gap: 10px;
   margin-top: 18px;
   padding-top: 16px;
-  border-top: 1px solid var(--aircas-color-divider);
+  border-top: 1px solid var(--aircas-color-border-light);
 }
 .ontology-llm-builder__assistant {
   position: fixed;
@@ -424,11 +415,11 @@ function openAssistant() {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 20px;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   background: var(--aircas-color-panel-background);
-  box-shadow: 0 8px 20px var(--aircas-color-divider);
+  box-shadow: 0 8px 20px var(--aircas-color-border-light);
   cursor: pointer;
 }
 @media (max-width: 900px) {

@@ -1,17 +1,9 @@
 <template>
-  <el-dialog
-    :model-value="modelValue"
-    class="aircas-dialog"
-    title="删除关系确认"
-    width="440px"
-    append-to-body
-    destroy-on-close
-    @close="emit('update:modelValue', false)"
-  >
+  <el-dialog :model-value="modelValue" title="删除关系确认" width="440px" append-to-body destroy-on-close @close="emit('update:modelValue', false)">
     <p>确认删除关系「{{ displayName }}」吗？此操作不可恢复。</p>
     <template #footer>
-      <el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button class="aircas-button aircas-button--tone-danger" type="danger" :loading="loading" @click="emit('confirm')">确认删除</el-button>
+      <el-button @click="emit('update:modelValue', false)">取消</el-button>
+      <el-button type="danger" :loading="loading" @click="emit('confirm')">确认删除</el-button>
     </template>
   </el-dialog>
 </template>

@@ -3,14 +3,10 @@ import { createPinia } from "pinia";
 import ElementPlus from "element-plus";
 import zhCn from "element-plus/es/locale/lang/zh-cn";
 import * as ElementIcons from "@element-plus/icons-vue";
-
-// import "element-plus/dist/index.css";
-//import "font-awesome/css/font-awesome.min.css";
-
+import "font-awesome/css/font-awesome.min.css";
 import "element-plus/dist/index.css";
 import "element-plus/theme-chalk/dark/css-vars.css";
-import "./styles/aircas/index.scss";
-// import "@/styles/index.scss";
+import "@/styles/index.scss";
 
 import App from "./App.vue";
 import router from "./router";

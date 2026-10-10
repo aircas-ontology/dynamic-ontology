@@ -1,19 +1,18 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    class="aircas-dialog"
     :title="mode === 'create' ? '新建行为分类' : '编辑行为分类'"
     width="440px"
     :close-on-click-modal="false"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <el-form label-position="top"
-      ><el-form-item label="分类名称" required><el-input v-model="name" class="aircas-input" :maxlength="50" placeholder="请输入分类名称" /></el-form-item>
+      ><el-form-item label="分类名称" required><el-input v-model="name" :maxlength="50" placeholder="请输入分类名称" /></el-form-item>
       <p v-if="mode === 'create'" class="object-behavior-dialog__hint">将在“{{ parentLabel }}”下创建分类。</p></el-form
     >
     <template #footer
-      ><el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">取消</el-button
-      ><el-button class="aircas-button aircas-button--tone-primary" :disabled="!name.trim()" @click="submitCategoryForm">确认</el-button></template
+      ><el-button @click="emit('update:modelValue', false)">取消</el-button
+      ><el-button :disabled="!name.trim()" @click="submitCategoryForm">确认</el-button></template
     >
   </el-dialog>
 </template>
@@ -37,7 +36,7 @@ watch(
 <style scoped lang="scss">
 .object-behavior-dialog__hint {
   margin: 0;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 </style>

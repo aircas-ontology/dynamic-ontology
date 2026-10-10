@@ -57,7 +57,7 @@ test("space export confirmation calls the export api instead of local json", () 
   assert.match(dialogSource, /INSTANCE：含实例数据/);
   assert.match(dialogSource, /ref<OntologySpaceExportType>\("INSTANCE"\)/);
   assert.match(dialogSource, /exportType\.value = "INSTANCE"/);
-  assert.match(dialogSource, /class="aircas-radio-group space-command-dialogs__export-type"/);
+  assert.match(dialogSource, /class="space-command-dialogs__export-type"/);
   assert.match(dialogSource, /value="SCHEMA"/);
   assert.match(dialogSource, /value="INSTANCE"/);
   assert.match(dialogSource, /emit\('confirmExport', exportType\)/);

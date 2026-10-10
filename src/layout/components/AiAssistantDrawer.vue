@@ -1,10 +1,10 @@
 <template>
-  <button v-show="!visible" class="ai-assistant-launcher" type="button" aria-label="打开 AI 助手" @click="visible = true">
+  <el-button v-bind="assistantButtonAttributes" class="ai-assistant-launcher" @click="visible = !visible">
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M5 6.5h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" />
     </svg>
-  </button>
-  <el-drawer v-model="visible" class="aircas-drawer ai-assistant-drawer" title="AI 助手" direction="rtl" size="620px" :modal="false" append-to-body>
+  </el-button>
+  <el-drawer v-model="visible" class="ai-assistant-drawer" title="AI 助手" direction="rtl" size="620px" :modal="false" modal-penetrable append-to-body>
     <div class="ai-assistant-drawer__panel">
       <div ref="stageRef" class="ai-assistant-drawer__stage">
         <div v-if="messages.length" class="ai-assistant-drawer__conversation">
@@ -34,7 +34,6 @@
       <div class="ai-assistant-drawer__composer">
         <el-input
           v-model="draft"
-          class="aircas-input"
           type="textarea"
           :rows="4"
           maxlength="1000"
@@ -44,7 +43,7 @@
           @keydown.ctrl.enter.prevent="submitAssistantQuestion"
         />
         <div class="ai-assistant-drawer__composer-bar">
-          <el-dropdown trigger="click" popper-class="aircas-popper">
+          <el-dropdown trigger="click">
             <button class="ai-assistant-drawer__mode" type="button">
               <span aria-hidden="true">✦</span>
               智能管理助手
@@ -68,7 +67,8 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
+import type { ButtonHTMLAttributes } from "vue";
 
 interface AssistantChatMessage {
   role: "user" | "assistant";
@@ -87,6 +87,10 @@ const promptReplies: Record<string, string> = {
   导出行为调度和规则库: "可导出当前行为调度及其规则库，内容包含触发条件与对应规则，便于在其他空间复用。导出前请确认调度范围和规则是否完整。",
 };
 const visible = ref(false);
+const assistantButtonAttributes = computed<Pick<ButtonHTMLAttributes, "aria-label" | "aria-expanded">>(() => ({
+  "aria-label": visible.value ? "关闭 AI 助手" : "打开 AI 助手",
+  "aria-expanded": visible.value,
+}));
 const draft = ref("");
 const messages = ref<AssistantChatMessage[]>([]);
 const stageRef = ref<HTMLElement | null>(null);
@@ -136,28 +140,15 @@ watch(messages, () => {
 </script>
 
 <style scoped lang="scss">
-.ai-assistant-launcher {
-  position: fixed;
-  right: 24px;
+.el-button.ai-assistant-launcher {
+  position: absolute;
+  left: 50%;
   bottom: 24px;
   z-index: 20;
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 50%;
-  color: var(--aircas-color-text-primary);
-  background: color-mix(in srgb, var(--aircas-color-accent-cyan) 60%, transparent);
-  box-shadow: 0 8px 20px var(--aircas-color-divider);
-  cursor: pointer;
-}
-
-.ai-assistant-launcher:hover,
-.ai-assistant-launcher:focus-visible {
-  border-color: var(--aircas-color-accent-cyan);
-  color: var(--aircas-color-accent-cyan);
-  outline: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  transform: translateX(-50%);
 }
 
 .ai-assistant-launcher svg,
@@ -170,6 +161,11 @@ watch(messages, () => {
   stroke-width: 1.6;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+
+.ai-assistant-launcher svg {
+  width: 25px;
+  height: 25px;
 }
 
 .ai-assistant-drawer:deep(.el-drawer__body) {
@@ -212,10 +208,10 @@ watch(messages, () => {
   width: 42px;
   height: 42px;
   place-items: center;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 50%;
-  color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-accent-cyan-soft);
+  color: var(--aircas-color-primary);
+  background: var(--aircas-color-effect-primary-soft);
 }
 
 .ai-assistant-drawer__intro strong {
@@ -225,7 +221,7 @@ watch(messages, () => {
 
 .ai-assistant-drawer__intro p {
   margin: 0;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -259,20 +255,20 @@ watch(messages, () => {
 }
 
 .ai-assistant-drawer__message--assistant p {
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-top-left-radius: 2px;
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-overlay-deep);
+  background: var(--aircas-color-panel-background-deep);
 }
 
-:root[theme="light"] .ai-assistant-drawer__message--assistant p {
+:root:not(.dark) .ai-assistant-drawer__message--assistant p {
   background: var(--aircas-color-card-background);
 }
 
 .ai-assistant-drawer__message--user p {
   border-top-right-radius: 2px;
-  color: var(--aircas-color-text-inverse);
-  background: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-on-accent);
+  background: var(--aircas-color-primary);
 }
 
 .ai-assistant-drawer__prompts {
@@ -286,23 +282,23 @@ watch(messages, () => {
   width: 100%;
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 6px;
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-overlay-deep);
+  background: var(--aircas-color-panel-background-deep);
   font-size: 13px;
   text-align: left;
   cursor: pointer;
 }
 
-:root[theme="light"] .ai-assistant-drawer__prompts button {
+:root:not(.dark) .ai-assistant-drawer__prompts button {
   background: var(--aircas-color-card-background);
 }
 
 .ai-assistant-drawer__prompts button:hover,
 .ai-assistant-drawer__prompts button:focus-visible {
   border-color: var(--aircas-color-border);
-  background: var(--aircas-color-hover-background);
+  background: var(--aircas-color-hover);
   outline: none;
 }
 
@@ -330,10 +326,10 @@ watch(messages, () => {
   gap: 6px;
   height: 28px;
   padding: 0 10px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 14px;
   color: var(--aircas-color-text-secondary);
-  background: var(--aircas-color-transparent);
+  background: transparent;
   font-size: 12px;
   cursor: pointer;
 }
@@ -352,14 +348,14 @@ watch(messages, () => {
   place-items: center;
   border: 0;
   border-radius: 50%;
-  color: var(--aircas-color-text-inverse);
-  background: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-on-accent);
+  background: var(--aircas-color-primary);
   cursor: pointer;
 }
 
 .ai-assistant-drawer__send:hover,
 .ai-assistant-drawer__send:focus-visible {
-  background: var(--aircas-color-button-hover-background);
+  background: var(--aircas-color-hover);
   outline: none;
 }
 

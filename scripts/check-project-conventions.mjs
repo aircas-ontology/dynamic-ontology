@@ -1,9 +1,10 @@
 import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { compile, Logger } from "sass";
 
 const SKIPPED_DIRECTORIES = new Set([".git", "html", "node_modules", "public"]);
-const AIRCAS_SOURCE_PATTERN = /\.(?:css|scss|vue)$/;
+const AIRCAS_SOURCE_PATTERN = /\.(?:css|scss|vue|ts)$/;
 const PRETTIER_FORMATTER = "esbenp.prettier-vscode";
 const PRETTIER_LANGUAGES = ["vue", "css", "scss", "javascript", "typescript", "json", "jsonc"];
 
@@ -120,10 +121,20 @@ async function checkSkills(root, errors) {
   }
 }
 
+/**
+ * @description 提取 CSS 中实际声明的 Aircas 令牌。
+ * @param {string} source 编译后 CSS 或无插值源码。
+ * @returns {Set<string>} 令牌名称。
+ */
 function declaredAircasVariables(source) {
   return new Set([...source.matchAll(/(--aircas-[\w-]+)\s*:/g)].map((match) => match[1]));
 }
 
+/**
+ * @description 编译当前主题入口，检查真实输出的令牌、主题一致性和业务引用。
+ * @param {string} root 项目目录。
+ * @param {string[]} errors 检查结果收集器。
+ */
 async function checkAircasVariables(root, errors) {
   const stylesRoot = path.join(root, "src/styles");
   if (!(await pathExists(stylesRoot))) {
@@ -131,32 +142,59 @@ async function checkAircasVariables(root, errors) {
     return;
   }
 
-  const sourceFiles = (await listFiles(path.join(root, "src"))).filter((filePath) => AIRCAS_SOURCE_PATTERN.test(filePath));
+  const entryPath = path.join(stylesRoot, "index.scss");
+  if (!(await pathExists(entryPath))) {
+    errors.push("src/styles/index.scss is required.");
+    return;
+  }
+  let css;
+  let themeSourcePaths;
+  try {
+    const compiledTheme = compile(entryPath, { logger: Logger.silent });
+    css = compiledTheme.css;
+    themeSourcePaths = new Set(compiledTheme.loadedUrls.filter((url) => url.protocol === "file:").map((url) => fileURLToPath(url)));
+  } catch (error) {
+    errors.push(`Aircas theme compilation failed: ${error.message}`);
+    return;
+  }
+  const sourceFiles = (await listFiles(path.join(root, "src"))).filter(
+    (filePath) => AIRCAS_SOURCE_PATTERN.test(filePath) && !themeSourcePaths.has(path.resolve(filePath)),
+  );
   const sources = await Promise.all(
     sourceFiles.map(async (filePath) => ({
       filePath,
       source: await readFile(filePath, "utf8"),
     })),
   );
-  const declaredVariables = new Set(sources.flatMap(({ source }) => [...declaredAircasVariables(source)]));
+  const declaredVariables = new Set([...declaredAircasVariables(css), ...sources.flatMap(({ source }) => [...declaredAircasVariables(source)])]);
+
+  sources.push({ filePath: entryPath, source: css });
 
   for (const { filePath, source } of sources) {
-    for (const match of source.matchAll(/var\(\s*(--aircas-[\w-]+)/g)) {
+    for (const match of source.matchAll(/(?:var\(\s*|["'])(--aircas-[\w-]+)(?=[\s,"')])/g)) {
       if (!declaredVariables.has(match[1])) {
         errors.push(`${relativePath(root, filePath)} uses undefined Aircas variable ${match[1]}.`);
       }
     }
   }
 
-  const darkThemePath = path.join(stylesRoot, "theme-dark.css");
-  const lightThemePath = path.join(stylesRoot, "theme-light.css");
+  const darkThemePath = path.join(stylesRoot, "themes/dark.scss");
+  const lightThemePath = path.join(stylesRoot, "themes/light.scss");
   if (!(await pathExists(darkThemePath)) || !(await pathExists(lightThemePath))) {
     errors.push("Both Aircas theme files are required.");
     return;
   }
 
-  const darkVariables = declaredAircasVariables(await readFile(darkThemePath, "utf8"));
-  const lightVariables = declaredAircasVariables(await readFile(lightThemePath, "utf8"));
+  const darkVariables = new Set();
+  const lightVariables = new Set();
+  for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const variables = declaredAircasVariables(match[2]);
+    if (match[1].includes(":root.dark")) for (const variable of variables) darkVariables.add(variable);
+    if (match[1].includes(":root:not(.dark)")) for (const variable of variables) lightVariables.add(variable);
+  }
+  if (!darkVariables.size || !lightVariables.size) {
+    errors.push("compiled Aircas themes must declare tokens under :root.dark and :root:not(.dark).");
+  }
   for (const variable of new Set([...darkVariables, ...lightVariables])) {
     if (!darkVariables.has(variable) || !lightVariables.has(variable)) {
       errors.push(`${variable} must be declared in both Aircas themes.`);

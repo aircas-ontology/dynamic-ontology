@@ -9,20 +9,15 @@ test("ontology object create dialog exposes prototype creation modes and require
   assert.match(source, /title="新建本体"/);
   assert.match(source, /手动创建/);
   assert.match(source, /导入创建/);
-  assert.match(source, /class="aircas-upload ontology-object-create-dialog__upload"/);
-  assert.match(
-    source,
-    /ontology-object-create-dialog__upload :deep\(\.el-upload-dragger\)[\s\S]*background-color: var\(--aircas-color-input-background\)[\s\S]*border: 1px dashed var\(--aircas-color-border\)/,
-  );
-  assert.match(source, /ontology-object-create-dialog__upload :deep\(\.el-upload-dragger:hover\)[\s\S]*border-color: var\(--aircas-color-border-highlight\)/);
-  assert.match(source, /ontology-object-create-dialog__upload :deep\(\.el-upload-dragger \.el-icon\)[\s\S]*color: var\(--aircas-color-title\)/);
+  assert.match(source, /class="ontology-object-create-dialog__upload"/);
+  assert.match(source, /<el-upload[\s\S]*drag/);
   assert.match(source, /大模型构建/);
   assert.match(source, /API 名称/);
   assert.match(source, /显示名称/);
   assert.match(source, /继承本体/);
   assert.match(source, /分类/);
   assert.match(source, /el-tree-select/);
-  assert.match(source, /aircas-tree-select/);
+  assert.match(source, /<el-tree-select\b/);
   assert.match(source, /check-strictly/);
   assert.doesNotMatch(source, /<el-select v-model="draft\.categoryId"/);
   assert.match(source, /submitCreate/);

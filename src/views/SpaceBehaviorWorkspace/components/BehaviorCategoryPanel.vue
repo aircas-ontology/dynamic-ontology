@@ -3,20 +3,19 @@
     <header class="behavior-category-panel__header">
       <h1 class="behavior-category-panel__title">行为分类树</h1>
     </header>
-    <el-input v-model="keyword" class="aircas-input" :maxlength="50" clearable placeholder="搜索行为分类" ariaLabel="搜索行为分类">
+    <el-input v-model="keyword" :maxlength="50" clearable placeholder="搜索行为分类" ariaLabel="搜索行为分类">
       <template #prefix
         ><el-icon><Search /></el-icon
       ></template>
     </el-input>
     <div class="behavior-category-panel__content">
       <div v-if="!treeData.length" class="behavior-category-panel__empty">
-        <el-button class="aircas-button aircas-button--tone-primary" @click="emit('create', '')">添加行为分类</el-button>
+        <el-button @click="emit('create', '')">添加行为分类</el-button>
       </div>
       <el-tree
         v-else
         v-show="hasSearchResult"
         ref="treeRef"
-        class="aircas-tree"
         :data="treeData"
         node-key="id"
         :default-expanded-keys="defaultExpandedKeys"
@@ -34,7 +33,7 @@
               <em class="behavior-category-panel__count">{{ data.count }}</em>
             </span>
             <span class="behavior-category-panel__actions" @click.stop>
-              <el-tooltip content="添加子分类" placement="top" popper-class="aircas-popper" :show-after="200">
+              <el-tooltip content="添加子分类" placement="top" :show-after="200">
                 <button
                   type="button"
                   class="behavior-category-panel__action behavior-category-panel__action--add"
@@ -44,7 +43,7 @@
                   <el-icon><Plus /></el-icon>
                 </button>
               </el-tooltip>
-              <el-tooltip v-if="!isRootCategory(data.id)" content="编辑分类" placement="top" popper-class="aircas-popper" :show-after="200">
+              <el-tooltip v-if="!isRootCategory(data.id)" content="编辑分类" placement="top" :show-after="200">
                 <button
                   type="button"
                   class="behavior-category-panel__action behavior-category-panel__action--edit"
@@ -54,7 +53,7 @@
                   <el-icon><EditPen /></el-icon>
                 </button>
               </el-tooltip>
-              <el-tooltip v-if="!isRootCategory(data.id)" content="删除分类" placement="top" popper-class="aircas-popper" :show-after="200">
+              <el-tooltip v-if="!isRootCategory(data.id)" content="删除分类" placement="top" :show-after="200">
                 <button
                   type="button"
                   class="behavior-category-panel__action behavior-category-panel__action--danger"
@@ -165,13 +164,13 @@ watch(
   overflow: hidden;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-effect-page-glow);
   flex-direction: column;
   gap: 8px;
 }
 
-:root[theme="light"] .behavior-category-panel {
+:root:not(.dark) .behavior-category-panel {
   background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 .behavior-category-panel__header {
@@ -219,8 +218,8 @@ watch(
   flex-shrink: 0;
   padding: 0 6px;
   border-radius: 10px;
-  color: var(--aircas-color-text-muted);
-  border: 1px solid var(--aircas-color-border-soft);
+  color: var(--aircas-color-text-secondary);
+  border: 1px solid var(--aircas-color-border-light);
   background: var(--aircas-color-input-background);
   font-size: 11px;
   font-style: normal;
@@ -253,20 +252,20 @@ watch(
 }
 .behavior-category-panel__action--add {
   color: var(--aircas-color-text-primary);
-  border-color: var(--aircas-color-accent-cyan);
-  background: linear-gradient(90deg, var(--aircas-color-active-background), var(--aircas-color-accent-blue-fill));
+  border-color: var(--aircas-color-primary);
+  background: linear-gradient(90deg, var(--aircas-color-active), var(--aircas-color-effect-blue-fill));
   box-shadow:
-    inset 0 0 10px var(--aircas-color-accent-cyan-fill),
-    0 0 8px var(--aircas-color-accent-cyan-soft);
+    inset 0 0 10px var(--aircas-color-effect-primary-fill),
+    0 0 8px var(--aircas-color-effect-primary-soft);
 }
 .behavior-category-panel__action--edit {
-  color: var(--aircas-color-accent-blue);
-  border-color: var(--aircas-color-accent-blue-border);
-  background: var(--aircas-color-accent-blue-soft);
+  color: var(--aircas-color-category-blue);
+  border-color: var(--aircas-color-effect-blue-border);
+  background: var(--aircas-color-effect-blue-soft);
 }
 .behavior-category-panel__action--danger {
   color: var(--aircas-color-danger);
   border-color: var(--aircas-color-danger);
-  background: var(--aircas-color-danger-background);
+  background: var(--aircas-color-effect-danger-fill);
 }
 </style>

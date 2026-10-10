@@ -2,38 +2,19 @@
   <section class="function-operator-panel">
     <div class="function-operator-panel__filters">
       <div class="function-operator-panel__filter-fields">
-        <el-input v-model="filters.keyword" class="aircas-input function-operator-panel__keyword" clearable placeholder="按函数名称搜索" />
-        <el-select
-          v-model="filters.type"
-          class="aircas-select function-operator-panel__filter"
-          popper-class="aircas-select-popper"
-          clearable
-          placeholder="函数类型"
-        >
+        <el-input v-model="filters.keyword" class="function-operator-panel__keyword" clearable placeholder="按函数名称搜索" />
+        <el-select v-model="filters.type" class="function-operator-panel__filter" clearable placeholder="函数类型">
           <el-option v-for="item in FUNCTION_OPERATOR_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
-        <el-select
-          v-model="filters.creator"
-          class="aircas-select function-operator-panel__filter"
-          popper-class="aircas-select-popper"
-          clearable
-          placeholder="创建人"
-        >
+        <el-select v-model="filters.creator" class="function-operator-panel__filter" clearable placeholder="创建人">
           <el-option v-for="item in creatorOptions" :key="item" :label="item" :value="item" />
         </el-select>
-        <el-select
-          v-model="filters.status"
-          class="aircas-select function-operator-panel__filter"
-          popper-class="aircas-select-popper"
-          clearable
-          placeholder="状态"
-        >
+        <el-select v-model="filters.status" class="function-operator-panel__filter" clearable placeholder="状态">
           <el-option v-for="item in FUNCTION_OPERATOR_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
         <el-date-picker
           v-model="updatedRange"
-          class="aircas-input function-operator-panel__date"
-          popper-class="aircas-picker"
+          class="function-operator-panel__date"
           type="daterange"
           value-format="YYYY-MM-DD"
           range-separator="至"
@@ -43,22 +24,22 @@
       </div>
 
       <div class="function-operator-panel__filter-actions">
-        <el-button class="aircas-button" type="primary" @click="openCreate">新建函数</el-button>
-        <el-button class="aircas-button" type="primary" @click="applyFilters">查询</el-button>
-        <el-button class="aircas-button" @click="resetFilters">重置</el-button>
+        <el-button type="primary" @click="openCreate">新建函数</el-button>
+        <el-button type="primary" @click="applyFilters">查询</el-button>
+        <el-button @click="resetFilters">重置</el-button>
       </div>
     </div>
 
     <div class="function-operator-panel__toolbar">
       <span class="function-operator-panel__count">共 {{ total }} 个函数算子</span>
       <div class="function-operator-panel__toolbar-actions">
-        <el-select v-model="sortValue" class="aircas-select" popper-class="aircas-select-popper" style="width: 170px" @change="loadOperators">
+        <el-select v-model="sortValue" style="width: 170px" @change="loadOperators">
           <el-option label="更新时间（倒序）" value="updatedAt-desc" />
           <el-option label="更新时间（正序）" value="updatedAt-asc" />
           <el-option label="名称（正序）" value="name-asc" />
           <el-option label="名称（倒序）" value="name-desc" />
         </el-select>
-        <el-radio-group :model-value="viewMode" class="aircas-radio-group function-operator-panel__view" ariaLabel="展示方式" @update:model-value="setViewMode">
+        <el-radio-group :model-value="viewMode" class="function-operator-panel__view" ariaLabel="展示方式" @update:model-value="setViewMode">
           <el-radio-button value="card">
             <svg class="function-operator-panel__view-icon" viewBox="0 0 24 24" aria-hidden="true">
               <rect x="3" y="3" width="8" height="8" rx="1.5" />
@@ -82,17 +63,17 @@
     <div v-if="loading" class="function-operator-panel__state">正在加载函数算子...</div>
     <div v-else-if="errorMessage" class="function-operator-panel__state function-operator-panel__state--error">
       <span>{{ errorMessage }}</span>
-      <el-button class="aircas-button" size="small" @click="loadOperators">重试</el-button>
+      <el-button size="small" @click="loadOperators">重试</el-button>
     </div>
     <el-empty v-else-if="!operators.length" class="function-operator-panel__empty" description="当前空间暂无函数算子" />
     <div v-else-if="viewMode === 'card'" class="function-operator-panel__cards">
       <article v-for="operator in operators" :key="operator.id" class="function-operator-card" @click="openDetail(operator)">
         <div class="function-operator-card__header">
           <div class="function-operator-card__name">{{ operator.name }}</div>
-          <el-tag class="aircas-tag" size="small" :type="statusTagType(operator.status)">{{ statusLabel(operator.status) }}</el-tag>
+          <el-tag size="small" :type="statusTagType(operator.status)">{{ statusLabel(operator.status) }}</el-tag>
         </div>
         <div class="function-operator-card__meta">
-          <el-tag class="aircas-tag" size="small" effect="plain">{{ typeLabel(operator) }}</el-tag>
+          <el-tag size="small" effect="plain">{{ typeLabel(operator) }}</el-tag>
           <span>{{ operator.version }}</span>
         </div>
         <p class="function-operator-card__description">{{ operator.description || "暂无说明" }}</p>
@@ -101,26 +82,26 @@
           <span>{{ operator.updatedAt }}</span>
         </div>
         <div class="function-operator-card__actions" @click.stop>
-          <el-button class="aircas-button" text size="small" @click="openTest(operator)">测试</el-button>
-          <el-button class="aircas-button" text size="small" @click="openEdit(operator)">编辑</el-button>
-          <el-button class="aircas-button" text size="small" @click="togglePublish(operator)">
+          <el-button text size="small" @click="openTest(operator)">测试</el-button>
+          <el-button text size="small" @click="openEdit(operator)">编辑</el-button>
+          <el-button text size="small" @click="togglePublish(operator)">
             {{ operator.status === "published" ? "下线" : "发布" }}
           </el-button>
-          <el-button class="aircas-button" text size="small" @click="openDeleteOperator(operator)">删除</el-button>
+          <el-button text size="small" @click="openDeleteOperator(operator)">删除</el-button>
         </div>
       </article>
     </div>
     <el-table
       v-else
       :data="operators"
-      class="aircas-table aircas-table--flat function-operator-panel__table"
+      class="aircas-table--accent-header function-operator-panel__table"
       height="100%"
       @row-click="(row) => openDetail(asOperator(row))"
     >
       <el-table-column prop="name" label="函数名称" min-width="180" show-overflow-tooltip />
       <el-table-column label="类型" width="120">
         <template #default="{ row }">
-          <el-tag class="aircas-tag" size="small" effect="plain">{{ typeLabel(asOperator(row)) }}</el-tag>
+          <el-tag size="small" effect="plain">{{ typeLabel(asOperator(row)) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="protocol" label="协议" width="90" />
@@ -128,18 +109,16 @@
       <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
-          <el-tag class="aircas-tag" size="small" :type="statusTagType(asOperator(row).status)">{{ statusLabel(asOperator(row).status) }}</el-tag>
+          <el-tag size="small" :type="statusTagType(asOperator(row).status)">{{ statusLabel(asOperator(row).status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="updatedAt" label="最后更新" width="150" />
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
-          <el-button class="aircas-button" link type="primary" @click.stop="openTest(asOperator(row))">测试</el-button>
-          <el-button class="aircas-button" link @click.stop="openEdit(asOperator(row))">编辑</el-button>
-          <el-button class="aircas-button" link @click.stop="togglePublish(asOperator(row))">{{
-            asOperator(row).status === "published" ? "下线" : "发布"
-          }}</el-button>
-          <el-button class="aircas-button" link type="danger" @click.stop="openDeleteOperator(asOperator(row))">删除</el-button>
+          <el-button link type="primary" @click.stop="openTest(asOperator(row))">测试</el-button>
+          <el-button link @click.stop="openEdit(asOperator(row))">编辑</el-button>
+          <el-button link @click.stop="togglePublish(asOperator(row))">{{ asOperator(row).status === "published" ? "下线" : "发布" }}</el-button>
+          <el-button link type="danger" @click.stop="openDeleteOperator(asOperator(row))">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -149,8 +128,7 @@
       v-if="total > 0"
       v-model:current-page="page"
       v-model:page-size="pageSize"
-      class="aircas-pagination function-operator-panel__pagination"
-      popper-class="aircas-pagination-popper"
+      class="function-operator-panel__pagination"
       layout="total, sizes, prev, pager, next"
       :total="total"
       :page-sizes="[8, 16, 32]"
@@ -175,16 +153,14 @@
       @confirm="confirmDeleteOperator"
     />
 
-    <el-dialog v-model="testVisible" class="aircas-dialog function-operator-test" title="函数算子测试" width="960px" append-to-body destroy-on-close>
+    <el-dialog v-model="testVisible" class="function-operator-test" title="函数算子测试" width="960px" append-to-body destroy-on-close>
       <p class="function-operator-panel__test-title">{{ testingOperator?.name }}</p>
       <div class="function-operator-test__body">
         <p v-if="testDetailLoading" class="function-operator-test__state" role="status"><AircasLoading>正在加载函数详情...</AircasLoading></p>
-        <el-form v-else label-position="top" class="aircas-form function-operator-test__form">
+        <el-form v-else label-position="top" class="function-operator-test__form">
           <el-form-item label="选择对象">
             <el-select
               :model-value="testSelectedOntologyId"
-              class="aircas-select"
-              popper-class="aircas-select-popper"
               filterable
               clearable
               :loading="testObjectLoading"
@@ -197,8 +173,6 @@
           <el-form-item v-for="bindingKey in testBindingKeys" :key="bindingKey" :label="`参数 ${bindingKey}`">
             <el-select
               :model-value="testPropertyBindings[bindingKey] ?? ''"
-              class="aircas-select"
-              popper-class="aircas-select-popper"
               filterable
               clearable
               :disabled="!testSelectedOntologyId"
@@ -216,17 +190,17 @@
           </el-form-item>
           <div class="function-operator-test__io">
             <el-form-item label="请求参数" class="function-operator-test__io-item">
-              <el-input v-model="testInput" class="aircas-input" type="textarea" :rows="12" placeholder="完整测试请求 JSON" />
+              <el-input v-model="testInput" type="textarea" :rows="12" placeholder="完整测试请求 JSON" />
             </el-form-item>
             <el-form-item label="输出结果" class="function-operator-test__io-item">
-              <el-input :model-value="testOutput" class="aircas-input" type="textarea" :rows="12" readonly placeholder="运行测试后展示接口响应" />
+              <el-input :model-value="testOutput" type="textarea" :rows="12" readonly placeholder="运行测试后展示接口响应" />
             </el-form-item>
           </div>
         </el-form>
       </div>
       <template #footer>
-        <el-button class="aircas-button" @click="testVisible = false">取消</el-button>
-        <el-button class="aircas-button" type="primary" :loading="testing" :disabled="testDetailLoading" @click="runTest">运行测试</el-button>
+        <el-button @click="testVisible = false">取消</el-button>
+        <el-button type="primary" :loading="testing" :disabled="testDetailLoading" @click="runTest">运行测试</el-button>
       </template>
     </el-dialog>
   </section>
@@ -379,9 +353,9 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   flex-wrap: wrap;
   gap: 8px;
   padding: 10px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
-  background: var(--aircas-color-panel-overlay);
+  background: var(--aircas-color-panel-background);
 }
 
 .function-operator-panel__filter-fields,
@@ -399,44 +373,8 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   width: 140px;
 }
 
-.function-operator-panel :deep(.function-operator-panel__date.el-date-editor) {
-  --el-input-text-color: var(--aircas-color-text-primary);
-  --el-input-bg-color: var(--aircas-color-input-background);
-  --el-input-border-color: var(--aircas-color-border);
-  --el-input-hover-border-color: var(--aircas-color-border-highlight);
-  --el-input-focus-border-color: var(--aircas-color-focus-border);
-  --el-input-placeholder-color: var(--aircas-color-text-placeholder);
-  --el-input-icon-color: var(--aircas-color-text-muted);
-  --el-fill-color-blank: var(--aircas-color-input-background);
-  --el-text-color-placeholder: var(--aircas-color-text-placeholder);
-  --el-text-color-regular: var(--aircas-color-text-primary);
-  background-color: var(--aircas-color-input-background);
-  box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
-}
-
-.function-operator-panel :deep(.function-operator-panel__date.el-date-editor:hover) {
-  box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
-}
-
-.function-operator-panel :deep(.function-operator-panel__date.el-date-editor.is-active) {
-  box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
-}
-
-.function-operator-panel :deep(.function-operator-panel__date .el-range-input) {
-  color: var(--aircas-color-text-primary);
-  background-color: var(--aircas-color-transparent);
-}
-
-.function-operator-panel :deep(.function-operator-panel__date .el-range-input::placeholder) {
-  color: var(--aircas-color-text-placeholder);
-}
-
-.function-operator-panel :deep(.function-operator-panel__date .el-range-separator) {
-  color: var(--aircas-color-text-muted);
-}
-
 .function-operator-panel :deep(.function-operator-panel__date .el-icon) {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
 }
 
 .function-operator-panel__toolbar {
@@ -462,28 +400,15 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   gap: 4px;
 }
 
-.function-operator-panel__view.aircas-radio-group :deep(.el-radio-button__inner),
-.function-operator-panel__view.aircas-radio-group :deep(.el-radio-button:first-child .el-radio-button__inner),
-.function-operator-panel__view.aircas-radio-group :deep(.el-radio-button:last-child .el-radio-button__inner) {
+.function-operator-panel__view :deep(.el-radio-button__inner),
+.function-operator-panel__view :deep(.el-radio-button:first-child .el-radio-button__inner),
+.function-operator-panel__view :deep(.el-radio-button:last-child .el-radio-button__inner) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 4px;
-  outline: none;
-  box-shadow: none;
-  background-color: var(--aircas-color-panel-background-deep);
-  color: var(--aircas-color-text-primary);
-}
-
-.function-operator-panel__view.aircas-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  border-color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-active-background);
-  color: var(--aircas-color-text-primary);
-  box-shadow: 0 0 10px var(--aircas-color-accent-cyan-soft);
 }
 
 .function-operator-panel__view-icon {
@@ -535,14 +460,14 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   gap: 8px;
   min-width: 0;
   padding: 12px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
   background: var(--aircas-color-card-background);
   cursor: pointer;
 }
 
 .function-operator-card:hover {
-  border-color: var(--aircas-color-accent-cyan);
+  border-color: var(--aircas-color-primary);
 }
 
 .function-operator-card__header,

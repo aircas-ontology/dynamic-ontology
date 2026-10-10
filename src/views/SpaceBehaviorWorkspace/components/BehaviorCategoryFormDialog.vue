@@ -1,24 +1,23 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    class="aircas-dialog"
     :title="mode === 'create' ? '添加行为分类' : '编辑行为分类'"
     width="520px"
     append-to-body
     destroy-on-close
     @close="emit('update:modelValue', false)"
   >
-    <el-form class="aircas-form" label-position="top">
+    <el-form label-position="top">
       <el-form-item v-if="mode === 'create'" label="父分类">
-        <el-input class="aircas-input" :model-value="parentLabel" disabled />
+        <el-input :model-value="parentLabel" disabled />
       </el-form-item>
       <el-form-item label="分类名称" required>
-        <el-input v-model="name" class="aircas-input" maxlength="64" placeholder="请输入分类名称" />
+        <el-input v-model="name" maxlength="64" placeholder="请输入分类名称" />
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button class="aircas-button aircas-button--tone-primary" :loading="loading" @click="submitCategoryForm">确认</el-button>
+      <el-button @click="emit('update:modelValue', false)">取消</el-button>
+      <el-button :loading="loading" @click="submitCategoryForm">确认</el-button>
     </template>
   </el-dialog>
 </template>

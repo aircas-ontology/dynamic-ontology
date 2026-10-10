@@ -61,7 +61,7 @@ test("object card and list export confirms before calling the ontology export ap
   assert.match(dialogSource, /INSTANCE：含实例数据/);
   assert.match(dialogSource, /ref<OntologyExportType>\("INSTANCE"\)/);
   assert.match(dialogSource, /exportType\.value = "INSTANCE"/);
-  assert.match(dialogSource, /class="aircas-radio-group ontology-object-export-dialog__export-type"/);
+  assert.match(dialogSource, /class="ontology-object-export-dialog__export-type"/);
   assert.match(dialogSource, /value="SCHEMA"/);
   assert.match(dialogSource, /value="INSTANCE"/);
   assert.match(dialogSource, /emit\('confirm', exportType\)/);

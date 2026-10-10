@@ -1,23 +1,23 @@
 <template>
-  <el-dialog v-model="visible" class="aircas-dialog" title="导出本体" width="min(440px, 94vw)" append-to-body destroy-on-close>
+  <el-dialog v-model="visible" title="导出本体" width="min(440px, 94vw)" append-to-body destroy-on-close>
     <p>导出「{{ objectName }}」。</p>
     <ul class="ontology-object-export-dialog__export-types">
       <li>可仅导出结构数据也可导出结构+实例数据</li>
     </ul>
     <el-radio-group
       :model-value="exportType"
-      class="aircas-radio-group ontology-object-export-dialog__export-type"
+      class="ontology-object-export-dialog__export-type"
       :disabled="submitting"
       ariaLabel="导出类型"
       @update:model-value="setOntologyExportType"
     >
-      <el-radio class="aircas-radio" value="SCHEMA">仅结构</el-radio>
-      <el-radio class="aircas-radio" value="INSTANCE">含实例数据</el-radio>
+      <el-radio value="SCHEMA">仅结构</el-radio>
+      <el-radio value="INSTANCE">含实例数据</el-radio>
     </el-radio-group>
     <p v-if="error" class="ontology-object-export-dialog__error" role="alert">{{ error }}</p>
     <template #footer>
-      <el-button class="aircas-button" :disabled="submitting" @click="visible = false">取消</el-button>
-      <el-button class="aircas-button" type="primary" :loading="submitting" @click="emit('confirm', exportType)">导出</el-button>
+      <el-button :disabled="submitting" @click="visible = false">取消</el-button>
+      <el-button type="primary" :loading="submitting" @click="emit('confirm', exportType)">导出</el-button>
     </template>
   </el-dialog>
 </template>

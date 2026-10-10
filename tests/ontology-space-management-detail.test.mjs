@@ -107,10 +107,10 @@ test("workspace type tabs keep prototype labels including function operator", ()
   assert.match(source, /函数算子/);
   assert.match(source, /行为调度/);
   assert.match(source, /workspace-type-tabs/);
-  assert.match(source, /background: linear-gradient\(135deg, var\(--aircas-color-overlay\), var\(--aircas-color-overlay-deep\)\)/);
+  assert.match(source, /background: linear-gradient\(135deg, var\(--aircas-color-panel-background\), var\(--aircas-color-panel-background-deep\)\)/);
   assert.match(
     source,
-    /:root\[theme="light"\] \.workspace-type-tabs[\s\S]*linear-gradient\(135deg, var\(--aircas-color-card-background\), var\(--aircas-color-panel-background-deep\)\)/,
+    /:root:not\(\.dark\) \.workspace-type-tabs[\s\S]*linear-gradient\(135deg, var\(--aircas-color-card-background\), var\(--aircas-color-panel-background-deep\)\)/,
   );
-  assert.match(source, /box-shadow: inset 0 0 20px var\(--aircas-color-page-glow\)/);
+  assert.match(source, /box-shadow: inset 0 0 20px var\(--aircas-color-effect-page-glow\)/);
 });

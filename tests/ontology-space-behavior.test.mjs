@@ -71,10 +71,10 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
 
   assert.match(workspaceSource, /grid-template-columns:\s*360px minmax\(0, 1fr\)/);
   assert.match(treeSource, /行为分类树/);
-  assert.match(treeSource, /class="aircas-tree/);
+  assert.match(treeSource, /<el-tree\b/);
   assert.match(treeSource, /搜索行为分类/);
   assert.match(treeSource, /FolderOpened/);
-  assert.match(listSource, /aircas-table aircas-table--flat/);
+  assert.match(listSource, /aircas-table--accent-header/);
   assert.match(listSource, /stripe/);
   assert.match(listSource, /label="行为名称"/);
   assert.match(listSource, /label="函数算子"/);
@@ -83,8 +83,8 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(listSource, /label="更新时间"/);
   assert.match(listSource, /新建行为/);
   assert.match(listSource, /placeholder="行为状态"/);
-  assert.match(listSource, /aircas-pagination/);
-  assert.match(listSource, /aircas-dropdown/);
+  assert.match(listSource, /<el-pagination\b/);
+  assert.match(listSource, /<el-dropdown\b/);
   assert.match(listSource, /状态管理/);
   assert.match(listSource, /command="delete"/);
 });
@@ -119,7 +119,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /min\(1120px, 94vw\)/);
   assert.doesNotMatch(formSource, /behavior-form-dialog__nav/);
 
-  assert.match(drawerSource, /aircas-drawer/);
+  assert.match(drawerSource, /<el-drawer\b/);
   assert.match(drawerSource, /size="680px"/);
   assert.match(drawerSource, /行为 ID/);
   assert.match(drawerSource, /执行范围/);

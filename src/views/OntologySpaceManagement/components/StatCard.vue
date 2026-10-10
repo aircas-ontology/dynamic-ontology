@@ -1,6 +1,6 @@
 <template>
   <el-card
-    class="aircas-card stat-card"
+    class="stat-card"
     shadow="never"
     :class="{ 'stat-card--object': stat.id === 'object', 'stat-card--behavior': stat.id === 'behavior', 'stat-card--relation': stat.id === 'relation' }"
     body-class="stat-card__body"
@@ -23,34 +23,34 @@ defineProps<{ stat: OntologySpaceSummary }>();
 const icons = { Box, Connection, Link, Share };
 </script>
 <style scoped lang="scss">
-.stat-card.aircas-card {
-  --stat-accent: var(--aircas-color-accent-cyan);
-  --stat-fill: var(--aircas-color-accent-cyan-fill);
+.stat-card {
+  --stat-accent: var(--aircas-color-primary);
+  --stat-fill: var(--aircas-color-effect-primary-fill);
   min-width: 0;
   height: 100%;
   min-height: 150px;
   border-radius: 8px;
-  background: linear-gradient(160deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 28px var(--aircas-color-page-glow);
+  background: linear-gradient(160deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 28px var(--aircas-color-effect-page-glow);
 }
 
-:root[theme="light"] .stat-card.aircas-card {
+:root:not(.dark) .stat-card {
   background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
-.stat-card.aircas-card.stat-card--object {
-  --stat-accent: var(--aircas-color-accent-green);
-  --stat-fill: var(--aircas-color-accent-green-fill);
+.stat-card.stat-card--object {
+  --stat-accent: var(--aircas-color-success);
+  --stat-fill: var(--aircas-color-effect-success-fill);
 }
 
-.stat-card.aircas-card.stat-card--behavior {
-  --stat-accent: var(--aircas-color-accent-blue);
-  --stat-fill: var(--aircas-color-accent-blue-fill);
+.stat-card.stat-card--behavior {
+  --stat-accent: var(--aircas-color-category-blue);
+  --stat-fill: var(--aircas-color-effect-blue-fill);
 }
 
-.stat-card.aircas-card.stat-card--relation {
-  --stat-accent: var(--aircas-color-accent-purple);
-  --stat-fill: var(--aircas-color-accent-purple-fill);
+.stat-card.stat-card--relation {
+  --stat-accent: var(--aircas-color-category-purple);
+  --stat-fill: var(--aircas-color-effect-purple-fill);
 }
 
 :deep(.stat-card__body) {
@@ -94,7 +94,7 @@ strong {
 
 .stat-card__caption {
   font-size: 12px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
 }
 
 .stat-card__line {

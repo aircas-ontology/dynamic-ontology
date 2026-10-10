@@ -1,7 +1,6 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    class="aircas-dialog"
     title="本体行为状态管理"
     width="720px"
     append-to-body
@@ -12,28 +11,20 @@
     <template v-if="behavior">
       <header class="behavior-status-dialog__header">
         <strong>{{ behavior.displayName }}</strong>
-        <el-tag class="aircas-tag" size="small" :type="statusTagType(behavior.status)">{{ SPACE_BEHAVIOR_STATUS_LABELS[behavior.status] }}</el-tag>
+        <el-tag size="small" :type="statusTagType(behavior.status)">{{ SPACE_BEHAVIOR_STATUS_LABELS[behavior.status] }}</el-tag>
         <span class="behavior-status-dialog__version">{{ behavior.version }}</span>
       </header>
       <p class="behavior-status-dialog__hint">仅管理已保存配置的状态，不修改行为 ID、参数和引用；当前为 Mockup 生命周期，不执行真实调度控制或生产审批。</p>
 
       <template v-if="step === 'form'">
-        <el-form class="aircas-form" label-position="top">
+        <el-form label-position="top">
           <el-form-item label="目标操作">
-            <el-select v-model="operation" class="aircas-select" popper-class="aircas-select-popper" style="width: 100%">
+            <el-select v-model="operation" style="width: 100%">
               <el-option v-for="item in operationOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
           <el-form-item label="操作原因" required>
-            <el-input
-              v-model="reason"
-              class="aircas-input"
-              type="textarea"
-              :rows="3"
-              maxlength="2400"
-              show-word-limit
-              placeholder="说明发布、停用或转草稿的原因"
-            />
+            <el-input v-model="reason" type="textarea" :rows="3" maxlength="2400" show-word-limit placeholder="说明发布、停用或转草稿的原因" />
           </el-form-item>
         </el-form>
 
@@ -62,14 +53,14 @@
 
     <template #footer>
       <template v-if="step === 'form'">
-        <el-button class="aircas-button aircas-button--tone-ghost" :loading="checking" @click="refreshReferenceCheck">重新检查</el-button>
-        <el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">关闭</el-button>
-        <el-button class="aircas-button aircas-button--tone-primary" :disabled="!checkResult.passed" @click="openConfirmStep">下一步：确认变更</el-button>
+        <el-button :loading="checking" @click="refreshReferenceCheck">重新检查</el-button>
+        <el-button @click="emit('update:modelValue', false)">关闭</el-button>
+        <el-button :disabled="!checkResult.passed" @click="openConfirmStep">下一步：确认变更</el-button>
       </template>
       <template v-else>
-        <el-button class="aircas-button aircas-button--tone-ghost" @click="step = 'form'">上一步</el-button>
-        <el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">关闭</el-button>
-        <el-button class="aircas-button aircas-button--tone-primary" :loading="loading" @click="submitStatusChange">确认变更</el-button>
+        <el-button @click="step = 'form'">上一步</el-button>
+        <el-button @click="emit('update:modelValue', false)">关闭</el-button>
+        <el-button :loading="loading" @click="submitStatusChange">确认变更</el-button>
       </template>
     </template>
   </el-dialog>
@@ -173,12 +164,12 @@ watch(
   color: var(--aircas-color-text-primary);
 }
 .behavior-status-dialog__version {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 .behavior-status-dialog__hint {
   margin: 0 0 16px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   line-height: 1.6;
 }
