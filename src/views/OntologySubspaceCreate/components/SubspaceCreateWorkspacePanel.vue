@@ -6,7 +6,7 @@
       <div class="subspace-create-workspace__header-actions">
         <el-button v-if="currentStepIndex > 0" class="aircas-button" @click="emit('previous')">上一步</el-button>
         <el-button v-if="currentStepIndex < flowSteps.length - 1" class="aircas-button" type="primary" @click="emit('next')">下一步</el-button>
-        <el-button v-else class="aircas-button" type="primary" @click="emit('create')">创建</el-button>
+        <el-button v-else class="aircas-button" type="primary" :loading="creating" @click="emit('create')">创建</el-button>
       </div>
     </header>
 
@@ -53,21 +53,37 @@
           </div>
         </article>
       </div>
-      <el-table
-        v-else-if="currentStepIndex === 1 && instanceRows.length"
-        ref="instanceTableRef"
-        class="aircas-table aircas-table--flat subspace-create-workspace__table"
-        :data="instanceRows"
-        row-key="id"
-        stripe
-        height="100%"
-        @selection-change="syncSelectedInstanceRows"
-      >
-        <el-table-column type="selection" width="48" reserve-selection />
-        <el-table-column prop="name" label="实例名称" min-width="240" show-overflow-tooltip />
-        <el-table-column prop="objectLabel" label="所属对象" min-width="200" show-overflow-tooltip />
-      </el-table>
-      <div v-else-if="currentStepIndex === 2 && propertyGroups.length" class="subspace-create-workspace__properties">
+      <div v-else-if="currentStepIndex === 1 && instanceLoadStatus === 'loading'" class="subspace-create-workspace__state" role="status">正在加载对象实例…</div>
+      <div v-else-if="currentStepIndex === 1 && instanceLoadStatus === 'error' && !instanceGroups.length" class="subspace-create-workspace__state" role="alert">
+        <span>{{ instanceLoadError }}</span>
+        <el-button class="aircas-button" @click="retryInstanceLoading">重试</el-button>
+      </div>
+      <SubspaceCreateInstancePanel
+        v-else-if="currentStepIndex === 1 && instanceGroups.length"
+        :instance-groups="instanceGroups"
+        :selected-instance-ids="selectedInstanceIds"
+        @update:selected-instance-ids="emit('update:selectedInstanceIds', $event)"
+        @page-change="handleInstancePageChange"
+        @page-size-change="handleInstancePageSizeChange"
+        @retry="handleInstanceRetry"
+      />
+      <div v-if="currentStepIndex === 1 && propertyLoadStatus === 'error'" class="subspace-create-workspace__state" role="alert">
+        <span>{{ propertyLoadError }}</span>
+        <el-button class="aircas-button" @click="emit('property-retry')">重试属性查询</el-button>
+      </div>
+      <div v-else-if="currentStepIndex === 2 && propertyLoadStatus === 'loading'" class="subspace-create-workspace__state" role="status">正在加载对象属性…</div>
+      <div v-else-if="currentStepIndex === 2 && propertyLoadStatus === 'error'" class="subspace-create-workspace__state" role="alert">
+        <span>{{ propertyLoadError }}</span>
+        <el-button class="aircas-button" @click="emit('property-retry')">重试</el-button>
+      </div>
+      <div v-else-if="currentStepIndex === 2 && relationLoadStatus === 'loading'" class="subspace-create-workspace__state" role="status">
+        正在加载父空间关系…
+      </div>
+      <div v-else-if="currentStepIndex === 2 && relationLoadStatus === 'error'" class="subspace-create-workspace__state" role="alert">
+        <span>{{ relationLoadError }}</span>
+        <el-button class="aircas-button" @click="emit('relation-retry')">重试关系查询</el-button>
+      </div>
+      <div v-else-if="currentStepIndex === 2 && propertyGroups.some((group) => group.properties.length)" class="subspace-create-workspace__properties">
         <section v-for="group in propertyGroups" :key="group.objectId" class="subspace-create-workspace__property-group">
           <header class="subspace-create-workspace__property-group-header">
             <div>
@@ -174,9 +190,11 @@ import type { CheckboxValueType, TableInstance } from "element-plus";
 import type { SubspaceCreateObjectProperty, SubspaceCreateObjectPropertyGroup } from "../utils/mapSubspaceCreateObjectProperty";
 import { resolveSubspaceCreatePropertyFilterKind } from "../utils/resolveSubspaceCreatePropertyFilterKind";
 import type { SubspaceCreatePropertyFilterKind } from "../utils/resolveSubspaceCreatePropertyFilterKind";
-import type { SubspaceCreateSelectedInstance } from "../utils/mapSubspaceCreateSelectedInstance";
+import SubspaceCreateInstancePanel from "./SubspaceCreateInstancePanel.vue";
+import type { SubspaceCreateInstanceGroup } from "../utils/mapSubspaceCreateSelectedInstance";
 import type { SubspaceCreateSelectedRelation } from "../utils/mapSubspaceCreateSelectedRelation";
 import type { SubspaceCreateSelectedObject } from "../utils/mapSubspaceCreateSelectedObject";
+import type { SubspaceCreatePropertyFilterState } from "../utils/mapSubspaceCreateRequest";
 
 const props = defineProps<{
   spaceName: string;
@@ -185,12 +203,20 @@ const props = defineProps<{
   selectedCount: number;
   selectedObjects: SubspaceCreateSelectedObject[];
   currentStepIndex: number;
-  instanceRows: SubspaceCreateSelectedInstance[];
+  instanceGroups: SubspaceCreateInstanceGroup[];
+  instanceLoadStatus: "idle" | "loading" | "success" | "empty" | "error";
+  instanceLoadError: string;
   selectedInstanceIds: string[];
   propertyGroups: SubspaceCreateObjectPropertyGroup[];
+  propertyLoadStatus: "idle" | "loading" | "success" | "empty" | "error";
+  propertyLoadError: string;
   selectedPropertyIds: string[];
+  propertyFilters: Record<string, SubspaceCreatePropertyFilterState>;
   relationRows: SubspaceCreateSelectedRelation[];
   selectedRelationIds: string[];
+  relationLoadStatus: "idle" | "loading" | "success" | "empty" | "error";
+  relationLoadError: string;
+  creating: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -198,10 +224,16 @@ const emit = defineEmits<{
   "update:apiName": [value: string];
   "update:selectedInstanceIds": [value: string[]];
   "update:selectedRelationIds": [value: string[]];
+  "instance-page-change": [objectId: string, page: number];
+  "instance-page-size-change": [objectId: string, pageSize: number];
+  "instance-retry": [objectId: string];
   selectObjectProperties: [objectId: string];
   selectAllProperties: [];
   clearProperties: [];
   toggleProperty: [propertyId: string, checked: boolean];
+  "property-retry": [];
+  "relation-retry": [];
+  "update:propertyFilters": [value: Record<string, SubspaceCreatePropertyFilterState>];
   back: [];
   previous: [];
   next: [];
@@ -209,14 +241,27 @@ const emit = defineEmits<{
 }>();
 
 const flowSteps = ["选择对象", "选择实例", "配置属性", "配置关系"];
-const instanceTableRef = ref<TableInstance>();
 const relationTableRef = ref<TableInstance>();
-let isApplyingInstanceSelection = false;
 let isApplyingRelationSelection = false;
 const stepPanelCopy = computed(() => resolveStepPanelCopy());
-const propertyFilters = ref<
-  Record<string, { text: string; number: number | null; dateRange: [string, string] | undefined; booleanValue: boolean | undefined }>
->({});
+const propertyFilters = ref<Record<string, SubspaceCreatePropertyFilterState>>({ ...props.propertyFilters });
+
+watch(propertyFilters, (filters) => emit("update:propertyFilters", filters), { deep: true });
+
+/** @description 转发对象实例分页变化。 @param objectId 对象标识。 @param page 目标页码。 */
+function handleInstancePageChange(objectId: string, page: number) {
+  emit("instance-page-change", objectId, page);
+}
+
+/** @description 转发对象实例每页条数变化。 @param objectId 对象标识。 @param pageSize 每页条数。 */
+function handleInstancePageSizeChange(objectId: string, pageSize: number) {
+  emit("instance-page-size-change", objectId, pageSize);
+}
+
+/** @description 转发对象实例重试操作。 @param objectId 对象标识。 */
+function handleInstanceRetry(objectId: string) {
+  emit("instance-retry", objectId);
+}
 
 /**
  * @description 按当前进行步骤计算节点状态：已完成、进行中或等待。
@@ -281,6 +326,12 @@ function resolveEmptyDescription() {
     return "暂无对象属性";
   }
   return "暂无对象关系";
+}
+
+/** @description 重试当前对象的实例查询。 */
+function retryInstanceLoading() {
+  const firstGroup = props.instanceGroups[0];
+  if (firstGroup) emit("instance-retry", firstGroup.objectId);
 }
 
 /**
@@ -460,55 +511,6 @@ function updatePropertyFilterBoolean(row: unknown, value: unknown) {
   const current = ensurePropertyFilter(propertyId);
   propertyFilters.value = { ...propertyFilters.value, [propertyId]: { ...current, booleanValue: typeof value === "boolean" ? value : undefined } };
 }
-
-/**
- * @description 把父级已选实例 id 同步到表格勾选状态。
- */
-function applyInstanceTableSelection() {
-  const table = instanceTableRef.value;
-  if (!table || props.currentStepIndex !== 1) {
-    return;
-  }
-  const selectedIds = new Set(props.selectedInstanceIds);
-  isApplyingInstanceSelection = true;
-  props.instanceRows.forEach((row) => {
-    table.toggleRowSelection(row, selectedIds.has(row.id));
-  });
-  void nextTick(() => {
-    isApplyingInstanceSelection = false;
-  });
-}
-
-/**
- * @description 将表格勾选行同步为父级已选实例 id。
- * @param rows 当前勾选的实例行。
- */
-function syncSelectedInstanceRows(rows: unknown[]) {
-  if (isApplyingInstanceSelection) {
-    return;
-  }
-  emit(
-    "update:selectedInstanceIds",
-    rows.flatMap((row) => {
-      if (row && typeof row === "object" && "id" in row && typeof row.id === "string") {
-        return [row.id];
-      }
-      return [];
-    }),
-  );
-}
-
-watch(
-  () => [props.currentStepIndex, props.instanceRows, props.selectedInstanceIds] as const,
-  async () => {
-    if (props.currentStepIndex !== 1) {
-      return;
-    }
-    await nextTick();
-    applyInstanceTableSelection();
-  },
-  { immediate: true },
-);
 
 /**
  * @description 把父级已选关系 id 同步到表格勾选状态。

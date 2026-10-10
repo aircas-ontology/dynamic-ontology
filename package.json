@@ -20,6 +20,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@antv/layout": "^0.3.25",
     "@antv/x6": "^3.1.7",
     "@element-plus/icons-vue": "^2.3.2",
     "@microsoft/fetch-event-source": "^2.0.1",
