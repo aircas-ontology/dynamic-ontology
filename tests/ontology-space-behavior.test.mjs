@@ -189,6 +189,10 @@ test("space behavior mock filters by category and supports local create", () => 
   const data = querySpaceBehaviorWorkspaceMock("behavior-test-space");
   assert.ok(data.categoryTree.length > 0);
   assert.ok(data.behaviors.length > 0);
+  assert.equal(data.categoryTree[0]?.label, "基础操作");
+  assert.equal(data.behaviors[0]?.displayName, "新增对象行为");
+  assert.equal(data.behaviors[0]?.executionPeriod, "—");
+  assert.doesNotMatch(JSON.stringify(data), /æ|å|ç|Â|â/);
   const childId = data.categoryTree[0]?.children[0]?.id ?? "";
   assert.ok(childId);
   const filtered = filterSpaceBehaviorsByCategory(data.behaviors, data.categoryTree, childId);

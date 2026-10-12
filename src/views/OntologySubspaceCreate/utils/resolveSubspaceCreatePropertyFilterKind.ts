@@ -1,4 +1,4 @@
-export type SubspaceCreatePropertyFilterKind = "text" | "number" | "dateRange" | "dateTimeRange" | "boolean";
+export type SubspaceCreatePropertyFilterKind = "text" | "numberRange" | "dateRange" | "dateTimeRange" | "boolean";
 
 /**
  * @description 按属性数据类型选择筛选条件控件。
@@ -13,8 +13,8 @@ export function resolveSubspaceCreatePropertyFilterKind(dataType: string): Subsp
   if (normalized === "date") {
     return "dateRange";
   }
-  if (["double", "float", "integer", "int", "long", "number", "decimal"].includes(normalized)) {
-    return "number";
+  if (["double", "float", "integer", "int", "long", "number", "decimal", "short", "byte"].includes(normalized)) {
+    return "numberRange";
   }
   if (normalized === "boolean" || normalized === "bool") {
     return "boolean";

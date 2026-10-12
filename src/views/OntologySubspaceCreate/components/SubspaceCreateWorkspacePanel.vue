@@ -1,21 +1,21 @@
 <template>
   <main class="subspace-create-workspace" aria-label="子空间创建内容">
     <header class="subspace-create-workspace__header subspace-create-workspace__panel">
-      <el-button @click="emit('back')">返回</el-button>
+      <el-button class="aircas-button" @click="emit('back')">返回</el-button>
       <span>父空间：{{ parentSpaceName }}</span>
       <div class="subspace-create-workspace__header-actions">
-        <el-button v-if="currentStepIndex > 0" @click="emit('previous')">上一步</el-button>
-        <el-button v-if="currentStepIndex < flowSteps.length - 1" type="primary" @click="emit('next')">下一步</el-button>
-        <el-button v-else type="primary" @click="emit('create')">创建</el-button>
+        <el-button v-if="currentStepIndex > 0" class="aircas-button" @click="emit('previous')">上一步</el-button>
+        <el-button v-if="currentStepIndex < flowSteps.length - 1" class="aircas-button" type="primary" @click="emit('next')">下一步</el-button>
+        <el-button v-else class="aircas-button" type="primary" :loading="creating" @click="emit('create')">创建</el-button>
       </div>
     </header>
 
-    <el-form class="subspace-create-workspace__form" label-position="left" label-width="88px">
+    <el-form class="aircas-form subspace-create-workspace__form" label-position="left" label-width="88px">
       <el-form-item label="子空间名称">
-        <el-input :model-value="spaceName" ariaLabel="子空间名称" @update:model-value="emit('update:spaceName', String($event ?? ''))" />
+        <el-input :model-value="spaceName" class="aircas-input" ariaLabel="子空间名称" @update:model-value="emit('update:spaceName', String($event ?? ''))" />
       </el-form-item>
       <el-form-item label="API 名称">
-        <el-input :model-value="apiName" ariaLabel="API 名称" @update:model-value="emit('update:apiName', String($event ?? ''))" />
+        <el-input :model-value="apiName" class="aircas-input" ariaLabel="API 名称" @update:model-value="emit('update:apiName', String($event ?? ''))" />
       </el-form-item>
     </el-form>
 
@@ -39,8 +39,8 @@
           <p>{{ stepPanelCopy.description }}</p>
         </div>
         <div v-if="currentStepIndex === 2" class="subspace-create-workspace__property-actions">
-          <el-button size="small" @click="emit('selectAllProperties')">全选属性</el-button>
-          <el-button size="small" @click="emit('clearProperties')">取消全选</el-button>
+          <el-button class="aircas-button" size="small" @click="emit('selectAllProperties')">全选属性</el-button>
+          <el-button class="aircas-button" size="small" @click="emit('clearProperties')">取消全选</el-button>
         </div>
         <strong v-else>{{ stepPanelCopy.summary }}</strong>
       </header>
@@ -53,33 +53,54 @@
           </div>
         </article>
       </div>
-      <el-table
-        v-else-if="currentStepIndex === 1 && instanceRows.length"
-        ref="instanceTableRef"
-        class="aircas-table--accent-header subspace-create-workspace__table"
-        :data="instanceRows"
-        row-key="id"
-        stripe
-        height="100%"
-        @selection-change="syncSelectedInstanceRows"
-      >
-        <el-table-column type="selection" width="48" reserve-selection />
-        <el-table-column prop="name" label="实例名称" min-width="240" show-overflow-tooltip />
-        <el-table-column prop="objectLabel" label="所属对象" min-width="200" show-overflow-tooltip />
-      </el-table>
-      <div v-else-if="currentStepIndex === 2 && propertyGroups.length" class="subspace-create-workspace__properties">
+      <div v-else-if="currentStepIndex === 1 && instanceLoadStatus === 'loading'" class="subspace-create-workspace__state" role="status">正在加载对象实例…</div>
+      <div v-else-if="currentStepIndex === 1 && instanceLoadStatus === 'error' && !instanceGroups.length" class="subspace-create-workspace__state" role="alert">
+        <span>{{ instanceLoadError }}</span>
+        <el-button class="aircas-button" @click="retryInstanceLoading">重试</el-button>
+      </div>
+      <SubspaceCreateInstancePanel
+        v-else-if="currentStepIndex === 1 && instanceGroups.length"
+        :instance-groups="instanceGroups"
+        :selected-instance-ids="selectedInstanceIds"
+        @update:selected-instance-ids="emit('update:selectedInstanceIds', $event)"
+        @page-change="handleInstancePageChange"
+        @page-size-change="handleInstancePageSizeChange"
+        @retry="handleInstanceRetry"
+      />
+      <div v-if="currentStepIndex === 1 && propertyLoadStatus === 'error'" class="subspace-create-workspace__state" role="alert">
+        <span>{{ propertyLoadError }}</span>
+        <el-button class="aircas-button" @click="emit('property-retry')">重试属性查询</el-button>
+      </div>
+      <div v-else-if="currentStepIndex === 2 && propertyLoadStatus === 'loading'" class="subspace-create-workspace__state" role="status">正在加载对象属性…</div>
+      <div v-else-if="currentStepIndex === 2 && propertyLoadStatus === 'error'" class="subspace-create-workspace__state" role="alert">
+        <span>{{ propertyLoadError }}</span>
+        <el-button class="aircas-button" @click="emit('property-retry')">重试</el-button>
+      </div>
+      <div v-else-if="currentStepIndex === 2 && relationLoadStatus === 'loading'" class="subspace-create-workspace__state" role="status">
+        正在加载父空间关系…
+      </div>
+      <div v-else-if="currentStepIndex === 2 && relationLoadStatus === 'error'" class="subspace-create-workspace__state" role="alert">
+        <span>{{ relationLoadError }}</span>
+        <el-button class="aircas-button" @click="emit('relation-retry')">重试关系查询</el-button>
+      </div>
+      <div v-else-if="currentStepIndex === 2 && propertyGroups.some((group) => group.properties.length)" class="subspace-create-workspace__properties">
         <section v-for="group in propertyGroups" :key="group.objectId" class="subspace-create-workspace__property-group">
           <header class="subspace-create-workspace__property-group-header">
             <div>
               <strong>{{ group.objectLabel }}</strong>
               <span>{{ countSelectedObjectProperties(group.objectId) }} / {{ group.properties.length }} 个属性</span>
             </div>
-            <el-button size="small" @click="selectObjectProperties(group.objectId)">全选</el-button>
+            <el-button class="aircas-button" size="small" @click="selectObjectProperties(group.objectId)">全选</el-button>
           </header>
-          <el-table class="aircas-table--accent-header subspace-create-workspace__property-table" :data="group.properties" row-key="id" stripe>
+          <el-table class="aircas-table aircas-table--flat subspace-create-workspace__property-table" :data="group.properties" row-key="id" stripe>
             <el-table-column label="选择" width="72">
               <template v-slot:default="{ row }">
-                <el-checkbox :model-value="isObjectPropertySelected(row)" ariaLabel="选择属性" @change="toggleObjectProperty(row, $event)" />
+                <el-checkbox
+                  class="aircas-checkbox"
+                  :model-value="isObjectPropertySelected(row)"
+                  ariaLabel="选择属性"
+                  @change="toggleObjectProperty(row, $event)"
+                />
               </template>
             </el-table-column>
             <el-table-column label="属性名称" min-width="180">
@@ -92,7 +113,7 @@
             </el-table-column>
             <el-table-column label="数据类型" width="140">
               <template v-slot:default="{ row }">
-                <el-tag size="small">{{ readObjectProperty(row).dataType }}</el-tag>
+                <el-tag class="aircas-tag" size="small">{{ readObjectProperty(row).dataType }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column label="筛选条件" min-width="280">
@@ -100,7 +121,8 @@
                 <el-date-picker
                   v-if="resolvePropertyFilterKind(row) === 'dateRange' || resolvePropertyFilterKind(row) === 'dateTimeRange'"
                   :model-value="readPropertyDateRange(row)"
-                  class="subspace-create-workspace__property-filter"
+                  class="aircas-input subspace-create-workspace__property-filter"
+                  popper-class="aircas-picker"
                   :type="resolvePropertyFilterKind(row) === 'dateTimeRange' ? 'datetimerange' : 'daterange'"
                   :value-format="resolvePropertyFilterKind(row) === 'dateTimeRange' ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD'"
                   range-separator="至"
@@ -108,17 +130,30 @@
                   end-placeholder="结束时间"
                   @update:model-value="updatePropertyDateRange(row, $event)"
                 />
-                <el-input-number
-                  v-else-if="resolvePropertyFilterKind(row) === 'number'"
-                  :model-value="readPropertyFilterNumber(row)"
-                  class="subspace-create-workspace__property-filter"
-                  controls-position="right"
-                  @update:model-value="updatePropertyFilterNumber(row, $event)"
-                />
+                <div v-else-if="resolvePropertyFilterKind(row) === 'numberRange'" class="subspace-create-workspace__number-range">
+                  <el-input-number
+                    :model-value="readPropertyFilterNumberRangeValue(row, 0)"
+                    class="subspace-create-workspace__property-filter"
+                    controls-position="right"
+                    placeholder="最小值"
+                    ariaLabel="最小值"
+                    @update:model-value="updatePropertyFilterNumberRange(row, 0, $event)"
+                  />
+                  <span>至</span>
+                  <el-input-number
+                    :model-value="readPropertyFilterNumberRangeValue(row, 1)"
+                    class="subspace-create-workspace__property-filter"
+                    controls-position="right"
+                    placeholder="最大值"
+                    ariaLabel="最大值"
+                    @update:model-value="updatePropertyFilterNumberRange(row, 1, $event)"
+                  />
+                </div>
                 <el-select
                   v-else-if="resolvePropertyFilterKind(row) === 'boolean'"
                   :model-value="readPropertyFilterBoolean(row)"
-                  class="subspace-create-workspace__property-filter"
+                  class="aircas-select subspace-create-workspace__property-filter"
+                  popper-class="aircas-select-popper"
                   clearable
                   placeholder="请选择"
                   @update:model-value="updatePropertyFilterBoolean(row, $event)"
@@ -129,7 +164,7 @@
                 <el-input
                   v-else
                   :model-value="readPropertyFilterText(row)"
-                  class="subspace-create-workspace__property-filter"
+                  class="aircas-input subspace-create-workspace__property-filter"
                   clearable
                   placeholder="请输入筛选内容"
                   ariaLabel="筛选条件"
@@ -143,7 +178,7 @@
       <el-table
         v-else-if="currentStepIndex === 3 && relationRows.length"
         ref="relationTableRef"
-        class="aircas-table--accent-header subspace-create-workspace__table"
+        class="aircas-table aircas-table--flat subspace-create-workspace__table"
         :data="relationRows"
         row-key="id"
         stripe
@@ -155,7 +190,7 @@
         <el-table-column prop="sourceLabel" label="源对象" min-width="220" show-overflow-tooltip />
         <el-table-column prop="targetLabel" label="目标对象" min-width="220" show-overflow-tooltip />
       </el-table>
-      <el-empty v-else :description="resolveEmptyDescription()" />
+      <el-empty v-else-if="shouldShowStepEmpty()" class="aircas-empty" :description="resolveEmptyDescription()" />
     </section>
   </main>
 </template>
@@ -167,9 +202,11 @@ import type { CheckboxValueType, TableInstance } from "element-plus";
 import type { SubspaceCreateObjectProperty, SubspaceCreateObjectPropertyGroup } from "../utils/mapSubspaceCreateObjectProperty";
 import { resolveSubspaceCreatePropertyFilterKind } from "../utils/resolveSubspaceCreatePropertyFilterKind";
 import type { SubspaceCreatePropertyFilterKind } from "../utils/resolveSubspaceCreatePropertyFilterKind";
-import type { SubspaceCreateSelectedInstance } from "../utils/mapSubspaceCreateSelectedInstance";
+import SubspaceCreateInstancePanel from "./SubspaceCreateInstancePanel.vue";
+import type { SubspaceCreateInstanceGroup } from "../utils/mapSubspaceCreateSelectedInstance";
 import type { SubspaceCreateSelectedRelation } from "../utils/mapSubspaceCreateSelectedRelation";
 import type { SubspaceCreateSelectedObject } from "../utils/mapSubspaceCreateSelectedObject";
+import type { SubspaceCreatePropertyFilterState } from "../utils/mapSubspaceCreateRequest";
 
 const props = defineProps<{
   spaceName: string;
@@ -178,12 +215,20 @@ const props = defineProps<{
   selectedCount: number;
   selectedObjects: SubspaceCreateSelectedObject[];
   currentStepIndex: number;
-  instanceRows: SubspaceCreateSelectedInstance[];
+  instanceGroups: SubspaceCreateInstanceGroup[];
+  instanceLoadStatus: "idle" | "loading" | "success" | "empty" | "error";
+  instanceLoadError: string;
   selectedInstanceIds: string[];
   propertyGroups: SubspaceCreateObjectPropertyGroup[];
+  propertyLoadStatus: "idle" | "loading" | "success" | "empty" | "error";
+  propertyLoadError: string;
   selectedPropertyIds: string[];
+  propertyFilters: Record<string, SubspaceCreatePropertyFilterState>;
   relationRows: SubspaceCreateSelectedRelation[];
   selectedRelationIds: string[];
+  relationLoadStatus: "idle" | "loading" | "success" | "empty" | "error";
+  relationLoadError: string;
+  creating: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -191,10 +236,16 @@ const emit = defineEmits<{
   "update:apiName": [value: string];
   "update:selectedInstanceIds": [value: string[]];
   "update:selectedRelationIds": [value: string[]];
+  "instance-page-change": [objectId: string, page: number];
+  "instance-page-size-change": [objectId: string, pageSize: number];
+  "instance-retry": [objectId: string];
   selectObjectProperties: [objectId: string];
   selectAllProperties: [];
   clearProperties: [];
   toggleProperty: [propertyId: string, checked: boolean];
+  "property-retry": [];
+  "relation-retry": [];
+  "update:propertyFilters": [value: Record<string, SubspaceCreatePropertyFilterState>];
   back: [];
   previous: [];
   next: [];
@@ -202,14 +253,27 @@ const emit = defineEmits<{
 }>();
 
 const flowSteps = ["选择对象", "选择实例", "配置属性", "配置关系"];
-const instanceTableRef = ref<TableInstance>();
 const relationTableRef = ref<TableInstance>();
-let isApplyingInstanceSelection = false;
 let isApplyingRelationSelection = false;
 const stepPanelCopy = computed(() => resolveStepPanelCopy());
-const propertyFilters = ref<
-  Record<string, { text: string; number: number | null; dateRange: [string, string] | undefined; booleanValue: boolean | undefined }>
->({});
+const propertyFilters = ref<Record<string, SubspaceCreatePropertyFilterState>>({ ...props.propertyFilters });
+
+watch(propertyFilters, (filters) => emit("update:propertyFilters", filters), { deep: true });
+
+/** @description 转发对象实例分页变化。 @param objectId 对象标识。 @param page 目标页码。 */
+function handleInstancePageChange(objectId: string, page: number) {
+  emit("instance-page-change", objectId, page);
+}
+
+/** @description 转发对象实例每页条数变化。 @param objectId 对象标识。 @param pageSize 每页条数。 */
+function handleInstancePageSizeChange(objectId: string, pageSize: number) {
+  emit("instance-page-size-change", objectId, pageSize);
+}
+
+/** @description 转发对象实例重试操作。 @param objectId 对象标识。 */
+function handleInstanceRetry(objectId: string) {
+  emit("instance-retry", objectId);
+}
 
 /**
  * @description 按当前进行步骤计算节点状态：已完成、进行中或等待。
@@ -260,6 +324,29 @@ function resolveStepPanelCopy() {
 }
 
 /**
+ * @description 判断当前步骤是否应展示空状态，避免实例分组已存在时仍占满剩余高度。
+ * @returns 是否展示空状态。
+ */
+function shouldShowStepEmpty() {
+  if (props.currentStepIndex <= 0) {
+    return props.selectedObjects.length === 0;
+  }
+  if (props.currentStepIndex === 1) {
+    return props.instanceGroups.length === 0 && props.instanceLoadStatus !== "loading" && props.instanceLoadStatus !== "error";
+  }
+  if (props.currentStepIndex === 2) {
+    return (
+      !props.propertyGroups.some((group) => group.properties.length) &&
+      props.propertyLoadStatus !== "loading" &&
+      props.propertyLoadStatus !== "error" &&
+      props.relationLoadStatus !== "loading" &&
+      props.relationLoadStatus !== "error"
+    );
+  }
+  return props.relationRows.length === 0;
+}
+
+/**
  * @description 返回当前步骤没有可展示内容时的空状态说明。
  * @returns 空状态文案。
  */
@@ -274,6 +361,12 @@ function resolveEmptyDescription() {
     return "暂无对象属性";
   }
   return "暂无对象关系";
+}
+
+/** @description 重试当前对象的实例查询。 */
+function retryInstanceLoading() {
+  const firstGroup = props.instanceGroups[0];
+  if (firstGroup) emit("instance-retry", firstGroup.objectId);
 }
 
 /**
@@ -355,7 +448,13 @@ function ensurePropertyFilter(propertyId: string) {
   if (current) {
     return current;
   }
-  const created = { text: "", number: null, dateRange: undefined, booleanValue: undefined };
+  const created: SubspaceCreatePropertyFilterState = {
+    text: "",
+    number: null,
+    numberRange: [null, null],
+    dateRange: undefined,
+    booleanValue: undefined,
+  };
   propertyFilters.value = { ...propertyFilters.value, [propertyId]: created };
   return created;
 }
@@ -384,26 +483,30 @@ function updatePropertyFilterText(row: unknown, value: string) {
 }
 
 /**
- * @description 读取数值筛选内容。
+ * @description 读取数字区间某一端的筛选值。
  * @param row 表格当前行。
+ * @param index 0 为最小值，1 为最大值。
  * @returns 数值，未填写时为空。
  */
-function readPropertyFilterNumber(row: unknown) {
-  return propertyFilters.value[readObjectProperty(row).id]?.number ?? null;
+function readPropertyFilterNumberRangeValue(row: unknown, index: 0 | 1) {
+  return propertyFilters.value[readObjectProperty(row).id]?.numberRange?.[index] ?? null;
 }
 
 /**
- * @description 写入数值筛选内容。
+ * @description 写入数字区间某一端的筛选值，另一端保持原值或空。
  * @param row 表格当前行。
+ * @param index 0 为最小值，1 为最大值。
  * @param value 数字输入值。
  */
-function updatePropertyFilterNumber(row: unknown, value: number | undefined) {
+function updatePropertyFilterNumberRange(row: unknown, index: 0 | 1, value: number | undefined) {
   const propertyId = readObjectProperty(row).id;
   if (!propertyId) {
     return;
   }
   const current = ensurePropertyFilter(propertyId);
-  propertyFilters.value = { ...propertyFilters.value, [propertyId]: { ...current, number: typeof value === "number" ? value : null } };
+  const nextRange: [number | null, number | null] = [current.numberRange?.[0] ?? null, current.numberRange?.[1] ?? null];
+  nextRange[index] = typeof value === "number" ? value : null;
+  propertyFilters.value = { ...propertyFilters.value, [propertyId]: { ...current, numberRange: nextRange } };
 }
 
 /**
@@ -453,55 +556,6 @@ function updatePropertyFilterBoolean(row: unknown, value: unknown) {
   const current = ensurePropertyFilter(propertyId);
   propertyFilters.value = { ...propertyFilters.value, [propertyId]: { ...current, booleanValue: typeof value === "boolean" ? value : undefined } };
 }
-
-/**
- * @description 把父级已选实例 id 同步到表格勾选状态。
- */
-function applyInstanceTableSelection() {
-  const table = instanceTableRef.value;
-  if (!table || props.currentStepIndex !== 1) {
-    return;
-  }
-  const selectedIds = new Set(props.selectedInstanceIds);
-  isApplyingInstanceSelection = true;
-  props.instanceRows.forEach((row) => {
-    table.toggleRowSelection(row, selectedIds.has(row.id));
-  });
-  void nextTick(() => {
-    isApplyingInstanceSelection = false;
-  });
-}
-
-/**
- * @description 将表格勾选行同步为父级已选实例 id。
- * @param rows 当前勾选的实例行。
- */
-function syncSelectedInstanceRows(rows: unknown[]) {
-  if (isApplyingInstanceSelection) {
-    return;
-  }
-  emit(
-    "update:selectedInstanceIds",
-    rows.flatMap((row) => {
-      if (row && typeof row === "object" && "id" in row && typeof row.id === "string") {
-        return [row.id];
-      }
-      return [];
-    }),
-  );
-}
-
-watch(
-  () => [props.currentStepIndex, props.instanceRows, props.selectedInstanceIds] as const,
-  async () => {
-    if (props.currentStepIndex !== 1) {
-      return;
-    }
-    await nextTick();
-    applyInstanceTableSelection();
-  },
-  { immediate: true },
-);
 
 /**
  * @description 把父级已选关系 id 同步到表格勾选状态。
@@ -566,7 +620,7 @@ watch(
 }
 
 .subspace-create-workspace__panel {
-  border: 1px solid var(--aircas-color-effect-primary-border);
+  border: 1px solid var(--aircas-color-accent-cyan-border);
   border-radius: 8px;
   background: var(--aircas-color-panel-background);
 }
@@ -634,7 +688,7 @@ watch(
 }
 
 .subspace-create-workspace__steps li.is-finish {
-  color: var(--aircas-color-primary);
+  color: var(--aircas-color-title);
 }
 
 .subspace-create-workspace__steps li.is-process {
@@ -642,7 +696,7 @@ watch(
 }
 
 .subspace-create-workspace__steps li.is-wait {
-  color: var(--aircas-color-text-secondary);
+  color: var(--aircas-color-text-muted);
 }
 
 .subspace-create-workspace__step-index {
@@ -651,14 +705,14 @@ watch(
   height: 16px;
   flex-shrink: 0;
   place-items: center;
-  border: 1px solid var(--aircas-color-text-secondary);
+  border: 1px solid var(--aircas-color-text-muted);
   border-radius: 50%;
-  background: transparent;
+  background: var(--aircas-color-transparent);
 }
 
 .subspace-create-workspace__steps li.is-finish .subspace-create-workspace__step-index {
-  border-color: var(--aircas-color-primary);
-  background: var(--aircas-color-primary);
+  border-color: var(--aircas-color-accent-cyan);
+  background: var(--aircas-color-accent-cyan);
 }
 
 .subspace-create-workspace__steps li.is-finish .subspace-create-workspace__step-index::after {
@@ -680,7 +734,7 @@ watch(
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--aircas-color-primary);
+  background: var(--aircas-color-accent-cyan);
 }
 
 .subspace-create-workspace__step-arrow {
@@ -688,8 +742,8 @@ watch(
   right: 0;
   width: 8px;
   height: 8px;
-  border-top: 1px solid var(--aircas-color-text-secondary);
-  border-right: 1px solid var(--aircas-color-text-secondary);
+  border-top: 1px solid var(--aircas-color-text-muted);
+  border-right: 1px solid var(--aircas-color-text-muted);
   transform: rotate(45deg);
 }
 
@@ -723,12 +777,12 @@ watch(
 }
 
 .subspace-create-workspace__empty-header strong {
-  color: var(--aircas-color-text-secondary);
+  color: var(--aircas-color-text-muted);
   font-size: 12px;
   font-weight: 400;
 }
 
-.subspace-create-workspace__empty :deep(.el-empty) {
+.subspace-create-workspace__empty :deep(.aircas-empty) {
   min-height: 0;
   flex: 1;
 }
@@ -753,7 +807,7 @@ watch(
   align-items: center;
   gap: 16px;
   padding: 16px;
-  border: 1px solid var(--aircas-color-border-light);
+  border: 1px solid var(--aircas-color-border-soft);
   border-radius: 8px;
   background: var(--aircas-color-input-background);
   transition:
@@ -762,12 +816,12 @@ watch(
 }
 
 .subspace-create-workspace__card:hover {
-  border-color: var(--aircas-color-primary);
-  background: var(--aircas-color-active);
+  border-color: var(--aircas-color-border-highlight);
+  background: var(--aircas-color-selected-background);
 }
 
 .subspace-create-workspace__card:focus-visible {
-  outline: 2px solid var(--aircas-color-primary);
+  outline: 2px solid var(--aircas-color-accent-cyan);
   outline-offset: 2px;
 }
 
@@ -776,7 +830,7 @@ watch(
   width: 56px;
   height: 40px;
   place-items: center;
-  color: var(--aircas-color-primary);
+  color: var(--aircas-color-accent-cyan);
   font-size: 40px;
 }
 
@@ -801,7 +855,7 @@ watch(
 }
 
 .subspace-create-workspace__card-body small {
-  color: var(--aircas-color-text-secondary);
+  color: var(--aircas-color-text-muted);
   font-size: 14px;
 }
 
@@ -832,7 +886,7 @@ watch(
 .subspace-create-workspace__property-group {
   flex: 0 0 auto;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-border-light);
+  border: 1px solid var(--aircas-color-border-soft);
   border-radius: 8px;
 }
 
@@ -842,7 +896,7 @@ watch(
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  background: var(--aircas-color-active);
+  background: var(--aircas-color-card-background-active);
 }
 
 .subspace-create-workspace__property-group-header strong {
@@ -852,7 +906,7 @@ watch(
 
 .subspace-create-workspace__property-group-header span {
   margin-left: 8px;
-  color: var(--aircas-color-text-secondary);
+  color: var(--aircas-color-text-muted);
   font-size: 12px;
 }
 
@@ -880,7 +934,7 @@ watch(
 }
 
 .subspace-create-workspace__property-name small {
-  color: var(--aircas-color-text-secondary);
+  color: var(--aircas-color-text-muted);
   font-size: 12px;
 }
 
@@ -888,18 +942,126 @@ watch(
   width: 100%;
 }
 
+.subspace-create-workspace__number-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subspace-create-workspace__number-range span {
+  flex-shrink: 0;
+  color: var(--aircas-color-text-muted);
+  font-size: 13px;
+}
+
+.subspace-create-workspace__number-range .subspace-create-workspace__property-filter {
+  min-width: 0;
+  flex: 1;
+}
+
 .subspace-create-workspace__property-filter.el-date-editor {
+  --el-input-text-color: var(--aircas-color-text-primary);
+  --el-input-bg-color: var(--aircas-color-input-background);
+  --el-input-border-color: var(--aircas-color-border);
+  --el-input-hover-border-color: var(--aircas-color-border-highlight);
+  --el-input-focus-border-color: var(--aircas-color-focus-border);
+  --el-input-placeholder-color: var(--aircas-color-text-placeholder);
+  --el-input-icon-color: var(--aircas-color-text-muted);
+
+  :deep(.el-input__wrapper) {
+    background-color: var(--aircas-color-input-background);
+    box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+  }
+
+  :deep(.el-input__wrapper:hover:not(.is-disabled)) {
+    box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
+  }
+
+  :deep(.el-input__wrapper.is-focus) {
+    box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
+  }
+
+  :deep(.el-range-input) {
+    background-color: var(--aircas-color-transparent);
+    color: var(--aircas-color-text-primary);
+  }
+
+  :deep(.el-range-input::placeholder),
+  :deep(.el-range-separator),
+  :deep(.el-input__icon) {
+    color: var(--aircas-color-text-muted);
+  }
+
   &.is-disabled {
+    :deep(.el-input__wrapper),
+    :deep(.el-range-input) {
+      background-color: var(--aircas-color-panel-background);
+      color: var(--aircas-color-text-disabled);
+      -webkit-text-fill-color: var(--aircas-color-text-disabled);
+    }
   }
 }
 
 .subspace-create-workspace__property-filter.el-input-number {
+  --el-input-text-color: var(--aircas-color-text-primary);
+  --el-input-bg-color: var(--aircas-color-input-background);
+  --el-input-border-color: var(--aircas-color-border);
+  --el-input-hover-border-color: var(--aircas-color-border-highlight);
+  --el-input-focus-border-color: var(--aircas-color-focus-border);
+  --el-input-icon-color: var(--aircas-color-text-muted);
+
+  width: 100%;
+
+  :deep(.el-input__wrapper) {
+    background-color: var(--aircas-color-input-background);
+    box-shadow: 0 0 0 1px var(--aircas-color-border) inset;
+  }
+
+  :deep(.el-input__wrapper:hover:not(.is-disabled)) {
+    box-shadow: 0 0 0 1px var(--aircas-color-border-highlight) inset;
+  }
+
+  :deep(.el-input__wrapper.is-focus) {
+    box-shadow: 0 0 0 1px var(--aircas-color-focus-border) inset;
+  }
+
+  :deep(.el-input__inner) {
+    color: var(--aircas-color-text-primary);
+  }
+
+  :deep(.el-input-number__increase),
+  :deep(.el-input-number__decrease) {
+    background-color: var(--aircas-color-panel-background);
+    border-color: var(--aircas-color-border-soft);
+    color: var(--aircas-color-text-muted);
+  }
+
+  :deep(.el-input-number__increase:hover),
+  :deep(.el-input-number__decrease:hover) {
+    background-color: var(--aircas-color-hover-background);
+    color: var(--aircas-color-title);
+  }
+
   :deep(.el-input-number__increase.is-disabled),
   :deep(.el-input-number__decrease.is-disabled) {
+    background-color: var(--aircas-color-panel-background);
+    color: var(--aircas-color-text-disabled);
     cursor: not-allowed;
   }
 
   &.is-disabled {
+    :deep(.el-input__wrapper),
+    :deep(.el-input-number__increase),
+    :deep(.el-input-number__decrease) {
+      background-color: var(--aircas-color-panel-background);
+      border-color: var(--aircas-color-border-soft);
+      color: var(--aircas-color-text-disabled);
+    }
+
+    :deep(.el-input__inner) {
+      color: var(--aircas-color-text-disabled);
+      -webkit-text-fill-color: var(--aircas-color-text-disabled);
+    }
   }
 }
 </style>

@@ -1,3 +1,4 @@
+import { postAgentChatStreamInterface } from "./agentChatApi";
 import { getExampleInterface } from "./exampleApi";
 import {
   createOntologyFunctionInterface,
@@ -10,7 +11,9 @@ import {
 import { postLoginInterface } from "./loginApi";
 import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
 import { getOntologyApiDocsInterface } from "./ontologyDocApi";
+import { getOntologyEntitiesInterface } from "./ontologyEntityApi";
 import { postOntologyGlobalSearchInterface } from "./ontologySearchApi";
+import { createOntologySubspaceInterface } from "./ontologySubspaceApi";
 import {
   createOntologySpaceInterface,
   createOntologySpaceWithCanvasContentInterface,
@@ -66,6 +69,7 @@ export {
   createOntologyFunctionInterface,
   createOntologySpaceInterface,
   createOntologySpaceWithCanvasContentInterface,
+  createOntologySubspaceInterface,
   createOntologyObjectInterface,
   createOntologyObjectArrTypeTreeInterface,
   createOntologyPropertyInterface,
@@ -92,11 +96,13 @@ export {
   getOntologyPropertyByOntologyIdInterface,
   getOntologyPropertyDetailByOntologyIdInterface,
   getOntologyDatasourceTablesInterface,
+  getOntologyEntitiesInterface,
   getOntologyMetaStatisticInterface,
   getOntologyOverviewCountInterface,
   getOntologyRelationCategoryTreeInterface,
   getOntologySpaceListInterface,
   getOntologySpaceStatisticInterface,
+  postAgentChatStreamInterface,
   postCreateOntologyCategoryTreeInterface,
   postCreateOntologyLinkInterface,
   postCreateOntologyRelationCategoryTreeInterface,

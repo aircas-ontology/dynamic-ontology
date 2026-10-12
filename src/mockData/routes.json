@@ -1,6 +1,18 @@
 [
   {
     "method": "POST",
+    "path": "/agent/chat/stream",
+    "file": "fixtures/agent/chat.stream.post.json",
+    "responseType": "sse"
+  },
+  {
+    "method": "POST",
+    "path": "/agent/chat/stream/error",
+    "file": "fixtures/agent/chat.stream.error.post.json",
+    "responseType": "sse"
+  },
+  {
+    "method": "POST",
     "path": "/ontology/user/login",
     "file": "fixtures/ontology/user/login.post.json",
     "headers": {

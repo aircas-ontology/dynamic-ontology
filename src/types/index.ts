@@ -1,3 +1,16 @@
+export type {
+  AiAssistantBuildProgress,
+  AiAssistantBuildStep,
+  AiAssistantBuildStepStatus,
+  AiAssistantAssistantMessage,
+  AiAssistantCommandStatus,
+  AiAssistantMessage,
+  AiAssistantProcessItem,
+  AiAssistantProcessKind,
+  AiAssistantPropertySelectionRow,
+  AiAssistantSelectionCard,
+  AiAssistantUserMessage,
+} from "./agent/aiAssistantChatType";
 export type { ApiResponse } from "./apis/apiResponseType";
 export type { AutoBindOntologyPropertyDatasourceData, AutoBindOntologyPropertyDatasourceParams } from "./apis/autoBindOntologyPropertyDatasourceType";
 export type {
@@ -28,6 +41,22 @@ export type {
   CreateOntologySpaceWithCanvasContentData,
   CreateOntologySpaceWithCanvasContentParams,
 } from "./apis/createOntologySpaceWithCanvasContentType";
+export type {
+  CreateOntologySubspaceData,
+  CreateOntologySubspaceParams,
+  CreateOntologySubspacePropertyFilter,
+  CreateOntologySubspaceSelectedLink,
+  CreateOntologySubspaceSelectedOntology,
+  CreateOntologySubspaceSelectedProperty,
+  OntologySubspaceLinkSelection,
+  OntologySubspaceCreateVO,
+  OntologySubspaceOntologySelection,
+  OntologySubspacePropertyDataType,
+  OntologySubspacePropertyFilterConfig,
+  OntologySubspacePropertyFilterOp,
+  OntologySubspacePropertyFilterValue,
+  OntologySubspacePropertySelection,
+} from "./apis/createOntologySubspaceType";
 export type { DeleteOntologyFunctionData, DeleteOntologyFunctionParams } from "./apis/deleteOntologyFunctionType";
 export type { DeleteOntologyLinkParams } from "./apis/deleteOntologyLinkType";
 export type { DeleteOntologyObjectArrTypeTreeParams } from "./apis/deleteOntologyObjectArrTypeTreeType";
@@ -43,6 +72,7 @@ export type {
   OntologyDatasourceColumnDescVO,
 } from "./apis/getOntologyDatasourceColumnsType";
 export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
+export type { GetOntologyEntitiesData, GetOntologyEntitiesParams, OntologyEntityInfo } from "./apis/getOntologyEntitiesType";
 export type { GetOntologyFunctionDetailData, GetOntologyFunctionDetailParamItem, GetOntologyFunctionDetailParams } from "./apis/getOntologyFunctionDetailType";
 export type { GetOntologyFunctionListData, GetOntologyFunctionListItem, GetOntologyFunctionListParams } from "./apis/getOntologyFunctionListType";
 export type { GetOntologyMetaByObjectIdData, GetOntologyMetaByObjectIdParams } from "./apis/getOntologyMetaByObjectIdType";
@@ -93,6 +123,14 @@ export type {
   OntologyRelationCategoryTreeParams,
   UpdateOntologyRelationCategoryNameParams,
 } from "./apis/ontologyRelationCategoryTreeType";
+export type {
+  StreamAgentChatData,
+  StreamAgentChatEvent,
+  StreamAgentChatEventType,
+  StreamAgentChatParams,
+  StreamAgentChatSelectionOption,
+  StreamAgentChatSelectionScenario,
+} from "./apis/streamAgentChatType";
 export type { TestOntologyFunctionData, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
 export type { UpdateOntologyFunctionData, UpdateOntologyFunctionParams } from "./apis/updateOntologyFunctionType";
 export type { UpdateOntologyLinkParams } from "./apis/updateOntologyLinkType";
@@ -174,6 +212,61 @@ export type {
   OntologyObjectDetailRouteName,
   OntologyObjectDetailTab,
 } from "./pages/ontologyObjectDetailType";
+export {
+  BEHAVIOR_SCHEDULE_INVOCATION_STATUSES,
+  BEHAVIOR_SCHEDULE_MONTH_DAYS,
+  BEHAVIOR_SCHEDULE_PERIOD_KINDS,
+  BEHAVIOR_SCHEDULE_WEEKDAYS,
+  DEFAULT_BEHAVIOR_SCHEDULE_EXECUTE_TIME,
+  RULE_VARIABLE_PROPERTY_VALUE_TYPE_OPTIONS,
+  SCHEDULE_RULE_AI_ATTACHMENT_ACCEPT,
+  SCHEDULE_RULE_AI_ATTACHMENT_MAX_BYTES,
+  SCHEDULE_RULE_AI_PRESET_PROMPTS,
+  SCHEDULE_RULE_AI_PROMPT_MAX_LENGTH,
+} from "./pages/ontologySpaceBehaviorScheduleType";
+export type {
+  BehaviorScheduleCommandStatus,
+  BehaviorScheduleDraft,
+  BehaviorScheduleFormMode,
+  BehaviorScheduleInvocationLog,
+  BehaviorScheduleInvocationStatus,
+  BehaviorSchedulePeriodKind,
+  BehaviorScheduleRecord,
+  BehaviorScheduleStrategy,
+  BehaviorScheduleWeekday,
+  RuleCompareOperator,
+  RuleCompositeCondition,
+  RuleConditionNode,
+  RuleExprOperator,
+  RuleExprTerm,
+  RuleExpressionValue,
+  RuleFlowActionsStep,
+  RuleFlowBranchStep,
+  RuleFlowParamValueType,
+  RuleFlowStep,
+  RuleFlowSwitchCase,
+  RuleFlowSwitchStep,
+  RuleFlowThenAction,
+  RuleFlowThenParamValue,
+  RuleFunctionArgKind,
+  RuleFunctionName,
+  RuleFunctionValue,
+  RuleLeafCondition,
+  RuleLiteralValue,
+  RuleLogicOperator,
+  RuleValueKind,
+  RuleValueNode,
+  RuleVariableCatalogCategory,
+  RuleVariableCatalogObject,
+  RuleVariableObjectKind,
+  RuleVariablePropertyOption,
+  RuleVariablePropertyValueType,
+  RuleVariableValue,
+  ScheduleRuleAiMessage,
+  ScheduleRuleAiMessageRole,
+  ScheduleRuleAiMessageStatus,
+  ScheduleRuleFlowDocument,
+} from "./pages/ontologySpaceBehaviorScheduleType";
 export {
   ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
   SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
