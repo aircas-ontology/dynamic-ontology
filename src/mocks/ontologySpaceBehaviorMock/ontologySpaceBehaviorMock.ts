@@ -21,6 +21,41 @@ let nextCategorySeq = 1;
 let nextUpdatedMinute = 40;
 
 /**
+ * @description 修复历史 Mock 中 UTF-8 被误按 Latin-1 解码形成的乱码文本。
+ * @param value 待修复文本。
+ * @returns 修复后的文本；无法转换或不含乱码特征时保留原值。
+ */
+function repairBehaviorText(value: string): string {
+  if (!/[æåçéèêìíîïðñòóôõöùúûüýþÂâ]/.test(value)) {
+    return value;
+  }
+  try {
+    const bytes = Uint8Array.from([...value].map((character) => character.charCodeAt(0)));
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * @description 深度修复行为 Mock 对象中的文本字段。
+ * @param value 行为 Mock 数据。
+ * @returns 修复文本后的新对象或数组。
+ */
+function repairBehaviorMockValue<T>(value: T): T {
+  if (typeof value === "string") {
+    return repairBehaviorText(value) as T;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => repairBehaviorMockValue(item)) as T;
+  }
+  if (typeof value === "object" && value !== null) {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, repairBehaviorMockValue(item)])) as T;
+  }
+  return value;
+}
+
+/**
  * @description æé è¡ä¸ºåæ°èç¹ã
  * @param parameter åæ°å­æ®µã
  * @returns å®æ´åæ°ã
@@ -207,7 +242,7 @@ const operatorCatalog: SpaceBehaviorOperatorOption[] = [
  * @returns ç®å­éé¡¹ï¼æªæ¾å°æ¶è¿å nullã
  */
 function findOperatorByName(name: string): SpaceBehaviorOperatorOption | null {
-  return operatorCatalog.find((item) => item.name === name) ?? null;
+  return operatorCatalog.find((item) => item.name === name || repairBehaviorText(item.name) === name) ?? null;
 }
 
 /**
@@ -383,7 +418,7 @@ function formatSpaceBehaviorUpdatedAt(): string {
  * @returns ç®å­éé¡¹ã
  */
 export function listSpaceBehaviorOperatorOptionsMock(): SpaceBehaviorOperatorOption[] {
-  return structuredClone(operatorCatalog);
+  return repairBehaviorMockValue(structuredClone(operatorCatalog));
 }
 
 /**
@@ -392,7 +427,7 @@ export function listSpaceBehaviorOperatorOptionsMock(): SpaceBehaviorOperatorOpt
  * @returns åç±»æ ä¸è¡ä¸ºåè¡¨ã
  */
 export function querySpaceBehaviorWorkspaceMock(spaceId: string): SpaceBehaviorWorkspaceData {
-  return structuredClone(getOrCreateSpaceBehaviorWorkspace(spaceId));
+  return repairBehaviorMockValue(structuredClone(getOrCreateSpaceBehaviorWorkspace(spaceId)));
 }
 
 /**

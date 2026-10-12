@@ -35,9 +35,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { Folder } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 import type { TreeInstance, TreeNodeData } from "element-plus";
 import type { OntologyConceptNode, OntologyObjectWorkspace } from "@/types";
 import { useOntologyObjectWorkspace } from "@/views/ObjectWorkspacePanel/composables/useOntologyObjectWorkspace";
@@ -52,6 +53,7 @@ interface SubspaceCreateTreeNode {
   children?: SubspaceCreateTreeNode[];
 }
 
+const props = defineProps<{ currentStepIndex: number }>();
 const emit = defineEmits<{
   "update:selectedCount": [value: number];
   "update:selectedObjects": [value: SubspaceCreateSelectedObject[]];
@@ -96,9 +98,15 @@ function filterTreeNode(value: string, data: TreeNodeData) {
 }
 
 /**
- * @description 同步分类树勾选的叶子对象并通知父级。
+ * @description 同步分类树勾选的叶子对象并通知父级；非对象选择步骤时恢复原勾选并提示。
  */
-function syncSelectedTreeObjects() {
+async function syncSelectedTreeObjects() {
+  if (props.currentStepIndex !== 0) {
+    ElMessage.warning("请回到对象选择步骤再更改");
+    await nextTick();
+    treeRef.value?.setCheckedKeys(selectedIds.value);
+    return;
+  }
   const checkedNodes = treeRef.value?.getCheckedNodes(true) ?? [];
   const objects = mapSubspaceCreateSelectedObjects(checkedNodes);
   selectedIds.value = objects.map((item) => item.id);

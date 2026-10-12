@@ -12,9 +12,13 @@ import {
   toggleSubspaceCreateInstanceSelection,
 } from "../src/views/OntologySubspaceCreate/utils/mapSubspaceCreateSelectedInstance.ts";
 import { mapSubspaceCreateSelectedObjects } from "../src/views/OntologySubspaceCreate/utils/mapSubspaceCreateSelectedObject.ts";
-import { mapSubspaceCreateObjectPropertyGroup } from "../src/views/OntologySubspaceCreate/utils/mapSubspaceCreateObjectProperty.ts";
+import {
+  listSubspaceCreateObjectsMissingProperties,
+  mapSubspaceCreateObjectPropertyGroup,
+} from "../src/views/OntologySubspaceCreate/utils/mapSubspaceCreateObjectProperty.ts";
 import { mapSubspaceCreateRelationsFromTree } from "../src/views/OntologySubspaceCreate/utils/mapSubspaceCreateSelectedRelation.ts";
 import { mapSubspaceCreateRequest } from "../src/views/OntologySubspaceCreate/utils/mapSubspaceCreateRequest.ts";
+import { resolveSubspaceCreatePropertyFilterKind } from "../src/views/OntologySubspaceCreate/utils/resolveSubspaceCreatePropertyFilterKind.ts";
 
 /**
  * @description 读取相对 tests 目录的源文件文本。
@@ -54,6 +58,9 @@ test("subspace create tree panel uses public tree and filter controls", () => {
   assert.match(source, /mapOntologyTreeToSubspaceNodes/);
   assert.match(source, /getCheckedNodes\(true\)/);
   assert.match(source, /function syncSelectedTreeObjects/);
+  assert.match(source, /currentStepIndex/);
+  assert.match(source, /请回到对象选择步骤再更改/);
+  assert.match(source, /setCheckedKeys/);
   assert.match(source, /update:selectedObjects/);
   assert.doesNotMatch(source, /function selectAllTreeObjects/);
   assert.doesNotMatch(source, /function clearTreeSelection/);
@@ -122,6 +129,9 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, /选择纳入子空间的对象实例/);
   assert.match(source, /from "\.\/SubspaceCreateInstancePanel\.vue"/);
   assert.match(source, /<SubspaceCreateInstancePanel/);
+  assert.match(source, /function shouldShowStepEmpty/);
+  assert.match(source, /v-else-if="shouldShowStepEmpty\(\)"/);
+  assert.doesNotMatch(source, /<el-empty v-else[\s>]/);
   assert.match(source, /propertyLoadStatus/);
   assert.match(source, /propertyLoadError/);
   assert.match(source, /property-retry/);
@@ -146,6 +156,10 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, /'daterange'/);
   assert.match(source, /popper-class="aircas-picker"/);
   assert.match(source, /el-input-number/);
+  assert.match(source, /numberRange/);
+  assert.match(source, /最小值/);
+  assert.match(source, /最大值/);
+  assert.match(source, />至</);
   assert.doesNotMatch(source, /验证条件/);
   assert.match(source, /class="aircas-checkbox"/);
   assert.match(source, /class="aircas-tag"/);
@@ -185,8 +199,25 @@ test("subspace create maps selected objects to property groups", () => {
   const source = readSource("../src/views/OntologySubspaceCreate/utils/mapSubspaceCreateObjectProperty.ts");
   assert.match(source, /export interface SubspaceCreateObjectPropertyGroup/);
   assert.match(source, /function mapSubspaceCreateObjectPropertyGroups/);
+  assert.match(source, /function listSubspaceCreateObjectsMissingProperties/);
   assert.match(source, /hullNumber/);
   assert.doesNotMatch(source, /validationLabel/);
+});
+
+test("subspace create lists objects that have no selected properties", () => {
+  const ship = mapSubspaceCreateObjectPropertyGroup([{ uniqueIdentifier: "prop-ship", displayName: "舰名", apiName: "name", propertyType: "String" }], {
+    id: "ship",
+    label: "舰船",
+    apiName: "ship",
+  });
+  const plane = mapSubspaceCreateObjectPropertyGroup([{ uniqueIdentifier: "prop-plane", displayName: "机型", apiName: "model", propertyType: "String" }], {
+    id: "plane",
+    label: "飞机",
+    apiName: "plane",
+  });
+  const empty = mapSubspaceCreateObjectPropertyGroup([], { id: "empty", label: "辽宁号", apiName: "liaoning" });
+  assert.deepEqual(listSubspaceCreateObjectsMissingProperties([ship, plane, empty], ["prop-plane"]), ["舰船", "辽宁号"]);
+  assert.deepEqual(listSubspaceCreateObjectsMissingProperties([ship, plane], ["prop-ship", "prop-plane"]), []);
 });
 
 test("subspace create maps API properties into object property groups", () => {
@@ -217,7 +248,14 @@ test("subspace create property filter kind follows data type", () => {
   assert.match(source, /function resolveSubspaceCreatePropertyFilterKind/);
   assert.match(source, /dateRange/);
   assert.match(source, /"text"/);
-  assert.match(source, /"number"/);
+  assert.match(source, /"numberRange"/);
+  assert.equal(resolveSubspaceCreatePropertyFilterKind("Double"), "numberRange");
+  assert.equal(resolveSubspaceCreatePropertyFilterKind("Int"), "numberRange");
+  assert.equal(resolveSubspaceCreatePropertyFilterKind("Long"), "numberRange");
+  assert.equal(resolveSubspaceCreatePropertyFilterKind("Float"), "numberRange");
+  assert.equal(resolveSubspaceCreatePropertyFilterKind("Decimal"), "numberRange");
+  assert.equal(resolveSubspaceCreatePropertyFilterKind("Short"), "numberRange");
+  assert.equal(resolveSubspaceCreatePropertyFilterKind("Byte"), "numberRange");
 });
 
 test("subspace create maps selected objects to relation rows", () => {
@@ -293,8 +331,8 @@ test("subspace create maps selected page state to the create request", () => {
       },
     ],
     propertyFilters: {
-      "property-1": { text: "驱逐舰", number: null, dateRange: undefined, booleanValue: undefined },
-      "property-2": { text: "", number: 3000, dateRange: undefined, booleanValue: undefined },
+      "property-1": { text: "驱逐舰", number: null, numberRange: [null, null], dateRange: undefined, booleanValue: undefined },
+      "property-2": { text: "", number: null, numberRange: [3000, 10000], dateRange: undefined, booleanValue: undefined },
     },
     selectedRelationIds: ["link-1"],
     relationRows: [
@@ -320,12 +358,49 @@ test("subspace create maps selected page state to the create request", () => {
         selectedInstancePrimaryKeys: [101],
         selectedProperties: [
           { sourcePropertyUniqueIdentifier: "property-1", filter: { op: "LIKE", value: "驱逐舰", dataType: "String" } },
-          { sourcePropertyUniqueIdentifier: "property-2", filter: { op: "EQ", value: 3000, dataType: "Int" } },
+          { sourcePropertyUniqueIdentifier: "property-2", filter: { op: "BETWEEN", value: [3000, 10000], dataType: "Int" } },
         ],
       },
     ],
     selectedLinks: [{ sourceLinkUniqueIdentifier: "link-1", name: "护航", apiName: "escort", type: "OTHER", description: "关系描述" }],
   });
+});
+
+/**
+ * @description 构造仅含一条数字筛选的创建请求映射入参。
+ * @param propertyId 属性 id。
+ * @param numberRange 数字区间。
+ * @returns 映射入参。
+ */
+function buildNumberRangeRequestInput(propertyId, numberRange) {
+  return {
+    parentSpaceId: "92",
+    displayName: "区间",
+    apiName: "range",
+    selectedObjects: [{ id: "plane", label: "飞机", apiName: "plane" }],
+    instanceGroups: [],
+    selectedInstanceIds: [],
+    selectedPropertyIds: [propertyId],
+    propertyGroups: [
+      {
+        objectId: "plane",
+        objectLabel: "飞机",
+        properties: [{ id: propertyId, objectId: "plane", objectLabel: "飞机", displayName: "测试1", apiName: "test", dataType: "Double" }],
+      },
+    ],
+    propertyFilters: {
+      [propertyId]: { text: "", number: null, numberRange, dateRange: undefined, booleanValue: undefined },
+    },
+    selectedRelationIds: [],
+    relationRows: [],
+  };
+}
+
+test("subspace create maps one-sided number ranges to GE or LE", () => {
+  const minOnly = mapSubspaceCreateRequest(buildNumberRangeRequestInput("prop-min", [1.5, null]));
+  assert.deepEqual(minOnly.selectedOntologies[0]?.selectedProperties[0]?.filter, { op: "GE", value: 1.5, dataType: "Double" });
+  const maxOnly = mapSubspaceCreateRequest(buildNumberRangeRequestInput("prop-max", [null, 8]));
+  assert.deepEqual(maxOnly.selectedOntologies[0]?.selectedProperties[0]?.filter, { op: "LE", value: 8, dataType: "Double" });
 });
 
 test("subspace create exposes the create API path and submit wiring", () => {
@@ -375,6 +450,11 @@ test("subspace create instance panel groups rows by object and paginates", () =>
   assert.doesNotMatch(source, />全选</);
   assert.match(source, /aircas-button/);
   assert.match(source, /class="aircas-table aircas-table--flat /);
+  assert.match(source, /height="100%"/);
+  assert.match(source, /function canFillInstanceGroup/);
+  assert.match(source, /is-filled/);
+  assert.match(source, /is-compact/);
+  assert.match(source, /\.subspace-create-instance-panel__group\.is-filled \{[\s\S]*flex: 1/);
   assert.match(source, /class="aircas-pagination/);
   assert.match(source, /popper-class="aircas-pagination-popper"/);
   assert.match(source, /layout="total, sizes, prev, pager, next"/);
@@ -396,6 +476,7 @@ test("subspace create page orchestrates names and next-step validation", () => {
   assert.match(source, /from "\.\/components\/SubspaceCreateTreePanel\.vue"/);
   assert.match(source, /from "\.\/components\/SubspaceCreateWorkspacePanel\.vue"/);
   assert.match(source, /selectedObjects/);
+  assert.match(source, /<SubspaceCreateTreePanel[^>]*current-step-index="currentStepIndex"/);
   assert.match(source, /:selected-objects="selectedObjects"/);
   assert.match(source, /function goBackToSpaceList/);
   assert.match(source, /@back="goBackToSpaceList"/);
@@ -439,7 +520,8 @@ test("subspace create page orchestrates names and next-step validation", () => {
   assert.match(source, /loadSelectedObjectProperties/);
   assert.match(source, /propertyLoadStatus/);
   assert.match(source, /currentStepIndex.value = 2/);
-  assert.doesNotMatch(source, /请至少选择一个对象属性/);
+  assert.match(source, /listSubspaceCreateObjectsMissingProperties/);
+  assert.match(source, /请为对象「\$\{missingObjectLabels\.join\("、"\)\}」选择属性/);
   assert.match(source, /grid-template-columns: 320px minmax\(0, 1fr\)/);
   assert.match(source, /gap: 8px/);
   assert.match(source, /width: 100%/);

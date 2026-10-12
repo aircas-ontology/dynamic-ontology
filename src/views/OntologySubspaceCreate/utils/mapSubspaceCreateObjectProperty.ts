@@ -81,6 +81,17 @@ export function mapSubspaceCreateObjectPropertyGroup(
   };
 }
 
+/**
+ * @description 列出尚未勾选任何属性的对象名称，属性列表为空的对象也视为未选择。
+ * @param groups 已选对象的属性分组。
+ * @param selectedPropertyIds 已勾选的属性 id。
+ * @returns 未选择属性的对象名称，保持分组顺序。
+ */
+export function listSubspaceCreateObjectsMissingProperties(groups: SubspaceCreateObjectPropertyGroup[], selectedPropertyIds: string[]): string[] {
+  const selectedIds = new Set(selectedPropertyIds);
+  return groups.filter((group) => !group.properties.some((property) => selectedIds.has(property.id))).map((group) => group.objectLabel);
+}
+
 /** @description 读取属性接口字段文本。 @param value 未知字段值。 @returns 字符串值。 */
 function readPropertyText(value: unknown): string {
   return typeof value === "string" ? value.trim() : typeof value === "number" ? String(value) : "";

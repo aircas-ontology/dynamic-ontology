@@ -1,6 +1,6 @@
 <template>
   <section class="ontology-subspace-create" aria-label="创建子空间">
-    <SubspaceCreateTreePanel @update:selected-objects="selectedObjects = $event" />
+    <SubspaceCreateTreePanel :current-step-index="currentStepIndex" @update:selected-objects="selectedObjects = $event" />
     <SubspaceCreateWorkspacePanel
       v-model:space-name="spaceName"
       v-model:api-name="apiName"
@@ -52,7 +52,7 @@ import {
 } from "@/apis";
 import SubspaceCreateTreePanel from "./components/SubspaceCreateTreePanel.vue";
 import SubspaceCreateWorkspacePanel from "./components/SubspaceCreateWorkspacePanel.vue";
-import { mapSubspaceCreateObjectPropertyGroup } from "./utils/mapSubspaceCreateObjectProperty";
+import { listSubspaceCreateObjectsMissingProperties, mapSubspaceCreateObjectPropertyGroup } from "./utils/mapSubspaceCreateObjectProperty";
 import type { SubspaceCreateObjectPropertyGroup } from "./utils/mapSubspaceCreateObjectProperty";
 import { mapSubspaceCreateSelectedInstances, SUBSPACE_CREATE_INSTANCE_PAGE_SIZE } from "./utils/mapSubspaceCreateSelectedInstance";
 import type { SubspaceCreateInstanceGroup } from "./utils/mapSubspaceCreateSelectedInstance";
@@ -196,6 +196,11 @@ async function advanceSubspaceCreateStep() {
     return;
   }
   if (currentStepIndex.value === 2) {
+    const missingObjectLabels = listSubspaceCreateObjectsMissingProperties(propertyGroups.value, selectedPropertyIds.value);
+    if (missingObjectLabels.length) {
+      ElMessage.warning(`请为对象「${missingObjectLabels.join("、")}」选择属性`);
+      return;
+    }
     if (relationLoadStatus.value === "loading") return;
     await loadParentSpaceRelations();
     if (relationLoadStatus.value === "error") return;

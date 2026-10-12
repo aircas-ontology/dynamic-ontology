@@ -7,16 +7,7 @@
   <el-drawer v-model="visible" class="aircas-drawer ai-assistant-drawer" title="AI 助手" direction="rtl" size="620px" :modal="false" append-to-body>
     <div class="ai-assistant-drawer__panel">
       <div ref="stageRef" class="ai-assistant-drawer__stage">
-        <div v-if="messages.length" class="ai-assistant-drawer__conversation">
-          <div
-            v-for="(message, index) in messages"
-            :key="`${index}-${message.role}`"
-            class="ai-assistant-drawer__message"
-            :class="message.role === 'user' ? 'ai-assistant-drawer__message--user' : 'ai-assistant-drawer__message--assistant'"
-          >
-            <p>{{ message.content }}</p>
-          </div>
-        </div>
+        <AiAssistantConversation v-if="messages.length" :messages="messages" @select-option="selectAssistantOption" />
         <div v-else class="ai-assistant-drawer__prompts">
           <div class="ai-assistant-drawer__intro">
             <span class="ai-assistant-drawer__mark" aria-hidden="true">
@@ -31,6 +22,7 @@
           <button v-for="prompt in prompts" :key="prompt" type="button" @click="applyAssistantPrompt(prompt)">{{ prompt }}</button>
         </div>
       </div>
+      <p v-if="errorMessage && !messages.length" class="ai-assistant-drawer__banner">{{ errorMessage }}</p>
       <div class="ai-assistant-drawer__composer">
         <el-input
           v-model="draft"
@@ -40,23 +32,33 @@
           maxlength="1000"
           show-word-limit
           resize="none"
-          placeholder="请输入问题，Ctrl + Enter 发送"
-          @keydown.ctrl.enter.prevent="submitAssistantQuestion"
+          :disabled="status === 'submitting'"
+          placeholder="请输入问题，Enter 发送，Shift + Enter 换行"
+          @keydown="handleAssistantInputKeydown"
         />
         <div class="ai-assistant-drawer__composer-bar">
-          <el-dropdown trigger="click" popper-class="aircas-popper">
-            <button class="ai-assistant-drawer__mode" type="button">
-              <span aria-hidden="true">✦</span>
-              智能管理助手
-              <span aria-hidden="true">⌄</span>
-            </button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item>智能管理助手</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          <button class="ai-assistant-drawer__send" type="button" aria-label="发送问题" :disabled="!draft.trim()" @click="submitAssistantQuestion">
+          <div class="ai-assistant-drawer__composer-actions">
+            <el-dropdown trigger="click" popper-class="aircas-popper">
+              <button class="ai-assistant-drawer__mode" type="button">
+                <span aria-hidden="true">✦</span>
+                智能管理助手
+                <span aria-hidden="true">⌄</span>
+              </button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item>智能管理助手</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+            <button class="ai-assistant-drawer__mode" type="button" @click="startNewAssistantConversation">新对话</button>
+          </div>
+          <button
+            class="ai-assistant-drawer__send"
+            type="button"
+            aria-label="发送问题"
+            :disabled="status === 'submitting' || !draft.trim()"
+            @click="submitAssistantQuestion"
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M5 12h12M13 6l6 6-6 6" />
             </svg>
@@ -70,26 +72,14 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from "vue";
 
-interface AssistantChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
+import { useAiAssistantChat } from "@/composables/agent/useAiAssistantChat";
+
+import AiAssistantConversation from "./AiAssistantConversation.vue";
 
 const prompts = ["新建福特级航空母舰", "创建一个名称属性", "创建舰艇编制关系", "创建一个巡航行为", "编辑函数算子运行配置", "导出行为调度和规则库"];
-const promptReplies: Record<string, string> = {
-  新建福特级航空母舰:
-    "已按示例整理对象草案：在「舰船 / 航空母舰」下新建「福特级航空母舰(CVN)」，API 名称建议为 carrier_ford。对象会带默认 main 存储分组，创建后可继续补充属性与关系。",
-  创建一个名称属性:
-    "名称属性用于标识对象实例。新增属性后打开「名称键」即可。同一对象只能有一个名称键；若已存在，需要先取消原属性上的名称键。设置成功后，关联数据源时会显示（名）。",
-  创建舰艇编制关系: "可新增一条舰艇编制关系：源对象与目标对象分别选择编制双方，并填写必填分类。保存后可在关系图或列表中查看，筛选时以所选对象为中心。",
-  创建一个巡航行为: "可为当前对象新建「巡航」行为，写明触发条件与执行步骤。该行为之后可以编入行为树，并由行为调度按规则触发。",
-  编辑函数算子运行配置: "打开对应函数算子进行编辑，调整运行配置后保存。建议先用测试核对输入与输出，确认结果后再发布。",
-  导出行为调度和规则库: "可导出当前行为调度及其规则库，内容包含触发条件与对应规则，便于在其他空间复用。导出前请确认调度范围和规则是否完整。",
-};
 const visible = ref(false);
-const draft = ref("");
-const messages = ref<AssistantChatMessage[]>([]);
 const stageRef = ref<HTMLElement | null>(null);
+const { draft, messages, status, errorMessage, sendAssistantMessage, startNewAssistantConversation, selectAssistantOption } = useAiAssistantChat();
 
 /**
  * @description 把示例问题写入输入框，便于继续编辑后发送。
@@ -100,25 +90,25 @@ function applyAssistantPrompt(prompt: string) {
 }
 
 /**
- * @description 按示例问题返回本地助手回复。
- * @param question 已去掉首尾空白的问题。
- * @returns 对应回复；不是六条示例时返回空字符串。
+ * @description 提交当前输入框中的问题。
  */
-function resolveAssistantReply(question: string): string {
-  return promptReplies[question] ?? "";
+function submitAssistantQuestion() {
+  void sendAssistantMessage();
 }
 
 /**
- * @description 提交当前问题。空问题不发送；命中六条示例时在右侧用户消息后追加左侧助手回复。
+ * @description 处理助手编辑框快捷键：Enter 发送，Shift+Enter 换行，输入法组合输入期间不发送。
+ * @param event 编辑框键盘事件。
  */
-function submitAssistantQuestion() {
-  const question = draft.value.trim();
-  if (!question) return;
-  const nextMessages: AssistantChatMessage[] = [...messages.value, { role: "user", content: question }];
-  const reply = resolveAssistantReply(question);
-  if (reply) nextMessages.push({ role: "assistant", content: reply });
-  messages.value = nextMessages;
-  draft.value = "";
+function handleAssistantInputKeydown(event: Event | KeyboardEvent): void {
+  if (!(event instanceof KeyboardEvent)) {
+    return;
+  }
+  if (event.key !== "Enter" || event.isComposing || event.shiftKey) {
+    return;
+  }
+  event.preventDefault();
+  submitAssistantQuestion();
 }
 
 /**
@@ -230,51 +220,6 @@ watch(messages, () => {
   line-height: 1.6;
 }
 
-.ai-assistant-drawer__conversation {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px 0;
-}
-
-.ai-assistant-drawer__message {
-  display: flex;
-}
-
-.ai-assistant-drawer__message--assistant {
-  justify-content: flex-start;
-}
-
-.ai-assistant-drawer__message--user {
-  justify-content: flex-end;
-}
-
-.ai-assistant-drawer__message p {
-  max-width: 72%;
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.ai-assistant-drawer__message--assistant p {
-  border: 1px solid var(--aircas-color-border-soft);
-  border-top-left-radius: 2px;
-  color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-overlay-deep);
-}
-
-:root[theme="light"] .ai-assistant-drawer__message--assistant p {
-  background: var(--aircas-color-card-background);
-}
-
-.ai-assistant-drawer__message--user p {
-  border-top-right-radius: 2px;
-  color: var(--aircas-color-text-inverse);
-  background: var(--aircas-color-accent-cyan);
-}
-
 .ai-assistant-drawer__prompts {
   display: flex;
   min-height: 0;
@@ -306,6 +251,12 @@ watch(messages, () => {
   outline: none;
 }
 
+.ai-assistant-drawer__banner {
+  margin: 0;
+  color: var(--aircas-color-danger);
+  font-size: 12px;
+}
+
 .ai-assistant-drawer__composer {
   display: flex;
   flex: none;
@@ -321,6 +272,12 @@ watch(messages, () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+}
+
+.ai-assistant-drawer__composer-actions {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 

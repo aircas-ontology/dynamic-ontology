@@ -7,6 +7,7 @@ import type { SubspaceCreateSelectedRelation } from "./mapSubspaceCreateSelected
 export interface SubspaceCreatePropertyFilterState {
   text: string;
   number: number | null;
+  numberRange: [number | null, number | null];
   dateRange: [string, string] | undefined;
   booleanValue: boolean | undefined;
 }
@@ -73,8 +74,29 @@ function readPrimaryKey(value: string): string | number {
 /** @description 将页面筛选状态转换为接口筛选条件。 */
 function mapPropertyFilter(state: SubspaceCreatePropertyFilterState | undefined, dataType: string): CreateOntologySubspacePropertyFilter | null {
   if (state?.dateRange) return { op: "BETWEEN", value: state.dateRange, dataType };
+  const numberRangeFilter = mapNumberRangeFilter(state?.numberRange, dataType);
+  if (numberRangeFilter) return numberRangeFilter;
   if (typeof state?.number === "number") return { op: "EQ", value: state.number, dataType };
   if (typeof state?.booleanValue === "boolean") return { op: "EQ", value: state.booleanValue, dataType };
   if (state?.text.trim()) return { op: "LIKE", value: state.text.trim(), dataType };
+  return null;
+}
+
+/**
+ * @description 将数字区间映射为接口可接收的筛选条件：两端都填用 BETWEEN，只填一端用 GE 或 LE。
+ * @param range 最小值和最大值，允许一端为空。
+ * @param dataType 属性数据类型。
+ * @returns 接口筛选条件；两端都空时返回空。
+ */
+function mapNumberRangeFilter(range: [number | null, number | null] | undefined, dataType: string): CreateOntologySubspacePropertyFilter | null {
+  const min = range?.[0];
+  const max = range?.[1];
+  const hasMin = typeof min === "number";
+  const hasMax = typeof max === "number";
+  if (hasMin && hasMax) {
+    return { op: "BETWEEN", value: [Math.min(min, max), Math.max(min, max)], dataType };
+  }
+  if (hasMin) return { op: "GE", value: min, dataType };
+  if (hasMax) return { op: "LE", value: max, dataType };
   return null;
 }

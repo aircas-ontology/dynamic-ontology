@@ -1,3 +1,4 @@
+import { postAgentChatStreamInterface } from "./agentChatApi";
 import { getExampleInterface } from "./exampleApi";
 import {
   createOntologyFunctionInterface,
@@ -101,6 +102,7 @@ export {
   getOntologyRelationCategoryTreeInterface,
   getOntologySpaceListInterface,
   getOntologySpaceStatisticInterface,
+  postAgentChatStreamInterface,
   postCreateOntologyCategoryTreeInterface,
   postCreateOntologyLinkInterface,
   postCreateOntologyRelationCategoryTreeInterface,

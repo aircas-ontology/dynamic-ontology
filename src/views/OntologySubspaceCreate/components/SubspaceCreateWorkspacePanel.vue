@@ -130,13 +130,25 @@
                   end-placeholder="结束时间"
                   @update:model-value="updatePropertyDateRange(row, $event)"
                 />
-                <el-input-number
-                  v-else-if="resolvePropertyFilterKind(row) === 'number'"
-                  :model-value="readPropertyFilterNumber(row)"
-                  class="subspace-create-workspace__property-filter"
-                  controls-position="right"
-                  @update:model-value="updatePropertyFilterNumber(row, $event)"
-                />
+                <div v-else-if="resolvePropertyFilterKind(row) === 'numberRange'" class="subspace-create-workspace__number-range">
+                  <el-input-number
+                    :model-value="readPropertyFilterNumberRangeValue(row, 0)"
+                    class="subspace-create-workspace__property-filter"
+                    controls-position="right"
+                    placeholder="最小值"
+                    ariaLabel="最小值"
+                    @update:model-value="updatePropertyFilterNumberRange(row, 0, $event)"
+                  />
+                  <span>至</span>
+                  <el-input-number
+                    :model-value="readPropertyFilterNumberRangeValue(row, 1)"
+                    class="subspace-create-workspace__property-filter"
+                    controls-position="right"
+                    placeholder="最大值"
+                    ariaLabel="最大值"
+                    @update:model-value="updatePropertyFilterNumberRange(row, 1, $event)"
+                  />
+                </div>
                 <el-select
                   v-else-if="resolvePropertyFilterKind(row) === 'boolean'"
                   :model-value="readPropertyFilterBoolean(row)"
@@ -178,7 +190,7 @@
         <el-table-column prop="sourceLabel" label="源对象" min-width="220" show-overflow-tooltip />
         <el-table-column prop="targetLabel" label="目标对象" min-width="220" show-overflow-tooltip />
       </el-table>
-      <el-empty v-else class="aircas-empty" :description="resolveEmptyDescription()" />
+      <el-empty v-else-if="shouldShowStepEmpty()" class="aircas-empty" :description="resolveEmptyDescription()" />
     </section>
   </main>
 </template>
@@ -312,6 +324,29 @@ function resolveStepPanelCopy() {
 }
 
 /**
+ * @description 判断当前步骤是否应展示空状态，避免实例分组已存在时仍占满剩余高度。
+ * @returns 是否展示空状态。
+ */
+function shouldShowStepEmpty() {
+  if (props.currentStepIndex <= 0) {
+    return props.selectedObjects.length === 0;
+  }
+  if (props.currentStepIndex === 1) {
+    return props.instanceGroups.length === 0 && props.instanceLoadStatus !== "loading" && props.instanceLoadStatus !== "error";
+  }
+  if (props.currentStepIndex === 2) {
+    return (
+      !props.propertyGroups.some((group) => group.properties.length) &&
+      props.propertyLoadStatus !== "loading" &&
+      props.propertyLoadStatus !== "error" &&
+      props.relationLoadStatus !== "loading" &&
+      props.relationLoadStatus !== "error"
+    );
+  }
+  return props.relationRows.length === 0;
+}
+
+/**
  * @description 返回当前步骤没有可展示内容时的空状态说明。
  * @returns 空状态文案。
  */
@@ -413,7 +448,13 @@ function ensurePropertyFilter(propertyId: string) {
   if (current) {
     return current;
   }
-  const created = { text: "", number: null, dateRange: undefined, booleanValue: undefined };
+  const created: SubspaceCreatePropertyFilterState = {
+    text: "",
+    number: null,
+    numberRange: [null, null],
+    dateRange: undefined,
+    booleanValue: undefined,
+  };
   propertyFilters.value = { ...propertyFilters.value, [propertyId]: created };
   return created;
 }
@@ -442,26 +483,30 @@ function updatePropertyFilterText(row: unknown, value: string) {
 }
 
 /**
- * @description 读取数值筛选内容。
+ * @description 读取数字区间某一端的筛选值。
  * @param row 表格当前行。
+ * @param index 0 为最小值，1 为最大值。
  * @returns 数值，未填写时为空。
  */
-function readPropertyFilterNumber(row: unknown) {
-  return propertyFilters.value[readObjectProperty(row).id]?.number ?? null;
+function readPropertyFilterNumberRangeValue(row: unknown, index: 0 | 1) {
+  return propertyFilters.value[readObjectProperty(row).id]?.numberRange?.[index] ?? null;
 }
 
 /**
- * @description 写入数值筛选内容。
+ * @description 写入数字区间某一端的筛选值，另一端保持原值或空。
  * @param row 表格当前行。
+ * @param index 0 为最小值，1 为最大值。
  * @param value 数字输入值。
  */
-function updatePropertyFilterNumber(row: unknown, value: number | undefined) {
+function updatePropertyFilterNumberRange(row: unknown, index: 0 | 1, value: number | undefined) {
   const propertyId = readObjectProperty(row).id;
   if (!propertyId) {
     return;
   }
   const current = ensurePropertyFilter(propertyId);
-  propertyFilters.value = { ...propertyFilters.value, [propertyId]: { ...current, number: typeof value === "number" ? value : null } };
+  const nextRange: [number | null, number | null] = [current.numberRange?.[0] ?? null, current.numberRange?.[1] ?? null];
+  nextRange[index] = typeof value === "number" ? value : null;
+  propertyFilters.value = { ...propertyFilters.value, [propertyId]: { ...current, numberRange: nextRange } };
 }
 
 /**
@@ -895,6 +940,23 @@ watch(
 
 .subspace-create-workspace__property-filter {
   width: 100%;
+}
+
+.subspace-create-workspace__number-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subspace-create-workspace__number-range span {
+  flex-shrink: 0;
+  color: var(--aircas-color-text-muted);
+  font-size: 13px;
+}
+
+.subspace-create-workspace__number-range .subspace-create-workspace__property-filter {
+  min-width: 0;
+  flex: 1;
 }
 
 .subspace-create-workspace__property-filter.el-date-editor {

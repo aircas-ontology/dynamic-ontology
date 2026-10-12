@@ -1,6 +1,10 @@
 <template>
   <div class="subspace-create-instance-panel">
-    <section v-for="group in instanceGroups" :key="group.objectId" class="subspace-create-instance-panel__group">
+    <section
+      v-for="group in instanceGroups"
+      :key="group.objectId"
+      :class="['subspace-create-instance-panel__group', canFillInstanceGroup(group) ? 'is-filled' : 'is-compact']"
+    >
       <header class="subspace-create-instance-panel__header">
         <strong>{{ group.objectLabel }}</strong
         ><span>{{ countSelectedGroupInstances(group) }} / {{ group.total }} 个实例</span>
@@ -11,7 +15,7 @@
         ><el-button class="aircas-button" size="small" @click="emit('retry', group.objectId)">重试</el-button>
       </div>
       <div v-else-if="group.status === 'empty'" class="subspace-create-instance-panel__state">暂无实例</div>
-      <el-table v-else class="aircas-table aircas-table--flat subspace-create-instance-panel__table" :data="group.instances" row-key="id" stripe>
+      <el-table v-else class="aircas-table aircas-table--flat subspace-create-instance-panel__table" :data="group.instances" row-key="id" stripe height="100%">
         <el-table-column width="48">
           <template #header
             ><el-checkbox
@@ -55,6 +59,15 @@ const emit = defineEmits<{
   "page-size-change": [objectId: string, pageSize: number];
   retry: [objectId: string];
 }>();
+
+/**
+ * @description 判断对象分组是否应撑满剩余高度。
+ * @param group 对象实例分组。
+ * @returns 是否为可撑满的分组。
+ */
+function canFillInstanceGroup(group: SubspaceCreateInstanceGroup) {
+  return group.status === "success" && group.instances.length > 0;
+}
 
 /** @description 统计对象当前已选实例数量。 */
 function countSelectedGroupInstances(group: SubspaceCreateInstanceGroup) {
@@ -101,13 +114,22 @@ function toggleInstance(row: unknown, checked: CheckboxValueType) {
   overflow: auto;
 }
 .subspace-create-instance-panel__group {
-  flex: 0 0 auto;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--aircas-color-border-soft);
   border-radius: 8px;
 }
+.subspace-create-instance-panel__group.is-filled {
+  flex: 1 1 auto;
+}
+.subspace-create-instance-panel__group.is-compact {
+  flex: 0 0 auto;
+}
 .subspace-create-instance-panel__header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
@@ -123,6 +145,8 @@ function toggleInstance(row: unknown, checked: CheckboxValueType) {
 }
 .subspace-create-instance-panel__table {
   width: 100%;
+  min-height: 0;
+  flex: 1;
 }
 .subspace-create-instance-panel__state {
   display: flex;
@@ -133,6 +157,7 @@ function toggleInstance(row: unknown, checked: CheckboxValueType) {
   color: var(--aircas-color-text-muted);
 }
 .subspace-create-instance-panel__pagination {
+  flex-shrink: 0;
   justify-content: flex-end;
   padding: 8px 12px;
 }

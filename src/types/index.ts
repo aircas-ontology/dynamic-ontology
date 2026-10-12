@@ -1,3 +1,16 @@
+export type {
+  AiAssistantBuildProgress,
+  AiAssistantBuildStep,
+  AiAssistantBuildStepStatus,
+  AiAssistantAssistantMessage,
+  AiAssistantCommandStatus,
+  AiAssistantMessage,
+  AiAssistantProcessItem,
+  AiAssistantProcessKind,
+  AiAssistantPropertySelectionRow,
+  AiAssistantSelectionCard,
+  AiAssistantUserMessage,
+} from "./agent/aiAssistantChatType";
 export type { ApiResponse } from "./apis/apiResponseType";
 export type { AutoBindOntologyPropertyDatasourceData, AutoBindOntologyPropertyDatasourceParams } from "./apis/autoBindOntologyPropertyDatasourceType";
 export type {
@@ -110,6 +123,14 @@ export type {
   OntologyRelationCategoryTreeParams,
   UpdateOntologyRelationCategoryNameParams,
 } from "./apis/ontologyRelationCategoryTreeType";
+export type {
+  StreamAgentChatData,
+  StreamAgentChatEvent,
+  StreamAgentChatEventType,
+  StreamAgentChatParams,
+  StreamAgentChatSelectionOption,
+  StreamAgentChatSelectionScenario,
+} from "./apis/streamAgentChatType";
 export type { TestOntologyFunctionData, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
 export type { UpdateOntologyFunctionData, UpdateOntologyFunctionParams } from "./apis/updateOntologyFunctionType";
 export type { UpdateOntologyLinkParams } from "./apis/updateOntologyLinkType";
