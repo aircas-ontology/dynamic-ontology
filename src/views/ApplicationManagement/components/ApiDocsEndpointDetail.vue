@@ -25,12 +25,12 @@
       </dl>
     </div>
 
-    <el-tabs v-model="activeTab" class="aircas-tabs api-docs-endpoint-detail__tabs">
+    <el-tabs v-model="activeTab" class="api-docs-endpoint-detail__tabs">
       <el-tab-pane label="请求参数" name="parameters">
         <el-table
           v-if="detail.parameters.length"
           :data="detail.parameters"
-          class="aircas-table aircas-table--flat api-docs-endpoint-detail__table"
+          class="aircas-table--accent-header api-docs-endpoint-detail__table"
           size="small"
           empty-text="无请求参数"
         >
@@ -58,7 +58,7 @@
         <el-table
           v-if="detail.responses.length"
           :data="detail.responses"
-          class="aircas-table aircas-table--flat api-docs-endpoint-detail__table"
+          class="aircas-table--accent-header api-docs-endpoint-detail__table"
           size="small"
           empty-text="无响应定义"
         >
@@ -79,7 +79,7 @@
           </h4>
           <el-table
             :data="responseSchema200.schemaFields"
-            class="aircas-table aircas-table--flat api-docs-endpoint-detail__table api-docs-endpoint-detail__schema-table"
+            class="aircas-table--accent-header api-docs-endpoint-detail__table api-docs-endpoint-detail__schema-table"
             size="small"
             row-key="id"
             default-expand-all
@@ -157,7 +157,7 @@ watch(
 
 .api-docs-endpoint-detail__method {
   flex: 0 0 auto;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 14px;
   font-weight: 700;
 }
@@ -201,7 +201,7 @@ watch(
 
 .api-docs-endpoint-detail__tag {
   padding: 2px 8px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 4px;
   color: var(--aircas-color-text-secondary);
   font-size: 12px;

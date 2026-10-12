@@ -102,7 +102,7 @@ html/                生产构建产物，【禁止】读取、修改、删除�
 | 调整共享状态                 | `src/stores/`、`src/types/`                                                                                   |
 | 新增或调整全局 composable    | `src/composables/`、`src/stores/`、`src/types/`                                                               |
 | 修改公共组件                 | `src/components/`、`src/assets/components/`、`src/styles/`                                                    |
-| 修改主题或 Element Plus 外观 | `src/styles/theme-*.css`、`src/styles/element-plus/`                                                          |
+| 修改主题或 Element Plus 外观 | `src/styles/themes/`、`src/styles/components/`                                                                |
 | 修改地图或三维能力           | `src/utils/initEarth.ts`、相关模型、组件或页面，并核对实例生命周期                                            |
 | 修改类型                     | `src/types/`、`src/types/index.ts`、`scripts/check-types-conventions.mjs`                                     |
 | 修改构建配置                 | `vite.config.ts`、`tsconfig*.json`、`package.json`                                                            |

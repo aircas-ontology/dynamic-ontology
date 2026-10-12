@@ -11,7 +11,7 @@
     <div v-if="status === 'loading'" class="ontology-space-management__state" role="status"><AircasLoading>正在加载本体空间…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="ontology-space-management__state" role="alert">
       <span>{{ error }}</span
-      ><el-button class="aircas-button" type="primary" @click="loadOntologySpaces">重试</el-button>
+      ><el-button type="primary" @click="loadOntologySpaces">重试</el-button>
     </div>
     <SpaceCollection
       v-else
@@ -138,7 +138,7 @@ onMounted(() => {
   gap: 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   background-color: var(--aircas-color-panel-background);
 }
 

@@ -3,7 +3,7 @@
     <div v-if="loading" class="application-management__state">接口文档加载中…</div>
     <div v-else-if="!endpointGroups.length" class="application-management__state">
       <p>{{ error || "暂无接口文档数据" }}</p>
-      <el-button class="aircas-button" type="primary" @click="loadOntologyApiDocs">重新加载</el-button>
+      <el-button type="primary" @click="loadOntologyApiDocs">重新加载</el-button>
     </div>
     <template v-else>
       <p v-if="error" class="application-management__banner" role="status">{{ error }}</p>
@@ -46,7 +46,7 @@ const { loading, error, selectedId, serviceInfo, endpointGroups, selectedDetail,
 .application-management__banner {
   margin: 0;
   padding: 8px 16px;
-  border-bottom: 1px solid var(--aircas-color-border-soft);
+  border-bottom: 1px solid var(--aircas-color-border-light);
   background: var(--aircas-color-panel-background-deep);
   color: var(--aircas-color-warning);
   font-size: 12px;

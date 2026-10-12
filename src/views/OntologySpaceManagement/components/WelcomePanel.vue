@@ -1,8 +1,8 @@
 <template>
-  <el-card class="aircas-card welcome-panel" shadow="never" body-class="welcome-panel__body">
+  <el-card class="welcome-panel" shadow="never" body-class="welcome-panel__body">
     <h1>欢迎回来，<span>访客</span></h1>
     <p>在这里统一管理本体空间，支持创建、编辑、导入导出与空间运维。</p>
-    <el-button class="aircas-button welcome-panel__create" type="primary" :icon="Plus" @click="$emit('create')">新建本体空间</el-button>
+    <el-button class="welcome-panel__create" type="primary" :icon="Plus" @click="$emit('create')">新建本体空间</el-button>
   </el-card>
 </template>
 <script setup lang="ts">
@@ -10,17 +10,17 @@ import { Plus } from "@element-plus/icons-vue";
 defineEmits<{ create: [] }>();
 </script>
 <style scoped lang="scss">
-.welcome-panel.aircas-card {
+.welcome-panel {
   position: relative;
   min-width: 0;
   height: 100%;
   min-height: 150px;
   border-radius: 8px;
-  background: linear-gradient(160deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 28px var(--aircas-color-page-glow);
+  background: linear-gradient(160deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 28px var(--aircas-color-effect-page-glow);
 }
 
-:root[theme="light"] .welcome-panel.aircas-card {
+:root:not(.dark) .welcome-panel {
   background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
@@ -30,7 +30,7 @@ defineEmits<{ create: [] }>();
   left: 0;
   width: 26%;
   height: 2px;
-  background: var(--aircas-color-accent-cyan);
+  background: var(--aircas-color-primary);
   content: "";
 }
 
@@ -39,9 +39,8 @@ defineEmits<{ create: [] }>();
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 12px;
-  height: 100%;
-  padding: 20px;
+  gap: 8px;
+  padding: 16px 20px;
 }
 
 h1 {
@@ -51,25 +50,12 @@ h1 {
 
 h1 span {
   margin-left: 20px;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
 }
 
 p {
   color: var(--aircas-color-text-secondary);
   font-size: 14px;
   line-height: 1.6;
-}
-
-.welcome-panel :deep(.welcome-panel__create.el-button--primary) {
-  background-color: var(--aircas-color-transparent);
-  border-color: var(--aircas-color-accent-cyan);
-  color: var(--aircas-color-accent-cyan);
-}
-
-.welcome-panel :deep(.welcome-panel__create.el-button--primary:hover),
-.welcome-panel :deep(.welcome-panel__create.el-button--primary:focus-visible) {
-  background-color: var(--aircas-color-accent-cyan-fill);
-  border-color: var(--aircas-color-accent-cyan);
-  color: var(--aircas-color-accent-cyan);
 }
 </style>

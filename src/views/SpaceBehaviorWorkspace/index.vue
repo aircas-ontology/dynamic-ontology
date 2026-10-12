@@ -13,7 +13,7 @@
       <div v-if="status === 'loading'" class="space-behavior-workspace__state" role="status"><AircasLoading>正在加载行为…</AircasLoading></div>
       <div v-else-if="status === 'error'" class="space-behavior-workspace__state space-behavior-workspace__state--error" role="alert">
         <span>{{ errorMessage || "行为工作区加载失败" }}</span>
-        <el-button class="aircas-button aircas-button--tone-primary" @click="loadSpaceBehaviorWorkspace">重试</el-button>
+        <el-button @click="loadSpaceBehaviorWorkspace">重试</el-button>
       </div>
       <BehaviorListPanel
         v-else
@@ -338,10 +338,10 @@ function handleBehaviorDelete(): void {
   justify-content: center;
   gap: 12px;
   min-height: 160px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 14px;
 }
 .space-behavior-workspace__state--error {
-  color: var(--aircas-color-accent-orange);
+  color: var(--aircas-color-warning);
 }
 </style>

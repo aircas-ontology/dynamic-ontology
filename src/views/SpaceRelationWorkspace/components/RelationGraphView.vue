@@ -38,6 +38,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { Delete, Edit } from "@element-plus/icons-vue";
 import type { OntologyRelationClass, RelationGraphLayoutMode } from "@/types";
 import { createRelationGraph3d, type RelationGraph3dApi } from "../composables/useRelationGraph3d";
+import { useDocumentTheme } from "@/composables/shared/useDocumentTheme";
 
 const props = withDefaults(
   defineProps<{
@@ -63,6 +64,7 @@ const emit = defineEmits<{
 }>();
 
 const rootRef = ref<HTMLElement | null>(null);
+const { isDark } = useDocumentTheme();
 const canvasRef = ref<HTMLElement | null>(null);
 let graphApi: RelationGraph3dApi | null = null;
 let resizeObserver: ResizeObserver | null = null;
@@ -143,6 +145,8 @@ onBeforeUnmount(() => {
   graphApi = null;
 });
 
+watch(isDark, () => graphApi?.refreshTheme());
+
 watch(
   () => [props.items, props.layoutMode, props.seedNames, props.maxHop, props.categoryColors] as const,
   () => {
@@ -168,35 +172,19 @@ watch(
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   background:
-    radial-gradient(
-      ellipse 80% 48% at 50% 72%,
-      color-mix(in srgb, var(--aircas-color-accent-cyan-fill) 90%, var(--aircas-color-transparent)) 0%,
-      var(--aircas-color-transparent) 70%
-    ),
-    radial-gradient(
-      ellipse 58% 42% at 50% 38%,
-      color-mix(in srgb, var(--aircas-color-accent-blue-fill) 80%, var(--aircas-color-transparent)) 0%,
-      var(--aircas-color-transparent) 65%
-    ),
+    radial-gradient(ellipse 80% 48% at 50% 72%, color-mix(in srgb, var(--aircas-color-effect-primary-fill) 90%, transparent) 0%, transparent 70%),
+    radial-gradient(ellipse 58% 42% at 50% 38%, color-mix(in srgb, var(--aircas-color-effect-blue-fill) 80%, transparent) 0%, transparent 65%),
     linear-gradient(
       165deg,
-      color-mix(in srgb, var(--aircas-color-overlay) 72%, var(--aircas-color-panel-background) 28%),
-      color-mix(in srgb, var(--aircas-color-overlay-deep) 55%, var(--aircas-color-panel-background) 45%)
+      color-mix(in srgb, var(--aircas-color-panel-background) 72%, var(--aircas-color-panel-background) 28%),
+      color-mix(in srgb, var(--aircas-color-panel-background-deep) 55%, var(--aircas-color-panel-background) 45%)
     );
 }
 
-:root[theme="light"] .relation-graph-view:not(.relation-graph-view--holographic) {
+:root:not(.dark) .relation-graph-view:not(.relation-graph-view--holographic) {
   background:
-    radial-gradient(
-      ellipse 80% 48% at 50% 72%,
-      color-mix(in srgb, var(--aircas-color-accent-cyan-fill) 90%, var(--aircas-color-transparent)) 0%,
-      var(--aircas-color-transparent) 70%
-    ),
-    radial-gradient(
-      ellipse 58% 42% at 50% 38%,
-      color-mix(in srgb, var(--aircas-color-accent-blue-fill) 80%, var(--aircas-color-transparent)) 0%,
-      var(--aircas-color-transparent) 65%
-    ),
+    radial-gradient(ellipse 80% 48% at 50% 72%, color-mix(in srgb, var(--aircas-color-effect-primary-fill) 90%, transparent) 0%, transparent 70%),
+    radial-gradient(ellipse 58% 42% at 50% 38%, color-mix(in srgb, var(--aircas-color-effect-blue-fill) 80%, transparent) 0%, transparent 65%),
     linear-gradient(165deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 .relation-graph-view__canvas {
@@ -224,7 +212,7 @@ watch(
 }
 .relation-graph-view__scanlines {
   opacity: 0.12;
-  background: repeating-linear-gradient(to bottom, transparent 0, transparent 3px, color-mix(in srgb, var(--aircas-color-accent-cyan) 7%, transparent) 4px);
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 3px, color-mix(in srgb, var(--aircas-color-primary) 7%, transparent) 4px);
 }
 .relation-graph-view__vignette {
   background: radial-gradient(circle, transparent 50%, color-mix(in srgb, var(--aircas-color-black) 72%, transparent) 118%);
@@ -236,7 +224,7 @@ watch(
   left: 0;
   right: 0;
   text-align: center;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   pointer-events: none;
 }
@@ -250,11 +238,11 @@ watch(
   padding: 6px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: var(--aircas-color-overlay-deep);
-  box-shadow: 0 8px 24px var(--aircas-color-divider);
+  background: var(--aircas-color-panel-background-deep);
+  box-shadow: 0 8px 24px var(--aircas-color-border-light);
 }
 
-:root[theme="light"] .relation-graph-context-menu {
+:root:not(.dark) .relation-graph-context-menu {
   background: var(--aircas-color-card-background);
 }
 .relation-graph-context-menu__item {
@@ -263,10 +251,10 @@ watch(
   gap: 6px;
   height: 32px;
   padding: 0 10px;
-  border: 1px solid var(--aircas-color-accent-blue-border);
+  border: 1px solid var(--aircas-color-effect-blue-border);
   border-radius: 4px;
-  color: var(--aircas-color-accent-blue);
-  background: var(--aircas-color-accent-blue-soft);
+  color: var(--aircas-color-category-blue);
+  background: var(--aircas-color-effect-blue-soft);
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
@@ -274,14 +262,14 @@ watch(
 .relation-graph-context-menu__item:hover,
 .relation-graph-context-menu__item:focus-visible {
   color: var(--aircas-color-text-primary);
-  border-color: var(--aircas-color-accent-blue);
-  background: var(--aircas-color-accent-blue-fill);
+  border-color: var(--aircas-color-category-blue);
+  background: var(--aircas-color-effect-blue-fill);
 }
 .relation-graph-context-menu__item-danger {
   color: var(--aircas-color-danger);
   border-color: var(--aircas-color-danger);
-  background: var(--aircas-color-danger-background);
-  box-shadow: inset 0 0 12px var(--aircas-color-danger-background);
+  background: var(--aircas-color-effect-danger-fill);
+  box-shadow: inset 0 0 12px var(--aircas-color-effect-danger-fill);
 }
 .relation-graph-context-menu__item-danger:hover,
 .relation-graph-context-menu__item-danger:focus-visible {

@@ -59,7 +59,7 @@ const props = withDefaults(
     right: -9999,
     isStatic: false,
     isFunc: true,
-  }
+  },
 );
 
 const emit = defineEmits<{ close: [] }>();
@@ -77,8 +77,7 @@ store.updatePanelIndex(currentPanelIndex.value);
 const { x, y } = useDraggable(panelHeadRef, { disabled: props.isStatic });
 
 /** 尺寸值 → CSS 长度：数字加 px，字符串原样 */
-const sizeToCss = (value: number | string): string =>
-  isFinite(Number(value)) ? `${value}px` : String(value);
+const sizeToCss = (value: number | string): string => (isFinite(Number(value)) ? `${value}px` : String(value));
 
 /** 面板定位与宽度样式（拖拽后按屏幕范围 clamp） */
 const initStyle = computed<Record<string, string>>(() => {
@@ -192,7 +191,7 @@ function handlerCloseAircasPanel() {
         font-size: 16px;
         padding: 0 5px;
         font-weight: bolder;
-        color: var(--aircas-color-title);
+        color: var(--aircas-color-primary);
       }
     }
 
@@ -211,14 +210,14 @@ function handlerCloseAircasPanel() {
         border: 0;
         border-radius: 2px;
         color: var(--aircas-color-text-primary);
-        background: var(--aircas-color-selected-background);
+        background: var(--aircas-color-active);
         margin-left: 3px;
         transition: background-color 0.3s;
         cursor: pointer;
       }
 
       .panel-action:hover {
-        background: var(--aircas-color-active-background);
+        background: var(--aircas-color-active);
       }
 
       .panel-action-close:hover {
@@ -226,7 +225,7 @@ function handlerCloseAircasPanel() {
       }
 
       .panel-action:focus-visible {
-        outline: 2px solid var(--aircas-color-focus-border);
+        outline: 2px solid var(--aircas-color-primary);
         outline-offset: 2px;
       }
     }

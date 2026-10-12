@@ -1,5 +1,5 @@
 <template>
-  <el-table class="aircas-table aircas-table--flat space-table-view" height="100%" :data="spaces" stripe row-key="id">
+  <el-table class="aircas-table--accent-header space-table-view" height="100%" :data="spaces" stripe row-key="id">
     <el-table-column label="空间名称" min-width="280">
       <template #default="{ row }">
         <div class="space-table-view__name">
@@ -51,19 +51,18 @@ function spaceRow(row: unknown): OntologySpaceItem {
 
 <style scoped lang="scss">
 .space-table-view {
-  --aircas-table-cell-padding: 14px 0;
   flex: 1;
   min-height: 320px;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 8px;
   overflow: hidden;
-  background: linear-gradient(160deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+  background: linear-gradient(160deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
   box-shadow:
-    inset 0 0 28px var(--aircas-color-page-glow),
-    0 0 18px var(--aircas-color-accent-blue-soft);
+    inset 0 0 28px var(--aircas-color-effect-page-glow),
+    0 0 18px var(--aircas-color-effect-blue-soft);
 }
 
-:root[theme="light"] .space-table-view {
+:root:not(.dark) .space-table-view {
   background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
@@ -72,18 +71,6 @@ function spaceRow(row: unknown): OntologySpaceItem {
   color: var(--aircas-color-text-primary);
   font-size: 13px;
   font-weight: 700;
-}
-
-.space-table-view :deep(.el-table__body tr > td.el-table__cell) {
-  background-color: var(--aircas-color-panel-background) !important;
-}
-
-.space-table-view :deep(.el-table__body tr.el-table__row--striped > td.el-table__cell) {
-  background-color: var(--aircas-color-panel-background-deep) !important;
-}
-
-.space-table-view :deep(.el-table__body tr:hover > td.el-table__cell) {
-  background-color: var(--aircas-color-accent-blue-soft) !important;
 }
 
 .space-table-view__name {
@@ -99,11 +86,11 @@ function spaceRow(row: unknown): OntologySpaceItem {
   width: 48px;
   height: 48px;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 8px;
   background: var(--aircas-color-section-header);
-  box-shadow: 0 0 12px var(--aircas-color-accent-cyan-soft);
-  color: var(--aircas-color-accent-cyan);
+  box-shadow: 0 0 12px var(--aircas-color-effect-primary-soft);
+  color: var(--aircas-color-primary);
   flex-shrink: 0;
 }
 
@@ -115,10 +102,6 @@ function spaceRow(row: unknown): OntologySpaceItem {
 
 .space-table-view__name div {
   min-width: 0;
-}
-
-.space-table-view :deep(.el-table__body .space-table-view__name strong) {
-  color: var(--aircas-color-text-primary);
 }
 
 .space-table-view__name strong {
@@ -135,7 +118,7 @@ function spaceRow(row: unknown): OntologySpaceItem {
   display: block;
   margin-top: 4px;
   overflow-wrap: anywhere;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 </style>

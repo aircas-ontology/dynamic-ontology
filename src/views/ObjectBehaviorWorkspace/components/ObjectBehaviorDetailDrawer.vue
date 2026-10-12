@@ -1,5 +1,5 @@
 <template>
-  <el-drawer :model-value="modelValue" class="aircas-drawer" title="行为详情" size="680px" @update:model-value="emit('update:modelValue', $event)">
+  <el-drawer :model-value="modelValue" title="行为详情" size="680px" @update:model-value="emit('update:modelValue', $event)">
     <template v-if="behavior"
       ><el-descriptions :column="2" border
         ><el-descriptions-item label="行为名称">{{ behavior.displayName }}</el-descriptions-item
@@ -15,7 +15,7 @@
       <el-empty v-if="!behavior.inputParameters.length" description="暂无输入参数" /><el-table
         v-else
         :data="behavior.inputParameters"
-        class="aircas-table aircas-table--flat"
+        class="aircas-table--accent-header"
         ><el-table-column prop="name" label="参数" /><el-table-column prop="type" label="类型" /><el-table-column prop="description" label="描述"
       /></el-table>
       <h3>状态操作记录</h3>

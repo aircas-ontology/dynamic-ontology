@@ -1,6 +1,5 @@
 <template>
   <el-dialog
-    class="aircas-dialog"
     :title="editingAttributeId === null ? '添加属性' : '编辑属性'"
     width="min(760px, 94vw)"
     append-to-body
@@ -8,49 +7,40 @@
     :model-value="visible"
     @update:model-value="$emit('update:visible', $event)"
   >
-    <el-form ref="formRef" :model="draft" :rules="rules" class="aircas-form" label-position="top">
+    <el-form ref="formRef" :model="draft" :rules="rules" label-position="top">
       <div class="ontology-object-attribute-panel__form-grid">
         <el-form-item label="属性名称" prop="displayName">
-          <el-input v-model="draft.displayName" class="aircas-input" placeholder="例如：任务优先级" />
+          <el-input v-model="draft.displayName" placeholder="例如：任务优先级" />
         </el-form-item>
         <el-form-item label="API" prop="apiName">
-          <el-input v-model="draft.apiName" class="aircas-input" placeholder="例如：priority" :disabled="editingAttributeId !== null" />
+          <el-input v-model="draft.apiName" placeholder="例如：priority" :disabled="editingAttributeId !== null" />
         </el-form-item>
         <el-form-item label="属性分类" prop="categoryId" class="ontology-object-attribute-panel__form-full">
-          <el-select v-model="draft.categoryId" class="aircas-select" popper-class="aircas-select-popper" placeholder="请选择属性分类">
+          <el-select v-model="draft.categoryId" placeholder="请选择属性分类">
             <el-option v-for="category in categoryOptions" :key="category.id" :label="category.label" :value="category.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="数据类型" prop="dataType">
-          <el-select v-model="draft.dataType" class="aircas-select" popper-class="aircas-select-popper" placeholder="请选择数据类型">
+          <el-select v-model="draft.dataType" placeholder="请选择数据类型">
             <el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" />
           </el-select>
         </el-form-item>
         <el-form-item label="存储分组" prop="storageGroup">
-          <el-select
-            v-model="draft.storageGroup"
-            class="aircas-select"
-            popper-class="aircas-select-popper"
-            placeholder="请输入或选择存储分组"
-            filterable
-            allow-create
-            default-first-option
-          >
+          <el-select v-model="draft.storageGroup" placeholder="请输入或选择存储分组" filterable allow-create default-first-option>
             <el-option v-for="group in storageGroups" :key="group.value" :label="group.label" :value="group.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="默认值" class="ontology-object-attribute-panel__form-full">
-          <el-input v-model="draft.defaultValue" class="aircas-input" placeholder="可选" />
+          <el-input v-model="draft.defaultValue" placeholder="可选" />
         </el-form-item>
       </div>
       <el-form-item label="属性描述" class="ontology-object-attribute-panel__form-full">
-        <el-input v-model="draft.description" class="aircas-input" type="textarea" :rows="3" placeholder="请输入属性描述" />
+        <el-input v-model="draft.description" type="textarea" :rows="3" placeholder="请输入属性描述" />
       </el-form-item>
       <div class="ontology-object-attribute-panel__switches">
         <div class="ontology-object-attribute-panel__switch-field">
           <span>主键</span>
           <el-switch
-            class="aircas-switch"
             :model-value="draft.isPrimary"
             inline-prompt
             active-text="是"
@@ -61,7 +51,6 @@
         <div class="ontology-object-attribute-panel__switch-field">
           <span>名称键</span>
           <el-switch
-            class="aircas-switch"
             :model-value="draft.isNameKey"
             inline-prompt
             active-text="是"
@@ -73,8 +62,8 @@
     </el-form>
     <p v-if="commandError" class="ontology-object-attribute-panel__dialog-error" role="alert">{{ commandError }}</p>
     <template #footer>
-      <el-button class="aircas-button aircas-button--tone-ghost" @click="$emit('update:visible', false)">取消</el-button>
-      <el-button class="aircas-button aircas-button--tone-primary" :loading="saving" @click="confirmSave">保存</el-button>
+      <el-button @click="$emit('update:visible', false)">取消</el-button>
+      <el-button :loading="saving" @click="confirmSave">保存</el-button>
     </template>
   </el-dialog>
 </template>

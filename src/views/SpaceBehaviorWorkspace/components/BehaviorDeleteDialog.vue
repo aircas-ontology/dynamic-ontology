@@ -1,7 +1,6 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    class="aircas-dialog"
     title="删除行为"
     width="520px"
     append-to-body
@@ -24,22 +23,15 @@
         即将删除行为 <strong>“{{ preflight.behaviorName }}”</strong>。此操作不可恢复，但历史执行记录会保留行为名称快照。
       </p>
       <p class="behavior-delete-dialog__impact">影响范围：{{ preflight.impactSummary }}</p>
-      <el-form class="aircas-form" label-position="top">
+      <el-form label-position="top">
         <el-form-item label="请输入行为名称确认删除" :error="confirmError">
-          <el-input v-model="confirmName" class="aircas-input" maxlength="64" :placeholder="preflight.behaviorName" />
+          <el-input v-model="confirmName" maxlength="64" :placeholder="preflight.behaviorName" />
         </el-form-item>
       </el-form>
     </template>
     <template #footer>
-      <el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button
-        v-if="preflight?.canDelete"
-        class="aircas-button aircas-button--tone-danger"
-        type="danger"
-        :loading="loading"
-        :disabled="confirmName !== preflight.behaviorName"
-        @click="emit('confirm')"
-      >
+      <el-button @click="emit('update:modelValue', false)">取消</el-button>
+      <el-button v-if="preflight?.canDelete" type="danger" :loading="loading" :disabled="confirmName !== preflight.behaviorName" @click="emit('confirm')">
         确认删除
       </el-button>
     </template>

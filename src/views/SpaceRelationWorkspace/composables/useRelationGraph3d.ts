@@ -2,10 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { OntologyRelationClass, RelationGraphLayoutMode } from "@/types";
 import { computeHopDistances } from "../utils/spaceRelationGraph";
-import {
-  createRelationEdgeLabelTexture,
-  resolveSoftCategoryColor,
-} from "../utils/relationGraph3dTexture";
+import { createRelationEdgeLabelTexture, resolveSoftCategoryColor } from "../utils/relationGraph3dTexture";
 import { themeColor } from "../utils/themeColor";
 import { createGlowTexture, createLabelTexture } from "../utils/graphTextureFactory";
 
@@ -20,6 +17,7 @@ export interface RelationGraph3dData {
 
 export interface RelationGraph3dApi {
   setData: (data: RelationGraph3dData) => Promise<void>;
+  refreshTheme: () => void;
   resize: () => void;
   dispose: () => void;
 }
@@ -45,6 +43,7 @@ interface EdgeRecord {
   targetName: string;
   displayName: string;
   cardinality: string;
+  categoryKey: string;
 }
 
 function disposeObject(obj: THREE.Object3D): void {
@@ -73,10 +72,7 @@ function buildDegreeMap(items: OntologyRelationClass[]): Map<string, number> {
   return map;
 }
 
-function buildCategoryColorMap(
-  items: OntologyRelationClass[],
-  customColors?: Record<string, string>,
-): Map<string, string> {
+function buildCategoryColorMap(items: OntologyRelationClass[], customColors?: Record<string, string>): Map<string, string> {
   const map = new Map<string, string>();
   let index = 0;
   items.forEach((item) => {
@@ -117,23 +113,16 @@ function placeRingNodes(
   zFactor: number,
 ): void {
   names.forEach((name, index) => {
-    const angle =
-      names.length === 1 ? -Math.PI / 2 : (Math.PI * 2 * index) / names.length - Math.PI / 2;
+    const angle = names.length === 1 ? -Math.PI / 2 : (Math.PI * 2 * index) / names.length - Math.PI / 2;
     result.set(name, {
-      position: new THREE.Vector3(
-        Math.cos(angle) * radius,
-        Math.sin(angle) * yAmp,
-        Math.sin(angle) * radius * zFactor,
-      ),
+      position: new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * yAmp, Math.sin(angle) * radius * zFactor),
       isSeed: false,
       hop,
     });
   });
 }
 
-function computeLayoutPositions(
-  data: RelationGraph3dData,
-): Map<string, { position: THREE.Vector3; isSeed: boolean; hop: number }> {
+function computeLayoutPositions(data: RelationGraph3dData): Map<string, { position: THREE.Vector3; isSeed: boolean; hop: number }> {
   const result = new Map<string, { position: THREE.Vector3; isSeed: boolean; hop: number }>();
   const names = new Set<string>();
   data.items.forEach((item) => {
@@ -157,8 +146,7 @@ function computeLayoutPositions(
     return result;
   }
 
-  const primarySeed =
-    data.seedNames.map((name) => name.trim()).find((name) => Boolean(name)) || "";
+  const primarySeed = data.seedNames.map((name) => name.trim()).find((name) => Boolean(name)) || "";
   const hopLevel = Math.max(1, data.maxHop || 1);
 
   if (!primarySeed) {
@@ -196,16 +184,9 @@ function computeLayoutPositions(
         return;
       }
       const radius = 3.2 + (hop / hopLevel) * 5.4;
-      const angle =
-        groupNames.length === 1
-          ? -Math.PI / 2
-          : (Math.PI * 2 * index) / groupNames.length - Math.PI / 2;
+      const angle = groupNames.length === 1 ? -Math.PI / 2 : (Math.PI * 2 * index) / groupNames.length - Math.PI / 2;
       result.set(name, {
-        position: new THREE.Vector3(
-          Math.cos(angle) * radius,
-          0.2 + hop * 0.35,
-          Math.sin(angle) * radius * 0.78,
-        ),
+        position: new THREE.Vector3(Math.cos(angle) * radius, 0.2 + hop * 0.35, Math.sin(angle) * radius * 0.78),
         isSeed: false,
         hop,
       });
@@ -215,13 +196,18 @@ function computeLayoutPositions(
   return result;
 }
 
+/**
+ * @description 创建拥有独立资源与清理边界的三维关系图，主题刷新保留场景与镜头。
+ * @param options 容器与关系菜单回调。
+ * @returns 数据更新、主题刷新、尺寸调整和销毁接口。
+ */
 export function createRelationGraph3d(options: {
   container: HTMLElement;
   onEdgeContextMenu: (relationId: string, clientX: number, clientY: number) => void;
 }): RelationGraph3dApi {
   const container = options.container;
   const scene = new THREE.Scene();
-  const fogColor = themeColor("--aircas-color-panel-background") || "#0c2430";
+  const fogColor = themeColor("--aircas-color-panel-background");
   scene.fog = new THREE.FogExp2(fogColor, 0.014);
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
@@ -272,6 +258,46 @@ export function createRelationGraph3d(options: {
   let animationId = 0;
   let disposed = false;
   let buildToken = 0;
+  let themeData: RelationGraph3dData | null = null;
+
+  /**
+   * @description 替换精灵纹理并释放旧纹理，保持精灵位置、透明度与尺寸。
+   * @param sprite 需要更新的精灵。
+   * @param texture 新主题纹理。
+   */
+  function replaceSpriteTexture(sprite: THREE.Sprite, texture: THREE.Texture): void {
+    const previous = sprite.material.map;
+    sprite.material.map = texture;
+    sprite.material.needsUpdate = true;
+    previous?.dispose();
+  }
+
+  /**
+   * @description 就地更新图谱颜色和纹理，保留镜头、节点、布局、悬停及用户分类配色。
+   */
+  function refreshTheme(): void {
+    if (disposed) return;
+    const textColor = themeColor("--aircas-color-text-primary");
+    const primaryColor = themeColor("--aircas-color-primary");
+    scene.fog?.color.set(themeColor("--aircas-color-panel-background"));
+    const categoryColors = themeData ? buildCategoryColorMap(themeData.items, themeData.categoryColors) : new Map<string, string>();
+    nodes.forEach((node) => {
+      const subtitle = holographicLayout ? `${node.degree} 条关联关系` : node.isSeed ? `中心 · ${node.degree}` : `L${node.hop} · ${node.degree}`;
+      replaceSpriteTexture(node.sprite, createLabelTexture(node.name, subtitle, textColor));
+      const color = node.isSeed ? primaryColor : textColor;
+      node.hologram?.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) child.material.color.set(color);
+        if (child instanceof THREE.Sprite) replaceSpriteTexture(child, createGlowTexture(color));
+      });
+    });
+    edges.forEach((edge) => {
+      const color = categoryColors.get(edge.categoryKey) ?? resolveSoftCategoryColor(0);
+      edge.color = color;
+      if (edge.line.material instanceof THREE.LineBasicMaterial) edge.line.material.color.set(color);
+      if (edge.arrow.material instanceof THREE.MeshBasicMaterial) edge.arrow.material.color.set(color);
+      replaceSpriteTexture(edge.label, createRelationEdgeLabelTexture(edge.displayName, "", color, false));
+    });
+  }
 
   const resize = (): void => {
     if (disposed) return;
@@ -293,9 +319,7 @@ export function createRelationGraph3d(options: {
   };
 
   const refreshHighlight = (): void => {
-    const focusEdge = hoveredRelationId
-      ? edges.find((item) => item.relationId === hoveredRelationId)
-      : null;
+    const focusEdge = hoveredRelationId ? edges.find((item) => item.relationId === hoveredRelationId) : null;
     const focusNames = new Set<string>();
     if (focusEdge) {
       focusNames.add(focusEdge.sourceName);
@@ -325,18 +349,21 @@ export function createRelationGraph3d(options: {
     });
   };
 
+  /**
+   * @description 更新关系数据与布局，保存主题刷新所需的分类配置。
+   * @param data 关系数据、布局与用户分类颜色。
+   */
   const setData = async (data: RelationGraph3dData): Promise<void> => {
     if (disposed) return;
-    const seed = data.seedNames.map(name => name.trim()).find(Boolean);
+    const seed = data.seedNames.map((name) => name.trim()).find(Boolean);
     if (data.layoutMode === "network" && seed && data.maxHop === 1) {
       data = {
         ...data,
-        items: data.items.filter(item =>
-          item.sourceName.trim() === seed || item.targetName.trim() === seed,
-        ),
+        items: data.items.filter((item) => item.sourceName.trim() === seed || item.targetName.trim() === seed),
       };
     }
     const token = ++buildToken;
+    themeData = data;
     clearGraph();
     hoveredRelationId = null;
     hoveredNodeName = null;
@@ -348,7 +375,7 @@ export function createRelationGraph3d(options: {
     const layout = computeLayoutPositions(data);
     const holographic = data.layoutMode === "network";
     holographicLayout = holographic;
-    scene.fog = holographic ? new THREE.FogExp2(0x020612, 0.022) : new THREE.FogExp2(fogColor, 0.014);
+    scene.fog = new THREE.FogExp2(themeColor("--aircas-color-panel-background"), holographic ? 0.022 : 0.014);
 
     for (const [name, layoutItem] of layout) {
       if (token !== buildToken || disposed) return;
@@ -356,12 +383,8 @@ export function createRelationGraph3d(options: {
       const baseScale = sizeFromDegree(degree, degreeValues);
       const texture = createLabelTexture(
         name,
-        holographic
-          ? `${degree} 条关联关系`
-          : layoutItem.isSeed
-            ? `中心 · ${degree}`
-            : `L${layoutItem.hop} · ${degree}`,
-        "#d9edf7",
+        holographic ? `${degree} 条关联关系` : layoutItem.isSeed ? `中心 · ${degree}` : `L${layoutItem.hop} · ${degree}`,
+        themeColor("--aircas-color-text-primary"),
       );
       if (token !== buildToken || disposed) {
         texture.dispose();
@@ -379,13 +402,24 @@ export function createRelationGraph3d(options: {
         hologram = new THREE.Group();
         hologram.position.copy(layoutItem.position);
         const size = layoutItem.isSeed ? 0.42 : 0.25;
-        const color = layoutItem.isSeed ? "#a5efff" : "#d9edf7";
-        const wire = new THREE.Mesh(new THREE.IcosahedronGeometry(size, 1), new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending }));
+        const color = themeColor(layoutItem.isSeed ? "--aircas-color-primary" : "--aircas-color-text-primary");
+        const wire = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(size, 1),
+          new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending }),
+        );
         wire.userData = { kind: "node", name };
-        const shell = new THREE.Mesh(new THREE.IcosahedronGeometry(size * 1.5, 1), new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.26, blending: THREE.AdditiveBlending }));
-        const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: createGlowTexture(color), transparent: true, opacity: 0.65, blending: THREE.AdditiveBlending, depthWrite: false }));
+        const shell = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(size * 1.5, 1),
+          new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.26, blending: THREE.AdditiveBlending }),
+        );
+        const glow = new THREE.Sprite(
+          new THREE.SpriteMaterial({ map: createGlowTexture(color), transparent: true, opacity: 0.65, blending: THREE.AdditiveBlending, depthWrite: false }),
+        );
         glow.scale.setScalar(size * 8);
-        const base = new THREE.Mesh(new THREE.RingGeometry(size * 1.4, size * 1.7, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }));
+        const base = new THREE.Mesh(
+          new THREE.RingGeometry(size * 1.4, size * 1.7, 48),
+          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }),
+        );
         base.rotation.x = -Math.PI / 2;
         base.position.y = -0.45;
         const halo = new THREE.Mesh(new THREE.TorusGeometry(size * 1.9, 0.008, 8, 64), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5 }));
@@ -464,12 +498,7 @@ export function createRelationGraph3d(options: {
       arrow.userData = { kind: "edge-arrow", relationId: item.id };
       graphRoot.add(arrow);
 
-      const labelTexture = createRelationEdgeLabelTexture(
-        item.displayName,
-        "",
-        color,
-        false,
-      );
+      const labelTexture = createRelationEdgeLabelTexture(item.displayName, "", color, false);
       const labelMaterial = new THREE.SpriteMaterial({
         map: labelTexture,
         transparent: true,
@@ -492,13 +521,14 @@ export function createRelationGraph3d(options: {
         targetName: target,
         displayName: item.displayName,
         cardinality: item.cardinality,
+        categoryKey: colorKey,
       });
     }
 
     controls.target.set(0, 0.2, 0);
     camera.position.set(0, 9.5, 16);
     if (holographic) {
-      const radius = Math.max(7, ...nodes.map(node => node.position.length()));
+      const radius = Math.max(7, ...nodes.map((node) => node.position.length()));
       camera.position.set(0, radius * 1.25, radius * 1.9);
     }
     controls.update();
@@ -511,7 +541,7 @@ export function createRelationGraph3d(options: {
     raycaster.setFromCamera(pointer, camera);
     const targets: THREE.Object3D[] = [
       ...nodes.map((item) => item.sprite),
-      ...nodes.flatMap((item) => item.hologram ? [item.hologram.children[0]!] : []),
+      ...nodes.flatMap((item) => (item.hologram ? [item.hologram.children[0]!] : [])),
       ...edges.map((item) => item.line),
       ...edges.map((item) => item.label),
     ];
@@ -574,8 +604,11 @@ export function createRelationGraph3d(options: {
   resize();
   animate();
 
+  /** @description 停止渲染并释放全部监听器、图谱纹理与 WebGL 资源；可重复调用。 */
   const dispose = (): void => {
+    if (disposed) return;
     disposed = true;
+    themeData = null;
     cancelAnimationFrame(animationId);
     buildToken += 1;
     renderer.domElement.removeEventListener("pointermove", onPointerMove);
@@ -591,5 +624,5 @@ export function createRelationGraph3d(options: {
     }
   };
 
-  return { setData, resize, dispose };
+  return { setData, refreshTheme, resize, dispose };
 }

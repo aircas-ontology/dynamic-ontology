@@ -1,7 +1,6 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    class="aircas-dialog"
     :title="mode === 'create' ? '创建行为' : '编辑行为'"
     width="min(960px, 94vw)"
     :close-on-click-modal="false"
@@ -11,35 +10,31 @@
     <el-form label-position="top" class="object-behavior-form">
       <h3>基本信息</h3>
       <div class="object-behavior-form__grid">
-        <el-form-item label="行为名称" required
-          ><el-input v-model="draft.displayName" class="aircas-input" :disabled="readonly" placeholder="输入行为名称" /></el-form-item
+        <el-form-item label="行为名称" required><el-input v-model="draft.displayName" :disabled="readonly" placeholder="输入行为名称" /></el-form-item
         ><el-form-item label="行为分类" required
-          ><el-select v-model="draft.categoryId" class="aircas-select" :disabled="readonly"
+          ><el-select v-model="draft.categoryId" :disabled="readonly"
             ><el-option v-for="item in categoryOptions" :key="item.id" :label="item.label" :value="item.id" /></el-select
         ></el-form-item>
       </div>
       <div class="object-behavior-form__grid">
         <el-form-item label="基础操作"
-          ><el-select v-model="draft.basicAction" class="aircas-select" :disabled="readonly"
+          ><el-select v-model="draft.basicAction" :disabled="readonly"
             ><el-option
               v-for="item in SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS"
               :key="item.value"
               :label="item.label"
               :value="item.value" /></el-select></el-form-item
         ><el-form-item label="关联基础函数算子" required
-          ><el-input v-model="draft.functionOperatorName" class="aircas-input" :disabled="readonly" placeholder="关联基础函数算子"
+          ><el-input v-model="draft.functionOperatorName" :disabled="readonly" placeholder="关联基础函数算子"
         /></el-form-item>
       </div>
       <el-form-item label="行为描述"
-        ><el-input v-model="draft.description" class="aircas-input" type="textarea" :rows="3" :disabled="readonly" placeholder="输入行为描述" /></el-form-item
-      ><el-form-item label="变更说明"
-        ><el-input v-model="draft.changeNote" class="aircas-input" :disabled="readonly" placeholder="输入变更说明"
-      /></el-form-item>
+        ><el-input v-model="draft.description" type="textarea" :rows="3" :disabled="readonly" placeholder="输入行为描述" /></el-form-item
+      ><el-form-item label="变更说明"><el-input v-model="draft.changeNote" :disabled="readonly" placeholder="输入变更说明" /></el-form-item>
     </el-form>
     <template #footer
-      ><el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">取消</el-button
-      ><el-button v-if="readonly" class="aircas-button aircas-button--tone-primary" @click="emit('save-copy', draft)">另存草稿副本</el-button
-      ><el-button v-else class="aircas-button aircas-button--tone-primary" :disabled="!canSubmit" @click="submitBehaviorForm">保存行为</el-button></template
+      ><el-button @click="emit('update:modelValue', false)">取消</el-button><el-button v-if="readonly" @click="emit('save-copy', draft)">另存草稿副本</el-button
+      ><el-button v-else :disabled="!canSubmit" @click="submitBehaviorForm">保存行为</el-button></template
     >
   </el-dialog>
 </template>

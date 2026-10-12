@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    class="aircas-dialog behavior-form-dialog"
+    class="behavior-form-dialog"
     :title="dialogTitle"
     width="min(1120px, 94vw)"
     top="4vh"
@@ -12,7 +12,7 @@
   >
     <div class="behavior-form-dialog__intro">
       <span>基本信息 / 输入参数 / 输出参数</span>
-      <el-tag class="aircas-tag" size="small" type="warning">{{ configTag }}</el-tag>
+      <el-tag size="small" type="warning">{{ configTag }}</el-tag>
     </div>
     <el-alert
       v-if="saveAsCopy"
@@ -24,53 +24,30 @@
     />
     <el-alert v-if="readonly" title="已停用行为为只读，请先通过状态管理转为草稿" type="warning" show-icon :closable="false" />
 
-    <el-form class="aircas-form behavior-form-dialog__form" label-position="top" :disabled="readonly">
+    <el-form class="behavior-form-dialog__form" label-position="top" :disabled="readonly">
       <section class="behavior-form-dialog__section">
         <h3>基本信息</h3>
         <div class="behavior-form-dialog__grid">
           <el-form-item label="行为名称" required>
-            <el-input v-model="displayName" class="aircas-input" maxlength="64" show-word-limit placeholder="输入行为名称" />
+            <el-input v-model="displayName" maxlength="64" show-word-limit placeholder="输入行为名称" />
           </el-form-item>
           <el-form-item label="行为分类" required>
-            <el-select v-model="categoryId" class="aircas-select" popper-class="aircas-select-popper" filterable placeholder="选择行为分类" style="width: 100%">
+            <el-select v-model="categoryId" filterable placeholder="选择行为分类" style="width: 100%">
               <el-option v-for="item in categoryOptions" :key="item.id" :label="item.label" :value="item.id" />
             </el-select>
           </el-form-item>
         </div>
         <el-form-item label="行为描述">
-          <el-input
-            v-model="description"
-            class="aircas-input"
-            type="textarea"
-            :rows="2"
-            maxlength="240"
-            show-word-limit
-            placeholder="说明业务目的、执行场景与预期结果"
-          />
+          <el-input v-model="description" type="textarea" :rows="2" maxlength="240" show-word-limit placeholder="说明业务目的、执行场景与预期结果" />
         </el-form-item>
         <div class="behavior-form-dialog__grid">
           <el-form-item label="基础操作" required>
-            <el-select
-              :model-value="basicAction"
-              class="aircas-select"
-              popper-class="aircas-select-popper"
-              placeholder="选择基础操作"
-              style="width: 100%"
-              @change="handleBasicActionChange"
-            >
+            <el-select :model-value="basicAction" placeholder="选择基础操作" style="width: 100%" @change="handleBasicActionChange">
               <el-option v-for="item in SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
           <el-form-item label="关联基础函数算子" required>
-            <el-select
-              :model-value="functionOperatorId"
-              class="aircas-select"
-              popper-class="aircas-select-popper"
-              filterable
-              placeholder="选择基础函数算子"
-              style="width: 100%"
-              @change="handleOperatorChange"
-            >
+            <el-select :model-value="functionOperatorId" filterable placeholder="选择基础函数算子" style="width: 100%" @change="handleOperatorChange">
               <el-option v-for="item in filteredOperatorOptions" :key="item.id" :label="`${item.name} · ${item.version}`" :value="item.id" />
             </el-select>
           </el-form-item>
@@ -81,7 +58,7 @@
         <header class="behavior-form-dialog__heading">
           <h3>
             {{ direction === "input" ? "输入参数" : "输出参数" }}
-            <el-tag class="aircas-tag" size="small" effect="plain">{{ parameterList(direction).length }} 项</el-tag>
+            <el-tag size="small" effect="plain">{{ parameterList(direction).length }} 项</el-tag>
           </h3>
           <span>{{ direction === "input" ? "声明来源；对象 / List 内字段需逐项配置" : "使用返回字段路径与目标属性建立一一映射" }}</span>
         </header>
@@ -109,7 +86,7 @@
                   <small>{{ row.parameter.description || "暂无描述" }}</small>
                 </td>
                 <td>
-                  <el-tag class="aircas-tag" size="small" effect="plain">{{ row.parameter.type }}</el-tag>
+                  <el-tag size="small" effect="plain">{{ row.parameter.type }}</el-tag>
                   <small>{{ row.parameter.required ? (direction === "input" ? "必填输入" : "算子必返") : "可选" }}</small>
                 </td>
                 <template v-if="row.isGroup">
@@ -122,7 +99,7 @@
                   <td v-if="direction === 'output'">{{ row.parameter.path || "—" }}</td>
                   <td>{{ row.parameter.bindLabel || "—" }}</td>
                   <td>
-                    <el-tag class="aircas-tag" size="small" :type="row.parameter.configured ? 'success' : 'warning'">
+                    <el-tag size="small" :type="row.parameter.configured ? 'success' : 'warning'">
                       {{ row.parameter.configured ? "已配置" : "待完善" }}
                     </el-tag>
                   </td>
@@ -131,13 +108,13 @@
             </tbody>
           </table>
         </div>
-        <el-empty v-else class="aircas-empty" :description="functionOperatorId ? '该算子无参数' : '请选择函数算子以加载参数'" :image-size="48" />
+        <el-empty v-else :description="functionOperatorId ? '该算子无参数' : '请选择函数算子以加载参数'" :image-size="48" />
       </section>
 
       <section class="behavior-form-dialog__section">
         <h3>变更信息</h3>
         <el-form-item label="变更说明">
-          <el-input v-model="changeNote" class="aircas-input" maxlength="240" show-word-limit placeholder="说明参数、绑定或关系变化" />
+          <el-input v-model="changeNote" maxlength="240" show-word-limit placeholder="说明参数、绑定或关系变化" />
         </el-form-item>
         <p class="behavior-form-dialog__muted">
           此处只保存配置，不改变状态。保存后请在列表或详情的“状态管理”中发布；当前为 Mock 生命周期，不执行真实行为或生产审批。
@@ -146,13 +123,9 @@
     </el-form>
 
     <template #footer>
-      <el-button class="aircas-button aircas-button--tone-ghost" @click="emit('update:modelValue', false)">{{ readonly ? "关闭" : "取消" }}</el-button>
-      <el-button v-if="saveAsCopy" class="aircas-button aircas-button--tone-primary" :loading="loading" @click="submitBehaviorForm('copy')">
-        另存草稿副本
-      </el-button>
-      <el-button v-else-if="!readonly" class="aircas-button aircas-button--tone-primary" :loading="loading" @click="submitBehaviorForm('save')">
-        保存行为
-      </el-button>
+      <el-button @click="emit('update:modelValue', false)">{{ readonly ? "关闭" : "取消" }}</el-button>
+      <el-button v-if="saveAsCopy" :loading="loading" @click="submitBehaviorForm('copy')"> 另存草稿副本 </el-button>
+      <el-button v-else-if="!readonly" :loading="loading" @click="submitBehaviorForm('save')"> 保存行为 </el-button>
     </template>
   </el-dialog>
 </template>
@@ -380,7 +353,7 @@ defineExpose({
   margin: 0;
 }
 .behavior-form-dialog__heading span {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 .behavior-form-dialog__grid {
@@ -389,7 +362,7 @@ defineExpose({
   gap: 12px;
 }
 .behavior-form-dialog__muted {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -407,13 +380,13 @@ defineExpose({
 .behavior-form-dialog__table th,
 .behavior-form-dialog__table td {
   padding: 8px 12px;
-  border-bottom: 1px solid var(--aircas-color-border-soft);
+  border-bottom: 1px solid var(--aircas-color-border-light);
   text-align: left;
   vertical-align: top;
 }
 .behavior-form-dialog__table th {
   background: var(--aircas-color-panel-background-deep);
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -427,7 +400,7 @@ defineExpose({
 }
 .behavior-form-dialog__table td small {
   margin-top: 2px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
 }
 .behavior-form-dialog__table tr.is-group td {
   background: var(--aircas-color-panel-background-deep);

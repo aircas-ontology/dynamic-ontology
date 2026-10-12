@@ -1,0 +1,20 @@
+// 独立蓝紫分类色保留旧版视觉差异，普通状态色使用新版语义色。
+@mixin emit($dark: false) {
+  @if $dark {
+    --aircas-color-category-blue: #269cff;
+    --aircas-color-category-purple: #9272ff;
+  } @else {
+    --aircas-color-category-blue: #2563eb;
+    --aircas-color-category-purple: #7c3aed;
+  }
+
+  @each $name, $base in ("primary": "primary", "blue": "category-blue", "purple": "category-purple", "success": "success", "warning": "warning") {
+    --aircas-color-effect-#{$name}-soft: color-mix(in srgb, var(--aircas-color-#{$base}) 13%, transparent);
+    --aircas-color-effect-#{$name}-fill: color-mix(in srgb, var(--aircas-color-#{$base}) 12%, transparent);
+    --aircas-color-effect-#{$name}-border: color-mix(in srgb, var(--aircas-color-#{$base}) 26%, transparent);
+    --aircas-color-effect-#{$name}-shadow: color-mix(in srgb, var(--aircas-color-#{$base}) 40%, transparent);
+  }
+  --aircas-color-effect-grid: color-mix(in srgb, var(--aircas-color-primary) 6%, transparent);
+  --aircas-color-effect-page-glow: color-mix(in srgb, var(--aircas-color-category-blue) 14%, transparent);
+  --aircas-color-effect-danger-fill: color-mix(in srgb, var(--aircas-color-danger) 16%, transparent);
+}

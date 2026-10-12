@@ -3,13 +3,13 @@
     <header class="concept-hierarchy__header">
       <h1>概念层级树</h1>
     </header>
-    <el-input v-model="keyword" class="aircas-input concept-hierarchy__search" clearable placeholder="搜索概念类">
+    <el-input v-model="keyword" class="concept-hierarchy__search" clearable placeholder="搜索概念类">
       <template #prefix
         ><el-icon> <Search /> </el-icon
       ></template>
     </el-input>
     <div v-if="tree.length === 0" class="concept-hierarchy__empty">
-      <el-button class="aircas-button" type="primary" @click="emit('create')">添加分类树</el-button>
+      <el-button type="primary" @click="emit('create')">添加分类树</el-button>
     </div>
     <el-tree
       v-else
@@ -42,12 +42,12 @@
               </span>
             </span>
             <span class="concept-hierarchy__create-child-wrap" @click.stop>
-              <el-tooltip content="新建子分类" placement="top" popper-class="aircas-popper" :show-after="200">
+              <el-tooltip content="新建子分类" placement="top" :show-after="200">
                 <button type="button" class="concept-hierarchy__create-child" aria-label="新建子分类" @click="openChildCategoryDialog(data)">
                   <el-icon><Plus /></el-icon>
                 </button>
               </el-tooltip>
-              <el-tooltip content="修改分类名称" placement="top" popper-class="aircas-popper" :show-after="200">
+              <el-tooltip content="修改分类名称" placement="top" :show-after="200">
                 <button
                   type="button"
                   class="concept-hierarchy__action concept-hierarchy__action--edit"
@@ -57,7 +57,7 @@
                   <el-icon><Edit /></el-icon>
                 </button>
               </el-tooltip>
-              <el-tooltip content="删除分类" placement="top" popper-class="aircas-popper" :show-after="200">
+              <el-tooltip content="删除分类" placement="top" :show-after="200">
                 <button
                   type="button"
                   class="concept-hierarchy__action concept-hierarchy__action--danger"
@@ -258,19 +258,19 @@ function openDeleteCategoryDialog(value: unknown) {
   padding: 12px;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 12% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 42%),
-    linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
+    radial-gradient(circle at 12% 0, var(--aircas-color-effect-primary-soft), transparent 42%),
+    linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
   box-shadow:
-    inset 0 0 20px var(--aircas-color-page-glow),
-    0 0 18px var(--aircas-color-accent-blue-soft);
+    inset 0 0 20px var(--aircas-color-effect-page-glow),
+    0 0 18px var(--aircas-color-effect-blue-soft);
 }
 
-:root[theme="light"] .concept-hierarchy {
+:root:not(.dark) .concept-hierarchy {
   background:
-    radial-gradient(circle at 12% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 42%),
+    radial-gradient(circle at 12% 0, var(--aircas-color-effect-primary-soft), transparent 42%),
     linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
@@ -289,7 +289,7 @@ function openDeleteCategoryDialog(value: unknown) {
 }
 
 .concept-hierarchy__header span {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 
@@ -312,23 +312,13 @@ function openDeleteCategoryDialog(value: unknown) {
   flex: 1;
   overflow: auto;
   color: var(--aircas-color-text-secondary);
-  background: var(--aircas-color-transparent);
+  background: transparent;
 }
 
 .concept-hierarchy__tree :deep(.el-tree-node__content) {
   min-height: 32px;
   height: auto;
   padding: 4px 0;
-  border-radius: 4px;
-}
-
-.concept-hierarchy__tree :deep(.el-tree-node__content:hover) {
-  background: var(--aircas-color-hover-background);
-}
-
-.concept-hierarchy__tree :deep(.el-tree-node.is-current > .el-tree-node__content) {
-  color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-selected-background);
 }
 
 .concept-hierarchy__node {
@@ -365,9 +355,9 @@ function openDeleteCategoryDialog(value: unknown) {
 .concept-hierarchy__count {
   min-width: 24px;
   padding: 1px 6px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 999px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 11px;
   text-align: center;
 }
@@ -387,8 +377,8 @@ function openDeleteCategoryDialog(value: unknown) {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--aircas-color-accent-cyan);
-  box-shadow: 0 0 4px var(--aircas-color-accent-cyan-soft);
+  background: var(--aircas-color-primary);
+  box-shadow: 0 0 4px var(--aircas-color-effect-primary-soft);
 }
 
 .concept-hierarchy__object-name {
@@ -424,8 +414,8 @@ function openDeleteCategoryDialog(value: unknown) {
   padding: 0;
   border: none;
   border-radius: 4px;
-  color: var(--aircas-color-text-inverse);
-  background: var(--aircas-color-button-primary-background);
+  color: var(--aircas-color-on-accent);
+  background: var(--aircas-color-primary);
   cursor: pointer;
 }
 
@@ -443,12 +433,12 @@ function openDeleteCategoryDialog(value: unknown) {
   padding: 0;
   border: none;
   border-radius: 4px;
-  color: var(--aircas-color-text-inverse);
+  color: var(--aircas-color-on-accent);
   cursor: pointer;
 }
 
 .concept-hierarchy__action--edit {
-  background: var(--aircas-color-accent-blue);
+  background: var(--aircas-color-category-blue);
 }
 
 .concept-hierarchy__action--danger {
@@ -456,6 +446,6 @@ function openDeleteCategoryDialog(value: unknown) {
 }
 
 .concept-hierarchy__node > .el-icon {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
 }
 </style>

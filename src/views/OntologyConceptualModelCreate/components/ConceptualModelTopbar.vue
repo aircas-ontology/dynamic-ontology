@@ -1,13 +1,13 @@
 <template>
   <header class="conceptual-model-create__topbar">
-    <el-button class="aircas-button" @click="$emit('go-back')">返回</el-button>
+    <el-button @click="$emit('go-back')">返回</el-button>
     <div class="conceptual-model-create__identity">
       <span class="conceptual-model-create__eyebrow">空间概念模型</span>
       <h1>概念模型画布</h1>
       <p>拖拽 UML 对象构建空间骨架，保存后自动写入默认「全部」分类</p>
     </div>
     <el-input
-      class="aircas-input conceptual-model-create__space-input"
+      class="conceptual-model-create__space-input"
       :model-value="spaceApiName"
       ariaLabel="空间 API 名称"
       placeholder="空间 API 名称"
@@ -15,11 +15,11 @@
     />
     <div class="conceptual-model-create__actions">
       <span>{{ zoom }}%</span>
-      <el-button class="aircas-button" size="small" @click="$emit('zoom-out')">缩小</el-button>
-      <el-button class="aircas-button" size="small" @click="$emit('zoom-in')">放大</el-button>
-      <el-button class="aircas-button" size="small" @click="$emit('fit-canvas')">适应画布</el-button>
-      <el-button class="aircas-button" type="danger" size="small" :disabled="!hasSelection" @click="$emit('delete-selected')">删除选中</el-button>
-      <el-button class="aircas-button" type="primary" size="small" @click="$emit('save')">保存并创建空间</el-button>
+      <el-button size="small" @click="$emit('zoom-out')">缩小</el-button>
+      <el-button size="small" @click="$emit('zoom-in')">放大</el-button>
+      <el-button size="small" @click="$emit('fit-canvas')">适应画布</el-button>
+      <el-button type="danger" size="small" :disabled="!hasSelection" @click="$emit('delete-selected')">删除选中</el-button>
+      <el-button type="primary" size="small" @click="$emit('save')">保存并创建空间</el-button>
     </div>
   </header>
 </template>
@@ -70,7 +70,7 @@ defineEmits<{
 }
 
 .conceptual-model-create__eyebrow {
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 11px;
   letter-spacing: 0.12em;
 }

@@ -1,7 +1,7 @@
 <template>
   <el-drawer
     :model-value="modelValue"
-    class="aircas-drawer behavior-detail-drawer"
+    class="behavior-detail-drawer"
     :title="behavior?.displayName || '行为详情'"
     size="680px"
     append-to-body
@@ -12,7 +12,7 @@
       <header class="behavior-detail-drawer__header">
         <p class="behavior-detail-drawer__description" :title="behavior.description || '暂无描述'">{{ behavior.description || "暂无描述" }}</p>
         <div class="behavior-detail-drawer__tags">
-          <el-tag class="aircas-tag" size="small" :type="statusTagType(behavior.status)">{{ SPACE_BEHAVIOR_STATUS_LABELS[behavior.status] }}</el-tag>
+          <el-tag size="small" :type="statusTagType(behavior.status)">{{ SPACE_BEHAVIOR_STATUS_LABELS[behavior.status] }}</el-tag>
         </div>
         <div class="behavior-detail-drawer__meta-line">
           <span
@@ -23,7 +23,7 @@
         </div>
       </header>
 
-      <el-descriptions class="aircas-descriptions behavior-detail-drawer__summary" :column="2" border size="small">
+      <el-descriptions class="behavior-detail-drawer__summary" :column="2" border size="small">
         <el-descriptions-item label="行为 ID">{{ behavior.id }}</el-descriptions-item>
         <el-descriptions-item label="执行范围">{{ behavior.singleObject ? "单对象" : "批量" }}</el-descriptions-item>
         <el-descriptions-item label="执行次数">{{ behavior.executionCount }}</el-descriptions-item>
@@ -34,7 +34,7 @@
 
       <section class="behavior-detail-drawer__section">
         <h4>输入参数</h4>
-        <el-table v-if="inputRows.length" :data="inputRows" class="aircas-table aircas-table--flat" size="small">
+        <el-table v-if="inputRows.length" :data="inputRows" class="aircas-table--accent-header" size="small">
           <el-table-column label="参数" min-width="160" show-overflow-tooltip>
             <template #default="{ row }">{{ asParameterRow(row).parameter.path || asParameterRow(row).parameter.name }}</template>
           </el-table-column>
@@ -56,7 +56,7 @@
 
       <section class="behavior-detail-drawer__section">
         <h4>输出参数</h4>
-        <el-table v-if="outputRows.length" :data="outputRows" class="aircas-table aircas-table--flat" size="small">
+        <el-table v-if="outputRows.length" :data="outputRows" class="aircas-table--accent-header" size="small">
           <el-table-column label="参数" min-width="160" show-overflow-tooltip>
             <template #default="{ row }">{{ asParameterRow(row).parameter.path || asParameterRow(row).parameter.name }}</template>
           </el-table-column>
@@ -170,20 +170,6 @@ function statusTagType(status: SpaceBehaviorStatus): "success" | "info" | "warni
 }
 .behavior-detail-drawer__summary {
   margin-top: 16px;
-  --el-descriptions-item-bordered-label-background: var(--aircas-color-panel-background-deep);
-  --el-descriptions-table-border: 1px solid var(--aircas-color-border-soft);
-  --el-fill-color-blank: var(--aircas-color-input-background);
-}
-.behavior-detail-drawer__summary :deep(.el-descriptions__body) {
-  background-color: var(--aircas-color-transparent);
-}
-.behavior-detail-drawer__summary :deep(.el-descriptions__label.is-bordered-label) {
-  background: var(--aircas-color-panel-background-deep);
-  color: var(--aircas-color-text-secondary);
-}
-.behavior-detail-drawer__summary :deep(.el-descriptions__content.is-bordered-content) {
-  background: var(--aircas-color-input-background);
-  color: var(--aircas-color-text-primary);
 }
 .behavior-detail-drawer__section {
   margin-top: 20px;
@@ -195,7 +181,7 @@ function statusTagType(status: SpaceBehaviorStatus): "success" | "info" | "warni
 }
 .behavior-detail-drawer__empty {
   margin: 0;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 .behavior-detail-drawer__change {
@@ -237,7 +223,7 @@ function statusTagType(status: SpaceBehaviorStatus): "success" | "info" | "warni
 }
 .behavior-detail-drawer__logs time {
   flex-shrink: 0;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   white-space: nowrap;
 }

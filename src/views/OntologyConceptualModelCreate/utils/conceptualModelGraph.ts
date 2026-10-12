@@ -174,7 +174,7 @@ export function applyRelationEdgeTools(edge: Edge, visible: boolean, force = fal
       args: {
         attrs: {
           d: ENDPOINT_HANDLE,
-          fill: "var(--aircas-color-accent-cyan)",
+          fill: "var(--aircas-color-primary)",
           stroke: "var(--aircas-color-panel-background)",
           strokeWidth: 2,
           cursor: "move",
@@ -186,7 +186,7 @@ export function applyRelationEdgeTools(edge: Edge, visible: boolean, force = fal
       args: {
         attrs: {
           d: ENDPOINT_HANDLE,
-          fill: "var(--aircas-color-accent-purple)",
+          fill: "var(--aircas-color-category-purple)",
           stroke: "var(--aircas-color-panel-background)",
           strokeWidth: 2,
           cursor: "move",
@@ -203,14 +203,14 @@ export function applyRelationEdgeTools(edge: Edge, visible: boolean, force = fal
 export function conceptualEdgeAttrs() {
   return {
     line: {
-      stroke: "var(--aircas-color-accent-cyan)",
+      stroke: "var(--aircas-color-primary)",
       strokeWidth: 2,
       sourceMarker: null,
       targetMarker: {
         name: "block",
         width: 12,
         height: 8,
-        fill: "var(--aircas-color-accent-cyan)",
+        fill: "var(--aircas-color-primary)",
       },
     },
   };
@@ -234,7 +234,7 @@ export function conceptualEdgeLabel(text: string) {
       body: {
         ref: "label",
         fill: "var(--aircas-color-panel-background)",
-        stroke: "var(--aircas-color-accent-cyan)",
+        stroke: "var(--aircas-color-primary)",
         strokeWidth: 1,
         rx: 4,
         ry: 4,
@@ -255,6 +255,7 @@ export function conceptualEdgeLabel(text: string) {
  */
 export function createConceptualModelGraph(container: HTMLElement): Graph {
   registerConceptualModelShapes();
+  const colors = getComputedStyle(document.documentElement);
   return new Graph({
     container,
     autoResize: true,
@@ -264,8 +265,8 @@ export function createConceptualModelGraph(container: HTMLElement): Graph {
       size: 16,
       type: "doubleMesh",
       args: [
-        { color: "var(--aircas-color-grid-line)", thickness: 1 },
-        { color: "var(--aircas-color-border-soft)", thickness: 1, factor: 5 },
+        { color: `rgba(${colors.getPropertyValue("--aircas-color-primary-rgb").trim()}, 0.06)`, thickness: 1 },
+        { color: colors.getPropertyValue("--aircas-color-border-light").trim(), thickness: 1, factor: 5 },
       ],
     },
     interacting: {
@@ -281,11 +282,11 @@ export function createConceptualModelGraph(container: HTMLElement): Graph {
     highlighting: {
       magnetAvailable: {
         name: "stroke",
-        args: { attrs: { stroke: "var(--aircas-color-accent-cyan)", "stroke-width": 3, opacity: 0.85 } },
+        args: { attrs: { stroke: "var(--aircas-color-primary)", "stroke-width": 3, opacity: 0.85 } },
       },
       magnetAdsorbed: {
         name: "stroke",
-        args: { attrs: { stroke: "var(--aircas-color-accent-cyan)", "stroke-width": 4 } },
+        args: { attrs: { stroke: "var(--aircas-color-primary)", "stroke-width": 4 } },
       },
     },
     connecting: {
@@ -400,7 +401,7 @@ function edgePortGroup(position: ConceptualModelGraphPort, dx: number, dy: numbe
       circle: {
         r: 6,
         magnet: true,
-        stroke: "var(--aircas-color-accent-cyan)",
+        stroke: "var(--aircas-color-primary)",
         strokeWidth: 2,
         fill: "var(--aircas-color-panel-background)",
         style: { cursor: "crosshair" },

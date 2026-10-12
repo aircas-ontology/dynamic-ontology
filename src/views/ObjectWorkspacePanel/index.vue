@@ -3,7 +3,7 @@
     <div v-if="status === 'loading'" class="object-workspace-panel__state" role="status"><AircasLoading>正在加载本体对象…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="object-workspace-panel__state" role="alert">
       <span>{{ error }}</span>
-      <el-button class="aircas-button" type="primary" @click="load">重试</el-button>
+      <el-button type="primary" @click="load">重试</el-button>
     </div>
     <div v-else class="object-workspace-panel__layout">
       <ConceptHierarchyTree
@@ -278,11 +278,11 @@ function handleAction(action: string, item?: OntologyObjectItem) {
   gap: 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  color: var(--aircas-color-text-muted);
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
+  color: var(--aircas-color-text-secondary);
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-effect-page-glow);
 }
-:root[theme="light"] .object-workspace-panel__state {
+:root:not(.dark) .object-workspace-panel__state {
   background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 

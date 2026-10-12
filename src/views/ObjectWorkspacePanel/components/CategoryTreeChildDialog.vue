@@ -1,14 +1,14 @@
 <template>
-  <el-dialog v-model="visible" class="aircas-dialog" title="新建子分类" width="min(480px, 94vw)" append-to-body destroy-on-close>
-    <el-form class="aircas-form" label-position="top">
+  <el-dialog v-model="visible" title="新建子分类" width="min(480px, 94vw)" append-to-body destroy-on-close>
+    <el-form label-position="top">
       <el-form-item label="输入子分类名称" required>
-        <el-input v-model="categoryName" class="aircas-input" maxlength="64" ariaLabel="输入子分类名称" placeholder="请输入子分类名称" :disabled="submitting" />
+        <el-input v-model="categoryName" maxlength="64" ariaLabel="输入子分类名称" placeholder="请输入子分类名称" :disabled="submitting" />
       </el-form-item>
     </el-form>
     <p v-if="error" class="category-tree-child-dialog__error" role="alert">{{ error }}</p>
     <template #footer>
-      <el-button class="aircas-button" :disabled="submitting" @click="visible = false">取消</el-button>
-      <el-button class="aircas-button" type="primary" :loading="submitting" @click="confirmCategoryChildName">确认</el-button>
+      <el-button :disabled="submitting" @click="visible = false">取消</el-button>
+      <el-button type="primary" :loading="submitting" @click="confirmCategoryChildName">确认</el-button>
     </template>
   </el-dialog>
 </template>

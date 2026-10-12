@@ -1,7 +1,7 @@
 <template>
   <el-drawer
     :model-value="modelValue"
-    class="aircas-drawer function-operator-detail"
+    class="function-operator-detail"
     :title="operator?.name || '函数算子详情'"
     size="520px"
     destroy-on-close
@@ -11,20 +11,20 @@
     <template v-else-if="operator">
       <div class="function-operator-detail__header">
         <div class="function-operator-detail__tags">
-          <el-tag v-if="operator.status" class="aircas-tag" :type="statusTagType(operator.status)" effect="dark">{{ statusLabel(operator.status) }}</el-tag>
-          <el-tag v-if="typeLabel(operator)" class="aircas-tag" effect="plain">{{ typeLabel(operator) }}</el-tag>
+          <el-tag v-if="operator.status" :type="statusTagType(operator.status)" effect="dark">{{ statusLabel(operator.status) }}</el-tag>
+          <el-tag v-if="typeLabel(operator)" effect="plain">{{ typeLabel(operator) }}</el-tag>
         </div>
         <span v-if="operator.version" class="function-operator-detail__version">{{ operator.version }}</span>
       </div>
       <p v-if="operator.description" class="function-operator-detail__description">{{ operator.description }}</p>
 
-      <el-descriptions v-if="hasMetaItems" class="aircas-descriptions function-operator-detail__meta" :column="2" border size="small">
+      <el-descriptions v-if="hasMetaItems" class="function-operator-detail__meta" :column="2" border size="small">
         <el-descriptions-item v-if="operator.protocol" label="协议">{{ operator.protocol }}</el-descriptions-item>
         <el-descriptions-item v-if="operator.createdBy" label="创建人">{{ operator.createdBy }}</el-descriptions-item>
         <el-descriptions-item v-if="operator.updatedAt" label="更新时间">{{ operator.updatedAt }}</el-descriptions-item>
         <el-descriptions-item v-if="operator.timeout > 0" label="超时">{{ operator.timeout }} ms</el-descriptions-item>
         <el-descriptions-item v-if="operator.testStatus && operator.testStatus !== 'untested'" label="测试状态">
-          <el-tag class="aircas-tag" size="small" :type="operator.testStatus === 'passed' ? 'success' : 'danger'">
+          <el-tag size="small" :type="operator.testStatus === 'passed' ? 'success' : 'danger'">
             {{ operator.testStatus === "passed" ? "已通过" : "未通过" }}
           </el-tag>
         </el-descriptions-item>
@@ -34,7 +34,7 @@
 
       <div class="function-operator-detail__section">
         <h4>输入参数</h4>
-        <el-table :data="operator.inputParameters" class="aircas-table aircas-table--flat" size="small">
+        <el-table :data="operator.inputParameters" class="aircas-table--accent-header" size="small">
           <el-table-column prop="name" label="名称" min-width="100" />
           <el-table-column prop="type" label="类型" width="90" />
           <el-table-column prop="description" label="说明" min-width="120" show-overflow-tooltip />
@@ -42,7 +42,7 @@
       </div>
       <div v-if="showOutputParameters" class="function-operator-detail__section">
         <h4>输出参数</h4>
-        <el-table :data="operator.outputParameters" class="aircas-table aircas-table--flat" size="small">
+        <el-table :data="operator.outputParameters" class="aircas-table--accent-header" size="small">
           <el-table-column prop="name" label="名称" min-width="100" />
           <el-table-column prop="type" label="类型" width="90" />
           <el-table-column prop="description" label="说明" min-width="120" show-overflow-tooltip />
@@ -182,26 +182,6 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   font-size: 13px;
 }
 
-.function-operator-detail__meta {
-  --el-descriptions-item-bordered-label-background: var(--aircas-color-panel-background-deep);
-  --el-descriptions-table-border: 1px solid var(--aircas-color-border-soft);
-  --el-fill-color-blank: var(--aircas-color-input-background);
-}
-
-.function-operator-detail__meta :deep(.el-descriptions__body) {
-  background-color: var(--aircas-color-transparent);
-}
-
-.function-operator-detail__meta :deep(.el-descriptions__label.is-bordered-label) {
-  background: var(--aircas-color-panel-background-deep);
-  color: var(--aircas-color-text-secondary);
-}
-
-.function-operator-detail__meta :deep(.el-descriptions__content.is-bordered-content) {
-  background: var(--aircas-color-input-background);
-  color: var(--aircas-color-text-primary);
-}
-
 .function-operator-detail__section {
   margin-top: 16px;
 }
@@ -217,7 +197,7 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   max-height: 240px;
   overflow: auto;
   padding: 8px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 4px;
   background: var(--aircas-color-panel-background-deep);
   color: var(--aircas-color-text-secondary);

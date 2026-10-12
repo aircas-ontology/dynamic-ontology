@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" class="aircas-dialog ontology-object-create-dialog" title="新建本体" width="min(720px, 94vw)" append-to-body destroy-on-close>
+  <el-dialog v-model="visible" class="ontology-object-create-dialog" title="新建本体" width="min(720px, 94vw)" append-to-body destroy-on-close>
     <template #header>
       <span>{{ editingItem ? "编辑本体" : "新建本体" }}</span>
     </template>
@@ -21,37 +21,23 @@
     </div>
 
     <div v-if="createMode === 'manual'" class="ontology-object-create-dialog__panel">
-      <el-form class="aircas-form" label-position="top">
+      <el-form label-position="top">
         <div class="ontology-object-create-dialog__grid">
           <el-form-item label="API 名称" required>
-            <el-input
-              v-model="draft.apiName"
-              class="aircas-input"
-              maxlength="64"
-              ariaLabel="API 名称"
-              placeholder="如 airplane"
-              :disabled="submitting || Boolean(editingItem)"
-            />
+            <el-input v-model="draft.apiName" maxlength="64" ariaLabel="API 名称" placeholder="如 airplane" :disabled="submitting || Boolean(editingItem)" />
           </el-form-item>
           <el-form-item label="显示名称" required>
-            <el-input
-              v-model="draft.displayName"
-              class="aircas-input"
-              maxlength="64"
-              ariaLabel="显示名称"
-              placeholder="请输入本体显示名称"
-              :disabled="submitting"
-            />
+            <el-input v-model="draft.displayName" maxlength="64" ariaLabel="显示名称" placeholder="请输入本体显示名称" :disabled="submitting" />
           </el-form-item>
         </div>
         <el-form-item label="描述">
-          <el-input v-model="draft.description" class="aircas-input" type="textarea" :rows="2" maxlength="300" ariaLabel="描述" :disabled="submitting" />
+          <el-input v-model="draft.description" type="textarea" :rows="2" maxlength="300" ariaLabel="描述" :disabled="submitting" />
         </el-form-item>
         <el-form-item label="本体图标">
           <div class="ontology-object-create-dialog__icon-field">
             <div v-if="draft.iconUrl" class="ontology-object-create-dialog__icon-preview">
               <img :src="draft.iconUrl" alt="本体图标预览" />
-              <el-button class="aircas-button" :disabled="submitting || iconUploading" @click="clearIcon">清除</el-button>
+              <el-button :disabled="submitting || iconUploading" @click="clearIcon">清除</el-button>
             </div>
             <el-upload
               :auto-upload="false"
@@ -60,7 +46,7 @@
               :disabled="submitting || iconUploading"
               :on-change="handleIconChange"
             >
-              <el-button class="aircas-button" :loading="iconUploading" :disabled="submitting || iconUploading">
+              <el-button :loading="iconUploading" :disabled="submitting || iconUploading">
                 {{ draft.iconUrl ? "重新选择" : "选择本地图片" }}
               </el-button>
             </el-upload>
@@ -70,23 +56,13 @@
         </el-form-item>
         <div class="ontology-object-create-dialog__grid">
           <el-form-item v-if="!editingItem" label="继承本体">
-            <el-select
-              v-model="draft.parentId"
-              class="aircas-select"
-              popper-class="aircas-select-popper"
-              clearable
-              filterable
-              placeholder="可选"
-              :disabled="submitting"
-            >
+            <el-select v-model="draft.parentId" clearable filterable placeholder="可选" :disabled="submitting">
               <el-option v-for="item in parentOptions" :key="item.id" :label="`${item.displayName} (${item.apiName})`" :value="item.id" />
             </el-select>
           </el-form-item>
           <el-form-item label="分类" required>
             <el-tree-select
               v-model="draft.categoryId"
-              class="aircas-tree-select"
-              popper-class="aircas-tree-select-popper"
               :data="categoryTreeOptions"
               check-strictly
               filterable
@@ -105,10 +81,10 @@
     <div v-else-if="createMode === 'import'" class="ontology-object-create-dialog__panel">
       <div class="ontology-object-create-dialog__import-head">
         <p>上传符合字段结构的 JSON 文件，支持批量导入当前分类。</p>
-        <el-button class="aircas-button" :disabled="submitting" @click="downloadTemplate">下载模板</el-button>
+        <el-button :disabled="submitting" @click="downloadTemplate">下载模板</el-button>
       </div>
       <el-upload
-        class="aircas-upload ontology-object-create-dialog__upload"
+        class="ontology-object-create-dialog__upload"
         drag
         :auto-upload="false"
         accept=".json,application/json"
@@ -134,9 +110,9 @@
     <p v-if="validationError" class="ontology-object-create-dialog__error" role="alert">{{ validationError }}</p>
     <p v-if="error" class="ontology-object-create-dialog__error" role="alert">{{ error }}</p>
     <template #footer>
-      <el-button class="aircas-button" :disabled="submitting" @click="visible = false">取消</el-button>
-      <el-button v-if="createMode === 'llm'" class="aircas-button" type="primary" :disabled="submitting" @click="emit('open-llm')">进入大模型构建</el-button>
-      <el-button v-else class="aircas-button" type="primary" :loading="submitting" @click="submitCreate">{{ editingItem ? "保存修改" : "确认创建" }}</el-button>
+      <el-button :disabled="submitting" @click="visible = false">取消</el-button>
+      <el-button v-if="createMode === 'llm'" type="primary" :disabled="submitting" @click="emit('open-llm')">进入大模型构建</el-button>
+      <el-button v-else type="primary" :loading="submitting" @click="submitCreate">{{ editingItem ? "保存修改" : "确认创建" }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -335,7 +311,7 @@ function submitCreate() {
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
   color: var(--aircas-color-text-secondary);
   background: var(--aircas-color-panel-background-deep);
@@ -347,7 +323,7 @@ function submitCreate() {
 }
 .ontology-object-create-dialog__mode .el-icon {
   margin-bottom: 4px;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 20px;
 }
 .ontology-object-create-dialog__mode strong {
@@ -356,16 +332,16 @@ function submitCreate() {
 }
 .ontology-object-create-dialog__mode span,
 .ontology-object-create-dialog__hint {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 .ontology-object-create-dialog__mode.is-active {
-  border-color: var(--aircas-color-accent-cyan);
-  box-shadow: 0 0 12px var(--aircas-color-accent-cyan-soft);
+  border-color: var(--aircas-color-primary);
+  box-shadow: 0 0 12px var(--aircas-color-effect-primary-soft);
 }
 .ontology-object-create-dialog__panel {
   padding: 14px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
   background: var(--aircas-color-panel-background-deep);
 }
@@ -388,7 +364,7 @@ function submitCreate() {
   width: 64px;
   height: 64px;
   object-fit: contain;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
 }
 .ontology-object-create-dialog__import-head {
@@ -409,29 +385,17 @@ function submitCreate() {
 }
 .ontology-object-create-dialog__upload :deep(.el-upload-dragger) {
   width: 100%;
-  background-color: var(--aircas-color-input-background);
-  border: 1px dashed var(--aircas-color-border);
-}
-.ontology-object-create-dialog__upload :deep(.el-upload-dragger:hover),
-.ontology-object-create-dialog__upload :deep(.el-upload-dragger.is-dragover) {
-  border-color: var(--aircas-color-border-highlight);
-}
-.ontology-object-create-dialog__upload :deep(.el-upload-dragger:focus-visible) {
-  border-color: var(--aircas-color-focus-border);
-}
-.ontology-object-create-dialog__upload :deep(.el-upload-dragger .el-icon) {
-  color: var(--aircas-color-title);
 }
 .ontology-object-create-dialog__upload p {
   margin: 8px 0 4px;
   color: var(--aircas-color-text-secondary);
 }
 .ontology-object-create-dialog__upload em {
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-style: normal;
 }
 .ontology-object-create-dialog__upload span {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 .ontology-object-create-dialog__panel--llm {
@@ -441,13 +405,13 @@ function submitCreate() {
   gap: 14px;
 }
 .ontology-object-create-dialog__panel--llm > .el-icon {
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 40px;
 }
 .ontology-object-create-dialog__panel--llm strong {
   display: block;
   margin-bottom: 6px;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 15px;
 }
 .ontology-object-create-dialog__error {

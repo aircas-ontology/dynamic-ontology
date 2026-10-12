@@ -2,7 +2,7 @@
   <aside class="object-behavior-category-panel">
     <header><h1>行为分类树</h1></header>
     <label class="object-behavior-category-panel__search"
-      >搜索行为分类<el-input v-model="keyword" class="aircas-input" clearable placeholder="搜索行为分类">
+      >搜索行为分类<el-input v-model="keyword" clearable placeholder="搜索行为分类">
         <template #prefix
           ><el-icon><Search /></el-icon
         ></template> </el-input
@@ -11,7 +11,6 @@
       <el-tree
         v-if="treeData.length"
         ref="treeRef"
-        class="aircas-tree"
         :data="treeData"
         node-key="id"
         highlight-current
@@ -26,16 +25,16 @@
               ><el-icon><FolderOpened /></el-icon>{{ data.label }} <em>{{ data.count }}</em></span
             >
             <span class="object-behavior-category-panel__actions" @click.stop>
-              <el-tooltip content="添加子分类" popper-class="aircas-popper"
+              <el-tooltip content="添加子分类"
                 ><button type="button" aria-label="添加子分类" @click="emit('create', data.id)">
                   <el-icon><Plus /></el-icon></button
               ></el-tooltip>
               <template v-if="!isRoot(data.id)">
-                <el-tooltip content="编辑分类" popper-class="aircas-popper"
+                <el-tooltip content="编辑分类"
                   ><button type="button" aria-label="编辑分类" @click="emit('edit', data.id)">
                     <el-icon><EditPen /></el-icon></button
                 ></el-tooltip>
-                <el-tooltip content="删除分类" popper-class="aircas-popper"
+                <el-tooltip content="删除分类"
                   ><button type="button" aria-label="删除分类" @click="emit('delete', data.id)">
                     <el-icon><Delete /></el-icon></button
                 ></el-tooltip>
@@ -44,9 +43,7 @@
           </div>
         </template>
       </el-tree>
-      <el-empty v-else description="暂无行为分类"
-        ><el-button class="aircas-button aircas-button--tone-primary" @click="emit('create', '')">添加行为分类</el-button></el-empty
-      >
+      <el-empty v-else description="暂无行为分类"><el-button @click="emit('create', '')">添加行为分类</el-button></el-empty>
     </div>
   </aside>
 </template>
@@ -94,8 +91,8 @@ watch(
   overflow: hidden;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-effect-page-glow);
   flex-direction: column;
   gap: 8px;
 }
@@ -128,9 +125,9 @@ watch(
 }
 .object-behavior-category-panel em {
   padding: 0 6px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 10px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 11px;
   font-style: normal;
 }
