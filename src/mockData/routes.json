@@ -40,6 +40,11 @@
     "file": "fixtures/ontology/space/canvas.post.json"
   },
   {
+    "method": "POST",
+    "path": "/ontology/space/subspace",
+    "file": "fixtures/ontology/space/subspace.post.json"
+  },
+  {
     "method": "GET",
     "path": "/ontology/space/statistic",
     "file": "fixtures/ontology/space/statistic.get.json"
@@ -168,6 +173,11 @@
     "method": "GET",
     "path": "/ontology/datasource/column",
     "file": "fixtures/ontology/datasource/column.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/entity/list",
+    "file": "fixtures/ontology/entity/list.get.json"
   },
   {
     "method": "GET",
