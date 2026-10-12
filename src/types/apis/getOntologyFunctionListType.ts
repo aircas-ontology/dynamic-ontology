@@ -16,6 +16,10 @@ export interface GetOntologyFunctionListItem {
   type: string;
   /** 更新时间（ISO 字符串）。 */
   updateTime: string;
+  /** 发布状态：0 未发布，1 已发布。 */
+  publishStatus: number;
+  /** 版本号，格式 x.y.z。 */
+  version: string;
 }
 
 /** 查询函数列表分页数据。 */

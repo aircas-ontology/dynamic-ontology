@@ -13,6 +13,8 @@ export const getOntologyFunctionListMock: ApiResponse<GetOntologyFunctionListDat
         description: "测试函数说明",
         type: "BASIC_QUERY",
         updateTime: "2026-09-24T03:35:18.692+00:00",
+        publishStatus: 1,
+        version: "1.0.0",
       },
       {
         functionApi: "addTwoNumbers",
@@ -20,6 +22,8 @@ export const getOntologyFunctionListMock: ApiResponse<GetOntologyFunctionListDat
         description: "测试用：返回 a+b",
         type: "CUSTOMIZE",
         updateTime: "2026-09-24T03:35:18.692+00:00",
+        publishStatus: 0,
+        version: "0.1.0",
       },
     ],
     total: 2,

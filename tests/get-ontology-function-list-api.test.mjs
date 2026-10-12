@@ -29,6 +29,8 @@ test("get ontology function list types expose documented request and page fields
   assert.match(source, /description: string/);
   assert.match(source, /type: string/);
   assert.match(source, /updateTime: string/);
+  assert.match(source, /publishStatus: number/);
+  assert.match(source, /version: string/);
   assert.match(source, /export interface GetOntologyFunctionListData/);
   assert.match(source, /records: GetOntologyFunctionListItem\[\]/);
   assert.match(source, /total: number/);
@@ -56,8 +58,12 @@ test("get ontology function list mock mirrors the documented sample", () => {
   assert.match(source, /displayName: "测试函数"/);
   assert.match(source, /type: "BASIC_QUERY"/);
   assert.match(source, /updateTime: "2026-09-24T03:35:18\.692\+00:00"/);
+  assert.match(source, /publishStatus: 1/);
+  assert.match(source, /version: "1\.0\.0"/);
   assert.match(source, /functionApi: "addTwoNumbers"/);
   assert.match(source, /type: "CUSTOMIZE"/);
+  assert.match(source, /publishStatus: 0/);
+  assert.match(source, /version: "0\.1\.0"/);
   assert.match(source, /total: 2/);
   assert.match(source, /pages: 1/);
 });
@@ -70,6 +76,8 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
       description: "测试函数说明",
       type: "BASIC_QUERY",
       updateTime: "2026-09-24T03:35:18.692+00:00",
+      publishStatus: 1,
+      version: "1.0.0",
     },
     11,
   );
@@ -80,8 +88,8 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
   assert.equal(basic.description, "测试函数说明");
   assert.equal(basic.type, "basic");
   assert.equal(basic.apiModelType, "BASIC_QUERY");
-  assert.equal(basic.status, "");
-  assert.equal(basic.version, "");
+  assert.equal(basic.status, "published");
+  assert.equal(basic.version, "1.0.0");
   assert.equal(basic.protocol, "");
   assert.equal(basic.createdBy, "");
   assert.equal(basic.updatedAt, dayjs("2026-09-24T03:35:18.692+00:00").format("YYYY-MM-DD HH:mm:ss"));
@@ -95,12 +103,31 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
       description: "测试用：返回 a+b",
       type: "CUSTOMIZE",
       updateTime: "",
+      publishStatus: 0,
+      version: "0.1.0",
     },
     11,
   );
   assert.equal(custom.apiModelType, "CUSTOMIZE");
   assert.equal(custom.type, "basic");
   assert.equal(custom.updatedAt, "");
+  assert.equal(custom.status, "draft");
+  assert.equal(custom.version, "0.1.0");
+
+  const unknownStatus = mapOntologyFunctionListItem(
+    {
+      functionApi: "x",
+      displayName: "x",
+      description: "",
+      type: "BASIC_QUERY",
+      updateTime: "",
+      publishStatus: 9,
+      version: "",
+    },
+    11,
+  );
+  assert.equal(unknownStatus.status, "");
+  assert.equal(unknownStatus.version, "");
 });
 
 test("function operator panel displays updatedAt from list mapping", () => {

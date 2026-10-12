@@ -74,7 +74,7 @@
         </div>
         <div class="function-operator-card__meta">
           <el-tag size="small" effect="plain">{{ typeLabel(operator) }}</el-tag>
-          <span>{{ operator.version }}</span>
+          <span>v{{ operator.version }}</span>
         </div>
         <p class="function-operator-card__description">{{ operator.description || "暂无说明" }}</p>
         <div class="function-operator-card__footer">
