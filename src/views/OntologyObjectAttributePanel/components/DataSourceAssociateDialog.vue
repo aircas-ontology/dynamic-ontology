@@ -1251,19 +1251,8 @@ onBeforeUnmount(() => {
 
 :global(.property-datasource-mapping-dialog .el-dialog__header) {
   flex-shrink: 0;
-  position: relative;
   margin: 0;
   padding: 16px 20px 12px;
-}
-
-:global(.property-datasource-mapping-dialog .el-dialog__header::before) {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 2px;
-  content: "";
-  background: linear-gradient(90deg, var(--aircas-color-primary), var(--aircas-color-category-blue), var(--aircas-color-category-purple));
 }
 
 :global(.property-datasource-mapping-dialog .el-dialog__title) {

@@ -128,6 +128,8 @@ test("full text search page and header wire OntologyGlobalSearchField", () => {
   assert.match(page, /placement=["']page["']/);
   assert.match(header, /OntologyGlobalSearchField/);
   assert.match(header, /placement=["']overlay["']/);
+  assert.match(header, /v-if="showHeaderSearch"/);
+  assert.match(header, /route\.name !== ["']FullTextSearch["']/);
   assert.doesNotMatch(header, /全局搜索暂未开放/);
   assert.match(field, /v-if="placement === ['"]page['"]"/);
   assert.match(field, /@click="submitSearch"/);

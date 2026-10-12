@@ -5,7 +5,7 @@
       <h1>空天 · 灵枢</h1>
       <span class="header-bar__version">{{ version }}</span>
     </div>
-    <div class="header-bar__search">
+    <div v-if="showHeaderSearch" class="header-bar__search">
       <OntologyGlobalSearchField placement="overlay" ariaLabel="全局搜索" placeholder="检索空间、对象、实例、属性..." />
     </div>
     <div class="header-bar__tools">
@@ -41,16 +41,23 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { useDocumentTheme } from "@/composables/shared/useDocumentTheme";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { Bell, Moon, QuestionFilled, Sunny, UserFilled } from "@element-plus/icons-vue";
 import OntologyGlobalSearchField from "@/components/OntologyGlobalSearchField/OntologyGlobalSearchField.vue";
 import { LOGIN_ROUTE_NAME } from "@/router/authGuard";
 import { clearLoginToken } from "@/utils/authToken";
 
 const version = SYSTEM_CONFIG.version;
+const route = useRoute();
 const router = useRouter();
 const { isDark: dark, toggleTheme } = useDocumentTheme();
+
+/**
+ * @description 全文检索页已有页面内检索框，顶栏不再重复展示。
+ */
+const showHeaderSearch = computed(() => route.name !== "FullTextSearch");
 
 /**
  * @description 退出当前会话：清除浏览器中的登录令牌，并替换到登录页，避免返回已退出的页面。

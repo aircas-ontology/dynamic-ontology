@@ -12,6 +12,7 @@ test("data source mapping dialog uses prototype class, width and non-dismissable
   assert.match(source, /:close-on-click-modal="false"/);
   assert.match(source, /destroy-on-close/);
   assert.match(source, /append-to-body/);
+  assert.doesNotMatch(source, /\.el-dialog__header::before/);
 });
 
 test("data source mapping dialog toolbar exposes selects and action buttons", () => {
