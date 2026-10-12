@@ -28,6 +28,21 @@
 
       <section v-if="form.type === 'basic'" class="function-operator-form__section">
         <div class="function-operator-form__section-title">通用配置</div>
+        <template v-if="!operator">
+          <div class="function-operator-form__section-subtitle">基于已有函数 (可选)</div>
+          <div class="function-operator-form__name-grid">
+            <el-form-item label="源函数">
+              <el-select v-model="sourceFunctionId" clearable filterable placeholder="选择已有函数作为模板" @change="onSourceFunctionChange">
+                <el-option v-for="item in basicSourceOptions" :key="item.id" :label="item.name" :value="item.id" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="源版本">
+              <el-select v-model="sourceVersion" clearable placeholder="选择版本" :disabled="!sourceFunctionId">
+                <el-option v-for="item in sourceVersionOptions" :key="item" :label="item" :value="item" />
+              </el-select>
+            </el-form-item>
+          </div>
+        </template>
         <div class="function-operator-form__name-grid">
           <el-form-item label="函数名称" prop="name">
             <el-input v-model="form.name" maxlength="64" placeholder="例如：目标识别算子" />
@@ -36,6 +51,9 @@
             <el-input v-model="form.functionApi" maxlength="64" placeholder="例如：target_recognition" :disabled="Boolean(operator)" />
           </el-form-item>
         </div>
+        <el-form-item label="函数版本" prop="version">
+          <el-input v-model="form.version" maxlength="32" placeholder="例如：1.0.0" />
+        </el-form-item>
         <el-form-item label="函数说明" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="2" maxlength="240" show-word-limit />
         </el-form-item>
@@ -54,20 +72,59 @@
         </el-form-item>
       </section>
 
+      <section v-else-if="form.type === 'composite' || form.type === 'code'" class="function-operator-form__section">
+        <template v-if="!operator">
+          <div class="function-operator-form__section-title">基于已有函数 (可选)</div>
+          <div class="function-operator-form__name-grid">
+            <el-form-item label="源函数">
+              <el-select v-model="sourceFunctionId" clearable filterable placeholder="选择已有函数作为模板" @change="onSourceFunctionChange">
+                <el-option v-for="item in generalConfigSourceOptions" :key="item" :label="item" :value="item" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="源版本">
+              <el-select v-model="sourceVersion" clearable placeholder="选择版本" :disabled="!sourceFunctionId">
+                <el-option v-for="item in sourceVersionOptions" :key="item" :label="item" :value="item" />
+              </el-select>
+            </el-form-item>
+          </div>
+        </template>
+        <div class="function-operator-form__section-title">通用配置</div>
+        <el-form-item label="函数名称" prop="name">
+          <el-input v-model="form.name" maxlength="64" placeholder="例如：目标识别算子" />
+        </el-form-item>
+        <div class="function-operator-form__name-grid">
+          <el-form-item label="API名称" prop="functionApi">
+            <el-input v-model="form.functionApi" maxlength="64" placeholder="例如：TargetDetectFn" :disabled="Boolean(operator)" />
+          </el-form-item>
+          <el-form-item label="版本号" prop="version">
+            <el-input v-model="form.version" maxlength="32" placeholder="v1.0.0" />
+          </el-form-item>
+        </div>
+        <el-form-item label="调用协议" prop="protocol">
+          <el-select v-model="form.protocol" placeholder="请选择调用协议">
+            <el-option v-for="item in PROTOCOL_OPTIONS" :key="item" :label="item" :value="item" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="函数说明" prop="description">
+          <el-input v-model="form.description" type="textarea" :rows="3" maxlength="240" show-word-limit />
+        </el-form-item>
+      </section>
+
       <section v-else class="function-operator-form__section function-operator-form__section--empty">
-        <el-empty description="该函数类型本阶段暂未开放，请选择基础函数" />
+        <el-empty description="该函数类型本阶段暂未开放，请选择基础函数、脚本函数或函数编排" />
       </section>
     </el-form>
 
     <template #footer>
       <el-button @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button type="primary" :loading="loading" :disabled="form.type !== 'basic'" @click="submitDraft"> 保存 </el-button>
+      <el-button v-if="form.type === 'composite' || form.type === 'code'" type="primary" :loading="loading" @click="goGeneralConfigNextStep">下一步</el-button>
+      <el-button v-else type="primary" :loading="loading" :disabled="form.type !== 'basic'" @click="submitDraft">保存</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, toRaw, watch } from "vue";
+import { computed, reactive, ref, toRaw, watch } from "vue";
 import type { FormInstance, FormRules } from "element-plus";
 import { ElMessage } from "element-plus";
 
@@ -76,11 +133,14 @@ import {
   FUNCTION_OPERATOR_TYPE_OPTIONS,
   type FunctionOperator,
   type FunctionOperatorDraft,
+  type FunctionOperatorProtocol,
   type FunctionOperatorType,
 } from "@/types";
 import { createEmptyBasicFilterDocument, stringifyBasicFilterConfig } from "@/utils/functionOperatorBasicFilter";
 
 import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBuilder.vue";
+
+const PROTOCOL_OPTIONS: ReadonlyArray<Extract<FunctionOperatorProtocol, "HTTP">> = ["HTTP"];
 
 /**
  * @description 生成新建基础函数的默认 parameterConfig。
@@ -90,13 +150,17 @@ function createDefaultBasicParameterConfig(): string {
   return stringifyBasicFilterConfig(createEmptyBasicFilterDocument());
 }
 
-const props = defineProps<{
-  modelValue: boolean;
-  operator: FunctionOperator | null;
-  draft: FunctionOperatorDraft | null;
-  spaceId: number;
-  loading: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean;
+    operator: FunctionOperator | null;
+    draft: FunctionOperatorDraft | null;
+    spaceId: number;
+    loading: boolean;
+    operators?: FunctionOperator[];
+  }>(),
+  { operators: () => [] },
+);
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
@@ -104,6 +168,35 @@ const emit = defineEmits<{
 }>();
 
 const formRef = ref<FormInstance>();
+const sourceFunctionId = ref("");
+const sourceVersion = ref("");
+
+/** 当前列表中的基础函数，供基础函数表单源函数下拉展示名称。 */
+const basicSourceOptions = computed(() => props.operators.filter((item) => item.type === "basic"));
+
+/** 函数编排源函数选项；接口未接入前保持空列表。 */
+const compositeSourceOptions = computed<string[]>(() => []);
+
+/** 脚本函数源函数选项；接口未接入前保持空列表。 */
+const codeSourceOptions = computed<string[]>(() => []);
+
+/** 源版本选项；版本接口未接入前保持空列表。 */
+const sourceVersionOptions = computed<string[]>(() => []);
+
+/**
+ * @description 切换源函数时清空源版本选择。
+ */
+function onSourceFunctionChange(): void {
+  sourceVersion.value = "";
+}
+
+/**
+ * @description 重置基于已有函数的可选模板选择。
+ */
+function resetSourceTemplateSelection(): void {
+  sourceFunctionId.value = "";
+  sourceVersion.value = "";
+}
 
 /**
  * @description 创建空草稿，默认基础函数。
@@ -165,18 +258,41 @@ function toDraft(operator: FunctionOperator): FunctionOperatorDraft {
 
 const form = reactive<FunctionOperatorDraft>(createEmptyDraft());
 
-const rules: FormRules = {
-  name: [{ required: true, message: "请输入函数名称", trigger: "blur" }],
-  functionApi: [{ required: true, message: "请输入函数api名称", trigger: "blur" }],
-};
+/** 编排 / 脚本通用配置区当前源函数选项。 */
+const generalConfigSourceOptions = computed(() => (form.type === "code" ? codeSourceOptions.value : compositeSourceOptions.value));
+
+/** 按函数类型切换校验文案；编排与脚本额外校验协议与说明。 */
+const rules = computed<FormRules>(() => {
+  if (form.type === "composite" || form.type === "code") {
+    return {
+      name: [{ required: true, message: "请输入函数名称", trigger: "blur" }],
+      functionApi: [{ required: true, message: "请输入API名称", trigger: "blur" }],
+      version: [{ required: true, message: "请输入版本号", trigger: "blur" }],
+      protocol: [{ required: true, message: "请选择调用协议", trigger: "change" }],
+      description: [{ required: true, message: "请输入函数说明", trigger: "blur" }],
+    };
+  }
+  return {
+    name: [{ required: true, message: "请输入函数名称", trigger: "blur" }],
+    functionApi: [{ required: true, message: "请输入函数api名称", trigger: "blur" }],
+    version: [{ required: true, message: "请输入函数版本", trigger: "blur" }],
+  };
+});
+
 /**
- * @description 切换函数类型；非 basic 仅占位。
+ * @description 切换函数类型；basic / composite / code 进入对应表单，其它类型占位。
  * @param type 目标类型。
  */
 function changeType(type: FunctionOperatorType): void {
   form.type = type;
+  resetSourceTemplateSelection();
   if (type === "basic") {
     form.definition = { kind: "basic", parameterConfig: createDefaultBasicParameterConfig(), aggFunc: "", targetProperty: "" };
+    return;
+  }
+  if (type === "composite" || type === "code") {
+    form.protocol = "HTTP";
+    form.definition = { kind: type };
     return;
   }
   form.definition = { kind: type };
@@ -226,6 +342,7 @@ async function submitDraft(): Promise<void> {
     ...form,
     name: form.name.trim(),
     functionApi: form.functionApi.trim(),
+    version: form.version.trim(),
     description: form.description.trim(),
     type: "basic",
     definition: {
@@ -234,6 +351,21 @@ async function submitDraft(): Promise<void> {
       targetProperty: aggFunc ? (form.definition.targetProperty || "").trim() : "",
     },
   });
+}
+
+/**
+ * @description 校验编排 / 脚本通用配置后进入下一步；后续步骤暂未开放。
+ */
+async function goGeneralConfigNextStep(): Promise<void> {
+  if (form.type !== "composite" && form.type !== "code") {
+    return;
+  }
+  const valid = await formRef.value?.validate().catch(() => false);
+  if (!valid) {
+    return;
+  }
+  const tip = form.type === "code" ? "脚本函数后续步骤暂未开放" : "函数编排后续步骤暂未开放";
+  ElMessage.info(tip);
 }
 
 watch(
@@ -248,6 +380,7 @@ watch(
     if (!next.id) {
       delete form.id;
     }
+    resetSourceTemplateSelection();
   },
 );
 </script>
@@ -262,6 +395,13 @@ watch(
   color: var(--aircas-color-text-primary);
   font-size: 14px;
   font-weight: 600;
+}
+
+.function-operator-form__section-subtitle {
+  margin: 4px 0 8px;
+  color: var(--aircas-color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .function-operator-form__name-grid {

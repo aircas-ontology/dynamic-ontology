@@ -90,6 +90,11 @@ test("function operator panel wires workspace composable and basic form", () => 
   const panelSource = readSource("../src/views/FunctionOperatorPanel/index.vue");
   const formSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue");
   assert.match(panelSource, /useFunctionOperatorWorkspace/);
+  assert.match(panelSource, /FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS/);
+  assert.doesNotMatch(panelSource, /FUNCTION_OPERATOR_STATUS_OPTIONS/);
+  assert.match(typeSource, /FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS/);
+  assert.match(typeSource, /FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS[\s\S]*?=\s*\[[\s\S]*?value: "draft"[\s\S]*?value: "published"[\s\S]*?\];/);
+  assert.doesNotMatch(typeSource, /FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS[\s\S]*?=\s*\[[\s\S]*?(testing|disabled)[\s\S]*?\];/);
   assert.match(panelSource, /<el-date-picker[\s\S]*class="function-operator-panel__date"/);
   assert.doesNotMatch(panelSource, /--aircas-color-cyan-soft/);
   assert.equal((panelSource.match(/<el-tag/g) || []).length, 4);
@@ -109,9 +114,40 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(formSource, /class="function-operator-form"/);
   assert.match(formSource, /<el-empty\b/);
   assert.match(formSource, /function-operator-form__name-grid/);
-  assert.match(formSource, /label="函数名称"[\s\S]*label="函数api名称"/);
-  assert.match(formSource, /prop="functionApi"/);
+  assert.match(formSource, /基于已有函数 \(可选\)/);
+  assert.match(formSource, /label="源函数"[\s\S]*label="源版本"/);
+  assert.match(formSource, /选择已有函数作为模板/);
+  assert.match(formSource, /选择版本/);
+  assert.match(formSource, /basicSourceOptions/);
+  assert.match(formSource, /compositeSourceOptions/);
+  assert.match(formSource, /codeSourceOptions/);
+  assert.match(formSource, /sourceVersionOptions/);
+  assert.match(
+    formSource,
+    /form\.type === ['"]composite['"]\s*\|\|\s*form\.type === ['"]code['"]|form\.type === ['"]code['"]\s*\|\|\s*form\.type === ['"]composite['"]/,
+  );
+  assert.match(formSource, /label="API名称"/);
+  assert.match(formSource, /label="版本号"/);
+  assert.match(formSource, /label="调用协议"/);
+  assert.match(formSource, /PROTOCOL_OPTIONS/);
+  assert.match(formSource, /PROTOCOL_OPTIONS[\s\S]*=\s*\["HTTP"\]/);
+  assert.doesNotMatch(formSource, /PROTOCOL_OPTIONS[\s\S]*=\s*\[[^\]]*gRPC/);
+  assert.doesNotMatch(formSource, /PROTOCOL_OPTIONS[\s\S]*=\s*\[[^\]]*MQ/);
+  assert.match(formSource, /goGeneralConfigNextStep/);
+  assert.match(formSource, /下一步/);
+  assert.match(formSource, /脚本函数后续步骤暂未开放/);
+  assert.match(formSource, /请输入API名称/);
   assert.match(formSource, /请输入函数api名称/);
+  assert.match(formSource, /请选择调用协议/);
+  assert.match(formSource, /请选择基础函数、脚本函数或函数编排/);
+  assert.match(formSource, /label="函数名称"[\s\S]*label="函数api名称"/);
+  assert.match(formSource, /label="函数版本"[\s\S]*label="函数说明"/);
+  assert.match(formSource, /prop="version"/);
+  assert.match(formSource, /v-model="form\.version"/);
+  assert.match(formSource, /prop="functionApi"/);
+  assert.match(panelSource, /:operators="operators"/);
+  assert.match(typeSource, /通过编排多个函数构建复杂流程/);
+  assert.match(typeSource, /通过脚本编写自定义函数逻辑/);
   assert.match(formSource, /v-model="form\.functionApi"[\s\S]*:disabled="Boolean\(operator\)"/);
   assert.match(typeSource, /functionApi:\s*string/);
   const filterSource = readSource("../src/views/FunctionOperatorPanel/components/BasicFilterGroupEditor.vue");

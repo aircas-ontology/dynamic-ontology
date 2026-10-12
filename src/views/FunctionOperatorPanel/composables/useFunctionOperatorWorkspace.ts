@@ -9,10 +9,11 @@ import {
   getOntologyFunctionDetailInterface,
   getOntologyFunctionListInterface,
   getOntologyPropertyByOntologyIdInterface,
+  postOntologyFunctionPublishInterface,
+  postOntologyFunctionUnpublishInterface,
   testOntologyFunctionInterface,
   updateOntologyFunctionInterface,
 } from "@/apis";
-import { setFunctionOperatorStatusMock } from "@/mocks/functionOperatorMock/functionOperatorMock";
 import type {
   FunctionOperator,
   FunctionOperatorDraft,
@@ -20,6 +21,7 @@ import type {
   FunctionOperatorStatus,
   FunctionOperatorType,
   FunctionOperatorViewMode,
+  GetOntologyFunctionListParams,
   SpaceRelationObjectOption,
   TestOntologyFunctionParams,
 } from "@/types";
@@ -29,8 +31,52 @@ import { mapOntologyFunctionListItem } from "@/utils/mapOntologyFunctionList";
 import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestRequest } from "@/utils/mapOntologyFunctionTest";
 
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
+
+const FUNCTION_OPERATOR_TYPE_TO_API: Partial<Record<FunctionOperatorType, string>> = {
+  basic: "BASIC_QUERY",
+  code: "CUSTOMIZE",
+  api: "EXTERNAL",
+  composite: "COMPOSITE",
+};
+
 /**
- * @description 空间函数算子工作区：列表筛选、创建/修改/删除接口与发布测试（部分 Mock）。
+ * @description 将页面筛选条件映射为列表接口查询参数；空值与无契约类型不传。
+ * @param input 页面筛选与分页上下文。
+ * @returns 列表接口请求参数片段（不含 ontologySpaceId / 分页时可被调用方合并）。
+ */
+function buildOntologyFunctionListQueryParams(input: {
+  keyword: string;
+  type: FunctionOperatorType | "";
+  status: FunctionOperatorStatus | "";
+  updatedRange: [string, string] | null;
+}): Pick<GetOntologyFunctionListParams, "displayName" | "type" | "publishStatus" | "startDate" | "endDate"> {
+  const params: Pick<GetOntologyFunctionListParams, "displayName" | "type" | "publishStatus" | "startDate" | "endDate"> = {};
+  const displayName = input.keyword.trim();
+  if (displayName) {
+    params.displayName = displayName;
+  }
+  if (input.type) {
+    const apiType = FUNCTION_OPERATOR_TYPE_TO_API[input.type];
+    if (apiType) {
+      params.type = apiType;
+    }
+  }
+  if (input.status === "draft") {
+    params.publishStatus = 0;
+  } else if (input.status === "published") {
+    params.publishStatus = 1;
+  }
+  if (input.updatedRange?.[0]) {
+    params.startDate = input.updatedRange[0];
+  }
+  if (input.updatedRange?.[1]) {
+    params.endDate = input.updatedRange[1];
+  }
+  return params;
+}
+
+/**
+ * @description 空间函数算子工作区：列表筛选、创建/修改/删除、发布/下线与测试。
  * @returns 工作区状态与操作方法。
  */
 export function useFunctionOperatorWorkspace() {
@@ -91,7 +137,7 @@ export function useFunctionOperatorWorkspace() {
   });
 
   /**
-   * @description 加载函数算子列表（分页走后端；筛选暂在当前页客户端过滤）。
+   * @description 加载函数算子列表（分页与筛选走后端；当前页仅保留本地排序）。
    */
   async function loadOperators(): Promise<void> {
     if (!spaceId.value) {
@@ -108,6 +154,12 @@ export function useFunctionOperatorWorkspace() {
         pageNum: page.value,
         pageSize: pageSize.value,
         ontologySpaceId: spaceId.value,
+        ...buildOntologyFunctionListQueryParams({
+          keyword: filters.keyword,
+          type: filters.type,
+          status: filters.status,
+          updatedRange: updatedRange.value,
+        }),
       });
       if (disposed || requestId !== generation) {
         return;
@@ -115,31 +167,7 @@ export function useFunctionOperatorWorkspace() {
       if (response.code !== 200 || !response.data) {
         throw new Error(response.message || "函数算子加载失败");
       }
-      let records = response.data.records.map((item) => mapOntologyFunctionListItem(item, spaceId.value));
-      const keyword = filters.keyword.trim().toLowerCase();
-      if (keyword) {
-        records = records.filter(
-          (item) =>
-            item.name.toLowerCase().includes(keyword) || item.functionApi.toLowerCase().includes(keyword) || item.description.toLowerCase().includes(keyword),
-        );
-      }
-      if (filters.type) {
-        records = records.filter((item) => item.type === filters.type);
-      }
-      if (filters.creator) {
-        records = records.filter((item) => item.createdBy === filters.creator);
-      }
-      if (filters.status) {
-        records = records.filter((item) => item.status === filters.status);
-      }
-      if (updatedRange.value?.[0]) {
-        const from = updatedRange.value[0];
-        records = records.filter((item) => item.updatedAt.slice(0, 10) >= from);
-      }
-      if (updatedRange.value?.[1]) {
-        const to = updatedRange.value[1];
-        records = records.filter((item) => item.updatedAt.slice(0, 10) <= to);
-      }
+      const records = response.data.records.map((item) => mapOntologyFunctionListItem(item, spaceId.value));
       const [sortBy, sortOrder] = sortValue.value.split("-") as [FunctionOperatorQuery["sortBy"], FunctionOperatorQuery["sortOrder"]];
       const factor = sortOrder === "asc" ? 1 : -1;
       records.sort((left, right) => {
@@ -350,19 +378,39 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 发布或下线函数算子。
+   * @description 发布或下线函数算子；分别调用 publish / unpublish 真实接口。
    * @param operator 目标算子。
    */
   async function togglePublish(operator: FunctionOperator): Promise<void> {
-    const nextStatus = operator.status === "published" ? "disabled" : "published";
-    const updated = setFunctionOperatorStatusMock(spaceId.value, operator.id, nextStatus);
-    if (!updated) {
-      ElMessage.error("状态更新失败");
+    const functionApi = operator.functionApi.trim();
+    const version = operator.version.trim();
+    const isUnpublish = operator.status === "published";
+    const actionLabel = isUnpublish ? "下线" : "发布";
+
+    if (!functionApi) {
+      ElMessage.error(`缺少函数 API，无法${actionLabel}`);
       return;
     }
-    ElMessage.success(nextStatus === "published" ? "已发布" : "已下线");
-    selectedOperator.value = updated;
-    await loadOperators();
+    if (!version) {
+      ElMessage.error(`缺少版本号，无法${actionLabel}`);
+      return;
+    }
+
+    try {
+      const response = isUnpublish
+        ? await postOntologyFunctionUnpublishInterface({ functionApi, version })
+        : await postOntologyFunctionPublishInterface({ functionApi, version });
+      if (response.code !== 200) {
+        throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : `${actionLabel}失败`);
+      }
+      ElMessage.success(isUnpublish ? "下线成功" : "发布成功");
+      if (selectedOperator.value?.id === operator.id) {
+        selectedOperator.value = { ...selectedOperator.value, status: isUnpublish ? "draft" : "published" };
+      }
+      await loadOperators();
+    } catch (error) {
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : `${actionLabel}失败`);
+    }
   }
 
   /**

@@ -10,7 +10,7 @@
           <el-option v-for="item in creatorOptions" :key="item" :label="item" :value="item" />
         </el-select>
         <el-select v-model="filters.status" class="function-operator-panel__filter" clearable placeholder="状态">
-          <el-option v-for="item in FUNCTION_OPERATOR_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+          <el-option v-for="item in FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
         <el-date-picker
           v-model="updatedRange"
@@ -141,6 +141,7 @@
       v-model="formVisible"
       :operator="editingOperator"
       :draft="formDraft"
+      :operators="operators"
       :space-id="spaceId"
       :loading="actionLoading"
       @submit="saveOperator"
@@ -210,7 +211,12 @@
 import type { TagProps } from "element-plus";
 
 import type { FunctionOperator, FunctionOperatorStatus } from "@/types";
-import { FUNCTION_OPERATOR_STATUS_LABELS, FUNCTION_OPERATOR_STATUS_OPTIONS, FUNCTION_OPERATOR_TYPE_LABELS, FUNCTION_OPERATOR_TYPE_OPTIONS } from "@/types";
+import {
+  FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS,
+  FUNCTION_OPERATOR_STATUS_LABELS,
+  FUNCTION_OPERATOR_TYPE_LABELS,
+  FUNCTION_OPERATOR_TYPE_OPTIONS,
+} from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 
 import { useFunctionOperatorWorkspace } from "./composables/useFunctionOperatorWorkspace";
