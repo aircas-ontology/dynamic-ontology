@@ -11,9 +11,9 @@ const mockDataRoot = path.join(repoRoot, "src", "mockData");
  */
 function readMockRecordConfig() {
   return {
-    baseUrl: (process.env.MOCK_RECORD_BASE_URL ?? "http://172.16.18.58:37002").replace(/\/+$/, ""),
-    username: process.env.MOCK_RECORD_USERNAME ?? "admin",
-    password: process.env.MOCK_RECORD_PASSWORD ?? "admin",
+    baseUrl: (process.env.MOCK_RECORD_BASE_URL ?? "http://172.16.36.247:37002").replace(/\/+$/, ""),
+    username: process.env.MOCK_RECORD_USERNAME ?? "admin1",
+    password: process.env.MOCK_RECORD_PASSWORD ?? "a123456",
   };
 }
 

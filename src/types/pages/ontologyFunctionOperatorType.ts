@@ -122,10 +122,10 @@ export interface FunctionOperatorTestResult {
 
 export const FUNCTION_OPERATOR_TYPE_OPTIONS: ReadonlyArray<{ value: FunctionOperatorType; label: string; description: string }> = [
   { value: "basic", label: "基础函数", description: "配置基础参数的轻量函数" },
-  { value: "code", label: "脚本函数", description: "本阶段暂未开放" },
+  { value: "code", label: "脚本函数", description: "通过脚本编写自定义函数逻辑" },
   { value: "api", label: "外部 API 函数", description: "本阶段暂未开放" },
   { value: "docker", label: "容器算子函数", description: "本阶段暂未开放" },
-  { value: "composite", label: "函数编排", description: "本阶段暂未开放" },
+  { value: "composite", label: "函数编排", description: "通过编排多个函数构建复杂流程" },
 ];
 
 export const FUNCTION_OPERATOR_AGG_FUNC_OPTIONS: ReadonlyArray<{ value: FunctionOperatorAggFunc; label: string }> = [
@@ -142,6 +142,12 @@ export const FUNCTION_OPERATOR_STATUS_OPTIONS: ReadonlyArray<{ value: FunctionOp
   { value: "testing", label: "测试中" },
   { value: "published", label: "已发布" },
   { value: "disabled", label: "已停用" },
+];
+
+/** 列表筛选可用的发布状态（与接口 publishStatus 0/1 对齐）。 */
+export const FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS: ReadonlyArray<{ value: Extract<FunctionOperatorStatus, "draft" | "published">; label: string }> = [
+  { value: "draft", label: "草稿" },
+  { value: "published", label: "已发布" },
 ];
 
 export const FUNCTION_OPERATOR_TYPE_LABELS: Record<FunctionOperatorType, string> = {

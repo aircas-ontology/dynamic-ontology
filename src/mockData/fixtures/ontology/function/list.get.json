@@ -9,14 +9,18 @@
         "displayName": "测试函数",
         "description": "测试函数说明",
         "type": "BASIC_QUERY",
-        "updateTime": "2026-09-24T03:35:18.692+00:00"
+        "updateTime": "2026-09-24T03:35:18.692+00:00",
+        "publishStatus": 1,
+        "version": "1.0.0"
       },
       {
         "functionApi": "addTwoNumbers",
         "displayName": "两数相加",
         "description": "测试用：返回 a+b",
-        "type": "CUSTOMIZE",
-        "updateTime": "2026-09-24T03:35:18.692+00:00"
+        "type": "BASIC_QUERY",
+        "updateTime": "2026-09-24T03:35:18.692+00:00",
+        "publishStatus": 0,
+        "version": "1.0.0"
       }
     ],
     "total": 2,

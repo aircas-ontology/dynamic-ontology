@@ -5,6 +5,8 @@ import {
   deleteOntologyFunctionInterface,
   getOntologyFunctionDetailInterface,
   getOntologyFunctionListInterface,
+  postOntologyFunctionPublishInterface,
+  postOntologyFunctionUnpublishInterface,
   testOntologyFunctionInterface,
   updateOntologyFunctionInterface,
 } from "./functionApi";
@@ -109,6 +111,8 @@ export {
   postImportOntologiesInterface,
   postImportOntologySpaceInterface,
   postLoginInterface,
+  postOntologyFunctionPublishInterface,
+  postOntologyFunctionUnpublishInterface,
   postOntologyGlobalSearchInterface,
   postUploadOntologyThumbnailInterface,
   putBatchUpdateOntologyPropertiesInterface,

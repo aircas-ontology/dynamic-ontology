@@ -66,6 +66,8 @@ export type { DeleteOntologySpaceData, DeleteOntologySpaceParams } from "./apis/
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
 export type { ExportOntologySpaceFile, ExportOntologySpaceParams, OntologySpaceExportType } from "./apis/exportOntologySpaceType";
 export type { ExportOntologyFile, ExportOntologyParams, OntologyExportType } from "./apis/exportOntologyType";
+export type { FunctionPublishData, FunctionPublishParams } from "./apis/functionPublishType";
+export type { FunctionUnpublishData, FunctionUnpublishParams } from "./apis/functionUnpublishType";
 export type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceColumnsParams,
@@ -174,6 +176,7 @@ export type {
 } from "./pages/ontologyFunctionOperatorBasicFilterType";
 export {
   FUNCTION_OPERATOR_AGG_FUNC_OPTIONS,
+  FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS,
   FUNCTION_OPERATOR_STATUS_LABELS,
   FUNCTION_OPERATOR_STATUS_OPTIONS,
   FUNCTION_OPERATOR_TYPE_LABELS,
