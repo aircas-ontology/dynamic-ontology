@@ -141,7 +141,6 @@
       v-model="formVisible"
       :operator="editingOperator"
       :draft="formDraft"
-      :operators="operators"
       :space-id="spaceId"
       :loading="actionLoading"
       @submit="saveOperator"

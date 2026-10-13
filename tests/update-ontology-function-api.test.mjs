@@ -17,6 +17,7 @@ test("update ontology function types expose the documented request fields", () =
   const source = readSource("../src/types/apis/updateOntologyFunctionType.ts");
   assert.match(source, /export interface UpdateOntologyFunctionParams/);
   assert.match(source, /functionApi: string/);
+  assert.match(source, /version: string/);
   assert.match(source, /displayName: string/);
   assert.match(source, /description: string/);
   assert.match(source, /type: "BASIC_QUERY"/);
@@ -56,4 +57,9 @@ test("function operator workspace edit save calls update api", () => {
   assert.doesNotMatch(workspaceSource, /updateFunctionOperatorMock/);
   assert.match(workspaceSource, /if \(editingOperator\.value\)/);
   assert.match(workspaceSource, /createOntologyFunctionInterface/);
+  const saveBlock = workspaceSource.slice(workspaceSource.indexOf("async function saveOperator"), workspaceSource.indexOf("function openDeleteOperator"));
+  assert.match(saveBlock, /updateOntologyFunctionInterface\(payload\)/);
+  assert.match(saveBlock, /version:\s*version/);
+  assert.match(saveBlock, /draft\.version\.trim\(\)/);
+  assert.match(saveBlock, /缺少函数版本/);
 });

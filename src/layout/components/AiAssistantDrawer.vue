@@ -141,7 +141,7 @@ watch(messages, () => {
   place-items: center;
   transform: translateX(-50%);
   border: 1px solid var(--aircas-color-border);
-  border-radius: 50%;
+ 
   color: var(--aircas-color-text-primary);
   background: color-mix(in srgb, var(--aircas-color-primary) 60%, transparent);
   box-shadow: 0 8px 20px var(--aircas-color-border-light);

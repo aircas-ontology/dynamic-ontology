@@ -3,6 +3,8 @@ import type { CreateOntologyFunctionQueryConfig } from "./createOntologyFunction
 /** 修改函数算子请求参数。 */
 export interface UpdateOntologyFunctionParams {
   functionApi: string;
+  /** 版本号，格式 x.y.z。 */
+  version: string;
   displayName: string;
   description: string;
   type: "BASIC_QUERY";

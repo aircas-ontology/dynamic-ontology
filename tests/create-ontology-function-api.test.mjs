@@ -19,6 +19,7 @@ test("create ontology function types expose the documented request fields", () =
   const source = readSource("../src/types/apis/createOntologyFunctionType.ts");
   assert.match(source, /export interface CreateOntologyFunctionParams/);
   assert.match(source, /functionApi: string/);
+  assert.match(source, /version: string/);
   assert.match(source, /displayName: string/);
   assert.match(source, /description: string/);
   assert.match(source, /type: "BASIC_QUERY"/);
@@ -112,4 +113,9 @@ test("function operator create form exposes aggFunc targetProperty and workspace
   assert.match(workspaceSource, /targetProperty/);
   assert.match(workspaceSource, /if \(editingOperator\.value\)/);
   assert.doesNotMatch(workspaceSource, /if \(draft\.id\)/);
+  const saveBlock = workspaceSource.slice(workspaceSource.indexOf("async function saveOperator"), workspaceSource.indexOf("function openDeleteOperator"));
+  assert.match(saveBlock, /version:\s*version/);
+  assert.match(saveBlock, /draft\.version\.trim\(\)/);
+  assert.match(saveBlock, /缺少函数版本/);
+  assert.match(saveBlock, /createOntologyFunctionInterface\(payload\)/);
 });

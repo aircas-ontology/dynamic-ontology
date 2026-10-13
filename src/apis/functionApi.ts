@@ -12,6 +12,8 @@ import type {
   GetOntologyFunctionDetailParams,
   GetOntologyFunctionListData,
   GetOntologyFunctionListParams,
+  GetOntologyFunctionVersionsData,
+  GetOntologyFunctionVersionsParams,
   TestOntologyFunctionData,
   TestOntologyFunctionParams,
   UpdateOntologyFunctionData,
@@ -26,6 +28,7 @@ import { request } from "@/utils/request";
  *
  * @param params 创建参数。
  * @param params.functionApi 函数 API 名称。
+ * @param params.version 版本号，格式 x.y.z。
  * @param params.displayName 函数显示名称。
  * @param params.description 函数说明。
  * @param params.type 函数模型，当前固定为 BASIC_QUERY。
@@ -48,6 +51,7 @@ export function createOntologyFunctionInterface(params: CreateOntologyFunctionPa
  *
  * @param params 修改参数。
  * @param params.functionApi 函数 API 名称。
+ * @param params.version 版本号，格式 x.y.z。
  * @param params.displayName 函数显示名称。
  * @param params.description 函数说明。
  * @param params.type 函数模型，当前固定为 BASIC_QUERY。
@@ -100,6 +104,23 @@ export function getOntologyFunctionListInterface(params: GetOntologyFunctionList
 export function getOntologyFunctionDetailInterface(params: GetOntologyFunctionDetailParams): Promise<ApiResponse<GetOntologyFunctionDetailData>> {
   return request<GetOntologyFunctionDetailData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/detail",
+    method: "get",
+    params,
+  });
+}
+
+/**
+ * @description 根据函数 API 名称查询版本号列表。
+ *
+ * 请求方式：GET `/ontology/function/versions`（`functionApi` 以 query string 传递）。
+ *
+ * @param params 查询参数。
+ * @param params.functionApi 函数 API 名称。
+ * @returns 标准 API 响应，data 为版本号字符串数组。
+ */
+export function getOntologyFunctionVersionsInterface(params: GetOntologyFunctionVersionsParams): Promise<ApiResponse<GetOntologyFunctionVersionsData>> {
+  return request<GetOntologyFunctionVersionsData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/versions",
     method: "get",
     params,
   });

@@ -101,12 +101,30 @@ function resolveDetailParameterConfig(detail: GetOntologyFunctionDetailData): st
 }
 
 /**
+ * @description 解析详情版本号；空值时使用回退版本。
+ * @param detailVersion 详情 data.version。
+ * @param fallbackVersion 列表行或请求所用版本。
+ * @returns 非空版本或空串。
+ */
+function resolveDetailVersion(detailVersion: unknown, fallbackVersion?: string): string {
+  if (typeof detailVersion === "string" && detailVersion.trim()) {
+    return detailVersion.trim();
+  }
+  return typeof fallbackVersion === "string" ? fallbackVersion.trim() : "";
+}
+
+/**
  * @description 将函数详情映射为编辑弹框草稿（基础函数表单字段）。
  * @param detail 详情接口 data。
  * @param fallbackSpaceId 详情缺省空间 id 时的回退值。
+ * @param fallbackVersion 详情缺省 version 时的回退值（通常为列表行版本）。
  * @returns 可回填表单的草稿。
  */
-export function mapOntologyFunctionDetailToDraft(detail: GetOntologyFunctionDetailData, fallbackSpaceId: number): FunctionOperatorDraft {
+export function mapOntologyFunctionDetailToDraft(
+  detail: GetOntologyFunctionDetailData,
+  fallbackSpaceId: number,
+  fallbackVersion?: string,
+): FunctionOperatorDraft {
   const filtersDoc = detail.queryConfig ? mapOntologyFunctionQueryConfigToBasicFilter(detail.queryConfig) : createEmptyBasicFilterDocument();
   const aggFunc = resolveAggFunc(detail.queryConfig?.aggFunc);
   const targetProperty = resolveTargetProperty(detail.queryConfig?.targetProperty);
@@ -120,7 +138,7 @@ export function mapOntologyFunctionDetailToDraft(detail: GetOntologyFunctionDeta
     type: "basic",
     apiModelType: typeof detail.type === "string" ? detail.type.trim() : "",
     protocol: "",
-    version: "",
+    version: resolveDetailVersion(detail.version, fallbackVersion),
     description: typeof detail.description === "string" ? detail.description.trim() : "",
     createdBy: "",
     status: "",
@@ -162,7 +180,7 @@ export function mapOntologyFunctionDetailToOperator(detail: GetOntologyFunctionD
     type: "basic",
     apiModelType,
     protocol: "",
-    version: "",
+    version: resolveDetailVersion(detail.version, listOperator?.version),
     createdBy: "",
     updatedAt: listOperator?.updatedAt?.trim() || "",
     status: "",

@@ -37,6 +37,8 @@ export interface CreateOntologyFunctionQueryConfig {
 /** 创建函数算子请求参数。 */
 export interface CreateOntologyFunctionParams {
   functionApi: string;
+  /** 版本号，格式 x.y.z。 */
+  version: string;
   displayName: string;
   description: string;
   type: "BASIC_QUERY";

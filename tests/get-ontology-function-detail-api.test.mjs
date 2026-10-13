@@ -90,6 +90,7 @@ test("mapOntologyFunctionDetailToDraft fills basic form fields from detail", () 
       model: "BASIC",
       type: "BASIC_QUERY",
       ontologySpaceId: 46,
+      version: "1.2.3",
       params: [],
       code: "{}",
       queryConfig: {
@@ -106,6 +107,7 @@ test("mapOntologyFunctionDetailToDraft fills basic form fields from detail", () 
   assert.equal(draft.name, "ss");
   assert.equal(draft.functionApi, "ss");
   assert.equal(draft.description, "ss");
+  assert.equal(draft.version, "1.2.3");
   assert.equal(draft.type, "basic");
   assert.equal(draft.definition.kind, "basic");
   if (draft.definition.kind === "basic") {
@@ -113,6 +115,24 @@ test("mapOntologyFunctionDetailToDraft fills basic form fields from detail", () 
     assert.equal(draft.definition.targetProperty, "age");
     assert.match(draft.definition.parameterConfig, /"propertyApiName": "age"/);
   }
+});
+
+test("mapOntologyFunctionDetailToDraft falls back to list version when detail omits version", () => {
+  const draft = mapOntologyFunctionDetailToDraft(
+    {
+      functionApi: "ss",
+      displayName: "ss",
+      description: "ss",
+      model: "BASIC",
+      type: "BASIC_QUERY",
+      ontologySpaceId: 46,
+      params: [],
+      code: "{}",
+    },
+    46,
+    "2.0.0",
+  );
+  assert.equal(draft.version, "2.0.0");
 });
 
 test("function operator openEdit fetches detail before opening form", () => {
@@ -124,6 +144,7 @@ test("function operator openEdit fetches detail before opening form", () => {
   assert.match(workspace, /formVisible\.value\s*=\s*true/);
   assert.match(workspace, /getOntologyFunctionDetailInterface\(\{\s*functionApi,\s*version,?\s*\}\)/);
   assert.match(workspace, /缺少函数版本/);
+  assert.match(workspace, /mapOntologyFunctionDetailToDraft\([\s\S]*operator\.version/);
   const openEditBlock = workspace.slice(workspace.indexOf("async function openEdit"), workspace.indexOf("async function saveOperator"));
   assert.ok(
     openEditBlock.indexOf("formVisible.value = true") < openEditBlock.indexOf("getOntologyFunctionDetailInterface"),
@@ -161,6 +182,7 @@ test("mapOntologyFunctionDetailToOperator fills input params from detail", () =>
           paramRole: "AGGREGATION",
         },
       ],
+      version: "1.0.0",
       code: "{}",
       queryConfig: {
         filters: {
@@ -178,7 +200,7 @@ test("mapOntologyFunctionDetailToOperator fills input params from detail", () =>
       type: "basic",
       apiModelType: "BASIC_QUERY",
       protocol: "",
-      version: "",
+      version: "9.9.9",
       createdBy: "",
       updatedAt: "2026-09-24 11:35:18",
       status: "",
@@ -196,6 +218,7 @@ test("mapOntologyFunctionDetailToOperator fills input params from detail", () =>
     },
   );
   assert.equal(operator.name, "ss");
+  assert.equal(operator.version, "1.0.0");
   assert.equal(operator.updatedAt, "2026-09-24 11:35:18");
   assert.equal(operator.inputParameters.length, 2);
   assert.equal(operator.inputParameters[0]?.name, "xingbie");
@@ -205,6 +228,47 @@ test("mapOntologyFunctionDetailToOperator fills input params from detail", () =>
   if (operator.definition.kind === "basic") {
     assert.match(operator.definition.parameterConfig, /"propertyApiName": "age"/);
   }
+});
+
+test("mapOntologyFunctionDetailToOperator falls back to list version when detail omits version", () => {
+  const operator = mapOntologyFunctionDetailToOperator(
+    {
+      functionApi: "ss",
+      displayName: "ss",
+      description: "ss",
+      model: "BASIC",
+      type: "BASIC_QUERY",
+      ontologySpaceId: 46,
+      params: [],
+      code: "{}",
+    },
+    {
+      id: "ss",
+      spaceId: 46,
+      name: "列表名",
+      functionApi: "ss",
+      description: "",
+      type: "basic",
+      apiModelType: "BASIC_QUERY",
+      protocol: "",
+      version: "3.1.0",
+      createdBy: "",
+      updatedAt: "",
+      status: "",
+      category: "",
+      inputParameters: [],
+      outputParameters: [],
+      timeout: 0,
+      retryCount: 0,
+      retryInterval: 0,
+      definition: { kind: "basic", parameterConfig: "" },
+      dependencies: [],
+      testStatus: "untested",
+      testedAt: "",
+      versions: [],
+    },
+  );
+  assert.equal(operator.version, "3.1.0");
 });
 
 test("function operator openDetail fetches detail for drawer", () => {

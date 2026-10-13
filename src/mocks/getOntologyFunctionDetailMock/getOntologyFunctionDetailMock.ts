@@ -12,6 +12,7 @@ export const getOntologyFunctionDetailMock: ApiResponse<GetOntologyFunctionDetai
     model: "BASIC",
     type: "BASIC_QUERY",
     ontologySpaceId: 46,
+    version: "1.0.0",
     params: [
       {
         paramId: 25,

@@ -27,17 +27,11 @@ import type {
 } from "@/types";
 import { buildOntologyFunctionQueryConfig, parseBasicFilterConfig } from "@/utils/functionOperatorBasicFilter";
 import { mapOntologyFunctionDetailToDraft, mapOntologyFunctionDetailToOperator } from "@/utils/mapOntologyFunctionDetail";
+import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToApi";
 import { mapOntologyFunctionListItem } from "@/utils/mapOntologyFunctionList";
 import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestRequest } from "@/utils/mapOntologyFunctionTest";
 
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
-
-const FUNCTION_OPERATOR_TYPE_TO_API: Partial<Record<FunctionOperatorType, string>> = {
-  basic: "BASIC_QUERY",
-  code: "CUSTOMIZE",
-  api: "EXTERNAL",
-  composite: "COMPOSITE",
-};
 
 /**
  * @description 将页面筛选条件映射为列表接口查询参数；空值与无契约类型不传。
@@ -56,7 +50,7 @@ function buildOntologyFunctionListQueryParams(input: {
     params.displayName = displayName;
   }
   if (input.type) {
-    const apiType = FUNCTION_OPERATOR_TYPE_TO_API[input.type];
+    const apiType = mapFunctionOperatorTypeToApi(input.type);
     if (apiType) {
       params.type = apiType;
     }
@@ -286,7 +280,7 @@ export function useFunctionOperatorWorkspace() {
       if (response.code !== 200 || !response.data) {
         throw new Error(message || "函数详情查询失败");
       }
-      formDraft.value = mapOntologyFunctionDetailToDraft(response.data, spaceId.value || operator.spaceId);
+      formDraft.value = mapOntologyFunctionDetailToDraft(response.data, spaceId.value || operator.spaceId, operator.version);
     } catch (error) {
       formDraft.value = null;
       ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数详情查询失败，已使用列表数据打开");
@@ -311,8 +305,14 @@ export function useFunctionOperatorWorkspace() {
     try {
       const filtersDoc = parseBasicFilterConfig(draft.definition.parameterConfig);
       const queryConfig = buildOntologyFunctionQueryConfig(filtersDoc, draft.definition.aggFunc || "", draft.definition.targetProperty || "");
+      const version = draft.version.trim();
+      if (!version) {
+        ElMessage.error("缺少函数版本，无法保存");
+        return;
+      }
       const payload = {
         functionApi: draft.functionApi.trim(),
+        version: version,
         displayName: draft.name.trim(),
         description: draft.description.trim(),
         type: "BASIC_QUERY" as const,

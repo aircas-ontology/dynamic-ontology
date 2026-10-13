@@ -27,6 +27,7 @@ mocks与types文件名自行语义化命名
 - ```JSON
   {
     "functionApi": "",
+    "version": "",
     "displayName": "",
     "description": "",
     "type": "",
@@ -39,6 +40,7 @@ mocks与types文件名自行语义化命名
   ```
 
 - `functionApi`：【string，必填】 函数api
+- `version`：【string，必填】 版本号（必填，格式 x.y.z）
 - `displayName`：【string，必填】 函数名称
 - `description`：【string，必填】 描述
 - `type`：【string，必填】 函数模型,目前只有一个值BASIC_QUERY

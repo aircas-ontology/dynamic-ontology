@@ -28,6 +28,8 @@ export interface GetOntologyFunctionDetailData {
   model: string;
   type: string;
   ontologySpaceId: number;
+  /** 版本号，格式 x.y.z；部分环境可能未返回。 */
+  version?: string;
   params: GetOntologyFunctionDetailParamItem[];
   /** queryConfig 的 JSON 字符串（与响应码 code 同名，类型为 string）。 */
   code: string;

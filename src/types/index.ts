@@ -77,6 +77,7 @@ export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams
 export type { GetOntologyEntitiesData, GetOntologyEntitiesParams, OntologyEntityInfo } from "./apis/getOntologyEntitiesType";
 export type { GetOntologyFunctionDetailData, GetOntologyFunctionDetailParamItem, GetOntologyFunctionDetailParams } from "./apis/getOntologyFunctionDetailType";
 export type { GetOntologyFunctionListData, GetOntologyFunctionListItem, GetOntologyFunctionListParams } from "./apis/getOntologyFunctionListType";
+export type { GetOntologyFunctionVersionsData, GetOntologyFunctionVersionsParams } from "./apis/getOntologyFunctionVersionsType";
 export type { GetOntologyMetaByObjectIdData, GetOntologyMetaByObjectIdParams } from "./apis/getOntologyMetaByObjectIdType";
 export type { GetOntologyMetaStatisticData, GetOntologyMetaStatisticParams, OntologyMetaStatisticVO } from "./apis/getOntologyMetaStatisticType";
 export type { GetOntologyObjectArrTypeTreeData, GetOntologyObjectArrTypeTreeParams } from "./apis/getOntologyObjectArrTypeTreeType";

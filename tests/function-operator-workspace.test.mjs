@@ -123,10 +123,34 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(formSource, /label="源函数"[\s\S]*label="源版本"/);
   assert.match(formSource, /选择已有函数作为模板/);
   assert.match(formSource, /选择版本/);
-  assert.match(formSource, /basicSourceOptions/);
-  assert.match(formSource, /compositeSourceOptions/);
-  assert.match(formSource, /codeSourceOptions/);
+  assert.match(formSource, /sourceFunctionOptions/);
   assert.match(formSource, /sourceVersionOptions/);
+  assert.match(formSource, /getOntologyFunctionListInterface/);
+  assert.match(formSource, /getOntologyFunctionVersionsInterface/);
+  assert.match(formSource, /onSourceFunctionChange/);
+  assert.match(formSource, /onSourceVersionChange/);
+  assert.match(formSource, /getOntologyFunctionDetailInterface/);
+  assert.match(formSource, /mapOntologyFunctionDetailToDraft/);
+  assert.match(formSource, /getOntologyFunctionDetailInterface\(\{\s*functionApi,\s*version,?\s*\}\)/);
+  assert.match(formSource, /isSourceTemplateLocked/);
+  assert.match(formSource, /form\.functionApi\s*=\s*draft\.functionApi/);
+  assert.match(formSource, /clearValidate\(\[\s*["']name["']\s*,\s*["']functionApi["']\s*\]\)/);
+  assert.match(formSource, /nextTick/);
+  assert.match(formSource, /form\.name\s*=\s*""/);
+  assert.match(formSource, /form\.functionApi\s*=\s*""/);
+  const changeTypeBlock = formSource.slice(formSource.indexOf("function changeType"), formSource.indexOf("function clearTargetProperty"));
+  assert.match(changeTypeBlock, /form\.type === type/);
+  assert.match(changeTypeBlock, /createEmptyDraft\(\)/);
+  assert.match(changeTypeBlock, /Object\.assign\(form,/);
+  assert.match(changeTypeBlock, /clearValidate\(\)/);
+  assert.doesNotMatch(formSource, /sourceVersionOptions = computed<string\[\]>\(\(\) => \[\]\)/);
+  assert.match(formSource, /mapFunctionOperatorTypeToApi/);
+  assert.match(formSource, /pageSize:\s*1000/);
+  assert.match(formSource, /pageNum:\s*1/);
+  assert.doesNotMatch(formSource, /operators\?:/);
+  assert.doesNotMatch(formSource, /basicSourceOptions/);
+  assert.doesNotMatch(formSource, /compositeSourceOptions/);
+  assert.doesNotMatch(formSource, /codeSourceOptions/);
   assert.match(
     formSource,
     /form\.type === ['"]composite['"]\s*\|\|\s*form\.type === ['"]code['"]|form\.type === ['"]code['"]\s*\|\|\s*form\.type === ['"]composite['"]/,
@@ -150,11 +174,18 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(formSource, /prop="version"/);
   assert.match(formSource, /v-model="form\.version"/);
   assert.match(formSource, /prop="functionApi"/);
-  assert.match(panelSource, /:operators="operators"/);
+  assert.doesNotMatch(panelSource, /:operators="operators"/);
+  const typeMapSource = readSource("../src/utils/mapFunctionOperatorTypeToApi.ts");
+  assert.match(typeMapSource, /export function mapFunctionOperatorTypeToApi/);
+  assert.match(typeMapSource, /BASIC_QUERY/);
+  assert.match(typeMapSource, /CUSTOMIZE/);
+  assert.match(typeMapSource, /COMPOSITE/);
+  assert.match(workspaceSource, /mapFunctionOperatorTypeToApi/);
+
   assert.match(typeSource, /通过编排多个函数构建复杂流程/);
   assert.match(typeSource, /通过脚本编写自定义函数逻辑/);
-  assert.match(formSource, /v-model="form\.name"[\s\S]*:disabled="Boolean\(operator\)"/);
-  assert.match(formSource, /v-model="form\.functionApi"[\s\S]*:disabled="Boolean\(operator\)"/);
+  assert.match(formSource, /v-model="form\.name"[\s\S]*:disabled="Boolean\(operator\) \|\| isSourceTemplateLocked"/);
+  assert.match(formSource, /v-model="form\.functionApi"[\s\S]*:disabled="Boolean\(operator\) \|\| isSourceTemplateLocked"/);
   assert.match(formSource, /v-model="form\.version"[\s\S]*:disabled="Boolean\(operator\)"/);
   assert.match(typeSource, /functionApi:\s*string/);
   const filterSource = readSource("../src/views/FunctionOperatorPanel/components/BasicFilterGroupEditor.vue");

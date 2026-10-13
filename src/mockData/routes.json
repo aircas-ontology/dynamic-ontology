@@ -166,6 +166,11 @@
   },
   {
     "method": "GET",
+    "path": "/ontology/function/versions",
+    "file": "fixtures/ontology/function/versions.get.json"
+  },
+  {
+    "method": "GET",
     "path": "/ontology/datasource/table",
     "file": "fixtures/ontology/datasource/table.get.json"
   },
