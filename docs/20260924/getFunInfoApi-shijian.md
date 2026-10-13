@@ -27,10 +27,12 @@ mocks与types文件名自行语义化命名
 - ```JSON
   {
     "functionApi": "",
+    "version": ""
   }
   ```
 
 - `functionApi`：【string，必填】 函数api
+- `version`：【string，必填】 版本号
 
 ## 输出参数
 

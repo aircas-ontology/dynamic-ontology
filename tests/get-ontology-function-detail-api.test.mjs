@@ -20,6 +20,7 @@ test("get ontology function detail types expose documented fields", () => {
   const source = readSource("../src/types/apis/getOntologyFunctionDetailType.ts");
   assert.match(source, /export interface GetOntologyFunctionDetailParams/);
   assert.match(source, /functionApi: string/);
+  assert.match(source, /version: string/);
   assert.match(source, /export interface GetOntologyFunctionDetailData/);
   assert.match(source, /displayName: string/);
   assert.match(source, /description: string/);
@@ -40,6 +41,7 @@ test("get ontology function detail api gets detail by functionApi query", () => 
   assert.match(source, /DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/function\/detail"/);
   assert.match(source, /method: "get"/);
   assert.match(source, /params/);
+  assert.match(source, /params\.version/);
   const barrel = readSource("../src/apis/index.ts");
   assert.match(barrel, /getOntologyFunctionDetailInterface/);
 });
@@ -120,11 +122,14 @@ test("function operator openEdit fetches detail before opening form", () => {
   assert.match(workspace, /async function openEdit/);
   assert.match(workspace, /formDraft\.value\s*=/);
   assert.match(workspace, /formVisible\.value\s*=\s*true/);
+  assert.match(workspace, /getOntologyFunctionDetailInterface\(\{\s*functionApi,\s*version,?\s*\}\)/);
+  assert.match(workspace, /缺少函数版本/);
   const openEditBlock = workspace.slice(workspace.indexOf("async function openEdit"), workspace.indexOf("async function saveOperator"));
   assert.ok(
     openEditBlock.indexOf("formVisible.value = true") < openEditBlock.indexOf("getOntologyFunctionDetailInterface"),
     "formVisible must open before detail request",
   );
+  assert.match(openEditBlock, /version/);
 });
 
 test("mapOntologyFunctionDetailToOperator fills input params from detail", () => {

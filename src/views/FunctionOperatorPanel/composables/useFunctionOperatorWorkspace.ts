@@ -215,20 +215,25 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 打开详情抽屉：先展示列表行，再按 functionApi 拉取详情回填。
+   * @description 打开详情抽屉：先展示列表行，再按 functionApi 与 version 拉取详情回填。
    * @param operator 目标算子。
    */
   async function openDetail(operator: FunctionOperator): Promise<void> {
     const functionApi = operator.functionApi.trim();
+    const version = operator.version.trim();
     if (!functionApi) {
       ElMessage.error("缺少函数 API 名称，无法查看详情");
+      return;
+    }
+    if (!version) {
+      ElMessage.error("缺少函数版本，无法查看详情");
       return;
     }
     selectedOperator.value = operator;
     detailVisible.value = true;
     detailLoading.value = true;
     try {
-      const response = await getOntologyFunctionDetailInterface({ functionApi });
+      const response = await getOntologyFunctionDetailInterface({ functionApi, version });
       if (response.code !== 200 || !response.data) {
         throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数详情查询失败");
       }
@@ -250,13 +255,22 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 打开编辑弹框：先打开表单，再按 functionApi 拉取详情回填；详情失败保留列表行数据并提示。
+   * @description 打开编辑弹框：已发布函数直接拒绝；其余先打开表单，再按 functionApi 与 version 拉取详情回填；详情失败保留列表行数据并提示。
    * @param operator 目标算子。
    */
   async function openEdit(operator: FunctionOperator): Promise<void> {
+    if (operator.status === "published") {
+      ElMessage.warning("已发布函数不可编辑");
+      return;
+    }
     const functionApi = operator.functionApi.trim();
+    const version = operator.version.trim();
     if (!functionApi) {
       ElMessage.error("缺少函数 API 名称，无法编辑");
+      return;
+    }
+    if (!version) {
+      ElMessage.error("缺少函数版本，无法编辑");
       return;
     }
     editingOperator.value = operator;
@@ -267,7 +281,7 @@ export function useFunctionOperatorWorkspace() {
     }
     actionLoading.value = true;
     try {
-      const response = await getOntologyFunctionDetailInterface({ functionApi });
+      const response = await getOntologyFunctionDetailInterface({ functionApi, version });
       const message = typeof response.message === "string" ? response.message.trim() : "";
       if (response.code !== 200 || !response.data) {
         throw new Error(message || "函数详情查询失败");
@@ -520,8 +534,13 @@ export function useFunctionOperatorWorkspace() {
    */
   async function openTest(operator: FunctionOperator): Promise<void> {
     const functionApi = operator.functionApi.trim();
+    const version = operator.version.trim();
     if (!functionApi) {
       ElMessage.error("缺少函数 API 名称，无法测试");
+      return;
+    }
+    if (!version) {
+      ElMessage.error("缺少函数版本，无法测试");
       return;
     }
     testingOperator.value = operator;
@@ -535,7 +554,7 @@ export function useFunctionOperatorWorkspace() {
     testVisible.value = true;
     testDetailLoading.value = true;
     try {
-      const response = await getOntologyFunctionDetailInterface({ functionApi });
+      const response = await getOntologyFunctionDetailInterface({ functionApi, version });
       if (response.code !== 200 || !response.data) {
         throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数详情查询失败");
       }

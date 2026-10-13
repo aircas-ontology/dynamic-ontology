@@ -94,6 +94,7 @@ export function getOntologyFunctionListInterface(params: GetOntologyFunctionList
  *
  * @param params 查询参数。
  * @param params.functionApi 函数 API 名称。
+ * @param params.version 版本号。
  * @returns 标准 API 响应，data 为函数详情。
  */
 export function getOntologyFunctionDetailInterface(params: GetOntologyFunctionDetailParams): Promise<ApiResponse<GetOntologyFunctionDetailData>> {

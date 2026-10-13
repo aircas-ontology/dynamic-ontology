@@ -1,10 +1,19 @@
 <template>
-  <button v-show="!visible" class="ai-assistant-launcher" type="button" aria-label="打开 AI 助手" @click="visible = true">
+  <el-button class="ai-assistant-launcher" :aria-label="visible ? '关闭 AI 助手' : '打开 AI 助手'" :aria-expanded="visible" @click="visible = !visible">
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M5 6.5h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" />
     </svg>
-  </button>
-  <el-drawer v-model="visible" class="aircas-drawer ai-assistant-drawer" title="AI 助手" direction="rtl" size="620px" :modal="false" append-to-body>
+  </el-button>
+  <el-drawer
+    v-model="visible"
+    class="aircas-drawer ai-assistant-drawer"
+    title="AI 助手"
+    direction="rtl"
+    size="620px"
+    :modal="false"
+    modal-penetrable
+    append-to-body
+  >
     <div class="ai-assistant-drawer__panel">
       <div ref="stageRef" class="ai-assistant-drawer__stage">
         <AiAssistantConversation v-if="messages.length" :messages="messages" @select-option="selectAssistantOption" />
@@ -127,30 +136,29 @@ watch(messages, () => {
 
 <style scoped lang="scss">
 .ai-assistant-launcher {
-  position: fixed;
-  right: 24px;
+  position: absolute;
+  left: 50%;
   bottom: 24px;
   z-index: 20;
   display: grid;
-  width: 44px;
-  height: 44px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
   place-items: center;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 50%;
-  color: var(--aircas-color-text-primary);
-  background: color-mix(in srgb, var(--aircas-color-accent-cyan) 60%, transparent);
-  box-shadow: 0 8px 20px var(--aircas-color-divider);
+  transform: translateX(-50%);
   cursor: pointer;
 }
 
-.ai-assistant-launcher:hover,
-.ai-assistant-launcher:focus-visible {
-  border-color: var(--aircas-color-accent-cyan);
-  color: var(--aircas-color-accent-cyan);
-  outline: none;
+.ai-assistant-launcher svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
-.ai-assistant-launcher svg,
 .ai-assistant-drawer__send svg,
 .ai-assistant-drawer__mark svg {
   width: 20px;

@@ -83,7 +83,7 @@
         </div>
         <div class="function-operator-card__actions" @click.stop>
           <el-button text size="small" @click="openTest(operator)">测试</el-button>
-          <el-button text size="small" @click="openEdit(operator)">编辑</el-button>
+          <el-button v-if="operator.status !== 'published'" text size="small" @click="openEdit(operator)">编辑</el-button>
           <el-button text size="small" @click="togglePublish(operator)">
             {{ operator.status === "published" ? "下线" : "发布" }}
           </el-button>
@@ -116,7 +116,7 @@
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click.stop="openTest(asOperator(row))">测试</el-button>
-          <el-button link @click.stop="openEdit(asOperator(row))">编辑</el-button>
+          <el-button v-if="asOperator(row).status !== 'published'" link @click.stop="openEdit(asOperator(row))">编辑</el-button>
           <el-button link @click.stop="togglePublish(asOperator(row))">{{ asOperator(row).status === "published" ? "下线" : "发布" }}</el-button>
           <el-button link type="danger" @click.stop="openDeleteOperator(asOperator(row))">删除</el-button>
         </template>

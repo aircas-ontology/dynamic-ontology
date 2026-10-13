@@ -107,6 +107,11 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(panelSource, /function-operator-card__actions[\s\S]*justify-content:\s*flex-end/);
   assert.match(panelSource, /FunctionOperatorFormDialog/);
   assert.match(panelSource, /FunctionOperatorDetailDrawer/);
+  assert.match(panelSource, /v-if="operator\.status !== ['"]published['"]"[\s\S]*openEdit\(operator\)/);
+  assert.match(panelSource, /v-if="asOperator\(row\)\.status !== ['"]published['"]"[\s\S]*openEdit\(asOperator\(row\)\)/);
+  const workspaceSource = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
+  assert.match(workspaceSource, /operator\.status === ['"]published['"]/);
+  assert.match(workspaceSource, /已发布函数不可编辑/);
   assert.doesNotMatch(panelSource, /运行配置/);
   assert.match(formSource, /FunctionOperatorBasicFilterBuilder/);
   assert.match(formSource, /本阶段暂未开放/);
@@ -148,7 +153,9 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(panelSource, /:operators="operators"/);
   assert.match(typeSource, /通过编排多个函数构建复杂流程/);
   assert.match(typeSource, /通过脚本编写自定义函数逻辑/);
+  assert.match(formSource, /v-model="form\.name"[\s\S]*:disabled="Boolean\(operator\)"/);
   assert.match(formSource, /v-model="form\.functionApi"[\s\S]*:disabled="Boolean\(operator\)"/);
+  assert.match(formSource, /v-model="form\.version"[\s\S]*:disabled="Boolean\(operator\)"/);
   assert.match(typeSource, /functionApi:\s*string/);
   const filterSource = readSource("../src/views/FunctionOperatorPanel/components/BasicFilterGroupEditor.vue");
   assert.equal((filterSource.match(/<el-select/g) || []).length, 4);

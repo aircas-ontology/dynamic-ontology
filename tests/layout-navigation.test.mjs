@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { parse, compileScript } from "@vue/compiler-sfc";
 import { createRequire } from "node:module";
 import { runInNewContext } from "node:vm";
-import { createRenderer, h, nextTick } from "vue";
+import { createRenderer, h, nextTick, ref } from "vue";
 import { transpileModule, ModuleKind } from "typescript";
 
 test("menu supports collapse and shows space management without a home entry", () => {
@@ -58,12 +58,15 @@ test("layout centers the native AI assistant button horizontally near the sideba
   assert.match(drawer, /创建一个巡航行为/);
   assert.match(drawer, /编辑函数算子运行配置/);
   assert.match(drawer, /导出行为调度和规则库/);
-  assert.match(drawer, /请输入问题，Ctrl \+ Enter 发送/);
+  assert.match(drawer, /请输入问题，Enter 发送/);
   assert.match(drawer, /maxlength="1000"/);
   assert.match(drawer, /function applyAssistantPrompt/);
   assert.match(drawer, /function submitAssistantQuestion/);
-  assert.match(drawer, /keydown\.ctrl\.enter/);
+  assert.match(drawer, /@keydown="handleAssistantInputKeydown"/);
   assert.match(drawer, /size="620px"/);
+  assert.match(drawer, /position: absolute;/);
+  assert.doesNotMatch(drawer, /position: fixed;/);
+  assert.doesNotMatch(drawer, /\.ai-assistant-launcher \{[^}]*right:\s*24px/);
   assert.match(drawer, /class="ai-assistant-drawer__stage"/);
   assert.match(drawer, /useAiAssistantChat/);
   assert.match(drawer, /AiAssistantConversation/);
@@ -97,7 +100,35 @@ function createAssistantHarness() {
   const compiled = compileScript(descriptor, { id: "assistant", inlineTemplate: true });
   const { outputText } = transpileModule(compiled.content, { compilerOptions: { module: ModuleKind.CommonJS } });
   const exports = {};
-  runInNewContext(outputText, { exports, require: createRequire(import.meta.url) });
+  const realRequire = createRequire(import.meta.url);
+  /**
+   * @description 解析组件依赖：拦截 `@/` 别名与助手对话依赖，避免 harness 加载真实网络/UI 模块。
+   * @param {string} id 模块 id。
+   * @returns {unknown} 模块导出。
+   */
+  function resolveHarnessModule(id) {
+    if (id === "@/composables/agent/useAiAssistantChat" || id.endsWith("/composables/agent/useAiAssistantChat")) {
+      return {
+        useAiAssistantChat: () => ({
+          draft: ref(""),
+          messages: ref([]),
+          status: ref("idle"),
+          errorMessage: ref(""),
+          sendAssistantMessage: () => undefined,
+          startNewAssistantConversation: () => undefined,
+          selectAssistantOption: () => undefined,
+        }),
+      };
+    }
+    if (id === "./AiAssistantConversation.vue" || id.endsWith("AiAssistantConversation.vue")) {
+      return { default: { name: "AiAssistantConversation", render: () => null } };
+    }
+    if (id.startsWith("@/")) {
+      return realRequire(new URL(`../src/${id.slice(2)}`, import.meta.url));
+    }
+    return realRequire(id);
+  }
+  runInNewContext(outputText, { exports, require: resolveHarnessModule });
   /**
    * @description 创建内存渲染节点，保留属性和父子关系供 Vue 渲染器使用。
    * @param {string} type 节点类型。
@@ -132,7 +163,7 @@ function createAssistantHarness() {
     setup:
       (props, { attrs, slots }) =>
       () =>
-        h("button", attrs, slots.default?.()),
+        h("button", { ...attrs, ...props }, slots.default?.()),
   });
   app.component("ElDrawer", {
     props: ["modelValue"],
@@ -143,7 +174,7 @@ function createAssistantHarness() {
       return () => h("section");
     },
   });
-  for (const name of ["ElInput", "ElDropdownItem", "ElDropdownMenu", "ElDropdown"]) {
+  for (const name of ["ElInput", "ElDropdownItem", "ElDropdownMenu", "ElDropdown", "AiAssistantConversation"]) {
     app.component(name, { render: () => h("span") });
   }
   app.mount(root);

@@ -4,6 +4,8 @@ import type { CreateOntologyFunctionQueryConfig } from "./createOntologyFunction
 export interface GetOntologyFunctionDetailParams {
   /** 函数 API 名称。 */
   functionApi: string;
+  /** 版本号。 */
+  version: string;
 }
 
 /** 函数详情参数项。 */

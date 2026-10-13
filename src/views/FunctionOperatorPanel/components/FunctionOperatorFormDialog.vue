@@ -45,14 +45,14 @@
         </template>
         <div class="function-operator-form__name-grid">
           <el-form-item label="函数名称" prop="name">
-            <el-input v-model="form.name" maxlength="64" placeholder="例如：目标识别算子" />
+            <el-input v-model="form.name" maxlength="64" placeholder="例如：目标识别算子" :disabled="Boolean(operator)" />
           </el-form-item>
           <el-form-item label="函数api名称" prop="functionApi">
             <el-input v-model="form.functionApi" maxlength="64" placeholder="例如：target_recognition" :disabled="Boolean(operator)" />
           </el-form-item>
         </div>
         <el-form-item label="函数版本" prop="version">
-          <el-input v-model="form.version" maxlength="32" placeholder="例如：1.0.0" />
+          <el-input v-model="form.version" maxlength="32" placeholder="例如：1.0.0" :disabled="Boolean(operator)" />
         </el-form-item>
         <el-form-item label="函数说明" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="2" maxlength="240" show-word-limit />
@@ -90,14 +90,14 @@
         </template>
         <div class="function-operator-form__section-title">通用配置</div>
         <el-form-item label="函数名称" prop="name">
-          <el-input v-model="form.name" maxlength="64" placeholder="例如：目标识别算子" />
+          <el-input v-model="form.name" maxlength="64" placeholder="例如：目标识别算子" :disabled="Boolean(operator)" />
         </el-form-item>
         <div class="function-operator-form__name-grid">
           <el-form-item label="API名称" prop="functionApi">
             <el-input v-model="form.functionApi" maxlength="64" placeholder="例如：TargetDetectFn" :disabled="Boolean(operator)" />
           </el-form-item>
           <el-form-item label="版本号" prop="version">
-            <el-input v-model="form.version" maxlength="32" placeholder="v1.0.0" />
+            <el-input v-model="form.version" maxlength="32" placeholder="v1.0.0" :disabled="Boolean(operator)" />
           </el-form-item>
         </div>
         <el-form-item label="调用协议" prop="protocol">
