@@ -8,6 +8,7 @@ import type {
   GetOntologyFunctionDetailParamItem,
 } from "@/types";
 import { createEmptyBasicFilterDocument, mapOntologyFunctionQueryConfigToBasicFilter, stringifyBasicFilterConfig } from "./functionOperatorBasicFilter.ts";
+import { mapFunctionOperatorTypeFromApi } from "./mapFunctionOperatorTypeToApi.ts";
 
 const AGG_FUNC_SET = new Set<string>(["SUM", "COUNT", "AVG", "MAX", "MIN", "DISTINCT"]);
 
@@ -130,17 +131,20 @@ export function mapOntologyFunctionDetailToDraft(
   const targetProperty = resolveTargetProperty(detail.queryConfig?.targetProperty);
   const spaceId = Number.isFinite(detail.ontologySpaceId) ? detail.ontologySpaceId : fallbackSpaceId;
   const functionApi = typeof detail.functionApi === "string" ? detail.functionApi.trim() : "";
+  const apiModelType = typeof detail.type === "string" ? detail.type.trim() : "";
+  const type = mapFunctionOperatorTypeFromApi(apiModelType);
   return {
     id: functionApi || undefined,
     spaceId,
     name: typeof detail.displayName === "string" ? detail.displayName.trim() : "",
     functionApi,
-    type: "basic",
-    apiModelType: typeof detail.type === "string" ? detail.type.trim() : "",
+    type,
+    apiModelType,
     protocol: "",
     version: resolveDetailVersion(detail.version, fallbackVersion),
     description: typeof detail.description === "string" ? detail.description.trim() : "",
     createdBy: "",
+    createdAt: "",
     status: "",
     category: "",
     inputParameters: [],
@@ -148,12 +152,15 @@ export function mapOntologyFunctionDetailToDraft(
     timeout: 0,
     retryCount: 0,
     retryInterval: 0,
-    definition: {
-      kind: "basic",
-      parameterConfig: stringifyBasicFilterConfig(filtersDoc),
-      aggFunc,
-      targetProperty,
-    },
+    definition:
+      type === "basic"
+        ? {
+            kind: "basic",
+            parameterConfig: stringifyBasicFilterConfig(filtersDoc),
+            aggFunc,
+            targetProperty,
+          }
+        : { kind: type },
     dependencies: [],
     testStatus: "untested",
     testedAt: "",
@@ -169,6 +176,7 @@ export function mapOntologyFunctionDetailToDraft(
 export function mapOntologyFunctionDetailToOperator(detail: GetOntologyFunctionDetailData, listOperator?: FunctionOperator | null): FunctionOperator {
   const functionApi = typeof detail.functionApi === "string" ? detail.functionApi.trim() : listOperator?.functionApi.trim() || "";
   const apiModelType = typeof detail.type === "string" ? detail.type.trim() : listOperator?.apiModelType || "";
+  const type = mapFunctionOperatorTypeFromApi(apiModelType || listOperator?.type);
   const spaceId = Number.isFinite(detail.ontologySpaceId) ? detail.ontologySpaceId : (listOperator?.spaceId ?? 0);
   const parameterConfig = resolveDetailParameterConfig(detail);
   return {
@@ -177,11 +185,12 @@ export function mapOntologyFunctionDetailToOperator(detail: GetOntologyFunctionD
     name: typeof detail.displayName === "string" ? detail.displayName.trim() : listOperator?.name || "",
     functionApi,
     description: typeof detail.description === "string" ? detail.description.trim() : listOperator?.description || "",
-    type: "basic",
+    type,
     apiModelType,
     protocol: "",
     version: resolveDetailVersion(detail.version, listOperator?.version),
     createdBy: "",
+    createdAt: listOperator?.createdAt?.trim() || "",
     updatedAt: listOperator?.updatedAt?.trim() || "",
     status: "",
     category: "",
@@ -190,12 +199,15 @@ export function mapOntologyFunctionDetailToOperator(detail: GetOntologyFunctionD
     timeout: 0,
     retryCount: 0,
     retryInterval: 0,
-    definition: {
-      kind: "basic",
-      parameterConfig,
-      aggFunc: resolveAggFunc(detail.queryConfig?.aggFunc),
-      targetProperty: resolveTargetProperty(detail.queryConfig?.targetProperty),
-    },
+    definition:
+      type === "basic"
+        ? {
+            kind: "basic",
+            parameterConfig,
+            aggFunc: resolveAggFunc(detail.queryConfig?.aggFunc),
+            targetProperty: resolveTargetProperty(detail.queryConfig?.targetProperty),
+          }
+        : { kind: type },
     dependencies: [],
     testStatus: "untested",
     testedAt: "",

@@ -18,8 +18,8 @@
           type="daterange"
           value-format="YYYY-MM-DD"
           range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
+          start-placeholder="开始日期(创建)"
+          end-placeholder="结束日期(创建)"
         />
       </div>
 
@@ -78,16 +78,22 @@
         </div>
         <p class="function-operator-card__description">{{ operator.description || "暂无说明" }}</p>
         <div class="function-operator-card__footer">
-          <span>{{ operator.createdBy }}</span>
-          <span>{{ operator.updatedAt }}</span>
+          <span
+            >创建时间<br />
+            {{ operator.createdAt || "-" }}</span
+          >
+          <span
+            >更新时间<br />
+            {{ operator.updatedAt || "-" }}</span
+          >
         </div>
         <div class="function-operator-card__actions" @click.stop>
-          <el-button text size="small" @click="openTest(operator)">测试</el-button>
+          <el-button type="primary" text size="small" @click="openTest(operator)">测试</el-button>
           <el-button v-if="operator.status !== 'published'" text size="small" @click="openEdit(operator)">编辑</el-button>
-          <el-button text size="small" @click="togglePublish(operator)">
+          <el-button type="warning" text size="small" @click="togglePublish(operator)">
             {{ operator.status === "published" ? "下线" : "发布" }}
           </el-button>
-          <el-button text size="small" @click="openDeleteOperator(operator)">删除</el-button>
+          <el-button type="danger" text size="small" @click="openDeleteOperator(operator)">删除</el-button>
         </div>
       </article>
     </div>
@@ -112,7 +118,8 @@
           <el-tag size="small" :type="statusTagType(asOperator(row).status)">{{ statusLabel(asOperator(row).status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="updatedAt" label="最后更新" width="150" />
+      <el-table-column prop="createdAt" label="创建时间" width="160" />
+      <el-table-column prop="updatedAt" label="最后更新" width="160" />
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click.stop="openTest(asOperator(row))">测试</el-button>
@@ -144,6 +151,7 @@
       :space-id="spaceId"
       :loading="actionLoading"
       @submit="saveOperator"
+      @save-script="saveScriptOperator"
     />
     <FunctionOperatorDeleteDialog
       v-model="deleteVisible"
@@ -267,6 +275,7 @@ const {
   openCreate,
   openEdit,
   saveOperator,
+  saveScriptOperator,
   openDeleteOperator,
   confirmDeleteOperator,
   togglePublish,
@@ -296,17 +305,11 @@ function setViewMode(value: unknown): void {
 }
 
 /**
- * @description 获取函数类型展示文案；CUSTOMIZE 与未知模型类型展示空。
+ * @description 获取函数类型展示文案，与筛选下拉 FUNCTION_OPERATOR_TYPE_LABELS 一致。
  * @param operator 算子。
  * @returns 中文标签或空字符串。
  */
 function typeLabel(operator: FunctionOperator): string {
-  if (operator.apiModelType === "CUSTOMIZE") {
-    return "";
-  }
-  if (operator.apiModelType === "BASIC_QUERY" || operator.type === "basic") {
-    return FUNCTION_OPERATOR_TYPE_LABELS.basic;
-  }
   return FUNCTION_OPERATOR_TYPE_LABELS[operator.type] ?? "";
 }
 
@@ -506,6 +509,8 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  min-height: calc(1.6em * 2);
+  height: calc(1.6em * 2);
   color: var(--aircas-color-text-secondary);
   font-size: 12px;
   line-height: 1.6;

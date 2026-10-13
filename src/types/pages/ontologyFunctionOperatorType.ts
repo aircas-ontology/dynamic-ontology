@@ -12,6 +12,8 @@ export type FunctionOperatorSortOrder = "asc" | "desc";
 export type FunctionOperatorTestStatus = "untested" | "passed" | "failed";
 export type FunctionOperatorViewMode = "card" | "table";
 export type FunctionOperatorAggFunc = CreateOntologyFunctionAggFunc;
+/** 脚本函数 Web-IDE 可选语言。 */
+export type FunctionOperatorScriptLanguage = "typescript" | "groovy" | "python" | "java";
 
 export interface FunctionOperatorParameterField {
   id: string;
@@ -72,6 +74,8 @@ export interface FunctionOperator {
   version: string;
   description: string;
   createdBy: string;
+  /** 创建时间（列表 createTime 格式化后）。 */
+  createdAt: string;
   updatedAt: string;
   status: FunctionOperatorStatus;
   category: string;
@@ -126,6 +130,16 @@ export const FUNCTION_OPERATOR_TYPE_OPTIONS: ReadonlyArray<{ value: FunctionOper
   { value: "api", label: "外部 API 函数", description: "本阶段暂未开放" },
   { value: "docker", label: "容器算子函数", description: "本阶段暂未开放" },
   { value: "composite", label: "函数编排", description: "通过编排多个函数构建复杂流程" },
+];
+
+export const FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS: ReadonlyArray<{
+  value: FunctionOperatorScriptLanguage;
+  label: string;
+}> = [
+  { value: "typescript", label: "TypeScript" },
+  { value: "groovy", label: "Groovy" },
+  { value: "python", label: "Python" },
+  { value: "java", label: "Java" },
 ];
 
 export const FUNCTION_OPERATOR_AGG_FUNC_OPTIONS: ReadonlyArray<{ value: FunctionOperatorAggFunc; label: string }> = [

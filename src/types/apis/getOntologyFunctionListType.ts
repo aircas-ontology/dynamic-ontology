@@ -24,6 +24,8 @@ export interface GetOntologyFunctionListItem {
   displayName: string;
   description: string;
   type: string;
+  /** 创建时间（ISO 字符串）。 */
+  createTime: string;
   /** 更新时间（ISO 字符串）。 */
   updateTime: string;
   /** 发布状态：0 未发布，1 已发布。 */

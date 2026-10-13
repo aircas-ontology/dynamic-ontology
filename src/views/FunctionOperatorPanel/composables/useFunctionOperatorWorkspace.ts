@@ -15,6 +15,7 @@ import {
   updateOntologyFunctionInterface,
 } from "@/apis";
 import type {
+  CreateOntologyFunctionParams,
   FunctionOperator,
   FunctionOperatorDraft,
   FunctionOperatorQuery,
@@ -284,6 +285,36 @@ export function useFunctionOperatorWorkspace() {
     } catch (error) {
       formDraft.value = null;
       ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数详情查询失败，已使用列表数据打开");
+    } finally {
+      actionLoading.value = false;
+    }
+  }
+
+  /**
+   * @description 保存新建脚本函数（CUSTOMIZE）；成功后关闭表单与 IDE 并刷新列表。
+   * @param params 创建接口请求体。
+   */
+  async function saveScriptOperator(params: CreateOntologyFunctionParams): Promise<void> {
+    if (actionLoading.value) {
+      return;
+    }
+    if (params.type !== "CUSTOMIZE") {
+      ElMessage.warning("仅支持创建脚本函数");
+      return;
+    }
+    actionLoading.value = true;
+    try {
+      const response = await createOntologyFunctionInterface(params);
+      if (response.code !== 200) {
+        throw new Error(response.message || "脚本函数创建失败");
+      }
+      ElMessage.success("脚本函数草稿已保存");
+      formVisible.value = false;
+      formDraft.value = null;
+      editingOperator.value = null;
+      await loadOperators();
+    } catch (error) {
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "脚本函数创建失败");
     } finally {
       actionLoading.value = false;
     }
@@ -695,6 +726,7 @@ export function useFunctionOperatorWorkspace() {
     openCreate,
     openEdit,
     saveOperator,
+    saveScriptOperator,
     openDeleteOperator,
     confirmDeleteOperator,
     togglePublish,

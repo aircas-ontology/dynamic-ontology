@@ -1,0 +1,102 @@
+import type {
+  CreateOntologyFunctionParameter,
+  CreateOntologyFunctionParameterType,
+  CreateOntologyFunctionParams,
+  FunctionOperatorScriptLanguage,
+} from "@/types";
+
+/** 组装脚本函数创建请求的输入。 */
+export interface BuildCreateOntologyScriptFunctionParamsInput {
+  functionApi: string;
+  version: string;
+  displayName: string;
+  description: string;
+  ontologySpaceId: number;
+  language: FunctionOperatorScriptLanguage;
+  code: string;
+  inputLabels: string[];
+  outputLabels: string[];
+}
+
+/** 页面脚本语言到接口 language 的映射。 */
+const SCRIPT_LANGUAGE_TO_API: Record<FunctionOperatorScriptLanguage, string> = {
+  typescript: "TYPESCRIPT",
+  groovy: "GROOVY",
+  python: "PYTHON",
+  java: "JAVA",
+};
+
+/**
+ * @description 将展示用类型文本映射为创建接口 paramType。
+ * @param typeText 标签中的类型片段（如 string / number）。
+ * @returns 契约 paramType。
+ */
+function mapScriptTypeTextToParamType(typeText: string): CreateOntologyFunctionParameterType {
+  const normalized = typeText.trim().toLowerCase();
+  if (normalized === "string") {
+    return "STRING";
+  }
+  if (normalized === "number") {
+    return "NUMBER";
+  }
+  if (normalized === "boolean") {
+    return "BOOLEAN";
+  }
+  return "OBJECT";
+}
+
+/**
+ * @description 将 `name - type` 标签列表转为创建接口 parameters 片段。
+ * @param labels 展示标签。
+ * @param category INPUT 或 OUTPUT。
+ * @returns 参数项列表。
+ */
+function mapScriptLabelsToParameters(labels: string[], category: CreateOntologyFunctionParameter["category"]): CreateOntologyFunctionParameter[] {
+  const parameters: CreateOntologyFunctionParameter[] = [];
+  for (const label of labels) {
+    const separatorIndex = label.indexOf(" - ");
+    if (separatorIndex <= 0) {
+      continue;
+    }
+    const paramName = label.slice(0, separatorIndex).trim();
+    const typeText = label.slice(separatorIndex + 3).trim();
+    if (!paramName) {
+      continue;
+    }
+    parameters.push({
+      paramName,
+      paramType: mapScriptTypeTextToParamType(typeText),
+      category,
+    });
+  }
+  return parameters;
+}
+
+/**
+ * @description 将页面脚本语言映射为创建接口 language。
+ * @param language 页面脚本语言。
+ * @returns 接口 language 大写值。
+ */
+export function mapScriptLanguageToApi(language: FunctionOperatorScriptLanguage): string {
+  return SCRIPT_LANGUAGE_TO_API[language];
+}
+
+/**
+ * @description 组装 CUSTOMIZE 脚本函数创建请求体；不含 queryConfig。
+ * @param input 通用配置、代码与识别出的入出参标签。
+ * @returns 创建接口请求参数。
+ */
+export function buildCreateOntologyScriptFunctionParams(input: BuildCreateOntologyScriptFunctionParamsInput): CreateOntologyFunctionParams {
+  const parameters = [...mapScriptLabelsToParameters(input.inputLabels, "INPUT"), ...mapScriptLabelsToParameters(input.outputLabels, "OUTPUT")];
+  return {
+    functionApi: input.functionApi.trim(),
+    version: input.version.trim(),
+    displayName: input.displayName.trim(),
+    description: input.description.trim(),
+    type: "CUSTOMIZE",
+    language: mapScriptLanguageToApi(input.language),
+    ontologySpaceId: input.ontologySpaceId,
+    code: input.code,
+    parameters,
+  };
+}

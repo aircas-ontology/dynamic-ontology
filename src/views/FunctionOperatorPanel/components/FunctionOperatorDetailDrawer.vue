@@ -109,17 +109,11 @@ const hasMetaItems = computed(() => {
 });
 
 /**
- * @description 获取函数类型展示文案；CUSTOMIZE 与未知模型类型展示空。
+ * @description 获取函数类型展示文案，与筛选下拉 FUNCTION_OPERATOR_TYPE_LABELS 一致。
  * @param operator 算子。
  * @returns 中文标签或空字符串。
  */
 function typeLabel(operator: FunctionOperator): string {
-  if (operator.apiModelType === "CUSTOMIZE") {
-    return "";
-  }
-  if (operator.apiModelType === "BASIC_QUERY" || operator.apiModelType === "BASIC" || operator.type === "basic") {
-    return FUNCTION_OPERATOR_TYPE_LABELS.basic;
-  }
   return FUNCTION_OPERATOR_TYPE_LABELS[operator.type] ?? "";
 }
 

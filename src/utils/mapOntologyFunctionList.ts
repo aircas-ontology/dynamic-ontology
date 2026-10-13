@@ -1,14 +1,27 @@
 import dayjs from "dayjs";
 
-import type { FunctionOperator, FunctionOperatorStatus, GetOntologyFunctionListItem } from "@/types";
+import type { FunctionOperator, FunctionOperatorDefinition, FunctionOperatorStatus, GetOntologyFunctionListItem } from "@/types";
+import { mapFunctionOperatorTypeFromApi } from "./mapFunctionOperatorTypeToApi.ts";
 
 /**
- * @description 将列表 updateTime 格式化为页面展示用更新时间；非法值回落为空串。
- * @param updateTime 接口 ISO 时间字符串。
+ * @description 按页面函数类型生成列表占位 definition。
+ * @param type 页面函数类型。
+ * @returns definition。
+ */
+function createListDefinition(type: FunctionOperator["type"]): FunctionOperatorDefinition {
+  if (type === "basic") {
+    return { kind: "basic", parameterConfig: "" };
+  }
+  return { kind: type };
+}
+
+/**
+ * @description 将列表 createTime / updateTime 格式化为页面展示时间；非法值回落为空串。
+ * @param timeValue 接口 ISO 时间字符串。
  * @returns `YYYY-MM-DD HH:mm:ss` 或空串。
  */
-function formatOntologyFunctionUpdateTime(updateTime: string | undefined): string {
-  const raw = typeof updateTime === "string" ? updateTime.trim() : "";
+function formatOntologyFunctionListTime(timeValue: string | undefined): string {
+  const raw = typeof timeValue === "string" ? timeValue.trim() : "";
   if (!raw) {
     return "";
   }
@@ -39,6 +52,7 @@ function mapOntologyFunctionPublishStatus(publishStatus: number | undefined): Fu
  */
 export function mapOntologyFunctionListItem(item: GetOntologyFunctionListItem, spaceId: number): FunctionOperator {
   const apiModelType = typeof item.type === "string" ? item.type : "";
+  const type = mapFunctionOperatorTypeFromApi(apiModelType);
   const version = typeof item.version === "string" ? item.version.trim() : "";
   return {
     id: item.functionApi || "",
@@ -46,12 +60,13 @@ export function mapOntologyFunctionListItem(item: GetOntologyFunctionListItem, s
     name: item.displayName || "",
     functionApi: item.functionApi || "",
     description: item.description || "",
-    type: "basic",
+    type,
     apiModelType,
     protocol: "",
     version,
     createdBy: "",
-    updatedAt: formatOntologyFunctionUpdateTime(item.updateTime),
+    createdAt: formatOntologyFunctionListTime(item.createTime),
+    updatedAt: formatOntologyFunctionListTime(item.updateTime),
     status: mapOntologyFunctionPublishStatus(item.publishStatus),
     category: "",
     inputParameters: [],
@@ -59,7 +74,7 @@ export function mapOntologyFunctionListItem(item: GetOntologyFunctionListItem, s
     timeout: 0,
     retryCount: 0,
     retryInterval: 0,
-    definition: { kind: "basic", parameterConfig: "" },
+    definition: createListDefinition(type),
     dependencies: [],
     testStatus: "untested",
     testedAt: "",

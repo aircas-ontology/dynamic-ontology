@@ -26,8 +26,12 @@ export type {
   CreateOntologyFunctionFilterDataType,
   CreateOntologyFunctionFilterNode,
   CreateOntologyFunctionFilters,
+  CreateOntologyFunctionParameter,
+  CreateOntologyFunctionParameterCategory,
+  CreateOntologyFunctionParameterType,
   CreateOntologyFunctionParams,
   CreateOntologyFunctionQueryConfig,
+  CreateOntologyFunctionType,
 } from "./apis/createOntologyFunctionType";
 export type { CreateOntologyLinkParams } from "./apis/createOntologyLinkType";
 export type { CreateOntologyObjectArrTypeTreeParams } from "./apis/createOntologyObjectArrTypeTreeType";
@@ -178,6 +182,7 @@ export type {
 export {
   FUNCTION_OPERATOR_AGG_FUNC_OPTIONS,
   FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS,
+  FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS,
   FUNCTION_OPERATOR_STATUS_LABELS,
   FUNCTION_OPERATOR_STATUS_OPTIONS,
   FUNCTION_OPERATOR_TYPE_LABELS,
@@ -197,6 +202,7 @@ export type {
   FunctionOperatorPlaceholderDefinition,
   FunctionOperatorProtocol,
   FunctionOperatorQuery,
+  FunctionOperatorScriptLanguage,
   FunctionOperatorSortBy,
   FunctionOperatorSortOrder,
   FunctionOperatorStatus,

@@ -34,6 +34,22 @@ export interface CreateOntologyFunctionQueryConfig {
   targetProperty?: string;
 }
 
+/** 创建函数算子类型。 */
+export type CreateOntologyFunctionType = "BASIC_QUERY" | "CUSTOMIZE";
+
+/** 脚本函数参数方向。 */
+export type CreateOntologyFunctionParameterCategory = "INPUT" | "OUTPUT";
+
+/** 脚本函数参数类型。 */
+export type CreateOntologyFunctionParameterType = "STRING" | "NUMBER" | "BOOLEAN" | "OBJECT";
+
+/** CUSTOMIZE 脚本函数参数项。 */
+export interface CreateOntologyFunctionParameter {
+  paramName: string;
+  paramType: CreateOntologyFunctionParameterType;
+  category: CreateOntologyFunctionParameterCategory;
+}
+
 /** 创建函数算子请求参数。 */
 export interface CreateOntologyFunctionParams {
   functionApi: string;
@@ -41,8 +57,14 @@ export interface CreateOntologyFunctionParams {
   version: string;
   displayName: string;
   description: string;
-  type: "BASIC_QUERY";
+  type: CreateOntologyFunctionType;
   ontologySpaceId: number;
+  /** 脚本语言（仅 CUSTOMIZE 有效）。 */
+  language?: string;
+  /** 脚本源码（仅 CUSTOMIZE 有效）。 */
+  code?: string;
+  /** 脚本入出参定义（仅 CUSTOMIZE 有效）。 */
+  parameters?: CreateOntologyFunctionParameter[];
   queryConfig?: CreateOntologyFunctionQueryConfig;
 }
 

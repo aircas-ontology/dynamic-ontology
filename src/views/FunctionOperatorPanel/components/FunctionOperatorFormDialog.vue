@@ -87,7 +87,7 @@
               </el-select>
             </el-form-item>
             <el-form-item label="源版本">
-              <el-select v-model="sourceVersion" clearable placeholder="选择版本" :disabled="!sourceFunctionId" @change="onSourceVersionChange">
+              <el-select v-model="sourceVersion" placeholder="选择版本" :disabled="!sourceFunctionId" @change="onSourceVersionChange">
                 <el-option v-for="item in sourceVersionOptions" :key="item" :label="item" :value="item" />
               </el-select>
             </el-form-item>
@@ -126,6 +126,17 @@
       <el-button v-else type="primary" :loading="loading" :disabled="form.type !== 'basic'" @click="submitDraft">保存</el-button>
     </template>
   </el-dialog>
+
+  <FunctionOperatorScriptIdeDialog
+    v-model="scriptIdeVisible"
+    :function-api="form.functionApi"
+    :version="form.version"
+    :display-name="form.name"
+    :description="form.description"
+    :space-id="form.spaceId"
+    :saving="loading"
+    @save="emitSaveScript"
+  />
 </template>
 
 <script setup lang="ts">
@@ -137,6 +148,7 @@ import { getOntologyFunctionDetailInterface, getOntologyFunctionListInterface, g
 import {
   FUNCTION_OPERATOR_AGG_FUNC_OPTIONS,
   FUNCTION_OPERATOR_TYPE_OPTIONS,
+  type CreateOntologyFunctionParams,
   type FunctionOperator,
   type FunctionOperatorDraft,
   type FunctionOperatorProtocol,
@@ -148,6 +160,7 @@ import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToA
 import { mapOntologyFunctionDetailToDraft } from "@/utils/mapOntologyFunctionDetail";
 
 import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBuilder.vue";
+import FunctionOperatorScriptIdeDialog from "./FunctionOperatorScriptIdeDialog.vue";
 
 const PROTOCOL_OPTIONS: ReadonlyArray<Extract<FunctionOperatorProtocol, "HTTP">> = ["HTTP"];
 
@@ -170,11 +183,22 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
   submit: [draft: FunctionOperatorDraft];
+  "save-script": [params: CreateOntologyFunctionParams];
 }>();
+
+/**
+ * @description 将脚本 IDE 组装的创建请求转发给工作区保存。
+ * @param params CUSTOMIZE 创建参数。
+ */
+function emitSaveScript(params: CreateOntologyFunctionParams): void {
+  emit("save-script", params);
+}
 
 const formRef = ref<FormInstance>();
 const sourceFunctionId = ref("");
 const sourceVersion = ref("");
+/** 脚本函数 Web-IDE 全屏弹框是否可见。 */
+const scriptIdeVisible = ref(false);
 /** 源函数下拉选项（独立列表接口结果）。 */
 const sourceFunctionOptions = ref<GetOntologyFunctionListItem[]>([]);
 let sourceFunctionListGeneration = 0;
@@ -349,6 +373,7 @@ function createEmptyDraft(): FunctionOperatorDraft {
     version: "1.0.0",
     description: "",
     createdBy: "admin",
+    createdAt: "",
     status: "draft",
     category: "基础操作",
     inputParameters: [],
@@ -379,6 +404,7 @@ function toDraft(operator: FunctionOperator): FunctionOperatorDraft {
     version: operator.version,
     description: operator.description,
     createdBy: operator.createdBy,
+    createdAt: operator.createdAt,
     status: operator.status,
     category: operator.category,
     inputParameters: operator.inputParameters.map((item) => ({ ...item })),
@@ -496,7 +522,7 @@ async function submitDraft(): Promise<void> {
 }
 
 /**
- * @description 校验编排 / 脚本通用配置后进入下一步；后续步骤暂未开放。
+ * @description 校验编排 / 脚本通用配置后进入下一步；脚本打开 Web-IDE，编排仍提示未开放。
  */
 async function goGeneralConfigNextStep(): Promise<void> {
   if (form.type !== "composite" && form.type !== "code") {
@@ -506,14 +532,18 @@ async function goGeneralConfigNextStep(): Promise<void> {
   if (!valid) {
     return;
   }
-  const tip = form.type === "code" ? "脚本函数后续步骤暂未开放" : "函数编排后续步骤暂未开放";
-  ElMessage.info(tip);
+  if (form.type === "code") {
+    scriptIdeVisible.value = true;
+    return;
+  }
+  ElMessage.info("函数编排后续步骤暂未开放");
 }
 
 watch(
   () => [props.modelValue, props.operator, props.draft, props.spaceId] as const,
   ([visible]) => {
     if (!visible) {
+      scriptIdeVisible.value = false;
       sourceFunctionListGeneration += 1;
       sourceFunctionOptions.value = [];
       resetSourceTemplateSelection();
