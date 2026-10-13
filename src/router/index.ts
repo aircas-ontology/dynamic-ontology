@@ -3,6 +3,8 @@ import type { RouteRecordRaw } from "vue-router";
 import { workspaceRoutes } from "@/router/modules/workspaceRoutes";
 
 import { registerAuthGuard } from "./authGuard";
+import { registerEmbeddedAutoLoginGuard } from "./embeddedAutoLoginGuard";
+import { registerEmbeddedModeGuard } from "./embeddedModeGuard";
 
 const routes: RouteRecordRaw[] = [
   {
@@ -22,6 +24,8 @@ const router = createRouter({
   routes,
 });
 
+registerEmbeddedAutoLoginGuard(router);
 registerAuthGuard(router);
+registerEmbeddedModeGuard(router);
 
 export default router;

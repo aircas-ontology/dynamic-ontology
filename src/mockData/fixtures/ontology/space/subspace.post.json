@@ -1,0 +1,14 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": {
+    "spaceId": 101,
+    "ontologyMapping": {
+      "ontology-aircraft": "subspace-ontology-aircraft"
+    },
+    "linkMapping": {
+      "link-aircraft-base": "subspace-link-aircraft-base"
+    }
+  }
+}

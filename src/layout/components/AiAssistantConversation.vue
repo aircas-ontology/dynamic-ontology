@@ -1,65 +1,74 @@
 <template>
   <div class="ai-assistant-drawer__conversation">
     <div v-for="message in messages" :key="message.id" class="ai-assistant-drawer__message" :class="resolveAssistantMessageClass(message)">
-      <div class="ai-assistant-drawer__bubble">
-        <ol v-if="message.role === 'assistant' && message.buildProgress" class="ai-assistant-drawer__build-steps" aria-label="本体构建步骤">
+      <div class="ai-assistant-drawer__bubble" :class="{ 'ai-assistant-drawer__bubble--layout': message.role === 'assistant' && message.buildProgress }">
+        <ol
+          v-if="message.role === 'assistant' && message.buildProgress"
+          class="ai-assistant-drawer__build-steps ai-assistant-drawer__build-steps--vertical"
+          aria-label="本体构建步骤"
+        >
           <li v-for="step in message.buildProgress.steps" :key="`${message.id}-step-${step.index}`" :class="`is-${step.status}`">
             <span class="ai-assistant-drawer__build-step-index">{{ step.index }}</span>
             <span class="ai-assistant-drawer__build-step-title">{{ step.title }}</span>
           </li>
         </ol>
-        <details v-if="message.role === 'assistant' && message.processItems.length" class="ai-assistant-drawer__process">
-          <summary>过程</summary>
-          <p v-for="(item, index) in message.processItems" :key="`${message.id}-process-${index}`">{{ item.text }}</p>
-        </details>
-        <div v-if="resolveAssistantVisibleContentBlocks(message).length" class="ai-assistant-drawer__content">
-          <template v-for="(block, index) in resolveAssistantVisibleContentBlocks(message)" :key="`${message.id}-block-${index}`">
-            <p v-if="block.kind === 'text'">{{ block.text }}</p>
-            <p v-else-if="block.kind === 'item'" class="ai-assistant-drawer__content-item">
-              <strong v-if="block.label">{{ block.label }}</strong>
-              <span>{{ block.text }}</span>
-            </p>
-            <pre v-else class="ai-assistant-drawer__content-code">{{ block.text }}</pre>
-          </template>
-        </div>
-        <p v-else-if="message.role === 'assistant' && !message.errorMessage && !message.selection" class="ai-assistant-drawer__pending">正在回复…</p>
-        <p v-if="message.role === 'assistant' && message.errorMessage" class="ai-assistant-drawer__error">{{ message.errorMessage }}</p>
-        <div v-if="message.role === 'assistant' && message.selection" class="ai-assistant-drawer__selection">
-          <strong>{{ message.selection.title || "请选择" }}</strong>
-          <AiAssistantPropertySelectionTable
-            v-if="isAssistantPropertySelectionCard(message.selection)"
-            :rows="mapAssistantPropertySelectionRows(resolveAssistantSelection(message)?.options ?? [])"
-            :selected-ids="selectedIdsByMessage[message.id] ?? []"
-            :multi-select="resolveAssistantSelection(message)?.multiSelect ?? false"
-            :disabled="isAssistantSelectionConfirmed(message.id)"
-            @change-option="
-              (optionId, checked) => changeAssistantOption(message.id, optionId, resolveAssistantSelection(message)?.multiSelect ?? false, checked)
-            "
-            @change-all="(checked) => changeAllAssistantOptions(message.id, resolveAssistantSelection(message)?.options ?? [], checked)"
-          />
-          <template v-else>
-            <label v-for="option in resolveAssistantSelection(message)?.options ?? []" :key="option.id" class="ai-assistant-drawer__option">
-              <el-checkbox
-                class="aircas-checkbox"
-                :model-value="isAssistantOptionSelected(message.id, option.id)"
-                :disabled="isAssistantSelectionConfirmed(message.id)"
-                @change="changeAssistantOption(message.id, option.id, resolveAssistantSelection(message)?.multiSelect ?? false, $event)"
-              />
-              <span class="ai-assistant-drawer__option-text">
-                <span>{{ option.label }}</span>
-                <small v-if="option.description">{{ option.description }}</small>
-              </span>
-            </label>
-          </template>
-          <el-button
-            class="aircas-button"
-            type="primary"
-            size="small"
-            :disabled="!canConfirmAssistantSelection(message.id)"
-            @click="confirmAssistantSelection(message.id)"
-          >
-            确认
-          </el-button>
+        <div class="ai-assistant-drawer__bubble-body">
+          <p v-if="message.role === 'assistant' && message.buildProgress" class="ai-assistant-drawer__build-progress-label">
+            第{{ message.buildProgress.current }}步/共{{ message.buildProgress.total }}步
+          </p>
+          <details v-if="message.role === 'assistant' && message.processItems.length" class="ai-assistant-drawer__process">
+            <summary>过程</summary>
+            <p v-for="(item, index) in message.processItems" :key="`${message.id}-process-${index}`">{{ item.text }}</p>
+          </details>
+          <div v-if="resolveAssistantVisibleContentBlocks(message).length" class="ai-assistant-drawer__content">
+            <template v-for="(block, index) in resolveAssistantVisibleContentBlocks(message)" :key="`${message.id}-block-${index}`">
+              <p v-if="block.kind === 'text'">{{ block.text }}</p>
+              <p v-else-if="block.kind === 'item'" class="ai-assistant-drawer__content-item">
+                <strong v-if="block.label">{{ block.label }}</strong>
+                <span>{{ block.text }}</span>
+              </p>
+              <pre v-else class="ai-assistant-drawer__content-code">{{ block.text }}</pre>
+            </template>
+          </div>
+          <p v-else-if="message.role === 'assistant' && !message.errorMessage && !message.selection" class="ai-assistant-drawer__pending">正在回复…</p>
+          <p v-if="message.role === 'assistant' && message.errorMessage" class="ai-assistant-drawer__error">{{ message.errorMessage }}</p>
+          <div v-if="message.role === 'assistant' && message.selection" class="ai-assistant-drawer__selection">
+            <strong>{{ message.selection.title || "请选择" }}</strong>
+            <AiAssistantPropertySelectionTable
+              v-if="isAssistantPropertySelectionCard(message.selection)"
+              :rows="mapAssistantPropertySelectionRows(resolveAssistantSelection(message)?.options ?? [])"
+              :selected-ids="selectedIdsByMessage[message.id] ?? []"
+              :multi-select="resolveAssistantSelection(message)?.multiSelect ?? false"
+              :disabled="isAssistantSelectionConfirmed(message.id)"
+              @change-option="
+                (optionId, checked) => changeAssistantOption(message.id, optionId, resolveAssistantSelection(message)?.multiSelect ?? false, checked)
+              "
+              @change-all="(checked) => changeAllAssistantOptions(message.id, resolveAssistantSelection(message)?.options ?? [], checked)"
+            />
+            <template v-else>
+              <label v-for="option in resolveAssistantSelection(message)?.options ?? []" :key="option.id" class="ai-assistant-drawer__option">
+                <el-checkbox
+                  class="aircas-checkbox"
+                  :model-value="isAssistantOptionSelected(message.id, option.id)"
+                  :disabled="isAssistantSelectionConfirmed(message.id)"
+                  @change="changeAssistantOption(message.id, option.id, resolveAssistantSelection(message)?.multiSelect ?? false, $event)"
+                />
+                <span class="ai-assistant-drawer__option-text">
+                  <span>{{ option.label }}</span>
+                  <small v-if="option.description">{{ option.description }}</small>
+                </span>
+              </label>
+            </template>
+            <el-button
+              class="aircas-button"
+              type="primary"
+              size="small"
+              :disabled="!canConfirmAssistantSelection(message.id)"
+              @click="confirmAssistantSelection(message.id)"
+            >
+              确认
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -119,14 +128,21 @@ function resolveAssistantSelection(message: DeepReadonly<AiAssistantMessage>): D
   return message.role === "assistant" ? message.selection : undefined;
 }
 
+const buildProgressMarkerPattern = /^\s*【第\s*\d+\s*步\s*\/\s*共\s*\d+\s*步】\s*$/;
+
 /**
- * @description 解析气泡正文块，属性选择时隐藏已被表格承接的草案 JSON。
+ * @description 解析气泡正文块，属性选择时隐藏已被表格承接的草案 JSON，构建进度消息过滤与进度标签重复的步骤标记文本。
  * @param message 会话消息。
  * @returns 可见正文块。
  */
 function resolveAssistantVisibleContentBlocks(message: DeepReadonly<AiAssistantMessage>): AssistantChatContentBlock[] {
-  const blocks = splitAssistantChatContentBlocks(message.content);
-  if (message.role !== "assistant" || !isAssistantPropertySelectionCard(message.selection)) {
+  if (message.role !== "assistant") {
+    return splitAssistantChatContentBlocks(message.content);
+  }
+  const blocks = splitAssistantChatContentBlocks(message.content).filter(
+    (block) => block.kind !== "text" || !(message.buildProgress && buildProgressMarkerPattern.test(block.text)),
+  );
+  if (!isAssistantPropertySelectionCard(message.selection)) {
     return blocks;
   }
   return blocks.filter((block) => block.kind !== "code" || !isAssistantPropertyProposalCode(block.text));
@@ -253,10 +269,10 @@ function confirmAssistantSelection(messageId: string): void {
 
 .ai-assistant-drawer__message--assistant .ai-assistant-drawer__bubble {
   max-width: 95%;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-top-left-radius: 2px;
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-overlay-deep);
+  background: var(--aircas-color-panel-background-deep);
 }
 
 :root[theme="light"] .ai-assistant-drawer__message--assistant .ai-assistant-drawer__bubble {
@@ -265,8 +281,8 @@ function confirmAssistantSelection(messageId: string): void {
 
 .ai-assistant-drawer__message--user .ai-assistant-drawer__bubble {
   border-top-right-radius: 2px;
-  color: var(--aircas-color-text-inverse);
-  background: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-on-accent);
+  background: var(--aircas-color-primary);
 }
 
 .ai-assistant-drawer__bubble p,
@@ -295,7 +311,7 @@ function confirmAssistantSelection(messageId: string): void {
 }
 
 .ai-assistant-drawer__build-steps li.is-active {
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
 }
 .ai-assistant-drawer__build-steps li.is-complete {
   color: var(--aircas-color-text-secondary);
@@ -320,6 +336,74 @@ function confirmAssistantSelection(messageId: string): void {
   text-overflow: ellipsis;
 }
 
+.ai-assistant-drawer__build-steps--vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.ai-assistant-drawer__build-steps--vertical li {
+  position: relative;
+  padding-bottom: 12px;
+}
+
+.ai-assistant-drawer__build-steps--vertical li::after {
+  content: "";
+  position: absolute;
+  top: 20px;
+  bottom: 2px;
+  left: 9px;
+  width: 1px;
+  background: var(--aircas-color-border-light);
+}
+
+.ai-assistant-drawer__build-steps--vertical li:last-child {
+  padding-bottom: 0;
+}
+
+.ai-assistant-drawer__build-steps--vertical li:last-child::after {
+  display: none;
+}
+
+.ai-assistant-drawer__build-steps--vertical .ai-assistant-drawer__build-step-index {
+  position: relative;
+  z-index: 1;
+  background: var(--aircas-color-panel-background-deep);
+}
+
+:root[theme="light"] .ai-assistant-drawer__build-steps--vertical .ai-assistant-drawer__build-step-index {
+  background: var(--aircas-color-card-background);
+}
+
+.ai-assistant-drawer__bubble--layout {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 12px;
+  border: 1px solid var(--aircas-color-border-light);
+  border-radius: 8px;
+  background: var(--aircas-color-panel-background-deep);
+}
+
+:root[theme="light"] .ai-assistant-drawer__bubble--layout {
+  background: var(--aircas-color-card-background);
+}
+
+.ai-assistant-drawer__bubble-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-assistant-drawer__build-progress-label {
+  margin: 0;
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+}
+
 .ai-assistant-drawer__content {
   display: flex;
   min-width: 0;
@@ -340,17 +424,17 @@ function confirmAssistantSelection(messageId: string): void {
 }
 
 .ai-assistant-drawer__message--assistant .ai-assistant-drawer__content-item strong {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
 }
 
 .ai-assistant-drawer__content-code {
   padding: 8px 10px;
   overflow: auto;
   max-width: 100%;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 6px;
-  color: var(--aircas-color-text-muted);
-  background: var(--aircas-color-transparent);
+  color: var(--aircas-color-text-secondary);
+  background: transparent;
   font-size: 12px;
   line-height: 1.45;
   white-space: pre-wrap;
@@ -359,7 +443,7 @@ function confirmAssistantSelection(messageId: string): void {
 .ai-assistant-drawer__pending,
 .ai-assistant-drawer__process,
 .ai-assistant-drawer__error {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 
@@ -386,10 +470,10 @@ function confirmAssistantSelection(messageId: string): void {
   align-items: flex-start;
   gap: 8px;
   padding: 8px 10px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 6px;
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-transparent);
+  background: transparent;
   text-align: left;
   cursor: pointer;
 }
@@ -397,7 +481,7 @@ function confirmAssistantSelection(messageId: string): void {
 .ai-assistant-drawer__option:hover,
 .ai-assistant-drawer__option:focus-within {
   border-color: var(--aircas-color-border);
-  background: var(--aircas-color-hover-background);
+  background: var(--aircas-color-hover);
 }
 
 .ai-assistant-drawer__option-text {
@@ -409,7 +493,7 @@ function confirmAssistantSelection(messageId: string): void {
 }
 
 .ai-assistant-drawer__option small {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 </style>
