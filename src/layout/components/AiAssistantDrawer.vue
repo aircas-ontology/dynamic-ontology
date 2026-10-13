@@ -4,7 +4,10 @@
       <path d="M5 6.5h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" />
     </svg>
   </button>
-  <el-drawer v-model="visible" class="aircas-drawer ai-assistant-drawer" title="AI 助手" direction="rtl" size="620px" :modal="false" append-to-body>
+  <el-drawer v-model="visible" class="ai-assistant-drawer" direction="rtl" size="620px" :modal="false" append-to-body>
+    <template #header>
+      <span class="ai-assistant-drawer__header-title">AI 助手</span>
+    </template>
     <div class="ai-assistant-drawer__panel">
       <div ref="stageRef" class="ai-assistant-drawer__stage">
         <AiAssistantConversation v-if="messages.length" :messages="messages" @select-option="selectAssistantOption" />
@@ -26,7 +29,6 @@
       <div class="ai-assistant-drawer__composer">
         <el-input
           v-model="draft"
-          class="aircas-input"
           type="textarea"
           :rows="4"
           maxlength="1000"
@@ -38,7 +40,7 @@
         />
         <div class="ai-assistant-drawer__composer-bar">
           <div class="ai-assistant-drawer__composer-actions">
-            <el-dropdown trigger="click" popper-class="aircas-popper">
+            <el-dropdown trigger="click">
               <button class="ai-assistant-drawer__mode" type="button">
                 <span aria-hidden="true">✦</span>
                 智能管理助手
@@ -60,7 +62,8 @@
             @click="submitAssistantQuestion"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 12h12M13 6l6 6-6 6" />
+              <path d="M21 3 3 10.5l6.8 2.7L12.5 20 21 3Z" />
+              <path d="M21 3 9.8 13.2" />
             </svg>
           </button>
         </div>
@@ -138,15 +141,15 @@ watch(messages, () => {
   border: 1px solid var(--aircas-color-border);
   border-radius: 50%;
   color: var(--aircas-color-text-primary);
-  background: color-mix(in srgb, var(--aircas-color-accent-cyan) 60%, transparent);
-  box-shadow: 0 8px 20px var(--aircas-color-divider);
+  background: color-mix(in srgb, var(--aircas-color-primary) 60%, transparent);
+  box-shadow: 0 8px 20px var(--aircas-color-border-light);
   cursor: pointer;
 }
 
 .ai-assistant-launcher:hover,
 .ai-assistant-launcher:focus-visible {
-  border-color: var(--aircas-color-accent-cyan);
-  color: var(--aircas-color-accent-cyan);
+  border-color: var(--aircas-color-primary);
+  color: var(--aircas-color-primary);
   outline: none;
 }
 
@@ -171,6 +174,11 @@ watch(messages, () => {
   padding: 0 16px 16px;
 }
 
+.ai-assistant-drawer__header-title {
+  color: var(--aircas-color-primary);
+  font-size: 16px;
+}
+
 .ai-assistant-drawer__panel {
   display: flex;
   height: 100%;
@@ -193,19 +201,24 @@ watch(messages, () => {
   align-items: center;
   flex-direction: column;
   gap: 8px;
-  padding: 28px 24px 8px;
+  padding: 28px 24px 20px;
   text-align: center;
 }
 
 .ai-assistant-drawer__mark {
   display: grid;
-  width: 42px;
-  height: 42px;
+  width: 56px;
+  height: 56px;
   place-items: center;
-  border: 1px solid var(--aircas-color-accent-cyan-border);
+  border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 50%;
-  color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-accent-cyan-soft);
+  color: var(--aircas-color-primary);
+  background: var(--aircas-color-effect-primary-soft);
+}
+
+.ai-assistant-drawer__mark svg {
+  width: 26px;
+  height: 26px;
 }
 
 .ai-assistant-drawer__intro strong {
@@ -215,7 +228,7 @@ watch(messages, () => {
 
 .ai-assistant-drawer__intro p {
   margin: 0;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -224,30 +237,26 @@ watch(messages, () => {
   display: flex;
   min-height: 0;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding: 0 64px;
 }
 
 .ai-assistant-drawer__prompts button {
   width: 100%;
   margin: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--aircas-color-border-soft);
-  border-radius: 6px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 8px;
   color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-overlay-deep);
+  background: var(--aircas-color-section-background);
   font-size: 13px;
   text-align: left;
   cursor: pointer;
 }
 
-:root[theme="light"] .ai-assistant-drawer__prompts button {
-  background: var(--aircas-color-card-background);
-}
-
 .ai-assistant-drawer__prompts button:hover,
 .ai-assistant-drawer__prompts button:focus-visible {
-  border-color: var(--aircas-color-border);
-  background: var(--aircas-color-hover-background);
+  background: var(--aircas-color-hover);
   outline: none;
 }
 
@@ -262,10 +271,25 @@ watch(messages, () => {
   flex: none;
   flex-direction: column;
   gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 8px;
-  background: var(--aircas-color-input-background);
+  padding: 14px 14px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--aircas-color-section-background);
+}
+
+.ai-assistant-drawer__composer :deep(.el-textarea__inner) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ai-assistant-drawer__composer :deep(.el-textarea__inner:focus) {
+  border: 0;
+  box-shadow: none;
+}
+
+.ai-assistant-drawer__composer :deep(.el-input__count) {
+  background: transparent;
 }
 
 .ai-assistant-drawer__composer-bar {
@@ -285,38 +309,37 @@ watch(messages, () => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--aircas-color-border-soft);
-  border-radius: 14px;
-  color: var(--aircas-color-text-secondary);
-  background: var(--aircas-color-transparent);
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid var(--aircas-color-effect-primary-border);
+  border-radius: 15px;
+  color: var(--aircas-color-primary);
+  background: var(--aircas-color-effect-primary-soft);
   font-size: 12px;
   cursor: pointer;
 }
 
 .ai-assistant-drawer__mode:hover,
 .ai-assistant-drawer__mode:focus-visible {
-  border-color: var(--aircas-color-border);
-  color: var(--aircas-color-text-primary);
+  border-color: var(--aircas-color-primary);
   outline: none;
 }
 
 .ai-assistant-drawer__send {
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   place-items: center;
   border: 0;
   border-radius: 50%;
-  color: var(--aircas-color-text-inverse);
-  background: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-on-accent);
+  background: var(--aircas-color-primary);
   cursor: pointer;
 }
 
 .ai-assistant-drawer__send:hover,
 .ai-assistant-drawer__send:focus-visible {
-  background: var(--aircas-color-button-hover-background);
+  background: color-mix(in srgb, var(--aircas-color-primary) 85%, var(--aircas-color-white));
   outline: none;
 }
 

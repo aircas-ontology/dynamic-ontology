@@ -645,19 +645,16 @@ function refreshLines(): void {
   };
 
   const nextLines: MappingLine[] = [];
-  let index = 0;
   draftBinds.value.forEach((bind, propertyId) => {
     if (!bind) return;
     const source = anchorCenter(resolveSourceSelector(bind));
     const target = anchorCenter(propAnchorId(propertyId));
     if (!source || !target) return;
-    const fan = (index % 2 === 0 ? 1 : -1) * Math.ceil((index + 1) / 2) * 12;
     nextLines.push({
       id: propertyId,
-      path: buildCurve(source.x, source.y + fan * 0.2, target.x, target.y + fan * 0.12),
+      path: buildCurve(source.x, source.y, target.x, target.y),
       color: colorForTable(bind.databaseId, bind.tableId),
     });
-    index += 1;
   });
   visibleLines.value = nextLines;
 }
@@ -1004,7 +1001,6 @@ onBeforeUnmount(() => {
 
 .property-datasource-mapping-dialog__panels {
   position: relative;
-  z-index: 1;
   display: grid;
   grid-template-columns: minmax(240px, 300px) minmax(320px, 380px);
   justify-content: space-between;
@@ -1217,6 +1213,8 @@ onBeforeUnmount(() => {
 }
 
 .mapping-anchor {
+  position: relative;
+  z-index: 3;
   width: 12px;
   height: 12px;
   padding: 0;
