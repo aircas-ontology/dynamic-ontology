@@ -3,55 +3,39 @@
     <template v-if="selectedObject">
       <h2>对象检查器</h2>
       <small>对齐对象创建表单的核心字段</small>
-      <el-form class="aircas-form" label-position="top">
+      <el-form label-position="top">
         <el-form-item label="API 名称">
-          <el-input class="aircas-input" :model-value="selectedObject.apiName" @update:model-value="$emit('update-object', 'apiName', $event)" />
+          <el-input :model-value="selectedObject.apiName" @update:model-value="$emit('update-object', 'apiName', $event)" />
         </el-form-item>
         <el-form-item label="显示名称">
-          <el-input class="aircas-input" :model-value="selectedObject.displayName" @update:model-value="$emit('update-object', 'displayName', $event)" />
+          <el-input :model-value="selectedObject.displayName" @update:model-value="$emit('update-object', 'displayName', $event)" />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input
-            class="aircas-input"
-            type="textarea"
-            :rows="3"
-            :model-value="selectedObject.description"
-            @update:model-value="$emit('update-object', 'description', $event)"
-          />
+          <el-input type="textarea" :rows="3" :model-value="selectedObject.description" @update:model-value="$emit('update-object', 'description', $event)" />
         </el-form-item>
       </el-form>
-      <el-button class="aircas-button" type="primary" @click="$emit('add-attribute', selectedObject.id)">添加属性</el-button>
+      <el-button type="primary" @click="$emit('add-attribute', selectedObject.id)">添加属性</el-button>
     </template>
     <template v-else-if="selectedAttribute">
       <h2>属性检查器</h2>
       <small>所属对象：{{ selectedAttribute.owner }}</small>
-      <el-form class="aircas-form" label-position="top">
+      <el-form label-position="top">
         <el-form-item label="属性名称">
-          <el-input class="aircas-input" :model-value="selectedAttribute.displayName" @update:model-value="$emit('update-attribute', 'displayName', $event)" />
+          <el-input :model-value="selectedAttribute.displayName" @update:model-value="$emit('update-attribute', 'displayName', $event)" />
         </el-form-item>
         <el-form-item label="API">
-          <el-input class="aircas-input" :model-value="selectedAttribute.apiName" @update:model-value="$emit('update-attribute', 'apiName', $event)" />
+          <el-input :model-value="selectedAttribute.apiName" @update:model-value="$emit('update-attribute', 'apiName', $event)" />
         </el-form-item>
         <el-form-item label="数据类型">
-          <el-select
-            class="aircas-input"
-            popper-class="aircas-select-popper"
-            :model-value="selectedAttribute.dataType"
-            @update:model-value="$emit('update-attribute', 'dataType', $event)"
-          >
+          <el-select :model-value="selectedAttribute.dataType" @update:model-value="$emit('update-attribute', 'dataType', $event)">
             <el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" />
           </el-select>
         </el-form-item>
         <el-form-item label="默认值">
-          <el-input
-            class="aircas-input"
-            :model-value="selectedAttribute.defaultValue"
-            @update:model-value="$emit('update-attribute', 'defaultValue', $event)"
-          />
+          <el-input :model-value="selectedAttribute.defaultValue" @update:model-value="$emit('update-attribute', 'defaultValue', $event)" />
         </el-form-item>
         <el-form-item label="属性描述">
           <el-input
-            class="aircas-input"
             type="textarea"
             :rows="2"
             :model-value="selectedAttribute.description"
@@ -65,38 +49,25 @@
     <template v-else-if="selectedRelation">
       <h2>关系检查器</h2>
       <small>拖动两端连到对象四边圆点，或在此选择源/目标</small>
-      <el-form class="aircas-form" label-position="top">
+      <el-form label-position="top">
         <el-form-item label="关系名称">
-          <el-input class="aircas-input" :model-value="selectedRelation.displayName" @update:model-value="$emit('update-relation', 'displayName', $event)" />
+          <el-input :model-value="selectedRelation.displayName" @update:model-value="$emit('update-relation', 'displayName', $event)" />
         </el-form-item>
         <el-form-item label="API 名称">
-          <el-input class="aircas-input" :model-value="selectedRelation.apiName" @update:model-value="$emit('update-relation', 'apiName', $event)" />
+          <el-input :model-value="selectedRelation.apiName" @update:model-value="$emit('update-relation', 'apiName', $event)" />
         </el-form-item>
         <el-form-item label="源对象">
-          <el-select
-            class="aircas-input"
-            popper-class="aircas-select-popper"
-            clearable
-            :model-value="selectedRelation.sourceId"
-            @update:model-value="$emit('update-relation', 'sourceId', $event)"
-          >
+          <el-select clearable :model-value="selectedRelation.sourceId" @update:model-value="$emit('update-relation', 'sourceId', $event)">
             <el-option v-for="object in objects" :key="object.id" :label="object.displayName" :value="object.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="目标对象">
-          <el-select
-            class="aircas-input"
-            popper-class="aircas-select-popper"
-            clearable
-            :model-value="selectedRelation.targetId"
-            @update:model-value="$emit('update-relation', 'targetId', $event)"
-          >
+          <el-select clearable :model-value="selectedRelation.targetId" @update:model-value="$emit('update-relation', 'targetId', $event)">
             <el-option v-for="object in objects" :key="object.id" :label="object.displayName" :value="object.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="描述">
           <el-input
-            class="aircas-input"
             type="textarea"
             :rows="3"
             :model-value="selectedRelation.description"
@@ -144,7 +115,7 @@ defineEmits<{
 }
 
 .conceptual-model-create__inspector small {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
 }
 
@@ -152,7 +123,7 @@ defineEmits<{
   display: grid;
   min-height: 200px;
   place-items: center;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   text-align: center;
   font-size: 12px;
 }

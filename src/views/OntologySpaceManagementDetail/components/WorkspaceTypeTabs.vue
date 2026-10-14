@@ -56,11 +56,11 @@ const visibleWorkspaceTabs = computed(() => workspaceTabs.value.filter((tab) => 
   padding: 0 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-effect-page-glow);
 }
 
-:root[theme="light"] .workspace-type-tabs {
+:root:not(.dark) .workspace-type-tabs {
   background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
@@ -79,10 +79,10 @@ const visibleWorkspaceTabs = computed(() => workspaceTabs.value.filter((tab) => 
   flex-shrink: 0;
   height: 32px;
   padding: 0 14px;
-  border: 1px solid var(--aircas-color-transparent);
+  border: 1px solid transparent;
   border-radius: 6px;
   color: var(--aircas-color-text-secondary);
-  background: var(--aircas-color-transparent);
+  background: transparent;
   font-size: 14px;
   line-height: 32px;
   text-align: center;
@@ -106,7 +106,7 @@ const visibleWorkspaceTabs = computed(() => workspaceTabs.value.filter((tab) => 
   height: 20px;
   margin: 0 8px;
   flex-shrink: 0;
-  background: var(--aircas-color-border-soft);
+  background: var(--aircas-color-border-light);
 }
 
 .workspace-type-tabs__item:hover {
@@ -115,14 +115,14 @@ const visibleWorkspaceTabs = computed(() => workspaceTabs.value.filter((tab) => 
 }
 
 .workspace-type-tabs__item:focus-visible {
-  outline: 2px solid var(--aircas-color-accent-cyan);
+  outline: 2px solid var(--aircas-color-primary);
   outline-offset: 2px;
 }
 
 .workspace-type-tabs__item-active {
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   border-color: var(--aircas-color-border);
-  background: var(--aircas-color-accent-cyan-soft);
-  box-shadow: inset 0 -2px 0 var(--aircas-color-accent-cyan);
+  background: var(--aircas-color-effect-primary-soft);
+  box-shadow: inset 0 -2px 0 var(--aircas-color-primary);
 }
 </style>

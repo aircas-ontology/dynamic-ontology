@@ -4,7 +4,7 @@
     <div v-else-if="status === 'loading'" class="space-management-detail__state" role="status"><AircasLoading>正在加载空间…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="space-management-detail__state" role="alert">
       <span>{{ error || "空间加载失败" }}</span>
-      <el-button class="aircas-button" type="primary" @click="load">重试</el-button>
+      <el-button type="primary" @click="load">重试</el-button>
     </div>
     <div v-else class="space-management-detail__layout">
       <WorkspaceTypeTabs
@@ -58,11 +58,10 @@ function openTab(tab: ManagementWorkspaceTab) {
   color: var(--aircas-color-text-primary);
   background-color: var(--aircas-color-page-background);
   background-image:
-    linear-gradient(var(--aircas-color-grid-line) 1px, var(--aircas-color-transparent) 1px),
-    linear-gradient(90deg, var(--aircas-color-grid-line) 1px, var(--aircas-color-transparent) 1px),
-    radial-gradient(circle at 18% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 36%),
-    radial-gradient(circle at 82% 8%, var(--aircas-color-accent-purple-soft), var(--aircas-color-transparent) 34%),
-    radial-gradient(circle at 65% 0, var(--aircas-color-page-glow), var(--aircas-color-transparent) 48%);
+    linear-gradient(var(--aircas-color-effect-grid) 1px, transparent 1px), linear-gradient(90deg, var(--aircas-color-effect-grid) 1px, transparent 1px),
+    radial-gradient(circle at 18% 0, var(--aircas-color-effect-primary-soft), transparent 36%),
+    radial-gradient(circle at 82% 8%, var(--aircas-color-effect-purple-soft), transparent 34%),
+    radial-gradient(circle at 65% 0, var(--aircas-color-effect-page-glow), transparent 48%);
   background-size:
     34px 34px,
     34px 34px,

@@ -2,8 +2,7 @@
   <aside class="api-docs-endpoint-list" aria-label="接口列表">
     <el-select
       v-model="selectedMenuTag"
-      class="aircas-select api-docs-endpoint-list__menu"
-      popper-class="aircas-select-popper"
+      class="api-docs-endpoint-list__menu"
       clearable
       filterable
       placeholder="按接口菜单筛选"
@@ -12,14 +11,7 @@
     >
       <el-option v-for="tag in menuOptions" :key="tag" :label="tag" :value="tag" />
     </el-select>
-    <el-input
-      v-model="pathKeyword"
-      class="aircas-input api-docs-endpoint-list__search"
-      clearable
-      maxlength="128"
-      placeholder="按接口地址搜索"
-      aria-label="按接口地址搜索"
-    >
+    <el-input v-model="pathKeyword" class="api-docs-endpoint-list__search" clearable maxlength="128" placeholder="按接口地址搜索" aria-label="按接口地址搜索">
       <template #prefix>
         <el-icon><Search /></el-icon>
       </template>
@@ -180,7 +172,7 @@ watch(menuOptions, (options) => {
   min-height: 0;
   overflow: hidden;
   padding: 12px;
-  border-right: 1px solid var(--aircas-color-border-soft);
+  border-right: 1px solid var(--aircas-color-border-light);
   background: var(--aircas-color-panel-background-deep);
 }
 
@@ -215,7 +207,7 @@ watch(menuOptions, (options) => {
   padding: 6px 4px;
   border: 0;
   border-radius: 4px;
-  background: var(--aircas-color-transparent);
+  background: transparent;
   color: var(--aircas-color-text-secondary);
   font: inherit;
   text-align: left;
@@ -223,12 +215,12 @@ watch(menuOptions, (options) => {
 }
 
 .api-docs-endpoint-list__group-toggle:hover {
-  background: var(--aircas-color-hover-background);
+  background: var(--aircas-color-hover);
   color: var(--aircas-color-text-primary);
 }
 
 .api-docs-endpoint-list__group-toggle:focus-visible {
-  outline: 2px solid var(--aircas-color-accent-cyan);
+  outline: 2px solid var(--aircas-color-primary);
   outline-offset: -2px;
 }
 
@@ -269,7 +261,7 @@ watch(menuOptions, (options) => {
   padding: 8px;
   border: 1px solid transparent;
   border-radius: 4px;
-  background: var(--aircas-color-transparent);
+  background: transparent;
   color: var(--aircas-color-text-primary);
   font: inherit;
   text-align: left;
@@ -277,23 +269,23 @@ watch(menuOptions, (options) => {
 }
 
 .api-docs-endpoint-list__item:hover {
-  background: var(--aircas-color-hover-background);
+  background: var(--aircas-color-hover);
 }
 
 .api-docs-endpoint-list__item.is-active {
-  border-color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-hover-background);
+  border-color: var(--aircas-color-primary);
+  background: var(--aircas-color-hover);
 }
 
 .api-docs-endpoint-list__item:focus-visible {
-  outline: 2px solid var(--aircas-color-accent-cyan);
+  outline: 2px solid var(--aircas-color-primary);
   outline-offset: -2px;
 }
 
 .api-docs-endpoint-list__method {
   grid-row: 1 / span 2;
   align-self: center;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;

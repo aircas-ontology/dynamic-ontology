@@ -4,8 +4,15 @@
       <h2>分类体系树</h2>
       <span>已选 {{ selectedCount }} 个</span>
     </header>
-    <el-input v-model="keyword" class="aircas-input subspace-create-tree-panel__search" clearable placeholder="搜索本体对象" ariaLabel="搜索本体对象" />
+    <el-input v-model="keyword" class="aircas-input subspace-create-tree-panel__search" clearable placeholder="搜索本体对象" />
+    <div v-if="status === 'loading'" class="subspace-create-tree-panel__state" role="status">正在加载分类体系树…</div>
+    <div v-else-if="status === 'error'" class="subspace-create-tree-panel__state" role="alert">
+      <span>{{ error }}</span>
+      <el-button class="aircas-button" @click="load">重试</el-button>
+    </div>
+    <el-empty v-else-if="status === 'empty'" description="暂无分类体系树" :image-size="72" />
     <el-tree
+      v-else
       ref="treeRef"
       class="aircas-tree subspace-create-tree-panel__tree"
       node-key="id"
@@ -16,77 +23,68 @@
       :props="treeProps"
       :filter-node-method="filterTreeNode"
       @check="syncSelectedTreeObjects"
-    />
+    >
+      <template #default="{ node, data }">
+        <span class="subspace-create-tree-panel__node">
+          <el-icon v-if="data.kind === 'category'" class="subspace-create-tree-panel__node-icon"><Folder /></el-icon>
+          <span class="subspace-create-tree-panel__node-label" :title="node.label">{{ node.label }}</span>
+        </span>
+      </template>
+    </el-tree>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import { Folder } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 import type { TreeInstance, TreeNodeData } from "element-plus";
+import type { OntologyConceptNode, OntologyObjectWorkspace } from "@/types";
+import { useOntologyObjectWorkspace } from "@/views/ObjectWorkspacePanel/composables/useOntologyObjectWorkspace";
 import { mapSubspaceCreateSelectedObjects } from "../utils/mapSubspaceCreateSelectedObject";
 import type { SubspaceCreateSelectedObject } from "../utils/mapSubspaceCreateSelectedObject";
 
 interface SubspaceCreateTreeNode {
   id: string;
   label: string;
+  kind: "category" | "object";
   apiName?: string;
   children?: SubspaceCreateTreeNode[];
 }
 
+const props = defineProps<{ currentStepIndex: number }>();
 const emit = defineEmits<{
   "update:selectedCount": [value: number];
   "update:selectedObjects": [value: SubspaceCreateSelectedObject[]];
 }>();
 
+const route = useRoute();
+const spaceId = computed(() => String(route.params.spaceId || route.query.spaceId || ""));
+const { status, error, workspace, load } = useOntologyObjectWorkspace(spaceId);
 const treeRef = ref<TreeInstance>();
 const keyword = ref("");
 const selectedIds = ref<string[]>([]);
 const treeProps = { children: "children", label: "label" };
-const treeData: SubspaceCreateTreeNode[] = [
-  {
-    id: "overview",
-    label: "本体空间总览",
-    children: [
-      {
-        id: "ship",
-        label: "舰船",
-        children: [
-          {
-            id: "carrier",
-            label: "航空母舰",
-            children: [
-              { id: "ford", label: "福特级航空母舰(CVN)", apiName: "carrier_ford" },
-              { id: "nimitz", label: "尼米兹级航空母舰(CVN)", apiName: "carrier_nimitz" },
-            ],
-          },
-          {
-            id: "destroyer",
-            label: "驱逐舰",
-            children: [
-              { id: "burke", label: "阿利·伯克级驱逐舰(DDG)", apiName: "destroyer_burke" },
-              { id: "flight1", label: "阿利伯克级Flight-I驱逐舰(DDG)", apiName: "destroyer_flight1" },
-              { id: "flight2", label: "阿利伯克级Flight-II驱逐舰(DDG)", apiName: "destroyer_flight2" },
-              { id: "flight2a", label: "阿利伯克级Flight-IIA驱逐舰(DDG)", apiName: "destroyer_flight2a" },
-              { id: "flight3", label: "阿利伯克级Flight-III驱逐舰(DDG)", apiName: "destroyer_flight3" },
-              { id: "zumwalt", label: "朱姆沃尔特级驱逐舰(DDG)", apiName: "destroyer_zumwalt" },
-            ],
-          },
-          { id: "cruiser", label: "巡洋舰", children: [{ id: "ticonderoga", label: "提康德罗加级巡洋舰(CG)", apiName: "cruiser_ticonderoga" }] },
-          { id: "frigate", label: "护卫舰", children: [{ id: "constellation", label: "星座级护卫舰(FFG)", apiName: "frigate_constellation" }] },
-          {
-            id: "submarine",
-            label: "潜艇",
-            children: [
-              { id: "ohio", label: "俄亥俄级弹道导弹核潜艇(SSBN)", apiName: "submarine_ohio" },
-              { id: "virginia", label: "弗吉尼亚级攻击型核潜艇", apiName: "submarine_virginia" },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-];
+const treeData = computed(() => mapOntologyTreeToSubspaceNodes(workspace.value));
 const selectedCount = computed(() => selectedIds.value.length);
+
+/** @description 将本体空间分类树转换为子空间页面复选树节点。 @param value 本体对象工作区。 @returns 子空间树节点。 */
+function mapOntologyTreeToSubspaceNodes(value: OntologyObjectWorkspace | undefined): SubspaceCreateTreeNode[] {
+  return (value?.tree ?? []).flatMap((node) => mapOntologyNode(node));
+}
+
+/** @description 递归映射分类节点，并将分类下的本体对象转换为可勾选叶子。 @param node 本体分类节点。 @returns 子空间树节点。 */
+function mapOntologyNode(node: OntologyConceptNode): SubspaceCreateTreeNode[] {
+  const categories = node.children.flatMap((child) => mapOntologyNode(child));
+  const objects = (node.objects ?? []).map((object) => ({
+    id: object.uniqueIdentifier,
+    label: object.displayName,
+    kind: "object" as const,
+    apiName: object.uniqueIdentifier,
+  }));
+  return [{ id: node.id, label: node.label, kind: "category", children: [...categories, ...objects] }];
+}
 
 /**
  * @description 根据关键字过滤分类树节点。
@@ -100,10 +98,17 @@ function filterTreeNode(value: string, data: TreeNodeData) {
 }
 
 /**
- * @description 同步分类树勾选的叶子对象并通知父级。
+ * @description 同步分类树勾选的叶子对象并通知父级；非对象选择步骤时恢复原勾选并提示。
  */
-function syncSelectedTreeObjects() {
-  const objects = mapSubspaceCreateSelectedObjects(treeRef.value?.getCheckedNodes(true) ?? []);
+async function syncSelectedTreeObjects() {
+  if (props.currentStepIndex !== 0) {
+    ElMessage.warning("请回到对象选择步骤再更改");
+    await nextTick();
+    treeRef.value?.setCheckedKeys(selectedIds.value);
+    return;
+  }
+  const checkedNodes = treeRef.value?.getCheckedNodes(true) ?? [];
+  const objects = mapSubspaceCreateSelectedObjects(checkedNodes);
   selectedIds.value = objects.map((item) => item.id);
   emit("update:selectedObjects", objects);
   emit("update:selectedCount", objects.length);
@@ -180,6 +185,24 @@ watch(keyword, (value) => treeRef.value?.filter(value));
 .subspace-create-tree-panel__tree :deep(.el-tree-node__content) {
   height: 32px;
   color: var(--aircas-color-text-secondary);
+}
+
+.subspace-create-tree-panel__node {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.subspace-create-tree-panel__node-icon {
+  flex: 0 0 auto;
+  color: var(--aircas-color-accent-cyan);
+}
+
+.subspace-create-tree-panel__node-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .subspace-create-tree-panel__tree :deep(.el-tree-node__label) {

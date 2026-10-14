@@ -6,7 +6,7 @@
     </div>
     <div v-else-if="status === 'error'" class="ontology-global-search-results__state ontology-global-search-results__state--error" role="alert">
       <span>{{ errorMessage || "检索失败" }}</span>
-      <el-button class="aircas-button" size="small" @click="emit('retry')">重试</el-button>
+      <el-button size="small" @click="emit('retry')">重试</el-button>
     </div>
     <el-empty v-else-if="status === 'empty'" description="未找到相关结果" :image-size="64" />
     <ul v-else class="ontology-global-search-results__list">
@@ -14,7 +14,7 @@
         <button type="button" class="ontology-global-search-results__item" @click="emit('select', item)">
           <div class="ontology-global-search-results__row">
             <strong class="ontology-global-search-results__name">{{ item.name }}</strong>
-            <el-tag class="aircas-tag" size="small" effect="plain">{{ item.type }}</el-tag>
+            <el-tag size="small" effect="plain">{{ item.type }}</el-tag>
           </div>
           <p v-if="(item.type === '对象' || item.type === '关系分组') && item.spaceName?.trim()" class="ontology-global-search-results__meta">
             空间：{{ item.spaceName.trim() }}
@@ -85,7 +85,7 @@ const emit = defineEmits<{
 
 .ontology-global-search-results__item:hover,
 .ontology-global-search-results__item:focus-visible {
-  background: var(--aircas-color-hover-background);
+  background: var(--aircas-color-hover);
   outline: none;
 }
 
@@ -108,7 +108,7 @@ const emit = defineEmits<{
 .ontology-global-search-results__meta {
   margin: 4px 0 0;
   overflow: hidden;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   line-height: 1.4;
   text-overflow: ellipsis;

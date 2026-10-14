@@ -1,0 +1,31 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": {
+    "records": [
+      {
+        "id": 1001,
+        "entityPrimaryKey": "entity-1001",
+        "ontologyUniqueIdentifier": "ontology-aircraft",
+        "properties": {
+          "name": "歼-20",
+          "model": "J-20"
+        }
+      },
+      {
+        "id": 1002,
+        "entityPrimaryKey": "entity-1002",
+        "ontologyUniqueIdentifier": "ontology-aircraft",
+        "properties": {
+          "name": "运-20",
+          "model": "Y-20"
+        }
+      }
+    ],
+    "total": 2,
+    "size": 20,
+    "current": 1,
+    "pages": 1
+  }
+}

@@ -36,7 +36,7 @@ function createRoutePathPattern(routePath) {
  * @description 按 method 与 pathname 匹配路由表：先精确路径，再匹配 `:param` 模式。
  * @param {string} method HTTP 方法。
  * @param {string} pathname 请求路径。
- * @param {Array<{method: string, path: string, file: string, headers?: Record<string, string>}>} routes 路由表。
+ * @param {Array<{method: string, path: string, file: string, headers?: Record<string, string>, responseType?: string}>} routes 路由表。
  * @returns {{method: string, path: string, file: string, headers?: Record<string, string>} | null} 命中路由；未命中返回 null。
  */
 export function matchMockRoute(method, pathname, routes) {
@@ -93,7 +93,7 @@ function writeCorsHeaders(response, extraHeaders = {}) {
  * @description 按路由表返回 fixture JSON；未匹配时返回 404 信封。
  * @param {import("node:http").IncomingMessage} request HTTP 请求。
  * @param {import("node:http").ServerResponse} response HTTP 响应。
- * @param {{mockDataRoot?: string, routes?: Array<{method: string, path: string, file: string, headers?: Record<string, string>}>}} [options] 可注入路由与根目录。
+ * @param {{mockDataRoot?: string, routes?: Array<{method: string, path: string, file: string, headers?: Record<string, string>, responseType?: string}>}} [options] 可注入路由与根目录。
  * @returns {Promise<void>}
  */
 export async function handleMockRequest(request, response, options = {}) {
@@ -118,6 +118,15 @@ export async function handleMockRequest(request, response, options = {}) {
 
   const fixtureSource = await readFile(path.join(mockDataRoot, matchedRoute.file), "utf8");
   writeCorsHeaders(response, matchedRoute.headers ?? {});
+  if (matchedRoute.responseType === "sse") {
+    const events = JSON.parse(fixtureSource);
+    response.writeHead(200, { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache", Connection: "keep-alive" });
+    for (const event of events) {
+      response.write(`data: ${JSON.stringify(event)}\n\n`);
+    }
+    response.end();
+    return;
+  }
   response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
   response.end(fixtureSource);
 }

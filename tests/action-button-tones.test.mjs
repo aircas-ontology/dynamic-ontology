@@ -18,23 +18,11 @@ test("shared buttons cover current primary, danger, plain, text, and disabled st
   assert.match(source, /&\.is-disabled[\s\S]*cursor: not-allowed/);
 });
 
-test("list and table actions use the shared button tones", () => {
-  const objectList = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectList.vue");
-  const attributeTable = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyTable.vue");
-  const relationWorkspace = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/SpaceRelationWorkspace.vue");
+test("card gradients are explicit and ordinary actions use default component props", () => {
+  const objectList = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue");
   const spaceActions = readSource("../src/views/OntologySpaceManagement/components/SpaceActions.vue");
-  const relationGraph = readSource("../src/views/OntologySpaceManagementDetail/relationComponents/RelationGraphView.vue");
-
-  assert.match(objectList, /ontology-object-action--view aircas-button--tone-primary/);
-  assert.match(objectList, /ontology-object-action--edit aircas-button--tone-secondary/);
-  assert.match(objectList, /ontology-object-action--export aircas-button--tone-ghost/);
-  assert.match(objectList, /ontology-object-action--delete aircas-button--tone-danger/);
-  assert.match(attributeTable, /aircas-button aircas-button--tone-secondary/);
-  assert.match(attributeTable, /aircas-button aircas-button--tone-danger/);
-  assert.match(relationWorkspace, /aircas-button aircas-button--tone-secondary/);
-  assert.match(relationWorkspace, /aircas-button aircas-button--tone-danger/);
-  assert.match(spaceActions, /aircas-button aircas-button--tone-primary/);
-  assert.match(spaceActions, /aircas-button aircas-button--tone-secondary/);
-  assert.match(spaceActions, /aircas-button aircas-button--tone-ghost/);
-  assert.match(relationGraph, /\.relation-graph-context-menu__item-danger[\s\S]*background: var\(--aircas-color-danger-background\)/);
+  assert.match(objectList, /ontology-object-action--view aircas-button--gradient/);
+  assert.match(objectList, /type="danger"/);
+  assert.match(spaceActions, /'aircas-button--gradient': gradient/);
+  assert.doesNotMatch(objectList + spaceActions, /aircas-button--tone-/);
 });

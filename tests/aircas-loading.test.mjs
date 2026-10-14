@@ -15,7 +15,7 @@ test("aircas loading indicator and overview busy state match current presentatio
   const slotIndex = component.indexOf("<slot />");
   assert.ok(markIndex !== -1 && slotIndex !== -1 && markIndex < slotIndex);
   assert.match(component, /aria-hidden="true"/);
-  assert.match(component, /--aircas-color-title/);
+  assert.match(component, /--aircas-color-primary/);
   assert.match(component, /prefers-reduced-motion:\s*reduce/);
 
   const register = readSource("../src/components/register.ts");

@@ -70,11 +70,11 @@ function formatCount(value: number | undefined): string {
   padding: 0 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-page-glow);
+  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
+  box-shadow: inset 0 0 20px var(--aircas-color-effect-page-glow);
 }
 
-:root[theme="light"] .object-detail-tabs {
+:root:not(.dark) .object-detail-tabs {
   background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
@@ -101,10 +101,10 @@ function formatCount(value: number | undefined): string {
   flex-shrink: 0;
   height: 32px;
   padding: 0 14px;
-  border: 1px solid var(--aircas-color-transparent);
+  border: 1px solid transparent;
   border-radius: 6px;
   color: var(--aircas-color-text-secondary);
-  background: var(--aircas-color-transparent);
+  background: transparent;
   font-size: 14px;
   line-height: 32px;
   text-align: center;
@@ -130,16 +130,16 @@ function formatCount(value: number | undefined): string {
 }
 
 .object-detail-tabs__item:focus-visible {
-  outline: 2px solid var(--aircas-color-accent-cyan);
+  outline: 2px solid var(--aircas-color-primary);
   outline-offset: 2px;
 }
 
 .object-detail-tabs__item-active,
 .object-detail-tabs__item-active:hover {
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   border-color: var(--aircas-color-border);
-  background: var(--aircas-color-accent-cyan-soft);
-  box-shadow: inset 0 -2px 0 var(--aircas-color-accent-cyan);
+  background: var(--aircas-color-effect-primary-soft);
+  box-shadow: inset 0 -2px 0 var(--aircas-color-primary);
 }
 
 .object-detail-tabs__count {
@@ -147,7 +147,7 @@ function formatCount(value: number | undefined): string {
   padding: 0 6px;
   border-radius: 10px;
   background: var(--aircas-color-card-background);
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   font-weight: 600;
   line-height: 20px;
@@ -155,7 +155,7 @@ function formatCount(value: number | undefined): string {
 }
 
 .object-detail-tabs__item-active .object-detail-tabs__count {
-  color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-accent-cyan-soft);
+  color: var(--aircas-color-primary);
+  background: var(--aircas-color-effect-primary-soft);
 }
 </style>

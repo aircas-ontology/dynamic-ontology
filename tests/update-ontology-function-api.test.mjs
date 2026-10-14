@@ -50,7 +50,7 @@ test("update ontology function mock mirrors SUCCESS envelope with null data", ()
 });
 
 test("function operator workspace edit save calls update api", () => {
-  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useFunctionOperatorWorkspace.ts");
+  const workspaceSource = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
   assert.match(workspaceSource, /updateOntologyFunctionInterface/);
   assert.match(workspaceSource, /buildOntologyFunctionQueryConfig/);
   assert.doesNotMatch(workspaceSource, /updateFunctionOperatorMock/);

@@ -1,23 +1,24 @@
 <template>
-  <div class="layout-shell">
-    <HeaderBar />
-    <div class="layout-workspace" :class="{ 'is-expanded': !collapsed }">
-      <NavigationMenu v-model:collapsed="collapsed" />
+  <div class="layout-shell" :class="{ 'is-embedded': isEmbedded }">
+    <HeaderBar v-if="!isEmbedded" />
+    <div class="layout-workspace" :class="{ 'is-expanded': !collapsed, 'is-embedded': isEmbedded }">
+      <NavigationMenu v-if="!isEmbedded" v-model:collapsed="collapsed" />
       <section class="layout-content">
         <BreadcrumbBar />
         <main class="layout-page"><router-view /></main>
       </section>
     </div>
-    <AiAssistantDrawer />
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { useRoute } from "vue-router";
 import HeaderBar from "./components/HeaderBar.vue";
 import NavigationMenu from "./components/NavigationMenu.vue";
 import BreadcrumbBar from "./components/BreadcrumbBar.vue";
-import AiAssistantDrawer from "./components/AiAssistantDrawer.vue";
 const collapsed = ref(true);
+const route = useRoute();
+const isEmbedded = computed(() => !!route.query.userName);
 </script>
 <style scoped lang="scss">
 .layout-shell {
@@ -31,6 +32,9 @@ const collapsed = ref(true);
   overflow: hidden;
   background-color: var(--aircas-color-page-background);
 }
+.layout-shell.is-embedded {
+  grid-template-rows: minmax(0, 1fr);
+}
 .layout-workspace {
   display: grid;
   min-width: 0;
@@ -40,6 +44,9 @@ const collapsed = ref(true);
 }
 .layout-workspace.is-expanded {
   grid-template-columns: 200px minmax(0, 1fr);
+}
+.layout-workspace.is-embedded {
+  grid-template-columns: minmax(0, 1fr);
 }
 .layout-content {
   display: grid;

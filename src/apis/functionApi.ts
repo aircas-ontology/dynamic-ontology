@@ -4,6 +4,10 @@ import type {
   CreateOntologyFunctionParams,
   DeleteOntologyFunctionData,
   DeleteOntologyFunctionParams,
+  FunctionPublishData,
+  FunctionPublishParams,
+  FunctionUnpublishData,
+  FunctionUnpublishParams,
   GetOntologyFunctionDetailData,
   GetOntologyFunctionDetailParams,
   GetOntologyFunctionListData,
@@ -68,6 +72,11 @@ export function updateOntologyFunctionInterface(params: UpdateOntologyFunctionPa
  * @param params.ontologySpaceId 本体空间 id（必填）。
  * @param params.pageNum 可选页码，从 1 开始，默认 1。
  * @param params.pageSize 可选每页条数，默认 10。
+ * @param params.displayName 可选函数名称（模糊搜索）。
+ * @param params.type 可选函数类型（CUSTOMIZE / EXTERNAL / BASIC_QUERY / COMPOSITE）。
+ * @param params.publishStatus 可选发布状态（0 未发布，1 已发布）。
+ * @param params.startDate 可选创建开始日期（yyyy-MM-dd）。
+ * @param params.endDate 可选创建结束日期（yyyy-MM-dd）。
  * @returns 标准 API 响应，包含函数列表分页数据。
  */
 export function getOntologyFunctionListInterface(params: GetOntologyFunctionListParams): Promise<ApiResponse<GetOntologyFunctionListData>> {
@@ -85,6 +94,7 @@ export function getOntologyFunctionListInterface(params: GetOntologyFunctionList
  *
  * @param params 查询参数。
  * @param params.functionApi 函数 API 名称。
+ * @param params.version 版本号。
  * @returns 标准 API 响应，data 为函数详情。
  */
 export function getOntologyFunctionDetailInterface(params: GetOntologyFunctionDetailParams): Promise<ApiResponse<GetOntologyFunctionDetailData>> {
@@ -129,5 +139,41 @@ export function testOntologyFunctionInterface(params: TestOntologyFunctionParams
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/test",
     method: "post",
     data: params,
+  });
+}
+
+/**
+ * @description 发布函数算子。
+ *
+ * 请求方式：POST `/ontology/function/publish`（`functionApi`、`version` 以 query string 传递）。
+ *
+ * @param params 发布参数（query）。
+ * @param params.functionApi 函数 API 名称。
+ * @param params.version 版本号，格式 x.y.z。
+ * @returns 标准 API 响应；成功时 data 为 null。
+ */
+export function postOntologyFunctionPublishInterface(params: FunctionPublishParams): Promise<ApiResponse<FunctionPublishData>> {
+  return request<FunctionPublishData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/publish",
+    method: "post",
+    params,
+  });
+}
+
+/**
+ * @description 下线已发布的函数算子。
+ *
+ * 请求方式：POST `/ontology/function/unpublish`（`functionApi`、`version` 以 query string 传递）。
+ *
+ * @param params 下线参数（query）。
+ * @param params.functionApi 函数 API 名称。
+ * @param params.version 版本号，格式 x.y.z。
+ * @returns 标准 API 响应；成功时 data 为 null。
+ */
+export function postOntologyFunctionUnpublishInterface(params: FunctionUnpublishParams): Promise<ApiResponse<FunctionUnpublishData>> {
+  return request<FunctionUnpublishData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/unpublish",
+    method: "post",
+    params,
   });
 }

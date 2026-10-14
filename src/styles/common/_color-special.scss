@@ -1,0 +1,47 @@
+// 独立蓝紫分类色保留旧版视觉差异，普通状态色使用新版语义色。
+@mixin emit($dark: false) {
+  @if $dark {
+    --aircas-color-category-blue: #269cff;
+    --aircas-color-category-purple: #9272ff;
+  } @else {
+    --aircas-color-category-blue: #2563eb;
+    --aircas-color-category-purple: #7c3aed;
+  }
+
+  @each $name, $base in ("primary": "primary", "blue": "category-blue", "purple": "category-purple", "success": "success", "warning": "warning") {
+    --aircas-color-effect-#{$name}-soft: color-mix(in srgb, var(--aircas-color-#{$base}) 13%, transparent);
+    --aircas-color-effect-#{$name}-fill: color-mix(in srgb, var(--aircas-color-#{$base}) 12%, transparent);
+    --aircas-color-effect-#{$name}-border: color-mix(in srgb, var(--aircas-color-#{$base}) 26%, transparent);
+    --aircas-color-effect-#{$name}-shadow: color-mix(in srgb, var(--aircas-color-#{$base}) 40%, transparent);
+  }
+  --aircas-color-effect-grid: color-mix(in srgb, var(--aircas-color-primary) 6%, transparent);
+  --aircas-color-effect-page-glow: color-mix(in srgb, var(--aircas-color-category-blue) 14%, transparent);
+  --aircas-color-effect-danger-fill: color-mix(in srgb, var(--aircas-color-danger) 16%, transparent);
+
+  // 兼容历史页面样式，统一映射到当前 Aircas 语义令牌。
+  --aircas-color-accent-blue: var(--aircas-color-category-blue);
+  --aircas-color-accent-blue-soft: var(--aircas-color-effect-blue-soft);
+  --aircas-color-accent-cyan: var(--aircas-color-primary);
+  --aircas-color-accent-cyan-border: var(--aircas-color-effect-primary-border);
+  --aircas-color-accent-cyan-fill: var(--aircas-color-effect-primary-fill);
+  --aircas-color-accent-cyan-soft: var(--aircas-color-effect-primary-soft);
+  --aircas-color-accent-green: var(--aircas-color-success);
+  --aircas-color-accent-green-fill: var(--aircas-color-effect-success-fill);
+  --aircas-color-accent-orange: var(--aircas-color-warning);
+  --aircas-color-accent-orange-fill: var(--aircas-color-effect-warning-soft);
+  --aircas-color-accent-purple: var(--aircas-color-category-purple);
+  --aircas-color-accent-purple-fill: var(--aircas-color-effect-purple-fill);
+  --aircas-color-border-highlight: var(--aircas-color-primary);
+  --aircas-color-border-soft: var(--aircas-color-border-light);
+  --aircas-color-card-background-active: var(--aircas-color-active);
+  --aircas-color-focus-border: var(--aircas-color-primary);
+  --aircas-color-grid-line: var(--aircas-color-effect-grid);
+  --aircas-color-hover-background: var(--aircas-color-hover);
+  --aircas-color-overlay-deep: var(--aircas-color-overlay);
+  --aircas-color-page-glow: var(--aircas-color-effect-page-glow);
+  --aircas-color-selected-background: var(--aircas-color-active);
+  --aircas-color-text-muted: var(--aircas-color-text-secondary);
+  --aircas-color-text-placeholder: var(--aircas-color-text-secondary);
+  --aircas-color-title: var(--aircas-color-text-primary);
+  --aircas-color-transparent: transparent;
+}

@@ -16,15 +16,16 @@ src/views/
 └─ <PageName>/
    ├─ index.vue
    ├─ components/
-   ├─ <business>Components/
    ├─ composables/
    └─ utils/
 ```
 
 - 【必须】每个页面目录包含一个 `index.vue`，作为页面主入口并统一引入、组合页面内部组件。
 - 【必须】页面目录和页面组件文件使用 PascalCase，入口使用生态约定的 `index.vue`。
-- 【优先】页面私有组件按业务职责放入 `components`、`<business>Components` 等目录，只在确有拆分需要时创建。
-- 【优先】不同业务组件目录之间避免互相引用，由 `index.vue` 负责组合；确需共同使用的页面私有组件应调整到双方都可依赖的页面级 `components` 中。
+- 【必须】页面级文件夹只能作为 `src/views/` 的直接子目录，禁止再嵌套页面级文件夹。
+- 【必须】被路由直接挂载的页面（含嵌套子路由）使用 `src/views/<PageName>/index.vue`；非路由挂载的私有子组件可保持单文件 `.vue`，放在该页面的 `components` 中。
+- 【优先】页面私有组件按业务职责放入 `components`，只在确有拆分需要时创建。
+- 【优先】不同页面之间避免互相引用私有实现；确需共同使用的能力下沉到公共目录或独立页面。
 - 【必须】页面专属工具函数放入页面的 `utils`，页面专属 composables 放入页面的 `composables`。
 - 【必须】页面专属资源统一放入 `src/assets/pages/<pageName>`，其中资源目录使用小驼峰。
 - 【禁止】新建 `src/views/<PageName>/assets`。
@@ -57,7 +58,7 @@ src/views/
 
 ## 6. UI、交互与可访问性
 
-- 【必须】使用现有 Aircas 主题变量、公共组件和 Element Plus 覆盖。
+- 【必须】使用新版 Aircas 主题变量、公共组件和 Element Plus 默认外观；仅渐变、项目特有非对称边框使用特殊类。
 - 【禁止】业务样式硬编码颜色；私有样式使用 `<style scoped lang="scss">`。
 - 【必须】表单具有校验、提交中状态、失败提示和重复提交控制。
 - 【必须】可操作元素使用正确语义，图片、图标按钮、键盘焦点和长文本具有可访问处理。

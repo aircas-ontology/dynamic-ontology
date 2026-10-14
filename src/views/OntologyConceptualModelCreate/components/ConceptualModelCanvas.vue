@@ -158,18 +158,18 @@ function onDropPalette(event: DragEvent) {
 }
 
 .conceptual-model-create__edges marker path {
-  fill: var(--aircas-color-accent-cyan);
+  fill: var(--aircas-color-primary);
 }
 
 .conceptual-model-create__edge {
-  stroke: var(--aircas-color-accent-cyan);
+  stroke: var(--aircas-color-primary);
   stroke-width: 2;
   pointer-events: stroke;
   cursor: pointer;
 }
 
 .conceptual-model-create__edge.is-selected {
-  stroke: var(--aircas-color-accent-purple);
+  stroke: var(--aircas-color-category-purple);
   stroke-width: 3;
 }
 
@@ -184,11 +184,11 @@ function onDropPalette(event: DragEvent) {
 }
 
 .conceptual-model-create__edge-label.is-selected {
-  fill: var(--aircas-color-accent-purple);
+  fill: var(--aircas-color-category-purple);
 }
 
 .conceptual-model-create__edge-port {
-  fill: var(--aircas-color-accent-cyan);
+  fill: var(--aircas-color-primary);
   stroke: var(--aircas-color-panel-background);
   stroke-width: 2;
   pointer-events: all;
@@ -196,7 +196,7 @@ function onDropPalette(event: DragEvent) {
 }
 
 .conceptual-model-create__edge-port.is-target {
-  fill: var(--aircas-color-accent-purple);
+  fill: var(--aircas-color-category-purple);
 }
 
 .conceptual-model-create__edge-port.is-selected {
@@ -209,7 +209,7 @@ function onDropPalette(event: DragEvent) {
   display: grid;
   place-content: center;
   justify-items: center;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
 }
 
 .conceptual-model-create__object {
@@ -221,20 +221,20 @@ function onDropPalette(event: DragEvent) {
   flex-direction: column;
   gap: 5px;
   padding: 12px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
   background: var(--aircas-color-panel-background);
-  box-shadow: 0 8px 18px var(--aircas-color-divider);
+  box-shadow: 0 8px 18px var(--aircas-color-border-light);
   cursor: move;
 }
 
 .conceptual-model-create__object.is-selected {
-  border-color: var(--aircas-color-accent-cyan);
-  box-shadow: 0 0 14px var(--aircas-color-accent-cyan-soft);
+  border-color: var(--aircas-color-primary);
+  box-shadow: 0 0 14px var(--aircas-color-effect-primary-soft);
 }
 
 .conceptual-model-create__object-type {
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 10px;
 }
 
@@ -246,7 +246,7 @@ function onDropPalette(event: DragEvent) {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  border-top: 1px solid var(--aircas-color-border-soft);
+  border-top: 1px solid var(--aircas-color-border-light);
   padding-top: 5px;
   font-size: 11px;
 }
@@ -261,13 +261,13 @@ function onDropPalette(event: DragEvent) {
 
 .conceptual-model-create__attributes em {
   float: right;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-style: normal;
 }
 
 .conceptual-model-create__object-empty {
   margin-top: 8px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 10px;
 }
 
@@ -275,7 +275,7 @@ function onDropPalette(event: DragEvent) {
   align-self: flex-start;
   padding: 0;
   border: 0;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   background: transparent;
   font-size: 11px;
   cursor: pointer;
@@ -288,7 +288,7 @@ function onDropPalette(event: DragEvent) {
   padding: 0;
   border: 2px solid var(--aircas-color-panel-background);
   border-radius: 50%;
-  background: var(--aircas-color-accent-cyan);
+  background: var(--aircas-color-primary);
   cursor: crosshair;
 }
 
@@ -310,6 +310,6 @@ function onDropPalette(event: DragEvent) {
 .conceptual-model-create__port.is-left {
   top: calc(50% - 5px);
   left: -6px;
-  background: var(--aircas-color-accent-purple);
+  background: var(--aircas-color-category-purple);
 }
 </style>

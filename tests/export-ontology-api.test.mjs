@@ -44,9 +44,9 @@ test("apis barrel exports the ontology export interface in dictionary order", ()
 });
 
 test("object card and list export confirms before calling the ontology export api", () => {
-  const actionsSource = readSource("../src/views/OntologySpaceManagementDetail/composables/useObjectWorkspaceObjectActions.ts");
-  const panelSource = readSource("../src/views/OntologySpaceManagementDetail/components/ObjectWorkspacePanel.vue");
-  const dialogSource = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectExportDialog.vue");
+  const actionsSource = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceObjectActions.ts");
+  const panelSource = readSource("../src/views/ObjectWorkspacePanel/index.vue");
+  const dialogSource = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectExportDialog.vue");
   assert.match(actionsSource, /function openOntologyObjectExportDialog/);
   assert.match(actionsSource, /function confirmExportOntologyObject\(exportType: OntologyExportType\)/);
   assert.match(actionsSource, /getExportOntologyInterface\(\{ uniqueIdentifier, exportType \}\)/);
@@ -61,7 +61,7 @@ test("object card and list export confirms before calling the ontology export ap
   assert.match(dialogSource, /<el-radio[^>]*value="INSTANCE"[^>]*>\s*含实例数据\s*<\/el-radio>/);
   assert.match(dialogSource, /ref<OntologyExportType>\("INSTANCE"\)/);
   assert.match(dialogSource, /exportType\.value = "INSTANCE"/);
-  assert.match(dialogSource, /class="aircas-radio-group ontology-object-export-dialog__export-type"/);
+  assert.match(dialogSource, /class="ontology-object-export-dialog__export-type"/);
   assert.match(dialogSource, /value="SCHEMA"/);
   assert.match(dialogSource, /value="INSTANCE"/);
   assert.match(dialogSource, /emit\('confirm', exportType\)/);
@@ -70,7 +70,7 @@ test("object card and list export confirms before calling the ontology export ap
 });
 
 test("ontology export file name prefers content disposition and falls back by content type", async () => {
-  const resolverUrl = new URL("../src/views/OntologySpaceManagementDetail/utils/resolveExportOntologyFileName.ts", import.meta.url);
+  const resolverUrl = new URL("../src/views/ObjectWorkspacePanel/utils/resolveExportOntologyFileName.ts", import.meta.url);
   const { resolveExportOntologyFileName } = await import(resolverUrl.href);
   assert.equal(
     resolveExportOntologyFileName({

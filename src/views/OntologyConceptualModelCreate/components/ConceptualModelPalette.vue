@@ -58,7 +58,7 @@ defineEmits<{
 }
 
 .conceptual-model-create__eyebrow {
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 11px;
   letter-spacing: 0.12em;
 }
@@ -70,7 +70,7 @@ defineEmits<{
   gap: 10px;
   margin: 10px 0;
   padding: 10px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
   color: var(--aircas-color-text-primary);
   background: var(--aircas-color-panel-background-deep);
@@ -79,7 +79,7 @@ defineEmits<{
 }
 
 .conceptual-model-create__palette-item:hover {
-  border-color: var(--aircas-color-accent-cyan);
+  border-color: var(--aircas-color-primary);
 }
 
 .conceptual-model-create__palette-item span:nth-child(2) {
@@ -90,7 +90,7 @@ defineEmits<{
 }
 
 .conceptual-model-create__palette-item small {
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
   font-size: 11px;
 }
 
@@ -99,15 +99,15 @@ defineEmits<{
   width: 72px;
   height: 52px;
   place-items: center;
-  border: 1px solid var(--aircas-color-accent-cyan);
+  border: 1px solid var(--aircas-color-primary);
   border-radius: 6px;
-  color: var(--aircas-color-accent-cyan);
+  color: var(--aircas-color-primary);
   font-size: 10px;
 }
 
 .conceptual-model-create__glyph.is-attribute {
   border-style: dashed;
-  color: var(--aircas-color-accent-purple);
+  color: var(--aircas-color-category-purple);
 }
 
 .conceptual-model-create__glyph.is-relation {
@@ -117,7 +117,7 @@ defineEmits<{
 
 .conceptual-model-create__palette-note {
   padding: 12px;
-  border: 1px solid var(--aircas-color-border-soft);
+  border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
   background: var(--aircas-color-panel-background-deep);
   line-height: 1.7;

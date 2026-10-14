@@ -1,6 +1,18 @@
 [
   {
     "method": "POST",
+    "path": "/agent/chat/stream",
+    "file": "fixtures/agent/chat.stream.post.json",
+    "responseType": "sse"
+  },
+  {
+    "method": "POST",
+    "path": "/agent/chat/stream/error",
+    "file": "fixtures/agent/chat.stream.error.post.json",
+    "responseType": "sse"
+  },
+  {
+    "method": "POST",
     "path": "/ontology/user/login",
     "file": "fixtures/ontology/user/login.post.json",
     "headers": {
@@ -26,6 +38,11 @@
     "method": "POST",
     "path": "/ontology/space/canvas",
     "file": "fixtures/ontology/space/canvas.post.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/space/subspace",
+    "file": "fixtures/ontology/space/subspace.post.json"
   },
   {
     "method": "GET",
@@ -148,6 +165,16 @@
     "file": "fixtures/ontology/function/test.post.json"
   },
   {
+    "method": "POST",
+    "path": "/ontology/function/publish",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/function/unpublish",
+    "file": "fixtures/common/success.json"
+  },
+  {
     "method": "GET",
     "path": "/ontology/datasource/table",
     "file": "fixtures/ontology/datasource/table.get.json"
@@ -156,6 +183,11 @@
     "method": "GET",
     "path": "/ontology/datasource/column",
     "file": "fixtures/ontology/datasource/column.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/entity/list",
+    "file": "fixtures/ontology/entity/list.get.json"
   },
   {
     "method": "GET",

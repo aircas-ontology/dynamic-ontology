@@ -25,7 +25,7 @@ test("space draft validation accepts remote thumbnail urls for create and edit",
 });
 
 test("ontology object create dialog icon upload only allows png and jpeg", () => {
-  const dialog = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectCreateDialog.vue");
+  const dialog = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue");
   assert.match(dialog, /accept="image\/png,image\/jpeg,\.png,\.jpg,\.jpeg"/);
   assert.match(dialog, /PNG \/ JPG，不超过 2MB/);
   assert.doesNotMatch(dialog, /webp/i);
@@ -33,7 +33,7 @@ test("ontology object create dialog icon upload only allows png and jpeg", () =>
 });
 
 test("ontology object create dialog uploads icon via thumbnail api like space form", () => {
-  const dialog = readSource("../src/views/OntologySpaceManagementDetail/components/OntologyObjectCreateDialog.vue");
+  const dialog = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue");
   assert.match(dialog, /postUploadOntologyThumbnailInterface/);
   assert.match(dialog, /draft\.iconUrl\s*=\s*typeof response\.data === "string" \? response\.data : ""/);
   assert.doesNotMatch(dialog, /readFileAsDataUrl/);

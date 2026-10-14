@@ -15,6 +15,6 @@
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   background: linear-gradient(135deg, var(--aircas-color-section-background), var(--aircas-color-panel-background-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-divider);
+  box-shadow: inset 0 0 20px var(--aircas-color-border-light);
 }
 </style>

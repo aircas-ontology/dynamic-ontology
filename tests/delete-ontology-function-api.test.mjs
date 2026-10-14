@@ -47,9 +47,9 @@ test("delete ontology function mock mirrors SUCCESS envelope with null data", ()
 });
 
 test("function operator workspace removeOperator calls delete api for card and table", () => {
-  const workspace = readSource("../src/views/OntologySpaceManagementDetail/composables/useFunctionOperatorWorkspace.ts");
-  const panel = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorPanel.vue");
-  const dialog = readSource("../src/views/OntologySpaceManagementDetail/functionOperatorComponents/FunctionOperatorDeleteDialog.vue");
+  const workspace = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
+  const panel = readSource("../src/views/FunctionOperatorPanel/index.vue");
+  const dialog = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorDeleteDialog.vue");
   assert.match(workspace, /deleteOntologyFunctionInterface/);
   assert.match(workspace, /openDeleteOperator/);
   assert.match(workspace, /confirmDeleteOperator/);
@@ -58,6 +58,6 @@ test("function operator workspace removeOperator calls delete api for card and t
   assert.match(panel, /FunctionOperatorDeleteDialog/);
   assert.match(panel, /@click="openDeleteOperator\(operator\)"/);
   assert.match(panel, /@click\.stop="openDeleteOperator\(asOperator\(row\)\)"/);
-  assert.match(dialog, /class="aircas-dialog"/);
+  assert.match(dialog, /<el-dialog\b/);
   assert.match(dialog, /确认删除/);
 });

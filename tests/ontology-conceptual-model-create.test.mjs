@@ -38,9 +38,10 @@ test("conceptual model page exposes the prototype canvas areas and interactions"
   const inspectorSelects = source.match(/<el-select[\s\S]*?<\/el-select>/g) || [];
   assert.equal(inspectorSelects.length, 4);
   for (const selectBlock of inspectorSelects) {
-    assert.match(selectBlock, /class="aircas-select"/);
-    assert.match(selectBlock, /popper-class="aircas-select-popper"/);
-    assert.doesNotMatch(selectBlock, /class="aircas-input"/);
+    assert.match(selectBlock, /<el-select\b/);
+
+    assert.doesNotMatch(selectBlock, /popper-class="aircas-[^" ]+"/);
+    assert.doesNotMatch(selectBlock, /<el-input\b/);
   }
   assert.match(source, /storageGroup: "main"/);
   assert.match(source, /storageGroup: attribute\.storageGroup/);

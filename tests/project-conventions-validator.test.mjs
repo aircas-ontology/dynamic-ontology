@@ -14,7 +14,16 @@ async function pathExists(filePath) {
   }
 }
 
+/**
+ * @description 写入规范检查的最小主题与项目 fixture。
+ * @param {string} root 临时项目目录。
+ * @param {Record<string, string>} files 文件内容。
+ * @returns {Promise<void>} 写入完成。
+ */
 async function writeFixture(root, files) {
+  if (Object.keys(files).some((file) => file.startsWith("src/styles/themes/"))) {
+    files = { ...files, "src/styles/index.scss": '@use "./themes/dark.scss";\n@use "./themes/light.scss";\n' };
+  }
   await Promise.all(
     Object.entries(files).map(async ([relativePath, content]) => {
       const filePath = path.join(root, relativePath);
@@ -60,8 +69,8 @@ test("project convention validator checks only critical maintained surfaces", as
       ".agents/README.md": "[example](skills/example/SKILL.md)\n",
       ".agents/skills/example/SKILL.md": "---\nname: example\ndescription: Example skill.\n---\n\n# Example\n",
       ".agents/skills/example/agents/openai.yaml": 'interface:\n  default_prompt: "Use $example."\n',
-      "src/styles/theme-dark.css": ":root { --aircas-color-text: #fff; }\n",
-      "src/styles/theme-light.css": ":root { --aircas-color-text: #000; }\n",
+      "src/styles/themes/dark.scss": ":root.dark { @each $name in (text) { --aircas-color-#{$name}: #fff; } }\n",
+      "src/styles/themes/light.scss": ":root:not(.dark) { @each $name in (text) { --aircas-color-#{$name}: #000; } }\n",
       "src/styles/example.scss": ".example { color: var(--aircas-color-text); }\n",
     });
 
@@ -92,8 +101,8 @@ test("project convention validator reports formatting configuration drift", asyn
         "prettier.printWidth": 160,
       }),
       ".agents/README.md": "# Empty index\n",
-      "src/styles/theme-dark.css": ":root {}\n",
-      "src/styles/theme-light.css": ":root {}\n",
+      "src/styles/themes/dark.scss": ":root:not(.dark) {}\n",
+      "src/styles/themes/light.scss": ":root:not(.dark) {}\n",
     });
 
     const errors = await validateProjectConventions(fixtureRoot);
@@ -129,8 +138,8 @@ test("project convention validator reports missing and inconsistent critical sur
       ".agents/skills/Bad_Name/placeholder.txt": "missing entrypoints\n",
       ".agents/skills/wrong/SKILL.md": "---\nname: different\n---\n\n# Wrong\n",
       ".agents/skills/wrong/agents/openai.yaml": 'interface:\n  default_prompt: "No invocation."\n',
-      "src/styles/theme-dark.css": ":root { --aircas-color-dark-only: #000; }\n",
-      "src/styles/theme-light.css": ":root {}\n",
+      "src/styles/themes/dark.scss": ":root.dark { --aircas-color-dark-only: #000; }\n",
+      "src/styles/themes/light.scss": ":root:not(.dark) {}\n",
       "src/styles/example.scss": ".example { color: var(--aircas-color-missing); }\n",
     });
 
@@ -148,5 +157,25 @@ test("project convention validator reports missing and inconsistent critical sur
     assert.match(message, /navigation guidance must be maintained in AGENTS\.md only/);
   } finally {
     await Promise.all([rm(emptyRoot, { recursive: true, force: true }), rm(invalidRoot, { recursive: true, force: true })]);
+  }
+});
+
+test("Aircas validation requires class selectors and catches renderer token strings and Sass errors", async () => {
+  const { validateProjectConventions } = await import("../scripts/check-project-conventions.mjs");
+  const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), "aircas-compiled-conventions-"));
+  try {
+    await writeFixture(fixtureRoot, {
+      "src/styles/themes/dark.scss": ":root { --aircas-color-primary: #fff; }",
+      "src/styles/themes/light.scss": ":root { --aircas-color-primary: #000; }",
+      "src/renderer.ts": 'const color = getThemeColor("--aircas-color-missing-renderer");',
+    });
+    const errors = await validateProjectConventions(fixtureRoot);
+    assert.match(errors.join("\n"), /compiled Aircas themes must declare tokens under :root.dark and :root:not\(\.dark\)/);
+    assert.match(errors.join("\n"), /src\/renderer.ts uses undefined Aircas variable --aircas-color-missing-renderer/);
+    await writeFile(path.join(fixtureRoot, "src/styles/index.scss"), "@use './missing.scss';");
+    const invalidErrors = await validateProjectConventions(fixtureRoot);
+    assert.match(invalidErrors.join("\n"), /Aircas theme compilation failed/);
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
   }
 });

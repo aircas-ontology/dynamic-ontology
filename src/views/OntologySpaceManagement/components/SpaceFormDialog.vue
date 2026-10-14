@@ -1,7 +1,6 @@
 <template>
   <el-dialog
     v-model="visible"
-    class="aircas-dialog"
     :title="space ? '编辑本体空间' : '新建本体空间'"
     width="min(640px, 94vw)"
     :close-on-click-modal="!busy"
@@ -9,36 +8,36 @@
     :show-close="!busy"
     destroy-on-close
   >
-    <el-radio-group v-if="!space" :model-value="mode" @update:model-value="setMode" class="aircas-radio-group" :disabled="busy">
+    <el-radio-group v-if="!space" :model-value="mode" @update:model-value="setMode" :disabled="busy">
       <el-radio-button value="manual">手动创建</el-radio-button>
       <el-radio-button value="import">导入创建</el-radio-button>
     </el-radio-group>
-    <el-form v-if="mode === 'manual'" class="aircas-form space-form" label-position="top" :disabled="busy">
+    <el-form v-if="mode === 'manual'" class="space-form" label-position="top" :disabled="busy">
       <el-form-item label="API 名称（必填）"
-        ><el-input v-model="draft.apiName" class="aircas-input" ariaLabel="API 名称" :disabled="!!space" maxlength="63" placeholder="例如 example_space"
+        ><el-input v-model="draft.apiName" ariaLabel="API 名称" :disabled="!!space" maxlength="63" placeholder="例如 example_space"
       /></el-form-item>
-      <el-form-item label="空间名称（必填）"><el-input v-model="draft.displayName" class="aircas-input" ariaLabel="空间名称" maxlength="64" /></el-form-item>
+      <el-form-item label="空间名称（必填）"><el-input v-model="draft.displayName" ariaLabel="空间名称" maxlength="64" /></el-form-item>
       <el-form-item label="空间描述"
-        ><el-input v-model="draft.description" class="aircas-input" ariaLabel="空间描述" type="textarea" :rows="3" maxlength="256" show-word-limit
+        ><el-input v-model="draft.description" ariaLabel="空间描述" type="textarea" :rows="3" maxlength="256" show-word-limit
       /></el-form-item>
       <el-form-item label="空间图标">
         <img v-if="draft.iconUrl" :src="draft.iconUrl" class="space-form__preview" alt="空间图标预览" />
         <label class="space-form__file"
           >选择图片（PNG/JPEG，最大 2MB）<input type="file" accept="image/png,image/jpeg" :disabled="busy" @change="readIcon"
         /></label>
-        <el-button v-if="draft.iconUrl" class="aircas-button" link @click="draft.iconUrl = ''">清除</el-button>
+        <el-button v-if="draft.iconUrl" link @click="draft.iconUrl = ''">清除</el-button>
       </el-form-item>
     </el-form>
     <div v-else-if="mode === 'import'" class="space-form">
       <p>选择导入文件后点击确定。</p>
-      <el-button class="aircas-button" link type="primary" :disabled="busy" @click="template">下载模板</el-button>
+      <el-button link type="primary" :disabled="busy" @click="template">下载模板</el-button>
       <label class="space-form__file">选择文件<input type="file" :disabled="busy" @change="selectImportFile" /></label>
       <p v-if="importFile">已选择：{{ importFile.name }}</p>
     </div>
     <p v-if="error || externalError" class="space-form__error" role="alert">{{ error || externalError }}</p>
     <template #footer>
-      <el-button class="aircas-button" :disabled="busy" @click="visible = false">取消</el-button>
-      <el-button class="aircas-button" type="primary" :loading="busy" @click="submit">确定</el-button>
+      <el-button :disabled="busy" @click="visible = false">取消</el-button>
+      <el-button type="primary" :loading="busy" @click="submit">确定</el-button>
     </template>
   </el-dialog>
 </template>
@@ -198,14 +197,14 @@ function setMode(value: unknown) {
   margin-right: 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 4px;
-  background-color: var(--aircas-color-button-background);
-  color: var(--aircas-color-button-text);
+  background-color: var(--aircas-color-primary);
+  color: var(--aircas-color-on-accent);
   cursor: pointer;
 }
 
 .space-form__file input[type="file"]::file-selector-button:hover {
-  background-color: var(--aircas-color-button-hover-background);
-  border-color: var(--aircas-color-border-highlight);
+  background-color: var(--aircas-color-hover);
+  border-color: var(--aircas-color-primary);
 }
 
 .space-form__file input[type="file"]:disabled {
@@ -214,7 +213,7 @@ function setMode(value: unknown) {
 
 .space-form__file input[type="file"]:disabled::file-selector-button {
   background-color: var(--aircas-color-input-background);
-  border-color: var(--aircas-color-border-soft);
+  border-color: var(--aircas-color-border-light);
   color: var(--aircas-color-text-disabled);
   cursor: not-allowed;
 }
@@ -232,7 +231,7 @@ function setMode(value: unknown) {
 }
 
 input:focus-visible {
-  outline: 2px solid var(--aircas-color-accent-cyan);
+  outline: 2px solid var(--aircas-color-primary);
   outline-offset: 2px;
 }
 </style>

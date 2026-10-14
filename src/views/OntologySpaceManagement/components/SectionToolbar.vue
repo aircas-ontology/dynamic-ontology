@@ -5,12 +5,12 @@
       <p>{{ resolveToolbarDescription(viewMode) }}</p>
     </div>
     <div class="section-toolbar__actions">
-      <el-input v-model="keyword" class="aircas-input" ariaLabel="按空间名称或 API 名称搜索" placeholder="按空间名称搜索" :prefix-icon="Search" clearable />
-      <el-select v-model="order" class="aircas-select" popper-class="aircas-select-popper" ariaLabel="按名称排序">
+      <el-input v-model="keyword" ariaLabel="按空间名称或 API 名称搜索" placeholder="按空间名称搜索" :prefix-icon="Search" clearable />
+      <el-select v-model="order" ariaLabel="按名称排序">
         <el-option label="按名称升序" value="asc" />
         <el-option label="按名称降序" value="desc" />
       </el-select>
-      <el-radio-group :model-value="viewMode" @update:model-value="setViewMode" class="aircas-radio-group section-toolbar__view" ariaLabel="展示方式">
+      <el-radio-group :model-value="viewMode" @update:model-value="setViewMode" class="section-toolbar__view" ariaLabel="展示方式">
         <el-radio-button value="card">
           <svg class="section-toolbar__view-icon" viewBox="0 0 24 24" aria-hidden="true">
             <rect x="3" y="3" width="8" height="8" rx="1.5" />
@@ -84,7 +84,7 @@ h2 {
 
 p {
   font-size: 12px;
-  color: var(--aircas-color-text-muted);
+  color: var(--aircas-color-text-secondary);
 }
 
 .section-toolbar__actions {
@@ -100,7 +100,7 @@ p {
   max-width: 100%;
 }
 
-.section-toolbar__actions .aircas-select {
+.section-toolbar__actions .el-select {
   width: 148px;
 }
 
@@ -109,28 +109,15 @@ p {
   gap: 4px;
 }
 
-.section-toolbar__view.aircas-radio-group :deep(.el-radio-button__inner),
-.section-toolbar__view.aircas-radio-group :deep(.el-radio-button:first-child .el-radio-button__inner),
-.section-toolbar__view.aircas-radio-group :deep(.el-radio-button:last-child .el-radio-button__inner) {
+.section-toolbar__view :deep(.el-radio-button__inner),
+.section-toolbar__view :deep(.el-radio-button:first-child .el-radio-button__inner),
+.section-toolbar__view :deep(.el-radio-button:last-child .el-radio-button__inner) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 4px;
-  outline: none;
-  box-shadow: none;
-  background-color: var(--aircas-color-panel-background-deep);
-  color: var(--aircas-color-text-primary);
-}
-
-.section-toolbar__view.aircas-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  border-color: var(--aircas-color-accent-cyan);
-  background: var(--aircas-color-active-background);
-  color: var(--aircas-color-text-primary);
-  box-shadow: 0 0 10px var(--aircas-color-accent-cyan-soft);
 }
 
 .section-toolbar__view-icon {

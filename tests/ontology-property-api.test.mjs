@@ -111,8 +111,8 @@ test("ontology property api exposes property details with datasource fields", ()
 });
 
 test("attribute panel uses ontology property api for list and commands", () => {
-  const source = readSource("../src/views/OntologyObjectDetail/composables/useAttributePropertyList.ts");
-  const helperSource = readSource("../src/views/OntologyObjectDetail/utils/attributePanelHelpers.ts");
+  const source = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
+  const helperSource = readSource("../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts");
   assert.match(source, /loadAttributesForSelection/);
   assert.match(helperSource, /collectPropertyItemsFromTree/);
   assert.match(source, /createOntologyPropertyInterface/);
@@ -131,7 +131,7 @@ test("attribute panel uses ontology property api for list and commands", () => {
   assert.match(helperSource, /dataType: item\.propertyType/);
   assert.match(source, /const storageGroups = computed<OntologyAttributeStorageGroupOption\[\]>\(getStorageGroupOptions\)/);
   assert.match(source, /storageGroup: "main"/);
-  const formSource = readSource("../src/views/OntologyObjectDetail/components/AttributePropertyFormDialog.vue");
+  const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
   assert.match(formSource, /:label="group\.label" :value="group\.value"/);
   const createBuilder = source.match(/function buildCreatePropertyParams[\s\S]*?function buildUpdatePropertyParams/)?.[0] ?? "";
   assert.doesNotMatch(createBuilder, /datasource:|metadata:|type:/);

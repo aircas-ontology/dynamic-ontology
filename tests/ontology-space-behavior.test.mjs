@@ -13,7 +13,7 @@ import {
 import {
   flattenSpaceBehaviorParameterRows,
   listAvailableSpaceBehaviorStatusOperations,
-} from "../src/views/OntologySpaceManagementDetail/utils/spaceBehaviorOperations.ts";
+} from "../src/views/SpaceBehaviorWorkspace/utils/spaceBehaviorOperations.ts";
 
 /**
  * @description 读取相对 tests 目录的源文件文本。
@@ -35,7 +35,7 @@ test("space behavior route mounts the behavior workspace instead of the empty pa
   const routeSource = readSource("../src/router/modules/workspaceRoutes.ts");
   const behaviorBlock = routeSource.match(/path:\s*"behavior"[\s\S]*?workspaceTab:\s*"behavior"/);
   assert.ok(behaviorBlock, "behavior route block missing");
-  assert.match(behaviorBlock[0], /SpaceBehaviorWorkspace\.vue/);
+  assert.match(behaviorBlock[0], /SpaceBehaviorWorkspace\/index\.vue/);
   assert.doesNotMatch(behaviorBlock[0], /emptyWorkspacePanel/);
 });
 
@@ -47,11 +47,11 @@ test("object behavior route mounts its independent behavior workspace", () => {
 
   const routeSource = readSource("../src/router/modules/workspaceRoutes.ts");
   const objectBehaviorBlock = routeSource.match(/name:\s*"OntologyObjectDetailBehavior"[\s\S]*?objectDetailTab:\s*"behavior"/)?.[0] ?? "";
-  assert.match(objectBehaviorBlock, /OntologyObjectDetail\/behaviorComponents\/ObjectBehaviorWorkspace\.vue/);
+  assert.match(objectBehaviorBlock, /ObjectBehaviorWorkspace\/index\.vue/);
   assert.doesNotMatch(objectBehaviorBlock, /SpaceBehaviorWorkspace|emptyWorkspacePanel/);
 
-  const workspaceSource = readSource("../src/views/OntologyObjectDetail/behaviorComponents/ObjectBehaviorWorkspace.vue");
-  const composableSource = readSource("../src/views/OntologyObjectDetail/composables/useObjectBehaviorWorkspace.ts");
+  const workspaceSource = readSource("../src/views/ObjectBehaviorWorkspace/index.vue");
+  const composableSource = readSource("../src/views/ObjectBehaviorWorkspace/composables/useObjectBehaviorWorkspace.ts");
   assert.match(workspaceSource, /ObjectBehaviorCategoryPanel/);
   assert.match(workspaceSource, /ObjectBehaviorListPanel/);
   assert.match(workspaceSource, /ObjectBehaviorFormDialog/);
@@ -65,16 +65,16 @@ test("object behavior route mounts its independent behavior workspace", () => {
 });
 
 test("space behavior workspace uses shared tree and relation table surfaces", () => {
-  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/SpaceBehaviorWorkspace.vue");
-  const treeSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorCategoryPanel.vue");
-  const listSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorListPanel.vue");
+  const workspaceSource = readSource("../src/views/SpaceBehaviorWorkspace/index.vue");
+  const treeSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorCategoryPanel.vue");
+  const listSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorListPanel.vue");
 
   assert.match(workspaceSource, /grid-template-columns:\s*360px minmax\(0, 1fr\)/);
   assert.match(treeSource, /行为分类树/);
-  assert.match(treeSource, /class="aircas-tree/);
+  assert.match(treeSource, /<el-tree\b/);
   assert.match(treeSource, /搜索行为分类/);
   assert.match(treeSource, /FolderOpened/);
-  assert.match(listSource, /aircas-table aircas-table--flat/);
+  assert.match(listSource, /aircas-table--accent-header/);
   assert.match(listSource, /stripe/);
   assert.match(listSource, /label="行为名称"/);
   assert.match(listSource, /label="函数算子"/);
@@ -83,17 +83,17 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(listSource, /label="更新时间"/);
   assert.match(listSource, /新建行为/);
   assert.match(listSource, /placeholder="行为状态"/);
-  assert.match(listSource, /aircas-pagination/);
-  assert.match(listSource, /aircas-dropdown/);
+  assert.match(listSource, /<el-pagination\b/);
+  assert.match(listSource, /<el-dropdown\b/);
   assert.match(listSource, /状态管理/);
   assert.match(listSource, /command="delete"/);
 });
 
 test("space behavior crud dialogs follow prototype create view edit and delete surfaces", () => {
-  const formSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorFormDialog.vue");
-  const drawerSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorDetailDrawer.vue");
-  const deleteSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorDeleteDialog.vue");
-  const workspaceSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/SpaceBehaviorWorkspace.vue");
+  const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
+  const drawerSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorDetailDrawer.vue");
+  const deleteSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorDeleteDialog.vue");
+  const workspaceSource = readSource("../src/views/SpaceBehaviorWorkspace/index.vue");
 
   assert.match(formSource, /创建行为/);
   assert.match(formSource, /草稿配置/);
@@ -119,7 +119,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /min\(1120px, 94vw\)/);
   assert.doesNotMatch(formSource, /behavior-form-dialog__nav/);
 
-  assert.match(drawerSource, /aircas-drawer/);
+  assert.match(drawerSource, /<el-drawer\b/);
   assert.match(drawerSource, /size="680px"/);
   assert.match(drawerSource, /行为 ID/);
   assert.match(drawerSource, /执行范围/);
@@ -139,7 +139,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
 });
 
 test("space behavior status dialog follows the prototype two-step form", () => {
-  const dialogSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorStatusDialog.vue");
+  const dialogSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorStatusDialog.vue");
   assert.match(dialogSource, /本体行为状态管理/);
   assert.match(dialogSource, /目标操作/);
   assert.match(dialogSource, /操作原因/);
@@ -152,10 +152,10 @@ test("space behavior status dialog follows the prototype two-step form", () => {
 });
 
 test("space behavior edit and status dialogs stay open despite reactive clone and dropdown click-through", () => {
-  const formSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorFormDialog.vue");
-  const statusSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorStatusDialog.vue");
-  const deleteSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorDeleteDialog.vue");
-  const listSource = readSource("../src/views/OntologySpaceManagementDetail/behaviorComponents/BehaviorListPanel.vue");
+  const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
+  const statusSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorStatusDialog.vue");
+  const deleteSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorDeleteDialog.vue");
+  const listSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorListPanel.vue");
 
   assert.match(formSource, /cloneSpaceBehaviorParameters/);
   assert.doesNotMatch(formSource, /structuredClone\(props\.behavior/);
@@ -189,6 +189,10 @@ test("space behavior mock filters by category and supports local create", () => 
   const data = querySpaceBehaviorWorkspaceMock("behavior-test-space");
   assert.ok(data.categoryTree.length > 0);
   assert.ok(data.behaviors.length > 0);
+  assert.equal(data.categoryTree[0]?.label, "基础操作");
+  assert.equal(data.behaviors[0]?.displayName, "新增对象行为");
+  assert.equal(data.behaviors[0]?.executionPeriod, "—");
+  assert.doesNotMatch(JSON.stringify(data), /æ|å|ç|Â|â/);
   const childId = data.categoryTree[0]?.children[0]?.id ?? "";
   assert.ok(childId);
   const filtered = filterSpaceBehaviorsByCategory(data.behaviors, data.categoryTree, childId);

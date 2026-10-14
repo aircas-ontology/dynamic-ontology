@@ -1,0 +1,419 @@
+<template>
+  <div class="basic-filter-group" :class="`basic-filter-group--depth-${depth}`">
+    <div class="basic-filter-group__toolbar">
+      <el-select :model-value="group.logic" class="basic-filter-group__logic" style="width: 140px" @update:model-value="updateLogic">
+        <el-option v-for="item in BASIC_FILTER_LOGIC_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+      </el-select>
+      <div class="basic-filter-group__actions">
+        <el-button size="small" @click="addFilter">+ 条件</el-button>
+        <el-button v-if="depth < 3" size="small" @click="addGroup">+ 分组</el-button>
+      </div>
+    </div>
+
+    <div class="basic-filter-group__children">
+      <div v-for="(child, index) in group.children" :key="`${depth}-${index}-${child.type}`" class="basic-filter-group__child">
+        <template v-if="child.type === 'FILTER' && child.filter">
+          <div class="basic-filter-row">
+            <el-input
+              :model-value="child.filter.propertyApiName"
+              class="basic-filter-row__property"
+              maxlength="64"
+              placeholder="输入变量名"
+              @update:model-value="(value) => updateFilterProperty(index, value)"
+            />
+            <el-select
+              :model-value="child.filter.valueType"
+              class="basic-filter-row__value-type"
+              @update:model-value="(value) => updateFilterValueType(index, value)"
+            >
+              <el-option v-for="item in BASIC_FILTER_VALUE_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+            <el-select :model-value="child.filter.op" class="basic-filter-row__op" @update:model-value="(value) => updateFilterOp(index, value)">
+              <el-option v-for="item in BASIC_FILTER_OP_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+            <div class="basic-filter-row__values">
+              <template v-if="opNeedsRange(child.filter.op)">
+                <template v-if="child.filter.valueType === 'number'">
+                  <el-input-number
+                    :model-value="Number(child.filter.values?.[0] ?? 0)"
+                    class="basic-filter-row__number"
+                    controls-position="right"
+                    @update:model-value="(value) => updateFilterRange(index, 0, value ?? 0)"
+                  />
+                  <el-input-number
+                    :model-value="Number(child.filter.values?.[1] ?? 0)"
+                    class="basic-filter-row__number"
+                    controls-position="right"
+                    @update:model-value="(value) => updateFilterRange(index, 1, value ?? 0)"
+                  />
+                </template>
+                <template v-else>
+                  <el-input
+                    :model-value="String(child.filter.values?.[0] ?? '')"
+                    placeholder="最小值"
+                    @update:model-value="(value) => updateFilterRange(index, 0, value)"
+                  />
+                  <el-input
+                    :model-value="String(child.filter.values?.[1] ?? '')"
+                    placeholder="最大值"
+                    @update:model-value="(value) => updateFilterRange(index, 1, value)"
+                  />
+                </template>
+              </template>
+              <template v-else-if="opNeedsList(child.filter.op)">
+                <el-input
+                  :model-value="formatFilterList(child.filter.values)"
+                  placeholder="多个值用英文逗号分隔"
+                  @update:model-value="(value) => updateFilterList(index, value)"
+                />
+              </template>
+              <template v-else-if="opNeedsValue(child.filter.op)">
+                <el-select
+                  v-if="child.filter.valueType === 'boolean'"
+                  :model-value="Boolean(child.filter.value)"
+                  @update:model-value="(value) => updateFilterValue(index, Boolean(value))"
+                >
+                  <el-option label="true" :value="true" />
+                  <el-option label="false" :value="false" />
+                </el-select>
+                <el-input-number
+                  v-else-if="child.filter.valueType === 'number'"
+                  :model-value="Number(child.filter.value ?? 0)"
+                  class="basic-filter-row__number"
+                  controls-position="right"
+                  @update:model-value="(value) => updateFilterValue(index, value ?? 0)"
+                />
+                <el-input
+                  v-else
+                  :model-value="String(child.filter.value ?? '')"
+                  placeholder="输入值"
+                  @update:model-value="(value) => updateFilterValue(index, value)"
+                />
+              </template>
+              <span v-else class="basic-filter-row__value-placeholder">无需取值</span>
+            </div>
+            <el-button type="danger" plain class="basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
+              删除
+            </el-button>
+          </div>
+        </template>
+        <template v-else-if="child.type === 'GROUP' && child.group">
+          <div class="basic-filter-group__nested">
+            <div class="basic-filter-group__nested-header">
+              <span>分组</span>
+              <el-button type="danger" plain class="basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
+                删除分组
+              </el-button>
+            </div>
+            <BasicFilterGroupEditor :group="child.group" :depth="depth + 1" @update:group="(value) => updateNestedGroup(index, value)" />
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import {
+  BASIC_FILTER_LOGIC_OPTIONS,
+  BASIC_FILTER_OP_OPTIONS,
+  BASIC_FILTER_VALUE_TYPE_OPTIONS,
+  type BasicFilterDocument,
+  type BasicFilterLogic,
+  type BasicFilterOp,
+  type BasicFilterValue,
+  type BasicFilterValueType,
+} from "@/types";
+import { createEmptyBasicFilterGroup, createEmptyBasicFilterNode, opNeedsList, opNeedsRange, opNeedsValue } from "@/utils/functionOperatorBasicFilter";
+
+defineOptions({ name: "BasicFilterGroupEditor" });
+
+const props = defineProps<{
+  group: BasicFilterDocument;
+  depth: number;
+}>();
+
+const emit = defineEmits<{
+  "update:group": [value: BasicFilterDocument];
+}>();
+
+/**
+ * @description 克隆当前过滤分组，避免直接修改 props。
+ * @returns 深拷贝后的分组文档。
+ */
+function cloneGroup(): BasicFilterDocument {
+  return JSON.parse(JSON.stringify(props.group)) as BasicFilterDocument;
+}
+
+function publish(next: BasicFilterDocument): void {
+  emit("update:group", next);
+}
+
+function updateLogic(value: string | number | boolean | undefined): void {
+  if (value !== "AND" && value !== "OR") return;
+  const next = cloneGroup();
+  next.logic = value as BasicFilterLogic;
+  publish(next);
+}
+
+function addFilter(): void {
+  const next = cloneGroup();
+  next.children.push(createEmptyBasicFilterNode());
+  publish(next);
+}
+
+function addGroup(): void {
+  const next = cloneGroup();
+  next.children.push(createEmptyBasicFilterGroup());
+  publish(next);
+}
+
+function removeChild(index: number): void {
+  if (props.group.children.length <= 1) return;
+  const next = cloneGroup();
+  next.children.splice(index, 1);
+  publish(next);
+}
+
+function defaultValueForType(valueType: BasicFilterValueType): BasicFilterValue {
+  if (valueType === "number") return 0;
+  if (valueType === "boolean") return false;
+  return "";
+}
+
+function coerceToType(value: unknown, valueType: BasicFilterValueType): BasicFilterValue {
+  if (valueType === "boolean") return value === true || value === "true";
+  if (valueType === "number") {
+    const parsed = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return value === undefined || value === null ? "" : String(value);
+}
+
+function updateFilterProperty(index: number, value: string | number): void {
+  const next = cloneGroup();
+  const child = next.children[index];
+  if (!child?.filter) return;
+  child.filter.propertyApiName = String(value);
+  publish(next);
+}
+
+function updateFilterValueType(index: number, value: string | number | boolean | undefined): void {
+  if (value !== "string" && value !== "number" && value !== "boolean") return;
+  const next = cloneGroup();
+  const child = next.children[index];
+  if (!child?.filter) return;
+  const valueType = value as BasicFilterValueType;
+  child.filter.valueType = valueType;
+  if (opNeedsRange(child.filter.op)) {
+    child.filter.values = [coerceToType(child.filter.values?.[0], valueType), coerceToType(child.filter.values?.[1], valueType)];
+    delete child.filter.value;
+  } else if (opNeedsList(child.filter.op)) {
+    const values = child.filter.values ?? [];
+    child.filter.values = values.length ? values.map((item) => coerceToType(item, valueType)) : [defaultValueForType(valueType)];
+    delete child.filter.value;
+  } else if (opNeedsValue(child.filter.op)) {
+    child.filter.value = coerceToType(child.filter.value, valueType);
+    delete child.filter.values;
+  } else {
+    delete child.filter.value;
+    delete child.filter.values;
+  }
+  publish(next);
+}
+
+function updateFilterOp(index: number, value: string | number | boolean | undefined): void {
+  const next = cloneGroup();
+  const child = next.children[index];
+  if (!child?.filter || typeof value !== "string") return;
+  const op = value as BasicFilterOp;
+  const valueType = child.filter.valueType || "string";
+  child.filter.op = op;
+  if (opNeedsRange(op)) {
+    child.filter.values = [
+      coerceToType(child.filter.values?.[0] ?? child.filter.value, valueType),
+      coerceToType(child.filter.values?.[1] ?? defaultValueForType(valueType), valueType),
+    ];
+    delete child.filter.value;
+  } else if (opNeedsList(op)) {
+    const seed = child.filter.values?.length ? child.filter.values : child.filter.value !== undefined ? [child.filter.value] : [defaultValueForType(valueType)];
+    child.filter.values = seed.map((item) => coerceToType(item, valueType));
+    delete child.filter.value;
+  } else if (op === "IS_NULL" || op === "IS_NOT_NULL") {
+    delete child.filter.value;
+    delete child.filter.values;
+  } else {
+    child.filter.value = coerceToType(child.filter.value ?? child.filter.values?.[0] ?? defaultValueForType(valueType), valueType);
+    delete child.filter.values;
+  }
+  publish(next);
+}
+
+/**
+ * @description 将列表运算符的 values 格式化为逗号分隔文本。
+ * @param values 列表值。
+ * @returns 展示文本。
+ */
+function formatFilterList(values: BasicFilterValue[] | undefined): string {
+  return (values ?? []).map((item) => String(item)).join(",");
+}
+
+/**
+ * @description 按英文逗号拆分列表输入并写回 values。
+ * @param index 子节点下标。
+ * @param raw 输入文本。
+ */
+function updateFilterList(index: number, raw: string | number): void {
+  const next = cloneGroup();
+  const child = next.children[index];
+  if (!child?.filter) return;
+  const valueType = child.filter.valueType || "string";
+  const parts = String(raw)
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+  child.filter.values = parts.length ? parts.map((item) => coerceToType(item, valueType)) : [defaultValueForType(valueType)];
+  delete child.filter.value;
+  publish(next);
+}
+
+function updateFilterValue(index: number, value: string | number | boolean): void {
+  const next = cloneGroup();
+  const child = next.children[index];
+  if (!child?.filter) return;
+  child.filter.value = coerceToType(value, child.filter.valueType || "string");
+  publish(next);
+}
+
+function updateFilterRange(index: number, slot: 0 | 1, value: string | number): void {
+  const next = cloneGroup();
+  const child = next.children[index];
+  if (!child?.filter) return;
+  const valueType = child.filter.valueType || "string";
+  const values = [...(child.filter.values ?? [defaultValueForType(valueType), defaultValueForType(valueType)])];
+  values[slot] = coerceToType(value, valueType);
+  child.filter.values = [values[0] ?? defaultValueForType(valueType), values[1] ?? defaultValueForType(valueType)];
+  publish(next);
+}
+
+function updateNestedGroup(index: number, group: BasicFilterDocument): void {
+  const next = cloneGroup();
+  const child = next.children[index];
+  if (!child || child.type !== "GROUP") return;
+  child.group = group;
+  publish(next);
+}
+</script>
+
+<style scoped lang="scss">
+.basic-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--aircas-color-border-light);
+  border-radius: 8px;
+  background: var(--aircas-color-card-background);
+}
+
+.basic-filter-group__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.basic-filter-group__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.basic-filter-group__children {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.basic-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.basic-filter-row__property {
+  flex: 1.2;
+  min-width: 120px;
+}
+
+.basic-filter-row__value-type {
+  flex: 0 0 110px;
+  width: 110px;
+}
+
+.basic-filter-row__op {
+  flex: 0 0 150px;
+  width: 150px;
+}
+
+.basic-filter-row__values {
+  display: flex;
+  flex: 0 1 160px;
+  min-width: 120px;
+  max-width: 200px;
+  align-items: center;
+  gap: 8px;
+}
+
+.basic-filter-row__value-placeholder {
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+}
+
+.basic-filter-group__nested {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px dashed var(--aircas-color-border-light);
+  border-radius: 8px;
+  background: var(--aircas-color-panel-background);
+}
+
+:root:not(.dark) .basic-filter-group__nested {
+  background: var(--aircas-color-panel-background);
+}
+
+.basic-filter-row__number {
+  width: 100%;
+  max-width: 140px;
+}
+
+.basic-filter-row__number :deep(.el-input__wrapper) {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+}
+
+.basic-filter-row__number :deep(.el-input-number__decrease),
+.basic-filter-row__number :deep(.el-input-number__increase) {
+  width: 28px;
+}
+
+.basic-filter-row__remove {
+  flex: 0 0 auto;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 12px;
+  margin-left: 0;
+}
+
+.basic-filter-group__nested-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--aircas-color-text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+</style>

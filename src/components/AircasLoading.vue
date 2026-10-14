@@ -19,8 +19,8 @@
   width: 28px;
   height: 28px;
   box-sizing: border-box;
-  border: 2px solid var(--aircas-color-accent-cyan-soft);
-  border-top-color: var(--aircas-color-title);
+  border: 2px solid var(--aircas-color-effect-primary-soft);
+  border-top-color: var(--aircas-color-primary);
   border-radius: 50%;
   animation: aircas-loading-indicator-spin 0.8s linear infinite;
 }

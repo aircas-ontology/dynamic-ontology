@@ -29,10 +29,12 @@ function readSelectedObjectText(node: TreeNodeData, key: string): string {
  * @returns 选中对象列表。
  */
 export function mapSubspaceCreateSelectedObjects(nodes: TreeNodeData[]): SubspaceCreateSelectedObject[] {
-  return nodes.map((node) => {
-    const id = readSelectedObjectText(node, "id");
-    const label = readSelectedObjectText(node, "label");
-    const apiName = readSelectedObjectText(node, "apiName") || id;
-    return { id, label, apiName };
-  });
+  return nodes
+    .filter((node) => readSelectedObjectText(node, "kind") === "object")
+    .map((node) => {
+      const id = readSelectedObjectText(node, "id");
+      const label = readSelectedObjectText(node, "label");
+      const apiName = readSelectedObjectText(node, "apiName") || id;
+      return { id, label, apiName };
+    });
 }
