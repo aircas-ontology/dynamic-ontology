@@ -1,6 +1,6 @@
 import type { ApiResponse, OntologySpaceListData } from "@/types";
 
-/** 本体空间列表接口成功响应样例（对齐契约正文）。 */
+/** 对象空间列表接口成功响应样例（对齐契约正文）。 */
 export const ontologySpaceListApiMock: ApiResponse<OntologySpaceListData> = {
   code: 200,
   message: "SUCCESS",

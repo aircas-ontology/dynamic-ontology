@@ -3,12 +3,12 @@ import type { StreamAgentChatData, StreamAgentChatEvent } from "@/types";
 export const streamAgentChatMock: StreamAgentChatData = [
   {
     type: "thinking",
-    content: "正在检索平台本体列表",
+    content: "正在检索平台对象列表",
   },
   {
     type: "tool_call",
     tool: "searchDatasources",
-    args: '{"keyword":"本体"}',
+    args: '{"keyword":"对象"}',
   },
   {
     type: "tool_result",
@@ -18,7 +18,7 @@ export const streamAgentChatMock: StreamAgentChatData = [
   {
     type: "selection_request",
     scenario: "space_select",
-    title: "请选择目标本体空间",
+    title: "请选择目标对象空间",
     multiSelect: false,
     options: [
       {
@@ -34,7 +34,7 @@ export const streamAgentChatMock: StreamAgentChatData = [
   },
   {
     type: "content",
-    content: "平台当前有以下本体：",
+    content: "平台当前有以下对象：",
   },
   {
     type: "done",

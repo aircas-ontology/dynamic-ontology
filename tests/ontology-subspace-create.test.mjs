@@ -36,7 +36,7 @@ test("subspace create tree panel uses public tree and filter controls", () => {
   assert.match(source, /分类体系树/);
   assert.match(source, /已选 \{\{ selectedCount \}\} 个/);
   assert.match(source, /class="aircas-input /);
-  assert.match(source, /placeholder="搜索本体对象"/);
+  assert.match(source, /placeholder="搜索对象"/);
   assert.doesNotMatch(source, /全选对象/);
   assert.doesNotMatch(source, /清空选择/);
   assert.match(source, /class="aircas-tree /);
@@ -78,6 +78,13 @@ test("subspace create tree selection only maps object nodes", () => {
   assert.deepEqual(selected, [{ id: "object-1", label: "对象一", apiName: "object_api" }]);
 });
 
+test("subspace create tree maps selected object cards to the real API name", () => {
+  const source = readSource("../src/views/OntologySubspaceCreate/components/SubspaceCreateTreePanel.vue");
+  assert.match(source, /apiNameByObjectId/);
+  assert.match(source, /item\.id, item\.apiName/);
+  assert.match(source, /apiName: apiNameByObjectId\.get\(object\.uniqueIdentifier\) \?\? object\.uniqueIdentifier/);
+});
+
 test("subspace create workspace panel uses public form empty and actions", () => {
   const source = readSource("../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue");
   assert.match(source, /class="aircas-button"/);
@@ -85,12 +92,12 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, /v-if="currentStepIndex > 0"/);
   assert.match(source, /emit\('previous'\)/);
   assert.match(source, />上一步</);
-  assert.match(source, /父空间：\{\{ parentSpaceName \}\}/);
+  assert.match(source, /对象空间：\{\{ parentSpaceName \}\}/);
   assert.match(source, />下一步</);
   assert.match(source, />创建</);
   assert.match(source, /currentStepIndex/);
   assert.match(source, /class="aircas-form /);
-  assert.match(source, /子空间名称/);
+  assert.match(source, /主题空间名称/);
   assert.match(source, /API 名称/);
   assert.match(source, /class="aircas-input"/);
   assert.doesNotMatch(source, /\.el-input__wrapper\) \{[\s\S]*background: var\(--aircas-color-transparent\)/);
@@ -110,7 +117,7 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, /li\.is-process \.subspace-create-workspace__step-index::after[\s\S]*background: var\(--aircas-color-accent-cyan\)/);
   assert.match(source, /第一步：选择对象/);
   assert.match(source, /class="aircas-empty"/);
-  assert.match(source, /请在左侧勾选本体对象/);
+  assert.match(source, /请在左侧勾选对象/);
   assert.match(source, /selectedObjects/);
   assert.match(source, /subspace-create-workspace__card/);
   assert.match(source, /\.subspace-create-workspace__card \{[\s\S]*border: 1px solid var\(--aircas-color-border-soft\)/);
@@ -502,8 +509,8 @@ test("subspace create page orchestrates names and next-step validation", () => {
   assert.match(source, /relationLoadStatus/);
   assert.match(source, /currentStepIndex.value = 3/);
   assert.match(source, /OntologySpaceManagement/);
-  assert.match(source, /请填写子空间名称和 API 名称/);
-  assert.match(source, /请至少选择一个本体对象/);
+  assert.match(source, /请填写主题空间名称和 API 名称/);
+  assert.match(source, /请至少选择一个对象/);
   assert.match(source, /getOntologyEntitiesInterface/);
   assert.match(source, /:property-load-status="propertyLoadStatus"/);
   assert.match(source, /:property-load-error="propertyLoadError"/);

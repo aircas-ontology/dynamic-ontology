@@ -2,7 +2,7 @@ import type { OntologyApiDocsData } from "@/types";
 import { request } from "@/utils/request";
 
 /**
- * @description 查询本体服务 OpenAPI 接口文档（SpringDoc 原始文档体，非 ApiResponse 包裹）。
+ * @description 查询对象服务 OpenAPI 接口文档（SpringDoc 原始文档体，非 ApiResponse 包裹）。
  *
  * 请求方式：GET `/ontology/v3/api-docs/ontology`
  *

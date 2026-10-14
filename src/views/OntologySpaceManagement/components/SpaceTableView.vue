@@ -38,7 +38,7 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
 /**
  * @description 将表格行还原为页面空间模型，找不到对应 id 时视为无效行。
  * @param row 表格当前行。
- * @returns 匹配到的本体空间项。
+ * @returns 匹配到的对象空间项。
  */
 function spaceRow(row: unknown): OntologySpaceItem {
   if (row && typeof row === "object" && "id" in row) {

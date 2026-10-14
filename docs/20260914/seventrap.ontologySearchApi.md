@@ -1,6 +1,6 @@
 # 接口名称
 
-- 本体搜索接口
+- 对象搜索接口
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 根据关键词查询本体数据，支持分页查询。
+- 根据关键词查询对象数据，支持分页查询。
 
 ## 接口domain
 
@@ -33,7 +33,7 @@
     "pageSize": 20
   }
   ```
-- `keyword`：【string，可选】本体名称或描述的查询关键词
+- `keyword`：【string，可选】对象名称或描述的查询关键词
 - `page`：【number，必填】页码，从 1 开始
 - `pageSize`：【number，必填】每页返回的数据条数
 
@@ -49,7 +49,7 @@
       {
         "id": "ontology-001",
         "name": "Satellite Ontology",
-        "description": "用于描述卫星及其关联资源的本体。"
+        "description": "用于描述卫星及其关联资源的对象。"
       }
     ],
     "total": 1
@@ -61,11 +61,11 @@
 - `message`：【string】消息描述
 - `success`：【boolean】请求是否成功
 - `data`：【object】响应数据
-  - `items`：【OntologySearchItem[]】当前页的本体数据
+  - `items`：【OntologySearchItem[]】当前页的对象数据
   - `total`：【number】符合查询条件的数据总数
-- `items[].id`：【string】本体唯一标识
-- `items[].name`：【string】本体名称
-- `items[].description`：【string】本体描述
+- `items[].id`：【string】对象唯一标识
+- `items[].name`：【string】对象名称
+- `items[].description`：【string】对象描述
 
 ## code
 
@@ -121,15 +121,15 @@ import type { ApiResponse, OntologySearchData, OntologySearchParams } from "@/ty
 import { request } from "@/utils/request";
 
 /**
- * 根据关键词分页查询本体数据。
+ * 根据关键词分页查询对象数据。
  *
  * 请求方式：GET `/ontology/search`
  *
  * @param params 查询参数。
- * @param params.keyword 可选的本体名称或描述关键词。
+ * @param params.keyword 可选的对象名称或描述关键词。
  * @param params.page 当前页码，从 1 开始。
  * @param params.pageSize 每页返回的数据条数。
- * @returns 标准 API 响应，包含当前页本体列表和数据总数。
+ * @returns 标准 API 响应，包含当前页对象列表和数据总数。
  */
 export function getOntologySearchInterface(
   params: OntologySearchParams,
@@ -166,7 +166,7 @@ export const ontologySearchMock: ApiResponse<OntologySearchData> = {
       {
         id: "ontology-001",
         name: "Satellite Ontology",
-        description: "用于描述卫星及其关联资源的本体。",
+        description: "用于描述卫星及其关联资源的对象。",
       },
     ],
     total: 1,

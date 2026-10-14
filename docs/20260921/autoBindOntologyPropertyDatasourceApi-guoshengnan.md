@@ -1,10 +1,10 @@
 # 接口名称
 
-- 本体属性自动关联数据源
+- 对象属性自动关联数据源
 
 ## 接口描述
 
-- 根据本体标识自动为本体属性关联匹配的数据源字段。
+- 根据对象标识自动为对象属性关联匹配的数据源字段。
 
 ## 接口 domain
 
@@ -30,7 +30,7 @@
 
 | 字段               | 类型   | 必填 | 说明    |
 | ------------------ | ------ | ---- | ------- |
-| ontologyIdentifier | string | 是   | 本体 id |
+| ontologyIdentifier | string | 是   | 对象 id |
 
 ## 输出参数
 
@@ -87,12 +87,12 @@ import type { ApiResponse, AutoBindOntologyPropertyDatasourceData, AutoBindOntol
 import { request } from "@/utils/request";
 
 /**
- * 自动为本体属性关联数据源。
+ * 自动为对象属性关联数据源。
  *
  * 请求方式：POST `/ontology/property/auto_bind_datasource`
  *
  * @param params 自动关联数据源参数。
- * @param params.ontologyIdentifier 本体标识。
+ * @param params.ontologyIdentifier 对象标识。
  * @returns 标准 API 响应。
  */
 export function autoBindOntologyPropertyDatasourceInterface(

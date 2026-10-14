@@ -61,7 +61,7 @@ test("space export confirmation calls the export api instead of local json", () 
   assert.match(dialogSource, /value="SCHEMA"/);
   assert.match(dialogSource, /value="INSTANCE"/);
   assert.match(dialogSource, /emit\('confirmExport', exportType\)/);
-  assert.doesNotMatch(dialogSource, /分类树、本体 schema 与实例数据/);
+  assert.doesNotMatch(dialogSource, /分类树、对象 schema 与实例数据/);
   assert.doesNotMatch(dialogSource, /尚未接入/);
   assert.doesNotMatch(dialogSource, /导出 JSON/);
 });

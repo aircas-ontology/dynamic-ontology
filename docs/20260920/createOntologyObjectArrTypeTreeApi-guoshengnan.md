@@ -1,6 +1,6 @@
 # 接口名称
 
-- 本体对象属性分类树新增
+- 对象属性分类树新增
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 输入参数创建本体对象属性分类节点。
+- 输入参数创建对象属性分类节点。
 
 ## 接口domain
 
@@ -34,7 +34,7 @@
   }
   ```
 - 请求体：POST 请求使用 `data` 传递 JSON 对象。
-- `ontologyIdentifier`：【string，必填】 本体对象标识
+- `ontologyIdentifier`：【string，必填】 对象标识
 - `parentId`：【number，必填】 分类父id；从分类树节点创建时传入该节点 id，无分类树数据时传入 `0`
 - `name`：【string，必填】分类名称
 
@@ -90,11 +90,11 @@ import type { ApiResponse, CreateOntologyObjectArrTypeTreeParams } from "@/types
 import { request } from "@/utils/request";
 
 /**
- * 创建本体对象属性分类树。
+ * 创建对象属性分类树。
  *
  * 请求方式：POST `/ontology/property/category`
  *
- * @param params 创建本体对象属性分类参数。
+ * @param params 创建对象属性分类参数。
  * @param params.ontologyIdentifier 对象标识。
  * @param params.parentId 父节点id。
  * @param params.name 属性分类名称。

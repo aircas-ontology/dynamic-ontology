@@ -1,6 +1,6 @@
 <template>
   <div class="space-management-detail" :class="{ 'is-empty': status === 'empty' }">
-    <el-empty v-if="status === 'empty'" description="未找到对应的本体空间" />
+    <el-empty v-if="status === 'empty'" description="未找到对应的对象空间" />
     <div v-else-if="status === 'loading'" class="space-management-detail__state" role="status"><AircasLoading>正在加载空间…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="space-management-detail__state" role="alert">
       <span>{{ error || "空间加载失败" }}</span>
@@ -35,11 +35,13 @@ const route = useRoute();
 const { status, error, spaceId, activeTab, availableTabs, spaceDisplayName, load } = useSpaceWorkspace();
 const isWorkflowPage = computed(() => route.name === "OntologyLlmBuilder" || route.name === "OntologySubspaceCreate");
 
+/** @description 切换空间内管理的工作区 tab，透传当前 query 以保持来源标识与空间名。 @param tab 目标 tab。 */
 function openTab(tab: ManagementWorkspaceTab) {
   if (tab === activeTab.value) return;
   void router.push({
     name: routeNameForTab(tab),
     params: { spaceId: spaceId.value },
+    query: route.query,
   });
 }
 </script>

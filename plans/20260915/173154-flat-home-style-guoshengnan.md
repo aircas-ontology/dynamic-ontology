@@ -1,7 +1,7 @@
 # 首页纯色双主题调整（已确认）
 
 ## 需求
-参考用户两张截图调整本体空间管理首页。顶部标题名称保持“空天 · 灵枢”。全部当前页面渐变改为纯色，优先使用Aircas公共组件样式，兼容暗亮主题。
+参考用户两张截图调整对象空间管理首页。顶部标题名称保持“空天 · 灵枢”。全部当前页面渐变改为纯色，优先使用Aircas公共组件样式，兼容暗亮主题。
 
 ## 范围
 修改src/layout/index.vue及HeaderBar、NavigationMenu样式；修改OntologySpaceManagement页面及WelcomePanel、StatCard、SectionToolbar、SpaceTable、SpaceActions；公共el-table.scss增加可选aircas-table--flat修饰类；默认分页10条及相关测试。保持现有菜单、Mock真实统计、业务行为和未接入功能提示，不新增依赖或业务页面。

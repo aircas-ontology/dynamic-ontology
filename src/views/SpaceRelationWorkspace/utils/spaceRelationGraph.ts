@@ -64,11 +64,11 @@ export function filterRelationsByHop(relations: OntologyRelationClass[], seedNam
 }
 
 /**
- * @description 按源本体筛选关系：保留源名称等于选中对象 value 或其展示 label 的关系。
+ * @description 按源对象筛选关系：保留源名称等于选中对象 value 或其展示 label 的关系。
  * @param relations 当前关系列表。
  * @param selectedValue 下拉选中的对象 value（通常为 uniqueIdentifier）。
  * @param objectOptions 对象下拉选项，用于把 value 解析为 label。
- * @returns 源本体匹配选中对象的关系子集；未选中时返回原列表。
+ * @returns 源对象匹配选中对象的关系子集；未选中时返回原列表。
  */
 export function filterRelationsBySourceObject(
   relations: OntologyRelationClass[],

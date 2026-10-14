@@ -62,8 +62,8 @@
           </label>
           <el-icon class="mapping-toolbar__connection"><Connection /></el-icon>
           <label>
-            关联本体字段
-            <el-select v-model="manualSelectedProperty" filterable placeholder="选择本体属性">
+            关联对象字段
+            <el-select v-model="manualSelectedProperty" filterable placeholder="选择对象属性">
               <el-option
                 v-for="property in availableManualProperties"
                 :key="property.id"

@@ -1,8 +1,8 @@
-# 对接本体对象导入接口
+# 对接对象导入接口
 
 ## 需求理解
 
-本体对象创建弹窗选择「导入创建」、选择文件并点击确认后，调用 `docs/20260923/5.importOntologiesApi.md` 中的 `POST /ontology/meta/import`。请求体为 `multipart/form-data` 的 `file`。成功后关闭弹窗、提示并刷新对象列表。
+对象创建弹窗选择「导入创建」、选择文件并点击确认后，调用 `docs/20260923/5.importOntologiesApi.md` 中的 `POST /ontology/meta/import`。请求体为 `multipart/form-data` 的 `file`。成功后关闭弹窗、提示并刷新对象列表。
 
 ## 修改范围
 

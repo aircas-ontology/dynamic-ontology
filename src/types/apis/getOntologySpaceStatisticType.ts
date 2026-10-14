@@ -1,8 +1,8 @@
-/** 本体空间资源统计 VO。 */
+/** 对象空间资源统计 VO。 */
 export interface OntologySpaceStatisticVO {
-  /** 本体空间 id。 */
+  /** 对象空间 id。 */
   spaceId: number;
-  /** 对象（本体）数量。 */
+  /** 对象（对象）数量。 */
   ontologyCount: number;
   /** 关系数量。 */
   linkCount: number;
@@ -14,11 +14,11 @@ export interface OntologySpaceStatisticVO {
   actionSchedulingCount: number;
 }
 
-/** 查询本体空间资源统计的响应 data。 */
+/** 查询对象空间资源统计的响应 data。 */
 export type GetOntologySpaceStatisticData = OntologySpaceStatisticVO;
 
-/** 查询本体空间资源统计的查询参数。 */
+/** 查询对象空间资源统计的查询参数。 */
 export interface GetOntologySpaceStatisticParams {
-  /** 本体空间 id，必填。 */
+  /** 对象空间 id，必填。 */
   spaceId: number;
 }

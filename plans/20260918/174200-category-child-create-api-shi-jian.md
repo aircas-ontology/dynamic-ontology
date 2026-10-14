@@ -2,7 +2,7 @@
 
 ## 需求理解
 
-确认新建子分类时调用已有的创建本体分类体系树接口。`name` 为输入的子分类名称，`spaceId` 为当前空间 id，`parentId` 为被点击父节点的 `categoryId`。
+确认新建子分类时调用已有的创建对象分类体系树接口。`name` 为输入的子分类名称，`spaceId` 为当前空间 id，`parentId` 为被点击父节点的 `categoryId`。
 
 ## 修改范围
 

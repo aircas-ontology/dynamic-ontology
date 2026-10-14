@@ -4,7 +4,7 @@ export interface GetOntologyFunctionListParams {
   pageNum?: number;
   /** 每页条数，默认 10。 */
   pageSize?: number;
-  /** 本体空间 id（必填）。 */
+  /** 对象空间 id（必填）。 */
   ontologySpaceId: number;
   /** 函数名称（模糊搜索）。 */
   displayName?: string;

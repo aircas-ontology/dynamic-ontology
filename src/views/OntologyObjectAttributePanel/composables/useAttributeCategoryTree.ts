@@ -39,11 +39,11 @@ export function useAttributeCategoryTree(options: { selectedCategoryId: Ref<stri
   const categoryParentName = ref("无");
   const selectedCategoryName = computed(() => findCategory(categories.value, selectedCategoryId.value)?.label ?? "全部属性");
 
-  /** @description 查询当前本体对象的属性分类树并更新左侧分类状态。 */
+  /** @description 查询当前对象的属性分类树并更新左侧分类状态。 */
   async function loadAttributeCategoryTree() {
     const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
     if (!ontologyUniqueIdentifier) {
-      categoryTreeError.value = "缺少本体对象标识，无法加载属性分类。";
+      categoryTreeError.value = "缺少对象标识，无法加载属性分类。";
       return;
     }
     categoryTreeLoading.value = true;
@@ -151,7 +151,7 @@ export function useAttributeCategoryTree(options: { selectedCategoryId: Ref<stri
     }
     const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
     if (!ontologyUniqueIdentifier) {
-      categoryError.value = "缺少本体对象标识，无法创建分类。";
+      categoryError.value = "缺少对象标识，无法创建分类。";
       return;
     }
     categorySubmitting.value = true;

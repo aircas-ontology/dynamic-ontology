@@ -1,6 +1,6 @@
 <template>
-  <section class="space-collection" aria-label="本体空间列表">
-    <el-empty v-if="!spaces.length" description="暂无本体空间，请创建空间或调整搜索条件" />
+  <section class="space-collection" aria-label="对象空间列表">
+    <el-empty v-if="!spaces.length" description="暂无对象空间，请创建空间或调整搜索条件" />
     <SpaceTableView v-else-if="viewMode === 'table'" :spaces="spaces" @action="forward" />
     <SpaceCardGrid v-else :spaces="spaces" @action="forward" />
     <footer v-if="total" class="space-collection__pagination">

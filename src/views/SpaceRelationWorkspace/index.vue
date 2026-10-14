@@ -136,6 +136,7 @@
       :relation="activeRelation"
       @submit="handleRelationSubmit"
     />
+    <RelationDetailDialog v-model="relationDetailVisible" :relation="activeRelation" />
     <RelationDeleteDialog
       v-model="relationDeleteVisible"
       :display-name="activeRelation?.displayName || ''"
@@ -168,6 +169,7 @@ import RelationCategoryFormDialog from "./components/RelationCategoryFormDialog.
 import RelationCategoryDeleteDialog from "./components/RelationCategoryDeleteDialog.vue";
 import RelationDeleteDialog from "./components/RelationDeleteDialog.vue";
 import SpaceRelationFormDialog from "./components/SpaceRelationFormDialog.vue";
+import RelationDetailDialog from "./components/RelationDetailDialog.vue";
 
 const {
   status,
@@ -204,6 +206,7 @@ const categoryActionName = ref("");
 const relationFormVisible = ref(false);
 const relationFormMode = ref<"create" | "edit">("create");
 const relationDeleteVisible = ref(false);
+const relationDetailVisible = ref(false);
 const activeRelation = ref<OntologyRelationClass | null>(null);
 const actionLoading = ref(false);
 const draftSeedName = ref("");
@@ -379,13 +382,14 @@ function openRelationEdit(item: OntologyRelationClass) {
 }
 
 /**
- * @description 将分类树关系叶子转为列表项并打开与表格编辑按钮相同的关系编辑弹窗。
+ * @description 将分类树关系叶子转为列表项并打开只读关系详情弹窗；编辑入口仅保留表格"编辑"按钮。
  * @param relationId 关系 id。
  */
 function openRelationFromTree(relationId: string) {
   const item = relations.value.find((relation) => relation.id === relationId);
   if (!item) return;
-  openRelationEdit(item);
+  activeRelation.value = item;
+  relationDetailVisible.value = true;
 }
 
 function openRelationDelete(item: OntologyRelationClass) {
@@ -419,7 +423,7 @@ function resolveUpdateLinkCategoryId(categoryId: string | undefined): number | u
 
 /**
  * @description 提交关系表单：创建走 POST `/ontology/link`；编辑走 PUT `/ontology/link`；成功后刷新关系树。
- * @param payload 关系写载荷；create 时 sourceName/targetName 为本体 uniqueIdentifier。
+ * @param payload 关系写载荷；create 时 sourceName/targetName 为对象 uniqueIdentifier。
  */
 async function handleRelationSubmit(payload: RelationClassWritePayload) {
   if (relationFormMode.value === "edit") {

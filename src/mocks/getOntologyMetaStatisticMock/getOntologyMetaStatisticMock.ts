@@ -1,6 +1,6 @@
 import type { ApiResponse, GetOntologyMetaStatisticData } from "@/types";
 
-/** 本体对象资源统计成功响应样例。 */
+/** 对象资源统计成功响应样例。 */
 export const getOntologyMetaStatisticMock: ApiResponse<GetOntologyMetaStatisticData> = {
   code: 200,
   message: "SUCCESS",

@@ -32,7 +32,7 @@
    - 现有 `loginMock` 成功响应体不变。
 
 4. `src/apis/loginApi.ts`
-   - 增加 `const LOGIN_REQUEST_TIMEOUT = 10000;` 并在请求配置加 `timeout`，避免半开连接等待全局 10 分钟超时才回退（与本体空间列表接口处理一致）。
+   - 增加 `const LOGIN_REQUEST_TIMEOUT = 10000;` 并在请求配置加 `timeout`，避免半开连接等待全局 10 分钟超时才回退（与对象空间列表接口处理一致）。
    - 补 JSDoc 说明；`postLoginInterface` 其余逻辑（requestFull + persistLoginToken）不变，apis 层不吞异常。
 
 5. `src/views/LoginPage/index.vue`
@@ -59,4 +59,4 @@
 2. `npm test`（3 个既有失败不变）、`npm run test:coverage`（≥80%）。
 3. `npm run check:project-conventions`、`npm run check:types-conventions`、`npm run type-check`、`npm run build:verify`。
 4. 任务文件 format:check / format、`git diff --check`。
-5. 浏览器实测：登录页输入任意账密 -> 真实请求失败后自动 mock 登录 -> sessionStorage 存在令牌 -> 进入本体空间管理页。
+5. 浏览器实测：登录页输入任意账密 -> 真实请求失败后自动 mock 登录 -> sessionStorage 存在令牌 -> 进入对象空间管理页。

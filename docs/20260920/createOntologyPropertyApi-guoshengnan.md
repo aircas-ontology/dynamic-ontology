@@ -1,10 +1,10 @@
 # 接口名称
 
-- 本体对象属性新增
+- 对象属性新增
 
 ## 接口描述
 
-- 创建本体对象属性。
+- 创建对象属性。
 
 ## 接口 domain
 
@@ -24,7 +24,7 @@
 
 | 字段                 | 类型            | 必填 | 说明                                                      |
 | -------------------- | --------------- | ---- | --------------------------------------------------------- |
-| ontologyIdentifier   | string          | 是   | 本体 id                                                   |
+| ontologyIdentifier   | string          | 是   | 对象 id                                                   |
 | datasource           | object          | 否   | 数据源属性请求，结构见 `PropertyDatasourceParam`          |
 | schemaName           | string          | 是   | schema 名称                                               |
 | datasourceId         | string          | 是   | 数据源表名                                                |
@@ -115,11 +115,11 @@ import type { ApiResponse, CreateOntologyPropertyData, CreateOntologyPropertyPar
 import { request } from "@/utils/request";
 
 /**
- * 创建本体对象属性。
+ * 创建对象属性。
  *
  * 请求方式：POST `/ontology/property`
  *
- * @param params 创建本体对象属性参数。
+ * @param params 创建对象属性参数。
  * @returns 标准 API 响应。
  */
 export function createOntologyPropertyInterface(params: CreateOntologyPropertyParams): Promise<ApiResponse<CreateOntologyPropertyData>> {

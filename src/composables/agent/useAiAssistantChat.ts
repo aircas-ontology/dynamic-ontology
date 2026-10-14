@@ -1,7 +1,7 @@
 import { onScopeDispose, readonly, ref } from "vue";
 import { useRoute } from "vue-router";
 
-import { postAgentChatStreamInterface } from "@/apis";
+import { abortAgentChatInterface, postAgentChatStreamInterface } from "@/apis";
 import type { AiAssistantCommandStatus, AiAssistantMessage } from "@/types";
 import { applyAssistantChatEventToMessages, hasAssistantChatOutput, stampAssistantChatError } from "@/utils/applyAssistantChatEvent";
 import { buildStreamAgentChatParams } from "@/utils/buildStreamAgentChatParams";
@@ -51,6 +51,18 @@ export function useAiAssistantChat() {
   function abortAssistantChatStream(): void {
     abortController?.abort();
     abortController = null;
+  }
+  /** @description 中断服务端当前会话并停止本地流式输出。 */
+  async function stopAssistantChat(): Promise<void> {
+    if (status.value !== "submitting") return;
+    requestSerial += 1;
+    abortAssistantChatStream();
+    status.value = "success";
+    try {
+      await abortAgentChatInterface(sessionId.value);
+    } catch (cause) {
+      errorMessage.value = cause instanceof Error ? cause.message : "停止对话失败。";
+    }
   }
 
   /**
@@ -172,5 +184,6 @@ export function useAiAssistantChat() {
     sendAssistantMessage,
     startNewAssistantConversation,
     selectAssistantOption,
+    stopAssistantChat,
   };
 }

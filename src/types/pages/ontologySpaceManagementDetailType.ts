@@ -52,7 +52,7 @@ export interface OntologyObjectSection {
   items: OntologyObjectItem[];
 }
 
-/** 概念层级树中本体对象的引用信息。 */
+/** 概念层级树中对象的引用信息。 */
 export interface OntologyConceptObjectRef {
   /** 对象唯一标识，用于跳转对象详情。 */
   uniqueIdentifier: string;

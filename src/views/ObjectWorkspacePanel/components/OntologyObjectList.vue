@@ -1,7 +1,7 @@
 <template>
-  <section class="ontology-object-list" aria-label="本体对象列表">
+  <section class="ontology-object-list" aria-label="对象列表">
     <header class="ontology-object-list__toolbar">
-      <h1>本体空间总览</h1>
+      <h1>对象空间总览</h1>
       <div class="ontology-object-list__toolbar-actions">
         <el-radio-group :model-value="viewMode" class="ontology-object-list__view-switch" ariaLabel="展示方式" @update:model-value="setObjectListViewMode">
           <el-radio-button value="card">
@@ -22,7 +22,7 @@
           </el-radio-button>
         </el-radio-group>
         <el-button type="primary" @click="emit('action', 'create')"
-          ><el-icon><Plus /></el-icon>新建本体</el-button
+          ><el-icon><Plus /></el-icon>新建对象</el-button
         >
       </div>
     </header>
@@ -38,7 +38,7 @@
         <header class="ontology-object-section__header">
           <i aria-hidden="true"></i>
           <h2>{{ section.name }}</h2>
-          <span>{{ section.items.length }} 个本体</span>
+          <span>{{ section.items.length }} 个对象</span>
         </header>
 
         <div v-if="viewMode === 'card'" class="ontology-object-section__cards">
@@ -58,7 +58,7 @@
                 type="button"
                 @click="emit('locateParent', item)"
               >
-                父本体：{{ item.parentDisplayName }}
+                父对象：{{ item.parentDisplayName }}
               </button>
               <p>创建时间 {{ item.createdAt }}</p>
               <dl>
@@ -121,13 +121,13 @@
 
         <div v-else class="ontology-object-section__table">
           <el-table class="aircas-table--accent-header" :data="section.items" row-key="id" height="100%" stripe>
-            <el-table-column label="本体名称" min-width="220">
+            <el-table-column label="对象名称" min-width="220">
               <template #default="{ row }"
                 ><strong>{{ objectRow(row).displayName }}</strong
                 ><small class="ontology-object-table__api">{{ objectRow(row).apiName }}</small></template
               >
             </el-table-column>
-            <el-table-column prop="parentDisplayName" label="父本体" min-width="120" />
+            <el-table-column prop="parentDisplayName" label="父对象" min-width="120" />
             <el-table-column prop="createdAt" label="创建时间" width="170" />
             <el-table-column label="属性" width="80"
               ><template #default="{ row }">{{ objectRow(row).metrics.attribute }}</template></el-table-column
@@ -193,7 +193,7 @@ function objectRow(row: unknown): OntologyObjectItem {
       if (item) return item;
     }
   }
-  throw new Error("无效的本体对象数据行。");
+  throw new Error("无效的对象数据行。");
 }
 
 function categoryAnchorId(categoryId: string) {

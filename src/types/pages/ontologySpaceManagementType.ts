@@ -1,4 +1,4 @@
-/** 本体空间列表及内存演示使用的业务契约。 */
+/** 对象空间列表及内存演示使用的业务契约。 */
 export interface OntologySpaceDraft {
   apiName: string;
   displayName: string;
@@ -6,7 +6,7 @@ export interface OntologySpaceDraft {
   iconUrl: string;
 }
 
-/** 本体空间指标统计。 */
+/** 对象空间指标统计。 */
 export interface OntologySpaceMetrics {
   ontology: number;
   behavior: number;

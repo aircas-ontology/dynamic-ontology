@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import type { OntologyObjectDetailTab } from "@/types";
 import ObjectDetailTabs from "./components/ObjectDetailTabs.vue";
 import { useObjectDetailWorkspace } from "./composables/useObjectDetailWorkspace";
@@ -27,6 +27,7 @@ import { useObjectResourceStatistic } from "./composables/useObjectResourceStati
 import { routeNameForObjectDetailTab } from "./utils/objectDetailTabs";
 
 const router = useRouter();
+const route = useRoute();
 const { activeTab, availableTabs, objectName, objectId, spaceId, spaceName } = useObjectDetailWorkspace();
 const { counts: objectCounts, loading: statisticLoading, error: statisticError, loadObjectResourceStatistic } = useObjectResourceStatistic(objectId);
 
@@ -55,6 +56,7 @@ function openTab(tab: OntologyObjectDetailTab) {
   const query: Record<string, string> = {};
   if (spaceId.value) query.spaceId = spaceId.value;
   if (spaceName.value) query.spaceName = spaceName.value;
+  if (route.query.from === "theme-space-management") query.from = "theme-space-management";
   if (objectName.value && !objectName.value.startsWith("对象 ")) query.objectName = objectName.value;
   void router.push({
     name: routeNameForObjectDetailTab(tab),

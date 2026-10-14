@@ -50,7 +50,52 @@ test("workspace child route resolves to the space management page under the layo
     route.matched.map((record) => record.name),
     ["Workspace", "OntologySpaceManagement"],
   );
-  assert.equal(route.meta.title, "本体空间管理");
+  assert.equal(route.meta.title, "对象空间管理");
+});
+
+test("theme space management route and navigation item are registered below object spaces", () => {
+  const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
+  const route = router.resolve({ name: "ThemeSpaceManagement" });
+  assert.equal(route.path, "/workspace/theme-space-management");
+  assert.equal(route.meta.title, "主题空间管理");
+  const navigationSource = readFileSync(new URL("../src/layout/components/NavigationMenu.vue", import.meta.url), "utf8");
+  assert.match(navigationSource, /对象空间管理[\s\S]*主题空间管理/);
+  assert.match(navigationSource, /name: 'ThemeSpaceManagement'/);
+});
+
+test("theme space create dialog confirms into the subspace create flow with route context", () => {
+  const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
+  const route = router.resolve({ name: "OntologySubspaceCreate", params: { spaceId: "object-default" } });
+  assert.equal(route.path, "/workspace/ontology-space-management/object-default/subspace-create");
+  assert.equal(route.meta.title, "创建主题空间");
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /useRouter/);
+  assert.match(source, /请选择对象空间/);
+  assert.match(source, /name: "OntologySubspaceCreate"/);
+  assert.match(source, /params:\s*\{\s*spaceId:\s*selectedSpace\.id\s*\}/);
+  assert.match(source, /spaceName: selectedSpace\.displayName/);
+  assert.match(source, /from: "theme-space-management"/);
+  assert.match(source, /getOntologySpaceListInterface\(\{ type: 1 \}\)/);
+  assert.match(source, /loadThemeSpaces/);
+  assert.doesNotMatch(source, /theme_finance/);
+  assert.doesNotMatch(source, /新建主题空间功能暂未接入/);
+});
+
+test("theme space cards and table rows enter the space management detail with route context", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /function enterThemeSpace/);
+  assert.match(source, /name: "OntologySpaceManagementDetailOverview"/);
+  assert.match(source, /from: "theme-space-management"/);
+  assert.doesNotMatch(source, /notifyUnavailable\('进入主题空间'\)/);
+  assert.doesNotMatch(source, /进入主题空间功能暂未接入/);
+});
+
+test("theme space cards keep a single-line description and equal row height", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /\.theme-space-management__grid\s*\{[\s\S]*align-items:\s*stretch/);
+  assert.match(source, /\.theme-space-management__grid\s*\{[\s\S]*align-content:\s*start/);
+  assert.doesNotMatch(source, /\.theme-space-card\s*\{[\s\S]*height:\s*100%/);
+  assert.match(source, /\.theme-space-card p\s*\{[\s\S]*text-overflow:\s*ellipsis[\s\S]*white-space:\s*nowrap/);
 });
 
 test("space actions expose conceptual model build with current space context", () => {
@@ -74,4 +119,14 @@ test("conceptual model canvas displays route space context as readonly fields", 
   assert.match(source, /route\.query\.spaceApiName/);
   assert.match(source, /:readonly="hasRouteSpaceContext"/);
   assert.match(source, /hasRouteSpaceContext = computed/);
+});
+
+test("embedded object space management hides the create space button", () => {
+  const pageSource = readFileSync(new URL("../src/views/OntologySpaceManagement/index.vue", import.meta.url), "utf8");
+  const welcomeSource = readFileSync(new URL("../src/views/OntologySpaceManagement/components/WelcomePanel.vue", import.meta.url), "utf8");
+  assert.match(pageSource, /useRoute/);
+  assert.match(pageSource, /route\.query\.userName/);
+  assert.match(pageSource, /:show-create="!isEmbedded"/);
+  assert.match(welcomeSource, /v-if="showCreate"/);
+  assert.match(welcomeSource, /withDefaults\(defineProps/);
 });

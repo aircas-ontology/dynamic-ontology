@@ -3,6 +3,12 @@ import { EventStreamContentType, fetchEventSource } from "@microsoft/fetch-event
 import type { StreamAgentChatEvent, StreamAgentChatParams, StreamAgentChatSelectionOption } from "@/types";
 import { getAccessTokenHeader } from "@/utils/authToken";
 import { isAgentChatStreamClosedError } from "@/utils/resolveAgentChatStreamFailure";
+import { request } from "@/utils/request";
+
+/** @description 请求 Agent 服务中断指定会话。 @param sessionId 当前会话 id。 */
+export function abortAgentChatInterface(sessionId: string): Promise<{ code: number; message?: string; data?: boolean }> {
+  return request({ url: `${DOMAIN_CONFIG.AGENT_URL.replace(/\/$/, "")}/chat/abort`, method: "post", params: { sessionId } });
+}
 
 /** 流式对话事件回调。 */
 export interface PostAgentChatStreamOptions {

@@ -57,6 +57,7 @@ test("global search mock mirrors the documented success sample", () => {
       (item) => item.type === "属性" && item.spaceId === 46 && item.spaceName && item.ontologyName && item.ontologyUniqueIdentifier,
     ),
   );
+  assert.ok(ontologyGlobalSearchMock.data.some((item) => item.type === "实例" && item.spaceName && item.ontologyName));
   assert.ok(ontologyGlobalSearchMock.data.some((item) => item.type === "关系分组" && item.spaceId === 11 && item.spaceName));
 });
 
@@ -76,7 +77,7 @@ test("resolveOntologyGlobalSearchRoute maps space and relation-group types", () 
 test("resolveOntologyGlobalSearchObjectRoute uses item uniqueIdentifier spaceName and name", () => {
   assert.deepEqual(
     resolveOntologyGlobalSearchObjectRoute({
-      name: "测试本体对象-修改",
+      name: "测试对象-修改",
       type: "对象",
       spaceId: 11,
       spaceName: "测试空间",
@@ -85,7 +86,7 @@ test("resolveOntologyGlobalSearchObjectRoute uses item uniqueIdentifier spaceNam
     {
       name: "OntologyObjectDetailObject",
       params: { objectId: "ae6cca59ced9432189da4af315554957" },
-      query: { spaceId: "11", spaceName: "测试空间", objectName: "测试本体对象-修改" },
+      query: { spaceId: "11", spaceName: "测试空间", objectName: "测试对象-修改" },
     },
   );
   assert.equal(resolveOntologyGlobalSearchObjectRoute({ name: "缺字段", type: "对象", spaceId: 11 }), null);
@@ -137,5 +138,6 @@ test("full text search page and header wire OntologyGlobalSearchField", () => {
   assert.match(resultList, /<el-tag\b/);
   assert.match(resultList, /item\.spaceName/);
   assert.match(resultList, /item\.ontologyName/);
+  assert.match(resultList, /item\.type === '实例'/);
   assert.match(resultList, /关系分组/);
 });
