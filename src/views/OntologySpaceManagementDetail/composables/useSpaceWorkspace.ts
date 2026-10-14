@@ -8,7 +8,7 @@ import { findSpaceById } from "../utils/spaceLookup";
 import { AVAILABLE_WORKSPACE_TABS, tabFromRouteName } from "../utils/workspaceTabs";
 
 /**
- * @description 按路由 spaceId 从本体空间列表接口解析当前空间，驱动详情页状态与面包屑名称。
+ * @description 按路由 spaceId 从对象空间列表接口解析当前空间，驱动详情页状态与面包屑名称。
  * @returns 详情加载状态、当前空间、Tab 与重新加载方法。
  */
 export function useSpaceWorkspace() {
@@ -42,7 +42,8 @@ export function useSpaceWorkspace() {
     }
 
     try {
-      const response = await getOntologySpaceListInterface();
+      const isThemeSpaceDetail = route.query.from === "theme-space-management" && route.name !== "OntologySubspaceCreate";
+      const response = await getOntologySpaceListInterface({ type: isThemeSpaceDetail ? 1 : 0 });
       if (disposed || request !== generation) return;
       if (response.code === 200) {
         const next = findSpaceById(mapOntologySpaceList(response.data), id);
@@ -56,7 +57,7 @@ export function useSpaceWorkspace() {
         status.value = "ready";
         return;
       }
-      throw new Error(response.message || "本体空间列表查询失败");
+      throw new Error(response.message || "对象空间列表查询失败");
     } catch (cause) {
       if (disposed || request !== generation) return;
       space.value = null;
@@ -66,9 +67,13 @@ export function useSpaceWorkspace() {
     }
   }
 
-  watch(spaceId, () => {
-    void load();
-  }, { immediate: true });
+  watch(
+    spaceId,
+    () => {
+      void load();
+    },
+    { immediate: true },
+  );
 
   onUnmounted(() => {
     disposed = true;
