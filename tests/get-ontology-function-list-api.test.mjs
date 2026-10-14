@@ -166,8 +166,8 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
 
 test("function operator panel displays createdAt and updatedAt from list mapping", () => {
   const panel = readSource("../src/views/FunctionOperatorPanel/index.vue");
-  assert.match(panel, /创建 \{\{\s*operator\.createdAt/);
-  assert.match(panel, /更新 \{\{\s*operator\.updatedAt/);
+  assert.match(panel, /创建时间<br\s*\/?>\s*\{\{\s*operator\.createdAt/);
+  assert.match(panel, /更新时间<br\s*\/?>\s*\{\{\s*operator\.updatedAt/);
   assert.match(panel, /prop="createdAt"/);
   assert.match(panel, /prop="updatedAt"/);
   assert.match(panel, /label="创建时间"/);

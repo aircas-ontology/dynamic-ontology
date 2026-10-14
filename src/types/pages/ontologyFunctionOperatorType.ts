@@ -54,12 +54,21 @@ export interface FunctionOperatorBasicDefinition {
   objectName?: string;
 }
 
-/** 非基础函数占位定义（本阶段不实现配置 UI）。 */
-export interface FunctionOperatorPlaceholderDefinition {
-  kind: Exclude<FunctionOperatorType, "basic">;
+/** 脚本函数定义（编辑 / 基于已有创建回显与 IDE 草稿）。 */
+export interface FunctionOperatorCodeDefinition {
+  kind: "code";
+  /** 脚本语言。 */
+  language: FunctionOperatorScriptLanguage;
+  /** 脚本源码，对应详情 data.code。 */
+  code: string;
 }
 
-export type FunctionOperatorDefinition = FunctionOperatorBasicDefinition | FunctionOperatorPlaceholderDefinition;
+/** 非基础、非脚本函数占位定义（本阶段不实现配置 UI）。 */
+export interface FunctionOperatorPlaceholderDefinition {
+  kind: Exclude<FunctionOperatorType, "basic" | "code">;
+}
+
+export type FunctionOperatorDefinition = FunctionOperatorBasicDefinition | FunctionOperatorCodeDefinition | FunctionOperatorPlaceholderDefinition;
 
 export interface FunctionOperator {
   id: string;

@@ -138,7 +138,7 @@ export type {
   StreamAgentChatSelectionOption,
   StreamAgentChatSelectionScenario,
 } from "./apis/streamAgentChatType";
-export type { TestOntologyFunctionData, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
+export type { TestOntologyFunctionData, TestOntologyFunctionParameterItem, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
 export type { UpdateOntologyFunctionData, UpdateOntologyFunctionParams } from "./apis/updateOntologyFunctionType";
 export type { UpdateOntologyLinkParams } from "./apis/updateOntologyLinkType";
 export type { UpdateOntologyObjectArrTypeTreeParams } from "./apis/updateOntologyObjectArrTypeTreeType";
@@ -193,6 +193,7 @@ export type {
   FunctionOperatorAggFunc,
   FunctionOperatorBasicAction,
   FunctionOperatorBasicDefinition,
+  FunctionOperatorCodeDefinition,
   FunctionOperatorDefinition,
   FunctionOperatorDraft,
   FunctionOperatorPage,

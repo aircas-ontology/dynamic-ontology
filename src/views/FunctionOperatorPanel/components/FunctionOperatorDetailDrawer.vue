@@ -7,53 +7,77 @@
     destroy-on-close
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <div v-if="loading" class="function-operator-detail__state" role="status"><AircasLoading>正在加载函数详情...</AircasLoading></div>
-    <template v-else-if="operator">
+    <template v-if="operator">
       <div class="function-operator-detail__header">
         <div class="function-operator-detail__tags">
-          <el-tag v-if="operator.status" :type="statusTagType(operator.status)" effect="dark">{{ statusLabel(operator.status) }}</el-tag>
           <el-tag v-if="typeLabel(operator)" effect="plain">{{ typeLabel(operator) }}</el-tag>
+          <el-tag v-if="operator.status" :type="statusTagType(operator.status)" effect="dark">{{ statusLabel(operator.status) }}</el-tag>
         </div>
-        <span v-if="operator.version" class="function-operator-detail__version">{{ operator.version }}</span>
-      </div>
-      <p v-if="operator.description" class="function-operator-detail__description">{{ operator.description }}</p>
-
-      <el-descriptions v-if="hasMetaItems" class="function-operator-detail__meta" :column="2" border size="small">
-        <el-descriptions-item v-if="operator.protocol" label="协议">{{ operator.protocol }}</el-descriptions-item>
-        <el-descriptions-item v-if="operator.createdBy" label="创建人">{{ operator.createdBy }}</el-descriptions-item>
-        <el-descriptions-item v-if="operator.updatedAt" label="更新时间">{{ operator.updatedAt }}</el-descriptions-item>
-        <el-descriptions-item v-if="operator.timeout > 0" label="超时">{{ operator.timeout }} ms</el-descriptions-item>
-        <el-descriptions-item v-if="operator.testStatus && operator.testStatus !== 'untested'" label="测试状态">
-          <el-tag size="small" :type="operator.testStatus === 'passed' ? 'success' : 'danger'">
-            {{ operator.testStatus === "passed" ? "已通过" : "未通过" }}
-          </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item v-if="operator.testedAt" label="最近测试">{{ operator.testedAt }}</el-descriptions-item>
-        <el-descriptions-item v-if="operator.functionApi" label="函数 API">{{ operator.functionApi }}</el-descriptions-item>
-      </el-descriptions>
-
-      <div class="function-operator-detail__section">
-        <h4>输入参数</h4>
-        <el-table :data="operator.inputParameters" class="aircas-table--accent-header" size="small">
-          <el-table-column prop="name" label="名称" min-width="100" />
-          <el-table-column prop="type" label="类型" width="90" />
-          <el-table-column prop="description" label="说明" min-width="120" show-overflow-tooltip />
-        </el-table>
-      </div>
-      <div v-if="showOutputParameters" class="function-operator-detail__section">
-        <h4>输出参数</h4>
-        <el-table :data="operator.outputParameters" class="aircas-table--accent-header" size="small">
-          <el-table-column prop="name" label="名称" min-width="100" />
-          <el-table-column prop="type" label="类型" width="90" />
-          <el-table-column prop="description" label="说明" min-width="120" show-overflow-tooltip />
-        </el-table>
+        <el-select
+          class="function-operator-detail__version"
+          :model-value="detailVersion"
+          placeholder="选择版本"
+          :loading="versionsLoading"
+          :disabled="loading && !versions.length"
+          @update:model-value="onDetailVersionChange"
+        >
+          <el-option v-for="item in versions" :key="item" :label="item" :value="item" />
+        </el-select>
       </div>
 
-      <div v-if="operator.definition.kind === 'basic' && operator.definition.parameterConfig.trim()" class="function-operator-detail__section">
-        <h4>参数配置</h4>
-        <pre class="function-operator-detail__config">{{ operator.definition.parameterConfig }}</pre>
-      </div>
+      <div v-if="loading" class="function-operator-detail__state" role="status"><AircasLoading>正在加载函数详情...</AircasLoading></div>
+      <template v-else>
+        <p v-if="operator.description" class="function-operator-detail__description">{{ operator.description }}</p>
+
+        <el-descriptions v-if="hasMetaItems" class="function-operator-detail__meta" :column="2" border size="small">
+          <el-descriptions-item v-if="operator.protocol" label="协议">{{ operator.protocol }}</el-descriptions-item>
+          <el-descriptions-item v-if="operator.createdBy" label="创建人">{{ operator.createdBy }}</el-descriptions-item>
+          <el-descriptions-item v-if="operator.updatedAt" label="更新时间">{{ operator.updatedAt }}</el-descriptions-item>
+          <el-descriptions-item v-if="operator.timeout > 0" label="超时">{{ operator.timeout }} ms</el-descriptions-item>
+          <el-descriptions-item v-if="operator.testStatus && operator.testStatus !== 'untested'" label="测试状态">
+            <el-tag size="small" :type="operator.testStatus === 'passed' ? 'success' : 'danger'">
+              {{ operator.testStatus === "passed" ? "已通过" : "未通过" }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item v-if="operator.testedAt" label="最近测试">{{ operator.testedAt }}</el-descriptions-item>
+          <el-descriptions-item v-if="operator.functionApi" label="函数 API">{{ operator.functionApi }}</el-descriptions-item>
+        </el-descriptions>
+
+        <div class="function-operator-detail__section">
+          <h4>输入参数</h4>
+          <el-table :data="operator.inputParameters" class="aircas-table--accent-header" size="small">
+            <el-table-column prop="name" label="名称" min-width="100" />
+            <el-table-column prop="type" label="类型" width="90" />
+            <el-table-column prop="description" label="说明" min-width="120" show-overflow-tooltip />
+          </el-table>
+        </div>
+        <div class="function-operator-detail__section">
+          <h4>输出参数</h4>
+          <el-table :data="operator.outputParameters" class="aircas-table--accent-header" size="small">
+            <el-table-column prop="name" label="名称" min-width="100" />
+            <el-table-column prop="type" label="类型" width="90" />
+            <el-table-column prop="description" label="说明" min-width="120" show-overflow-tooltip />
+          </el-table>
+        </div>
+
+        <div class="function-operator-detail__actions">
+          <el-button v-if="operator.status !== 'published'" type="primary" @click="emitEdit">编辑</el-button>
+          <el-button type="warning" @click="emitTogglePublish">{{ operator.status === "published" ? "下线" : "发布" }}</el-button>
+          <el-button type="danger" @click="emitDelete">删除</el-button>
+          <el-button type="primary" plain @click="emitTest">测试</el-button>
+        </div>
+
+        <div v-if="operator.definition.kind === 'basic' && operator.definition.parameterConfig.trim()" class="function-operator-detail__section">
+          <h4>参数配置</h4>
+          <pre class="function-operator-detail__config">{{ operator.definition.parameterConfig }}</pre>
+        </div>
+        <div v-else-if="operator.definition.kind === 'code'" class="function-operator-detail__section">
+          <h4>{{ scriptCodeSectionTitle(operator) }}</h4>
+          <pre class="function-operator-detail__config">{{ scriptCodeText(operator) }}</pre>
+        </div>
+      </template>
     </template>
+    <div v-else-if="loading" class="function-operator-detail__state" role="status"><AircasLoading>正在加载函数详情...</AircasLoading></div>
   </el-drawer>
 </template>
 
@@ -69,25 +93,22 @@ const props = defineProps<{
   modelValue: boolean;
   operator: FunctionOperator | null;
   loading?: boolean;
+  /** 详情可选版本列表。 */
+  versions: string[];
+  /** 当前选中版本。 */
+  detailVersion: string;
+  /** 版本列表加载中。 */
+  versionsLoading?: boolean;
 }>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
+  "change-version": [version: string];
+  edit: [];
+  "toggle-publish": [];
+  delete: [];
+  test: [];
 }>();
-
-/**
- * @description 基础函数不展示输出参数区块。
- */
-const showOutputParameters = computed(() => {
-  const operator = props.operator;
-  if (!operator) {
-    return false;
-  }
-  if (operator.type === "basic" || operator.apiModelType === "BASIC_QUERY" || operator.apiModelType === "BASIC") {
-    return false;
-  }
-  return operator.outputParameters.length > 0;
-});
 
 /**
  * @description 是否存在可展示的元信息字段。
@@ -140,6 +161,71 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   if (status === "disabled") return "info";
   return undefined;
 }
+
+/**
+ * @description 通知父级切换详情版本。
+ * @param value 选中版本。
+ */
+function onDetailVersionChange(value: string | number | boolean | undefined): void {
+  if (typeof value !== "string" || !value.trim()) {
+    return;
+  }
+  emit("change-version", value.trim());
+}
+
+/**
+ * @description 通知父级编辑当前详情版本。
+ */
+function emitEdit(): void {
+  emit("edit");
+}
+
+/**
+ * @description 通知父级发布或下线当前详情版本。
+ */
+function emitTogglePublish(): void {
+  emit("toggle-publish");
+}
+
+/**
+ * @description 通知父级删除当前函数（按 functionApi）。
+ */
+function emitDelete(): void {
+  emit("delete");
+}
+
+/**
+ * @description 通知父级测试当前详情选中版本。
+ */
+function emitTest(): void {
+  emit("test");
+}
+
+/**
+ * @description 脚本代码区块标题；有语言时附带展示。
+ * @param operator 当前算子。
+ * @returns 区块标题。
+ */
+function scriptCodeSectionTitle(operator: FunctionOperator): string {
+  if (operator.definition.kind !== "code") {
+    return "脚本代码";
+  }
+  const language = typeof operator.definition.language === "string" ? operator.definition.language.trim() : "";
+  return language ? `脚本代码（${language}）` : "脚本代码";
+}
+
+/**
+ * @description 脚本源码展示文本；空则提示暂无代码。
+ * @param operator 当前算子。
+ * @returns 源码或占位文案。
+ */
+function scriptCodeText(operator: FunctionOperator): string {
+  if (operator.definition.kind !== "code") {
+    return "暂无代码";
+  }
+  const code = typeof operator.definition.code === "string" ? operator.definition.code : "";
+  return code.trim() ? code : "暂无代码";
+}
 </script>
 
 <style scoped lang="scss">
@@ -162,12 +248,13 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
 
 .function-operator-detail__tags {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .function-operator-detail__version {
-  color: var(--aircas-color-text-secondary);
-  font-size: 13px;
+  flex: 0 0 120px;
+  width: 120px;
 }
 
 .function-operator-detail__description {
@@ -177,6 +264,13 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
 }
 
 .function-operator-detail__section {
+  margin-top: 16px;
+}
+
+.function-operator-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 16px;
 }
 

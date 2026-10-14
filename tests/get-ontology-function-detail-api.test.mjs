@@ -29,10 +29,14 @@ test("get ontology function detail types expose documented fields", () => {
   assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /params: GetOntologyFunctionDetailParamItem\[\]/);
   assert.match(source, /code: string/);
+  assert.match(source, /language\?: string/);
+  assert.match(source, /publishStatus\?: number/);
+  assert.match(source, /description\?: string/);
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
   const barrel = readSource("../src/types/index.ts");
   assert.match(barrel, /GetOntologyFunctionDetailData/);
   assert.match(barrel, /getOntologyFunctionDetailType/);
+  assert.match(barrel, /FunctionOperatorCodeDefinition/);
 });
 
 test("get ontology function detail api gets detail by functionApi query", () => {
@@ -54,6 +58,10 @@ test("get ontology function detail mock mirrors SUCCESS sample", () => {
   assert.match(source, /success: true/);
   assert.match(source, /functionApi: "ss"/);
   assert.match(source, /type: "BASIC_QUERY"/);
+  assert.match(source, /export const getOntologyScriptFunctionDetailMock/);
+  assert.match(source, /type: "CUSTOMIZE"/);
+  assert.match(source, /language: "TYPESCRIPT"/);
+  assert.match(source, /export function handle/);
 });
 
 test("mapOntologyFunctionQueryConfigToBasicFilter maps dataType to valueType", () => {
@@ -133,6 +141,41 @@ test("mapOntologyFunctionDetailToDraft falls back to list version when detail om
     "2.0.0",
   );
   assert.equal(draft.version, "2.0.0");
+});
+
+test("mapOntologyFunctionDetailToDraft fills script code and language from CUSTOMIZE detail", () => {
+  const scriptCode =
+    "interface User {\n  id: number;\n  name: string;\n}\n\nexport function handle(input: User): Output {\n    return {\n        id:input.id+1,\n        name1:input.name+'a',\n    }\n}\n";
+  const draft = mapOntologyFunctionDetailToDraft(
+    {
+      functionApi: "jbtest",
+      version: "1.0.1",
+      publishStatus: 0,
+      displayName: "脚本函数cesi",
+      description: "jbtest 1.0.1",
+      model: "OTHER",
+      type: "CUSTOMIZE",
+      language: "TYPESCRIPT",
+      ontologySpaceId: 1,
+      params: [
+        { paramId: 1122, paramName: "id", paramType: "DOUBLE", category: "INPUT", paramOrder: 1 },
+        { paramId: 1123, paramName: "name", paramType: "STRING", category: "INPUT", paramOrder: 2 },
+      ],
+      code: scriptCode,
+    },
+    1,
+  );
+  assert.equal(draft.type, "code");
+  assert.equal(draft.name, "脚本函数cesi");
+  assert.equal(draft.functionApi, "jbtest");
+  assert.equal(draft.version, "1.0.1");
+  assert.equal(draft.protocol, "HTTP");
+  assert.equal(draft.definition.kind, "code");
+  if (draft.definition.kind === "code") {
+    assert.equal(draft.definition.language, "typescript");
+    assert.equal(draft.definition.code, scriptCode);
+    assert.match(draft.definition.code, /export function handle/);
+  }
 });
 
 test("function operator openEdit fetches detail before opening form", () => {
@@ -230,6 +273,64 @@ test("mapOntologyFunctionDetailToOperator fills input params from detail", () =>
   }
 });
 
+test("mapOntologyFunctionDetailToOperator maps publishStatus to status", () => {
+  const draftOperator = mapOntologyFunctionDetailToOperator({
+    functionApi: "jbtest",
+    displayName: "脚本函数cesi",
+    description: "jbtest 1.0.1",
+    model: "OTHER",
+    type: "CUSTOMIZE",
+    language: "TYPESCRIPT",
+    ontologySpaceId: 1,
+    version: "1.0.1",
+    publishStatus: 0,
+    params: [],
+    code: "",
+  });
+  assert.equal(draftOperator.status, "draft");
+  const publishedOperator = mapOntologyFunctionDetailToOperator({
+    functionApi: "jbtest",
+    displayName: "脚本函数cesi",
+    description: "jbtest 1.0.1",
+    model: "OTHER",
+    type: "CUSTOMIZE",
+    language: "TYPESCRIPT",
+    ontologySpaceId: 1,
+    version: "1.0.2",
+    publishStatus: 1,
+    params: [],
+    code: "",
+  });
+  assert.equal(publishedOperator.status, "published");
+});
+
+test("mapOntologyFunctionDetailToOperator splits params by INPUT and OUTPUT category", () => {
+  const operator = mapOntologyFunctionDetailToOperator({
+    functionApi: "jbtest",
+    displayName: "脚本函数cesi",
+    description: "jbtest 1.0.1",
+    model: "OTHER",
+    type: "CUSTOMIZE",
+    language: "TYPESCRIPT",
+    ontologySpaceId: 1,
+    version: "1.0.1",
+    params: [
+      { paramId: 1122, paramName: "id", paramType: "DOUBLE", category: "INPUT", paramOrder: 1 },
+      { paramId: 1123, paramName: "name", paramType: "STRING", category: "input", paramOrder: 2 },
+      { paramId: 1124, paramName: "id", paramType: "DOUBLE", category: "OUTPUT", paramOrder: 1 },
+      { paramId: 1125, paramName: "name1", paramType: "STRING", category: "OUTPUT", paramOrder: 2 },
+      { paramId: 9999, paramName: "ignored", paramType: "STRING", category: "OTHER", paramOrder: 1 },
+    ],
+    code: "export function handle() {}",
+  });
+  assert.equal(operator.inputParameters.length, 2);
+  assert.equal(operator.inputParameters[0]?.name, "id");
+  assert.equal(operator.inputParameters[1]?.name, "name");
+  assert.equal(operator.outputParameters.length, 2);
+  assert.equal(operator.outputParameters[0]?.name, "id");
+  assert.equal(operator.outputParameters[1]?.name, "name1");
+});
+
 test("mapOntologyFunctionDetailToOperator falls back to list version when detail omits version", () => {
   const operator = mapOntologyFunctionDetailToOperator(
     {
@@ -274,11 +375,47 @@ test("mapOntologyFunctionDetailToOperator falls back to list version when detail
 test("function operator openDetail fetches detail for drawer", () => {
   const workspace = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
   const drawer = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorDetailDrawer.vue");
+  const panel = readSource("../src/views/FunctionOperatorPanel/index.vue");
   assert.match(workspace, /async function openDetail/);
   assert.match(workspace, /mapOntologyFunctionDetailToOperator/);
   assert.match(workspace, /detailLoading/);
-  assert.match(drawer, /showOutputParameters/);
-  assert.match(drawer, /type === "basic"/);
+  assert.match(workspace, /getOntologyFunctionVersionsInterface/);
+  assert.match(workspace, /async function changeDetailVersion/);
+  assert.match(workspace, /detailVersions/);
+  assert.match(workspace, /detailVersion/);
+  assert.doesNotMatch(drawer, /showOutputParameters/);
+  assert.match(drawer, /输入参数/);
+  assert.match(drawer, /输出参数/);
+  assert.match(drawer, /operator\.inputParameters/);
+  assert.match(drawer, /operator\.outputParameters/);
+  assert.match(drawer, /el-select/);
+  assert.match(drawer, /change-version/);
+  assert.match(drawer, /typeLabel\(operator\)[\s\S]*operator\.status/);
+  assert.match(drawer, /function-operator-detail__actions/);
+  assert.match(drawer, /emit\(["']edit["']\)/);
+  assert.match(drawer, /emit\(["']toggle-publish["']\)/);
+  assert.match(drawer, /emit\(["']delete["']\)/);
+  assert.match(drawer, /emit\(["']test["']\)/);
+  assert.match(drawer, />编辑</);
+  assert.match(drawer, /下线|发布/);
+  assert.match(drawer, />删除</);
+  assert.match(drawer, />测试</);
+  assert.match(drawer, /definition\.kind === ["']code["']/);
+  assert.match(drawer, /scriptCodeSectionTitle/);
+  assert.match(drawer, /scriptCodeText/);
+  assert.match(drawer, /definition\.code/);
   assert.match(drawer, /loading/);
   assert.doesNotMatch(drawer, /必填/);
+  assert.match(panel, /@change-version=["']changeDetailVersion["']/);
+  assert.match(panel, /:detail-version=["']detailVersion["']/);
+  assert.match(panel, /@edit=["']onDetailEdit["']/);
+  assert.match(panel, /@toggle-publish=["']onDetailTogglePublish["']/);
+  assert.match(panel, /@delete=["']onDetailDelete["']/);
+  assert.match(panel, /@test=["']onDetailTest["']/);
+  assert.match(panel, /function onDetailEdit/);
+  assert.match(panel, /function onDetailTest/);
+  assert.match(panel, /openEdit\(selectedOperator\.value\)/);
+  assert.match(panel, /togglePublish\(selectedOperator\.value\)/);
+  assert.match(panel, /openDeleteOperator\(selectedOperator\.value\)/);
+  assert.match(panel, /openTest\(selectedOperator\.value\)/);
 });

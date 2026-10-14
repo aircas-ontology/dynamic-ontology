@@ -65,6 +65,10 @@ export interface CreateOntologyFunctionParams {
   code?: string;
   /** 脚本入出参定义（仅 CUSTOMIZE 有效）。 */
   parameters?: CreateOntologyFunctionParameter[];
+  /**
+   * 是否基于旧版本创建（true: 允许相同 api 但 api+version 不重复；false/null: 全新创建，api 不能重复）。
+   */
+  basedOnOldVersion?: boolean;
   queryConfig?: CreateOntologyFunctionQueryConfig;
 }
 

@@ -31,21 +31,30 @@ mocks与types文件名自行语义化命名
     "displayName": "",
     "description": "",
     "type": "",
+    "language": "",
+    "code": "",
     "ontologySpaceId": "",
     "queryConfig":{
       "aggFunc":"",
+      "targetProperty":"",
       "filters":{}
-    }
+    },
+    "parameters":[],
   }
   ```
 
 - `functionApi`：【string，必填】 函数api
-- `version`：【string，必填】 版本号（必填，格式 x.y.z）
+- `version`：【string，必填】 版本号，格式 x.y.z（如 1.0.0），同一 api 下不可重复且必须大于已有最大版本号
 - `displayName`：【string，必填】 函数名称
 - `description`：【string，必填】 描述
-- `type`：【string，必填】 函数模型,目前只有一个值BASIC_QUERY
+- `type`：【string，必填】 函数模型
+- `language`：【string，必填】 脚本语言（仅 CUSTOMIZE 脚本算子有效，不传默认 GROOVY；其他算子类型忽略此字段存 NULL；创建后不可修改）
+- `code`：【string，必填】 自定义函数：函数代码
 - `ontologySpaceId`：【number，必填】 所属本体空间 id
 - `queryConfig`：【object，非必填】 基础查询算子配置对象
+- `queryConfig.aggFunc`：【string，非必填】 聚合类型：SUM/COUNT/AVG/MAX/MIN，不传则为 query 模式（无聚合）
+- `queryConfig.targetProperty`：【string，非必填】 目标占位符名（创建时不选实际字段，前端未传时后端自动生成为 target；执行时通过 variableBindings 映射到实际属性 apiName）
+- `parameters`：【array，非必填】 参数定义列表（CUSTOMIZE 类型函数传入）
 
 ## 输出参数
 

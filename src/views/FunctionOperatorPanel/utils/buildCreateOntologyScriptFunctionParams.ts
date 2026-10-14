@@ -4,6 +4,7 @@ import type {
   CreateOntologyFunctionParams,
   FunctionOperatorScriptLanguage,
 } from "@/types";
+import { mapScriptLanguageToApi } from "../../../utils/mapFunctionOperatorScriptLanguage.ts";
 
 /** 组装脚本函数创建请求的输入。 */
 export interface BuildCreateOntologyScriptFunctionParamsInput {
@@ -16,15 +17,11 @@ export interface BuildCreateOntologyScriptFunctionParamsInput {
   code: string;
   inputLabels: string[];
   outputLabels: string[];
+  /** 新建表单所选源版本；非空表示基于旧版本创建。 */
+  sourceVersion: string;
 }
 
-/** 页面脚本语言到接口 language 的映射。 */
-const SCRIPT_LANGUAGE_TO_API: Record<FunctionOperatorScriptLanguage, string> = {
-  typescript: "TYPESCRIPT",
-  groovy: "GROOVY",
-  python: "PYTHON",
-  java: "JAVA",
-};
+export { mapScriptLanguageFromApi, mapScriptLanguageToApi } from "../../../utils/mapFunctionOperatorScriptLanguage.ts";
 
 /**
  * @description 将展示用类型文本映射为创建接口 paramType。
@@ -73,15 +70,6 @@ function mapScriptLabelsToParameters(labels: string[], category: CreateOntologyF
 }
 
 /**
- * @description 将页面脚本语言映射为创建接口 language。
- * @param language 页面脚本语言。
- * @returns 接口 language 大写值。
- */
-export function mapScriptLanguageToApi(language: FunctionOperatorScriptLanguage): string {
-  return SCRIPT_LANGUAGE_TO_API[language];
-}
-
-/**
  * @description 组装 CUSTOMIZE 脚本函数创建请求体；不含 queryConfig。
  * @param input 通用配置、代码与识别出的入出参标签。
  * @returns 创建接口请求参数。
@@ -98,5 +86,6 @@ export function buildCreateOntologyScriptFunctionParams(input: BuildCreateOntolo
     ontologySpaceId: input.ontologySpaceId,
     code: input.code,
     parameters,
+    basedOnOldVersion: Boolean(input.sourceVersion.trim()),
   };
 }

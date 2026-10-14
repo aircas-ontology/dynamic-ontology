@@ -36,6 +36,8 @@ mocks与types文件名自行语义化命名
 
 ## 输出参数
 
+基础函数示例
+
 ```JSON
 {
   "code": 200,
@@ -49,31 +51,67 @@ mocks与types文件名自行语义化命名
     "ontologySpaceId": 46,
     "params": [
       {
-        "paramId": 25,
-        "paramName": "xingbie",
+        "paramId": 888,
+        "paramName": "ontologyIdentifier",
         "paramType": "STRING",
         "category": "INPUT",
         "paramOrder": 1,
-        "description": "过滤条件",
+        "description": "查询目标本体标识",
         "paramRole": "FILTER"
       },
       {
-        "paramId": 26,
-        "paramName": "age",
+        "paramId": 889,
+        "paramName": "powerCapacity",
         "paramType": "STRING",
         "category": "INPUT",
         "paramOrder": 2,
-        "description": "过滤条件",
+        "description": "聚合目标",
+        "paramRole": "AGGREGATION"
+      },
+      {
+        "paramId": 890,
+        "paramName": "result",
+        "paramType": "DOUBLE",
+        "category": "OUTPUT",
+        "paramOrder": 1,
+        "description": "聚合结果",
         "paramRole": "FILTER"
       },
       {
-        "paramId": 27,
-        "paramName": "target",
+        "paramId": 891,
+        "paramName": "value",
+        "paramType": "DOUBLE",
+        "category": "OUTPUT",
+        "paramOrder": 2,
+        "description": "聚合值",
+        "paramRole": "FILTER"
+      },
+      {
+        "paramId": 892,
+        "paramName": "aggFunc",
         "paramType": "STRING",
-        "category": "INPUT",
+        "category": "OUTPUT",
         "paramOrder": 3,
-        "description": "聚合目标",
-        "paramRole": "AGGREGATION"
+        "description": "聚合函数",
+        "paramRole": "FILTER"
+      },
+      {
+        "paramId": 893,
+        "paramName": "alias",
+        "paramType": "STRING",
+        "category": "OUTPUT",
+        "paramOrder": 4,
+        "description": "聚合别名",
+        "paramRole": "FILTER"
+      },
+      {
+        "paramId": 894,
+        "paramName": "targetProperty",
+        "paramType": "STRING",
+        "category": "OUTPUT",
+        "paramOrder": 5,
+        "description": "聚合目标属性",
+        "paramRole": "FILTER"
       }
     ],
     "code": "{\"aggFunc\":null,\"targetProperty\":null,\"filters\":{\"logic\":\"AND\",\"children\":[{\"type\":\"FILTER\",\"filter\":{\"propertyApiName\":\"age\",\"op\":\"EQ\",\"value\":\"10\",\"values\":null,\"dataType\":\"STRING\"},\"group\":null}]}}",
@@ -95,6 +133,57 @@ mocks与types文件名自行语义化命名
         ]
       }
     }
+  }
+}
+```
+
+脚本函数示例
+
+```JSON
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": {
+      "functionApi": "jbtest",
+      "version": "1.0.1",
+      "publishStatus": 0,
+      "displayName": "脚本函数cesi",
+      "description": "jbtest 1.0.1",
+      "model": "OTHER",
+      "type": "CUSTOMIZE",
+      "language": "TYPESCRIPT",
+      "ontologySpaceId": 1,
+      "params": [
+          {
+              "paramId": 1122,
+              "paramName": "id",
+              "paramType": "DOUBLE",
+              "category": "INPUT",
+              "paramOrder": 1
+          },
+          {
+              "paramId": 1123,
+              "paramName": "name",
+              "paramType": "STRING",
+              "category": "INPUT",
+              "paramOrder": 2
+          },
+          {
+              "paramId": 1124,
+              "paramName": "id",
+              "paramType": "DOUBLE",
+              "category": "OUTPUT",
+              "paramOrder": 1
+          },
+          {
+              "paramId": 1125,
+              "paramName": "name1",
+              "paramType": "STRING",
+              "category": "OUTPUT",
+              "paramOrder": 2
+          }
+      ],
+      "code": "interface User {\n  id: number;\n  name: string;\n}\n\ninterface Output {\n  id: number;\n  name1: string;\n}\n\nexport function handle(input: User): Output {\n    return {\n        id:input.id+1,\n        name1:input.name+'a',\n    }\n}\n"
   }
 }
 ```

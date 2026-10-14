@@ -78,14 +78,8 @@
         </div>
         <p class="function-operator-card__description">{{ operator.description || "暂无说明" }}</p>
         <div class="function-operator-card__footer">
-          <span
-            >创建时间<br />
-            {{ operator.createdAt || "-" }}</span
-          >
-          <span
-            >更新时间<br />
-            {{ operator.updatedAt || "-" }}</span
-          >
+          <span>创建时间<br />{{ operator.createdAt || "-" }}</span>
+          <span>更新时间<br />{{ operator.updatedAt || "-" }}</span>
         </div>
         <div class="function-operator-card__actions" @click.stop>
           <el-button type="primary" text size="small" @click="openTest(operator)">测试</el-button>
@@ -143,7 +137,19 @@
       @size-change="loadOperators"
     />
 
-    <FunctionOperatorDetailDrawer v-model="detailVisible" :operator="selectedOperator" :loading="detailLoading" />
+    <FunctionOperatorDetailDrawer
+      v-model="detailVisible"
+      :operator="selectedOperator"
+      :loading="detailLoading"
+      :versions="detailVersions"
+      :detail-version="detailVersion"
+      :versions-loading="detailVersionsLoading"
+      @change-version="changeDetailVersion"
+      @edit="onDetailEdit"
+      @toggle-publish="onDetailTogglePublish"
+      @delete="onDetailDelete"
+      @test="onDetailTest"
+    />
     <FunctionOperatorFormDialog
       v-model="formVisible"
       :operator="editingOperator"
@@ -211,6 +217,17 @@
         <el-button type="primary" :loading="testing" :disabled="testDetailLoading" @click="runTest">运行测试</el-button>
       </template>
     </el-dialog>
+
+    <FunctionOperatorScriptTestDialog
+      v-model="scriptTestVisible"
+      :operator-name="scriptTestingOperator?.name ?? ''"
+      :detail-loading="scriptTestDetailLoading"
+      :submitting="scriptTesting"
+      :input-rows="scriptTestInputRows"
+      :output="scriptTestOutput"
+      @update-param="updateScriptTestParamValue"
+      @run="runScriptTest"
+    />
   </section>
 </template>
 
@@ -230,6 +247,7 @@ import { useFunctionOperatorWorkspace } from "./composables/useFunctionOperatorW
 import FunctionOperatorDeleteDialog from "./components/FunctionOperatorDeleteDialog.vue";
 import FunctionOperatorDetailDrawer from "./components/FunctionOperatorDetailDrawer.vue";
 import FunctionOperatorFormDialog from "./components/FunctionOperatorFormDialog.vue";
+import FunctionOperatorScriptTestDialog from "./components/FunctionOperatorScriptTestDialog.vue";
 
 const {
   spaceId,
@@ -248,6 +266,9 @@ const {
   selectedOperator,
   detailVisible,
   detailLoading,
+  detailVersions,
+  detailVersion,
+  detailVersionsLoading,
   editingOperator,
   formDraft,
   formVisible,
@@ -264,6 +285,12 @@ const {
   testPropertyOptions,
   testSelectedOntologyId,
   testPropertyBindings,
+  scriptTestVisible,
+  scriptTestingOperator,
+  scriptTestInputRows,
+  scriptTestOutput,
+  scriptTesting,
+  scriptTestDetailLoading,
   deleteVisible,
   deleteSubmitting,
   deleteError,
@@ -272,6 +299,7 @@ const {
   resetFilters,
   applyFilters,
   openDetail,
+  changeDetailVersion,
   openCreate,
   openEdit,
   saveOperator,
@@ -283,6 +311,8 @@ const {
   selectTestOntology,
   updateTestPropertyBinding,
   runTest,
+  updateScriptTestParamValue,
+  runScriptTest,
 } = useFunctionOperatorWorkspace();
 
 /**
@@ -292,6 +322,46 @@ const {
  */
 function asOperator(row: unknown): FunctionOperator {
   return row as FunctionOperator;
+}
+
+/**
+ * @description 详情抽屉编辑：基于当前选中版本打开编辑。
+ */
+function onDetailEdit(): void {
+  if (!selectedOperator.value) {
+    return;
+  }
+  void openEdit(selectedOperator.value);
+}
+
+/**
+ * @description 详情抽屉发布/下线：基于当前选中版本。
+ */
+function onDetailTogglePublish(): void {
+  if (!selectedOperator.value) {
+    return;
+  }
+  void togglePublish(selectedOperator.value);
+}
+
+/**
+ * @description 详情抽屉删除：打开删除确认（按 functionApi）。
+ */
+function onDetailDelete(): void {
+  if (!selectedOperator.value) {
+    return;
+  }
+  openDeleteOperator(selectedOperator.value);
+}
+
+/**
+ * @description 详情抽屉测试：基于当前选中版本打开测试弹框。
+ */
+function onDetailTest(): void {
+  if (!selectedOperator.value) {
+    return;
+  }
+  void openTest(selectedOperator.value);
 }
 
 /**

@@ -1,6 +1,7 @@
 import type {
   FunctionOperator,
   FunctionOperatorAggFunc,
+  FunctionOperatorDefinition,
   FunctionOperatorDraft,
   FunctionOperatorParameter,
   FunctionOperatorParameterType,
@@ -8,7 +9,9 @@ import type {
   GetOntologyFunctionDetailParamItem,
 } from "@/types";
 import { createEmptyBasicFilterDocument, mapOntologyFunctionQueryConfigToBasicFilter, stringifyBasicFilterConfig } from "./functionOperatorBasicFilter.ts";
+import { mapScriptLanguageFromApi } from "./mapFunctionOperatorScriptLanguage.ts";
 import { mapFunctionOperatorTypeFromApi } from "./mapFunctionOperatorTypeToApi.ts";
+import { mapOntologyFunctionPublishStatus } from "./mapOntologyFunctionPublishStatus.ts";
 
 const AGG_FUNC_SET = new Set<string>(["SUM", "COUNT", "AVG", "MAX", "MIN", "DISTINCT"]);
 
@@ -56,15 +59,18 @@ function mapDetailParamType(paramType: string | undefined): FunctionOperatorPara
 }
 
 /**
- * @description 将详情 params 映射为抽屉输入参数列表。
+ * @description 按 category 将详情 params 映射为抽屉参数列表；大小写不敏感匹配。
  * @param params 详情 params。
- * @returns 页面输入参数。
+ * @param category 目标类别（INPUT / OUTPUT）。
+ * @returns 页面参数列表。
  */
-function mapDetailParamsToInputParameters(params: GetOntologyFunctionDetailParamItem[] | undefined): FunctionOperatorParameter[] {
+function mapDetailParamsByCategory(params: GetOntologyFunctionDetailParamItem[] | undefined, category: "INPUT" | "OUTPUT"): FunctionOperatorParameter[] {
   if (!Array.isArray(params) || !params.length) {
     return [];
   }
+  const normalizedCategory = category.toUpperCase();
   return [...params]
+    .filter((item) => (typeof item.category === "string" ? item.category.trim().toUpperCase() : "") === normalizedCategory)
     .sort((a, b) => (a.paramOrder ?? 0) - (b.paramOrder ?? 0))
     .map((item, index) => {
       const name = typeof item.paramName === "string" ? item.paramName.trim() : "";
@@ -115,7 +121,33 @@ function resolveDetailVersion(detailVersion: unknown, fallbackVersion?: string):
 }
 
 /**
- * @description 将函数详情映射为编辑弹框草稿（基础函数表单字段）。
+ * @description 按详情类型组装草稿 definition；脚本使用 data.code 原文与 language。
+ * @param detail 详情接口 data。
+ * @param type 页面函数类型。
+ * @returns 草稿 definition。
+ */
+function mapDetailToDraftDefinition(detail: GetOntologyFunctionDetailData, type: FunctionOperatorDraft["type"]): FunctionOperatorDefinition {
+  if (type === "basic") {
+    const filtersDoc = detail.queryConfig ? mapOntologyFunctionQueryConfigToBasicFilter(detail.queryConfig) : createEmptyBasicFilterDocument();
+    return {
+      kind: "basic",
+      parameterConfig: stringifyBasicFilterConfig(filtersDoc),
+      aggFunc: resolveAggFunc(detail.queryConfig?.aggFunc),
+      targetProperty: resolveTargetProperty(detail.queryConfig?.targetProperty),
+    };
+  }
+  if (type === "code") {
+    return {
+      kind: "code",
+      language: mapScriptLanguageFromApi(detail.language),
+      code: typeof detail.code === "string" ? detail.code : "",
+    };
+  }
+  return { kind: type };
+}
+
+/**
+ * @description 将函数详情映射为编辑弹框草稿（基础 / 脚本表单字段）。
  * @param detail 详情接口 data。
  * @param fallbackSpaceId 详情缺省空间 id 时的回退值。
  * @param fallbackVersion 详情缺省 version 时的回退值（通常为列表行版本）。
@@ -126,9 +158,6 @@ export function mapOntologyFunctionDetailToDraft(
   fallbackSpaceId: number,
   fallbackVersion?: string,
 ): FunctionOperatorDraft {
-  const filtersDoc = detail.queryConfig ? mapOntologyFunctionQueryConfigToBasicFilter(detail.queryConfig) : createEmptyBasicFilterDocument();
-  const aggFunc = resolveAggFunc(detail.queryConfig?.aggFunc);
-  const targetProperty = resolveTargetProperty(detail.queryConfig?.targetProperty);
   const spaceId = Number.isFinite(detail.ontologySpaceId) ? detail.ontologySpaceId : fallbackSpaceId;
   const functionApi = typeof detail.functionApi === "string" ? detail.functionApi.trim() : "";
   const apiModelType = typeof detail.type === "string" ? detail.type.trim() : "";
@@ -140,7 +169,7 @@ export function mapOntologyFunctionDetailToDraft(
     functionApi,
     type,
     apiModelType,
-    protocol: "",
+    protocol: type === "code" || type === "composite" ? "HTTP" : "",
     version: resolveDetailVersion(detail.version, fallbackVersion),
     description: typeof detail.description === "string" ? detail.description.trim() : "",
     createdBy: "",
@@ -152,15 +181,7 @@ export function mapOntologyFunctionDetailToDraft(
     timeout: 0,
     retryCount: 0,
     retryInterval: 0,
-    definition:
-      type === "basic"
-        ? {
-            kind: "basic",
-            parameterConfig: stringifyBasicFilterConfig(filtersDoc),
-            aggFunc,
-            targetProperty,
-          }
-        : { kind: type },
+    definition: mapDetailToDraftDefinition(detail, type),
     dependencies: [],
     testStatus: "untested",
     testedAt: "",
@@ -179,6 +200,23 @@ export function mapOntologyFunctionDetailToOperator(detail: GetOntologyFunctionD
   const type = mapFunctionOperatorTypeFromApi(apiModelType || listOperator?.type);
   const spaceId = Number.isFinite(detail.ontologySpaceId) ? detail.ontologySpaceId : (listOperator?.spaceId ?? 0);
   const parameterConfig = resolveDetailParameterConfig(detail);
+  let definition: FunctionOperatorDefinition;
+  if (type === "basic") {
+    definition = {
+      kind: "basic",
+      parameterConfig,
+      aggFunc: resolveAggFunc(detail.queryConfig?.aggFunc),
+      targetProperty: resolveTargetProperty(detail.queryConfig?.targetProperty),
+    };
+  } else if (type === "code") {
+    definition = {
+      kind: "code",
+      language: mapScriptLanguageFromApi(detail.language),
+      code: typeof detail.code === "string" ? detail.code : "",
+    };
+  } else {
+    definition = { kind: type };
+  }
   return {
     id: functionApi || listOperator?.id || "",
     spaceId,
@@ -187,27 +225,19 @@ export function mapOntologyFunctionDetailToOperator(detail: GetOntologyFunctionD
     description: typeof detail.description === "string" ? detail.description.trim() : listOperator?.description || "",
     type,
     apiModelType,
-    protocol: "",
+    protocol: type === "code" || type === "composite" ? "HTTP" : "",
     version: resolveDetailVersion(detail.version, listOperator?.version),
     createdBy: "",
     createdAt: listOperator?.createdAt?.trim() || "",
     updatedAt: listOperator?.updatedAt?.trim() || "",
-    status: "",
+    status: mapOntologyFunctionPublishStatus(detail.publishStatus) || listOperator?.status || "",
     category: "",
-    inputParameters: mapDetailParamsToInputParameters(detail.params),
-    outputParameters: [],
+    inputParameters: mapDetailParamsByCategory(detail.params, "INPUT"),
+    outputParameters: mapDetailParamsByCategory(detail.params, "OUTPUT"),
     timeout: 0,
     retryCount: 0,
     retryInterval: 0,
-    definition:
-      type === "basic"
-        ? {
-            kind: "basic",
-            parameterConfig,
-            aggFunc: resolveAggFunc(detail.queryConfig?.aggFunc),
-            targetProperty: resolveTargetProperty(detail.queryConfig?.targetProperty),
-          }
-        : { kind: type },
+    definition,
     dependencies: [],
     testStatus: "untested",
     testedAt: "",

@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   buildCreateOntologyScriptFunctionParams,
+  mapScriptLanguageFromApi,
   mapScriptLanguageToApi,
 } from "../src/views/FunctionOperatorPanel/utils/buildCreateOntologyScriptFunctionParams.ts";
 
@@ -11,6 +12,15 @@ test("mapScriptLanguageToApi maps four UI languages", () => {
   assert.equal(mapScriptLanguageToApi("groovy"), "GROOVY");
   assert.equal(mapScriptLanguageToApi("python"), "PYTHON");
   assert.equal(mapScriptLanguageToApi("java"), "JAVA");
+});
+
+test("mapScriptLanguageFromApi maps API languages and falls back to typescript", () => {
+  assert.equal(mapScriptLanguageFromApi("TYPESCRIPT"), "typescript");
+  assert.equal(mapScriptLanguageFromApi("groovy"), "groovy");
+  assert.equal(mapScriptLanguageFromApi("PYTHON"), "python");
+  assert.equal(mapScriptLanguageFromApi("JAVA"), "java");
+  assert.equal(mapScriptLanguageFromApi(""), "typescript");
+  assert.equal(mapScriptLanguageFromApi(undefined), "typescript");
 });
 
 test("buildCreateOntologyScriptFunctionParams builds CUSTOMIZE payload with parameters", () => {
@@ -24,6 +34,7 @@ test("buildCreateOntologyScriptFunctionParams builds CUSTOMIZE payload with para
     code: "export function handle(input: User): Output { return { id: 1, name: 'a' }; }",
     inputLabels: ["id - number", "name - string"],
     outputLabels: ["id - number", "name - string", "ok - boolean", "meta - object"],
+    sourceVersion: "1.0.0",
   });
 
   assert.equal(payload.type, "CUSTOMIZE");
@@ -33,6 +44,7 @@ test("buildCreateOntologyScriptFunctionParams builds CUSTOMIZE payload with para
   assert.equal(payload.displayName, "冒烟测试函数-TS");
   assert.equal(payload.description, "TypeScript 脚本链路验证");
   assert.equal(payload.ontologySpaceId, 1);
+  assert.equal(payload.basedOnOldVersion, true);
   assert.match(payload.code ?? "", /export function handle/);
   assert.equal(payload.queryConfig, undefined);
   assert.deepEqual(payload.parameters, [
@@ -56,7 +68,25 @@ test("buildCreateOntologyScriptFunctionParams allows empty parameters", () => {
     code: "def handle():\n  return {}",
     inputLabels: [],
     outputLabels: [],
+    sourceVersion: "",
   });
   assert.equal(payload.language, "PYTHON");
+  assert.equal(payload.basedOnOldVersion, false);
   assert.deepEqual(payload.parameters, []);
+});
+
+test("buildCreateOntologyScriptFunctionParams maps blank sourceVersion to basedOnOldVersion false", () => {
+  const payload = buildCreateOntologyScriptFunctionParams({
+    functionApi: "fn",
+    version: "1.0.0",
+    displayName: "n",
+    description: "d",
+    ontologySpaceId: 1,
+    language: "typescript",
+    code: "export function handle() { return {}; }",
+    inputLabels: [],
+    outputLabels: [],
+    sourceVersion: "   ",
+  });
+  assert.equal(payload.basedOnOldVersion, false);
 });

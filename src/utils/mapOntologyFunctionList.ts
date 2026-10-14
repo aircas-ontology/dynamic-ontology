@@ -1,7 +1,8 @@
 import dayjs from "dayjs";
 
-import type { FunctionOperator, FunctionOperatorDefinition, FunctionOperatorStatus, GetOntologyFunctionListItem } from "@/types";
+import type { FunctionOperator, FunctionOperatorDefinition, GetOntologyFunctionListItem } from "@/types";
 import { mapFunctionOperatorTypeFromApi } from "./mapFunctionOperatorTypeToApi.ts";
+import { mapOntologyFunctionPublishStatus } from "./mapOntologyFunctionPublishStatus.ts";
 
 /**
  * @description 按页面函数类型生成列表占位 definition。
@@ -11,6 +12,9 @@ import { mapFunctionOperatorTypeFromApi } from "./mapFunctionOperatorTypeToApi.t
 function createListDefinition(type: FunctionOperator["type"]): FunctionOperatorDefinition {
   if (type === "basic") {
     return { kind: "basic", parameterConfig: "" };
+  }
+  if (type === "code") {
+    return { kind: "code", language: "typescript", code: "" };
   }
   return { kind: type };
 }
@@ -27,21 +31,6 @@ function formatOntologyFunctionListTime(timeValue: string | undefined): string {
   }
   const parsed = dayjs(raw);
   return parsed.isValid() ? parsed.format("YYYY-MM-DD HH:mm:ss") : "";
-}
-
-/**
- * @description 将列表 publishStatus 映射为页面状态；仅识别 0 未发布与 1 已发布。
- * @param publishStatus 接口发布状态码。
- * @returns 页面状态，无法识别时为空串。
- */
-function mapOntologyFunctionPublishStatus(publishStatus: number | undefined): FunctionOperatorStatus {
-  if (publishStatus === 1) {
-    return "published";
-  }
-  if (publishStatus === 0) {
-    return "draft";
-  }
-  return "";
 }
 
 /**
