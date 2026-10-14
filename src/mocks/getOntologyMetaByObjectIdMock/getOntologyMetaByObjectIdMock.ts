@@ -1,6 +1,6 @@
 import type { ApiResponse, GetOntologyMetaByObjectIdData } from "@/types";
 
-/** 根据本体对象 id 查询简要信息成功样例（与契约输出样例一致）。 */
+/** 根据对象 id 查询简要信息成功样例（与契约输出样例一致）。 */
 export const getOntologyMetaByObjectIdMock: ApiResponse<GetOntologyMetaByObjectIdData> = {
   code: 200,
   message: "SUCCESS",

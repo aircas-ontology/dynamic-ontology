@@ -39,7 +39,7 @@ function sanitizeExportFileName(fileName: string): string {
 /**
  * @description 在响应头没有文件名时，用对象 API 名称和内容类型生成下载名。
  * @param apiName 对象 API 名称。
- * @param uniqueIdentifier 本体唯一标识。
+ * @param uniqueIdentifier 对象唯一标识。
  * @param contentType 响应 Content-Type。
  * @returns 备用下载文件名。
  */
@@ -51,7 +51,7 @@ function buildFallbackExportFileName(apiName: string, uniqueIdentifier: string, 
 }
 
 /**
- * @description 决定本体对象导出文件的下载名。
+ * @description 决定对象导出文件的下载名。
  * @param input 响应头与当前对象信息。
  * @returns 用于浏览器下载的文件名。
  */

@@ -51,7 +51,7 @@ test("request errors use a safe typed contract and delegate auth to the token mo
 test("request error normalization exposes the server message and preserves fallback status context", () => {
   const notFoundError = normalizeRequestError({
     isAxiosError: true,
-    response: { data: { message: "本体对象名称已存在" }, status: 404 },
+    response: { data: { message: "对象名称已存在" }, status: 404 },
   });
   const blankMessageError = normalizeRequestError({ isAxiosError: true, response: { data: { message: "  " }, status: 500 } });
   const timeoutError = normalizeRequestError({ isAxiosError: true, code: "ECONNABORTED" });
@@ -60,7 +60,7 @@ test("request error normalization exposes the server message and preserves fallb
 
   assert.ok(notFoundError instanceof RequestError);
   assert.equal(notFoundError.status, 404);
-  assert.equal(notFoundError.message, "本体对象名称已存在");
+  assert.equal(notFoundError.message, "对象名称已存在");
   assert.equal(blankMessageError.message, "内部服务器错误");
   assert.equal(timeoutError.message, "请求超时，请稍后重试。");
   assert.equal(networkError.message, "网络连接失败，请检查网络后重试。");

@@ -21,7 +21,7 @@ test("data source mapping dialog toolbar exposes selects and action buttons", ()
   assert.match(source, /关联数据源/);
   assert.match(source, /关联数据源字段/);
   assert.match(source, /<Connection \/>/);
-  assert.match(source, /关联本体字段/);
+  assert.match(source, /关联对象字段/);
   assert.match(source, />关联<\/el-button>/);
   assert.match(source, /自动关联数据源/);
   assert.match(source, /跳转到数据管道/);

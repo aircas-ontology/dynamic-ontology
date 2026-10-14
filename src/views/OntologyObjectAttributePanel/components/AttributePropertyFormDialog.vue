@@ -13,7 +13,7 @@
           <el-input v-model="draft.displayName" placeholder="例如：任务优先级" />
         </el-form-item>
         <el-form-item label="API" prop="apiName">
-          <el-input v-model="draft.apiName" placeholder="例如：priority" :disabled="editingAttributeId !== null" />
+          <el-input v-model="draft.apiName" placeholder="例如：priority" :disabled="editingAttributeId !== null || draft.isPrimary" />
         </el-form-item>
         <el-form-item label="属性分类" prop="categoryId" class="ontology-object-attribute-panel__form-full">
           <el-select v-model="draft.categoryId" placeholder="请选择属性分类">
@@ -21,7 +21,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="数据类型" prop="dataType">
-          <el-select v-model="draft.dataType" placeholder="请选择数据类型">
+          <el-select v-model="draft.dataType" placeholder="请选择数据类型" :disabled="draft.isPrimary">
             <el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" />
           </el-select>
         </el-form-item>

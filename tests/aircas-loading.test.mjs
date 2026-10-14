@@ -19,9 +19,9 @@ test("aircas loading indicator sits above the existing loading copy", () => {
   assert.ok(register.indexOf("AircasLoading") < register.indexOf("AircasPanel"));
 
   const callSites = [
-    ["../src/views/OntologySpaceManagement/index.vue", "正在加载本体空间…"],
+    ["../src/views/OntologySpaceManagement/index.vue", "正在加载对象空间…"],
     ["../src/views/OntologySpaceManagementDetail/index.vue", "正在加载空间…"],
-    ["../src/views/ObjectWorkspacePanel/index.vue", "正在加载本体对象…"],
+    ["../src/views/ObjectWorkspacePanel/index.vue", "正在加载对象…"],
     ["../src/views/SpaceRelationWorkspace/index.vue", "加载中..."],
     ["../src/views/OntologyObjectAttributePanel/components/AttributeCategoryTree.vue", "正在加载属性分类..."],
     ["../src/views/OntologyObjectAttributePanel/components/AttributePropertyTable.vue", "正在加载属性..."],

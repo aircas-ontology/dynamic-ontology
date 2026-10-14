@@ -1,11 +1,11 @@
-# 对接本体空间创建接口 Plan
+# 对接对象空间创建接口 Plan
 
 ## 1. 需求理解
 
-- 依据 `docs/20260918/createOntologySpaceApi-guoshengnan.md` 对接本体空间手动创建接口。
-- 触发路径：本体空间管理页面 → 「新建本体空间」→ 选「手动创建」→ 填表 → 点「确定」。
+- 依据 `docs/20260918/createOntologySpaceApi-guoshengnan.md` 对接对象空间手动创建接口。
+- 触发路径：对象空间管理页面 → 「新建对象空间」→ 选「手动创建」→ 填表 → 点「确定」。
 - 接口失败：直接提示失败信息，不关闭弹窗。
-- 接口成功：关闭弹窗、提示「创建成功」、刷新本体空间列表。
+- 接口成功：关闭弹窗、提示「创建成功」、刷新对象空间列表。
 - 编辑路径不在本次范围（doc 仅覆盖创建）。
 
 ## 2. 修改范围
@@ -80,8 +80,8 @@ npm run format -- src/types/apis/createOntologySpaceType.ts src/types/index.ts s
 
 浏览器手测（`http://localhost:5173`）：
 
-1. 进入本体空间管理页。
-2. 点「新建本体空间」→ 选「手动创建」→ 填 apiName、displayName、description、icon → 点「确定」。
+1. 进入对象空间管理页。
+2. 点「新建对象空间」→ 选「手动创建」→ 填 apiName、displayName、description、icon → 点「确定」。
 3. 成功路径：弹窗关闭、`ElMessage` 提示「创建成功」、列表自动刷新。
 4. 失败路径：构造后端返回非 200 或关闭后端服务，弹窗保留并展示失败信息。
 

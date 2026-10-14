@@ -51,7 +51,7 @@ function buildFallbackExportFileName(apiName: string, spaceId: number, contentTy
 }
 
 /**
- * @description 决定本体空间导出文件的下载名。
+ * @description 决定对象空间导出文件的下载名。
  * @param input 响应头与当前空间信息。
  * @returns 用于浏览器下载的文件名。
  */

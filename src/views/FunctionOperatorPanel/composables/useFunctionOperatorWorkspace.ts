@@ -444,7 +444,7 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 加载当前空间下可选本体对象列表。
+   * @description 加载当前空间下可选对象列表。
    */
   async function loadTestObjectOptions(): Promise<void> {
     if (!spaceId.value) {
@@ -467,8 +467,8 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 按所选本体加载属性选项，并刷新请求预览。
-   * @param ontologyIdentifier 本体唯一标识。
+   * @description 按所选对象加载属性选项，并刷新请求预览。
+   * @param ontologyIdentifier 对象唯一标识。
    */
   async function selectTestOntology(ontologyIdentifier: string): Promise<void> {
     testSelectedOntologyId.value = ontologyIdentifier;

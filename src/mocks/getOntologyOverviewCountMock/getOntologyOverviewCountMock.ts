@@ -1,6 +1,6 @@
 import type { ApiResponse, GetOntologyOverviewCountData } from "@/types";
 
-/** 本体概览统计成功响应样例。 */
+/** 对象概览统计成功响应样例。 */
 export const getOntologyOverviewCountMock: ApiResponse<GetOntologyOverviewCountData> = {
   code: 0,
   message: "",

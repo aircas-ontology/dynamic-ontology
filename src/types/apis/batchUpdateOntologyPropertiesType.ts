@@ -26,8 +26,8 @@ export interface BatchUpdateOntologyPropertyItem {
   storageGroup: string;
 }
 
-/** 批量更新本体属性的请求体。 */
+/** 批量更新对象属性的请求体。 */
 export type BatchUpdateOntologyPropertiesParams = BatchUpdateOntologyPropertyItem[];
 
-/** 批量更新本体属性的响应 data。 */
+/** 批量更新对象属性的响应 data。 */
 export type BatchUpdateOntologyPropertiesData = unknown;

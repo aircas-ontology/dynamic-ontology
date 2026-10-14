@@ -62,8 +62,8 @@ test("section toolbar uses name sort select and card-then-table view toggle", ()
   assert.match(source, /h2[\s\S]*font-weight: 700/);
   assert.match(source, /h2[\s\S]*color: var\(--aircas-color-text-primary\)/);
   assert.match(source, /p[\s\S]*color: var\(--aircas-color-text-secondary\)/);
-  assert.match(source, /以表格视图管理全部本体空间/);
-  assert.match(source, /以卡片视图管理全部本体空间/);
+  assert.match(source, /以表格视图管理全部对象空间/);
+  assert.match(source, /以卡片视图管理全部对象空间/);
   assert.match(source, /section-toolbar__view-icon/);
   assert.match(source, /fill: none/);
   assert.match(source, /stroke: currentColor/);

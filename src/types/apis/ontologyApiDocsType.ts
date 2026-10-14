@@ -1,5 +1,5 @@
 /**
- * 本体应用管理 OpenAPI 文档（SpringDoc `/v3/api-docs`）相关类型。
+ * 对象应用管理 OpenAPI 文档（SpringDoc `/v3/api-docs`）相关类型。
  * 响应为裸 OpenAPI 文档，不包裹项目标准 ApiResponse。
  */
 

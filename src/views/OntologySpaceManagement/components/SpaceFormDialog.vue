@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="space ? '编辑本体空间' : '新建本体空间'"
+    :title="space ? '编辑对象空间' : '新建对象空间'"
     width="min(640px, 94vw)"
     :close-on-click-modal="!busy"
     :close-on-press-escape="!busy"
@@ -45,7 +45,7 @@
 import { onScopeDispose, reactive, ref, watch } from "vue";
 import type { OntologySpaceDraft, OntologySpaceItem } from "@/types";
 import { postImportOntologySpaceInterface, postUploadOntologyThumbnailInterface } from "@/apis";
-import { serializeSpace } from "../utils/spaceOperations";
+import spaceImportTemplate from "@/assets/pages/ontologySpaceManagement/spaceImportTemplate.json";
 import { downloadSpaceJson } from "../utils/downloadSpaceJson";
 const props = defineProps<{ space: OntologySpaceItem | null; externalError: string }>();
 const visible = defineModel<boolean>({ required: true });
@@ -126,7 +126,7 @@ async function readIcon(event: Event) {
  * @description 下载空间导入 JSON 模板。
  */
 function template() {
-  downloadSpaceJson("ontologySpaceTemplate.json", serializeSpace({ apiName: "example_space", displayName: "示例空间", description: "", iconUrl: "" }));
+  downloadSpaceJson("ontologySpaceTemplate.json", JSON.stringify(spaceImportTemplate, null, 2));
 }
 /**
  * @description 校验并提交当前模式：手动创建提交草稿，导入创建提交所选文件。

@@ -1,8 +1,8 @@
-# 本体页面原型样式迁移实施方案
+# 对象页面原型样式迁移实施方案
 
 ## 需求理解
 
-将当前 `dev-project` 的本体空间管理、空间详情、对象属性、概念模型、大模型构建和子空间页面的视觉表现调整为 `github-project` 原型基线，同时保留当前已接入的路由、接口、数据流和业务行为。
+将当前 `dev-project` 的对象空间管理、空间详情、对象属性、概念模型、大模型构建和子空间页面的视觉表现调整为 `github-project` 原型基线，同时保留当前已接入的路由、接口、数据流和业务行为。
 
 ## 修改范围
 
@@ -22,10 +22,10 @@
 
 - 修改 `src/layout/index.vue`、`src/layout/components/HeaderBar.vue`、`src/layout/components/NavigationMenu.vue`。
 - 修改 `src/styles/theme-dark.css`、`src/styles/theme-light.css`、`src/styles/index.scss`。
-- 新增本体页面私有按钮样式文件，或将原型按钮规则按当前目录规范迁移到对应页面组件样式中。
+- 新增对象页面私有按钮样式文件，或将原型按钮规则按当前目录规范迁移到对应页面组件样式中。
 - 只调整主题变量、公共布局尺寸和状态表现，不改变业务接口。
 
-### 第二批：本体业务页面
+### 第二批：对象业务页面
 
 - 修改 `src/views/OntologySpaceManagement/components/*`。
 - 修改 `src/views/OntologySpaceManagementDetail/components/*`。
@@ -43,7 +43,7 @@
 
 - 以原型 `github-project/src/styles/theme-*.css` 和页面 scoped SCSS 为视觉来源。
 - 复用当前项目已有 `--aircas-*` 令牌和 Element Plus 覆盖，原型变量缺失时在暗色/亮色主题中成对补齐。
-- 本体业务样式使用完整 BEM 类名和主题变量，不在页面中硬编码颜色。
+- 对象业务样式使用完整 BEM 类名和主题变量，不在页面中硬编码颜色。
 - 统一检查 normal、hover、active、disabled、focus-visible、overflow、empty、loading、error 状态。
 - 不新增第三方依赖，不复制原型锁文件。
 

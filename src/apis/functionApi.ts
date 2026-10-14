@@ -20,7 +20,7 @@ import type {
 import { request } from "@/utils/request";
 
 /**
- * @description 创建本体空间下的函数算子（本阶段为基础查询 BASIC_QUERY）。
+ * @description 创建对象空间下的函数算子（本阶段为基础查询 BASIC_QUERY）。
  *
  * 请求方式：POST `/ontology/function`
  *
@@ -29,7 +29,7 @@ import { request } from "@/utils/request";
  * @param params.displayName 函数显示名称。
  * @param params.description 函数说明。
  * @param params.type 函数模型，当前固定为 BASIC_QUERY。
- * @param params.ontologySpaceId 所属本体空间 id。
+ * @param params.ontologySpaceId 所属对象空间 id。
  * @param params.queryConfig 可选的基础查询配置（filters / aggFunc）。
  * @returns 标准 API 响应；成功时 data 为 null。
  */
@@ -42,7 +42,7 @@ export function createOntologyFunctionInterface(params: CreateOntologyFunctionPa
 }
 
 /**
- * @description 修改本体空间下的函数算子（本阶段为基础查询 BASIC_QUERY）。
+ * @description 修改对象空间下的函数算子（本阶段为基础查询 BASIC_QUERY）。
  *
  * 请求方式：PUT `/ontology/function`
  *
@@ -51,7 +51,7 @@ export function createOntologyFunctionInterface(params: CreateOntologyFunctionPa
  * @param params.displayName 函数显示名称。
  * @param params.description 函数说明。
  * @param params.type 函数模型，当前固定为 BASIC_QUERY。
- * @param params.ontologySpaceId 所属本体空间 id。
+ * @param params.ontologySpaceId 所属对象空间 id。
  * @param params.queryConfig 可选的基础查询配置（filters / aggFunc）。
  * @returns 标准 API 响应；成功时 data 为 null。
  */
@@ -69,7 +69,7 @@ export function updateOntologyFunctionInterface(params: UpdateOntologyFunctionPa
  * 请求方式：GET `/ontology/function/list`
  *
  * @param params 查询参数。
- * @param params.ontologySpaceId 本体空间 id（必填）。
+ * @param params.ontologySpaceId 对象空间 id（必填）。
  * @param params.pageNum 可选页码，从 1 开始，默认 1。
  * @param params.pageSize 可选每页条数，默认 10。
  * @param params.displayName 可选函数名称（模糊搜索）。
@@ -127,7 +127,7 @@ export function deleteOntologyFunctionInterface(params: DeleteOntologyFunctionPa
  *
  * @param params 测试参数。
  * @param params.functionApi 函数 API 名称。
- * @param params.ontologyIdentifier 本体唯一标识。
+ * @param params.ontologyIdentifier 对象唯一标识。
  * @param params.variableBindings 查询参数绑定对象。
  * @param params.pageNum 可选页码，默认 1。
  * @param params.pageSize 可选每页条数，默认 10。

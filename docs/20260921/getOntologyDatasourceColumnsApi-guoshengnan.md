@@ -1,10 +1,10 @@
 # 接口名称
 
-- 根据本体空间和数据源表名查询字段信息
+- 根据对象空间和数据源表名查询字段信息
 
 ## 接口描述
 
-- 查询指定本体空间下某一数据源表的字段（列）列表，返回字段名、数据类型、描述及是否主键。
+- 查询指定对象空间下某一数据源表的字段（列）列表，返回字段名、数据类型、描述及是否主键。
 - 对应后端 `OntologyDatasourceController#getColumns`。
 
 ## 接口 domain
@@ -25,7 +25,7 @@
 
 | 参数名       | 类型            | 必填 | 默认值 | 说明                                         |
 | ------------ | --------------- | ---- | ------ | -------------------------------------------- |
-| spaceId      | integer / int32 | 是   | -      | 本体空间 id                                  |
+| spaceId      | integer / int32 | 是   | -      | 对象空间 id                                  |
 | dataSourceId | string          | 是   | -      | 数据源表名，使用数据源列表返回的 `tableName` |
 
 请求示例：
@@ -107,7 +107,7 @@ export type GetOntologyDatasourceColumnsData = OntologyDatasourceColumnDescVO[];
 
 /** 查询数据源表字段列表的查询参数。 */
 export interface GetOntologyDatasourceColumnsParams {
-  /** 本体空间 id，必填。 */
+  /** 对象空间 id，必填。 */
   spaceId: number;
   /** 数据源表名，使用数据源列表返回的 tableName，必填。 */
   dataSourceId: string;
@@ -134,12 +134,12 @@ import { requestTimeoutMs } from "@/utils/constants";
 import { request } from "@/utils/request";
 
 /**
- * @description 根据本体空间和数据源表名查询字段（列）列表。
+ * @description 根据对象空间和数据源表名查询字段（列）列表。
  *
  * 请求方式：GET `/ontology/datasource/column`
  *
  * @param params 查询参数。
- * @param params.spaceId 本体空间 id，必填。
+ * @param params.spaceId 对象空间 id，必填。
  * @param params.dataSourceId 数据源表名，使用数据源列表返回的 tableName，必填。
  * @returns 标准 API 响应，data 为字段描述数组。
  */

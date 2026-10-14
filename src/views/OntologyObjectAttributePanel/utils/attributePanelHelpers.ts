@@ -41,7 +41,7 @@ function mapPropertyTreeNode(item: OntologyPropertyInfo): OntologyAttributePrope
 /**
  * @description 将接口属性记录适配为属性列表项。
  * @param item 接口属性记录
- * @param ontologyUniqueIdentifier 当前本体对象标识
+ * @param ontologyUniqueIdentifier 当前对象标识
  * @returns 属性列表项
  */
 export function mapOntologyPropertyItem(item: OntologyPropertyInfo, ontologyUniqueIdentifier: string): OntologyAttributeItem {
@@ -59,6 +59,8 @@ export function mapOntologyPropertyItem(item: OntologyPropertyInfo, ontologyUniq
     description: item.description ?? "",
     isPrimary: item.isPrimaryKey === true,
     isNameKey: item.isTitleKey === true,
+    datasourceId: item.datasourceId ?? "",
+    datasourceColumnName: item.datasourceColumnName ?? "",
   };
 }
 

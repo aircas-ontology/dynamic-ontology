@@ -1,6 +1,6 @@
 # 接口名称
 
-- 删除本体对象属性分类树
+- 删除对象属性分类树
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 根据本体对象属性分类id删除本体对象属性分类节点。
+- 根据对象属性分类id删除对象属性分类节点。
 
 ## 接口 domain
 
@@ -33,7 +33,7 @@
   }
   ```
 - 请求体：POST 请求使用 `data` 传递 JSON 对象。
-- `ontologyIdentifier`：【string，必填】 本体对象标识
+- `ontologyIdentifier`：【string，必填】 对象标识
 - `categoryId`：【number，必填】 分类id
 
 ## 输出参数
@@ -80,13 +80,13 @@ import type { ApiResponse, DeleteOntologyObjectArrTypeTreeParams } from "@/types
 import { request } from "@/utils/request";
 
 /**
- * 删除本体对象属性分类节点。
+ * 删除对象属性分类节点。
  *
  * 请求方式：DELETE `/ontology/property/category`
  *
- * @param params 删除本体对象参数。
- * @param params.ontologyIdentifier 本体对象唯一标识。
- * @param params.categoryId 本体对象属性分类唯一标识。
+ * @param params 删除对象参数。
+ * @param params.ontologyIdentifier 对象唯一标识。
+ * @param params.categoryId 对象属性分类唯一标识。
  * @returns 标准 API 响应，data 未定义具体业务字段。
  */
 export function deleteOntologyObjectArrTypeTreeInterface(params: DeleteOntologyObjectArrTypeTreeParams): Promise<ApiResponse<>> {

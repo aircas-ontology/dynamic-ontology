@@ -38,6 +38,6 @@ test("object delete action opens a confirmation dialog and refreshes after succe
   assert.match(panelSource, /action === "delete"/);
   assert.match(actionsSource, /const response = await deleteOntologyObjectInterface\([\s\S]*?if \(response\.code !== 200\)/);
   assert.match(actionsSource, /await load\(\)/);
-  assert.match(dialogSource, /确认删除本体对象/);
+  assert.match(dialogSource, /确认删除对象/);
   assert.match(dialogSource, /确认删除/);
 });

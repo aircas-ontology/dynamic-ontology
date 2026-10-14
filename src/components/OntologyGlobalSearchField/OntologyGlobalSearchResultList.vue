@@ -19,7 +19,10 @@
           <p v-if="(item.type === '对象' || item.type === '关系分组') && item.spaceName?.trim()" class="ontology-global-search-results__meta">
             空间：{{ item.spaceName.trim() }}
           </p>
-          <p v-else-if="item.type === '属性' && (item.spaceName?.trim() || item.ontologyName?.trim())" class="ontology-global-search-results__meta">
+          <p
+            v-else-if="(item.type === '属性' || item.type === '实例') && (item.spaceName?.trim() || item.ontologyName?.trim())"
+            class="ontology-global-search-results__meta"
+          >
             <template v-if="item.spaceName?.trim()">空间：{{ item.spaceName.trim() }}</template>
             <template v-if="item.spaceName?.trim() && item.ontologyName?.trim()"> · </template>
             <template v-if="item.ontologyName?.trim()">对象：{{ item.ontologyName.trim() }}</template>

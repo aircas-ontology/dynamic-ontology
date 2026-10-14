@@ -165,7 +165,7 @@
               filterable
               clearable
               :loading="testObjectLoading"
-              placeholder="请选择当前空间下的本体对象"
+              placeholder="请选择当前空间下的对象"
               @update:model-value="selectTestOntology(String($event ?? ''))"
             >
               <el-option v-for="item in testObjectOptions" :key="item.value" :label="item.label" :value="item.value" />

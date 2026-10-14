@@ -6,7 +6,7 @@ const readSource = (relativePath) => readFileSync(new URL(relativePath, import.m
 
 test("ontology object create dialog exposes prototype creation modes and required fields", () => {
   const source = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue");
-  assert.match(source, /title="新建本体"/);
+  assert.match(source, /title="新建对象"/);
   assert.match(source, /手动创建/);
   assert.match(source, /导入创建/);
   assert.match(source, /class="ontology-object-create-dialog__upload"/);
@@ -14,7 +14,7 @@ test("ontology object create dialog exposes prototype creation modes and require
   assert.match(source, /大模型构建/);
   assert.match(source, /API 名称/);
   assert.match(source, /显示名称/);
-  assert.match(source, /继承本体/);
+  assert.match(source, /继承对象/);
   assert.match(source, /分类/);
   assert.match(source, /el-tree-select/);
   assert.match(source, /<el-tree-select\b/);
@@ -23,6 +23,14 @@ test("ontology object create dialog exposes prototype creation modes and require
   assert.match(source, /submitCreate/);
   assert.match(source, /const payload: OntologyObjectCreateDraft = \{ \.\.\.draft \}/);
   assert.doesNotMatch(source, /structuredClone\(draft\)/);
+});
+
+test("selecting an inherited object echoes and locks its category", () => {
+  const source = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue");
+  assert.match(source, /categoryId: string/);
+  assert.match(source, /\(\) => draft\.parentId/);
+  assert.match(source, /draft\.categoryId = parentOption\.categoryId/);
+  assert.match(source, /:disabled="submitting \|\| Boolean\(draft\.parentId\)"/);
 });
 
 test("object workspace routes create action to the dialog and separates manual api submission", () => {

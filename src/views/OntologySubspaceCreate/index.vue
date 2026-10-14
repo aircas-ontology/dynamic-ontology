@@ -1,5 +1,5 @@
 <template>
-  <section class="ontology-subspace-create" aria-label="创建子空间">
+  <section class="ontology-subspace-create" aria-label="创建主题空间">
     <SubspaceCreateTreePanel :current-step-index="currentStepIndex" @update:selected-objects="selectedObjects = $event" />
     <SubspaceCreateWorkspacePanel
       v-model:space-name="spaceName"
@@ -85,9 +85,11 @@ const relationLoadStatus = ref<"idle" | "loading" | "success" | "empty" | "error
 const relationLoadError = ref("");
 let relationRequestGeneration = 0;
 const creating = ref(false);
-const spaceName = ref(`${String(route.query.spaceName || "海军本体空间")}子空间`);
+const parentSpaceId = computed(() => String(route.params.spaceId || route.query.spaceId || "").trim());
+const isThemeSpaceCreation = computed(() => route.query.from === "theme-space-management");
+const spaceName = ref(`${String(route.query.spaceName || "海军对象空间")}${isThemeSpaceCreation.value ? "主题空间" : "子空间"}`);
 const apiName = ref(`subspace_${Date.now()}`);
-const parentSpaceName = computed(() => String(route.query.spaceName || "海军本体空间"));
+const parentSpaceName = computed(() => String(route.query.spaceName || "海军对象空间"));
 
 watch(selectedObjects, () => {
   instanceRequestGeneration += 1;
@@ -115,7 +117,7 @@ watch(propertyGroups, (groups) => {
 });
 
 /**
- * @description 返回本体空间管理列表。
+ * @description 返回对象空间管理列表。
  */
 function goBackToSpaceList() {
   void router.push({ name: "OntologySpaceManagement" });
@@ -174,12 +176,12 @@ function toggleObjectProperty(propertyId: string, checked: boolean) {
  */
 async function advanceSubspaceCreateStep() {
   if (!spaceName.value.trim() || !apiName.value.trim()) {
-    ElMessage.warning("请填写子空间名称和 API 名称");
+    ElMessage.warning("请填写主题空间名称和 API 名称");
     return;
   }
   if (currentStepIndex.value === 0) {
     if (!selectedCount.value) {
-      ElMessage.warning("请至少选择一个本体对象");
+      ElMessage.warning("请至少选择一个对象");
       return;
     }
     if (instanceLoadStatus.value === "loading") return;
@@ -213,7 +215,7 @@ async function advanceSubspaceCreateStep() {
  */
 async function loadParentSpaceRelations() {
   const requestGeneration = ++relationRequestGeneration;
-  const spaceId = String(route.params.spaceId ?? "").trim();
+  const spaceId = parentSpaceId.value;
   relationLoadStatus.value = "loading";
   relationLoadError.value = "";
   relationRows.value = [];
@@ -283,7 +285,7 @@ async function loadSelectedObjectProperties() {
   if (hasError) propertyLoadError.value = "部分对象属性查询失败，请重试。";
 }
 
-/** @description 查询指定对象的属性列表。 @param object 本体对象。 @returns 属性分组。 */
+/** @description 查询指定对象的属性列表。 @param object 对象。 @returns 属性分组。 */
 async function queryObjectProperties(object: SubspaceCreateSelectedObject): Promise<SubspaceCreateObjectPropertyGroup> {
   const response = await getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier: object.id });
   if (response.code !== 200) throw new Error(response.message || "属性查询失败");
@@ -412,11 +414,11 @@ function retryObjectInstancePage(objectId: string) {
  */
 async function createSubspace() {
   if (!spaceName.value.trim() || !apiName.value.trim()) {
-    ElMessage.warning("请填写子空间名称和 API 名称");
+    ElMessage.warning("请填写主题空间名称和 API 名称");
     return;
   }
   if (creating.value) return;
-  const parentSpaceId = String(route.params.spaceId ?? "").trim();
+  const parentSpaceId = String(route.params.spaceId ?? route.query.spaceId ?? "").trim();
   if (!parentSpaceId) {
     ElMessage.error("缺少父空间标识，无法创建子空间");
     return;

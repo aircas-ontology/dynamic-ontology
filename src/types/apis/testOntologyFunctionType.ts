@@ -2,7 +2,7 @@
 export interface TestOntologyFunctionParams {
   /** 函数 API 名称。 */
   functionApi: string;
-  /** 本体唯一标识。 */
+  /** 对象唯一标识。 */
   ontologyIdentifier: string;
   /** 查询参数绑定：键为详情 params.paramName，值为属性 apiName。 */
   variableBindings: Record<string, string>;

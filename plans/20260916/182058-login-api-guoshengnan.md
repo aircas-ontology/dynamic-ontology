@@ -1,7 +1,7 @@
 # 登录接口对接实施 Plan
 
 ## 需求理解
-按 docs/20260916/loginAPI-guoshengnan.md 对接登录页登录按钮：输入用户名、密码调用登录接口，成功后进入本体空间管理页，失败展示后端返回的具体错误信息。
+按 docs/20260916/loginAPI-guoshengnan.md 对接登录页登录按钮：输入用户名、密码调用登录接口，成功后进入对象空间管理页，失败展示后端返回的具体错误信息。
 
 ## 契约映射（文档正文 -> 实现）
 - domain：`DOMAIN_CONFIG.LOGIN_URL` -> `src/apis/loginApi.ts` 中 `url: DOMAIN_CONFIG.LOGIN_URL + "/ontology/user/login"`（与 exampleApi 拼接 domain 的现有惯例一致；request 实例无全局 baseURL）。

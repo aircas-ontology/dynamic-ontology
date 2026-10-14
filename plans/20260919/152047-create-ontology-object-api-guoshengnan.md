@@ -1,8 +1,8 @@
-# 本体对象手动创建接口对接
+# 对象手动创建接口对接
 
 ## 需求理解
 
-根据 `docs/20260919/createOntologyObjectApi-guoshengnan.md` 对接本体对象手动创建接口。已确认采用正文类型和项目请求规范：POST 请求使用 `data` 请求体；`spaceId`、`parentOntologyUniqueIdentifier`、`categoryId` 使用数字；可选字段仅在有值时发送。真实接口成功后关闭创建弹框、提示成功并刷新当前对象列表；失败显示接口 message。
+根据 `docs/20260919/createOntologyObjectApi-guoshengnan.md` 对接对象手动创建接口。已确认采用正文类型和项目请求规范：POST 请求使用 `data` 请求体；`spaceId`、`parentOntologyUniqueIdentifier`、`categoryId` 使用数字；可选字段仅在有值时发送。真实接口成功后关闭创建弹框、提示成功并刷新当前对象列表；失败显示接口 message。
 
 ## 契约映射
 

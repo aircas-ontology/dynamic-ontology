@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="导出本体" width="min(440px, 94vw)" append-to-body destroy-on-close>
+  <el-dialog v-model="visible" title="导出对象" width="min(440px, 94vw)" append-to-body destroy-on-close>
     <p>导出「{{ objectName }}」。</p>
     <ul class="ontology-object-export-dialog__export-types">
       <li>可仅导出结构数据也可导出结构+实例数据</li>
@@ -32,7 +32,7 @@ const exportType = ref<OntologyExportType>("INSTANCE");
 const emit = defineEmits<{ confirm: [exportType: OntologyExportType] }>();
 
 /**
- * @description 切换本体对象导出类型。只接受 SCHEMA 与 INSTANCE。
+ * @description 切换对象导出类型。只接受 SCHEMA 与 INSTANCE。
  * @param value 单选组当前值。
  */
 function setOntologyExportType(value: string | number | boolean | undefined) {

@@ -40,6 +40,6 @@ test("object edit action opens a prefilled dialog and refreshes after success", 
   assert.match(actionsSource, /updateOntologyObjectInterface\([\s\S]*?groupIds:\s*\[null\]/);
   assert.match(actionsSource, /await load\(\)/);
   assert.match(dialogSource, /editingItem/);
-  assert.match(dialogSource, /编辑本体/);
+  assert.match(dialogSource, /编辑对象/);
   assert.match(dialogSource, /submit-edit/);
 });

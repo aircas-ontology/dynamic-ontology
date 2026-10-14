@@ -49,9 +49,9 @@ function createEmptySpaceRelationWorkspaceData(): SpaceRelationWorkspaceData {
 }
 
 /**
- * @description 按空间 id 查询对象分类树，提取本体对象作为关系源/目标可选列表；失败时返回空列表。
+ * @description 按空间 id 查询对象分类树，提取对象作为关系源/目标可选列表；失败时返回空列表。
  * @param spaceId 路由空间 id。
- * @returns 去重后的本体对象选项。
+ * @returns 去重后的对象选项。
  */
 async function loadRelationObjectOptionsFromObjectTree(spaceId: string): Promise<SpaceRelationObjectOption[]> {
   try {
@@ -64,9 +64,9 @@ async function loadRelationObjectOptionsFromObjectTree(spaceId: string): Promise
 }
 
 /**
- * @description 按空间 id 查询关系分类树，并并行加载对象树上的本体对象选项；对象页可附带 ontologyUniqueIdentifierFrom。
+ * @description 按空间 id 查询关系分类树，并并行加载对象树上的对象选项；对象页可附带 ontologyUniqueIdentifierFrom。
  * @param spaceId 路由空间 id。
- * @param ontologyUniqueIdentifierFrom 对象详情页的本体唯一标识；空串表示空间页不传该参数。
+ * @param ontologyUniqueIdentifierFrom 对象详情页的对象唯一标识；空串表示空间页不传该参数。
  * @returns 关系工作区数据。
  */
 async function loadSpaceRelationWorkspaceFromApi(spaceId: string, ontologyUniqueIdentifierFrom = ""): Promise<SpaceRelationWorkspaceData> {
