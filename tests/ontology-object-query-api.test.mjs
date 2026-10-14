@@ -2,6 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 
+/**
+ * @description 读取当前测试直接相关的源码。
+ * @param {string} relativePath 相对测试目录的文件路径。
+ * @returns {string} 源码内容。
+ */
 const readSource = (relativePath) => {
   const fileUrl = new URL(relativePath, import.meta.url);
   assert.equal(existsSync(fileUrl), true, `missing file: ${relativePath}`);
@@ -16,7 +21,7 @@ test("ontology object query api follows the category endpoint contract", () => {
 
   assert.match(apiSource, /export function getOntologyObjectByCategoryIdInterface\(/);
   assert.match(apiSource, /Promise<ApiResponse<GetOntologyObjectByCategoryIdData>>/);
-  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/meta\/category"/);
+  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/meta\/category"/);
   assert.match(apiSource, /method:\s*"get"/);
   assert.match(apiSource, /params,/);
   assert.match(typeSource, /export interface GetOntologyObjectByCategoryIdParams/);

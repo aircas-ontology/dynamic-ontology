@@ -363,7 +363,7 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   padding: 10px;
   border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
-  background: var(--aircas-color-panel-background);
+  background: var(--aircas-color-overlay);
 }
 
 .function-operator-panel__filter-fields,
