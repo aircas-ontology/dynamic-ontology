@@ -7,8 +7,8 @@
     </span>
     <el-breadcrumb>
       <template v-if="isObjectDetail">
-        <el-breadcrumb-item :to="{ name: 'OntologySpaceManagement' }">对象空间管理</el-breadcrumb-item>
-        <el-breadcrumb-item v-if="spaceName" :to="{ name: 'OntologySpaceManagementDetail', params: { spaceId } }">{{ spaceName }}</el-breadcrumb-item>
+        <el-breadcrumb-item :to="spaceEntryTarget">{{ spaceEntryLabel }}</el-breadcrumb-item>
+        <el-breadcrumb-item v-if="spaceName" :to="objectSpaceDetailTarget">{{ spaceName }}</el-breadcrumb-item>
         <el-breadcrumb-item>{{ objectDisplayName }}</el-breadcrumb-item>
       </template>
       <template v-else-if="isSubspaceCreate">
@@ -50,6 +50,12 @@ const isFromThemeSpace = computed(() => route.query.from === "theme-space-manage
 const spaceEntryLabel = computed(() => (isFromThemeSpace.value ? "主题空间管理" : "对象空间管理"));
 
 const spaceEntryTarget = computed(() => (isFromThemeSpace.value ? { name: "ThemeSpaceManagement" } : { name: "OntologySpaceManagement" }));
+
+const objectSpaceDetailTarget = computed(() => ({
+  name: "OntologySpaceManagementDetail",
+  params: { spaceId: currentSpaceId.value },
+  query: isFromThemeSpace.value ? { spaceName: spaceName.value, from: "theme-space-management" } : { spaceName: spaceName.value },
+}));
 
 const spaceDisplayName = computed(() => {
   if (isSpaceDetail.value || isSubspaceCreate.value) {

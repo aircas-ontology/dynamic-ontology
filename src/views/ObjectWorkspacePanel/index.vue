@@ -212,6 +212,7 @@ function openObjectDetailFromTree(object: OntologyConceptObjectRef) {
   const query: Record<string, string> = {};
   if (spaceId.value) query.spaceId = spaceId.value;
   if (spaceDisplayName.value.trim()) query.spaceName = spaceDisplayName.value.trim();
+  if (route.query.from === "theme-space-management") query.from = "theme-space-management";
   if (object.displayName.trim()) query.objectName = object.displayName.trim();
   void router.push({ name: "OntologyObjectDetail", params: { objectId }, query });
 }
@@ -242,6 +243,7 @@ function handleAction(action: string, item?: OntologyObjectItem) {
     const query: Record<string, string> = {};
     if (spaceId.value) query.spaceId = spaceId.value;
     if (spaceDisplayName.value.trim()) query.spaceName = spaceDisplayName.value.trim();
+    if (route.query.from === "theme-space-management") query.from = "theme-space-management";
     if (item.displayName.trim()) query.objectName = item.displayName.trim();
     void router.push({ name: "OntologyObjectDetail", params: { objectId: item.id }, query });
     return;

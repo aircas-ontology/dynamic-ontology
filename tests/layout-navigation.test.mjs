@@ -42,6 +42,16 @@ test("breadcrumb adds 创建主题空间 after the current space name and follow
   assert.match(source, /主题空间管理/);
 });
 
+test("theme space object details keep the theme breadcrumb context", () => {
+  const breadcrumb = readFileSync(new URL("../src/layout/components/BreadcrumbBar.vue", import.meta.url), "utf8");
+  const objectWorkspace = readFileSync(new URL("../src/views/ObjectWorkspacePanel/index.vue", import.meta.url), "utf8");
+  const objectDetail = readFileSync(new URL("../src/views/OntologyObjectDetail/index.vue", import.meta.url), "utf8");
+  assert.match(breadcrumb, /isObjectDetail[\s\S]*spaceEntryTarget/);
+  assert.match(breadcrumb, /objectSpaceDetailTarget/);
+  assert.match(objectWorkspace, /route\.query\.from === "theme-space-management"/);
+  assert.match(objectDetail, /route\.query\.from === "theme-space-management"/);
+});
+
 test("layout centers the native AI assistant button horizontally near the sidebar bottom", () => {
   const layout = readFileSync(new URL("../src/layout/index.vue", import.meta.url), "utf8");
   const navigation = readFileSync(new URL("../src/layout/components/NavigationMenu.vue", import.meta.url), "utf8");
