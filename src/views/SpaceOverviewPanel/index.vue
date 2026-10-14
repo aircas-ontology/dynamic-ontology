@@ -3,7 +3,7 @@
     <header class="space-overview-panel__header">
       <div>
         <h2>空间资源统计</h2>
-        <p>当前本体空间下的核心资源数量</p>
+        <p>当前对象空间下的核心资源数量</p>
       </div>
     </header>
 

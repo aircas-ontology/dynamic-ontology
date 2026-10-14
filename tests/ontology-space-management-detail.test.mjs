@@ -37,7 +37,7 @@ test("space detail parent and child routes resolve under the workspace layout", 
 test("subspace create page composes left tree and right workspace panels", () => {
   const source = readFileSync(new URL("../src/views/OntologySubspaceCreate/index.vue", import.meta.url), "utf8");
   assert.match(source, /class="ontology-subspace-create"/);
-  assert.match(source, /aria-label="创建子空间"/);
+  assert.match(source, /aria-label="创建主题空间"/);
   assert.match(source, /SubspaceCreateTreePanel/);
   assert.match(source, /SubspaceCreateWorkspacePanel/);
   assert.doesNotMatch(source, /<el-tree/);
@@ -51,12 +51,19 @@ test("space detail parent redirects to overview for a space id", () => {
   assert.equal(detailRoute.children?.length, 8);
 });
 
+test("theme space creation resolves its selected parent from object spaces", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useSpaceWorkspace.ts", import.meta.url), "utf8");
+  assert.match(source, /route\.query\.from === "theme-space-management"/);
+  assert.match(source, /route\.name !== "OntologySubspaceCreate"/);
+  assert.match(source, /getOntologySpaceListInterface\(\{ type: isThemeSpaceDetail \? 1 : 0 \}\)/);
+});
+
 test("space lookup returns mock space or null", () => {
   const spaces = [
     {
       id: "army",
       apiName: "army_space",
-      displayName: "陆军本体空间",
+      displayName: "陆军对象空间",
       description: "",
       iconUrl: "",
       category: "陆军",
@@ -68,7 +75,7 @@ test("space lookup returns mock space or null", () => {
       parentSpaceDisplayName: "",
     },
   ];
-  assert.equal(findSpaceById(spaces, "army")?.displayName, "陆军本体空间");
+  assert.equal(findSpaceById(spaces, "army")?.displayName, "陆军对象空间");
   assert.equal(findSpaceById(spaces, "missing"), null);
 });
 
@@ -81,9 +88,9 @@ test("workspace tab helpers map route names and tab ids", () => {
 test("ontology space detail store keeps and clears the breadcrumb space name", () => {
   setActivePinia(createPinia());
   const store = useOntologySpaceDetailStore();
-  store.setCurrentSpace("army", "陆军本体空间");
+  store.setCurrentSpace("army", "陆军对象空间");
   assert.equal(store.spaceId, "army");
-  assert.equal(store.displayName, "陆军本体空间");
+  assert.equal(store.displayName, "陆军对象空间");
   store.clearCurrentSpace();
   assert.equal(store.spaceId, "");
   assert.equal(store.displayName, "");

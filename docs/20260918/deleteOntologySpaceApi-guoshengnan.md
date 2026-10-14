@@ -1,6 +1,6 @@
 # 接口名称
 
-- 本体空间删除
+- 对象空间删除
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 输入参数删除本体空间。
+- 输入参数删除对象空间。
 
 ## 接口domain
 
@@ -87,7 +87,7 @@ import type { ApiResponse, DeleteOntologySpaceData, DeleteOntologySpaceParams } 
 import { request } from "@/utils/request";
 
 /**
- * 删除本体空间。
+ * 删除对象空间。
  *
  * 请求方式：DELETE `/ontology/space/{spaceId}`
  *

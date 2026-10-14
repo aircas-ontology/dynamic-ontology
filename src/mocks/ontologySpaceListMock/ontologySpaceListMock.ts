@@ -10,8 +10,8 @@ const ontologySpaces: OntologySpaceItem[] = [
   {
     id: "army",
     apiName: "army_space",
-    displayName: "陆军本体空间",
-    description: "陆军作战体系相关本体空间",
+    displayName: "陆军对象空间",
+    description: "陆军作战体系相关对象空间",
     iconUrl: armyImage,
     category: "陆军",
     metrics: { ontology: 18, behavior: 12, relation: 36, rule: 124, source: 28 },
@@ -23,8 +23,8 @@ const ontologySpaces: OntologySpaceItem[] = [
   {
     id: "navy",
     apiName: "navy_space",
-    displayName: "海军本体空间",
-    description: "海军作战体系相关本体空间",
+    displayName: "海军对象空间",
+    description: "海军作战体系相关对象空间",
     iconUrl: navyImage,
     category: "海军",
     metrics: { ontology: 22, behavior: 15, relation: 48, rule: 168, source: 36 },
@@ -36,8 +36,8 @@ const ontologySpaces: OntologySpaceItem[] = [
   {
     id: "air-force",
     apiName: "air_force_space",
-    displayName: "空军本体空间",
-    description: "空军作战体系相关本体空间",
+    displayName: "空军对象空间",
+    description: "空军作战体系相关对象空间",
     iconUrl: airForceImage,
     category: "空军",
     metrics: { ontology: 20, behavior: 12, relation: 40, rule: 112, source: 32 },
@@ -49,8 +49,8 @@ const ontologySpaces: OntologySpaceItem[] = [
   {
     id: "rocket-force",
     apiName: "rocket_force_space",
-    displayName: "火箭军本体空间",
-    description: "火箭军作战体系相关本体空间",
+    displayName: "火箭军对象空间",
+    description: "火箭军作战体系相关对象空间",
     iconUrl: rocketForceImage,
     category: "火箭军",
     metrics: { ontology: 14, behavior: 11, relation: 28, rule: 118, source: 20 },
@@ -62,8 +62,8 @@ const ontologySpaces: OntologySpaceItem[] = [
   {
     id: "space-force",
     apiName: "space_force_space",
-    displayName: "太空军本体空间",
-    description: "太空军作战体系相关本体空间",
+    displayName: "太空军对象空间",
+    description: "太空军作战体系相关对象空间",
     iconUrl: spaceForceImage,
     category: "太空军",
     metrics: { ontology: 12, behavior: 9, relation: 24, rule: 84, source: 16 },
@@ -75,8 +75,8 @@ const ontologySpaces: OntologySpaceItem[] = [
   {
     id: "environment",
     apiName: "environment_space",
-    displayName: "环境本体空间",
-    description: "环境要素相关本体空间",
+    displayName: "环境对象空间",
+    description: "环境要素相关对象空间",
     iconUrl: environmentImage,
     category: "环境",
     metrics: { ontology: 20, behavior: 14, relation: 38, rule: 132, source: 26 },
@@ -87,7 +87,7 @@ const ontologySpaces: OntologySpaceItem[] = [
   },
 ];
 
-/** 页面演示/详情与接口失败回退用的本体空间样例（页面模型，非接口契约）。 */
+/** 页面演示/详情与接口失败回退用的对象空间样例（页面模型，非接口契约）。 */
 export const ontologySpaceListMock: ApiResponse<OntologySpaceItem[]> = {
   code: 200,
   message: "列表查询成功",

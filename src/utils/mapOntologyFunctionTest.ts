@@ -28,7 +28,7 @@ export function buildOntologyFunctionTestBindingKeys(params: GetOntologyFunction
  * @description 组装函数测试请求体；按 bindingKeys 顺序写入 variableBindings。
  * @param options 组装选项。
  * @param options.functionApi 函数 API 名称。
- * @param options.ontologyIdentifier 所选本体唯一标识。
+ * @param options.ontologyIdentifier 所选对象唯一标识。
  * @param options.bindingKeys 有序绑定键。
  * @param options.propertyBindings 键到属性 apiName 的映射。
  * @param options.pageNum 可选页码。

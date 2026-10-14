@@ -2,14 +2,14 @@
 
 ## 需求理解
 
-对象工作区已经存在分类操作和本体对象操作 composable，但 `ObjectWorkspacePanel.vue` 仍保留同一套状态、接口调用和弹窗逻辑。需要像属性页一样使用拆分后的文件，并把当前对象页已有行为同步到拆分逻辑中。
+对象工作区已经存在分类操作和对象操作 composable，但 `ObjectWorkspacePanel.vue` 仍保留同一套状态、接口调用和弹窗逻辑。需要像属性页一样使用拆分后的文件，并把当前对象页已有行为同步到拆分逻辑中。
 
 ## 修改范围
 
 - 将 `ObjectWorkspacePanel.vue` 的分类树弹窗状态和分类接口操作迁移到 `useObjectWorkspaceCategoryActions.ts`。
-- 将 `ObjectWorkspacePanel.vue` 的本体对象创建、导入、编辑、删除状态和接口操作迁移到 `useObjectWorkspaceObjectActions.ts`。
+- 将 `ObjectWorkspacePanel.vue` 的对象创建、导入、编辑、删除状态和接口操作迁移到 `useObjectWorkspaceObjectActions.ts`。
 - 主面板保留工作区加载、树节点选择与右侧锚点定位、路由跳转和组件组合。
-- 保留对象创建接口字段、编辑时 `groupIds: [null]`、删除刷新、父本体无值时不展示等现有行为。
+- 保留对象创建接口字段、编辑时 `groupIds: [null]`、删除刷新、父对象无值时不展示等现有行为。
 - 更新对象工作区静态检查，确保主面板使用拆分 composable。
 
 ## 文件变更

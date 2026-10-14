@@ -2,7 +2,7 @@
 
 ## 需求理解
 
-根据 `docs/20260920/getOntologyObjectArrTypeApi-guoshengnan.md` 接入本体对象属性分类树查询接口。已确认采用正文约定的 GET 方法，接口通过 query 传递 ontologyUniqueIdentifier；同时修正文档中与正文冲突的 POST 示例、类型命名和 Mock 路径。
+根据 `docs/20260920/getOntologyObjectArrTypeApi-guoshengnan.md` 接入对象属性分类树查询接口。已确认采用正文约定的 GET 方法，接口通过 query 传递 ontologyUniqueIdentifier；同时修正文档中与正文冲突的 POST 示例、类型命名和 Mock 路径。
 
 ## 契约映射
 

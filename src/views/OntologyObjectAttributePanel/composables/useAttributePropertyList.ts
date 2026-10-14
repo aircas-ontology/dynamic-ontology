@@ -38,29 +38,7 @@ export function useAttributePropertyList(options: {
 }) {
   const { selectedCategoryId, getCategories, onPropertyChanged } = options;
   const route = useRoute();
-  const dataTypes = [
-    "Boolean",
-    "Int",
-    "Long",
-    "Float",
-    "Short",
-    "Byte",
-    "Double",
-    "Decimal",
-    "String",
-    "Date",
-    "Array",
-    "Map",
-    "Vector",
-    "Timestamp",
-    "MediaReference",
-    "TimeSeries",
-    "Attachment",
-    "Geohash",
-    "Geoshape",
-    "Cipher",
-    "Ontology",
-  ];
+  const dataTypes = ["Boolean", "Int", "Long", "Float", "Short", "Byte", "Double", "Decimal", "String", "Date", "Array", "Timestamp"];
   const storageGroupPattern = /^[A-Za-z0-9_]+$/;
   const attributes = ref<OntologyAttributeItem[]>([]);
   const attributeLoading = ref(false);
@@ -98,7 +76,7 @@ export function useAttributePropertyList(options: {
   const categoryOptions = computed(() => flattenCategoryOptions(getCategories()));
 
   /**
-   * @description 从当前本体对象的全部属性中提取非空存储分组并去重，同时保留新增属性默认使用的 main 选项。
+   * @description 从当前对象的全部属性中提取非空存储分组并去重，同时保留新增属性默认使用的 main 选项。
    * @returns 存储分组下拉选项
    */
   function getStorageGroupOptions(): OntologyAttributeStorageGroupOption[] {
@@ -118,7 +96,7 @@ export function useAttributePropertyList(options: {
   async function loadAttributesForSelection() {
     const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
     if (!ontologyUniqueIdentifier) {
-      attributeError.value = "缺少本体对象标识，无法加载属性。";
+      attributeError.value = "缺少对象标识，无法加载属性。";
       return;
     }
     attributeLoading.value = true;
@@ -150,10 +128,10 @@ export function useAttributePropertyList(options: {
       schemaName: "",
       datasourceId: "",
       datasourceColumnName: "",
-      dataType: draft.dataType,
+      dataType: draft.isPrimary ? "Int" : draft.dataType,
       description: draft.description,
       displayName: draft.displayName,
-      apiName: draft.apiName,
+      apiName: draft.isPrimary ? "id" : draft.apiName,
       isPrimaryKey: draft.isPrimary,
       isTitleKey: draft.isNameKey,
       defaultValue: draft.defaultValue,
@@ -168,8 +146,8 @@ export function useAttributePropertyList(options: {
     return {
       uniqueIdentifier,
       displayName: draft.displayName,
-      apiName: draft.apiName,
-      dataType: draft.dataType,
+      apiName: draft.isPrimary ? "id" : draft.apiName,
+      dataType: draft.isPrimary ? "Int" : draft.dataType,
       description: draft.description,
       isTitleKey: draft.isNameKey,
       isPrimaryKey: draft.isPrimary,
@@ -205,6 +183,10 @@ export function useAttributePropertyList(options: {
   /** @description 打开属性编辑表单并回显当前数据。 */
   function openEditAttribute(value: unknown) {
     if (!isAttributeItem(value)) return;
+    if (value.datasourceId.trim() && value.datasourceColumnName.trim()) {
+      ElMessage.warning("该属性已绑定数据源，不可编辑");
+      return;
+    }
     editingAttributeId.value = value.uniqueIdentifier;
     Object.assign(draft, {
       displayName: value.displayName,
@@ -226,7 +208,7 @@ export function useAttributePropertyList(options: {
     if (savingAttribute.value) return;
     const ontologyIdentifier = String(route.params.objectId || "").trim();
     if (!ontologyIdentifier) {
-      attributeCommandError.value = "缺少本体对象标识，无法保存属性。";
+      attributeCommandError.value = "缺少对象标识，无法保存属性。";
       return;
     }
     if (draft.isPrimary && rejectDuplicateAttributeKey("primary")) return;
@@ -295,6 +277,8 @@ export function useAttributePropertyList(options: {
     }
     if (rejectDuplicateAttributeKey("primary")) return;
     draft.isPrimary = true;
+    draft.apiName = "id";
+    draft.dataType = "Int";
   }
 
   /**

@@ -140,7 +140,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
 
 test("space behavior status dialog follows the prototype two-step form", () => {
   const dialogSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorStatusDialog.vue");
-  assert.match(dialogSource, /本体行为状态管理/);
+  assert.match(dialogSource, /对象行为状态管理/);
   assert.match(dialogSource, /目标操作/);
   assert.match(dialogSource, /操作原因/);
   assert.match(dialogSource, /说明发布、停用或转草稿的原因/);

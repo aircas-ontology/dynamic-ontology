@@ -1,10 +1,10 @@
-# 对接本体空间删除接口 Plan
+# 对接对象空间删除接口 Plan
 
 ## 1. 需求理解
 
-- 依据 `docs/20260918/deleteOntologySpaceApi-guoshengnan.md` 对接本体空间删除接口。
-- 触发路径：本体空间管理页面 → 卡片/表格行「更多」→「删除」→ 弹出确认删除提示窗 → 点「删除」确认。
-- 接口成功：关闭弹窗、提示「删除成功」、刷新本体空间列表。
+- 依据 `docs/20260918/deleteOntologySpaceApi-guoshengnan.md` 对接对象空间删除接口。
+- 触发路径：对象空间管理页面 → 卡片/表格行「更多」→「删除」→ 弹出确认删除提示窗 → 点「删除」确认。
+- 接口成功：关闭弹窗、提示「删除成功」、刷新对象空间列表。
 - 接口失败：保留弹窗并展示失败信息。
 - 删除按钮→弹窗→`confirmDeleteOntologySpace` 的 UI 流程已全部接通，核心改动仅在 API 契约层 + `confirmDeleteOntologySpace` 函数体 + 弹窗文案。
 
@@ -18,7 +18,7 @@
 | 修改 | `src/apis/index.ts` | 按字典序新增 `deleteOntologySpaceInterface` 导入与导出（位于 `createOntologySpaceInterface` 与 `getExampleInterface`/`getOntologyCategoryTreeInterface` 之间） |
 | 新增 | `src/mocks/deleteOntologySpaceMock/deleteOntologySpaceMock.ts` | 静态成功响应 `code: 200, message: "SUCCESS", success: true, data: {}` |
 | 修改 | `src/views/OntologySpaceManagement/composables/useSpaceManagementActions.ts` | import 补入 `deleteOntologySpaceInterface`；`confirmDeleteOntologySpace` 改为 `async`，用 `deleteOntologySpaceInterface({ spaceId: Number(activeSpace.value.id) })` 替换 `options.removeOntologySpace(...)`；code 200 → 关弹窗 + `ElMessage.success("删除成功")` + `await options.loadOntologySpaces()`；失败 → 展示 `response.message`；catch → 展示异常信息 |
-| 修改 | `src/views/OntologySpaceManagement/components/SpaceCommandDialogs.vue` | 删除弹窗文案改为 `确认删除「{{ space?.displayName }}」本体空间数据？`，移除「本次演示中的更改将在刷新后重置」本地演示说明 |
+| 修改 | `src/views/OntologySpaceManagement/components/SpaceCommandDialogs.vue` | 删除弹窗文案改为 `确认删除「{{ space?.displayName }}」对象空间数据？`，移除「本次演示中的更改将在刷新后重置」本地演示说明 |
 | 新增 | `tests/delete-ontology-space-api.test.mjs` | 4 个契约测试：types 字段/类型、API DELETE 方法和路径参数 URL、barrel 导出字典序、mock 响应样例 |
 | 修改 | `tests/create-ontology-space-api.test.mjs` | barrel 断言补入 `deleteOntologySpaceInterface` |
 | 修改 | `tests/update-ontology-space-api.test.mjs` | 同上 |
@@ -56,7 +56,7 @@
 ### 3.5 弹窗文案
 
 - 当前：`确定删除「{{ space?.displayName }}」？本次演示中的更改将在刷新后重置。`
-- 改为：`确认删除「{{ space?.displayName }}」本体空间数据？`
+- 改为：`确认删除「{{ space?.displayName }}」对象空间数据？`
 - 移除本地演示说明，因为删除现在走真实接口。
 
 ## 4. 验证

@@ -188,7 +188,7 @@ interface Relation {
 const router = useRouter();
 const route = useRoute();
 const graphCanvasRef = ref<{ zoomBy: (delta: number) => void; fit: () => void } | null>(null);
-const spaceDisplayName = ref("新建本体空间");
+const spaceDisplayName = ref("新建对象空间");
 const spaceApiName = ref("");
 const routeSpaceId = computed(() => {
   const parsed = Number(route.query.spaceId);
@@ -203,29 +203,7 @@ const zoom = ref(100);
 const selected = ref<Selection | null>({ kind: "object", id: 1 });
 const objects = ref<ModelObject[]>([{ id: 1, displayName: "Object_1", apiName: "Object_1", description: "", x: 120, y: 100, attributes: [] }]);
 const relations = ref<Relation[]>([]);
-const dataTypes = [
-  "Boolean",
-  "Int",
-  "Long",
-  "Float",
-  "Short",
-  "Byte",
-  "Double",
-  "Decimal",
-  "String",
-  "Date",
-  "Array",
-  "Map",
-  "Vector",
-  "Timestamp",
-  "MediaReference",
-  "TimeSeries",
-  "Attachment",
-  "Geohash",
-  "Geoshape",
-  "Cipher",
-  "Ontology",
-];
+const dataTypes = ["Boolean", "Int", "Long", "Float", "Short", "Byte", "Double", "Decimal", "String", "Date", "Array", "Timestamp"];
 const storageGroupOptions = ref(["main"]);
 const dataTypeMap: Record<string, string> = {
   字符串: "String",
@@ -236,7 +214,7 @@ const dataTypeMap: Record<string, string> = {
 };
 let sequence = 1;
 const palette = [
-  { type: "object" as const, label: "本体对象", hint: "UML Class · 可编辑名称与描述", glyph: "<<object>>" },
+  { type: "object" as const, label: "对象", hint: "UML Class · 可编辑名称与描述", glyph: "<<object>>" },
   { type: "attribute" as const, label: "对象属性", hint: "拖到对象上，或选中对象后点击", glyph: "+ attr: String" },
   { type: "relation" as const, label: "对象关系", hint: "实线单向箭头：连接两个对象", glyph: "→" },
 ];
@@ -300,7 +278,7 @@ function addObject(x?: number, y?: number) {
 function addAttribute(objectId?: number) {
   const object = objects.value.find((item) => item.id === objectId) ?? selectedObject.value;
   if (!object) {
-    ElMessage.info("请先选择一个本体对象");
+    ElMessage.info("请先选择一个对象");
     return;
   }
   const id = ++sequence;
@@ -498,7 +476,7 @@ function mapCanvasProperty(attribute: Attribute): CanvasProperty {
   };
 }
 
-/** @description 将画布对象转换为创建空间接口对象。 @param object 画布对象。 @returns 接口本体对象参数。 */
+/** @description 将画布对象转换为创建空间接口对象。 @param object 画布对象。 @returns 接口对象参数。 */
 
 function mapCanvasOntology(object: ModelObject): CanvasOntology {
   return {

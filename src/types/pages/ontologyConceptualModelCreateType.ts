@@ -22,7 +22,7 @@ export interface ConceptualModelAttribute {
   isNameKey: boolean;
 }
 
-/** 概念模型本体对象节点。 */
+/** 概念模型对象节点。 */
 export interface ConceptualModelObject {
   id: number;
   displayName: string;

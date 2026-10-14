@@ -1,7 +1,7 @@
-/** 本体对象详情页 Tab 标识。 */
+/** 对象详情页 Tab 标识。 */
 export type OntologyObjectDetailTab = "object" | "attribute" | "relation" | "behavior";
 
-/** 本体对象详情页路由名称联合类型。 */
+/** 对象详情页路由名称联合类型。 */
 export type OntologyObjectDetailRouteName =
   "OntologyObjectDetailObject" | "OntologyObjectDetailAttribute" | "OntologyObjectDetailRelation" | "OntologyObjectDetailBehavior";
 
@@ -39,6 +39,8 @@ export interface OntologyAttributeItem {
   description: string;
   isPrimary: boolean;
   isNameKey: boolean;
+  datasourceId: string;
+  datasourceColumnName: string;
 }
 
 /** 属性新增/编辑表单草稿。 */

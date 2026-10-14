@@ -1,4 +1,4 @@
-/** 查询本体对象实体实例的请求参数。 */
+/** 查询对象实体实例的请求参数。 */
 export interface GetOntologyEntitiesParams {
   ontologyUniqueIdentifier: string;
   pageNum?: number;
@@ -14,7 +14,7 @@ export interface OntologyEntityInfo {
   [propertyName: string]: unknown;
 }
 
-/** 本体对象实体实例分页数据。 */
+/** 对象实体实例分页数据。 */
 export interface GetOntologyEntitiesData {
   records: OntologyEntityInfo[];
   total: number;

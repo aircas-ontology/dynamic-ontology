@@ -2,7 +2,7 @@
 
 ## 需求理解
 
-当访问 `/workspace/ontology-space-management` 路由且 URL 携带 `userName` 查询参数时（如 `?userName=123124112312`），页面需进入"嵌入模式"：隐藏顶部栏（HeaderBar）和左侧导航栏（NavigationMenu），使内容区域占满全屏。该场景用于将本体空间管理页面嵌入到外部系统（如 iframe）中，无需展示应用自身导航框架。
+当访问 `/workspace/ontology-space-management` 路由且 URL 携带 `userName` 查询参数时（如 `?userName=123124112312`），页面需进入"嵌入模式"：隐藏顶部栏（HeaderBar）和左侧导航栏（NavigationMenu），使内容区域占满全屏。该场景用于将对象空间管理页面嵌入到外部系统（如 iframe）中，无需展示应用自身导航框架。
 
 ## 修改范围
 

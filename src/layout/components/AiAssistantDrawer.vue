@@ -57,14 +57,14 @@
           <button
             class="ai-assistant-drawer__send"
             type="button"
-            aria-label="发送问题"
-            :disabled="status === 'submitting' || !draft.trim()"
-            @click="submitAssistantQuestion"
+            :aria-label="status === 'submitting' ? '停止生成' : '发送问题'"
+            :disabled="status !== 'submitting' && !draft.trim()"
+            @click="status === 'submitting' ? stopAssistantChat() : submitAssistantQuestion()"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+            <svg v-if="status !== 'submitting'" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M21 3 3 10.5l6.8 2.7L12.5 20 21 3Z" />
-              <path d="M21 3 9.8 13.2" />
-            </svg>
+              <path d="M21 3 9.8 13.2" /></svg
+            ><span v-else class="ai-assistant-drawer__stop-icon" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -82,7 +82,8 @@ import AiAssistantConversation from "./AiAssistantConversation.vue";
 const prompts = ["新建福特级航空母舰", "创建一个名称属性", "创建舰艇编制关系", "创建一个巡航行为", "编辑函数算子运行配置", "导出行为调度和规则库"];
 const visible = ref(false);
 const stageRef = ref<HTMLElement | null>(null);
-const { draft, messages, status, errorMessage, sendAssistantMessage, startNewAssistantConversation, selectAssistantOption } = useAiAssistantChat();
+const { draft, messages, status, errorMessage, sendAssistantMessage, startNewAssistantConversation, selectAssistantOption, stopAssistantChat } =
+  useAiAssistantChat();
 
 /**
  * @description 把示例问题写入输入框，便于继续编辑后发送。
@@ -363,5 +364,12 @@ watch(messages, () => {
 .ai-assistant-drawer__send svg {
   width: 16px;
   height: 16px;
+}
+.ai-assistant-drawer__stop-icon {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: currentColor;
 }
 </style>

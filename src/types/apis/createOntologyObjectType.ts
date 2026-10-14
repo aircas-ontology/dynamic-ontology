@@ -1,4 +1,4 @@
-/** 创建本体对象请求参数。 */
+/** 创建对象请求参数。 */
 export interface CreateOntologyObjectParams {
   spaceId: number;
   displayName: string;
@@ -10,7 +10,7 @@ export interface CreateOntologyObjectParams {
   groupIds?: string[];
 }
 
-/** 创建本体对象响应数据。 */
+/** 创建对象响应数据。 */
 export interface CreateOntologyObjectData {
   uniqueIdentifier: string;
 }

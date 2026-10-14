@@ -1,6 +1,6 @@
 <template>
-  <section class="object-workspace-panel" aria-label="本体对象工作区">
-    <div v-if="status === 'loading'" class="object-workspace-panel__state" role="status"><AircasLoading>正在加载本体对象…</AircasLoading></div>
+  <section class="object-workspace-panel" aria-label="对象工作区">
+    <div v-if="status === 'loading'" class="object-workspace-panel__state" role="status"><AircasLoading>正在加载对象…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="object-workspace-panel__state" role="alert">
       <span>{{ error }}</span>
       <el-button type="primary" @click="load">重试</el-button>
@@ -184,8 +184,8 @@ function selectNode(node: OntologyConceptNode) {
 }
 
 /**
- * @description 将对象卡片的父本体定位到其所属分类分区。
- * @param item 需要定位的本体对象。
+ * @description 将对象卡片的父对象定位到其所属分类分区。
+ * @param item 需要定位的对象。
  */
 function locateParent(item: OntologyObjectItem) {
   selectedNodeId.value = item.categoryId;
@@ -246,7 +246,7 @@ function handleAction(action: string, item?: OntologyObjectItem) {
     void router.push({ name: "OntologyObjectDetail", params: { objectId: item.id }, query });
     return;
   }
-  const subject = item ? `“${item.displayName}”` : "本体";
+  const subject = item ? `“${item.displayName}”` : "对象";
   const labels: Record<string, string> = { create: "新建", edit: "编辑", export: "导出", delete: "删除" };
   ElMessage.info(`${subject}${labels[action] ?? "操作"}功能尚未接入。`);
 }

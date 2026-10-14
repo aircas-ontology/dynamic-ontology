@@ -14,10 +14,10 @@ export interface AiAssistantProcessItem {
   text: string;
 }
 
-/** AI 助手本体构建步骤状态。 */
+/** AI 助手对象构建步骤状态。 */
 export type AiAssistantBuildStepStatus = "pending" | "active" | "complete" | "error";
 
-/** AI 助手本体构建步骤。 */
+/** AI 助手对象构建步骤。 */
 export interface AiAssistantBuildStep {
   /** 步骤序号，从 1 开始。 */
   index: number;
@@ -27,7 +27,7 @@ export interface AiAssistantBuildStep {
   status: AiAssistantBuildStepStatus;
 }
 
-/** AI 助手本体构建进度。 */
+/** AI 助手对象构建进度。 */
 export interface AiAssistantBuildProgress {
   /** 当前步骤序号，从 1 开始。 */
   current: number;
@@ -87,7 +87,7 @@ export interface AiAssistantAssistantMessage {
   content: string;
   /** 折叠过程条目。 */
   processItems: AiAssistantProcessItem[];
-  /** 本体构建步骤进度；普通问答时为空。 */
+  /** 对象构建步骤进度；普通问答时为空。 */
   buildProgress?: AiAssistantBuildProgress;
   /** 选择卡片。 */
   selection?: AiAssistantSelectionCard;

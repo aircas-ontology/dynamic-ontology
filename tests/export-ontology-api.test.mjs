@@ -50,12 +50,12 @@ test("object card and list export confirms before calling the ontology export ap
   assert.match(actionsSource, /function openOntologyObjectExportDialog/);
   assert.match(actionsSource, /function confirmExportOntologyObject\(exportType: OntologyExportType\)/);
   assert.match(actionsSource, /getExportOntologyInterface\(\{ uniqueIdentifier, exportType \}\)/);
-  assert.match(actionsSource, /缺少本体对象标识，无法导出。/);
+  assert.match(actionsSource, /缺少对象标识，无法导出。/);
   assert.match(panelSource, /if \(action === "export" && item\) \{\s*openOntologyObjectExportDialog\(item\);\s*return;\s*\}/);
   assert.match(panelSource, /<OntologyObjectExportDialog/);
   assert.match(panelSource, /@confirm="confirmExportOntologyObject"/);
   assert.doesNotMatch(panelSource, /void exportOntologyObject\(item\)/);
-  assert.match(dialogSource, /title="导出本体"/);
+  assert.match(dialogSource, /title="导出对象"/);
   assert.match(dialogSource, /导出「\{\{ objectName \}\}」。/);
   assert.match(dialogSource, /SCHEMA：仅结构/);
   assert.match(dialogSource, /INSTANCE：含实例数据/);

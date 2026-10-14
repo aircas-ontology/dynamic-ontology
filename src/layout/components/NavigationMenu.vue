@@ -15,7 +15,11 @@
     <el-menu class="navigation-menu__list" :default-active="route.path" :collapse="collapsed" :collapse-transition="false" router>
       <el-menu-item index="/workspace/ontology-space-management" :route="{ name: 'OntologySpaceManagement' }">
         <el-icon><Box /></el-icon>
-        <template #title>本体空间管理</template>
+        <template #title>对象空间管理</template>
+      </el-menu-item>
+      <el-menu-item index="/workspace/theme-space-management" :route="{ name: 'ThemeSpaceManagement' }">
+        <el-icon><Collection /></el-icon>
+        <template #title>主题空间管理</template>
       </el-menu-item>
       <el-menu-item index="/workspace/full-text-search" :route="{ name: 'FullTextSearch' }">
         <el-icon><Search /></el-icon>
@@ -32,7 +36,7 @@
 
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import { Box, Document, Expand, Fold, Search } from "@element-plus/icons-vue";
+import { Box, Collection, Document, Expand, Fold, Search } from "@element-plus/icons-vue";
 import AiAssistantDrawer from "@/layout/components/AiAssistantDrawer.vue";
 const collapsed = defineModel<boolean>("collapsed", { default: true });
 const route = useRoute();

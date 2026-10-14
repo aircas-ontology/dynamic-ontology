@@ -3,7 +3,7 @@
     <header class="ontology-object-attribute-panel__section-header">
       <div>
         <h1>属性分类树 <small>/ Property Category</small></h1>
-        <p>按分类浏览当前本体对象的属性</p>
+        <p>按分类浏览当前对象的属性</p>
       </div>
     </header>
     <el-input
@@ -94,7 +94,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:categorySearch": [value: string];
   "select-category": [data: OntologyAttributeTreeNode];
-  "edit-attribute": [data: OntologyAttributePropertyTreeNode];
+  "view-attribute": [data: OntologyAttributePropertyTreeNode];
   "create-root": [];
   "create-category": [data: OntologyAttributeCategoryNode];
   "edit-category": [data: OntologyAttributeCategoryNode];
@@ -109,12 +109,12 @@ function isCategoryNode(value: unknown): value is OntologyAttributeCategoryNode 
 }
 
 /**
- * @description 分类树节点点击：分类节点用于筛选属性列表，属性节点打开编辑弹窗。
+ * @description 分类树节点点击：分类节点用于筛选属性列表，属性节点打开详情弹窗。
  * @param data 被点击的树节点
  */
 function handleCategoryTreeNodeClick(data: OntologyAttributeTreeNode) {
   if (data.nodeType === "property") {
-    emit("edit-attribute", data);
+    emit("view-attribute", data);
     return;
   }
   emit("select-category", data);

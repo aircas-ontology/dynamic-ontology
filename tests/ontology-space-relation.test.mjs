@@ -22,6 +22,19 @@ test("relation child route points to the space relation workspace component", ()
   assert.match(source, /SpaceRelationWorkspace\/index\.vue/);
 });
 
+test("relation tree node click opens the read-only detail dialog instead of the edit dialog", () => {
+  const workspaceSource = readFileSync(new URL("../src/views/SpaceRelationWorkspace/index.vue", import.meta.url), "utf8");
+  const detailDialogSource = readFileSync(new URL("../src/views/SpaceRelationWorkspace/components/RelationDetailDialog.vue", import.meta.url), "utf8");
+
+  assert.match(workspaceSource, /RelationDetailDialog/);
+  assert.match(workspaceSource, /relationDetailVisible/);
+  assert.match(workspaceSource, /function openRelationFromTree\(relationId: string\) \{[\s\S]*?relationDetailVisible\.value = true;/);
+  assert.doesNotMatch(workspaceSource, /function openRelationFromTree\(relationId: string\) \{[\s\S]*?openRelationEdit\(item\)/);
+  assert.match(detailDialogSource, /title="关系详情"/);
+  assert.match(detailDialogSource, /el-descriptions/);
+  assert.match(detailDialogSource, /relation: OntologyRelationClass \| null/);
+});
+
 test("hop filter keeps only adjacent layers from the seed", () => {
   const data = createOntologySpaceRelationWorkspaceData();
   const filtered = filterRelationsByHop(data.relations, ["福特级航空母舰(CVN)"], 1);

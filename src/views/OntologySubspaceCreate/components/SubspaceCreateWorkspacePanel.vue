@@ -2,7 +2,7 @@
   <main class="subspace-create-workspace" aria-label="子空间创建内容">
     <header class="subspace-create-workspace__header subspace-create-workspace__panel">
       <el-button class="aircas-button" @click="emit('back')">返回</el-button>
-      <span>父空间：{{ parentSpaceName }}</span>
+      <span>对象空间：{{ parentSpaceName }}</span>
       <div class="subspace-create-workspace__header-actions">
         <el-button v-if="currentStepIndex > 0" class="aircas-button" @click="emit('previous')">上一步</el-button>
         <el-button v-if="currentStepIndex < flowSteps.length - 1" class="aircas-button" type="primary" @click="emit('next')">下一步</el-button>
@@ -11,8 +11,8 @@
     </header>
 
     <el-form class="aircas-form subspace-create-workspace__form" label-position="left" label-width="88px">
-      <el-form-item label="子空间名称">
-        <el-input :model-value="spaceName" class="aircas-input" ariaLabel="子空间名称" @update:model-value="emit('update:spaceName', String($event ?? ''))" />
+      <el-form-item label="主题空间名称">
+        <el-input :model-value="spaceName" class="aircas-input" ariaLabel="主题空间名称" @update:model-value="emit('update:spaceName', String($event ?? ''))" />
       </el-form-item>
       <el-form-item label="API 名称">
         <el-input :model-value="apiName" class="aircas-input" ariaLabel="API 名称" @update:model-value="emit('update:apiName', String($event ?? ''))" />
@@ -298,7 +298,7 @@ function resolveStepPanelCopy() {
   if (props.currentStepIndex <= 0) {
     return {
       title: "第一步：选择对象",
-      description: "请先在左侧分类体系树下勾选需要纳入子空间的本体对象。",
+      description: "请先在左侧分类体系树下勾选需要纳入子空间的对象。",
       summary: `${props.selectedCount} 个对象`,
     };
   }
@@ -352,7 +352,7 @@ function shouldShowStepEmpty() {
  */
 function resolveEmptyDescription() {
   if (props.currentStepIndex <= 0) {
-    return "请在左侧勾选本体对象";
+    return "请在左侧勾选对象";
   }
   if (props.currentStepIndex === 1) {
     return "暂无对象实例";

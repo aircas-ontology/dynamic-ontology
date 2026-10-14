@@ -4,7 +4,7 @@
       <h2>分类体系树</h2>
       <span>已选 {{ selectedCount }} 个</span>
     </header>
-    <el-input v-model="keyword" class="aircas-input subspace-create-tree-panel__search" clearable placeholder="搜索本体对象" />
+    <el-input v-model="keyword" class="aircas-input subspace-create-tree-panel__search" clearable placeholder="搜索对象" />
     <div v-if="status === 'loading'" class="subspace-create-tree-panel__state" role="status">正在加载分类体系树…</div>
     <div v-else-if="status === 'error'" class="subspace-create-tree-panel__state" role="alert">
       <span>{{ error }}</span>
@@ -69,19 +69,20 @@ const treeProps = { children: "children", label: "label" };
 const treeData = computed(() => mapOntologyTreeToSubspaceNodes(workspace.value));
 const selectedCount = computed(() => selectedIds.value.length);
 
-/** @description 将本体空间分类树转换为子空间页面复选树节点。 @param value 本体对象工作区。 @returns 子空间树节点。 */
+/** @description 将对象空间分类树转换为子空间页面复选树节点。 @param value 对象工作区。 @returns 子空间树节点。 */
 function mapOntologyTreeToSubspaceNodes(value: OntologyObjectWorkspace | undefined): SubspaceCreateTreeNode[] {
-  return (value?.tree ?? []).flatMap((node) => mapOntologyNode(node));
+  const apiNameByObjectId = new Map((value?.sections ?? []).flatMap((section) => section.items.map((item) => [item.id, item.apiName] as const)));
+  return (value?.tree ?? []).flatMap((node) => mapOntologyNode(node, apiNameByObjectId));
 }
 
-/** @description 递归映射分类节点，并将分类下的本体对象转换为可勾选叶子。 @param node 本体分类节点。 @returns 子空间树节点。 */
-function mapOntologyNode(node: OntologyConceptNode): SubspaceCreateTreeNode[] {
-  const categories = node.children.flatMap((child) => mapOntologyNode(child));
+/** @description 递归映射分类节点，并将分类下的对象转换为可勾选叶子。 @param node 对象分类节点。 @returns 子空间树节点。 */
+function mapOntologyNode(node: OntologyConceptNode, apiNameByObjectId: Map<string, string>): SubspaceCreateTreeNode[] {
+  const categories = node.children.flatMap((child) => mapOntologyNode(child, apiNameByObjectId));
   const objects = (node.objects ?? []).map((object) => ({
     id: object.uniqueIdentifier,
     label: object.displayName,
     kind: "object" as const,
-    apiName: object.uniqueIdentifier,
+    apiName: apiNameByObjectId.get(object.uniqueIdentifier) ?? object.uniqueIdentifier,
   }));
   return [{ id: node.id, label: node.label, kind: "category", children: [...categories, ...objects] }];
 }

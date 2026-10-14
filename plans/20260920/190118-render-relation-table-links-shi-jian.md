@@ -8,7 +8,7 @@
 
 - mapOntologyRelationCategoryTree：导出 links 映射
 - useSpaceRelationWorkspace：填充 relations
-- SpaceRelationWorkspace：列文案源本体/目标本体；create 后 reload
+- SpaceRelationWorkspace：列文案源对象/目标对象；create 后 reload
 - 测试更新
 
 ## 新增依赖

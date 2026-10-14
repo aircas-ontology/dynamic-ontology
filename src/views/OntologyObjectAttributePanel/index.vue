@@ -1,5 +1,5 @@
 <template>
-  <section class="ontology-object-attribute-panel" aria-label="本体对象属性">
+  <section class="ontology-object-attribute-panel" aria-label="对象属性">
     <AttributeCategoryTree
       :categories="categories"
       :tree-props="treeProps"
@@ -11,7 +11,7 @@
       :filter-category-node="filterCategoryNode"
       @update:category-search="categorySearch = $event"
       @select-category="selectCategory"
-      @edit-attribute="openAttributeFromTree"
+      @view-attribute="openAttributeDetailFromTree"
       @create-root="openRootCategoryCreate"
       @create-category="openCategoryCreate"
       @edit-category="openCategoryEdit"
@@ -27,7 +27,7 @@
       @update:attribute-search="attributeSearch = $event"
       @open-data-source="openDataSource"
       @create-attribute="openCreateAttribute"
-      @edit-attribute="openEditAttribute"
+      @edit-attribute="handleEditAttribute"
       @remove-attribute="removeAttribute"
     />
     <AttributeCategoryCreateDialog
@@ -65,6 +65,12 @@
       @update-name-key="updateDraftNameKey"
       @confirm="saveAttributeDraft"
     />
+    <AttributePropertyDetailDialog
+      :visible="attributeDetailDialogVisible"
+      :attribute="attributeDetail"
+      :category-name="attributeDetailCategoryName"
+      @update:visible="attributeDetailDialogVisible = $event"
+    />
     <DataSourceAssociateDialog
       ref="dataSourceDialogRef"
       v-model="dataSourceDialogVisible"
@@ -97,16 +103,18 @@ import type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceTablesData,
   GetOntologyPropertyDetailByOntologyIdData,
+  OntologyAttributeItem,
   OntologyAttributePropertyTreeNode,
 } from "@/types";
 import { useRoute } from "vue-router";
 import { useAttributeCategoryTree } from "./composables/useAttributeCategoryTree";
 import { useAttributePropertyList } from "./composables/useAttributePropertyList";
-import { collectPropertyItemsFromTree, findCategory, filterCategoryNode, mapOntologyPropertyItem } from "./utils/attributePanelHelpers";
+import { collectPropertyItemsFromTree, findCategory, filterCategoryNode, isAttributeItem, mapOntologyPropertyItem } from "./utils/attributePanelHelpers";
 import AttributeCategoryCreateDialog from "./components/AttributeCategoryCreateDialog.vue";
 import AttributeCategoryEditDialog from "./components/AttributeCategoryEditDialog.vue";
 import AttributeCategoryTree from "./components/AttributeCategoryTree.vue";
 import AttributePropertyFormDialog from "./components/AttributePropertyFormDialog.vue";
+import AttributePropertyDetailDialog from "./components/AttributePropertyDetailDialog.vue";
 import AttributePropertyTable from "./components/AttributePropertyTable.vue";
 import DataSourceAssociateDialog from "./components/DataSourceAssociateDialog.vue";
 
@@ -228,12 +236,50 @@ const {
   removeAttribute,
 } = propertyApi;
 
+const attributeDetailDialogVisible = ref(false);
+const attributeDetail = ref<ReturnType<typeof mapOntologyPropertyItem> | null>(null);
+const attributeDetailCategoryName = computed(() =>
+  attributeDetail.value ? (findCategory(categories.value, attributeDetail.value.categoryId)?.label ?? "未分类") : "",
+);
+
 /**
- * @description 将分类树属性节点转为列表项并打开与表格编辑按钮相同的属性编辑弹窗。
+ * @description 将分类树属性节点转为列表项并打开只读属性详情弹窗。
  * @param data 分类树中的属性节点
  */
-function openAttributeFromTree(data: OntologyAttributePropertyTreeNode) {
-  openEditAttribute(mapOntologyPropertyItem(data.source, String(route.params.objectId || "")));
+function openAttributeDetailFromTree(data: OntologyAttributePropertyTreeNode) {
+  attributeDetail.value = mapOntologyPropertyItem(data.source, String(route.params.objectId || ""));
+  attributeDetailDialogVisible.value = true;
+}
+
+/**
+ * @description 查询属性详情后判断数据源绑定状态，再决定是否打开编辑表单。
+ * @param value 待编辑的属性列表项。
+ */
+async function handleEditAttribute(value: unknown): Promise<void> {
+  if (!isAttributeItem(value)) return;
+  if (value.datasourceId.trim() && value.datasourceColumnName.trim()) {
+    ElMessage.warning("该属性已绑定数据源，不可编辑");
+    return;
+  }
+  const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
+  if (!ontologyUniqueIdentifier || !value.uniqueIdentifier.trim()) {
+    openEditAttribute(value);
+    return;
+  }
+  try {
+    if (!ontologyPropertyDetails.value.length) {
+      await loadPropertyDataSourceDetails(ontologyUniqueIdentifier);
+    }
+    const detail = ontologyPropertyDetails.value.find((item) => item.uniqueIdentifier === value.uniqueIdentifier);
+    if (detail?.datasourceId?.trim() && detail.datasourceColumnName?.trim()) {
+      ElMessage.warning("该属性已绑定数据源，不可编辑");
+      return;
+    }
+  } catch {
+    ElMessage.error("属性绑定状态查询失败，请稍后重试");
+    return;
+  }
+  openEditAttribute(value);
 }
 
 const dataSourceDialogVisible = ref(false);
@@ -291,7 +337,7 @@ function mapDatasourceTables(response: GetOntologyDatasourceTablesData): DataSou
   return [
     {
       id: "ontology-datasource",
-      name: "本体空间数据源",
+      name: "对象空间数据源",
       tables: response.records.map((record) => ({
         id: `${record.schemaName}.${record.tableName}`,
         name: record.tableName,
@@ -321,7 +367,7 @@ async function openDataSource() {
   if (dataSourceOpening.value) return;
   const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
   if (!ontologyUniqueIdentifier) {
-    ElMessage.error("缺少本体对象标识，无法加载属性数据源关联。");
+    ElMessage.error("缺少对象标识，无法加载属性数据源关联。");
     return;
   }
   dataSourceOpening.value = true;
@@ -342,8 +388,8 @@ async function openDataSource() {
 }
 
 /**
- * @description 查询当前本体属性及其数据源关联详情。
- * @param ontologyUniqueIdentifier 本体唯一标识。
+ * @description 查询当前对象属性及其数据源关联详情。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
  */
 async function loadPropertyDataSourceDetails(ontologyUniqueIdentifier: string): Promise<void> {
   const infoResponse = await getOntologyPropertyDetailByOntologyIdInterface({ ontologyUniqueIdentifier });
@@ -352,13 +398,13 @@ async function loadPropertyDataSourceDetails(ontologyUniqueIdentifier: string): 
 }
 
 /**
- * @description 查询当前本体空间的数据源表列表。
+ * @description 查询当前对象空间的数据源表列表。
  * @returns 是否成功获得数据源表目录。
  */
 async function loadDataSourceTables(): Promise<boolean> {
   const spaceId = Number(route.query.spaceId);
   if (!Number.isFinite(spaceId)) {
-    dataSourceTableError.value = "缺少本体空间标识，无法加载数据源。";
+    dataSourceTableError.value = "缺少对象空间标识，无法加载数据源。";
     return false;
   }
   dataSourceTableLoading.value = true;
@@ -420,12 +466,12 @@ async function loadAssociatedDataSourceColumns(): Promise<void> {
   }
 }
 
-/** @description 调用后端自动关联当前本体属性数据源并保留弹窗。 */
+/** @description 调用后端自动关联当前对象属性数据源并保留弹窗。 */
 async function handleAutoDataSourceAssociate() {
   if (autoDataSourceSubmitting.value) return;
   const ontologyIdentifier = String(route.params.objectId || "").trim();
   if (!ontologyIdentifier) {
-    ElMessage.error("缺少本体对象标识，无法自动关联数据源。");
+    ElMessage.error("缺少对象标识，无法自动关联数据源。");
     return;
   }
   autoDataSourceSubmitting.value = true;
@@ -456,7 +502,7 @@ async function handleDataSourceSubmit(payloads: PropertyBindPayload[]) {
     const attribute = allAttributes.value.find((item) => item.uniqueIdentifier === payload.id);
     if (!attribute) {
       dataSourceDialogRef.value?.setLoading(false);
-      ElMessage.error("未找到待关联的本体属性，请重新打开弹窗后再试。");
+      ElMessage.error("未找到待关联的对象属性，请重新打开弹窗后再试。");
       return;
     }
     params.push({

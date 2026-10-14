@@ -1,5 +1,5 @@
 <template>
-  <nav class="object-detail-tabs" aria-label="本体对象详情">
+  <nav class="object-detail-tabs" aria-label="对象详情">
     <div class="object-detail-tabs__list" role="tablist">
       <template v-for="tab in visibleTabs" :key="tab.id">
         <span v-if="tab.id === firstMenuTabId" class="object-detail-tabs__separator" aria-hidden="true" />

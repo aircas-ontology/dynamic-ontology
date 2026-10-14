@@ -1,6 +1,6 @@
 import type { ApiResponse, GetOntologyObjectArrTypeTreeData } from "@/types";
 
-/** 本体对象属性分类树查询成功响应样例。 */
+/** 对象属性分类树查询成功响应样例。 */
 export const getOntologyObjectArrTypeTreeMock: ApiResponse<GetOntologyObjectArrTypeTreeData> = {
   code: 200,
   message: "SUCCESS",

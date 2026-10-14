@@ -2,7 +2,7 @@
 
 ## 需求理解
 
-按原型 `http://localhost:36001/#/layout/ontology-space-management/navy/carrier-ford` 属性页"关联数据源"按钮打开的弹窗，在本项目实现同款布局组件，入口为本体对象属性页 `OntologyObjectAttributePanel.vue` 的"关联数据源"按钮。本轮只做**页面布局**，不含真实接口对接、关联逻辑、连线图、自动关联、跳转数据管道等业务能力。
+按原型 `http://localhost:36001/#/layout/ontology-space-management/navy/carrier-ford` 属性页"关联数据源"按钮打开的弹窗，在本项目实现同款布局组件，入口为对象属性页 `OntologyObjectAttributePanel.vue` 的"关联数据源"按钮。本轮只做**页面布局**，不含真实接口对接、关联逻辑、连线图、自动关联、跳转数据管道等业务能力。
 
 用户已确认由本任务同时承担按钮接线，与在途的"概念画布创建接口对接"任务在 `OntologyObjectAttributePanel.vue` 上可能产生合并冲突，由用户协调。
 
@@ -30,13 +30,13 @@
 
 - 基于 `el-dialog` + `aircas-dialog`，宽度 `min(1100px, 96vw)`，`append-to-body` + `destroy-on-close`。
 - 头部用 el-dialog title "关联数据源"。
-- 顶部工具栏：已选数据表 tab（带关闭×、+N 计数）｜"选择数据表"下拉｜"选择字段"标签｜"关联到"｜"选择本体属性"下拉｜"关联"按钮（无选中时 disabled）｜"自动关联数据源"按钮｜"跳转到数据管道"按钮（默认 disabled）。
+- 顶部工具栏：已选数据表 tab（带关闭×、+N 计数）｜"选择数据表"下拉｜"选择字段"标签｜"关联到"｜"选择对象属性"下拉｜"关联"按钮（无选中时 disabled）｜"自动关联数据源"按钮｜"跳转到数据管道"按钮（默认 disabled）。
 - 主体用 CSS Grid 三列：左 `minmax(280px, 32%)`、中 `minmax(0, 1fr)`、右 `minmax(220px, 22%)`，窄屏改单列堆叠。
 - 左面板：按数据表分组的字段列表，每组用本地 `collapsedTables` ref 控制折叠，列头「字段名称｜数据类型」，每行末尾「关联字段」按钮。
-- 中间区：本体属性列表，列头「名称｜API 名称｜分类」，每行开头「关联属性」按钮，apiName 作为行唯一标识。
+- 中间区：对象属性列表，列头「名称｜API 名称｜分类」，每行开头「关联属性」按钮，apiName 作为行唯一标识。
 - 右面板：操作缓存，显示「操作缓存｜N 项待提交」、提示「图中双击连线可临时删除，提交后保存。」、「已关联 18 / 23」、「提交」按钮（缓存为空时 disabled）。
 - 类型本地定义：`DataSourceTable`、`DataSourceField`、`OntologyAttributeItem`。
-- mock 数据内联：7 张数据源表 + 23 条本体属性，与原型一致。
+- mock 数据内联：7 张数据源表 + 23 条对象属性，与原型一致。
 - 接线：`OntologyObjectAttributePanel.vue` 新增 `dataSourceDialogVisible` ref，`openDataSource` 改为置 true，模板末尾挂载 `<DataSourceAssociateDialog v-model="dataSourceDialogVisible" />`。
 
 ## 新增依赖及必要性
@@ -54,7 +54,7 @@ git diff --check
 git status --short
 ```
 
-浏览器实机验证：访问本体对象属性页，点击"关联数据源"按钮，确认弹窗结构与原型一致。
+浏览器实机验证：访问对象属性页，点击"关联数据源"按钮，确认弹窗结构与原型一致。
 
 ## 风险与边界
 

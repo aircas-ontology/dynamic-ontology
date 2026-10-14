@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    title="本体行为状态管理"
+    title="对象行为状态管理"
     width="720px"
     append-to-body
     destroy-on-close

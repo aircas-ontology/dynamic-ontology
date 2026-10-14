@@ -1,14 +1,14 @@
 <template>
   <div class="ontology-space-management">
     <section class="ontology-space-management__overview">
-      <WelcomePanel @create="openOntologySpaceForm()" />
+      <WelcomePanel :show-create="!isEmbedded" @create="openOntologySpaceForm()" />
       <div class="ontology-space-management__stats" :aria-busy="overviewStatus === 'loading'">
         <StatCard v-for="stat in summaryStats" :key="stat.id" :stat="stat" />
       </div>
     </section>
     <p v-if="overviewError" class="ontology-space-management__overview-error" role="alert">{{ overviewError }}</p>
     <SectionToolbar v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
-    <div v-if="status === 'loading'" class="ontology-space-management__state" role="status"><AircasLoading>正在加载本体空间…</AircasLoading></div>
+    <div v-if="status === 'loading'" class="ontology-space-management__state" role="status"><AircasLoading>正在加载对象空间…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="ontology-space-management__state" role="alert">
       <span>{{ error }}</span
       ><el-button type="primary" @click="loadOntologySpaces">重试</el-button>
@@ -43,7 +43,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import AircasLoading from "@/components/AircasLoading.vue";
 import SectionToolbar from "./components/SectionToolbar.vue";
 import SpaceCollection from "./components/SpaceCollection.vue";
@@ -85,6 +86,8 @@ const {
   confirmExportOntologySpace,
   completeOntologySpaceImport,
 } = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace, loadOntologySpaces });
+const route = useRoute();
+const isEmbedded = computed(() => typeof route.query.userName === "string" && route.query.userName.trim().length > 0);
 
 onMounted(() => {
   void Promise.all([loadOntologySpaces(), loadOntologyOverviewCount()]);

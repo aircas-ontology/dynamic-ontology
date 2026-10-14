@@ -13,7 +13,7 @@ const STATISTIC_FIELD_TO_TAB: ReadonlyArray<{ field: keyof OntologySpaceStatisti
 
 /**
  * @description 将后端统计 VO 映射为空间概览数据；所有非零计数的 tab 标记为可用。
- * @param statistic 后端返回的本体空间资源统计对象。
+ * @param statistic 后端返回的对象空间资源统计对象。
  * @returns 适配前端概览面板的结构。
  */
 export function mapOntologySpaceStatistic(statistic: OntologySpaceStatisticVO): OntologySpaceOverview {
@@ -33,7 +33,7 @@ export function mapOntologySpaceStatistic(statistic: OntologySpaceStatisticVO): 
 
 /**
  * @description 从后端统计接口加载空间概览；失败时抛出错误，由调用方提示，不回退 Mock。
- * @param id 本体空间 id。
+ * @param id 对象空间 id。
  * @returns 概览数据；成功但无业务 data 时返回 undefined。
  */
 async function loadSpaceOverviewFromApi(id: string): Promise<OntologySpaceOverview | undefined> {
