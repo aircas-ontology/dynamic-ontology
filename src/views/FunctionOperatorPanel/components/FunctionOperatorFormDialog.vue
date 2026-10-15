@@ -129,11 +129,16 @@
 
   <FunctionOperatorScriptIdeDialog
     v-model="scriptIdeVisible"
+    v-model:code="scriptDraftCode"
+    v-model:language="scriptDraftLanguage"
+    v-model:test-params="scriptDraftTestParams"
     :function-api="form.functionApi"
     :version="form.version"
     :display-name="form.name"
     :description="form.description"
     :space-id="form.spaceId"
+    :source-version="sourceVersion"
+    :language-locked="Boolean(operator)"
     :saving="loading"
     @save="emitSaveScript"
   />
@@ -152,6 +157,7 @@ import {
   type FunctionOperator,
   type FunctionOperatorDraft,
   type FunctionOperatorProtocol,
+  type FunctionOperatorScriptLanguage,
   type FunctionOperatorType,
   type GetOntologyFunctionListItem,
 } from "@/types";
@@ -161,6 +167,7 @@ import { mapOntologyFunctionDetailToDraft } from "@/utils/mapOntologyFunctionDet
 
 import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBuilder.vue";
 import FunctionOperatorScriptIdeDialog from "./FunctionOperatorScriptIdeDialog.vue";
+import { createDefaultScriptFunctionCode, DEFAULT_SCRIPT_FUNCTION_LANGUAGE, DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS } from "../utils/scriptFunctionStarters";
 
 const PROTOCOL_OPTIONS: ReadonlyArray<Extract<FunctionOperatorProtocol, "HTTP">> = ["HTTP"];
 
@@ -199,6 +206,46 @@ const sourceFunctionId = ref("");
 const sourceVersion = ref("");
 /** 脚本函数 Web-IDE 全屏弹框是否可见。 */
 const scriptIdeVisible = ref(false);
+/** 脚本 IDE 代码草稿（返回上一步时保留，关闭新建弹框或离开脚本类型时清空）。 */
+const scriptDraftCode = ref(createDefaultScriptFunctionCode());
+/** 脚本 IDE 语言草稿。 */
+const scriptDraftLanguage = ref<FunctionOperatorScriptLanguage>(DEFAULT_SCRIPT_FUNCTION_LANGUAGE);
+/** 脚本 IDE 测试参数草稿。 */
+const scriptDraftTestParams = ref(DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS);
+
+/**
+ * @description 将脚本 IDE 草稿重置为默认 starter。
+ */
+function resetScriptDraft(): void {
+  scriptDraftCode.value = createDefaultScriptFunctionCode();
+  scriptDraftLanguage.value = DEFAULT_SCRIPT_FUNCTION_LANGUAGE;
+  scriptDraftTestParams.value = DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS;
+}
+
+/**
+ * @description 从草稿 definition 回填脚本 IDE 草稿；非脚本类型不修改。
+ * @param draft 表单或详情映射草稿。
+ */
+function applyScriptDraftFromDefinition(draft: FunctionOperatorDraft): void {
+  if (draft.definition.kind !== "code") {
+    return;
+  }
+  scriptDraftCode.value = draft.definition.code;
+  scriptDraftLanguage.value = draft.definition.language;
+  scriptDraftTestParams.value = DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS;
+}
+
+/**
+ * @description 生成新建脚本类型的默认 definition。
+ * @returns 含默认语言与 starter 的 code definition。
+ */
+function createDefaultCodeDefinition(): FunctionOperatorDraft["definition"] {
+  return {
+    kind: "code",
+    language: DEFAULT_SCRIPT_FUNCTION_LANGUAGE,
+    code: createDefaultScriptFunctionCode(),
+  };
+}
 /** 源函数下拉选项（独立列表接口结果）。 */
 const sourceFunctionOptions = ref<GetOntologyFunctionListItem[]>([]);
 let sourceFunctionListGeneration = 0;
@@ -289,6 +336,10 @@ function applySourceTemplateDraft(draft: FunctionOperatorDraft): void {
   form.description = draft.description;
   if (form.type === "basic" && form.definition.kind === "basic" && draft.definition.kind === "basic") {
     form.definition = structuredClone(toRaw(draft.definition));
+  }
+  if (form.type === "code" && draft.definition.kind === "code") {
+    form.definition = structuredClone(toRaw(draft.definition));
+    applyScriptDraftFromDefinition(draft);
   }
   void nextTick(() => {
     formRef.value?.clearValidate(["name", "functionApi"]);
@@ -447,18 +498,28 @@ function changeType(type: FunctionOperatorType): void {
   if (form.type === type) {
     return;
   }
+  const previousType = form.type;
   const next = createEmptyDraft();
   next.type = type;
   if (type === "basic") {
     next.definition = { kind: "basic", parameterConfig: createDefaultBasicParameterConfig(), aggFunc: "", targetProperty: "" };
-  } else if (type === "composite" || type === "code") {
+  } else if (type === "code") {
     next.protocol = "HTTP";
-    next.definition = { kind: type };
+    next.definition = createDefaultCodeDefinition();
+  } else if (type === "composite") {
+    next.protocol = "HTTP";
+    next.definition = { kind: "composite" };
   } else {
     next.definition = { kind: type };
   }
   Object.assign(form, next);
   delete form.id;
+  if (previousType === "code" && type !== "code") {
+    scriptIdeVisible.value = false;
+    resetScriptDraft();
+  } else if (type === "code") {
+    applyScriptDraftFromDefinition(next);
+  }
   resetSourceTemplateSelection();
   void loadSourceFunctionOptions();
   void nextTick(() => {
@@ -544,6 +605,7 @@ watch(
   ([visible]) => {
     if (!visible) {
       scriptIdeVisible.value = false;
+      resetScriptDraft();
       sourceFunctionListGeneration += 1;
       sourceFunctionOptions.value = [];
       resetSourceTemplateSelection();
@@ -554,6 +616,11 @@ watch(
     Object.assign(form, next);
     if (!next.id) {
       delete form.id;
+    }
+    if (next.definition.kind === "code") {
+      applyScriptDraftFromDefinition(next);
+    } else {
+      resetScriptDraft();
     }
     resetSourceTemplateSelection();
     void loadSourceFunctionOptions();

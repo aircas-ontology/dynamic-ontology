@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestRequest } from "../src/utils/mapOntologyFunctionTest.ts";
+import {
+  buildOntologyFunctionScriptTestInputRows,
+  buildOntologyFunctionScriptTestRequest,
+  buildOntologyFunctionTestBindingKeys,
+  buildOntologyFunctionTestRequest,
+} from "../src/utils/mapOntologyFunctionTest.ts";
 
 /**
  * @description 读取相对 tests 目录的源文件文本。
@@ -19,16 +24,22 @@ test("test ontology function types expose documented request fields and null dat
   const source = readSource("../src/types/apis/testOntologyFunctionType.ts");
   assert.match(source, /export interface TestOntologyFunctionParams/);
   assert.match(source, /functionApi: string/);
-  assert.match(source, /ontologyIdentifier: string/);
-  assert.match(source, /variableBindings: Record<string, string>/);
+  assert.match(source, /version: string/);
+  assert.match(source, /ontologyIdentifier\?: string/);
+  assert.match(source, /variableBindings\?: Record<string, string>/);
+  assert.match(source, /parameters\?: TestOntologyFunctionParameterItem\[\]/);
   assert.match(source, /pageNum\?: number/);
   assert.match(source, /pageSize\?: number/);
+  assert.match(source, /export interface TestOntologyFunctionParameterItem/);
+  assert.match(source, /paramName: string/);
+  assert.match(source, /paramValue: string/);
   assert.match(source, /export type TestOntologyFunctionData = null/);
   const detail = readSource("../src/types/apis/getOntologyFunctionDetailType.ts");
   assert.match(detail, /paramRole\?: string/);
   const barrel = readSource("../src/types/index.ts");
   assert.match(barrel, /TestOntologyFunctionData/);
   assert.match(barrel, /TestOntologyFunctionParams/);
+  assert.match(barrel, /TestOntologyFunctionParameterItem/);
   assert.match(barrel, /testOntologyFunctionType/);
 });
 
@@ -60,18 +71,45 @@ test("buildOntologyFunctionTestBindingKeys puts AGGREGATION first then FILTER na
   assert.deepEqual(keys, ["target", "xingbie", "age"]);
 });
 
-test("buildOntologyFunctionTestRequest assembles functionApi ontologyIdentifier and bindings", () => {
+test("buildOntologyFunctionTestRequest assembles functionApi version ontologyIdentifier and bindings", () => {
   const request = buildOntologyFunctionTestRequest({
     functionApi: "ss",
+    version: "1.0.0",
     ontologyIdentifier: "ont-1",
     bindingKeys: ["target", "age"],
     propertyBindings: { target: "prop_a", age: "prop_b" },
   });
   assert.equal(request.functionApi, "ss");
+  assert.equal(request.version, "1.0.0");
   assert.equal(request.ontologyIdentifier, "ont-1");
   assert.deepEqual(request.variableBindings, { target: "prop_a", age: "prop_b" });
   assert.equal(request.pageNum, 1);
   assert.equal(request.pageSize, 10);
+});
+
+test("buildOntologyFunctionScriptTestInputRows keeps INPUT only sorted by paramOrder", () => {
+  const rows = buildOntologyFunctionScriptTestInputRows([
+    { paramId: 1, paramName: "b", paramType: "STRING", category: "INPUT", paramOrder: 2 },
+    { paramId: 2, paramName: "out", paramType: "STRING", category: "OUTPUT", paramOrder: 1 },
+    { paramId: 3, paramName: "a", paramType: "NUMBER", category: "input", paramOrder: 1 },
+  ]);
+  assert.deepEqual(rows, [
+    { paramName: "a", paramType: "NUMBER", paramValue: "" },
+    { paramName: "b", paramType: "STRING", paramValue: "" },
+  ]);
+});
+
+test("buildOntologyFunctionScriptTestRequest assembles functionApi version and parameters", () => {
+  const request = buildOntologyFunctionScriptTestRequest({
+    functionApi: "smoke.hello.py",
+    version: "1.0.0",
+    rows: [{ paramName: "name", paramType: "STRING", paramValue: "foundry" }],
+  });
+  assert.deepEqual(request, {
+    functionApi: "smoke.hello.py",
+    version: "1.0.0",
+    parameters: [{ paramName: "name", paramValue: "foundry" }],
+  });
 });
 
 test("function operator openTest loads detail and runTest shows output panel", () => {
@@ -93,4 +131,24 @@ test("function operator openTest loads detail and runTest shows output panel", (
   assert.match(panel, /function-operator-test__io/);
   assert.match(panel, /width="960px"/);
   assert.doesNotMatch(panel, /function-operator-panel__test-result/);
+});
+
+test("function operator script test uses dedicated dialog and parameters body", () => {
+  const workspace = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
+  const panel = readSource("../src/views/FunctionOperatorPanel/index.vue");
+  const dialog = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptTestDialog.vue");
+  assert.match(workspace, /isScriptFunctionOperator/);
+  assert.match(workspace, /type === "code"/);
+  assert.match(workspace, /apiModelType === "CUSTOMIZE"/);
+  assert.match(workspace, /async function openScriptTest/);
+  assert.match(workspace, /async function runScriptTest/);
+  assert.match(workspace, /buildOntologyFunctionScriptTestInputRows/);
+  assert.match(workspace, /buildOntologyFunctionScriptTestRequest/);
+  assert.match(workspace, /updateScriptTestParamValue/);
+  assert.match(dialog, /脚本函数测试/);
+  assert.match(dialog, /执行结果/);
+  assert.match(dialog, /formatScriptTestParamLabel/);
+  assert.match(panel, /FunctionOperatorScriptTestDialog/);
+  assert.match(panel, /scriptTestVisible/);
+  assert.match(panel, /runScriptTest/);
 });

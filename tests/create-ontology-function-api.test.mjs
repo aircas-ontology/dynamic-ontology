@@ -27,6 +27,7 @@ test("create ontology function types expose the documented request fields", () =
   assert.match(source, /language\?: string/);
   assert.match(source, /code\?: string/);
   assert.match(source, /parameters\?: CreateOntologyFunctionParameter\[\]/);
+  assert.match(source, /basedOnOldVersion\?: boolean/);
   assert.match(source, /export interface CreateOntologyFunctionParameter/);
   assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);

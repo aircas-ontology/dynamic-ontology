@@ -19,6 +19,7 @@ export type {
   BatchUpdateOntologyPropertyDatasource,
   BatchUpdateOntologyPropertyItem,
 } from "./apis/batchUpdateOntologyPropertiesType";
+export type { ActionCategoryNode, CreateActionCategoryParams } from "./apis/createActionCategoryType";
 export type {
   CreateOntologyFunctionAggFunc,
   CreateOntologyFunctionData,
@@ -61,6 +62,7 @@ export type {
   OntologySubspacePropertyFilterValue,
   OntologySubspacePropertySelection,
 } from "./apis/createOntologySubspaceType";
+export type { DeleteActionCategoryParams } from "./apis/deleteActionCategoryType";
 export type { DeleteOntologyFunctionData, DeleteOntologyFunctionParams } from "./apis/deleteOntologyFunctionType";
 export type { DeleteOntologyLinkParams } from "./apis/deleteOntologyLinkType";
 export type { DeleteOntologyObjectArrTypeTreeParams } from "./apis/deleteOntologyObjectArrTypeTreeType";
@@ -72,6 +74,7 @@ export type { ExportOntologySpaceFile, ExportOntologySpaceParams, OntologySpaceE
 export type { ExportOntologyFile, ExportOntologyParams, OntologyExportType } from "./apis/exportOntologyType";
 export type { FunctionPublishData, FunctionPublishParams } from "./apis/functionPublishType";
 export type { FunctionUnpublishData, FunctionUnpublishParams } from "./apis/functionUnpublishType";
+export type { ActionCategoryVO, GetActionCategoryTreeParams } from "./apis/getActionCategoryTreeType";
 export type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceColumnsParams,
@@ -138,7 +141,8 @@ export type {
   StreamAgentChatSelectionOption,
   StreamAgentChatSelectionScenario,
 } from "./apis/streamAgentChatType";
-export type { TestOntologyFunctionData, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
+export type { TestOntologyFunctionData, TestOntologyFunctionParameterItem, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
+export type { UpdateActionCategoryParams } from "./apis/updateActionCategoryType";
 export type { UpdateOntologyFunctionData, UpdateOntologyFunctionParams } from "./apis/updateOntologyFunctionType";
 export type { UpdateOntologyLinkParams } from "./apis/updateOntologyLinkType";
 export type { UpdateOntologyObjectArrTypeTreeParams } from "./apis/updateOntologyObjectArrTypeTreeType";
@@ -193,6 +197,7 @@ export type {
   FunctionOperatorAggFunc,
   FunctionOperatorBasicAction,
   FunctionOperatorBasicDefinition,
+  FunctionOperatorCodeDefinition,
   FunctionOperatorDefinition,
   FunctionOperatorDraft,
   FunctionOperatorPage,

@@ -1,4 +1,10 @@
 import { abortAgentChatInterface, postAgentChatStreamInterface } from "./agentChatApi";
+import {
+  createActionCategoryInterface,
+  deleteActionCategoryInterface,
+  getActionCategoryTreeInterface,
+  updateActionCategoryInterface,
+} from "./actionCategoryApi";
 import { getExampleInterface } from "./exampleApi";
 import {
   createOntologyFunctionInterface,
@@ -69,6 +75,8 @@ import {
 
 export {
   autoBindOntologyPropertyDatasourceInterface,
+  createActionCategoryInterface,
+  deleteActionCategoryInterface,
   createOntologyFunctionInterface,
   createOntologySpaceInterface,
   createOntologySpaceWithCanvasContentInterface,
@@ -84,6 +92,7 @@ export {
   deleteOntologyRelationCategoryTreeInterface,
   deleteOntologySpaceInterface,
   deleteOntologyPropertyInterface,
+  getActionCategoryTreeInterface,
   getExampleInterface,
   getExportOntologyInterface,
   getExportOntologySpaceInterface,
@@ -124,6 +133,7 @@ export {
   putUpdateOntologyRelationCategoryNameInterface,
   testOntologyFunctionInterface,
   updateOntologyFunctionInterface,
+  updateActionCategoryInterface,
   updateOntologySpaceInterface,
   updateOntologyObjectArrTypeTreeInterface,
   updateOntologyObjectInterface,

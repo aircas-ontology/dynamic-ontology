@@ -20,7 +20,11 @@ test("update ontology function types expose the documented request fields", () =
   assert.match(source, /version: string/);
   assert.match(source, /displayName: string/);
   assert.match(source, /description: string/);
-  assert.match(source, /type: "BASIC_QUERY"/);
+  assert.match(source, /type: CreateOntologyFunctionType/);
+  assert.match(source, /language\?: string/);
+  assert.match(source, /code\?: string/);
+  assert.match(source, /parameters\?: CreateOntologyFunctionParameter\[\]/);
+  assert.doesNotMatch(source, /basedOnOldVersion/);
   assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
   assert.match(source, /export type UpdateOntologyFunctionData = null/);
@@ -62,4 +66,22 @@ test("function operator workspace edit save calls update api", () => {
   assert.match(saveBlock, /version:\s*version/);
   assert.match(saveBlock, /draft\.version\.trim\(\)/);
   assert.match(saveBlock, /缺少函数版本/);
+});
+
+test("function operator saveScriptOperator uses put when editing", () => {
+  const workspaceSource = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
+  const saveScriptBlock = workspaceSource.slice(
+    workspaceSource.indexOf("async function saveScriptOperator"),
+    workspaceSource.indexOf("async function saveOperator"),
+  );
+  assert.match(saveScriptBlock, /if \(editingOperator\.value\)/);
+  assert.match(saveScriptBlock, /basedOnOldVersion:\s*_basedOnOldVersion/);
+  assert.match(saveScriptBlock, /updateOntologyFunctionInterface\(updateParams\)/);
+  assert.match(saveScriptBlock, /createOntologyFunctionInterface\(params\)/);
+  assert.match(saveScriptBlock, /脚本函数已更新/);
+  const formSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue");
+  assert.match(formSource, /:language-locked="Boolean\(operator\)"/);
+  const ideSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptIdeDialog.vue");
+  assert.match(ideSource, /languageLocked/);
+  assert.match(ideSource, /:disabled="languageLocked"/);
 });

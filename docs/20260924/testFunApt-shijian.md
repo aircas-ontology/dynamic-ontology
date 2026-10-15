@@ -27,18 +27,22 @@ mocks与types文件名自行语义化命名
 - ```JSON
   {
     "functionApi": "a",
+    "version": "",
     "ontologyIdentifier": "",
     "variableBindings": {
 
     },
+    "parameters": [],
     "pageNum": 1,
     "pageSize": 10,
   }
   ```
 
 - `functionApi`：【string，必填】 函数api
-- `ontologyIdentifier`：【string，必填】 对象唯一值
-- `variableBindings`：【object，必填】 查询参数对象
+- `version`：【string，必填】 版本号（必填，格式 x.y.z）
+- `ontologyIdentifier`：【string，必填】 本体唯一值
+- `variableBindings`：【object，非必填】 BASIC_QUERY 类型需要传该参数
+- `parameters`：【array，非必填】 CUSTOMIZE/EXTERNAL 类型需要传该参数
 - `pageNum`：【number，非必填】 分页，默认1
 - `pageSize`：【number，非必填】 每页条数，默认10
 

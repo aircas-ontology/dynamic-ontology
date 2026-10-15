@@ -89,6 +89,13 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(listSource, /command="delete"/);
 });
 
+test("space behavior workspace loads the action category tree on entry", () => {
+  const source = readSource("../src/views/SpaceBehaviorWorkspace/composables/useSpaceBehaviorWorkspace.ts");
+  assert.match(source, /getActionCategoryTreeInterface\(\{ spaceId: Number\(currentSpaceId\) \}\)/);
+  assert.match(source, /response\.code !== 200/);
+  assert.match(source, /mapActionCategoryNode/);
+});
+
 test("space behavior crud dialogs follow prototype create view edit and delete surfaces", () => {
   const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
   const drawerSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorDetailDrawer.vue");
@@ -136,6 +143,13 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
 
   assert.match(workspaceSource, /BehaviorDetailDrawer/);
   assert.doesNotMatch(workspaceSource, /behaviorFormMode\.value = "view"/);
+});
+
+test("space behavior category form validates the required name before submit", () => {
+  const source = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorCategoryFormDialog.vue");
+  assert.match(source, /:error="nameError"/);
+  assert.match(source, /nameError\.value = "请输入分类名称"/);
+  assert.match(source, /if \(!trimmed\) \{[\s\S]*return;/);
 });
 
 test("space behavior status dialog follows the prototype two-step form", () => {

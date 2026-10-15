@@ -8,6 +8,7 @@ import {
   getOntologyCategoryTreeInterface,
   getOntologyFunctionDetailInterface,
   getOntologyFunctionListInterface,
+  getOntologyFunctionVersionsInterface,
   getOntologyPropertyByOntologyIdInterface,
   postOntologyFunctionPublishInterface,
   postOntologyFunctionUnpublishInterface,
@@ -30,7 +31,13 @@ import { buildOntologyFunctionQueryConfig, parseBasicFilterConfig } from "@/util
 import { mapOntologyFunctionDetailToDraft, mapOntologyFunctionDetailToOperator } from "@/utils/mapOntologyFunctionDetail";
 import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToApi";
 import { mapOntologyFunctionListItem } from "@/utils/mapOntologyFunctionList";
-import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestRequest } from "@/utils/mapOntologyFunctionTest";
+import {
+  buildOntologyFunctionScriptTestInputRows,
+  buildOntologyFunctionScriptTestRequest,
+  buildOntologyFunctionTestBindingKeys,
+  buildOntologyFunctionTestRequest,
+  type OntologyFunctionScriptTestInputRow,
+} from "@/utils/mapOntologyFunctionTest";
 
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
 
@@ -103,6 +110,15 @@ export function useFunctionOperatorWorkspace() {
   const selectedOperator = ref<FunctionOperator | null>(null);
   const detailVisible = ref(false);
   const detailLoading = ref(false);
+  /** 详情抽屉可选版本列表。 */
+  const detailVersions = ref<string[]>([]);
+  /** 详情抽屉当前选中版本。 */
+  const detailVersion = ref("");
+  /** 详情抽屉版本列表加载中。 */
+  const detailVersionsLoading = ref(false);
+  /** 打开详情时的列表行，切换版本时用作映射回退。 */
+  const detailListOperator = ref<FunctionOperator | null>(null);
+  let detailGeneration = 0;
   const editingOperator = ref<FunctionOperator | null>(null);
   const formDraft = ref<FunctionOperatorDraft | null>(null);
   const formVisible = ref(false);
@@ -119,6 +135,13 @@ export function useFunctionOperatorWorkspace() {
   const testPropertyOptions = ref<SpaceRelationObjectOption[]>([]);
   const testSelectedOntologyId = ref("");
   const testPropertyBindings = reactive<Record<string, string>>({});
+  const scriptTestVisible = ref(false);
+  const scriptTestingOperator = ref<FunctionOperator | null>(null);
+  const scriptTestInputRows = ref<OntologyFunctionScriptTestInputRow[]>([]);
+  const scriptTestOutput = ref("");
+  const scriptTesting = ref(false);
+  const scriptTestDetailLoading = ref(false);
+  let scriptTestGeneration = 0;
   const deleteVisible = ref(false);
   const deleteSubmitting = ref(false);
   const deleteError = ref("");
@@ -210,7 +233,32 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 打开详情抽屉：先展示列表行，再按 functionApi 与 version 拉取详情回填。
+   * @description 清空详情抽屉的版本选择与列表行缓存。
+   */
+  function resetDetailVersionState(): void {
+    detailGeneration += 1;
+    detailVersions.value = [];
+    detailVersion.value = "";
+    detailVersionsLoading.value = false;
+    detailListOperator.value = null;
+  }
+
+  /**
+   * @description 合并版本列表：保证当前版本在选项中。
+   * @param versions 接口返回版本。
+   * @param currentVersion 当前选中版本。
+   * @returns 去重后的版本列表。
+   */
+  function mergeDetailVersionOptions(versions: string[], currentVersion: string): string[] {
+    const normalized = versions.map((item) => item.trim()).filter(Boolean);
+    if (currentVersion && !normalized.includes(currentVersion)) {
+      return [currentVersion, ...normalized];
+    }
+    return normalized;
+  }
+
+  /**
+   * @description 打开详情抽屉：展示列表行，拉取版本列表与当前版本详情。
    * @param operator 目标算子。
    */
   async function openDetail(operator: FunctionOperator): Promise<void> {
@@ -224,19 +272,100 @@ export function useFunctionOperatorWorkspace() {
       ElMessage.error("缺少函数版本，无法查看详情");
       return;
     }
+    const requestId = ++detailGeneration;
+    detailListOperator.value = operator;
     selectedOperator.value = operator;
+    detailVersion.value = version;
+    detailVersions.value = [version];
     detailVisible.value = true;
     detailLoading.value = true;
+    detailVersionsLoading.value = true;
     try {
-      const response = await getOntologyFunctionDetailInterface({ functionApi, version });
+      const [versionsResult, detailResult] = await Promise.allSettled([
+        getOntologyFunctionVersionsInterface({ functionApi }),
+        getOntologyFunctionDetailInterface({ functionApi, version }),
+      ]);
+      if (requestId !== detailGeneration) {
+        return;
+      }
+      if (versionsResult.status === "fulfilled") {
+        const versionsResponse = versionsResult.value;
+        if (versionsResponse.code === 200 && Array.isArray(versionsResponse.data)) {
+          detailVersions.value = mergeDetailVersionOptions(
+            versionsResponse.data.filter((item) => typeof item === "string"),
+            version,
+          );
+        } else {
+          ElMessage.error(typeof versionsResponse.message === "string" && versionsResponse.message.trim() ? versionsResponse.message : "函数版本列表加载失败");
+        }
+      } else {
+        ElMessage.error(
+          versionsResult.reason instanceof Error && versionsResult.reason.message.trim() ? versionsResult.reason.message : "函数版本列表加载失败",
+        );
+      }
+      if (detailResult.status === "fulfilled") {
+        const detailResponse = detailResult.value;
+        if (detailResponse.code !== 200 || !detailResponse.data) {
+          throw new Error(typeof detailResponse.message === "string" && detailResponse.message.trim() ? detailResponse.message : "函数详情查询失败");
+        }
+        selectedOperator.value = mapOntologyFunctionDetailToOperator(detailResponse.data, operator);
+        const resolvedVersion = selectedOperator.value.version.trim() || version;
+        detailVersion.value = resolvedVersion;
+        detailVersions.value = mergeDetailVersionOptions(detailVersions.value, resolvedVersion);
+      } else {
+        throw detailResult.reason instanceof Error ? detailResult.reason : new Error("函数详情查询失败");
+      }
+    } catch (error) {
+      if (requestId !== detailGeneration) {
+        return;
+      }
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数详情查询失败");
+    } finally {
+      if (requestId === detailGeneration) {
+        detailLoading.value = false;
+        detailVersionsLoading.value = false;
+      }
+    }
+  }
+
+  /**
+   * @description 切换详情抽屉版本并重新拉取该版本详情。
+   * @param version 目标版本号。
+   */
+  async function changeDetailVersion(version: string): Promise<void> {
+    const nextVersion = typeof version === "string" ? version.trim() : "";
+    const listOperator = detailListOperator.value;
+    const functionApi = listOperator?.functionApi.trim() || selectedOperator.value?.functionApi.trim() || "";
+    if (!functionApi || !nextVersion) {
+      return;
+    }
+    if (nextVersion === detailVersion.value.trim() && !detailLoading.value) {
+      return;
+    }
+    const requestId = ++detailGeneration;
+    detailVersion.value = nextVersion;
+    detailLoading.value = true;
+    try {
+      const response = await getOntologyFunctionDetailInterface({ functionApi, version: nextVersion });
+      if (requestId !== detailGeneration) {
+        return;
+      }
       if (response.code !== 200 || !response.data) {
         throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数详情查询失败");
       }
-      selectedOperator.value = mapOntologyFunctionDetailToOperator(response.data, operator);
+      selectedOperator.value = mapOntologyFunctionDetailToOperator(response.data, listOperator);
+      const resolvedVersion = selectedOperator.value.version.trim() || nextVersion;
+      detailVersion.value = resolvedVersion;
+      detailVersions.value = mergeDetailVersionOptions(detailVersions.value, resolvedVersion);
     } catch (error) {
+      if (requestId !== detailGeneration) {
+        return;
+      }
       ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数详情查询失败");
     } finally {
-      detailLoading.value = false;
+      if (requestId === detailGeneration) {
+        detailLoading.value = false;
+      }
     }
   }
 
@@ -291,30 +420,39 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 保存新建脚本函数（CUSTOMIZE）；成功后关闭表单与 IDE 并刷新列表。
-   * @param params 创建接口请求体。
+   * @description 保存脚本函数（CUSTOMIZE）；无 editingOperator 走创建 POST，有则走修改 PUT。
+   * @param params 创建/修改请求体（同形）。
    */
   async function saveScriptOperator(params: CreateOntologyFunctionParams): Promise<void> {
     if (actionLoading.value) {
       return;
     }
     if (params.type !== "CUSTOMIZE") {
-      ElMessage.warning("仅支持创建脚本函数");
+      ElMessage.warning("仅支持保存脚本函数");
       return;
     }
     actionLoading.value = true;
     try {
-      const response = await createOntologyFunctionInterface(params);
-      if (response.code !== 200) {
-        throw new Error(response.message || "脚本函数创建失败");
+      if (editingOperator.value) {
+        const { basedOnOldVersion: _basedOnOldVersion, ...updateParams } = params;
+        const response = await updateOntologyFunctionInterface(updateParams);
+        if (response.code !== 200) {
+          throw new Error(response.message || "脚本函数保存失败");
+        }
+        ElMessage.success("脚本函数已更新");
+      } else {
+        const response = await createOntologyFunctionInterface(params);
+        if (response.code !== 200) {
+          throw new Error(response.message || "脚本函数创建失败");
+        }
+        ElMessage.success("脚本函数草稿已保存");
       }
-      ElMessage.success("脚本函数草稿已保存");
       formVisible.value = false;
       formDraft.value = null;
       editingOperator.value = null;
       await loadOperators();
     } catch (error) {
-      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "脚本函数创建失败");
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "脚本函数保存失败");
     } finally {
       actionLoading.value = false;
     }
@@ -463,17 +601,28 @@ export function useFunctionOperatorWorkspace() {
    */
   function refreshTestRequestPreview(): void {
     const functionApi = testingOperator.value?.functionApi.trim() ?? "";
+    const version = testingOperator.value?.version.trim() ?? "";
     if (!functionApi) {
       testInput.value = "{}";
       return;
     }
     const request = buildOntologyFunctionTestRequest({
       functionApi,
+      version,
       ontologyIdentifier: testSelectedOntologyId.value,
       bindingKeys: testBindingKeys.value,
       propertyBindings: { ...testPropertyBindings },
     });
     testInput.value = `${JSON.stringify(request, null, 2)}\n`;
+  }
+
+  /**
+   * @description 判断算子是否应按脚本函数测试弹框处理。
+   * @param operator 目标算子。
+   * @returns 为脚本函数时返回 true。
+   */
+  function isScriptFunctionOperator(operator: FunctionOperator): boolean {
+    return operator.type === "code" || operator.apiModelType === "CUSTOMIZE";
   }
 
   /**
@@ -560,10 +709,14 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 打开测试对话框：拉详情生成绑定键，并加载空间对象列表。
+   * @description 打开测试对话框：脚本函数走独立弹框，基础函数拉详情生成绑定键并加载对象列表。
    * @param operator 目标算子。
    */
   async function openTest(operator: FunctionOperator): Promise<void> {
+    if (isScriptFunctionOperator(operator)) {
+      await openScriptTest(operator);
+      return;
+    }
     const functionApi = operator.functionApi.trim();
     const version = operator.version.trim();
     if (!functionApi) {
@@ -601,6 +754,67 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
+   * @description 打开脚本函数测试弹框：拉详情 INPUT 参数并渲染表单。
+   * @param operator 目标算子。
+   */
+  async function openScriptTest(operator: FunctionOperator): Promise<void> {
+    const functionApi = operator.functionApi.trim();
+    const version = operator.version.trim();
+    if (!functionApi) {
+      ElMessage.error("缺少函数 API 名称，无法测试");
+      return;
+    }
+    if (!version) {
+      ElMessage.error("缺少函数版本，无法测试");
+      return;
+    }
+    const requestId = ++scriptTestGeneration;
+    scriptTestingOperator.value = operator;
+    scriptTestInputRows.value = [];
+    scriptTestOutput.value = "";
+    scriptTestVisible.value = true;
+    scriptTestDetailLoading.value = true;
+    try {
+      const response = await getOntologyFunctionDetailInterface({ functionApi, version });
+      if (disposed || requestId !== scriptTestGeneration) {
+        return;
+      }
+      if (response.code !== 200 || !response.data) {
+        throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数详情查询失败");
+      }
+      scriptTestInputRows.value = buildOntologyFunctionScriptTestInputRows(response.data.params ?? []);
+    } catch (error) {
+      if (disposed || requestId !== scriptTestGeneration) {
+        return;
+      }
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数详情查询失败");
+    } finally {
+      if (requestId === scriptTestGeneration) {
+        scriptTestDetailLoading.value = false;
+      }
+    }
+  }
+
+  /**
+   * @description 更新脚本测试表单中某一入参的值。
+   * @param paramName 参数名。
+   * @param paramValue 参数值。
+   */
+  function updateScriptTestParamValue(paramName: string, paramValue: string): void {
+    const index = scriptTestInputRows.value.findIndex((row) => row.paramName === paramName);
+    if (index < 0) {
+      return;
+    }
+    const next = [...scriptTestInputRows.value];
+    const current = next[index];
+    if (!current) {
+      return;
+    }
+    next[index] = { ...current, paramValue };
+    scriptTestInputRows.value = next;
+  }
+
+  /**
    * @description 解析预览 JSON 并调用函数测试接口；将完整响应写入输出结果文本框。
    */
   async function runTest(): Promise<void> {
@@ -615,9 +829,13 @@ export function useFunctionOperatorWorkspace() {
       }
       const record = parsed as Record<string, unknown>;
       const functionApi = typeof record.functionApi === "string" ? record.functionApi.trim() : "";
+      const version = typeof record.version === "string" && record.version.trim() ? record.version.trim() : testingOperator.value.version.trim();
       const ontologyIdentifier = typeof record.ontologyIdentifier === "string" ? record.ontologyIdentifier.trim() : "";
       if (!functionApi) {
         throw new Error("缺少 functionApi");
+      }
+      if (!version) {
+        throw new Error("缺少 version");
       }
       if (!ontologyIdentifier) {
         throw new Error("请先选择对象");
@@ -639,6 +857,7 @@ export function useFunctionOperatorWorkspace() {
       }
       payload = {
         functionApi,
+        version,
         ontologyIdentifier,
         variableBindings,
         pageNum: typeof record.pageNum === "number" ? record.pageNum : 1,
@@ -668,9 +887,69 @@ export function useFunctionOperatorWorkspace() {
     }
   }
 
+  /**
+   * @description 按表单入参调用脚本函数测试接口；将完整响应写入执行结果区。
+   */
+  async function runScriptTest(): Promise<void> {
+    if (!scriptTestingOperator.value || scriptTesting.value || scriptTestDetailLoading.value) {
+      return;
+    }
+    const functionApi = scriptTestingOperator.value.functionApi.trim();
+    const version = scriptTestingOperator.value.version.trim();
+    if (!functionApi) {
+      ElMessage.error("缺少函数 API 名称，无法测试");
+      return;
+    }
+    if (!version) {
+      ElMessage.error("缺少函数版本，无法测试");
+      return;
+    }
+    const requestId = ++scriptTestGeneration;
+    const payload = buildOntologyFunctionScriptTestRequest({
+      functionApi,
+      version,
+      rows: scriptTestInputRows.value,
+    });
+    scriptTesting.value = true;
+    scriptTestOutput.value = "";
+    try {
+      const response = await testOntologyFunctionInterface(payload);
+      if (disposed || requestId !== scriptTestGeneration) {
+        return;
+      }
+      scriptTestOutput.value = `${JSON.stringify(response, null, 2)}\n`;
+      if (response.code !== 200) {
+        throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数测试失败");
+      }
+      ElMessage.success("测试成功");
+    } catch (error) {
+      if (disposed || requestId !== scriptTestGeneration) {
+        return;
+      }
+      const message = error instanceof Error && error.message.trim() ? error.message : "函数测试失败";
+      if (!scriptTestOutput.value.trim()) {
+        scriptTestOutput.value = `${JSON.stringify({ code: null, message, success: false, data: null }, null, 2)}\n`;
+      }
+      ElMessage.error(message);
+    } finally {
+      if (requestId === scriptTestGeneration) {
+        scriptTesting.value = false;
+      }
+    }
+  }
+
+  watch(detailVisible, (visible) => {
+    if (!visible) {
+      resetDetailVersionState();
+      selectedOperator.value = null;
+    }
+  });
+
   watch(spaceId, () => {
     page.value = 1;
     selectedOperator.value = null;
+    detailVisible.value = false;
+    resetDetailVersionState();
     void loadOperators();
   });
 
@@ -699,6 +978,9 @@ export function useFunctionOperatorWorkspace() {
     selectedOperator,
     detailVisible,
     detailLoading,
+    detailVersions,
+    detailVersion,
+    detailVersionsLoading,
     editingOperator,
     formDraft,
     formVisible,
@@ -715,6 +997,12 @@ export function useFunctionOperatorWorkspace() {
     testPropertyOptions,
     testSelectedOntologyId,
     testPropertyBindings,
+    scriptTestVisible,
+    scriptTestingOperator,
+    scriptTestInputRows,
+    scriptTestOutput,
+    scriptTesting,
+    scriptTestDetailLoading,
     deleteVisible,
     deleteSubmitting,
     deleteError,
@@ -723,6 +1011,7 @@ export function useFunctionOperatorWorkspace() {
     resetFilters,
     applyFilters,
     openDetail,
+    changeDetailVersion,
     openCreate,
     openEdit,
     saveOperator,
@@ -734,5 +1023,7 @@ export function useFunctionOperatorWorkspace() {
     selectTestOntology,
     updateTestPropertyBinding,
     runTest,
+    updateScriptTestParamValue,
+    runScriptTest,
   };
 }

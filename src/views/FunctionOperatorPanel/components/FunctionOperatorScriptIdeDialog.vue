@@ -25,7 +25,7 @@
       <aside class="function-operator-script-ide__side function-operator-script-ide__side--left">
         <div class="function-operator-script-ide__field">
           <div class="function-operator-script-ide__label">语言</div>
-          <el-select v-model="scriptLanguage" placeholder="选择语言" @change="onScriptLanguageChange">
+          <el-select :model-value="language" placeholder="选择语言" :disabled="languageLocked" @update:model-value="onScriptLanguageChange">
             <el-option v-for="item in FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </div>
@@ -44,13 +44,20 @@
       </aside>
 
       <section class="function-operator-script-ide__editor-pane" aria-label="脚本代码编辑区">
-        <FunctionOperatorScriptCodeEditor v-model="scriptCode" :language="scriptLanguage" />
+        <FunctionOperatorScriptCodeEditor :model-value="code" :language="language" @update:model-value="emit('update:code', $event)" />
       </section>
 
       <aside class="function-operator-script-ide__side function-operator-script-ide__side--right">
         <div class="function-operator-script-ide__field function-operator-script-ide__field--grow">
           <div class="function-operator-script-ide__label">测试参数</div>
-          <el-input v-model="testParamsText" type="textarea" :rows="6" class="function-operator-script-ide__test-input" resize="none" />
+          <el-input
+            :model-value="testParams"
+            type="textarea"
+            :rows="6"
+            class="function-operator-script-ide__test-input"
+            resize="none"
+            @update:model-value="emit('update:testParams', $event)"
+          />
           <p class="function-operator-script-ide__status">尚未测试</p>
         </div>
         <div class="function-operator-script-ide__field function-operator-script-ide__field--grow">
@@ -68,114 +75,38 @@ import { ElMessage } from "element-plus";
 import { FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS, type CreateOntologyFunctionParams, type FunctionOperatorScriptLanguage } from "@/types";
 import FunctionOperatorScriptCodeEditor from "./FunctionOperatorScriptCodeEditor.vue";
 import { buildCreateOntologyScriptFunctionParams } from "../utils/buildCreateOntologyScriptFunctionParams";
-import { parseTypescriptScriptExportParams } from "../utils/parseTypescriptScriptExportParams";
+import { parseScriptExportParams } from "../utils/parseScriptExportParams";
+import { SCRIPT_FUNCTION_STARTERS } from "../utils/scriptFunctionStarters";
 
 const props = defineProps<{
   modelValue: boolean;
+  /** 父级持有的脚本代码草稿。 */
+  code: string;
+  /** 父级持有的脚本语言草稿。 */
+  language: FunctionOperatorScriptLanguage;
+  /** 父级持有的测试参数草稿。 */
+  testParams: string;
   functionApi: string;
   version: string;
   displayName: string;
   description: string;
   spaceId: number;
+  /** 新建表单所选源版本；非空时创建请求 basedOnOldVersion 为 true。 */
+  sourceVersion: string;
+  /** 编辑态锁定语言（创建后不可修改 language）。 */
+  languageLocked: boolean;
   saving: boolean;
 }>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
+  "update:code": [value: string];
+  "update:language": [value: FunctionOperatorScriptLanguage];
+  "update:testParams": [value: string];
   save: [params: CreateOntologyFunctionParams];
 }>();
 
-const SCRIPT_STARTERS: Record<FunctionOperatorScriptLanguage, string> = {
-  typescript: `interface User {
-  id: number;
-  name: string;
-}
-
-interface Output {
-  id: number;
-  name: string;
-}
-
-export function handle(input: User): Output {
-    return {
-        id:input.id+1,
-        name:input.name+'a',
-    }
-}
-`,
-  groovy: `class ExecuteInput {
-  String name
-  Number count
-  Boolean enabled
-}
-
-class ExecuteOutput {
-  String message
-  Number score
-  Boolean ok
-}
-
-ExecuteOutput execute(ExecuteInput input) {
-  // 在这里实现业务逻辑
-  return new ExecuteOutput(
-    message: input.name,
-    score: input.count,
-    ok: input.enabled
-  )
-}
-`,
-  python: `from typing import TypedDict
-
-
-class ExecuteInput(TypedDict):
-    name: str
-    count: float
-    enabled: bool
-
-
-class ExecuteOutput(TypedDict):
-    message: str
-    score: float
-    ok: bool
-
-
-def execute(input: ExecuteInput) -> ExecuteOutput:
-    # 在这里实现业务逻辑
-    return {
-        "message": input["name"],
-        "score": input["count"],
-        "ok": input["enabled"],
-    }
-`,
-  java: `public class ExecuteInput {
-  public String name;
-  public double count;
-  public boolean enabled;
-}
-
-public class ExecuteOutput {
-  public String message;
-  public double score;
-  public boolean ok;
-}
-
-public class ScriptFunction {
-  public ExecuteOutput execute(ExecuteInput input) {
-    // 在这里实现业务逻辑
-    ExecuteOutput output = new ExecuteOutput();
-    output.message = input.name;
-    output.score = input.count;
-    output.ok = input.enabled;
-    return output;
-  }
-}
-`,
-};
-
-const scriptLanguage = ref<FunctionOperatorScriptLanguage>("typescript");
-const scriptCode = ref(SCRIPT_STARTERS.typescript);
-const testParamsText = ref("{}");
-const lastStarterLanguage = ref<FunctionOperatorScriptLanguage>("typescript");
+const lastStarterLanguage = ref<FunctionOperatorScriptLanguage>(props.language);
 const inputParameterLabels = ref<string[]>([]);
 const outputParameterLabels = ref<string[]>([]);
 
@@ -186,15 +117,10 @@ const subtitleText = computed(() => {
 });
 
 /**
- * @description 按当前语言刷新左侧入参/出参展示；仅 TypeScript 解析 export 方法。
+ * @description 按当前语言刷新左侧入参/出参展示（TypeScript / Python / Groovy / Java）。
  */
 function refreshScriptParameterLabels(): void {
-  if (scriptLanguage.value !== "typescript") {
-    inputParameterLabels.value = [];
-    outputParameterLabels.value = [];
-    return;
-  }
-  const parsed = parseTypescriptScriptExportParams(scriptCode.value);
+  const parsed = parseScriptExportParams(props.language, props.code);
   inputParameterLabels.value = parsed.inputLabels;
   outputParameterLabels.value = parsed.outputLabels;
 }
@@ -221,12 +147,12 @@ function submitScriptFunctionCreate(): void {
   if (props.saving) {
     return;
   }
-  const code = scriptCode.value;
+  const code = props.code;
   if (!code.trim()) {
     ElMessage.warning("请输入脚本代码");
     return;
   }
-  if (scriptLanguage.value === "typescript" && !/\bexport\s+(?:async\s+)?function\b/.test(code)) {
+  if (props.language === "typescript" && !/\bexport\s+(?:async\s+)?function\b/.test(code)) {
     ElMessage.warning("请导出一个 function（export function）后再保存");
     return;
   }
@@ -244,43 +170,38 @@ function submitScriptFunctionCreate(): void {
     displayName: props.displayName,
     description: props.description,
     ontologySpaceId: props.spaceId,
-    language: scriptLanguage.value,
+    language: props.language,
     code,
     inputLabels: inputParameterLabels.value,
     outputLabels: outputParameterLabels.value,
+    sourceVersion: props.sourceVersion,
   });
   emit("save", params);
 }
 
 /**
- * @description 切换语言；若当前代码仍为上一语言默认模板则替换为新语言 starter。
- * @param language 目标语言。
+ * @description 切换语言；若当前代码仍为上一语言默认模板则替换为新语言 starter，并写回父级草稿。
+ * @param value 目标语言。
  */
-function onScriptLanguageChange(language: FunctionOperatorScriptLanguage): void {
-  const previousStarter = SCRIPT_STARTERS[lastStarterLanguage.value];
-  if (!scriptCode.value.trim() || scriptCode.value === previousStarter) {
-    scriptCode.value = SCRIPT_STARTERS[language];
+function onScriptLanguageChange(value: string | number | boolean | undefined): void {
+  if (typeof value !== "string" || !(value in SCRIPT_FUNCTION_STARTERS)) {
+    return;
+  }
+  const language = value as FunctionOperatorScriptLanguage;
+  const previousStarter = SCRIPT_FUNCTION_STARTERS[lastStarterLanguage.value];
+  if (!props.code.trim() || props.code === previousStarter) {
+    emit("update:code", SCRIPT_FUNCTION_STARTERS[language]);
   }
   lastStarterLanguage.value = language;
+  emit("update:language", language);
 }
 
 watch(
-  () => props.modelValue,
-  (visible) => {
-    if (!visible) {
-      return;
-    }
-    scriptLanguage.value = "typescript";
-    scriptCode.value = SCRIPT_STARTERS.typescript;
-    lastStarterLanguage.value = "typescript";
-    testParamsText.value = "{}";
+  () => [props.code, props.language] as const,
+  () => {
     refreshScriptParameterLabels();
   },
 );
-
-watch([scriptCode, scriptLanguage], () => {
-  refreshScriptParameterLabels();
-});
 
 refreshScriptParameterLabels();
 </script>
