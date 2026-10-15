@@ -117,10 +117,10 @@ watch(propertyGroups, (groups) => {
 });
 
 /**
- * @description 返回对象空间管理列表。
+ * @description 按路由历史返回进入主题空间创建页之前的页面。
  */
 function goBackToSpaceList() {
-  void router.push({ name: "OntologySpaceManagement" });
+  void router.back();
 }
 
 /**

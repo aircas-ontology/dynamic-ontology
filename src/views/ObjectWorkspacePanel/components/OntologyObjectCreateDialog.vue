@@ -23,10 +23,10 @@
     <div v-if="createMode === 'manual'" class="ontology-object-create-dialog__panel">
       <el-form label-position="top">
         <div class="ontology-object-create-dialog__grid">
-          <el-form-item label="API 名称" required>
+          <el-form-item label="API 名称" required :error="apiNameError">
             <el-input v-model="draft.apiName" maxlength="64" ariaLabel="API 名称" placeholder="如 airplane" :disabled="submitting || Boolean(editingItem)" />
           </el-form-item>
-          <el-form-item label="显示名称" required>
+          <el-form-item label="显示名称" required :error="displayNameError">
             <el-input v-model="draft.displayName" maxlength="64" ariaLabel="显示名称" placeholder="请输入对象显示名称" :disabled="submitting" />
           </el-form-item>
         </div>
@@ -40,15 +40,19 @@
               <el-button :disabled="submitting || iconUploading" @click="clearIcon">清除</el-button>
             </div>
             <el-upload
+              v-if="!draft.iconUrl"
+              class="ontology-object-create-dialog__picture-upload"
+              action="#"
+              list-type="picture-card"
               :auto-upload="false"
               :show-file-list="false"
+              :limit="1"
               accept="image/png,image/jpeg,.png,.jpg,.jpeg"
               :disabled="submitting || iconUploading"
               :on-change="handleIconChange"
+              :on-exceed="handleIconExceed"
             >
-              <el-button :loading="iconUploading" :disabled="submitting || iconUploading">
-                {{ draft.iconUrl ? "重新选择" : "选择本地图片" }}
-              </el-button>
+              <el-icon><Plus /></el-icon>
             </el-upload>
             <span class="ontology-object-create-dialog__hint">可选，PNG / JPG，不超过 2MB</span>
             <p v-if="iconError" class="ontology-object-create-dialog__error" role="alert">{{ iconError }}</p>
@@ -60,7 +64,7 @@
               <el-option v-for="item in parentOptions" :key="item.id" :label="`${item.displayName} (${item.apiName})`" :value="item.id" />
             </el-select>
           </el-form-item>
-          <el-form-item label="分类" required>
+          <el-form-item label="分类" required :error="categoryError">
             <el-tree-select
               v-model="draft.categoryId"
               :data="categoryTreeOptions"
@@ -165,6 +169,9 @@ const importError = ref("");
 const validationError = ref("");
 const iconError = ref("");
 const iconUploading = ref(false);
+const apiNameError = ref("");
+const displayNameError = ref("");
+const categoryError = ref("");
 let iconUploadSerial = 0;
 const templateJson = JSON.stringify(ontologyImportTemplate, null, 2);
 
@@ -205,6 +212,9 @@ watch([visible, () => props.editingItem], ([opened, editingItem]) => {
   importError.value = "";
   validationError.value = "";
   iconError.value = "";
+  apiNameError.value = "";
+  displayNameError.value = "";
+  categoryError.value = "";
   iconUploading.value = false;
   iconUploadSerial += 1;
 });
@@ -260,6 +270,11 @@ async function handleIconChange(file: UploadFile): Promise<void> {
   }
 }
 
+/** @description 提示对象图标仅允许选择一张图片。 */
+function handleIconExceed(): void {
+  iconError.value = "对象图标仅支持上传一张图片，请先清除当前图片。";
+}
+
 /** @description 清除当前对象图标预览。 */
 function clearIcon() {
   iconUploadSerial += 1;
@@ -298,10 +313,11 @@ function submitCreate() {
     emit("submit-import", importFile.value);
     return;
   }
-  if (!draft.apiName.trim() || !draft.displayName.trim() || !draft.categoryId) {
-    validationError.value = "请填写 API 名称、显示名称并选择分类";
-    return;
-  }
+  validationError.value = "";
+  apiNameError.value = draft.apiName.trim() ? "" : "请输入 API 名称。";
+  displayNameError.value = draft.displayName.trim() ? "" : "请输入显示名称。";
+  categoryError.value = draft.categoryId ? "" : "请选择分类。";
+  if (apiNameError.value || displayNameError.value || categoryError.value) return;
   const payload: OntologyObjectCreateDraft = { ...draft };
   if (props.editingItem) emit("submit-edit", payload);
   else emit("submit-manual", payload);
@@ -377,6 +393,17 @@ function submitCreate() {
   object-fit: contain;
   border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
+}
+.ontology-object-create-dialog__picture-upload :deep(.el-upload--picture-card) {
+  width: 64px;
+  height: 64px;
+  margin: 0;
+  border-color: var(--aircas-color-border-light);
+  background: var(--aircas-color-input-background);
+}
+.ontology-object-create-dialog__picture-upload :deep(.el-upload--picture-card:hover) {
+  border-color: var(--aircas-color-primary);
+  color: var(--aircas-color-primary);
 }
 .ontology-object-create-dialog__import-head {
   display: flex;

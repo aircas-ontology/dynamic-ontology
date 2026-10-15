@@ -98,6 +98,58 @@ test("theme space cards keep a single-line description and equal row height", ()
   assert.match(source, /\.theme-space-card p\s*\{[\s\S]*text-overflow:\s*ellipsis[\s\S]*white-space:\s*nowrap/);
 });
 
+test("theme space editing uses the shared ontology space update interface", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /updateOntologySpaceInterface/);
+  assert.match(source, /spaceId,\s*displayName,\s*iconUrl: editDraft\.value\.iconUrl,\s*description/);
+  assert.match(source, /await loadThemeSpaces\(\)/);
+  assert.doesNotMatch(source, /编辑主题空间功能暂未接入/);
+});
+
+test("theme space cards, tables and editing dialog support image placeholders and uploads", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /<Box \/>/);
+  assert.match(source, /postUploadOntologyThumbnailInterface/);
+  assert.match(source, /function readThemeIcon/);
+  assert.match(source, /accept="image\/png,image\/jpeg"/);
+  assert.match(source, /theme-edit-preview/);
+});
+
+test("theme space editing validates required fields and uses a single picture upload", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /:error="editApiNameError"/);
+  assert.match(source, /:error="editDisplayNameError"/);
+  assert.match(source, /请输入 API 名称/);
+  assert.match(source, /请输入空间名称/);
+  assert.match(source, /v-if="!editDraft\.iconUrl"/);
+  assert.match(source, /:limit="1"/);
+  assert.match(source, /:on-exceed="handleThemeIconExceed"/);
+  assert.match(source, /el-upload--picture-card/);
+});
+
+test("theme space toolbar uses theme space description", () => {
+  const pageSource = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  const toolbarSource = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SectionToolbar.vue", import.meta.url), "utf8");
+  assert.match(pageSource, /space-label="主题空间"/);
+  assert.match(toolbarSource, /spaceLabel\?: string/);
+  assert.match(toolbarSource, /全部\$\{props\.spaceLabel\}/);
+});
+
+test("theme space object statistic reuses the object card color", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /\{ id: "object", label: "对象", value: overviewCount\.value\.ontologyCount/);
+});
+
+test("theme space light theme uses light backgrounds for list and creation panels", () => {
+  const themeSource = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  const treeSource = readFileSync(new URL("../src/views/OntologySubspaceCreate/components/SubspaceCreateTreePanel.vue", import.meta.url), "utf8");
+  const workspaceSource = readFileSync(new URL("../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", import.meta.url), "utf8");
+  assert.match(themeSource, /:root:not\(\.dark\) \.theme-space-management__grid/);
+  assert.match(themeSource, /:root:not\(\.dark\) \.theme-space-card/);
+  assert.match(treeSource, /:root:not\(\.dark\) \.subspace-create-tree-panel/);
+  assert.match(workspaceSource, /:root:not\(\.dark\) \.subspace-create-workspace__panel/);
+});
+
 test("space actions expose conceptual model build with current space context", () => {
   const actionsSource = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SpaceActions.vue", import.meta.url), "utf8");
   const composableSource = readFileSync(new URL("../src/views/OntologySpaceManagement/composables/useSpaceManagementActions.ts", import.meta.url), "utf8");
@@ -129,4 +181,25 @@ test("embedded object space management hides the create space button", () => {
   assert.match(pageSource, /:show-create="!isEmbedded"/);
   assert.match(welcomeSource, /v-if="showCreate"/);
   assert.match(welcomeSource, /withDefaults\(defineProps/);
+});
+
+test("space form validates required fields before emitting save", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SpaceFormDialog.vue", import.meta.url), "utf8");
+  assert.match(source, /:error="apiNameError"/);
+  assert.match(source, /:error="displayNameError"/);
+  assert.match(source, /const apiNameError = ref\(\"\"\)/);
+  assert.match(source, /const displayNameError = ref\(\"\"\)/);
+  assert.match(source, /请输入 API 名称/);
+  assert.match(source, /请输入空间名称/);
+  assert.match(source, /API 名称格式不正确/);
+  assert.match(source, /emit\("save", \{ \.\.\.draft \}\)/);
+});
+
+test("space form limits icon upload to one image and hides the add card after preview", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SpaceFormDialog.vue", import.meta.url), "utf8");
+  assert.match(source, /v-if="!draft\.iconUrl"/);
+  assert.match(source, /:limit="1"/);
+  assert.match(source, /:on-exceed="handleIconExceed"/);
+  assert.match(source, /仅支持上传一张图片/);
+  assert.match(source, /el-upload--picture-card/);
 });

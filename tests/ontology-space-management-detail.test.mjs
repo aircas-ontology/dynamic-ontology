@@ -44,6 +44,12 @@ test("subspace create page composes left tree and right workspace panels", () =>
   assert.doesNotMatch(source, /AI 助手/);
 });
 
+test("theme space create back button follows the route history", () => {
+  const source = readFileSync(new URL("../src/views/OntologySubspaceCreate/index.vue", import.meta.url), "utf8");
+  assert.match(source, /function goBackToSpaceList\(\)[\s\S]*router\.back\(\)/);
+  assert.doesNotMatch(source, /function goBackToSpaceList\(\)[\s\S]*router\.push\(\{ name: "OntologySpaceManagement" \}/);
+});
+
 test("space detail parent redirects to overview for a space id", () => {
   const detailRoute = workspaceRoutes[0]?.children?.find((route) => route.name === "OntologySpaceManagementDetail");
   assert.ok(detailRoute);

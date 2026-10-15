@@ -625,6 +625,10 @@ watch(
   background: var(--aircas-color-panel-background);
 }
 
+:root:not(.dark) .subspace-create-workspace__panel {
+  background: var(--aircas-color-card-background);
+}
+
 .subspace-create-workspace__header {
   display: grid;
   width: 100%;

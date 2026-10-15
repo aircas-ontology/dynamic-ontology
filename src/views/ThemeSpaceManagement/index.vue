@@ -4,7 +4,7 @@
       <WelcomePanel space-label="主题空间" @create="openCreateThemeSpaceDialog()" />
       <div class="theme-space-management__stats"><StatCard v-for="stat in stats" :key="stat.id" :stat="stat" /></div>
     </section>
-    <SectionToolbar title="主题空间管理" v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
+    <SectionToolbar title="主题空间管理" space-label="主题空间" v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
     <section class="theme-space-management__list" aria-label="主题空间列表">
       <div v-if="themeSpacesLoading" class="theme-space-management__empty">正在加载主题空间…</div>
       <div v-else-if="themeSpacesError" class="theme-space-management__empty">{{ themeSpacesError }}</div>
@@ -12,7 +12,9 @@
       <div v-else-if="viewMode === 'card'" class="theme-space-management__grid">
         <article v-for="space in pagedSpaces" :key="space.id" class="theme-space-card">
           <div class="theme-space-card__name">
-            <img v-if="space.iconUrl" :src="space.iconUrl" :alt="`${space.displayName}主题图片`" />
+            <span class="theme-space-card__icon"
+              ><img v-if="space.iconUrl" :src="space.iconUrl" :alt="`${space.displayName}主题图片`" /><el-icon v-else :size="22"><Box /></el-icon
+            ></span>
             <div>
               <strong>{{ space.displayName }}</strong
               ><small>{{ space.apiName }}</small>
@@ -71,7 +73,9 @@
         <el-table-column label="空间名称" min-width="280"
           ><template #default="{ row }"
             ><div class="theme-space-table__name">
-              <img v-if="row.iconUrl" :src="row.iconUrl" :alt="`${row.displayName}主题图片`" />
+              <span class="theme-space-table__icon"
+                ><img v-if="row.iconUrl" :src="row.iconUrl" :alt="`${row.displayName}主题图片`" /><el-icon v-else :size="22"><Box /></el-icon
+              ></span>
               <div>
                 <strong>{{ row.displayName }}</strong
                 ><small>{{ row.apiName }}</small>
@@ -124,13 +128,34 @@
     </el-dialog>
     <el-dialog v-model="editDialogVisible" title="编辑主题空间" width="min(640px, 94vw)"
       ><el-form label-position="top"
-        ><el-form-item label="API 名称（必填）"><el-input v-model="editDraft.apiName" disabled /></el-form-item
-        ><el-form-item label="空间名称（必填）"><el-input v-model="editDraft.displayName" maxlength="64" /></el-form-item
+        ><el-form-item label="API 名称（必填）" :error="editApiNameError"><el-input v-model="editDraft.apiName" disabled /></el-form-item
+        ><el-form-item label="空间名称（必填）" :error="editDisplayNameError"><el-input v-model="editDraft.displayName" maxlength="64" /></el-form-item
         ><el-form-item label="空间描述"><el-input v-model="editDraft.description" type="textarea" :rows="3" maxlength="256" show-word-limit /></el-form-item
         ><el-form-item label="空间图标"
-          ><img v-if="editDraft.iconUrl" :src="editDraft.iconUrl" class="theme-edit-preview" alt="主题空间图标预览" /></el-form-item></el-form
+          ><div class="theme-edit-upload">
+            <div v-if="editDraft.iconUrl" class="theme-edit-preview">
+              <img :src="editDraft.iconUrl" alt="主题空间图标预览" /><el-button link :disabled="editBusy" @click="editDraft.iconUrl = ''">清除图片</el-button>
+            </div>
+            <el-upload
+              v-if="!editDraft.iconUrl"
+              class="theme-edit-picture-upload"
+              action="#"
+              list-type="picture-card"
+              :auto-upload="false"
+              :show-file-list="false"
+              :limit="1"
+              accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+              :disabled="editBusy"
+              :on-change="readThemeIcon"
+              :on-exceed="handleThemeIconExceed"
+              ><el-icon><Plus /></el-icon></el-upload
+            ><span class="theme-edit-upload-hint">PNG/JPEG，最大 2MB</span>
+          </div></el-form-item
+        ></el-form
       ><template #footer
-        ><el-button @click="editDialogVisible = false">取消</el-button><el-button type="primary" @click="confirmEditThemeSpace">确定</el-button></template
+        ><p v-if="editError" class="theme-space-management__error" role="alert">{{ editError }}</p>
+        <el-button :disabled="editBusy" @click="editDialogVisible = false">取消</el-button
+        ><el-button type="primary" :loading="editBusy" @click="confirmEditThemeSpace">确定</el-button></template
       ></el-dialog
     >
     <el-dialog v-model="deleteDialogVisible" title="删除主题空间" width="min(460px, 94vw)" :close-on-click-modal="false">
@@ -156,13 +181,21 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
-import { deleteOntologySpaceInterface, getExportOntologySpaceInterface, getOntologyOverviewCountInterface, getOntologySpaceListInterface } from "@/apis";
+import {
+  deleteOntologySpaceInterface,
+  getExportOntologySpaceInterface,
+  getOntologyOverviewCountInterface,
+  getOntologySpaceListInterface,
+  postUploadOntologyThumbnailInterface,
+  updateOntologySpaceInterface,
+} from "@/apis";
 import type { OntologySpaceItem, OverviewCountVO } from "@/types";
 import type { OntologySpaceExportType } from "@/types";
 import { mapOntologySpaceList } from "@/utils/mapOntologySpaceList";
 import { downloadSpaceFile } from "../OntologySpaceManagement/utils/downloadSpaceJson";
 import { resolveExportOntologySpaceFileName } from "../OntologySpaceManagement/utils/resolveExportOntologySpaceFileName";
-import { ArrowDown, Connection, DataLine, Operation, Tickets } from "@element-plus/icons-vue";
+import { ArrowDown, Connection, DataLine, Operation, Plus, Tickets } from "@element-plus/icons-vue";
+import type { UploadFile } from "element-plus";
 import SectionToolbar from "../OntologySpaceManagement/components/SectionToolbar.vue";
 import StatCard from "../OntologySpaceManagement/components/StatCard.vue";
 import WelcomePanel from "../OntologySpaceManagement/components/WelcomePanel.vue";
@@ -182,7 +215,12 @@ const objectSpaces = ref<OntologySpaceItem[]>([]);
 const objectSpacesLoading = ref(false);
 const objectSpacesError = ref("");
 const editDialogVisible = ref(false);
+const editSpace = ref<OntologySpaceItem | null>(null);
 const editDraft = ref({ apiName: "", displayName: "", description: "", iconUrl: "" });
+const editBusy = ref(false);
+const editError = ref("");
+const editApiNameError = ref("");
+const editDisplayNameError = ref("");
 const deleteDialogVisible = ref(false);
 const deleteSpace = ref<OntologySpaceItem | null>(null);
 const deleteBusy = ref(false);
@@ -200,7 +238,7 @@ const filteredSpaces = computed(() =>
 const pagedSpaces = computed(() => filteredSpaces.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value));
 const stats = computed<OntologySpaceSummary[]>(() => [
   { id: "space", label: "主题空间", value: overviewCount.value.spaceCount ?? 0, icon: "Box" },
-  { id: "theme", label: "对象", value: overviewCount.value.ontologyCount ?? 0, icon: "Connection" },
+  { id: "object", label: "对象", value: overviewCount.value.ontologyCount ?? 0, icon: "Connection" },
   { id: "behavior", label: "行为数量", value: overviewCount.value.actionCount ?? 0, icon: "Share" },
   { id: "relation", label: "关系", value: overviewCount.value.linkCount ?? 0, icon: "Link" },
 ]);
@@ -351,12 +389,70 @@ function asThemeSpace(row: unknown): OntologySpaceItem {
 }
 /** @description 打开主题空间编辑弹窗并回填当前主题空间。 @param space 当前主题空间。 */
 function openEditThemeSpaceDialog(space: OntologySpaceItem): void {
+  editSpace.value = space;
+  editError.value = "";
+  editApiNameError.value = "";
+  editDisplayNameError.value = "";
   editDraft.value = { apiName: space.apiName, displayName: space.displayName, description: space.description, iconUrl: space.iconUrl };
   editDialogVisible.value = true;
 }
-/** @description 提示主题空间编辑功能尚未接入。 */
-function confirmEditThemeSpace(): void {
-  ElMessage.info("编辑主题空间功能暂未接入");
+/** @description 上传主题空间图片并回显接口返回的图片地址。 @param event 图片选择事件。 */
+async function readThemeIcon(upload: UploadFile): Promise<void> {
+  const file = upload.raw;
+  if (!file || editBusy.value) return;
+  if (!["image/png", "image/jpeg"].includes(file.type) || file.size > 2 * 1024 * 1024) {
+    editError.value = "请选择不超过 2MB 的 PNG 或 JPEG 图片。";
+    return;
+  }
+  editBusy.value = true;
+  editError.value = "";
+  try {
+    const response = await postUploadOntologyThumbnailInterface({ image: file });
+    if (response.code !== 200) throw new Error(response.message || "图片上传失败");
+    editDraft.value.iconUrl = response.data;
+  } catch (cause) {
+    editError.value = cause instanceof Error ? cause.message : "图片上传失败，请重试。";
+  } finally {
+    editBusy.value = false;
+  }
+}
+/** @description 提示主题空间图标仅允许选择一张图片。 */
+function handleThemeIconExceed(): void {
+  editError.value = "空间图标仅支持上传一张图片，请先清除当前图片。";
+}
+/** @description 调用对象空间编辑接口更新主题空间名称、描述和图标，并刷新主题空间列表。 */
+async function confirmEditThemeSpace(): Promise<void> {
+  if (!editSpace.value || editBusy.value) return;
+  const spaceId = Number(editSpace.value.id);
+  if (!Number.isInteger(spaceId)) {
+    editError.value = "缺少空间 id，无法保存。";
+    return;
+  }
+  editApiNameError.value = "";
+  editDisplayNameError.value = "";
+  const apiName = editDraft.value.apiName.trim();
+  const displayName = editDraft.value.displayName.trim();
+  if (!apiName) editApiNameError.value = "请输入 API 名称。";
+  if (!displayName) editDisplayNameError.value = "请输入空间名称。";
+  if (editApiNameError.value || editDisplayNameError.value) return;
+  editBusy.value = true;
+  editError.value = "";
+  try {
+    const response = await updateOntologySpaceInterface({
+      spaceId,
+      displayName,
+      iconUrl: editDraft.value.iconUrl,
+      description: editDraft.value.description.trim(),
+    });
+    if (response.code !== 200) throw new Error(response.message || "编辑主题空间失败");
+    editDialogVisible.value = false;
+    ElMessage.success("更新成功");
+    await loadThemeSpaces();
+  } catch (cause) {
+    editError.value = cause instanceof Error ? cause.message : "编辑主题空间失败，请重试。";
+  } finally {
+    editBusy.value = false;
+  }
 }
 watch([keyword, order, pageSize], () => {
   page.value = 1;
@@ -527,6 +623,27 @@ watch([keyword, order, pageSize], () => {
   background: var(--aircas-color-section-header);
   box-shadow: 0 0 12px var(--aircas-color-effect-primary-soft);
 }
+.theme-space-table__icon,
+.theme-space-card__icon {
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--aircas-color-effect-primary-border);
+  border-radius: 8px;
+  color: var(--aircas-color-primary);
+  background: var(--aircas-color-section-header);
+  box-shadow: 0 0 12px var(--aircas-color-effect-primary-soft);
+}
+.theme-space-table__icon img,
+.theme-space-card__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .theme-space-table__name div {
   min-width: 0;
 }
@@ -555,6 +672,17 @@ watch([keyword, order, pageSize], () => {
   border-radius: 8px;
   background: var(--aircas-color-panel-background);
 }
+
+:root:not(.dark) .theme-space-management__grid {
+  background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+  box-shadow:
+    inset 0 0 28px var(--aircas-color-effect-page-glow),
+    0 0 18px var(--aircas-color-effect-blue-soft);
+}
+
+:root:not(.dark) .theme-space-card {
+  background: linear-gradient(140deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+}
 .theme-space-card:hover {
   border-color: var(--aircas-color-primary);
 }
@@ -569,6 +697,9 @@ watch([keyword, order, pageSize], () => {
   object-fit: cover;
   border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 8px;
+}
+.theme-space-card__name .theme-space-card__icon {
+  background: var(--aircas-color-section-header);
 }
 .theme-space-card__name div {
   display: flex;
@@ -684,15 +815,44 @@ watch([keyword, order, pageSize], () => {
   gap: 6px;
 }
 .theme-edit-preview {
-  display: block;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.theme-edit-preview img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border: 1px solid var(--aircas-color-border-light);
+  border-radius: 8px;
+  background: var(--aircas-color-input-background);
+}
+
+.theme-edit-upload {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.theme-edit-picture-upload :deep(.el-upload--picture-card) {
   width: 96px;
   height: 96px;
   margin: 0;
-  object-fit: cover;
-  border: 1px solid var(--aircas-color-effect-primary-border);
-  border-radius: 8px;
-  background: var(--aircas-color-section-header);
-  box-shadow: 0 0 12px var(--aircas-color-effect-primary-soft);
+  border-color: var(--aircas-color-border-light);
+  background: var(--aircas-color-input-background);
+}
+
+.theme-edit-picture-upload :deep(.el-upload--picture-card:hover) {
+  border-color: var(--aircas-color-primary);
+  color: var(--aircas-color-primary);
+}
+
+.theme-edit-upload-hint {
+  align-self: center;
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
 }
 .theme-space-management__empty {
   display: grid;

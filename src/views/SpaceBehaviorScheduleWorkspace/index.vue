@@ -476,7 +476,7 @@ function confirmDeleteSchedule() {
   box-shadow: inset 0 0 18px var(--aircas-color-page-glow);
 }
 
-:root[theme="light"] .behavior-schedule-workspace__toolbar {
+:root:not(.dark) .behavior-schedule-workspace__toolbar {
   background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 .behavior-schedule-workspace__filters {
