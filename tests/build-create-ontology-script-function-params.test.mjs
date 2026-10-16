@@ -32,8 +32,47 @@ test("buildCreateOntologyScriptFunctionParams builds CUSTOMIZE payload with para
     ontologySpaceId: 1,
     language: "typescript",
     code: "export function handle(input: User): Output { return { id: 1, name: 'a' }; }",
-    inputLabels: ["id - number", "name - string"],
-    outputLabels: ["id - number", "name - string", "ok - boolean", "meta - object"],
+    parameters: [
+      {
+        paramName: "input",
+        paramType: "OBJECT",
+        category: "INPUT",
+        paramOrder: 1,
+        referenceType: "",
+        fields: [
+          {
+            paramName: "b",
+            paramType: "LIST",
+            category: "INPUT",
+            paramOrder: 2,
+            referenceType: "",
+          },
+          {
+            paramName: "a",
+            paramType: "STRING",
+            category: "INPUT",
+            paramOrder: 1,
+            referenceType: "",
+          },
+        ],
+      },
+      {
+        paramName: "Output",
+        paramType: "OBJECT",
+        category: "OUTPUT",
+        paramOrder: 1,
+        referenceType: "",
+        fields: [
+          {
+            paramName: "id",
+            paramType: "DOUBLE",
+            category: "OUTPUT",
+            paramOrder: 1,
+            referenceType: "",
+          },
+        ],
+      },
+    ],
     sourceVersion: "1.0.0",
   });
 
@@ -48,12 +87,25 @@ test("buildCreateOntologyScriptFunctionParams builds CUSTOMIZE payload with para
   assert.match(payload.code ?? "", /export function handle/);
   assert.equal(payload.queryConfig, undefined);
   assert.deepEqual(payload.parameters, [
-    { paramName: "id", paramType: "NUMBER", category: "INPUT" },
-    { paramName: "name", paramType: "STRING", category: "INPUT" },
-    { paramName: "id", paramType: "NUMBER", category: "OUTPUT" },
-    { paramName: "name", paramType: "STRING", category: "OUTPUT" },
-    { paramName: "ok", paramType: "BOOLEAN", category: "OUTPUT" },
-    { paramName: "meta", paramType: "OBJECT", category: "OUTPUT" },
+    {
+      paramName: "input",
+      paramType: "OBJECT",
+      category: "INPUT",
+      paramOrder: 1,
+      referenceType: "",
+      fields: [
+        { paramName: "a", paramType: "STRING", category: "INPUT", paramOrder: 1, referenceType: "" },
+        { paramName: "b", paramType: "LIST", category: "INPUT", paramOrder: 2, referenceType: "" },
+      ],
+    },
+    {
+      paramName: "Output",
+      paramType: "OBJECT",
+      category: "OUTPUT",
+      paramOrder: 1,
+      referenceType: "",
+      fields: [{ paramName: "id", paramType: "DOUBLE", category: "OUTPUT", paramOrder: 1, referenceType: "" }],
+    },
   ]);
 });
 
@@ -66,8 +118,7 @@ test("buildCreateOntologyScriptFunctionParams allows empty parameters", () => {
     ontologySpaceId: 2,
     language: "python",
     code: "def handle():\n  return {}",
-    inputLabels: [],
-    outputLabels: [],
+    parameters: [],
     sourceVersion: "",
   });
   assert.equal(payload.language, "PYTHON");
@@ -84,8 +135,7 @@ test("buildCreateOntologyScriptFunctionParams maps blank sourceVersion to basedO
     ontologySpaceId: 1,
     language: "typescript",
     code: "export function handle() { return {}; }",
-    inputLabels: [],
-    outputLabels: [],
+    parameters: [],
     sourceVersion: "   ",
   });
   assert.equal(payload.basedOnOldVersion, false);

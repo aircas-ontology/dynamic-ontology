@@ -31,19 +31,18 @@
         </div>
         <div class="function-operator-script-ide__field">
           <div class="function-operator-script-ide__label">输入参数</div>
-          <ul class="function-operator-script-ide__param-list" aria-label="输入参数列表">
-            <li v-for="item in inputParameterLabels" :key="item" class="function-operator-script-ide__param-item">{{ item }}</li>
-          </ul>
+          <FunctionOperatorScriptParamTree :nodes="inputParameters" ariaLabel="输入参数列表" />
         </div>
         <div class="function-operator-script-ide__field">
           <div class="function-operator-script-ide__label">输出参数</div>
-          <ul class="function-operator-script-ide__param-list" aria-label="输出参数列表">
-            <li v-for="item in outputParameterLabels" :key="item" class="function-operator-script-ide__param-item">{{ item }}</li>
-          </ul>
+          <FunctionOperatorScriptParamTree :nodes="outputParameters" ariaLabel="输出参数列表" />
         </div>
       </aside>
 
       <section class="function-operator-script-ide__editor-pane" aria-label="脚本代码编辑区">
+        <el-button class="function-operator-script-ide__parse" size="small" :loading="parsing" :disabled="parseLocked" @click="parseScriptParameters">
+          解析
+        </el-button>
         <FunctionOperatorScriptCodeEditor :model-value="code" :language="language" @update:model-value="emit('update:code', $event)" />
       </section>
 
@@ -72,11 +71,19 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS, type CreateOntologyFunctionParams, type FunctionOperatorScriptLanguage } from "@/types";
+import { postParseOntologyFunctionParamsInterface } from "@/apis";
+import {
+  FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS,
+  type CreateOntologyFunctionParams,
+  type FunctionOperatorScriptLanguage,
+  type ParseOntologyFunctionParamItem,
+} from "@/types";
+import { mapScriptLanguageToApi } from "@/utils/mapFunctionOperatorScriptLanguage";
 import FunctionOperatorScriptCodeEditor from "./FunctionOperatorScriptCodeEditor.vue";
+import FunctionOperatorScriptParamTree from "./FunctionOperatorScriptParamTree.vue";
 import { buildCreateOntologyScriptFunctionParams } from "../utils/buildCreateOntologyScriptFunctionParams";
-import { parseScriptExportParams } from "../utils/parseScriptExportParams";
 import { SCRIPT_FUNCTION_STARTERS } from "../utils/scriptFunctionStarters";
+import { splitParsedScriptParameters } from "../utils/splitParsedScriptParameters";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -107,8 +114,13 @@ const emit = defineEmits<{
 }>();
 
 const lastStarterLanguage = ref<FunctionOperatorScriptLanguage>(props.language);
-const inputParameterLabels = ref<string[]>([]);
-const outputParameterLabels = ref<string[]>([]);
+const inputParameters = ref<ParseOntologyFunctionParamItem[]>([]);
+const outputParameters = ref<ParseOntologyFunctionParamItem[]>([]);
+const parsing = ref(false);
+const parseLocked = ref(false);
+let parsedCodeSnapshot = "";
+let parsedLanguageSnapshot: FunctionOperatorScriptLanguage | "" = "";
+let parseGeneration = 0;
 
 const subtitleText = computed(() => {
   const apiName = props.functionApi.trim() || "-";
@@ -117,12 +129,11 @@ const subtitleText = computed(() => {
 });
 
 /**
- * @description 按当前语言刷新左侧入参/出参展示（TypeScript / Python / Groovy / Java）。
+ * @description 清空左侧由解析接口得到的输入、输出参数树。
  */
-function refreshScriptParameterLabels(): void {
-  const parsed = parseScriptExportParams(props.language, props.code);
-  inputParameterLabels.value = parsed.inputLabels;
-  outputParameterLabels.value = parsed.outputLabels;
+function clearParsedScriptParameters(): void {
+  inputParameters.value = [];
+  outputParameters.value = [];
 }
 
 /**
@@ -141,6 +152,52 @@ function notifyScriptFeatureUnavailable(actionLabel: string): void {
 }
 
 /**
+ * @description 调用解析接口，并用返回的参数树刷新左侧输入、输出展示。
+ */
+async function parseScriptParameters(): Promise<void> {
+  if (parsing.value) {
+    return;
+  }
+  const source = props.code;
+  if (!source.trim()) {
+    ElMessage.warning("请输入脚本代码");
+    return;
+  }
+  const requestId = ++parseGeneration;
+  parsing.value = true;
+  try {
+    const response = await postParseOntologyFunctionParamsInterface({
+      language: mapScriptLanguageToApi(props.language),
+      code: source,
+    });
+    if (requestId !== parseGeneration) {
+      return;
+    }
+    if (response.code !== 200 || !response.data?.parsed) {
+      throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "脚本解析失败");
+    }
+    const split = splitParsedScriptParameters(response.data.parameters);
+    inputParameters.value = split.inputParameters;
+    outputParameters.value = split.outputParameters;
+    parsedCodeSnapshot = source;
+    parsedLanguageSnapshot = props.language;
+    parseLocked.value = true;
+    ElMessage.success("解析完成");
+  } catch (error) {
+    if (requestId !== parseGeneration) {
+      return;
+    }
+    clearParsedScriptParameters();
+    const message = error instanceof Error && error.message.trim() ? error.message : "脚本解析失败";
+    ElMessage.error(message);
+  } finally {
+    if (requestId === parseGeneration) {
+      parsing.value = false;
+    }
+  }
+}
+
+/**
  * @description 校验并组装创建请求，向父组件提交脚本函数保存。
  */
 function submitScriptFunctionCreate(): void {
@@ -150,6 +207,10 @@ function submitScriptFunctionCreate(): void {
   const code = props.code;
   if (!code.trim()) {
     ElMessage.warning("请输入脚本代码");
+    return;
+  }
+  if (!parseLocked.value) {
+    ElMessage.warning("请先执行解析");
     return;
   }
   if (props.language === "typescript" && !/\bexport\s+(?:async\s+)?function\b/.test(code)) {
@@ -172,8 +233,7 @@ function submitScriptFunctionCreate(): void {
     ontologySpaceId: props.spaceId,
     language: props.language,
     code,
-    inputLabels: inputParameterLabels.value,
-    outputLabels: outputParameterLabels.value,
+    parameters: [...inputParameters.value, ...outputParameters.value],
     sourceVersion: props.sourceVersion,
   });
   emit("save", params);
@@ -198,12 +258,27 @@ function onScriptLanguageChange(value: string | number | boolean | undefined): v
 
 watch(
   () => [props.code, props.language] as const,
-  () => {
-    refreshScriptParameterLabels();
+  ([code, language]) => {
+    if (parseLocked.value && (code !== parsedCodeSnapshot || language !== parsedLanguageSnapshot)) {
+      parseLocked.value = false;
+      clearParsedScriptParameters();
+    }
   },
 );
 
-refreshScriptParameterLabels();
+watch(
+  () => props.modelValue,
+  (visible) => {
+    if (!visible) {
+      parseGeneration += 1;
+      parsing.value = false;
+      parseLocked.value = false;
+      parsedCodeSnapshot = "";
+      parsedLanguageSnapshot = "";
+      clearParsedScriptParameters();
+    }
+  },
+);
 </script>
 
 <style scoped lang="scss">
@@ -264,9 +339,17 @@ refreshScriptParameterLabels();
 }
 
 .function-operator-script-ide__editor-pane {
+  position: relative;
   min-width: 0;
   min-height: 0;
   height: 100%;
+}
+
+.function-operator-script-ide__parse {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  z-index: 2;
 }
 
 .function-operator-script-ide__field {
@@ -291,25 +374,6 @@ refreshScriptParameterLabels();
   font-size: 13px;
   font-weight: 600;
   color: var(--aircas-color-text-primary);
-}
-
-.function-operator-script-ide__param-list {
-  display: flex;
-  margin: 0;
-  padding: 0;
-  flex-direction: column;
-  gap: 8px;
-  list-style: none;
-}
-
-.function-operator-script-ide__param-item {
-  padding: 8px 10px;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 6px;
-  background: var(--aircas-color-panel-background-deep);
-  color: var(--aircas-color-text-secondary);
-  font-size: 12px;
-  word-break: break-word;
 }
 
 .function-operator-script-ide__status {

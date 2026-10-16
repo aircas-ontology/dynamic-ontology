@@ -14,6 +14,8 @@ import type {
   GetOntologyFunctionListParams,
   GetOntologyFunctionVersionsData,
   GetOntologyFunctionVersionsParams,
+  ParseOntologyFunctionParamsData,
+  ParseOntologyFunctionParamsParams,
   TestOntologyFunctionData,
   TestOntologyFunctionParams,
   UpdateOntologyFunctionData,
@@ -161,6 +163,24 @@ export function deleteOntologyFunctionInterface(params: DeleteOntologyFunctionPa
 export function testOntologyFunctionInterface(params: TestOntologyFunctionParams): Promise<ApiResponse<TestOntologyFunctionData>> {
   return request<TestOntologyFunctionData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/test",
+    method: "post",
+    data: params,
+  });
+}
+
+/**
+ * @description 解析脚本的输入/输出参数。
+ *
+ * 请求方式：POST `/ontology/function/parse_params`
+ *
+ * @param params 解析参数。
+ * @param params.language 脚本语言：GROOVY / JAVA / PYTHON / TYPESCRIPT。
+ * @param params.code 脚本代码。
+ * @returns 标准 API 响应，data 含解析状态与参数列表。
+ */
+export function postParseOntologyFunctionParamsInterface(params: ParseOntologyFunctionParamsParams): Promise<ApiResponse<ParseOntologyFunctionParamsData>> {
+  return request<ParseOntologyFunctionParamsData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/parse_params",
     method: "post",
     data: params,
   });

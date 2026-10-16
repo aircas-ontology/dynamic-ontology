@@ -134,6 +134,11 @@ export type {
   UpdateOntologyRelationCategoryNameParams,
 } from "./apis/ontologyRelationCategoryTreeType";
 export type {
+  ParseOntologyFunctionParamItem,
+  ParseOntologyFunctionParamsData,
+  ParseOntologyFunctionParamsParams,
+} from "./apis/parseOntologyFunctionParamsType";
+export type {
   StreamAgentChatData,
   StreamAgentChatEvent,
   StreamAgentChatEventType,
