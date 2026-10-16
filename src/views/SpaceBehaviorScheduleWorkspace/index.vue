@@ -472,12 +472,7 @@ function confirmDeleteSchedule() {
   padding: 8px 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-overlay), var(--aircas-color-overlay-deep));
-  box-shadow: inset 0 0 18px var(--aircas-color-page-glow);
-}
-
-:root[theme="light"] .behavior-schedule-workspace__toolbar {
-  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
+  background: var(--aircas-color-panel-background);
 }
 .behavior-schedule-workspace__filters {
   display: flex;

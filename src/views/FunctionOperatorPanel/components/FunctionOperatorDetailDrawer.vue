@@ -294,3 +294,22 @@ function scriptCodeText(operator: FunctionOperator): string {
   word-break: break-word;
 }
 </style>
+
+<style lang="scss">
+.function-operator-detail.el-drawer .el-drawer__header {
+  margin-bottom: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--aircas-color-border-light);
+  background: var(--aircas-color-section-header);
+  color: var(--aircas-color-text-primary);
+}
+
+.function-operator-detail.el-drawer .el-drawer__title {
+  color: var(--aircas-color-text-primary);
+  font-weight: 600;
+}
+
+.function-operator-detail.el-drawer .el-drawer__body {
+  padding-top: 16px;
+}
+</style>

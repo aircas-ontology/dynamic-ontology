@@ -158,6 +158,21 @@ export type {
   ApiDocsSchemaFieldRow,
   ApiDocsServiceInfo,
 } from "./pages/applicationManagementType";
+export { COMPOSITE_WORKFLOW_DND_MIME } from "./pages/ontologyCompositeWorkflowType";
+export type {
+  CompositeWorkflowBranchConfig,
+  CompositeWorkflowBranchOperator,
+  CompositeWorkflowDndPayload,
+  CompositeWorkflowEdgePayload,
+  CompositeWorkflowFunctionNodePayload,
+  CompositeWorkflowInputBinding,
+  CompositeWorkflowLogicNodePayload,
+  CompositeWorkflowLoopConfig,
+  CompositeWorkflowNodeKind,
+  CompositeWorkflowParamBrief,
+  CompositeWorkflowSavePayload,
+  CompositeWorkflowTransformConfig,
+} from "./pages/ontologyCompositeWorkflowType";
 export type {
   ConceptualModelAttribute,
   ConceptualModelObject,

@@ -93,7 +93,7 @@ const props = defineProps<{
   spaceId: number;
   /** 新建表单所选源版本；非空时创建请求 basedOnOldVersion 为 true。 */
   sourceVersion: string;
-  /** 编辑态锁定语言（创建后不可修改 language）。 */
+  /** 编辑态或基于源函数创建时锁定语言（不可切换 language）。 */
   languageLocked: boolean;
   saving: boolean;
 }>();
