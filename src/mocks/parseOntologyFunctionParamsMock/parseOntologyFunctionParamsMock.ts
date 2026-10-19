@@ -1,0 +1,83 @@
+import type { ApiResponse, ParseOntologyFunctionParamsData } from "@/types";
+
+/** 解析脚本输入/输出参数的成功样例。 */
+export const parseOntologyFunctionParamsMock: ApiResponse<ParseOntologyFunctionParamsData> = {
+  code: 200,
+  message: "SUCCESS",
+  success: true,
+  data: {
+    status: "OK",
+    parsed: true,
+    parameters: [
+      {
+        paramName: "input",
+        paramType: "OBJECT",
+        category: "INPUT",
+        paramOrder: 1,
+        referenceType: "",
+        fields: [
+          {
+            paramName: "a",
+            paramType: "OBJECT",
+            category: "INPUT",
+            paramOrder: 1,
+            referenceType: "",
+            fields: [
+              {
+                paramName: "aa",
+                paramType: "OBJECT",
+                category: "INPUT",
+                paramOrder: 1,
+                referenceType: "",
+              },
+              {
+                paramName: "data",
+                paramType: "STRING",
+                category: "INPUT",
+                paramOrder: 2,
+                referenceType: "",
+              },
+            ],
+          },
+          {
+            paramName: "b",
+            paramType: "LIST",
+            category: "INPUT",
+            paramOrder: 2,
+            referenceType: "",
+          },
+        ],
+      },
+      {
+        paramName: "age",
+        paramType: "DOUBLE",
+        category: "INPUT",
+        paramOrder: 2,
+        referenceType: "",
+      },
+      {
+        paramName: "Output",
+        paramType: "OBJECT",
+        category: "OUTPUT",
+        paramOrder: 1,
+        referenceType: "",
+        fields: [
+          {
+            paramName: "id",
+            paramType: "DOUBLE",
+            category: "OUTPUT",
+            paramOrder: 1,
+            referenceType: "",
+          },
+          {
+            paramName: "name",
+            paramType: "STRING",
+            category: "OUTPUT",
+            paramOrder: 2,
+            referenceType: "",
+          },
+        ],
+      },
+    ],
+  },
+};

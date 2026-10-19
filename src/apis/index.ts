@@ -14,6 +14,7 @@ import {
   getOntologyFunctionVersionsInterface,
   postOntologyFunctionPublishInterface,
   postOntologyFunctionUnpublishInterface,
+  postParseOntologyFunctionParamsInterface,
   testOntologyFunctionInterface,
   updateOntologyFunctionInterface,
 } from "./functionApi";
@@ -126,6 +127,7 @@ export {
   postOntologyFunctionPublishInterface,
   postOntologyFunctionUnpublishInterface,
   postOntologyGlobalSearchInterface,
+  postParseOntologyFunctionParamsInterface,
   postUploadOntologyThumbnailInterface,
   putBatchUpdateOntologyPropertiesInterface,
   putUpdateOntologyCategoryNameInterface,

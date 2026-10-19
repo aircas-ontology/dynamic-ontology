@@ -43,11 +43,18 @@ export type CreateOntologyFunctionParameterCategory = "INPUT" | "OUTPUT";
 /** 脚本函数参数类型。 */
 export type CreateOntologyFunctionParameterType = "STRING" | "NUMBER" | "BOOLEAN" | "OBJECT";
 
-/** CUSTOMIZE 脚本函数参数项。 */
+/** CUSTOMIZE 脚本函数参数项，结构与解析接口参数树一致。 */
 export interface CreateOntologyFunctionParameter {
   paramName: string;
-  paramType: CreateOntologyFunctionParameterType;
+  /** 参数类型，保留解析结果原值，如 STRING、DOUBLE、LIST、OBJECT。 */
+  paramType: string;
   category: CreateOntologyFunctionParameterCategory;
+  /** 同层顺序，从 1 开始。 */
+  paramOrder: number;
+  /** 引用类型；无引用时为空字符串。 */
+  referenceType: string;
+  /** 对象或列表的下级属性。 */
+  fields?: CreateOntologyFunctionParameter[];
 }
 
 /** 创建函数算子请求参数。 */

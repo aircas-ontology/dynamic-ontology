@@ -251,6 +251,7 @@ async function setupEditor(): Promise<void> {
     theme: resolveEditorTheme(),
     automaticLayout: true,
     minimap: { enabled: false },
+    inlayHints: { enabled: "off" },
     fontSize: 16,
     lineNumbers: "on",
     wordWrap: "on",

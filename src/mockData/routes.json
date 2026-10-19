@@ -165,6 +165,11 @@
     "file": "fixtures/ontology/function/test.post.json"
   },
   {
+    "method": "POST",
+    "path": "/ontology/function/parse_params",
+    "file": "fixtures/ontology/function/parse_params.post.json"
+  },
+  {
     "method": "GET",
     "path": "/ontology/function/versions",
     "file": "fixtures/ontology/function/versions.get.json"
