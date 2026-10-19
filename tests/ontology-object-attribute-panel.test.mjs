@@ -175,7 +175,7 @@ test("primary attribute forces id API and Int data type", () => {
   assert.match(listSource, /apiName: draft\.isPrimary \? "id" : draft\.apiName/);
   assert.match(listSource, /dataType: draft\.isPrimary \? "Int" : draft\.dataType/);
   assert.match(formSource, /:disabled="editingAttributeId !== null \|\| draft\.isPrimary"/);
-  assert.match(formSource, /:disabled="draft\.isPrimary"/);
+  assert.match(formSource, /:disabled="datasourceLocked \|\| draft\.isPrimary"/);
 });
 
 test("attribute category is required when creating or editing a property", () => {
@@ -191,23 +191,39 @@ test("attribute API name is disabled only while editing", () => {
   assert.match(source, /v-model="draft\.apiName"[\s\S]*?:disabled="editingAttributeId !== null \|\| draft\.isPrimary"/);
 });
 
-test("bound datasource attributes cannot open the edit dialog", () => {
+test("bound datasource attributes open the edit dialog locked to name and description", () => {
   const helperSource = readSource("../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts");
   const propertySource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
+  const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
   assert.match(helperSource, /datasourceId: item\.datasourceId \?\? ""/);
   assert.match(helperSource, /datasourceColumnName: item\.datasourceColumnName \?\? ""/);
-  assert.match(propertySource, /value\.datasourceId\.trim\(\) && value\.datasourceColumnName\.trim\(\)/);
-  assert.match(propertySource, /ElMessage\.warning\("该属性已绑定数据源，不可编辑"\)/);
-  assert.match(propertySource, /return;\n    }\n    editingAttributeId\.value/);
+  assert.doesNotMatch(propertySource, /该属性已绑定数据源，不可编辑/);
+  assert.match(propertySource, /const datasourceLocked = ref\(false\)/);
+  assert.match(propertySource, /function openEditAttribute\(value: unknown, datasourceLockedOverride = false\)/);
+  assert.match(
+    propertySource,
+    /datasourceLocked\.value = Boolean\(datasourceLockedOverride \|\| \(value\.datasourceId\.trim\(\) && value\.datasourceColumnName\.trim\(\)\)\)/,
+  );
+  assert.match(propertySource, /datasourceLocked,/);
+  assert.match(formSource, /datasourceLocked: boolean/);
+  assert.match(formSource, /该属性已绑定数据源，仅支持修改属性名称和描述/);
+  assert.match(formSource, /v-model="draft\.categoryId"[\s\S]*?:disabled="datasourceLocked"/);
+  assert.match(formSource, /:disabled="datasourceLocked \|\| draft\.isPrimary"/);
+  assert.match(formSource, /v-model="draft\.storageGroup"[\s\S]*?:disabled="datasourceLocked"/);
+  assert.match(formSource, /v-model="draft\.defaultValue"[\s\S]*?:disabled="datasourceLocked"/);
+  assert.match(formSource, /:model-value="draft\.isPrimary"[\s\S]*?:disabled="datasourceLocked"/);
+  assert.match(formSource, /:model-value="draft\.isNameKey"[\s\S]*?:disabled="datasourceLocked"/);
 });
 
-test("table editing checks datasource detail before opening the form", () => {
+test("table editing checks datasource detail then opens the form with lock state", () => {
   const panelSource = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
   assert.match(panelSource, /@edit-attribute="handleEditAttribute"/);
   assert.match(panelSource, /async function handleEditAttribute/);
   assert.match(panelSource, /loadPropertyDataSourceDetails\(ontologyUniqueIdentifier\)/);
   assert.match(panelSource, /detail\?\.datasourceId\?\.trim\(\) && detail\.datasourceColumnName\?\.trim\(\)/);
-  assert.match(panelSource, /该属性已绑定数据源，不可编辑/);
+  assert.doesNotMatch(panelSource, /该属性已绑定数据源，不可编辑/);
+  assert.match(panelSource, /:datasource-locked="datasourceLocked"/);
+  assert.match(panelSource, /openEditAttribute\(value, Boolean\(detail\?\.datasourceId\?\.trim\(\) && detail\.datasourceColumnName\?\.trim\(\)\)\)/);
 });
 
 test("attribute storage group accepts custom input and deduplicates values from all properties", () => {
