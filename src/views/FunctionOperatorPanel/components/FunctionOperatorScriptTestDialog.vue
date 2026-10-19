@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" class="function-operator-script-test" title="脚本函数测试" width="720px" append-to-body destroy-on-close>
+  <el-dialog v-model="visible" class="function-operator-script-test" :title="dialogTitle" width="720px" append-to-body destroy-on-close>
     <p class="function-operator-script-test__title">{{ operatorName }}</p>
     <div class="function-operator-script-test__body">
       <p v-if="detailLoading" class="function-operator-script-test__state" role="status">
@@ -28,14 +28,19 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+
 import AircasLoading from "@/components/AircasLoading.vue";
+import type { FunctionOperatorType } from "@/types";
 import type { OntologyFunctionScriptTestInputRow } from "@/utils/mapOntologyFunctionTest";
 import FunctionOperatorScriptTestParamTree from "./FunctionOperatorScriptTestParamTree.vue";
 
 const visible = defineModel<boolean>({ required: true });
 
-defineProps<{
+const props = defineProps<{
   operatorName: string;
+  /** 页面函数类型；外部 API 使用独立标题。 */
+  functionType: FunctionOperatorType | "";
   detailLoading: boolean;
   submitting: boolean;
   inputRows: OntologyFunctionScriptTestInputRow[];
@@ -46,6 +51,12 @@ const emit = defineEmits<{
   run: [];
   "update-param": [path: number[], paramValue: string];
 }>();
+
+/**
+ * @description 按函数类型返回测试弹框标题。
+ * @returns 外部 API 或脚本函数标题。
+ */
+const dialogTitle = computed(() => (props.functionType === "api" ? "外部 API 函数测试" : "脚本函数测试"));
 </script>
 
 <style scoped lang="scss">

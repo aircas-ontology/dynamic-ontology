@@ -552,8 +552,13 @@ export function useFunctionOperatorWorkspace() {
    */
   function openDeleteOperator(operator: FunctionOperator): void {
     const functionApi = operator.functionApi.trim();
+    const version = operator.version.trim();
     if (!functionApi) {
       ElMessage.error("缺少函数 API 名称，无法删除");
+      return;
+    }
+    if (!version) {
+      ElMessage.error("缺少函数版本，无法删除");
       return;
     }
     deleteError.value = "";
@@ -562,7 +567,7 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 确认删除函数算子：按 functionApi 调删除接口并刷新列表。
+   * @description 确认删除函数算子：按 functionApi 与 version 调删除接口并刷新列表。
    */
   async function confirmDeleteOperator(): Promise<void> {
     if (deleteSubmitting.value) {
@@ -570,14 +575,19 @@ export function useFunctionOperatorWorkspace() {
     }
     const operator = deletingOperator.value;
     const functionApi = operator?.functionApi.trim() ?? "";
+    const version = operator?.version.trim() ?? "";
     if (!operator || !functionApi) {
       deleteError.value = "缺少函数 API 名称，无法删除";
+      return;
+    }
+    if (!version) {
+      deleteError.value = "缺少函数版本，无法删除";
       return;
     }
     deleteSubmitting.value = true;
     deleteError.value = "";
     try {
-      const response = await deleteOntologyFunctionInterface({ functionApi });
+      const response = await deleteOntologyFunctionInterface({ functionApi, version });
       if (response.code !== 200) {
         throw new Error(response.message.trim() || "函数删除失败");
       }
@@ -651,12 +661,12 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 判断算子是否应按脚本函数测试弹框处理。
+   * @description 判断算子是否应按脚本函数测试弹框处理。脚本函数与外部 API 函数共用该弹框。
    * @param operator 目标算子。
-   * @returns 为脚本函数时返回 true。
+   * @returns 为脚本函数或外部 API 函数时返回 true。
    */
   function isScriptFunctionOperator(operator: FunctionOperator): boolean {
-    return operator.type === "code" || operator.apiModelType === "CUSTOMIZE";
+    return operator.type === "code" || operator.type === "api" || operator.apiModelType === "CUSTOMIZE" || operator.apiModelType === "EXTERNAL";
   }
 
   /**
@@ -743,7 +753,7 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 打开测试对话框：脚本函数走独立弹框，基础函数拉详情生成绑定键并加载对象列表。
+   * @description 打开测试对话框：脚本函数与外部 API 函数走独立弹框，基础函数拉详情生成绑定键并加载对象列表。
    * @param operator 目标算子。
    */
   async function openTest(operator: FunctionOperator): Promise<void> {

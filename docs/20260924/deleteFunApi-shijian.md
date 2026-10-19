@@ -16,7 +16,7 @@ mocks与types文件名自行语义化命名
 
 ## 接口uri
 
-- `/ontology/function/delete/{functionApi}`
+- `/ontology/function/delete`
 
 ## 请求方式
 
@@ -24,11 +24,15 @@ mocks与types文件名自行语义化命名
 
 ## 输入参数
 
+请求通过 `query` 传递参数
+
 - ```
     "functionApi": "",
+    "version": ""
   ```
 
 - `functionApi`：【string，必填】 函数api名称
+- `version`：【string，必填】 版本号（必填，格式 x.y.z）
 
 ## 输出参数
 
