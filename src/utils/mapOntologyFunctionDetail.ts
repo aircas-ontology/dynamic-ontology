@@ -1,4 +1,5 @@
 import type {
+  CreateOntologyFunctionApiConfig,
   FunctionOperator,
   FunctionOperatorAggFunc,
   FunctionOperatorDefinition,
@@ -15,6 +16,165 @@ import { mapFunctionOperatorTypeFromApi } from "./mapFunctionOperatorTypeToApi.t
 import { mapOntologyFunctionPublishStatus } from "./mapOntologyFunctionPublishStatus.ts";
 
 const AGG_FUNC_SET = new Set<string>(["SUM", "COUNT", "AVG", "MAX", "MIN", "DISTINCT"]);
+
+/** 外部 API 表单可回显的参数类型。 */
+type ExternalApiFormParameterType = "string" | "number" | "boolean" | "array" | "object";
+
+/** 外部 API 表单可回显的参数位置。 */
+type ExternalApiFormLocation = "Body" | "Path" | "Query" | "Header";
+
+/** 详情 apiConfig 转成外部 API 表单后的值。 */
+export interface OntologyExternalApiFormValues {
+  endpoint: string;
+  method: "GET" | "POST" | "PUT" | "DELETE";
+  authType: "none" | "apiKey";
+  apiKey: string;
+  inputs: Array<{
+    name: string;
+    type: ExternalApiFormParameterType;
+    description: string;
+    location: ExternalApiFormLocation;
+    required: "yes" | "no";
+  }>;
+  outputs: Array<{
+    name: string;
+    type: ExternalApiFormParameterType;
+    description: string;
+  }>;
+}
+
+const EXTERNAL_API_LOCATION_TO_FORM: Record<string, ExternalApiFormLocation> = {
+  body: "Body",
+  path: "Path",
+  query: "Query",
+  header: "Header",
+};
+
+/**
+ * @description 判断参数类型是否能回显到外部 API 表单。
+ * @param value 参数类型。
+ * @returns 是否为表单支持的类型。
+ */
+function isExternalApiFormParameterType(value: string): value is ExternalApiFormParameterType {
+  return value === "string" || value === "number" || value === "boolean" || value === "array" || value === "object";
+}
+
+/**
+ * @description 将详情 apiConfig 转为外部 API 表单值。配置中的输入或输出为空时，改用详情 params 对应方向的参数。
+ * @param config 详情中的外部 API 配置。
+ * @param detailParameters 已按详情 params 映射的输入、输出；配置列表为空时用于回显。
+ * @returns 表单值；没有配置且没有详情参数时返回 null。
+ */
+export function mapOntologyExternalApiConfigToForm(
+  config: CreateOntologyFunctionApiConfig | undefined,
+  detailParameters?: { inputs?: FunctionOperatorParameter[]; outputs?: FunctionOperatorParameter[] },
+): OntologyExternalApiFormValues | null {
+  if (!config && !detailParameters?.inputs?.length && !detailParameters?.outputs?.length) {
+    return null;
+  }
+  const method = config?.method === "GET" || config?.method === "POST" || config?.method === "PUT" || config?.method === "DELETE" ? config.method : "POST";
+  const authType = config?.authType === "apiKey" ? "apiKey" : "none";
+  const configInputs = mapExternalApiConfigInputs(config?.inputs ?? []);
+  const configOutputs = mapExternalApiConfigOutputs(config?.outputs ?? []);
+  return {
+    endpoint: typeof config?.endpoint === "string" ? config.endpoint.trim() : "",
+    method,
+    authType,
+    apiKey: authType === "apiKey" && typeof config?.apiKey === "string" ? config.apiKey.trim() : "",
+    inputs: configInputs.length > 0 ? configInputs : mapDetailParametersToExternalInputs(detailParameters?.inputs ?? []),
+    outputs: configOutputs.length > 0 ? configOutputs : mapDetailParametersToExternalOutputs(detailParameters?.outputs ?? []),
+  };
+}
+
+/**
+ * @description 将 apiConfig.inputs 转为表单行，并跳过无法识别的类型或位置。
+ * @param rows 配置中的输入参数。
+ * @returns 表单输入行。
+ */
+function mapExternalApiConfigInputs(rows: CreateOntologyFunctionApiConfig["inputs"]): OntologyExternalApiFormValues["inputs"] {
+  const inputs: OntologyExternalApiFormValues["inputs"] = [];
+  for (const row of rows) {
+    const parameterType = typeof row.type === "string" ? row.type.trim().toLowerCase() : "";
+    const locationKey = typeof row.location === "string" ? row.location.trim().toLowerCase() : "";
+    const location = EXTERNAL_API_LOCATION_TO_FORM[locationKey];
+    if (!isExternalApiFormParameterType(parameterType) || !location || typeof row.required !== "boolean") {
+      continue;
+    }
+    inputs.push({
+      name: typeof row.name === "string" ? row.name.trim() : "",
+      type: parameterType,
+      description: typeof row.description === "string" ? row.description.trim() : "",
+      location,
+      required: row.required ? "yes" : "no",
+    });
+  }
+  return inputs;
+}
+
+/**
+ * @description 将 apiConfig.outputs 转为表单行，并跳过无法识别的类型。
+ * @param rows 配置中的输出参数。
+ * @returns 表单输出行。
+ */
+function mapExternalApiConfigOutputs(rows: CreateOntologyFunctionApiConfig["outputs"]): OntologyExternalApiFormValues["outputs"] {
+  const outputs: OntologyExternalApiFormValues["outputs"] = [];
+  for (const row of rows) {
+    const parameterType = typeof row.type === "string" ? row.type.trim().toLowerCase() : "";
+    if (!isExternalApiFormParameterType(parameterType)) {
+      continue;
+    }
+    outputs.push({
+      name: typeof row.name === "string" ? row.name.trim() : "",
+      type: parameterType,
+      description: typeof row.description === "string" ? row.description.trim() : "",
+    });
+  }
+  return outputs;
+}
+
+/**
+ * @description 将详情 params 映射出的输入参数转为外部 API 表单行。详情不含位置时默认 Body，必填默认否。
+ * @param parameters 详情 INPUT 参数。
+ * @returns 表单输入行。
+ */
+function mapDetailParametersToExternalInputs(parameters: FunctionOperatorParameter[]): OntologyExternalApiFormValues["inputs"] {
+  const inputs: OntologyExternalApiFormValues["inputs"] = [];
+  for (const parameter of parameters) {
+    const name = parameter.name.trim();
+    if (!name || !isExternalApiFormParameterType(parameter.type)) {
+      continue;
+    }
+    inputs.push({
+      name,
+      type: parameter.type,
+      description: parameter.description.trim(),
+      location: "Body",
+      required: parameter.required ? "yes" : "no",
+    });
+  }
+  return inputs;
+}
+
+/**
+ * @description 将详情 params 映射出的输出参数转为外部 API 表单行。
+ * @param parameters 详情 OUTPUT 参数。
+ * @returns 表单输出行。
+ */
+function mapDetailParametersToExternalOutputs(parameters: FunctionOperatorParameter[]): OntologyExternalApiFormValues["outputs"] {
+  const outputs: OntologyExternalApiFormValues["outputs"] = [];
+  for (const parameter of parameters) {
+    const name = parameter.name.trim();
+    if (!name || !isExternalApiFormParameterType(parameter.type)) {
+      continue;
+    }
+    outputs.push({
+      name,
+      type: parameter.type,
+      description: parameter.description.trim(),
+    });
+  }
+  return outputs;
+}
 
 /**
  * @description 解析详情中的聚合类型；空或非法值回落为空字符串。
@@ -216,6 +376,7 @@ export function mapOntologyFunctionDetailToDraft(
     dependencies: [],
     testStatus: "untested",
     testedAt: "",
+    ...(type === "api" && detail.apiConfig ? { externalApiConfig: detail.apiConfig } : {}),
   };
 }
 

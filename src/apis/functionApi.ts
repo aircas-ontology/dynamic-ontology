@@ -48,7 +48,7 @@ export function createOntologyFunctionInterface(params: CreateOntologyFunctionPa
 }
 
 /**
- * @description 修改本体空间下的函数算子（BASIC_QUERY / CUSTOMIZE）。
+ * @description 修改本体空间下的函数算子（BASIC_QUERY / CUSTOMIZE / EXTERNAL）。
  *
  * 请求方式：PUT `/ontology/function`
  *
@@ -57,12 +57,14 @@ export function createOntologyFunctionInterface(params: CreateOntologyFunctionPa
  * @param params.version 版本号，格式 x.y.z。
  * @param params.displayName 函数显示名称。
  * @param params.description 函数说明。
- * @param params.type 函数模型（BASIC_QUERY 或 CUSTOMIZE）。
+ * @param params.type 函数模型（BASIC_QUERY、CUSTOMIZE 或 EXTERNAL）。
  * @param params.ontologySpaceId 所属本体空间 id。
  * @param params.language 可选脚本语言（仅 CUSTOMIZE）。
  * @param params.code 可选脚本源码（仅 CUSTOMIZE）。
  * @param params.parameters 可选脚本参数列表（仅 CUSTOMIZE）。
+ * @param params.basedOnOldVersion 可选，外部 API 编辑与新建请求保持一致。
  * @param params.queryConfig 可选的基础查询配置（filters / aggFunc）。
+ * @param params.apiConfig 可选的外部 API 配置（endpoint / method / authType / apiKey / inputs / outputs）。
  * @returns 标准 API 响应；成功时 data 为 null。
  */
 export function updateOntologyFunctionInterface(params: UpdateOntologyFunctionParams): Promise<ApiResponse<UpdateOntologyFunctionData>> {

@@ -3,7 +3,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { mapOntologyFunctionQueryConfigToBasicFilter, stringifyBasicFilterConfig } from "../src/utils/functionOperatorBasicFilter.ts";
-import { mapOntologyFunctionDetailToDraft, mapOntologyFunctionDetailToOperator } from "../src/utils/mapOntologyFunctionDetail.ts";
+import {
+  mapOntologyExternalApiConfigToForm,
+  mapOntologyFunctionDetailToDraft,
+  mapOntologyFunctionDetailToOperator,
+} from "../src/utils/mapOntologyFunctionDetail.ts";
 
 /**
  * @description 读取相对 tests 目录的源文件文本。
@@ -34,6 +38,7 @@ test("get ontology function detail types expose documented fields", () => {
   assert.match(source, /publishStatus\?: number/);
   assert.match(source, /description\?: string/);
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
+  assert.match(source, /apiConfig\?: CreateOntologyFunctionApiConfig/);
   const barrel = readSource("../src/types/index.ts");
   assert.match(barrel, /GetOntologyFunctionDetailData/);
   assert.match(barrel, /getOntologyFunctionDetailType/);
@@ -486,4 +491,119 @@ test("function operator openDetail fetches detail for drawer", () => {
   assert.match(panel, /togglePublish\(selectedOperator\.value\)/);
   assert.match(panel, /openDeleteOperator\(selectedOperator\.value\)/);
   assert.match(panel, /openTest\(selectedOperator\.value\)/);
+});
+
+test("mapOntologyFunctionDetailToDraft keeps external apiConfig for form echo", () => {
+  const apiConfig = {
+    endpoint: " https://service.example/run ",
+    method: "PUT",
+    authType: "apiKey",
+    contentType: "application/json",
+    apiKey: " secret ",
+    inputs: [
+      { name: "q", type: "string", required: true, location: "query", description: "关键词" },
+      { name: "bad-type", type: "date", required: true, location: "body", description: "" },
+      { name: "bad-location", type: "string", required: false, location: "cookie", description: "" },
+    ],
+    outputs: [
+      { name: "id", type: "number", description: "编号" },
+      { name: "bad", type: "date", description: "" },
+    ],
+  };
+  const draft = mapOntologyFunctionDetailToDraft(
+    {
+      functionApi: "ext.demo",
+      version: "1.0.0",
+      displayName: "外部接口",
+      description: "说明",
+      model: "OTHER",
+      type: "EXTERNAL",
+      ontologySpaceId: 3,
+      params: [],
+      code: "",
+      apiConfig,
+    },
+    3,
+  );
+  assert.equal(draft.type, "api");
+  assert.equal(draft.name, "外部接口");
+  assert.deepEqual(draft.externalApiConfig, apiConfig);
+  const formValues = mapOntologyExternalApiConfigToForm(apiConfig);
+  assert.equal(formValues.endpoint, "https://service.example/run");
+  assert.equal(formValues.method, "PUT");
+  assert.equal(formValues.authType, "apiKey");
+  assert.equal(formValues.apiKey, "secret");
+  assert.deepEqual(formValues.inputs, [{ name: "q", type: "string", description: "关键词", location: "Query", required: "yes" }]);
+  assert.deepEqual(formValues.outputs, [{ name: "id", type: "number", description: "编号" }]);
+  const noneValues = mapOntologyExternalApiConfigToForm({
+    endpoint: "https://service.example/run",
+    method: "POST",
+    authType: "none",
+    contentType: "application/json",
+    apiKey: "ignored",
+    inputs: [],
+    outputs: [],
+  });
+  assert.equal(noneValues.apiKey, "");
+  assert.equal(mapOntologyExternalApiConfigToForm(undefined), null);
+  const echoed = mapOntologyExternalApiConfigToForm(
+    {
+      endpoint: "https://httpbin.org/post",
+      method: "POST",
+      authType: "none",
+      contentType: "application/json",
+      inputs: [],
+      outputs: [],
+    },
+    {
+      inputs: [{ id: "in-1", name: "title", type: "string", required: false, description: "标题" }],
+      outputs: [
+        { id: "out-1", name: "result", type: "object", required: false, description: "响应报文" },
+        { id: "out-2", name: "status", type: "number", required: false, description: "HTTP 状态码" },
+      ],
+    },
+  );
+  assert.equal(echoed.endpoint, "https://httpbin.org/post");
+  assert.deepEqual(echoed.inputs, [{ name: "title", type: "string", description: "标题", location: "Body", required: "no" }]);
+  assert.deepEqual(echoed.outputs, [
+    { name: "result", type: "object", description: "响应报文" },
+    { name: "status", type: "number", description: "HTTP 状态码" },
+  ]);
+  const detailDraft = mapOntologyFunctionDetailToDraft(
+    {
+      functionApi: "wb",
+      version: "1.0.0",
+      displayName: "外部测试",
+      description: "wb",
+      model: "OTHER",
+      type: "EXTERNAL",
+      ontologySpaceId: 1,
+      params: [
+        { paramId: 1334, paramName: "result", paramType: "OBJECT", category: "OUTPUT", paramOrder: 1, description: "响应报文" },
+        { paramId: 1335, paramName: "status", paramType: "DOUBLE", category: "OUTPUT", paramOrder: 2, description: "HTTP 状态码" },
+        { paramId: 1336, paramName: "title", paramType: "STRING", category: "INPUT", paramOrder: 1, description: "标题" },
+      ],
+      code: "",
+      apiConfig: {
+        endpoint: "https://httpbin.org/post",
+        method: "POST",
+        authType: "none",
+        contentType: "application/json",
+        inputs: [],
+        outputs: [],
+      },
+    },
+    1,
+  );
+  const detailForm = mapOntologyExternalApiConfigToForm(detailDraft.externalApiConfig, {
+    inputs: detailDraft.inputParameters,
+    outputs: detailDraft.outputParameters,
+  });
+  assert.deepEqual(detailForm.outputs, [
+    { name: "result", type: "object", description: "响应报文" },
+    { name: "status", type: "number", description: "HTTP 状态码" },
+  ]);
+  assert.deepEqual(detailForm.inputs, [{ name: "title", type: "string", description: "标题", location: "Body", required: "no" }]);
+  const formSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue");
+  assert.match(formSource, /mapOntologyExternalApiConfigToForm/);
 });

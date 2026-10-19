@@ -459,8 +459,8 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 保存新建外部 API 函数（EXTERNAL）；编辑已有函数时不调用修改接口。
-   * @param params 创建请求体。
+   * @description 保存外部 API 函数（EXTERNAL）；无 editingOperator 走创建 POST，有则走修改 PUT，请求体与新建一致。
+   * @param params 创建或修改请求体。
    */
   async function saveExternalApiOperator(params: CreateOntologyFunctionParams): Promise<void> {
     if (actionLoading.value) {
@@ -470,23 +470,27 @@ export function useFunctionOperatorWorkspace() {
       ElMessage.warning("仅支持保存外部 API 函数");
       return;
     }
-    if (editingOperator.value) {
-      ElMessage.warning("外部 API 函数编辑本阶段暂未开放");
-      return;
-    }
     actionLoading.value = true;
     try {
-      const response = await createOntologyFunctionInterface(params);
-      if (response.code !== 200) {
-        throw new Error(response.message || "外部 API 函数创建失败");
+      if (editingOperator.value) {
+        const response = await updateOntologyFunctionInterface(params);
+        if (response.code !== 200) {
+          throw new Error(response.message || "外部 API 函数保存失败");
+        }
+        ElMessage.success("外部 API 函数已更新");
+      } else {
+        const response = await createOntologyFunctionInterface(params);
+        if (response.code !== 200) {
+          throw new Error(response.message || "外部 API 函数创建失败");
+        }
+        ElMessage.success("外部 API 函数草稿已保存");
       }
-      ElMessage.success("外部 API 函数草稿已保存");
       formVisible.value = false;
       formDraft.value = null;
       editingOperator.value = null;
       await loadOperators();
     } catch (error) {
-      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "外部 API 函数创建失败");
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "外部 API 函数保存失败");
     } finally {
       actionLoading.value = false;
     }

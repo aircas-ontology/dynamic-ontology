@@ -2,6 +2,7 @@ import { markRaw, onUnmounted, ref, shallowRef, type Ref, type ShallowRef } from
 import LogicFlow from "@logicflow/core";
 import { ElMessage } from "element-plus";
 
+import { getOntologyFunctionDetailInterface } from "@/apis";
 import type {
   CompositeWorkflowBranchConfig,
   CompositeWorkflowDndPayload,
@@ -16,6 +17,7 @@ import {
   buildCompositeWorkflowSavePayload,
   buildDefaultCompositeWorkflowInputBindings,
   hasCompositeWorkflowIncomingEdge,
+  mapCompositeWorkflowDetailParamBriefs,
   repairCompositeWorkflowInputBindings,
   validateCompositeWorkflowForSave,
   wouldCompositeWorkflowEdgeCreateCycle,
@@ -147,6 +149,88 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
       return { hasUpstream: true, upstreamOutputs: [{ paramName: itemName, paramType: "object" }] };
     }
     return { hasUpstream: true, upstreamOutputs: [] };
+  }
+
+  /** 上游函数输出加载序号，避免过期详情覆盖新结果。 */
+  const upstreamOutputLoadGeneration = new Map<string, number>();
+  let functionNodeOpenGeneration = 0;
+
+  /**
+   * @description 连线后补齐上游函数的输出定义。已有输出快照时直接使用，不检查该节点入参是否已填写。
+   * @param sourceNodeId 上游节点 id。
+   */
+  async function ensureUpstreamFunctionOutputs(sourceNodeId: string): Promise<void> {
+    const lf = lfRef.value;
+    if (!lf) {
+      return;
+    }
+    const source = readGraphNodes().find((node) => node.id === sourceNodeId);
+    if (!source || source.kind !== "function" || (source.paramsSnapshot?.outputs?.length ?? 0) > 0) {
+      return;
+    }
+    const functionApi = source.functionApi?.trim() ?? "";
+    const version = source.version?.trim() ?? "";
+    if (!functionApi || !version) {
+      return;
+    }
+    const requestId = (upstreamOutputLoadGeneration.get(sourceNodeId) ?? 0) + 1;
+    upstreamOutputLoadGeneration.set(sourceNodeId, requestId);
+    const response = await getOntologyFunctionDetailInterface({ functionApi, version });
+    if (disposed || upstreamOutputLoadGeneration.get(sourceNodeId) !== requestId) {
+      return;
+    }
+    if (response.code !== 200 || !response.data) {
+      throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "上游输出加载失败");
+    }
+    const model = lf.getNodeModelById(sourceNodeId);
+    if (!model) {
+      return;
+    }
+    const properties = model.getProperties() as Record<string, unknown>;
+    const existing =
+      properties.paramsSnapshot && typeof properties.paramsSnapshot === "object"
+        ? (properties.paramsSnapshot as { inputs?: CompositeWorkflowParamBrief[]; outputs?: CompositeWorkflowParamBrief[] })
+        : undefined;
+    model.setProperties({
+      ...properties,
+      paramsSnapshot: {
+        inputs: existing?.inputs ?? [],
+        outputs: mapCompositeWorkflowDetailParamBriefs(response.data.params ?? [], "OUTPUT"),
+      },
+    });
+  }
+
+  /**
+   * @description 打开函数节点配置。先按连线加载上游输出，再展示下游入参可选列表。
+   * @param nodeId 节点 id。
+   * @param properties 节点属性。
+   */
+  async function openFunctionNodeEdit(nodeId: string, properties: Record<string, unknown>): Promise<void> {
+    const requestId = functionNodeOpenGeneration + 1;
+    functionNodeOpenGeneration = requestId;
+    const edges = readGraphEdges().filter((edge) => edge.targetNodeId === nodeId);
+    const sourceNodeId = edges[0]?.sourceNodeId ?? "";
+    if (sourceNodeId) {
+      try {
+        await ensureUpstreamFunctionOutputs(sourceNodeId);
+      } catch (error) {
+        ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "上游输出加载失败");
+      }
+    }
+    if (disposed || functionNodeOpenGeneration !== requestId) {
+      return;
+    }
+    const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(nodeId);
+    functionNodeEdit.value = {
+      nodeId,
+      functionApi: String(properties.functionApi ?? ""),
+      version: String(properties.version ?? ""),
+      displayName: String(properties.displayName ?? properties.title ?? ""),
+      inputBindings: Array.isArray(properties.inputBindings) ? (properties.inputBindings as CompositeWorkflowInputBinding[]) : [],
+      paramsSnapshot: properties.paramsSnapshot as CompositeWorkflowFunctionNodeEditContext["paramsSnapshot"],
+      hasUpstream,
+      upstreamOutputs,
+    };
   }
 
   /**
@@ -285,17 +369,7 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
       const kind = properties.kind;
       if (kind === "function") {
         logicNodeEdit.value = null;
-        const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(data.id);
-        functionNodeEdit.value = {
-          nodeId: data.id,
-          functionApi: String(properties.functionApi ?? ""),
-          version: String(properties.version ?? ""),
-          displayName: String(properties.displayName ?? properties.title ?? ""),
-          inputBindings: Array.isArray(properties.inputBindings) ? (properties.inputBindings as CompositeWorkflowInputBinding[]) : [],
-          paramsSnapshot: properties.paramsSnapshot as CompositeWorkflowFunctionNodeEditContext["paramsSnapshot"],
-          hasUpstream,
-          upstreamOutputs,
-        };
+        void openFunctionNodeEdit(data.id, properties);
         return;
       }
       if (kind === "loop" || kind === "branch" || kind === "transform") {
@@ -334,7 +408,14 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
         const edgeModel = lf.getEdgeModelById(data.id);
         edgeModel?.setProperties({ ...(edgeModel.getProperties() as object), branch });
       }
-      refreshTargetBindingsAfterConnect(data.targetNodeId);
+      void (async () => {
+        try {
+          await ensureUpstreamFunctionOutputs(data.sourceNodeId);
+        } catch (error) {
+          ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "上游输出加载失败");
+        }
+        refreshTargetBindingsAfterConnect(data.targetNodeId);
+      })();
     });
     lf.on("edge:delete", ({ data }) => {
       refreshTargetBindingsAfterConnect(data.targetNodeId);
@@ -635,6 +716,7 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
    * @description 关闭配置弹框时清空编辑态。
    */
   function clearNodeEditState(): void {
+    functionNodeOpenGeneration += 1;
     functionNodeEdit.value = null;
     logicNodeEdit.value = null;
   }

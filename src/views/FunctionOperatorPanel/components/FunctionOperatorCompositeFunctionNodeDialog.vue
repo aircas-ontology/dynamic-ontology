@@ -29,34 +29,17 @@
 
       <h4 class="composite-fn-node-dialog__section-title">入参绑定</h4>
       <p v-if="!context.hasUpstream" class="composite-fn-node-dialog__hint">当前无前驱，入参仅支持手动输入</p>
-      <el-form v-if="bindings.length" label-position="top" class="composite-fn-node-dialog__bindings">
-        <div v-for="binding in bindings" :key="binding.paramName" class="composite-fn-node-dialog__binding-row">
-          <div class="composite-fn-node-dialog__binding-name">{{ binding.paramName }}</div>
-          <el-select
-            :model-value="binding.mode"
-            class="composite-fn-node-dialog__binding-mode"
-            @update:model-value="onBindingModeChange(binding.paramName, String($event))"
-          >
-            <el-option label="手动输入" value="manual" />
-            <el-option label="来自上游" value="fromUpstream" :disabled="!context.hasUpstream || upstreamOptions.length === 0" />
-          </el-select>
-          <el-input
-            v-if="binding.mode === 'manual'"
-            :model-value="binding.value"
-            placeholder="参数值"
-            @update:model-value="onManualValueChange(binding.paramName, String($event ?? ''))"
-          />
-          <el-select
-            v-else
-            :model-value="binding.upstreamParamName"
-            placeholder="选择上游输出"
-            filterable
-            @update:model-value="onUpstreamParamChange(binding.paramName, String($event ?? ''))"
-          >
-            <el-option v-for="item in upstreamOptions" :key="item.paramName" :label="`${item.paramName}（${item.paramType}）`" :value="item.paramName" />
-          </el-select>
-        </div>
-      </el-form>
+      <FunctionOperatorCompositeInputBindingTree
+        v-if="inputs.length"
+        :nodes="inputs"
+        :bindings="bindings"
+        :has-upstream="context.hasUpstream"
+        :upstream-options="upstreamOptions"
+        ariaLabel="入参绑定"
+        @update-mode="onBindingModeChange"
+        @update-value="onManualValueChange"
+        @update-upstream="onUpstreamParamChange"
+      />
       <p v-else class="composite-fn-node-dialog__hint">该函数无 INPUT 参数</p>
     </template>
     <template #footer>
@@ -77,9 +60,10 @@ import AircasLoading from "@/components/AircasLoading.vue";
 import type { CompositeWorkflowInputBinding, CompositeWorkflowParamBrief, GetOntologyFunctionDetailParamItem } from "@/types";
 
 import type { CompositeWorkflowFunctionNodeEditContext } from "../composables/useCompositeWorkflowCanvas";
-import { buildDefaultCompositeWorkflowInputBindings, repairCompositeWorkflowInputBindings } from "../utils/compositeWorkflowGraph.ts";
+import { alignCompositeWorkflowInputBindings } from "../utils/compositeWorkflowGraph.ts";
 import { compareCompositeWorkflowParamTypes } from "../utils/compositeWorkflowParamType.ts";
 import { mapCompositeParamBriefsToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
+import FunctionOperatorCompositeInputBindingTree from "./FunctionOperatorCompositeInputBindingTree.vue";
 import FunctionOperatorScriptParamTree from "./FunctionOperatorScriptParamTree.vue";
 
 const props = defineProps<{
@@ -158,10 +142,7 @@ async function loadFunctionDetail(): Promise<void> {
     if (hasParamsSnapshot && context.paramsSnapshot) {
       inputs.value = context.paramsSnapshot.inputs;
       outputs.value = context.paramsSnapshot.outputs ?? [];
-      bindings.value =
-        context.inputBindings.length > 0
-          ? repairCompositeWorkflowInputBindings(context.inputBindings, context.upstreamOutputs, context.hasUpstream)
-          : buildDefaultCompositeWorkflowInputBindings(context.paramsSnapshot.inputs, context.upstreamOutputs, context.hasUpstream);
+      bindings.value = alignCompositeWorkflowInputBindings(context.paramsSnapshot.inputs, context.inputBindings, context.upstreamOutputs, context.hasUpstream);
     }
     const response = await getOntologyFunctionDetailInterface({
       functionApi: context.functionApi,
@@ -196,10 +177,7 @@ async function loadFunctionDetail(): Promise<void> {
     }
     inputs.value = nextInputs;
     outputs.value = nextOutputs;
-    bindings.value =
-      context.inputBindings.length > 0
-        ? repairCompositeWorkflowInputBindings(context.inputBindings, context.upstreamOutputs, context.hasUpstream)
-        : buildDefaultCompositeWorkflowInputBindings(nextInputs, context.upstreamOutputs, context.hasUpstream);
+    bindings.value = alignCompositeWorkflowInputBindings(nextInputs, context.inputBindings, context.upstreamOutputs, context.hasUpstream);
   } catch (error) {
     if (requestId !== detailGeneration) {
       return;
@@ -214,39 +192,92 @@ async function loadFunctionDetail(): Promise<void> {
 }
 
 /**
+ * @description 判断绑定路径是否相同。
+ * @param left 路径。
+ * @param right 路径。
+ * @returns 相同返回 true。
+ */
+function isSameParamPath(left: string[], right: string[]): boolean {
+  const normalizedLeft = left.length > 0 ? left : [];
+  return normalizedLeft.length === right.length && normalizedLeft.every((item, index) => item === right[index]);
+}
+
+/**
+ * @description 按路径查找叶子参数。
+ * @param items 当前层参数。
+ * @param paramPath 从根到叶子的路径。
+ * @returns 叶子参数；路径指向仍有下级的节点时返回空。
+ */
+function findLeafInput(items: CompositeWorkflowParamBrief[], paramPath: string[]): CompositeWorkflowParamBrief | undefined {
+  const [head, ...rest] = paramPath;
+  if (!head) {
+    return undefined;
+  }
+  const current = items.find((item) => item.paramName === head);
+  if (!current) {
+    return undefined;
+  }
+  if (rest.length === 0) {
+    return current.fields && current.fields.length > 0 ? undefined : current;
+  }
+  return findLeafInput(current.fields ?? [], rest);
+}
+
+/**
+ * @description 按路径替换或追加一条叶子绑定。
+ * @param paramPath 叶子路径。
+ * @param next 新绑定。
+ */
+function replaceBinding(paramPath: string[], next: CompositeWorkflowInputBinding): void {
+  const index = bindings.value.findIndex((item) => isSameParamPath(item.paramPath.length > 0 ? item.paramPath : [item.paramName], paramPath));
+  if (index < 0) {
+    bindings.value = [...bindings.value, next];
+    return;
+  }
+  const copy = [...bindings.value];
+  copy[index] = next;
+  bindings.value = copy;
+}
+
+/**
  * @description 切换绑定模式。
- * @param paramName 入参名。
+ * @param paramPath 叶子路径。
  * @param mode 模式。
  */
-function onBindingModeChange(paramName: string, mode: string): void {
-  bindings.value = bindings.value.map((item) => {
-    if (item.paramName !== paramName) {
-      return item;
-    }
-    if (mode === "fromUpstream") {
-      const first = upstreamOptions.value[0]?.paramName ?? "";
-      return { mode: "fromUpstream", paramName, upstreamParamName: first };
-    }
-    return { mode: "manual", paramName, value: "" };
-  });
+function onBindingModeChange(paramPath: string[], mode: string): void {
+  const paramName = paramPath[paramPath.length - 1] ?? "";
+  if (mode === "fromUpstream") {
+    const first = upstreamOptions.value[0]?.paramName ?? "";
+    replaceBinding(paramPath, { mode: "fromUpstream", paramName, paramPath, upstreamParamName: first });
+    return;
+  }
+  replaceBinding(paramPath, { mode: "manual", paramName, paramPath, value: "" });
 }
 
 /**
  * @description 更新手动值。
- * @param paramName 入参名。
+ * @param paramPath 叶子路径。
  * @param value 值。
  */
-function onManualValueChange(paramName: string, value: string): void {
-  bindings.value = bindings.value.map((item) => (item.paramName === paramName && item.mode === "manual" ? { ...item, value } : item));
+function onManualValueChange(paramPath: string[], value: string): void {
+  const current = bindings.value.find((item) => isSameParamPath(item.paramPath, paramPath) && item.mode === "manual");
+  if (!current || current.mode !== "manual") {
+    return;
+  }
+  replaceBinding(paramPath, { ...current, value });
 }
 
 /**
  * @description 更新上游输出映射。
- * @param paramName 入参名。
+ * @param paramPath 叶子路径。
  * @param upstreamParamName 上游输出名。
  */
-function onUpstreamParamChange(paramName: string, upstreamParamName: string): void {
-  bindings.value = bindings.value.map((item) => (item.paramName === paramName && item.mode === "fromUpstream" ? { ...item, upstreamParamName } : item));
+function onUpstreamParamChange(paramPath: string[], upstreamParamName: string): void {
+  const current = bindings.value.find((item) => isSameParamPath(item.paramPath, paramPath) && item.mode === "fromUpstream");
+  if (!current || current.mode !== "fromUpstream") {
+    return;
+  }
+  replaceBinding(paramPath, { ...current, upstreamParamName });
 }
 
 /**
@@ -261,15 +292,16 @@ function emitConfirm(): void {
     if (binding.mode !== "fromUpstream") {
       continue;
     }
-    const input = inputs.value.find((item) => item.paramName === binding.paramName);
+    const input = findLeafInput(inputs.value, binding.paramPath.length > 0 ? binding.paramPath : [binding.paramName]);
     const upstream = upstreamOptions.value.find((item) => item.paramName === binding.upstreamParamName);
+    const label = (binding.paramPath.length > 0 ? binding.paramPath : [binding.paramName]).join(".");
     if (!input || !upstream) {
-      ElMessage.error(`入参「${binding.paramName}」上游映射无效`);
+      ElMessage.error(`入参「${label}」上游映射无效`);
       return;
     }
     const compared = compareCompositeWorkflowParamTypes(upstream.paramType, input.paramType);
     if (!compared.compatible) {
-      ElMessage.error(`入参「${binding.paramName}」与上游「${upstream.paramName}」类型不兼容`);
+      ElMessage.error(`入参「${label}」与上游「${upstream.paramName}」类型不兼容`);
       return;
     }
   }
@@ -320,29 +352,6 @@ watch(
   margin: 0 0 8px;
   font-size: 12px;
   color: var(--aircas-color-text-secondary);
-}
-
-.composite-fn-node-dialog__bindings {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.composite-fn-node-dialog__binding-row {
-  display: grid;
-  grid-template-columns: 100px 120px minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
-}
-
-.composite-fn-node-dialog__binding-name {
-  font-size: 13px;
-  color: var(--aircas-color-text-primary);
-  word-break: break-all;
-}
-
-.composite-fn-node-dialog__binding-mode {
-  width: 100%;
 }
 
 .composite-fn-node-dialog__code {

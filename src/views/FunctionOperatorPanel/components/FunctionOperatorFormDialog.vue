@@ -319,7 +319,7 @@ import {
 } from "@/types";
 import { createEmptyBasicFilterDocument, stringifyBasicFilterConfig } from "@/utils/functionOperatorBasicFilter";
 import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToApi";
-import { mapOntologyFunctionDetailToDraft } from "@/utils/mapOntologyFunctionDetail";
+import { mapOntologyExternalApiConfigToForm, mapOntologyFunctionDetailToDraft } from "@/utils/mapOntologyFunctionDetail";
 
 import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBuilder.vue";
 import FunctionOperatorCompositeWorkflowDialog from "./FunctionOperatorCompositeWorkflowDialog.vue";
@@ -686,7 +686,38 @@ function toDraft(operator: FunctionOperator): FunctionOperatorDraft {
 const form = reactive<FunctionOperatorDraft>(createEmptyDraft());
 
 /**
- * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header 和参数行。
+ * @description 用详情 apiConfig 回填外部 API 表单。配置里的输入或输出为空时，改用详情 params。没有配置时清空这些字段，不改配置测试内容。
+ * @param draft 外部 API 草稿；其他类型不传。
+ */
+function applyExternalApiConfig(draft: FunctionOperatorDraft | undefined): void {
+  const formValues = mapOntologyExternalApiConfigToForm(draft?.externalApiConfig, {
+    inputs: draft?.inputParameters,
+    outputs: draft?.outputParameters,
+  });
+  if (!formValues) {
+    externalApiEndpoint.value = "";
+    externalApiMethod.value = "POST";
+    externalApiAuth.value = "none";
+    externalApiHeader.value = "";
+    externalApiInputParameters.value = [];
+    externalApiOutputParameters.value = [];
+    return;
+  }
+  externalApiEndpoint.value = formValues.endpoint;
+  externalApiMethod.value = formValues.method;
+  externalApiAuth.value = formValues.authType;
+  externalApiHeader.value = formValues.apiKey;
+  externalApiInputParameters.value = formValues.inputs.map((row) => ({
+    id: createExternalApiParameterId("input"),
+    ...row,
+  }));
+  externalApiOutputParameters.value = formValues.outputs.map((row) => ({
+    id: createExternalApiParameterId("output"),
+    ...row,
+  }));
+}
+/**
+ * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header、参数行和配置测试内容。
  */
 function resetExternalApiForm(): void {
   externalApiEndpoint.value = "";
@@ -891,14 +922,10 @@ async function submitDraft(): Promise<void> {
 }
 
 /**
- * @description 校验并提交新建外部 API 函数；编辑已有函数时不调用修改接口。
+ * @description 校验并提交外部 API 函数；新建与编辑使用同一套请求参数。
  */
 async function submitExternalApi(): Promise<void> {
   if (form.type !== "api") {
-    return;
-  }
-  if (props.operator) {
-    ElMessage.warning("外部 API 函数编辑本阶段暂未开放");
     return;
   }
   const valid = await formRef.value?.validate().catch(() => false);
@@ -985,6 +1012,7 @@ watch(
     } else {
       resetScriptDraft();
     }
+    applyExternalApiConfig(next.type === "api" ? next : undefined);
     resetSourceTemplateSelection();
     void loadSourceFunctionOptions();
   },

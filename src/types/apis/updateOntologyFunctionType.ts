@@ -1,6 +1,11 @@
-import type { CreateOntologyFunctionParameter, CreateOntologyFunctionQueryConfig, CreateOntologyFunctionType } from "./createOntologyFunctionType";
+import type {
+  CreateOntologyFunctionApiConfig,
+  CreateOntologyFunctionParameter,
+  CreateOntologyFunctionQueryConfig,
+  CreateOntologyFunctionType,
+} from "./createOntologyFunctionType";
 
-/** 修改函数算子请求参数（与 putFunApi 契约对齐，支持 BASIC_QUERY / CUSTOMIZE）。 */
+/** 修改函数算子请求参数（与 putFunApi 契约对齐，并允许与新建一致的 EXTERNAL 字段）。 */
 export interface UpdateOntologyFunctionParams {
   functionApi: string;
   /** 版本号，格式 x.y.z。 */
@@ -15,7 +20,11 @@ export interface UpdateOntologyFunctionParams {
   code?: string;
   /** 脚本入出参定义（仅 CUSTOMIZE 有效）。 */
   parameters?: CreateOntologyFunctionParameter[];
+  /** 是否基于旧版本；外部 API 编辑与新建请求保持一致。 */
+  basedOnOldVersion?: boolean;
   queryConfig?: CreateOntologyFunctionQueryConfig;
+  /** 外部 API 配置（仅 EXTERNAL 有效）。 */
+  apiConfig?: CreateOntologyFunctionApiConfig;
 }
 
 /** 修改函数算子响应 data（契约样例无业务载荷）。 */
