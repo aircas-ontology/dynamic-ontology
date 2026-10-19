@@ -138,9 +138,17 @@
     :description="form.description"
     :space-id="form.spaceId"
     :source-version="sourceVersion"
-    :language-locked="Boolean(operator)"
+    :language-locked="Boolean(operator) || isSourceTemplateLocked"
     :saving="loading"
     @save="emitSaveScript"
+  />
+
+  <FunctionOperatorCompositeWorkflowDialog
+    v-model="compositeWorkflowVisible"
+    :space-id="form.spaceId"
+    :function-api="form.functionApi"
+    :display-name="form.name"
+    :version="form.version"
   />
 </template>
 
@@ -166,6 +174,7 @@ import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToA
 import { mapOntologyFunctionDetailToDraft } from "@/utils/mapOntologyFunctionDetail";
 
 import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBuilder.vue";
+import FunctionOperatorCompositeWorkflowDialog from "./FunctionOperatorCompositeWorkflowDialog.vue";
 import FunctionOperatorScriptIdeDialog from "./FunctionOperatorScriptIdeDialog.vue";
 import { createDefaultScriptFunctionCode, DEFAULT_SCRIPT_FUNCTION_LANGUAGE, DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS } from "../utils/scriptFunctionStarters";
 
@@ -206,6 +215,8 @@ const sourceFunctionId = ref("");
 const sourceVersion = ref("");
 /** 脚本函数 Web-IDE 全屏弹框是否可见。 */
 const scriptIdeVisible = ref(false);
+/** 函数编排流程画布全屏弹框是否可见。 */
+const compositeWorkflowVisible = ref(false);
 /** 脚本 IDE 代码草稿（返回上一步时保留，关闭新建弹框或离开脚本类型时清空）。 */
 const scriptDraftCode = ref(createDefaultScriptFunctionCode());
 /** 脚本 IDE 语言草稿。 */
@@ -520,6 +531,9 @@ function changeType(type: FunctionOperatorType): void {
   } else if (type === "code") {
     applyScriptDraftFromDefinition(next);
   }
+  if (previousType === "composite" && type !== "composite") {
+    compositeWorkflowVisible.value = false;
+  }
   resetSourceTemplateSelection();
   void loadSourceFunctionOptions();
   void nextTick(() => {
@@ -583,7 +597,7 @@ async function submitDraft(): Promise<void> {
 }
 
 /**
- * @description 校验编排 / 脚本通用配置后进入下一步；脚本打开 Web-IDE，编排仍提示未开放。
+ * @description 校验编排 / 脚本通用配置后进入下一步；脚本打开 Web-IDE，编排打开流程画布。
  */
 async function goGeneralConfigNextStep(): Promise<void> {
   if (form.type !== "composite" && form.type !== "code") {
@@ -597,7 +611,7 @@ async function goGeneralConfigNextStep(): Promise<void> {
     scriptIdeVisible.value = true;
     return;
   }
-  ElMessage.info("函数编排后续步骤暂未开放");
+  compositeWorkflowVisible.value = true;
 }
 
 watch(
@@ -605,6 +619,7 @@ watch(
   ([visible]) => {
     if (!visible) {
       scriptIdeVisible.value = false;
+      compositeWorkflowVisible.value = false;
       resetScriptDraft();
       sourceFunctionListGeneration += 1;
       sourceFunctionOptions.value = [];
@@ -695,5 +710,30 @@ watch(
   .function-operator-form__name-grid {
     grid-template-columns: 1fr;
   }
+}
+</style>
+
+<style lang="scss">
+.function-operator-form-dialog.el-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+  margin-top: 5vh !important;
+  margin-bottom: 5vh !important;
+  overflow: hidden;
+}
+
+.function-operator-form-dialog.el-dialog .el-dialog__header {
+  flex-shrink: 0;
+}
+
+.function-operator-form-dialog.el-dialog .el-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.function-operator-form-dialog.el-dialog .el-dialog__footer {
+  flex-shrink: 0;
 }
 </style>
