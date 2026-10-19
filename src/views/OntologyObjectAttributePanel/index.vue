@@ -53,6 +53,7 @@
     <AttributePropertyFormDialog
       :visible="attributeDialogVisible"
       :editing-attribute-id="editingAttributeId"
+      :datasource-locked="datasourceLocked"
       :draft="draft"
       :rules="attributeRules"
       :category-options="categoryOptions"
@@ -223,6 +224,7 @@ const {
   attributeDialogVisible,
   savingAttribute,
   editingAttributeId,
+  datasourceLocked,
   draft,
   attributeRules,
   visibleAttributes,
@@ -252,15 +254,11 @@ function openAttributeDetailFromTree(data: OntologyAttributePropertyTreeNode) {
 }
 
 /**
- * @description 查询属性详情后判断数据源绑定状态，再决定是否打开编辑表单。
+ * @description 查询属性详情后判断数据源绑定状态，再打开编辑表单并按绑定状态锁定名称和描述以外的字段。
  * @param value 待编辑的属性列表项。
  */
 async function handleEditAttribute(value: unknown): Promise<void> {
   if (!isAttributeItem(value)) return;
-  if (value.datasourceId.trim() && value.datasourceColumnName.trim()) {
-    ElMessage.warning("该属性已绑定数据源，不可编辑");
-    return;
-  }
   const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
   if (!ontologyUniqueIdentifier || !value.uniqueIdentifier.trim()) {
     openEditAttribute(value);
@@ -271,15 +269,11 @@ async function handleEditAttribute(value: unknown): Promise<void> {
       await loadPropertyDataSourceDetails(ontologyUniqueIdentifier);
     }
     const detail = ontologyPropertyDetails.value.find((item) => item.uniqueIdentifier === value.uniqueIdentifier);
-    if (detail?.datasourceId?.trim() && detail.datasourceColumnName?.trim()) {
-      ElMessage.warning("该属性已绑定数据源，不可编辑");
-      return;
-    }
+    openEditAttribute(value, Boolean(detail?.datasourceId?.trim() && detail.datasourceColumnName?.trim()));
   } catch {
     ElMessage.error("属性绑定状态查询失败，请稍后重试");
     return;
   }
-  openEditAttribute(value);
 }
 
 const dataSourceDialogVisible = ref(false);

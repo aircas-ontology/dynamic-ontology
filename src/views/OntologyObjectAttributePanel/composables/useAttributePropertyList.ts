@@ -48,6 +48,7 @@ export function useAttributePropertyList(options: {
   const attributeDialogVisible = ref(false);
   const savingAttribute = ref(false);
   const editingAttributeId = ref<string | null>(null);
+  const datasourceLocked = ref(false);
   const draft = reactive<OntologyAttributeDraft>({
     displayName: "",
     apiName: "",
@@ -176,17 +177,19 @@ export function useAttributePropertyList(options: {
   /** @description 打开新增属性表单。 */
   function openCreateAttribute() {
     editingAttributeId.value = null;
+    datasourceLocked.value = false;
     resetDraft();
     attributeDialogVisible.value = true;
   }
 
-  /** @description 打开属性编辑表单并回显当前数据。 */
-  function openEditAttribute(value: unknown) {
+  /**
+   * @description 打开属性编辑表单并回显当前数据；已绑定数据源时锁定属性名称和描述以外的字段。
+   * @param value 待编辑的属性列表项。
+   * @param datasourceLockedOverride 数据源绑定锁定状态，默认按列表项的绑定字段判断。
+   */
+  function openEditAttribute(value: unknown, datasourceLockedOverride = false) {
     if (!isAttributeItem(value)) return;
-    if (value.datasourceId.trim() && value.datasourceColumnName.trim()) {
-      ElMessage.warning("该属性已绑定数据源，不可编辑");
-      return;
-    }
+    datasourceLocked.value = Boolean(datasourceLockedOverride || (value.datasourceId.trim() && value.datasourceColumnName.trim()));
     editingAttributeId.value = value.uniqueIdentifier;
     Object.assign(draft, {
       displayName: value.displayName,
@@ -305,6 +308,7 @@ export function useAttributePropertyList(options: {
     attributeDialogVisible,
     savingAttribute,
     editingAttributeId,
+    datasourceLocked,
     draft,
     attributeRules,
     visibleAttributes,

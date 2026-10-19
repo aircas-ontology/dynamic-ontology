@@ -7,6 +7,7 @@
     :model-value="visible"
     @update:model-value="$emit('update:visible', $event)"
   >
+    <el-alert v-if="datasourceLocked" title="该属性已绑定数据源，仅支持修改属性名称和描述" type="info" show-icon :closable="false" />
     <el-form ref="formRef" :model="draft" :rules="rules" label-position="top">
       <div class="ontology-object-attribute-panel__form-grid">
         <el-form-item label="属性名称" prop="displayName">
@@ -16,22 +17,22 @@
           <el-input v-model="draft.apiName" placeholder="例如：priority" :disabled="editingAttributeId !== null || draft.isPrimary" />
         </el-form-item>
         <el-form-item label="属性分类" prop="categoryId" class="ontology-object-attribute-panel__form-full">
-          <el-select v-model="draft.categoryId" placeholder="请选择属性分类">
+          <el-select v-model="draft.categoryId" placeholder="请选择属性分类" :disabled="datasourceLocked">
             <el-option v-for="category in categoryOptions" :key="category.id" :label="category.label" :value="category.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="数据类型" prop="dataType">
-          <el-select v-model="draft.dataType" placeholder="请选择数据类型" :disabled="draft.isPrimary">
+          <el-select v-model="draft.dataType" placeholder="请选择数据类型" :disabled="datasourceLocked || draft.isPrimary">
             <el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" />
           </el-select>
         </el-form-item>
         <el-form-item label="存储分组" prop="storageGroup">
-          <el-select v-model="draft.storageGroup" placeholder="请输入或选择存储分组" filterable allow-create default-first-option>
+          <el-select v-model="draft.storageGroup" placeholder="请输入或选择存储分组" filterable allow-create default-first-option :disabled="datasourceLocked">
             <el-option v-for="group in storageGroups" :key="group.value" :label="group.label" :value="group.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="默认值" class="ontology-object-attribute-panel__form-full">
-          <el-input v-model="draft.defaultValue" placeholder="可选" />
+          <el-input v-model="draft.defaultValue" placeholder="可选" :disabled="datasourceLocked" />
         </el-form-item>
       </div>
       <el-form-item label="属性描述" class="ontology-object-attribute-panel__form-full">
@@ -45,6 +46,7 @@
             inline-prompt
             active-text="是"
             inactive-text="否"
+            :disabled="datasourceLocked"
             @update:model-value="$emit('update-primary', $event === true)"
           />
         </div>
@@ -55,6 +57,7 @@
             inline-prompt
             active-text="是"
             inactive-text="否"
+            :disabled="datasourceLocked"
             @update:model-value="$emit('update-name-key', $event === true)"
           />
         </div>
@@ -76,6 +79,8 @@ import type { OntologyAttributeCategoryNode, OntologyAttributeDraft, OntologyAtt
 defineProps<{
   visible: boolean;
   editingAttributeId: string | null;
+  /** 属性是否已绑定数据源；绑定时仅属性名称和描述可修改。 */
+  datasourceLocked: boolean;
   draft: OntologyAttributeDraft;
   rules: FormRules<OntologyAttributeDraft>;
   categoryOptions: OntologyAttributeCategoryNode[];
