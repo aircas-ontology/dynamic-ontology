@@ -222,6 +222,7 @@
     <FunctionOperatorScriptTestDialog
       v-model="scriptTestVisible"
       :operator-name="scriptTestingOperator?.name ?? ''"
+      :function-type="scriptTestingOperator?.type ?? ''"
       :detail-loading="scriptTestDetailLoading"
       :submitting="scriptTesting"
       :input-rows="scriptTestInputRows"

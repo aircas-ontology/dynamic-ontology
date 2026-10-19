@@ -133,18 +133,20 @@ export function getOntologyFunctionVersionsInterface(params: GetOntologyFunction
 }
 
 /**
- * @description 按函数 API 名称删除函数算子。
+ * @description 按函数 API 名称和版本删除函数算子。
  *
- * 请求方式：DELETE `/ontology/function/delete/{functionApi}`
+ * 请求方式：DELETE `/ontology/function/delete`（`functionApi`、`version` 以 query 传递）。
  *
  * @param params 删除参数。
- * @param params.functionApi 函数 API 名称（路径参数）。
+ * @param params.functionApi 函数 API 名称。
+ * @param params.version 版本号，格式 x.y.z。
  * @returns 标准 API 响应；成功时 data 为 null。
  */
 export function deleteOntologyFunctionInterface(params: DeleteOntologyFunctionParams): Promise<ApiResponse<DeleteOntologyFunctionData>> {
   return request<DeleteOntologyFunctionData>({
-    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + `/ontology/function/delete/${encodeURIComponent(params.functionApi)}`,
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/delete",
     method: "delete",
+    params,
   });
 }
 

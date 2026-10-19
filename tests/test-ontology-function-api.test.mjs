@@ -210,7 +210,11 @@ test("function operator script test uses dedicated dialog and parameters body", 
   const dialog = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptTestDialog.vue");
   assert.match(workspace, /isScriptFunctionOperator/);
   assert.match(workspace, /type === "code"/);
+  assert.match(workspace, /type === "api"/);
   assert.match(workspace, /apiModelType === "CUSTOMIZE"/);
+  assert.match(workspace, /apiModelType === "EXTERNAL"/);
+  assert.match(dialog, /外部 API 函数测试/);
+  assert.match(panel, /:function-type="scriptTestingOperator\?\.type/);
   assert.match(workspace, /async function openScriptTest/);
   assert.match(workspace, /async function runScriptTest/);
   assert.match(workspace, /buildOntologyFunctionScriptTestInputRows/);
