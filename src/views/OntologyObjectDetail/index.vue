@@ -28,7 +28,7 @@ import { routeNameForObjectDetailTab } from "./utils/objectDetailTabs";
 
 const router = useRouter();
 const route = useRoute();
-const { activeTab, availableTabs, objectName, objectId, spaceId, spaceName } = useObjectDetailWorkspace();
+const { activeTab, availableTabs, objectName, objectId, spaceId, spaceName, spaceType } = useObjectDetailWorkspace();
 const { counts: objectCounts, loading: statisticLoading, error: statisticError, loadObjectResourceStatistic } = useObjectResourceStatistic(objectId);
 
 /** @description 向当前子页面传递统计计数；对象概览同时传递加载和错误状态。 */
@@ -56,6 +56,7 @@ function openTab(tab: OntologyObjectDetailTab) {
   const query: Record<string, string> = {};
   if (spaceId.value) query.spaceId = spaceId.value;
   if (spaceName.value) query.spaceName = spaceName.value;
+  query.spaceType = spaceType.value;
   if (route.query.from === "theme-space-management") query.from = "theme-space-management";
   if (objectName.value && !objectName.value.startsWith("对象 ")) query.objectName = objectName.value;
   void router.push({

@@ -74,6 +74,19 @@ test("resolveOntologyGlobalSearchRoute maps space and relation-group types", () 
   assert.equal(resolveOntologyGlobalSearchRoute({ name: "飞机id", type: "属性", spaceId: 46, objectId: 106 }), null);
 });
 
+test("resolveOntologyGlobalSearchRoute adds theme-space context for space and relation results", () => {
+  assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "主题空间", type: "空间", spaceId: 122, spaceName: "环境本体空间主题空间1", spaceType: 1 }), {
+    name: "OntologySpaceManagementDetailOverview",
+    params: { spaceId: "122" },
+    query: { spaceName: "环境本体空间主题空间1", from: "theme-space-management", spaceType: "1" },
+  });
+  assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "关系", type: "关系分组", spaceId: 122, spaceName: "环境本体空间主题空间1", spaceType: 1 }), {
+    name: "OntologySpaceManagementDetailRelation",
+    params: { spaceId: "122" },
+    query: { spaceName: "环境本体空间主题空间1", from: "theme-space-management", spaceType: "1" },
+  });
+});
+
 test("resolveOntologyGlobalSearchObjectRoute uses item uniqueIdentifier spaceName and name", () => {
   assert.deepEqual(
     resolveOntologyGlobalSearchObjectRoute({
@@ -90,6 +103,21 @@ test("resolveOntologyGlobalSearchObjectRoute uses item uniqueIdentifier spaceNam
     },
   );
   assert.equal(resolveOntologyGlobalSearchObjectRoute({ name: "缺字段", type: "对象", spaceId: 11 }), null);
+  assert.deepEqual(
+    resolveOntologyGlobalSearchObjectRoute({
+      name: "aaa",
+      type: "对象",
+      spaceId: 122,
+      spaceName: "环境本体空间主题空间1",
+      uniqueIdentifier: "35f6b1662164495ea462afea4ed6f52e",
+      spaceType: 1,
+    }),
+    {
+      name: "OntologyObjectDetailObject",
+      params: { objectId: "35f6b1662164495ea462afea4ed6f52e" },
+      query: { spaceId: "122", spaceName: "环境本体空间主题空间1", objectName: "aaa", from: "theme-space-management", spaceType: "1" },
+    },
+  );
 });
 
 test("resolveOntologyGlobalSearchPropertyRoute uses item ontologyUniqueIdentifier spaceName and ontologyName", () => {

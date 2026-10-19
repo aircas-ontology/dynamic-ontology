@@ -42,7 +42,7 @@ export function useSpaceWorkspace() {
     }
 
     try {
-      const isThemeSpaceDetail = route.query.from === "theme-space-management" && route.name !== "OntologySubspaceCreate";
+      const isThemeSpaceDetail = (route.query.spaceType === "1" || route.query.from === "theme-space-management") && route.name !== "OntologySubspaceCreate";
       const response = await getOntologySpaceListInterface({ type: isThemeSpaceDetail ? 1 : 0 });
       if (disposed || request !== generation) return;
       if (response.code === 200) {

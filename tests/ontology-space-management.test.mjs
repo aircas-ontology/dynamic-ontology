@@ -183,6 +183,12 @@ test("embedded object space management hides the create space button", () => {
   assert.match(welcomeSource, /withDefaults\(defineProps/);
 });
 
+test("theme space management keeps the create space button in embedded mode", () => {
+  const pageSource = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(pageSource, /<WelcomePanel space-label="主题空间" @create="openCreateThemeSpaceDialog\(\)" \/>/);
+  assert.doesNotMatch(pageSource, /isEmbedded/);
+});
+
 test("space form validates required fields before emitting save", () => {
   const source = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SpaceFormDialog.vue", import.meta.url), "utf8");
   assert.match(source, /:error="apiNameError"/);

@@ -122,7 +122,7 @@ export type {
   OntologyCategoryTreeParams,
   UpdateOntologyCategoryNameParams,
 } from "./apis/ontologyCategoryTreeType";
-export type { OntologyGlobalSearchData, OntologyGlobalSearchItem, OntologyGlobalSearchParams } from "./apis/ontologyGlobalSearchType";
+export type { OntologyGlobalSearchData, OntologyGlobalSearchItem, OntologyGlobalSearchParams, OntologySpaceType } from "./apis/ontologyGlobalSearchType";
 export type { OntologySpaceListData, OntologySpaceListItem } from "./apis/ontologyManageType";
 export type {
   CreateOntologyRelationCategoryTreeParams,

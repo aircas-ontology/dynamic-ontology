@@ -31,6 +31,11 @@ export function useObjectDetailWorkspace() {
     return typeof fromQuery === "string" ? fromQuery : "";
   });
 
+  const spaceType = computed(() => {
+    const fromQuery = route.query.spaceType;
+    return fromQuery === "1" || fromQuery === "0" ? fromQuery : "0";
+  });
+
   return {
     objectId,
     activeTab,
@@ -38,5 +43,6 @@ export function useObjectDetailWorkspace() {
     objectName,
     spaceId,
     spaceName,
+    spaceType,
   };
 }
