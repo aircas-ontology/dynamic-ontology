@@ -32,7 +32,8 @@ test("test ontology function types expose documented request fields and null dat
   assert.match(source, /pageSize\?: number/);
   assert.match(source, /export interface TestOntologyFunctionParameterItem/);
   assert.match(source, /paramName: string/);
-  assert.match(source, /paramValue: string/);
+  assert.match(source, /paramValue\?: string/);
+  assert.match(source, /fields\?: TestOntologyFunctionParameterItem\[\]/);
   assert.match(source, /export type TestOntologyFunctionData = null/);
   const detail = readSource("../src/types/apis/getOntologyFunctionDetailType.ts");
   assert.match(detail, /paramRole\?: string/);
@@ -99,6 +100,76 @@ test("buildOntologyFunctionScriptTestInputRows keeps INPUT only sorted by paramO
   ]);
 });
 
+test("buildOntologyFunctionScriptTestInputRows keeps nested fields and leaf values", () => {
+  const rows = buildOntologyFunctionScriptTestInputRows([
+    {
+      paramName: "input",
+      paramType: "OBJECT",
+      category: "INPUT",
+      paramOrder: 2,
+      fields: [
+        { paramName: "b", paramType: "LIST", category: "INPUT", paramOrder: 2 },
+        {
+          paramName: "a",
+          paramType: "OBJECT",
+          category: "INPUT",
+          paramOrder: 1,
+          fields: [{ paramName: "aa", paramType: "STRING", category: "INPUT", paramOrder: 1, fields: [] }],
+        },
+      ],
+    },
+    { paramName: "age", paramType: "DOUBLE", category: "INPUT", paramOrder: 1 },
+    {
+      paramName: "out",
+      paramType: "OBJECT",
+      category: "OUTPUT",
+      paramOrder: 1,
+      fields: [{ paramName: "id", paramType: "DOUBLE", category: "OUTPUT", paramOrder: 1 }],
+    },
+  ]);
+  assert.deepEqual(rows, [
+    { paramName: "age", paramType: "DOUBLE", paramValue: "" },
+    {
+      paramName: "input",
+      paramType: "OBJECT",
+      fields: [
+        {
+          paramName: "a",
+          paramType: "OBJECT",
+          fields: [{ paramName: "aa", paramType: "STRING", paramValue: "" }],
+        },
+        { paramName: "b", paramType: "LIST", paramValue: "" },
+      ],
+    },
+  ]);
+});
+
+test("buildOntologyFunctionScriptTestRequest keeps nested fields and leaf values", () => {
+  const request = buildOntologyFunctionScriptTestRequest({
+    functionApi: "smoke.hello.ts",
+    version: "1.0.0",
+    rows: [
+      {
+        paramName: "input",
+        paramType: "OBJECT",
+        fields: [
+          {
+            paramName: "a",
+            paramType: "OBJECT",
+            fields: [{ paramName: "aa", paramType: "STRING", paramValue: "leaf" }],
+          },
+        ],
+      },
+    ],
+  });
+  assert.deepEqual(request.parameters, [
+    {
+      paramName: "input",
+      fields: [{ paramName: "a", fields: [{ paramName: "aa", paramValue: "leaf" }] }],
+    },
+  ]);
+});
+
 test("buildOntologyFunctionScriptTestRequest assembles functionApi version and parameters", () => {
   const request = buildOntologyFunctionScriptTestRequest({
     functionApi: "smoke.hello.py",
@@ -147,7 +218,11 @@ test("function operator script test uses dedicated dialog and parameters body", 
   assert.match(workspace, /updateScriptTestParamValue/);
   assert.match(dialog, /脚本函数测试/);
   assert.match(dialog, /执行结果/);
-  assert.match(dialog, /formatScriptTestParamLabel/);
+  assert.match(dialog, /FunctionOperatorScriptTestParamTree/);
+  const tree = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptTestParamTree.vue");
+  assert.match(tree, /formatScriptTestParamLabel/);
+  assert.match(tree, /row\.fields && row\.fields\.length > 0/);
+  assert.match(workspace, /function updateScriptTestParamValue\(path: number\[\], paramValue: string\)/);
   assert.match(panel, /FunctionOperatorScriptTestDialog/);
   assert.match(panel, /scriptTestVisible/);
   assert.match(panel, /runScriptTest/);

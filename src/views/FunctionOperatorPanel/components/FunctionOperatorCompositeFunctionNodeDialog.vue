@@ -19,16 +19,10 @@
       </el-descriptions>
 
       <h4 class="composite-fn-node-dialog__section-title">输入参数</h4>
-      <el-table :data="inputs" class="aircas-table--accent-header" size="small">
-        <el-table-column prop="paramName" label="名称" min-width="100" />
-        <el-table-column prop="paramType" label="类型" width="100" />
-      </el-table>
+      <FunctionOperatorScriptParamTree :nodes="inputParameterTree" ariaLabel="输入参数列表" />
 
       <h4 class="composite-fn-node-dialog__section-title">输出参数</h4>
-      <el-table :data="outputs" class="aircas-table--accent-header" size="small">
-        <el-table-column prop="paramName" label="名称" min-width="100" />
-        <el-table-column prop="paramType" label="类型" width="100" />
-      </el-table>
+      <FunctionOperatorScriptParamTree :nodes="outputParameterTree" ariaLabel="输出参数列表" />
 
       <h4 class="composite-fn-node-dialog__section-title">脚本代码{{ scriptLanguage ? `（${scriptLanguage}）` : "" }}</h4>
       <pre class="composite-fn-node-dialog__code">{{ scriptCode.trim() ? scriptCode : "暂无代码" }}</pre>
@@ -80,11 +74,13 @@ import { ElMessage } from "element-plus";
 
 import { getOntologyFunctionDetailInterface } from "@/apis";
 import AircasLoading from "@/components/AircasLoading.vue";
-import type { CompositeWorkflowInputBinding, CompositeWorkflowParamBrief } from "@/types";
+import type { CompositeWorkflowInputBinding, CompositeWorkflowParamBrief, GetOntologyFunctionDetailParamItem } from "@/types";
 
 import type { CompositeWorkflowFunctionNodeEditContext } from "../composables/useCompositeWorkflowCanvas";
 import { buildDefaultCompositeWorkflowInputBindings, repairCompositeWorkflowInputBindings } from "../utils/compositeWorkflowGraph.ts";
 import { compareCompositeWorkflowParamTypes } from "../utils/compositeWorkflowParamType.ts";
+import { mapCompositeParamBriefsToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
+import FunctionOperatorScriptParamTree from "./FunctionOperatorScriptParamTree.vue";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -113,6 +109,35 @@ const scriptCode = ref("");
 let detailGeneration = 0;
 
 const upstreamOptions = computed(() => props.context?.upstreamOutputs ?? []);
+
+/**
+ * @description 输入参数树，展示方式与脚本 IDE 解析结果一致。
+ */
+const inputParameterTree = computed(() => mapCompositeParamBriefsToScriptParamTree(inputs.value, "INPUT"));
+
+/**
+ * @description 输出参数树，展示方式与脚本 IDE 解析结果一致。
+ */
+const outputParameterTree = computed(() => mapCompositeParamBriefsToScriptParamTree(outputs.value, "OUTPUT"));
+
+/**
+ * @description 将详情 params 项递归转为编排参数摘要。
+ * @param item 详情参数项。
+ * @returns 参数摘要。
+ */
+function mapDetailParamItemToBrief(item: GetOntologyFunctionDetailParamItem): CompositeWorkflowParamBrief {
+  const brief: CompositeWorkflowParamBrief = {
+    paramName: typeof item.paramName === "string" ? item.paramName.trim() : "",
+    paramType: typeof item.paramType === "string" ? item.paramType : "",
+  };
+  if (Array.isArray(item.fields) && item.fields.length > 0) {
+    brief.fields = [...item.fields]
+      .sort((left, right) => (left.paramOrder ?? 0) - (right.paramOrder ?? 0))
+      .map((child) => mapDetailParamItemToBrief(child))
+      .filter((child) => child.paramName);
+  }
+  return brief;
+}
 
 /**
  * @description 拉取详情并初始化绑定表单。
@@ -156,13 +181,13 @@ async function loadFunctionDetail(): Promise<void> {
     }
     const nextInputs: CompositeWorkflowParamBrief[] = [];
     const nextOutputs: CompositeWorkflowParamBrief[] = [];
-    for (const item of response.data.params ?? []) {
+    const sortedParams = [...(response.data.params ?? [])].sort((left, right) => (left.paramOrder ?? 0) - (right.paramOrder ?? 0));
+    for (const item of sortedParams) {
       const category = typeof item.category === "string" ? item.category.trim().toUpperCase() : "";
-      const paramName = typeof item.paramName === "string" ? item.paramName.trim() : "";
-      if (!paramName) {
+      const brief = mapDetailParamItemToBrief(item);
+      if (!brief.paramName) {
         continue;
       }
-      const brief = { paramName, paramType: typeof item.paramType === "string" ? item.paramType : "" };
       if (category === "INPUT") {
         nextInputs.push(brief);
       } else if (category === "OUTPUT") {

@@ -28,6 +28,7 @@ test("get ontology function detail types expose documented fields", () => {
   assert.match(source, /type: string/);
   assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /params: GetOntologyFunctionDetailParamItem\[\]/);
+  assert.match(source, /fields\?: GetOntologyFunctionDetailParamItem\[\]/);
   assert.match(source, /code: string/);
   assert.match(source, /language\?: string/);
   assert.match(source, /publishStatus\?: number/);
@@ -176,6 +177,11 @@ test("mapOntologyFunctionDetailToDraft fills script code and language from CUSTO
     assert.equal(draft.definition.code, scriptCode);
     assert.match(draft.definition.code, /export function handle/);
   }
+  assert.equal(draft.inputParameters.length, 2);
+  assert.equal(draft.inputParameters[0]?.name, "id");
+  assert.equal(draft.inputParameters[0]?.apiParamType, "DOUBLE");
+  assert.equal(draft.inputParameters[1]?.name, "name");
+  assert.equal(draft.outputParameters.length, 0);
 });
 
 test("function operator openEdit fetches detail before opening form", () => {
@@ -331,6 +337,64 @@ test("mapOntologyFunctionDetailToOperator splits params by INPUT and OUTPUT cate
   assert.equal(operator.outputParameters[1]?.name, "name1");
 });
 
+test("mapOntologyFunctionDetailToOperator preserves nested fields and apiParamType", () => {
+  const operator = mapOntologyFunctionDetailToOperator({
+    functionApi: "nested.fn",
+    displayName: "nested",
+    description: "nested",
+    model: "OTHER",
+    type: "CUSTOMIZE",
+    language: "TYPESCRIPT",
+    ontologySpaceId: 1,
+    version: "1.0.0",
+    params: [
+      {
+        paramId: 1,
+        paramName: "input",
+        paramType: "OBJECT",
+        category: "INPUT",
+        paramOrder: 1,
+        fields: [
+          {
+            paramName: "b",
+            paramType: "LIST",
+            category: "INPUT",
+            paramOrder: 2,
+          },
+          {
+            paramName: "a",
+            paramType: "OBJECT",
+            category: "INPUT",
+            paramOrder: 1,
+            fields: [
+              { paramName: "aa", paramType: "STRING", category: "INPUT", paramOrder: 1 },
+              { paramName: "data", paramType: "STRING", category: "INPUT", paramOrder: 2 },
+            ],
+          },
+        ],
+      },
+      {
+        paramId: 2,
+        paramName: "Output",
+        paramType: "OBJECT",
+        category: "OUTPUT",
+        paramOrder: 1,
+        fields: [{ paramName: "id", paramType: "DOUBLE", category: "OUTPUT", paramOrder: 1 }],
+      },
+    ],
+    code: "",
+  });
+  assert.equal(operator.inputParameters.length, 1);
+  assert.equal(operator.inputParameters[0]?.apiParamType, "OBJECT");
+  assert.equal(operator.inputParameters[0]?.itemFields?.length, 2);
+  assert.equal(operator.inputParameters[0]?.itemFields?.[0]?.name, "a");
+  assert.equal(operator.inputParameters[0]?.itemFields?.[0]?.apiParamType, "OBJECT");
+  assert.equal(operator.inputParameters[0]?.itemFields?.[0]?.itemFields?.[0]?.name, "aa");
+  assert.equal(operator.inputParameters[0]?.itemFields?.[1]?.name, "b");
+  assert.equal(operator.inputParameters[0]?.itemFields?.[1]?.apiParamType, "LIST");
+  assert.equal(operator.outputParameters[0]?.itemFields?.[0]?.apiParamType, "DOUBLE");
+});
+
 test("mapOntologyFunctionDetailToOperator falls back to list version when detail omits version", () => {
   const operator = mapOntologyFunctionDetailToOperator(
     {
@@ -384,10 +448,14 @@ test("function operator openDetail fetches detail for drawer", () => {
   assert.match(workspace, /detailVersions/);
   assert.match(workspace, /detailVersion/);
   assert.doesNotMatch(drawer, /showOutputParameters/);
+  assert.match(drawer, /definition\.kind !== ['"]basic['"]/);
   assert.match(drawer, /输入参数/);
   assert.match(drawer, /输出参数/);
-  assert.match(drawer, /operator\.inputParameters/);
-  assert.match(drawer, /operator\.outputParameters/);
+  assert.match(drawer, /FunctionOperatorScriptParamTree/);
+  assert.match(drawer, /mapOperatorParametersToScriptParamTree/);
+  assert.doesNotMatch(drawer, /el-table/);
+  assert.match(drawer, /props\.operator\?\.inputParameters/);
+  assert.match(drawer, /props\.operator\?\.outputParameters/);
   assert.match(drawer, /el-select/);
   assert.match(drawer, /change-version/);
   assert.match(drawer, /typeLabel\(operator\)[\s\S]*operator\.status/);

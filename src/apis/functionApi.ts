@@ -24,7 +24,7 @@ import type {
 import { request } from "@/utils/request";
 
 /**
- * @description 创建对象空间下的函数算子（本阶段为基础查询 BASIC_QUERY）。
+ * @description 创建对象空间下的函数算子（BASIC_QUERY / CUSTOMIZE / EXTERNAL）。
  *
  * 请求方式：POST `/ontology/function`
  *
@@ -33,9 +33,10 @@ import { request } from "@/utils/request";
  * @param params.version 版本号，格式 x.y.z。
  * @param params.displayName 函数显示名称。
  * @param params.description 函数说明。
- * @param params.type 函数模型，当前固定为 BASIC_QUERY。
+ * @param params.type 函数模型：BASIC_QUERY、CUSTOMIZE 或 EXTERNAL。
  * @param params.ontologySpaceId 所属对象空间 id。
  * @param params.queryConfig 可选的基础查询配置（filters / aggFunc）。
+ * @param params.apiConfig 可选的外部 API 配置（endpoint / method / authType / apiKey / inputs / outputs）。
  * @returns 标准 API 响应；成功时 data 为 null。
  */
 export function createOntologyFunctionInterface(params: CreateOntologyFunctionParams): Promise<ApiResponse<CreateOntologyFunctionData>> {

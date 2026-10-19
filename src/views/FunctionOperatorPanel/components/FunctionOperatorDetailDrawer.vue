@@ -43,22 +43,16 @@
           <el-descriptions-item v-if="operator.functionApi" label="函数 API">{{ operator.functionApi }}</el-descriptions-item>
         </el-descriptions>
 
-        <div class="function-operator-detail__section">
-          <h4>输入参数</h4>
-          <el-table :data="operator.inputParameters" class="aircas-table--accent-header" size="small">
-            <el-table-column prop="name" label="名称" min-width="100" />
-            <el-table-column prop="type" label="类型" width="90" />
-            <el-table-column prop="description" label="说明" min-width="120" show-overflow-tooltip />
-          </el-table>
-        </div>
-        <div class="function-operator-detail__section">
-          <h4>输出参数</h4>
-          <el-table :data="operator.outputParameters" class="aircas-table--accent-header" size="small">
-            <el-table-column prop="name" label="名称" min-width="100" />
-            <el-table-column prop="type" label="类型" width="90" />
-            <el-table-column prop="description" label="说明" min-width="120" show-overflow-tooltip />
-          </el-table>
-        </div>
+        <template v-if="operator.definition.kind !== 'basic'">
+          <div class="function-operator-detail__section">
+            <h4>输入参数</h4>
+            <FunctionOperatorScriptParamTree :nodes="inputParameterTree" ariaLabel="输入参数列表" />
+          </div>
+          <div class="function-operator-detail__section">
+            <h4>输出参数</h4>
+            <FunctionOperatorScriptParamTree :nodes="outputParameterTree" ariaLabel="输出参数列表" />
+          </div>
+        </template>
 
         <div class="function-operator-detail__actions">
           <el-button v-if="operator.status !== 'published'" type="primary" @click="emitEdit">编辑</el-button>
@@ -88,6 +82,8 @@ import type { TagProps } from "element-plus";
 import AircasLoading from "@/components/AircasLoading.vue";
 import type { FunctionOperator, FunctionOperatorStatus } from "@/types";
 import { FUNCTION_OPERATOR_STATUS_LABELS, FUNCTION_OPERATOR_TYPE_LABELS } from "@/types";
+import FunctionOperatorScriptParamTree from "./FunctionOperatorScriptParamTree.vue";
+import { mapOperatorParametersToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -128,6 +124,16 @@ const hasMetaItems = computed(() => {
     operator.functionApi,
   );
 });
+
+/**
+ * @description 输入参数树，展示方式与脚本 IDE 解析结果一致。
+ */
+const inputParameterTree = computed(() => mapOperatorParametersToScriptParamTree(props.operator?.inputParameters ?? [], "INPUT"));
+
+/**
+ * @description 输出参数树，展示方式与脚本 IDE 解析结果一致。
+ */
+const outputParameterTree = computed(() => mapOperatorParametersToScriptParamTree(props.operator?.outputParameters ?? [], "OUTPUT"));
 
 /**
  * @description 获取函数类型展示文案，与筛选下拉 FUNCTION_OPERATOR_TYPE_LABELS 一致。

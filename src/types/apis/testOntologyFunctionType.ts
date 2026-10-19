@@ -2,8 +2,10 @@
 export interface TestOntologyFunctionParameterItem {
   /** 参数名。 */
   paramName: string;
-  /** 参数值（按字符串提交）。 */
-  paramValue: string;
+  /** 叶子参数值（按字符串提交）。有下级时省略。 */
+  paramValue?: string;
+  /** 下级参数。无下级时省略。 */
+  fields?: TestOntologyFunctionParameterItem[];
 }
 
 /** 算子函数测试请求参数。 */

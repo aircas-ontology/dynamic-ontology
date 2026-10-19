@@ -2,6 +2,8 @@
 export interface CompositeWorkflowParamBrief {
   paramName: string;
   paramType: string;
+  /** 对象或列表的下级属性；无下级时省略。 */
+  fields?: CompositeWorkflowParamBrief[];
 }
 
 /** 函数节点入参绑定：手填或取自唯一前驱输出。 */

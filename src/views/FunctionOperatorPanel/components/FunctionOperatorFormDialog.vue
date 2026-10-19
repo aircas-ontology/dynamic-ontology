@@ -115,6 +115,151 @@
         </el-form-item>
       </section>
 
+      <section v-else-if="form.type === 'api'" class="function-operator-form__section">
+        <template v-if="!operator">
+          <div class="function-operator-form__section-title">基于已有函数 (可选)</div>
+          <div class="function-operator-form__name-grid">
+            <el-form-item label="源函数">
+              <el-select v-model="sourceFunctionId" clearable filterable placeholder="选择已有函数作为模板" @change="onSourceFunctionChange">
+                <el-option v-for="item in sourceFunctionOptions" :key="item.functionApi" :label="item.displayName" :value="item.functionApi" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="源版本">
+              <el-select v-model="sourceVersion" placeholder="选择版本" :disabled="!sourceFunctionId" @change="onSourceVersionChange">
+                <el-option v-for="item in sourceVersionOptions" :key="item" :label="item" :value="item" />
+              </el-select>
+            </el-form-item>
+          </div>
+        </template>
+        <div class="function-operator-form__section-title">通用配置</div>
+        <el-form-item label="函数名称" prop="name">
+          <el-input v-model="form.name" maxlength="64" placeholder="例如：目标识别算子" :disabled="Boolean(operator) || isSourceTemplateLocked" />
+        </el-form-item>
+        <div class="function-operator-form__name-grid">
+          <el-form-item label="API名称" prop="functionApi">
+            <el-input v-model="form.functionApi" maxlength="64" placeholder="例如：TargetDetectFn" :disabled="Boolean(operator) || isSourceTemplateLocked" />
+          </el-form-item>
+          <el-form-item label="版本号" prop="version">
+            <el-input v-model="form.version" maxlength="32" placeholder="1.0.0" :disabled="Boolean(operator)" />
+          </el-form-item>
+        </div>
+        <el-form-item label="调用协议" prop="protocol">
+          <el-select v-model="form.protocol" placeholder="请选择调用协议">
+            <el-option v-for="item in PROTOCOL_OPTIONS" :key="item" :label="item" :value="item" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="函数说明" prop="description">
+          <el-input v-model="form.description" type="textarea" :rows="3" maxlength="240" show-word-limit />
+        </el-form-item>
+        <div class="function-operator-form__section-title">外部 API 函数配置</div>
+        <el-form-item label="接口地址">
+          <el-input v-model="externalApiEndpoint" maxlength="500" placeholder="https://service.example/api/run" />
+        </el-form-item>
+        <div class="function-operator-form__name-grid">
+          <el-form-item label="请求方法">
+            <el-select v-model="externalApiMethod" placeholder="请选择请求方法">
+              <el-option v-for="item in EXTERNAL_API_METHOD_OPTIONS" :key="item" :label="item" :value="item" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="认证方式">
+            <el-select v-model="externalApiAuth" placeholder="请选择认证方式" @change="onExternalApiAuthChange">
+              <el-option v-for="item in EXTERNAL_API_AUTH_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <el-form-item label="认证 Header">
+          <el-input v-if="externalApiAuth === 'apiKey'" v-model="externalApiHeader" maxlength="500" clearable placeholder="请输入认证 Header" />
+          <el-input v-else model-value="仅作原型展示，正式密钥由后端托管" disabled />
+        </el-form-item>
+
+        <div class="function-operator-form__param-head">
+          <div class="function-operator-form__section-title">输入参数</div>
+          <el-button type="primary" plain native-type="button" @click="addExternalApiInputParameter">添加</el-button>
+        </div>
+        <el-table class="function-operator-form__param-table" :data="externalApiInputParameters" row-key="id" empty-text="暂无输入参数">
+          <el-table-column label="name" min-width="140">
+            <template #default="{ row }">
+              <el-input v-model="row.name" maxlength="64" placeholder="请输入字段名称" />
+            </template>
+          </el-table-column>
+          <el-table-column label="type" min-width="140">
+            <template #default="{ row }">
+              <el-select v-model="row.type" placeholder="请选择 type">
+                <el-option v-for="item in EXTERNAL_API_PARAMETER_TYPE_OPTIONS" :key="item" :label="item" :value="item" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="description" min-width="180">
+            <template #default="{ row }">
+              <el-input v-model="row.description" maxlength="240" placeholder="请输入描述" />
+            </template>
+          </el-table-column>
+          <el-table-column label="location" min-width="140">
+            <template #default="{ row }">
+              <el-select v-model="row.location" placeholder="请选择 location">
+                <el-option v-for="item in EXTERNAL_API_PARAMETER_LOCATION_OPTIONS" :key="item" :label="item" :value="item" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="required" min-width="120">
+            <template #default="{ row }">
+              <el-select v-model="row.required" placeholder="请选择 required">
+                <el-option label="是" value="yes" />
+                <el-option label="否" value="no" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="88" fixed="right">
+            <template #default="{ $index }">
+              <el-button type="danger" plain native-type="button" @click="removeExternalApiInputParameter($index)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="function-operator-form__param-head">
+          <div class="function-operator-form__section-title">输出参数</div>
+          <el-button type="primary" plain native-type="button" @click="addExternalApiOutputParameter">添加</el-button>
+        </div>
+        <el-table class="function-operator-form__param-table" :data="externalApiOutputParameters" row-key="id" empty-text="暂无输出参数">
+          <el-table-column label="name" min-width="160">
+            <template #default="{ row }">
+              <el-input v-model="row.name" maxlength="64" placeholder="请输入字段名称" />
+            </template>
+          </el-table-column>
+          <el-table-column label="type" min-width="160">
+            <template #default="{ row }">
+              <el-select v-model="row.type" placeholder="请选择 type">
+                <el-option v-for="item in EXTERNAL_API_PARAMETER_TYPE_OPTIONS" :key="`output-${item}`" :label="item" :value="item" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="description" min-width="220">
+            <template #default="{ row }">
+              <el-input v-model="row.description" maxlength="240" placeholder="请输入描述" />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="88" fixed="right">
+            <template #default="{ $index }">
+              <el-button type="danger" plain native-type="button" @click="removeExternalApiOutputParameter($index)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="function-operator-form__test">
+          <div class="function-operator-form__param-head">
+            <div class="function-operator-form__section-title">配置测试</div>
+            <span class="function-operator-form__test-status">尚未测试</span>
+          </div>
+          <div class="function-operator-form__test-panes">
+            <div class="function-operator-form__test-editor">
+              <el-input v-model="externalApiTestInput" class="function-operator-form__test-input" type="textarea" :rows="8" resize="vertical" />
+              <el-button type="primary" plain native-type="button" @click="notifyExternalApiTestUnavailable">运行测试</el-button>
+            </div>
+            <div class="function-operator-form__test-result" aria-live="polite">测试结果将在这里显示</div>
+          </div>
+        </div>
+      </section>
+
       <section v-else class="function-operator-form__section function-operator-form__section--empty">
         <el-empty description="该函数类型本阶段暂未开放，请选择基础函数、脚本函数或函数编排" />
       </section>
@@ -123,7 +268,7 @@
     <template #footer>
       <el-button @click="emit('update:modelValue', false)">取消</el-button>
       <el-button v-if="form.type === 'composite' || form.type === 'code'" type="primary" :loading="loading" @click="goGeneralConfigNextStep">下一步</el-button>
-      <el-button v-else type="primary" :loading="loading" :disabled="form.type !== 'basic'" @click="submitDraft">保存</el-button>
+      <el-button v-else type="primary" :loading="loading" :disabled="form.type !== 'basic' && form.type !== 'api'" @click="submitCurrentDraft">保存</el-button>
     </template>
   </el-dialog>
 
@@ -140,6 +285,8 @@
     :source-version="sourceVersion"
     :language-locked="Boolean(operator) || isSourceTemplateLocked"
     :saving="loading"
+    v-model:parsed-input-parameters="scriptDraftInputParameters"
+    v-model:parsed-output-parameters="scriptDraftOutputParameters"
     @save="emitSaveScript"
   />
 
@@ -168,6 +315,7 @@ import {
   type FunctionOperatorScriptLanguage,
   type FunctionOperatorType,
   type GetOntologyFunctionListItem,
+  type ParseOntologyFunctionParamItem,
 } from "@/types";
 import { createEmptyBasicFilterDocument, stringifyBasicFilterConfig } from "@/utils/functionOperatorBasicFilter";
 import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToApi";
@@ -177,8 +325,53 @@ import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBui
 import FunctionOperatorCompositeWorkflowDialog from "./FunctionOperatorCompositeWorkflowDialog.vue";
 import FunctionOperatorScriptIdeDialog from "./FunctionOperatorScriptIdeDialog.vue";
 import { createDefaultScriptFunctionCode, DEFAULT_SCRIPT_FUNCTION_LANGUAGE, DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS } from "../utils/scriptFunctionStarters";
+import { buildCreateOntologyExternalFunctionParams } from "../utils/buildCreateOntologyExternalFunctionParams";
+import { mapOperatorParametersToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
 
 const PROTOCOL_OPTIONS: ReadonlyArray<Extract<FunctionOperatorProtocol, "HTTP">> = ["HTTP"];
+const EXTERNAL_API_METHOD_OPTIONS = ["GET", "POST", "PUT", "DELETE"] as const;
+const EXTERNAL_API_AUTH_OPTIONS = [
+  { value: "none", label: "无认证" },
+  { value: "apiKey", label: "API Key" },
+] as const;
+const EXTERNAL_API_PARAMETER_TYPE_OPTIONS = ["string", "number", "boolean", "array", "object"] as const;
+const EXTERNAL_API_PARAMETER_LOCATION_OPTIONS = ["Body", "Path", "Query", "Header"] as const;
+
+/** 外部 API 输入参数行。 */
+interface ExternalApiInputParameterRow {
+  id: string;
+  name: string;
+  type: (typeof EXTERNAL_API_PARAMETER_TYPE_OPTIONS)[number];
+  description: string;
+  location: (typeof EXTERNAL_API_PARAMETER_LOCATION_OPTIONS)[number];
+  required: "yes" | "no";
+}
+
+/** 外部 API 输出参数行。 */
+interface ExternalApiOutputParameterRow {
+  id: string;
+  name: string;
+  type: (typeof EXTERNAL_API_PARAMETER_TYPE_OPTIONS)[number];
+  description: string;
+}
+
+/** 外部 API 接口地址，仅表单展示，尚未提交创建接口。 */
+const externalApiEndpoint = ref("");
+/** 外部 API 请求方法，默认 POST。 */
+const externalApiMethod = ref<(typeof EXTERNAL_API_METHOD_OPTIONS)[number]>("POST");
+/** 外部 API 认证方式，默认无认证。 */
+const externalApiAuth = ref<(typeof EXTERNAL_API_AUTH_OPTIONS)[number]["value"]>("none");
+/** API Key 模式下的认证 Header。 */
+const externalApiHeader = ref("");
+/** 配置测试左侧默认 JSON。 */
+const EXTERNAL_API_TEST_INPUT_DEFAULT = '{\n  "": ""\n}';
+/** 配置测试输入，仅表单展示。 */
+const externalApiTestInput = ref(EXTERNAL_API_TEST_INPUT_DEFAULT);
+/** 外部 API 输入参数，仅表单展示。 */
+const externalApiInputParameters = ref<ExternalApiInputParameterRow[]>([]);
+/** 外部 API 输出参数，仅表单展示。 */
+const externalApiOutputParameters = ref<ExternalApiOutputParameterRow[]>([]);
+let externalApiParameterSerial = 0;
 
 /**
  * @description 生成新建基础函数的默认 parameterConfig。
@@ -200,6 +393,7 @@ const emit = defineEmits<{
   "update:modelValue": [value: boolean];
   submit: [draft: FunctionOperatorDraft];
   "save-script": [params: CreateOntologyFunctionParams];
+  "save-external": [params: CreateOntologyFunctionParams];
 }>();
 
 /**
@@ -223,6 +417,10 @@ const scriptDraftCode = ref(createDefaultScriptFunctionCode());
 const scriptDraftLanguage = ref<FunctionOperatorScriptLanguage>(DEFAULT_SCRIPT_FUNCTION_LANGUAGE);
 /** 脚本 IDE 测试参数草稿。 */
 const scriptDraftTestParams = ref(DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS);
+/** 脚本 IDE 已展示的输入参数树草稿。 */
+const scriptDraftInputParameters = ref<ParseOntologyFunctionParamItem[]>([]);
+/** 脚本 IDE 已展示的输出参数树草稿。 */
+const scriptDraftOutputParameters = ref<ParseOntologyFunctionParamItem[]>([]);
 
 /**
  * @description 将脚本 IDE 草稿重置为默认 starter。
@@ -231,6 +429,8 @@ function resetScriptDraft(): void {
   scriptDraftCode.value = createDefaultScriptFunctionCode();
   scriptDraftLanguage.value = DEFAULT_SCRIPT_FUNCTION_LANGUAGE;
   scriptDraftTestParams.value = DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS;
+  scriptDraftInputParameters.value = [];
+  scriptDraftOutputParameters.value = [];
 }
 
 /**
@@ -244,6 +444,8 @@ function applyScriptDraftFromDefinition(draft: FunctionOperatorDraft): void {
   scriptDraftCode.value = draft.definition.code;
   scriptDraftLanguage.value = draft.definition.language;
   scriptDraftTestParams.value = DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS;
+  scriptDraftInputParameters.value = mapOperatorParametersToScriptParamTree(draft.inputParameters, "INPUT");
+  scriptDraftOutputParameters.value = mapOperatorParametersToScriptParamTree(draft.outputParameters, "OUTPUT");
 }
 
 /**
@@ -483,9 +685,97 @@ function toDraft(operator: FunctionOperator): FunctionOperatorDraft {
 
 const form = reactive<FunctionOperatorDraft>(createEmptyDraft());
 
-/** 按函数类型切换校验文案；编排与脚本额外校验协议与说明。 */
+/**
+ * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header 和参数行。
+ */
+function resetExternalApiForm(): void {
+  externalApiEndpoint.value = "";
+  externalApiMethod.value = "POST";
+  externalApiAuth.value = "none";
+  externalApiHeader.value = "";
+  externalApiInputParameters.value = [];
+  externalApiOutputParameters.value = [];
+  externalApiTestInput.value = EXTERNAL_API_TEST_INPUT_DEFAULT;
+}
+
+/**
+ * @description 提示外部 API 配置测试本阶段未开放，不调用测试接口。
+ */
+function notifyExternalApiTestUnavailable(): void {
+  ElMessage.info("配置测试本阶段暂未开放");
+}
+
+/**
+ * @description 生成外部 API 参数行的列表键。
+ * @param prefix 输入或输出前缀。
+ * @returns 不重复的行 id。
+ */
+function createExternalApiParameterId(prefix: "input" | "output"): string {
+  externalApiParameterSerial += 1;
+  return `${prefix}-${externalApiParameterSerial}`;
+}
+
+/**
+ * @description 追加一行空的外部 API 输入参数。
+ */
+function addExternalApiInputParameter(): void {
+  externalApiInputParameters.value = [
+    ...externalApiInputParameters.value,
+    {
+      id: createExternalApiParameterId("input"),
+      name: "",
+      type: "string",
+      description: "",
+      location: "Body",
+      required: "no",
+    },
+  ];
+}
+
+/**
+ * @description 按序号删除一行外部 API 输入参数。
+ * @param index 行序号。
+ */
+function removeExternalApiInputParameter(index: number): void {
+  externalApiInputParameters.value = externalApiInputParameters.value.filter((_, rowIndex) => rowIndex !== index);
+}
+
+/**
+ * @description 追加一行空的外部 API 输出参数。
+ */
+function addExternalApiOutputParameter(): void {
+  externalApiOutputParameters.value = [
+    ...externalApiOutputParameters.value,
+    {
+      id: createExternalApiParameterId("output"),
+      name: "",
+      type: "string",
+      description: "",
+    },
+  ];
+}
+
+/**
+ * @description 按序号删除一行外部 API 输出参数。
+ * @param index 行序号。
+ */
+function removeExternalApiOutputParameter(index: number): void {
+  externalApiOutputParameters.value = externalApiOutputParameters.value.filter((_, rowIndex) => rowIndex !== index);
+}
+
+/**
+ * @description 切换认证方式时清空 Header，避免无认证模式残留已填密钥。
+ * @param value 当前认证方式。
+ */
+function onExternalApiAuthChange(value: string | number | boolean | undefined): void {
+  if (value !== "apiKey") {
+    externalApiHeader.value = "";
+  }
+}
+
+/** 按函数类型切换校验文案；编排、脚本与外部 API 额外校验协议与说明。 */
 const rules = computed<FormRules>(() => {
-  if (form.type === "composite" || form.type === "code") {
+  if (form.type === "composite" || form.type === "code" || form.type === "api") {
     return {
       name: [{ required: true, message: "请输入函数名称", trigger: "blur" }],
       functionApi: [{ required: true, message: "请输入API名称", trigger: "blur" }],
@@ -520,9 +810,13 @@ function changeType(type: FunctionOperatorType): void {
   } else if (type === "composite") {
     next.protocol = "HTTP";
     next.definition = { kind: "composite" };
+  } else if (type === "api") {
+    next.protocol = "HTTP";
+    next.definition = { kind: "api" };
   } else {
     next.definition = { kind: type };
   }
+  resetExternalApiForm();
   Object.assign(form, next);
   delete form.id;
   if (previousType === "code" && type !== "code") {
@@ -597,6 +891,59 @@ async function submitDraft(): Promise<void> {
 }
 
 /**
+ * @description 校验并提交新建外部 API 函数；编辑已有函数时不调用修改接口。
+ */
+async function submitExternalApi(): Promise<void> {
+  if (form.type !== "api") {
+    return;
+  }
+  if (props.operator) {
+    ElMessage.warning("外部 API 函数编辑本阶段暂未开放");
+    return;
+  }
+  const valid = await formRef.value?.validate().catch(() => false);
+  if (!valid) {
+    return;
+  }
+  if (!externalApiEndpoint.value.trim()) {
+    ElMessage.warning("请填写接口地址");
+    return;
+  }
+  if (externalApiAuth.value === "apiKey" && !externalApiHeader.value.trim()) {
+    ElMessage.warning("请填写认证 Header");
+    return;
+  }
+  emit(
+    "save-external",
+    buildCreateOntologyExternalFunctionParams({
+      functionApi: form.functionApi,
+      version: form.version,
+      displayName: form.name,
+      description: form.description,
+      ontologySpaceId: form.spaceId,
+      sourceVersion: sourceVersion.value,
+      endpoint: externalApiEndpoint.value,
+      method: externalApiMethod.value,
+      authType: externalApiAuth.value,
+      apiKey: externalApiHeader.value,
+      inputs: externalApiInputParameters.value,
+      outputs: externalApiOutputParameters.value,
+    }),
+  );
+}
+
+/**
+ * @description 按当前函数类型提交基础函数或外部 API 函数。
+ */
+function submitCurrentDraft(): void {
+  if (form.type === "api") {
+    void submitExternalApi();
+    return;
+  }
+  void submitDraft();
+}
+
+/**
  * @description 校验编排 / 脚本通用配置后进入下一步；脚本打开 Web-IDE，编排打开流程画布。
  */
 async function goGeneralConfigNextStep(): Promise<void> {
@@ -621,6 +968,7 @@ watch(
       scriptIdeVisible.value = false;
       compositeWorkflowVisible.value = false;
       resetScriptDraft();
+      resetExternalApiForm();
       sourceFunctionListGeneration += 1;
       sourceFunctionOptions.value = [];
       resetSourceTemplateSelection();
@@ -702,12 +1050,71 @@ watch(
   box-shadow: inset 0 0 0 1px var(--aircas-color-primary);
 }
 
+.function-operator-form__param-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.function-operator-form__param-head .function-operator-form__section-title {
+  margin-bottom: 0;
+}
+
+.function-operator-form__param-table {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.function-operator-form__test {
+  margin-top: 8px;
+}
+
+.function-operator-form__test-status {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--aircas-color-panel-background-deep);
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+}
+
+.function-operator-form__test-panes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.function-operator-form__test-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.function-operator-form__test-input {
+  width: 100%;
+}
+
+.function-operator-form__test-result {
+  min-height: 168px;
+  padding: 8px 12px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 6px;
+  background: var(--aircas-color-panel-background-deep);
+  color: var(--aircas-color-text-secondary);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
 .function-operator-form__section--empty {
   padding: 24px 0;
 }
 
 @media (max-width: 640px) {
-  .function-operator-form__name-grid {
+  .function-operator-form__name-grid,
+  .function-operator-form__test-panes {
     grid-template-columns: 1fr;
   }
 }

@@ -22,6 +22,9 @@ export type {
 export type { ActionCategoryNode, CreateActionCategoryParams } from "./apis/createActionCategoryType";
 export type {
   CreateOntologyFunctionAggFunc,
+  CreateOntologyFunctionApiConfig,
+  CreateOntologyFunctionApiInput,
+  CreateOntologyFunctionApiOutput,
   CreateOntologyFunctionData,
   CreateOntologyFunctionFilterCondition,
   CreateOntologyFunctionFilterDataType,
