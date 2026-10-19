@@ -11,11 +11,11 @@ const DOMAIN_CONFIG = {
   OCEAN_ANALYSIS_SERVER_URL: "http://192.168.53.42:16411", // 南海先导-软件所分析模型
 
   //接口地址
-  // LOGIN_URL: "http://172.16.18.58:37002", //登录
-  LOGIN_URL: "http://172.16.36.247:37002", //登录
+  LOGIN_URL: "http://172.16.18.58:37002", //登录
+  // LOGIN_URL: "http://172.16.36.247:37002", //登录
   // ONTOLOGYMANAGE_URL:"http://172.16.29.255:37002",//对象管理
-  // ONTOLOGYMANAGE_URL: "http://172.16.18.58:37002", //对象管理
-  ONTOLOGYMANAGE_URL: "http://172.16.36.247:37002", //对象管理
+  ONTOLOGYMANAGE_URL: "http://172.16.18.58:37002", //对象管理
+  // ONTOLOGYMANAGE_URL: "http://172.16.36.247:37002", //对象管理
 
   AGENT_URL: "http://172.16.18.58:37003/agent", //Agent对话
   // AGENT_URL: "http://172.16.36.247:37003/agent", //Agent对话
