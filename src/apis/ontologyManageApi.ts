@@ -172,7 +172,7 @@ export function getOntologyCategoryTreeInterface(params: OntologyCategoryTreePar
  *
  * @param params 查询参数。
  * @param {string} params.spaceId 必填空间 id。
- * @param {string} [params.ontologyUniqueIdentifierFrom] 可选对象唯一标识；传入时仅返回该对象关联的关系。
+ * @param {string} [params.ontologyUniqueIdentifierFrom] 按源对象唯一标识过滤，可选；子空间创建页按选中对象查询父空间关系时使用。
  * @returns 标准 API 响应，data 为关系分类体系单根节点；无 data 时表示关系树为空。
  */
 export function getOntologyRelationCategoryTreeInterface(params: OntologyRelationCategoryTreeParams): Promise<ApiResponse<OntologyRelationCategoryTreeData>> {

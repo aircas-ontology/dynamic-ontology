@@ -4,11 +4,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { workspaceRoutes } from "../src/router/modules/workspaceRoutes.ts";
 import { createOntologySpaceRelationWorkspaceData } from "../src/mocks/ontologySpaceRelationMock/ontologySpaceRelationMock.ts";
-import { filterRelationsByHop, filterRelationsBySourceObject } from "../src/views/SpaceRelationWorkspace/utils/spaceRelationGraph.ts";
+import { computeHopDistances, filterRelationsByHop } from "../src/views/SpaceRelationWorkspace/utils/spaceRelationGraph.ts";
 import {
   addRelation,
   addRelationCategory,
   filterRelationsByCategory,
+  pruneRelationCategoryTree,
   removeRelation,
   removeRelationCategory,
 } from "../src/views/SpaceRelationWorkspace/utils/relationOperations.ts";
@@ -42,19 +43,84 @@ test("hop filter keeps only adjacent layers from the seed", () => {
   assert.ok(filtered.every((item) => item.sourceName === "福特级航空母舰(CVN)" || item.targetName === "福特级航空母舰(CVN)"));
 });
 
-test("source object filter keeps relations whose source matches value or label", () => {
+test("hop distances and hop filter tolerate blank seeds and endpoints", () => {
   const data = createOntologySpaceRelationWorkspaceData();
-  const byLabel = filterRelationsBySourceObject(data.relations, "福特级航空母舰(CVN)");
-  assert.ok(byLabel.length > 0);
-  assert.ok(byLabel.every((item) => item.sourceName === "福特级航空母舰(CVN)"));
+  assert.equal(computeHopDistances(data.relations, ["", "   "]).size, 0);
+  assert.equal(filterRelationsByHop(data.relations, ["  "], 2).length, data.relations.length);
 
-  const options = [{ value: "uid-ford", label: "福特级航空母舰(CVN)" }];
-  const byValue = filterRelationsBySourceObject(data.relations, "uid-ford", options);
-  assert.deepEqual(byValue.map((item) => item.id).sort(), byLabel.map((item) => item.id).sort());
+  const withBlankSource = [
+    ...data.relations,
+    { ...data.relations[0], id: "rel-blank-source", sourceName: "  ", targetName: "孤立对象" },
+  ];
+  const hop = computeHopDistances(withBlankSource, ["孤立对象"]);
+  assert.equal(hop.get("孤立对象"), 0);
+});
 
+test("hop filter expands one more layer at two hops", () => {
+  const data = createOntologySpaceRelationWorkspaceData();
+  const oneHop = filterRelationsByHop(data.relations, ["福特级航空母舰(CVN)"], 1);
+  const twoHops = filterRelationsByHop(data.relations, ["福特级航空母舰(CVN)"], 2);
+  const oneHopIds = new Set(oneHop.map((item) => item.id));
+  const twoHopIds = new Set(twoHops.map((item) => item.id));
+
+  assert.ok(oneHopIds.has("rel-burke-escorts-ford"));
+  assert.ok(oneHopIds.has("rel-cruiser-escorts-ford"));
+  [
+    "rel-airwing-fighter",
+    "rel-destroyer-submarine-escort",
+    "rel-base-shipyard",
+    "rel-jtf-patrol-aircraft",
+    "rel-amphibious-carries-marine",
+  ].forEach((id) => {
+    assert.ok(twoHopIds.has(id), `expected ${id} in two-hop result`);
+  });
+  ["rel-shipyard-repair-center", "rel-fighter-squadron", "rel-burke-aa-coord", "rel-burke-replenished", "rel-burke-homeported"].forEach((id) => {
+    assert.equal(twoHopIds.has(id), false, `unexpected ${id} in two-hop result`);
+  });
+  oneHopIds.forEach((id) => {
+    assert.ok(twoHopIds.has(id), `expected ${id} kept at two hops`);
+  });
+});
+
+test("relation workspace filters by undirected hop and exposes hop switch", () => {
   const workspaceSource = readFileSync(new URL("../src/views/SpaceRelationWorkspace/composables/useSpaceRelationWorkspace.ts", import.meta.url), "utf8");
-  assert.match(workspaceSource, /filterRelationsBySourceObject/);
-  assert.doesNotMatch(workspaceSource, /filterRelationsByHop\(/);
+  assert.match(workspaceSource, /maxHop: 1,/);
+  assert.match(workspaceSource, /filterRelationsByHop\(byCategory, graphSeedNames\.value, relationFilter\.value\.maxHop\)/);
+  assert.match(workspaceSource, /function setRelationFilterMaxHop\(hop: SpaceRelationHopLevel\)/);
+  assert.match(workspaceSource, /setRelationFilterMaxHop,/);
+  assert.match(workspaceSource, /maxHop: relationFilter\.value\.maxHop,/);
+  assert.doesNotMatch(workspaceSource, /filterRelationsBySourceObject/);
+  assert.doesNotMatch(workspaceSource, /params\.ontologyUniqueIdentifierFrom/);
+  assert.match(workspaceSource, /loadSpaceRelationWorkspaceFromApi\(spaceId: string\)/);
+  assert.match(workspaceSource, /loadSpaceRelationWorkspaceFromApi\(spaceId\.value\)/);
+});
+
+test("relation workspace header offers one and two hop switch", () => {
+  const pageSource = readFileSync(new URL("../src/views/SpaceRelationWorkspace/index.vue", import.meta.url), "utf8");
+  assert.match(pageSource, /ariaLabel="关系跳数"/);
+  assert.match(pageSource, /:model-value="relationFilter\.maxHop"/);
+  assert.match(pageSource, /<el-radio-group[\s\S]*?v-if="relationFilter\.applied"/);
+  assert.match(pageSource, /<el-radio-button :value="1">1跳<\/el-radio-button>/);
+  assert.match(pageSource, /<el-radio-button :value="2">2跳<\/el-radio-button>/);
+  assert.match(pageSource, /function handleMaxHopChange/);
+  assert.match(pageSource, /function resetFilter\(\) \{[\s\S]*?setRelationFilterMaxHop\(1\);/);
+});
+
+test("object relation page scopes the category panel to hop-filtered relations and pruned tree", () => {
+  const workspaceSource = readFileSync(new URL("../src/views/SpaceRelationWorkspace/composables/useSpaceRelationWorkspace.ts", import.meta.url), "utf8");
+  const pageSource = readFileSync(new URL("../src/views/SpaceRelationWorkspace/index.vue", import.meta.url), "utf8");
+  const operationsSource = readFileSync(new URL("../src/views/SpaceRelationWorkspace/utils/relationOperations.ts", import.meta.url), "utf8");
+
+  assert.match(operationsSource, /export function pruneRelationCategoryTree\(/);
+  assert.match(workspaceSource, /const categoryPanelRelations = computed/);
+  assert.match(workspaceSource, /isObjectRelationPage\.value && relationFilter\.value\.applied/);
+  assert.match(workspaceSource, /filterRelationsByHop\(relations\.value, graphSeedNames\.value, relationFilter\.value\.maxHop\)/);
+  assert.match(workspaceSource, /const categoryPanelTreeData = computed/);
+  assert.match(workspaceSource, /pruneRelationCategoryTree\(relationCategoryTree\.value, categoryPanelRelations\.value\)/);
+  assert.match(workspaceSource, /categoryPanelRelations,/);
+  assert.match(workspaceSource, /categoryPanelTreeData,/);
+  assert.match(pageSource, /:tree-data="categoryPanelTreeData"/);
+  assert.match(pageSource, /:relations="categoryPanelRelations"/);
 });
 
 test("category filter includes nested category relations", () => {
@@ -62,6 +128,35 @@ test("category filter includes nested category relations", () => {
   const filtered = filterRelationsByCategory(data.relations, data.categoryTree, "rel-combat");
   assert.ok(filtered.some((item) => item.categoryId === "rel-combat-command"));
   assert.ok(filtered.some((item) => item.categoryId === "rel-combat-support"));
+});
+
+test("relation category tree pruning keeps only branches containing matched relations", () => {
+  const data = createOntologySpaceRelationWorkspaceData();
+  const target = data.relations[0];
+
+  const findPath = (nodes, categoryId, trail = []) => {
+    for (const node of nodes) {
+      const next = [...trail, node.id];
+      if (node.id === categoryId) return next;
+      const found = findPath(node.children ?? [], categoryId, next);
+      if (found) return found;
+    }
+    return null;
+  };
+  const path = findPath(data.categoryTree, target.categoryId);
+  assert.ok(path, "expected the target category to exist in the mock tree");
+
+  const pruned = pruneRelationCategoryTree(data.categoryTree, [target]);
+  const keptIds = [];
+  const walk = (nodes) =>
+    nodes.forEach((node) => {
+      keptIds.push(node.id);
+      walk(node.children ?? []);
+    });
+  walk(pruned);
+
+  assert.deepEqual([...new Set(keptIds)].sort(), [...new Set(path)].sort());
+  assert.ok(pruned.length > 0);
 });
 
 test("relation 3d graph does not load entity svg node icons", () => {

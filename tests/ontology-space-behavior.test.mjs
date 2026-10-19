@@ -181,6 +181,15 @@ test("space behavior edit and status dialogs stay open despite reactive clone an
   assert.match(listSource, /void nextTick/);
 });
 
+test("space behavior operator selection clones list params without structuredClone", () => {
+  const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
+  const applyBlock = formSource.match(/function applySelectedOperator\(operatorId: string\): void \{[\s\S]*?\n\}/)?.[0] ?? "";
+
+  assert.match(applyBlock, /inputParameters\.value = cloneSpaceBehaviorParameters\(operator\.inputParameters\)/);
+  assert.match(applyBlock, /outputParameters\.value = cloneSpaceBehaviorParameters\(operator\.outputParameters\)/);
+  assert.doesNotMatch(formSource, /structuredClone\(/);
+});
+
 test("space behavior parameter flatten treats missing children as leaf rows", () => {
   const rows = flattenSpaceBehaviorParameterRows([
     {
