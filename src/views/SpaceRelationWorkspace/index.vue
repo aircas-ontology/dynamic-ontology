@@ -1,9 +1,9 @@
 <template>
   <div class="space-relation-workspace">
     <RelationCategoryPanel
-      :tree-data="relationCategoryTree"
+      :tree-data="categoryPanelTreeData"
       :selected-node-id="selectedRelationCategoryId"
-      :relations="relations"
+      :relations="categoryPanelRelations"
       :can-create="true"
       :can-update="true"
       :can-delete="true"
@@ -20,7 +20,7 @@
           <h2>{{ selectedRelationCategoryLabel }}</h2>
           <span>
             空间内多对象关系 · {{ visibleSpaceRelations.length }} 条
-            <template v-if="relationFilter.applied"> （源对象：{{ graphSeedNames[0] }}） </template>
+            <template v-if="relationFilter.applied"> （中心对象：{{ graphSeedNames[0] }}） </template>
           </span>
         </div>
         <div class="space-relation-workspace__actions">
@@ -37,6 +37,16 @@
             </el-select>
             <el-button @click="resetFilter">重置</el-button>
           </div>
+          <el-radio-group
+            v-if="relationFilter.applied"
+            :model-value="relationFilter.maxHop"
+            class="space-relation-workspace__hop-switch"
+            ariaLabel="关系跳数"
+            @update:model-value="handleMaxHopChange"
+          >
+            <el-radio-button :value="1">1跳</el-radio-button>
+            <el-radio-button :value="2">2跳</el-radio-button>
+          </el-radio-group>
           <el-button :icon="Plus" @click="openRelationCreate">添加</el-button>
           <el-radio-group
             :model-value="relationViewMode"
@@ -183,6 +193,8 @@ const {
   selectedRelationCategoryLabel,
   relationCategoryOptions,
   visibleSpaceRelations,
+  categoryPanelRelations,
+  categoryPanelTreeData,
   relationViewMode,
   relationFilter,
   graphSeedNames,
@@ -190,6 +202,7 @@ const {
   loadSpaceRelationWorkspace,
   selectRelationCategory,
   setRelationViewMode,
+  setRelationFilterMaxHop,
   applyRelationFilter,
   findRelationCategoryLabel,
 } = useSpaceRelationWorkspace();
@@ -245,8 +258,17 @@ function handleSeedChange(value: string | number | boolean | undefined) {
   applyRelationFilter(seed ? [seed] : []);
 }
 
+/**
+ * @description 处理关系跳数切换，仅接受 1 跳与 2 跳。
+ * @param value 单选按钮组抛出的原始值。
+ */
+function handleMaxHopChange(value: unknown) {
+  if (value === 1 || value === 2) setRelationFilterMaxHop(value);
+}
+
 function resetFilter() {
   applyRelationFilter([]);
+  setRelationFilterMaxHop(1);
   draftSeedName.value = "";
 }
 

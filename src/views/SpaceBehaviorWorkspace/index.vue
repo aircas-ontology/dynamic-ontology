@@ -57,6 +57,7 @@
       ref="behaviorFormRef"
       v-model="behaviorFormVisible"
       :mode="behaviorFormMode"
+      :space-id="spaceId"
       :category-options="categoryOptions"
       :default-category-id="selectedCategoryId || ROOT_SPACE_BEHAVIOR_CATEGORY_ID"
       :behavior="activeBehavior"
@@ -88,6 +89,7 @@ import BehaviorDeleteDialog from "./components/BehaviorDeleteDialog.vue";
 
 const {
   status,
+  spaceId,
   errorMessage,
   categoryTree,
   selectedCategoryId,
