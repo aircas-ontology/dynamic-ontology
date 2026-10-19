@@ -459,6 +459,40 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
+   * @description 保存新建外部 API 函数（EXTERNAL）；编辑已有函数时不调用修改接口。
+   * @param params 创建请求体。
+   */
+  async function saveExternalApiOperator(params: CreateOntologyFunctionParams): Promise<void> {
+    if (actionLoading.value) {
+      return;
+    }
+    if (params.type !== "EXTERNAL") {
+      ElMessage.warning("仅支持保存外部 API 函数");
+      return;
+    }
+    if (editingOperator.value) {
+      ElMessage.warning("外部 API 函数编辑本阶段暂未开放");
+      return;
+    }
+    actionLoading.value = true;
+    try {
+      const response = await createOntologyFunctionInterface(params);
+      if (response.code !== 200) {
+        throw new Error(response.message || "外部 API 函数创建失败");
+      }
+      ElMessage.success("外部 API 函数草稿已保存");
+      formVisible.value = false;
+      formDraft.value = null;
+      editingOperator.value = null;
+      await loadOperators();
+    } catch (error) {
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "外部 API 函数创建失败");
+    } finally {
+      actionLoading.value = false;
+    }
+  }
+
+  /**
    * @description 保存新建或编辑草稿；无 editingOperator 走创建 POST，有则走修改 PUT。
    * @param draft 表单草稿。
    */
@@ -796,22 +830,37 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 更新脚本测试表单中某一入参的值。
-   * @param paramName 参数名。
+   * @description 按从根到叶子的序号路径更新脚本测试入参值。
+   * @param path 各层序号。
    * @param paramValue 参数值。
    */
-  function updateScriptTestParamValue(paramName: string, paramValue: string): void {
-    const index = scriptTestInputRows.value.findIndex((row) => row.paramName === paramName);
-    if (index < 0) {
-      return;
+  function updateScriptTestParamValue(path: number[], paramValue: string): void {
+    scriptTestInputRows.value = writeScriptTestParamValue(scriptTestInputRows.value, path, paramValue);
+  }
+
+  /**
+   * @description 按序号路径写入叶子参数值，并返回新的入参树。
+   * @param rows 当前层入参行。
+   * @param path 剩余序号路径。
+   * @param paramValue 参数值。
+   * @returns 更新后的入参行。
+   */
+  function writeScriptTestParamValue(rows: OntologyFunctionScriptTestInputRow[], path: number[], paramValue: string): OntologyFunctionScriptTestInputRow[] {
+    const [index, ...rest] = path;
+    if (index === undefined || !Number.isInteger(index) || index < 0 || index >= rows.length) {
+      return rows;
     }
-    const next = [...scriptTestInputRows.value];
-    const current = next[index];
+    const current = rows[index];
     if (!current) {
-      return;
+      return rows;
     }
-    next[index] = { ...current, paramValue };
-    scriptTestInputRows.value = next;
+    const next = [...rows];
+    if (rest.length === 0) {
+      next[index] = { ...current, paramValue };
+      return next;
+    }
+    next[index] = { ...current, fields: writeScriptTestParamValue(current.fields ?? [], rest, paramValue) };
+    return next;
   }
 
   /**
@@ -1016,6 +1065,7 @@ export function useFunctionOperatorWorkspace() {
     openEdit,
     saveOperator,
     saveScriptOperator,
+    saveExternalApiOperator,
     openDeleteOperator,
     confirmDeleteOperator,
     togglePublish,

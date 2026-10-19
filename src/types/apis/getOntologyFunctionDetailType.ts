@@ -10,7 +10,8 @@ export interface GetOntologyFunctionDetailParams {
 
 /** 函数详情参数项。 */
 export interface GetOntologyFunctionDetailParamItem {
-  paramId: number;
+  /** 顶层参数常见；嵌套 fields 项可能缺省。 */
+  paramId?: number;
   paramName: string;
   paramType: string;
   category: string;
@@ -19,6 +20,8 @@ export interface GetOntologyFunctionDetailParamItem {
   description?: string;
   /** 参数角色：FILTER / AGGREGATION 等。 */
   paramRole?: string;
+  /** 对象或列表的下级属性；无下级时省略。 */
+  fields?: GetOntologyFunctionDetailParamItem[];
 }
 
 /** 根据函数 API 查询详情的响应 data。 */

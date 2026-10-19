@@ -158,6 +158,7 @@
       :loading="actionLoading"
       @submit="saveOperator"
       @save-script="saveScriptOperator"
+      @save-external="saveExternalApiOperator"
     />
     <FunctionOperatorDeleteDialog
       v-model="deleteVisible"
@@ -304,6 +305,7 @@ const {
   openEdit,
   saveOperator,
   saveScriptOperator,
+  saveExternalApiOperator,
   openDeleteOperator,
   confirmDeleteOperator,
   togglePublish,

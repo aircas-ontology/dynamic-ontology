@@ -49,69 +49,83 @@ mocks与types文件名自行语义化命名
     "model": "BASIC",
     "type": "BASIC_QUERY",
     "ontologySpaceId": 46,
-    "params": [
+    "params":[
       {
-        "paramId": 888,
-        "paramName": "ontologyIdentifier",
-        "paramType": "STRING",
+        "paramId": 1327,
+        "paramName": "input",
+        "paramType": "OBJECT",
         "category": "INPUT",
         "paramOrder": 1,
-        "description": "查询目标本体标识",
-        "paramRole": "FILTER"
+        "fields": [
+          {
+            "paramName": "a",
+            "paramType": "OBJECT",
+            "category": "INPUT",
+            "paramOrder": 1,
+            "fields": [
+              {
+                "paramName": "aa",
+                "paramType": "OBJECT",
+                "category": "INPUT",
+                "paramOrder": 1,
+                "fields": [
+                  {
+                    "paramName": "aaa1",
+                    "paramType": "STRING",
+                    "category": "INPUT",
+                    "paramOrder": 1
+                  },
+                  {
+                    "paramName": "aaa2",
+                    "paramType": "STRING",
+                    "category": "INPUT",
+                    "paramOrder": 2
+                  }
+                ]
+              },
+              {
+                "paramName": "data",
+                "paramType": "STRING",
+                "category": "INPUT",
+                "paramOrder": 2
+              }
+            ]
+          },
+          {
+            "paramName": "b",
+            "paramType": "LIST",
+            "category": "INPUT",
+            "paramOrder": 2
+          }
+        ]
       },
       {
-        "paramId": 889,
-        "paramName": "powerCapacity",
-        "paramType": "STRING",
-        "category": "INPUT",
-        "paramOrder": 2,
-        "description": "聚合目标",
-        "paramRole": "AGGREGATION"
-      },
-      {
-        "paramId": 890,
-        "paramName": "result",
-        "paramType": "DOUBLE",
+        "paramId": 1328,
+        "paramName": "Output",
+        "paramType": "OBJECT",
         "category": "OUTPUT",
         "paramOrder": 1,
-        "description": "聚合结果",
-        "paramRole": "FILTER"
+        "fields": [
+          {
+            "paramName": "id",
+            "paramType": "DOUBLE",
+            "category": "OUTPUT",
+            "paramOrder": 1
+          },
+          {
+            "paramName": "name",
+            "paramType": "STRING",
+            "category": "OUTPUT",
+            "paramOrder": 2
+          }
+        ]
       },
       {
-        "paramId": 891,
-        "paramName": "value",
+        "paramId": 1329,
+        "paramName": "age",
         "paramType": "DOUBLE",
-        "category": "OUTPUT",
-        "paramOrder": 2,
-        "description": "聚合值",
-        "paramRole": "FILTER"
-      },
-      {
-        "paramId": 892,
-        "paramName": "aggFunc",
-        "paramType": "STRING",
-        "category": "OUTPUT",
-        "paramOrder": 3,
-        "description": "聚合函数",
-        "paramRole": "FILTER"
-      },
-      {
-        "paramId": 893,
-        "paramName": "alias",
-        "paramType": "STRING",
-        "category": "OUTPUT",
-        "paramOrder": 4,
-        "description": "聚合别名",
-        "paramRole": "FILTER"
-      },
-      {
-        "paramId": 894,
-        "paramName": "targetProperty",
-        "paramType": "STRING",
-        "category": "OUTPUT",
-        "paramOrder": 5,
-        "description": "聚合目标属性",
-        "paramRole": "FILTER"
+        "category": "INPUT",
+        "paramOrder": 2
       }
     ],
     "code": "{\"aggFunc\":null,\"targetProperty\":null,\"filters\":{\"logic\":\"AND\",\"children\":[{\"type\":\"FILTER\",\"filter\":{\"propertyApiName\":\"age\",\"op\":\"EQ\",\"value\":\"10\",\"values\":null,\"dataType\":\"STRING\"},\"group\":null}]}}",

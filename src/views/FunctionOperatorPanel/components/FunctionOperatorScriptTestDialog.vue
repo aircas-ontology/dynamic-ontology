@@ -8,14 +8,12 @@
       <template v-else>
         <el-form label-position="top" class="function-operator-script-test__form">
           <p v-if="inputRows.length === 0" class="function-operator-script-test__empty">当前版本无 INPUT 入参</p>
-          <el-form-item v-for="row in inputRows" :key="row.paramName" :label="formatScriptTestParamLabel(row.paramName, row.paramType)">
-            <el-input
-              :model-value="row.paramValue"
-              clearable
-              placeholder="请输入参数值"
-              @update:model-value="emit('update-param', row.paramName, String($event ?? ''))"
-            />
-          </el-form-item>
+          <FunctionOperatorScriptTestParamTree
+            v-else
+            :rows="inputRows"
+            ariaLabel="脚本测试入参"
+            @update-param="(path, paramValue) => emit('update-param', path, paramValue)"
+          />
           <el-form-item label="执行结果">
             <el-input :model-value="output" type="textarea" :rows="14" readonly placeholder="运行测试后展示完整接口响应" />
           </el-form-item>
@@ -32,6 +30,7 @@
 <script setup lang="ts">
 import AircasLoading from "@/components/AircasLoading.vue";
 import type { OntologyFunctionScriptTestInputRow } from "@/utils/mapOntologyFunctionTest";
+import FunctionOperatorScriptTestParamTree from "./FunctionOperatorScriptTestParamTree.vue";
 
 const visible = defineModel<boolean>({ required: true });
 
@@ -45,19 +44,8 @@ defineProps<{
 
 const emit = defineEmits<{
   run: [];
-  "update-param": [paramName: string, paramValue: string];
+  "update-param": [path: number[], paramValue: string];
 }>();
-
-/**
- * @description 组装脚本测试入参表单项标签：参数名与类型。
- * @param paramName 参数名。
- * @param paramType 参数类型。
- * @returns 展示标签。
- */
-function formatScriptTestParamLabel(paramName: string, paramType: string): string {
-  const typeLabel = paramType.trim();
-  return typeLabel ? `${paramName}（${typeLabel}）` : paramName;
-}
 </script>
 
 <style scoped lang="scss">

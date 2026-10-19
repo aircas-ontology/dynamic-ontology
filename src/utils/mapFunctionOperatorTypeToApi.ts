@@ -4,6 +4,7 @@ import type { FunctionOperatorType } from "@/types";
 const FUNCTION_OPERATOR_TYPE_TO_API: Partial<Record<FunctionOperatorType, string>> = {
   basic: "BASIC_QUERY",
   code: "CUSTOMIZE",
+  api: "EXTERNAL",
   composite: "COMPOSITE",
 };
 
@@ -12,6 +13,7 @@ const FUNCTION_OPERATOR_TYPE_FROM_API: Record<string, FunctionOperatorType> = {
   BASIC_QUERY: "basic",
   BASIC: "basic",
   CUSTOMIZE: "code",
+  EXTERNAL: "api",
   COMPOSITE: "composite",
 };
 

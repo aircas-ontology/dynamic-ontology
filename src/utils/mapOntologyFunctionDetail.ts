@@ -4,6 +4,7 @@ import type {
   FunctionOperatorDefinition,
   FunctionOperatorDraft,
   FunctionOperatorParameter,
+  FunctionOperatorParameterField,
   FunctionOperatorParameterType,
   GetOntologyFunctionDetailData,
   GetOntologyFunctionDetailParamItem,
@@ -59,7 +60,38 @@ function mapDetailParamType(paramType: string | undefined): FunctionOperatorPara
 }
 
 /**
- * @description 按 category 将详情 params 映射为抽屉参数列表；大小写不敏感匹配。
+ * @description 将详情参数项（含嵌套 fields）映射为页面参数字段树。
+ * @param item 详情参数项。
+ * @param index 同层序号。
+ * @param parentKey 父级键前缀。
+ * @returns 页面参数字段。
+ */
+function mapDetailParamItemToField(item: GetOntologyFunctionDetailParamItem, index: number, parentKey: string): FunctionOperatorParameterField {
+  const name = typeof item.paramName === "string" ? item.paramName.trim() : "";
+  const description = typeof item.description === "string" ? item.description.trim() : "";
+  const role = typeof item.paramRole === "string" ? item.paramRole.trim() : "";
+  const descParts = [description, role ? `角色：${role}` : ""].filter(Boolean);
+  const apiParamType = typeof item.paramType === "string" ? item.paramType.trim() : "";
+  const id = String(item.paramId ?? `${parentKey}-${name || "param"}-${index}`);
+  const nested =
+    Array.isArray(item.fields) && item.fields.length > 0
+      ? [...item.fields]
+          .sort((left, right) => (left.paramOrder ?? 0) - (right.paramOrder ?? 0))
+          .map((child, childIndex) => mapDetailParamItemToField(child, childIndex, id))
+      : undefined;
+  return {
+    id,
+    name,
+    type: mapDetailParamType(item.paramType),
+    required: false,
+    description: descParts.join("；"),
+    apiParamType,
+    itemFields: nested,
+  };
+}
+
+/**
+ * @description 按 category 将详情 params 映射为抽屉参数列表；大小写不敏感匹配，递归保留 fields。
  * @param params 详情 params。
  * @param category 目标类别（INPUT / OUTPUT）。
  * @returns 页面参数列表。
@@ -73,16 +105,15 @@ function mapDetailParamsByCategory(params: GetOntologyFunctionDetailParamItem[] 
     .filter((item) => (typeof item.category === "string" ? item.category.trim().toUpperCase() : "") === normalizedCategory)
     .sort((a, b) => (a.paramOrder ?? 0) - (b.paramOrder ?? 0))
     .map((item, index) => {
-      const name = typeof item.paramName === "string" ? item.paramName.trim() : "";
-      const description = typeof item.description === "string" ? item.description.trim() : "";
-      const role = typeof item.paramRole === "string" ? item.paramRole.trim() : "";
-      const descParts = [description, role ? `角色：${role}` : ""].filter(Boolean);
+      const field = mapDetailParamItemToField(item, index, category.toLowerCase());
       return {
-        id: String(item.paramId ?? `${name || "param"}-${index}`),
-        name,
-        type: mapDetailParamType(item.paramType),
-        required: false,
-        description: descParts.join("；"),
+        id: field.id,
+        name: field.name,
+        type: field.type,
+        required: field.required,
+        description: field.description,
+        apiParamType: field.apiParamType,
+        itemFields: field.itemFields,
       };
     });
 }
@@ -176,8 +207,8 @@ export function mapOntologyFunctionDetailToDraft(
     createdAt: "",
     status: "",
     category: "",
-    inputParameters: [],
-    outputParameters: [],
+    inputParameters: mapDetailParamsByCategory(detail.params, "INPUT"),
+    outputParameters: mapDetailParamsByCategory(detail.params, "OUTPUT"),
     timeout: 0,
     retryCount: 0,
     retryInterval: 0,

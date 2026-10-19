@@ -35,7 +35,35 @@ export interface CreateOntologyFunctionQueryConfig {
 }
 
 /** 创建函数算子类型。 */
-export type CreateOntologyFunctionType = "BASIC_QUERY" | "CUSTOMIZE";
+export type CreateOntologyFunctionType = "BASIC_QUERY" | "CUSTOMIZE" | "EXTERNAL";
+
+/** 外部 API 输入参数。 */
+export interface CreateOntologyFunctionApiInput {
+  name: string;
+  type: "string" | "number" | "boolean" | "array" | "object";
+  required: boolean;
+  location: "body" | "path" | "query" | "header";
+  description: string;
+}
+
+/** 外部 API 输出参数。 */
+export interface CreateOntologyFunctionApiOutput {
+  name: string;
+  type: "string" | "number" | "boolean" | "array" | "object";
+  description: string;
+}
+
+/** 外部 API 算子 apiConfig。 */
+export interface CreateOntologyFunctionApiConfig {
+  endpoint: string;
+  method: "GET" | "POST" | "PUT" | "DELETE";
+  authType: "none" | "apiKey";
+  contentType: "application/json";
+  /** 认证 Header；仅 authType 为 apiKey 时提交。 */
+  apiKey?: string;
+  inputs: CreateOntologyFunctionApiInput[];
+  outputs: CreateOntologyFunctionApiOutput[];
+}
 
 /** 脚本函数参数方向。 */
 export type CreateOntologyFunctionParameterCategory = "INPUT" | "OUTPUT";
@@ -77,6 +105,8 @@ export interface CreateOntologyFunctionParams {
    */
   basedOnOldVersion?: boolean;
   queryConfig?: CreateOntologyFunctionQueryConfig;
+  /** 外部 API 配置（仅 EXTERNAL 有效）。 */
+  apiConfig?: CreateOntologyFunctionApiConfig;
 }
 
 /** 创建函数算子响应 data（契约样例无业务载荷）。 */

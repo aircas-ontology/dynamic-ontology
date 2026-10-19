@@ -100,9 +100,13 @@ const props = defineProps<{
   spaceId: number;
   /** 新建表单所选源版本；非空时创建请求 basedOnOldVersion 为 true。 */
   sourceVersion: string;
-  /** 编辑态锁定语言（创建后不可修改 language）。 */
+  /** 编辑态或基于源函数创建时锁定语言（不可切换 language）。 */
   languageLocked: boolean;
   saving: boolean;
+  /** 打开 IDE 时带入的已解析输入参数树。 */
+  parsedInputParameters: ParseOntologyFunctionParamItem[];
+  /** 打开 IDE 时带入的已解析输出参数树。 */
+  parsedOutputParameters: ParseOntologyFunctionParamItem[];
 }>();
 
 const emit = defineEmits<{
@@ -110,6 +114,8 @@ const emit = defineEmits<{
   "update:code": [value: string];
   "update:language": [value: FunctionOperatorScriptLanguage];
   "update:testParams": [value: string];
+  "update:parsedInputParameters": [value: ParseOntologyFunctionParamItem[]];
+  "update:parsedOutputParameters": [value: ParseOntologyFunctionParamItem[]];
   save: [params: CreateOntologyFunctionParams];
 }>();
 
@@ -129,11 +135,30 @@ const subtitleText = computed(() => {
 });
 
 /**
- * @description 清空左侧由解析接口得到的输入、输出参数树。
+ * @description 清空左侧参数树，并同步清空父级草稿。
  */
 function clearParsedScriptParameters(): void {
   inputParameters.value = [];
   outputParameters.value = [];
+  emit("update:parsedInputParameters", []);
+  emit("update:parsedOutputParameters", []);
+}
+
+/**
+ * @description 打开 IDE 时套用详情或上次解析得到的参数树；有参数则视为已解析。
+ */
+function applyIncomingParsedParameters(): void {
+  inputParameters.value = props.parsedInputParameters.map((item) => ({ ...item }));
+  outputParameters.value = props.parsedOutputParameters.map((item) => ({ ...item }));
+  if (inputParameters.value.length > 0 || outputParameters.value.length > 0) {
+    parsedCodeSnapshot = props.code;
+    parsedLanguageSnapshot = props.language;
+    parseLocked.value = true;
+    return;
+  }
+  parseLocked.value = false;
+  parsedCodeSnapshot = "";
+  parsedLanguageSnapshot = "";
 }
 
 /**
@@ -182,6 +207,8 @@ async function parseScriptParameters(): Promise<void> {
     parsedCodeSnapshot = source;
     parsedLanguageSnapshot = props.language;
     parseLocked.value = true;
+    emit("update:parsedInputParameters", split.inputParameters);
+    emit("update:parsedOutputParameters", split.outputParameters);
     ElMessage.success("解析完成");
   } catch (error) {
     if (requestId !== parseGeneration) {
@@ -272,11 +299,9 @@ watch(
     if (!visible) {
       parseGeneration += 1;
       parsing.value = false;
-      parseLocked.value = false;
-      parsedCodeSnapshot = "";
-      parsedLanguageSnapshot = "";
-      clearParsedScriptParameters();
+      return;
     }
+    applyIncomingParsedParameters();
   },
 );
 </script>

@@ -22,7 +22,9 @@ test("create ontology function types expose the documented request fields", () =
   assert.match(source, /version: string/);
   assert.match(source, /displayName: string/);
   assert.match(source, /description: string/);
-  assert.match(source, /type CreateOntologyFunctionType = "BASIC_QUERY" \| "CUSTOMIZE"/);
+  assert.match(source, /type CreateOntologyFunctionType = "BASIC_QUERY" \| "CUSTOMIZE" \| "EXTERNAL"/);
+  assert.match(source, /apiConfig\?: CreateOntologyFunctionApiConfig/);
+  assert.match(source, /apiKey\?: string/);
   assert.match(source, /type: CreateOntologyFunctionType/);
   assert.match(source, /language\?: string/);
   assert.match(source, /code\?: string/);
