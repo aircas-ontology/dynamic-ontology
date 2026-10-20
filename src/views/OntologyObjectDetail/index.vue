@@ -1,5 +1,8 @@
 <template>
   <div class="ontology-object-detail">
+    <button class="ontology-object-detail__help" type="button" aria-label="打开新手引导" title="新手引导" @click="guideVisible = true">
+      <el-icon><QuestionFilled /></el-icon>
+    </button>
     <div class="ontology-object-detail__layout">
       <ObjectDetailTabs :active-tab="activeTab" :available-tabs="availableTabs" :object-name="objectName" :counts="tabCounts" @update:active-tab="openTab" />
       <div class="ontology-object-detail__content">
@@ -14,12 +17,16 @@
         </router-view>
       </div>
     </div>
+    <OnboardingGuideOverlay v-model="guideVisible" :steps="guideSteps" start-id="create-property" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { QuestionFilled } from "@element-plus/icons-vue";
+import type { OnboardingGuideStep } from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
+import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
 import type { OntologyObjectDetailTab } from "@/types";
 import ObjectDetailTabs from "./components/ObjectDetailTabs.vue";
 import { useObjectDetailWorkspace } from "./composables/useObjectDetailWorkspace";
@@ -30,6 +37,23 @@ const router = useRouter();
 const route = useRoute();
 const { activeTab, availableTabs, objectName, objectId, spaceId, spaceName, spaceType } = useObjectDetailWorkspace();
 const { counts: objectCounts, loading: statisticLoading, error: statisticError, loadObjectResourceStatistic } = useObjectResourceStatistic(objectId);
+const guideVisible = ref(false);
+const guideSteps: OnboardingGuideStep[] = [
+  {
+    id: "create-property",
+    title: "建属性",
+    description: "在属性页签中维护对象属性。引导示例不会提交数据。",
+    targetSelector: ".object-detail-tabs__item",
+    mockLabel: "属性",
+  },
+  {
+    id: "create-relation",
+    title: "建关系",
+    description: "在关系页签中维护对象关系。引导示例不会提交数据。",
+    targetSelector: ".object-detail-tabs__item",
+    mockLabel: "关系",
+  },
+];
 
 /** @description 向当前子页面传递统计计数；对象概览同时传递加载和错误状态。 */
 const detailChildProps = computed(() => {
@@ -91,6 +115,27 @@ function openTab(tab: OntologyObjectDetailTab) {
     auto,
     auto,
     auto;
+}
+
+.ontology-object-detail__help {
+  position: absolute;
+  top: 8px;
+  right: 18px;
+  z-index: 4;
+  display: inline-flex;
+  padding: 6px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 6px;
+  color: var(--aircas-color-text-secondary);
+  background: var(--aircas-color-panel-background);
+  cursor: pointer;
+}
+.ontology-object-detail__help:hover {
+  color: var(--aircas-color-primary);
+}
+.ontology-object-detail__help:focus-visible {
+  outline: 2px solid var(--aircas-color-primary);
+  outline-offset: 2px;
 }
 
 .ontology-object-detail__layout {

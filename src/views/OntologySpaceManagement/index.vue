@@ -1,5 +1,8 @@
 <template>
   <div class="ontology-space-management">
+    <button class="ontology-space-management__help" type="button" aria-label="打开新手引导" title="新手引导" @click="guideVisible = true">
+      <el-icon><QuestionFilled /></el-icon>
+    </button>
     <section class="ontology-space-management__overview">
       <WelcomePanel :show-create="!isEmbedded" @create="openOntologySpaceForm()" />
       <div class="ontology-space-management__stats" :aria-busy="overviewStatus === 'loading'">
@@ -39,12 +42,16 @@
       @confirm-delete="confirmDeleteOntologySpace"
       @confirm-export="confirmExportOntologySpace"
     />
+    <OnboardingGuideOverlay v-model="guideVisible" :steps="guideSteps" :start-id="isEmbedded ? 'create-object' : 'create-space'" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
+import { QuestionFilled } from "@element-plus/icons-vue";
+import type { OnboardingGuideStep } from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
+import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
 import AircasLoading from "@/components/AircasLoading.vue";
 import SectionToolbar from "./components/SectionToolbar.vue";
 import SpaceCollection from "./components/SpaceCollection.vue";
@@ -88,6 +95,40 @@ const {
 } = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace, loadOntologySpaces });
 const route = useRoute();
 const isEmbedded = computed(() => typeof route.query.userName === "string" && route.query.userName.trim().length > 0);
+const guideVisible = ref(false);
+const guideSteps = computed<OnboardingGuideStep[]>(() => {
+  const steps: OnboardingGuideStep[] = [
+    {
+      id: "create-space",
+      title: "创建空间",
+      description: "在这里创建一个对象空间。引导示例不会提交数据。",
+      targetSelector: ".welcome-panel__create",
+      mockLabel: "新建对象空间",
+    },
+    {
+      id: "create-object",
+      title: "进入空间，建对象",
+      description: "进入对象空间后，在对象工作区创建对象。引导示例不会提交数据。",
+      targetSelector: ".workspace-type-tabs__item",
+      mockLabel: "进入空间并创建对象",
+    },
+    {
+      id: "create-property",
+      title: "建属性",
+      description: "在对象详情的属性页签中维护对象属性。引导示例不会提交数据。",
+      targetSelector: ".object-detail-tabs__item",
+      mockLabel: "属性",
+    },
+    {
+      id: "create-relation",
+      title: "建关系",
+      description: "在关系工作区中维护对象关系。引导示例不会提交数据。",
+      targetSelector: ".workspace-type-tabs__item",
+      mockLabel: "关系",
+    },
+  ];
+  return isEmbedded.value ? steps.filter((step) => step.id !== "create-space") : steps;
+});
 
 onMounted(() => {
   void Promise.all([loadOntologySpaces(), loadOntologyOverviewCount()]);
@@ -107,6 +148,27 @@ onMounted(() => {
   overflow-y: auto;
   color: var(--aircas-color-text-primary);
   background: var(--aircas-color-page-background);
+}
+
+.ontology-space-management__help {
+  position: fixed;
+  top: 62px;
+  right: 18px;
+  z-index: 4;
+  display: inline-flex;
+  padding: 6px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 6px;
+  color: var(--aircas-color-text-secondary);
+  background: var(--aircas-color-panel-background);
+  cursor: pointer;
+}
+.ontology-space-management__help:hover {
+  color: var(--aircas-color-primary);
+}
+.ontology-space-management__help:focus-visible {
+  outline: 2px solid var(--aircas-color-primary);
+  outline-offset: 2px;
 }
 
 .ontology-space-management__overview {
