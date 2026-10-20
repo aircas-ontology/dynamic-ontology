@@ -1210,9 +1210,10 @@ watch(
 .function-operator-form-dialog.el-dialog {
   display: flex;
   flex-direction: column;
+  align-self: center;
+  height: auto;
   max-height: 80vh;
-  margin-top: 5vh !important;
-  margin-bottom: 5vh !important;
+  margin: auto !important;
   overflow: hidden;
 }
 
@@ -1221,7 +1222,7 @@ watch(
 }
 
 .function-operator-form-dialog.el-dialog .el-dialog__body {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
   overflow: auto;
 }
