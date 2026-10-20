@@ -10,6 +10,7 @@
             'workspace-type-tabs__item-active': tab.id === activeTab,
             'workspace-type-tabs__item-overview': tab.id === 'overview',
           }"
+          :data-onboarding="`workspace-tab-${tab.id}`"
           role="tab"
           :aria-selected="tab.id === activeTab"
           @click="emit('update:activeTab', tab.id)"

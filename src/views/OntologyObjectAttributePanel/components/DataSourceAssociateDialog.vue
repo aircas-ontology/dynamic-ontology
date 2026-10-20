@@ -12,7 +12,7 @@
     <div class="property-datasource-mapping-dialog__body">
       <header class="mapping-toolbar">
         <div class="mapping-toolbar__inputs">
-          <div class="mapping-toolbar__source-group">
+          <div class="mapping-toolbar__source-group" data-onboarding="associate-select-datasource">
             <label>
               选择数据源
               <el-select
@@ -33,8 +33,8 @@
               </el-select>
             </label>
           </div>
-          <div class="mapping-toolbar__mapping-group">
-            <label>
+          <div class="mapping-toolbar__mapping-group" data-onboarding="associate-fields">
+            <label data-onboarding="associate-map-datasource">
               关联数据源
               <el-select
                 :model-value="manualSelectedTable"
@@ -75,17 +75,23 @@
                 />
               </el-select>
             </label>
-            <el-button type="primary" :disabled="!canAddManualBind || loading" @click="addManualBind">关联</el-button>
+            <el-button type="primary" data-onboarding="associate-link" :disabled="!canAddManualBind || loading" @click="addManualBind">关联</el-button>
           </div>
         </div>
         <p v-if="tableError || fieldError" class="mapping-toolbar__error" role="alert">{{ tableError || fieldError }}</p>
         <div class="mapping-toolbar__actions">
-          <el-button :loading="autoAssociateLoading" :disabled="loading || autoAssociateLoading" @click="emit('auto-associate')">自动关联数据源</el-button>
+          <el-button
+            data-onboarding="associate-auto"
+            :loading="autoAssociateLoading"
+            :disabled="loading || autoAssociateLoading"
+            @click="emit('auto-associate')"
+            >自动关联数据源</el-button
+          >
           <span title="暂未开放"><el-button disabled>跳转到数据管道</el-button></span>
         </div>
       </header>
       <div class="mapping-layout" :class="{ 'mapping-layout--saving': loading }">
-        <div ref="workspaceRef" class="property-datasource-mapping-dialog__workspace" @scroll="scheduleLineRefresh">
+        <div ref="workspaceRef" class="property-datasource-mapping-dialog__workspace" data-onboarding="associate-drag" @scroll="scheduleLineRefresh">
           <div class="property-datasource-mapping-dialog__panels">
             <aside class="property-datasource-mapping-dialog__source">
               <template v-for="table in displayTables" :key="manualTableKey(table.databaseId, table.table.id)">
@@ -228,7 +234,9 @@
           </div>
           <div class="mapping-pending__footer">
             <span>已关联 {{ mappedCount }} / {{ properties.length }}</span>
-            <el-button type="primary" :loading="loading" :disabled="!pendingOperations.length" @click="handleConfirm"> 提交 </el-button>
+            <el-button type="primary" data-onboarding="associate-submit" :loading="loading" :disabled="!pendingOperations.length" @click="handleConfirm">
+              提交
+            </el-button>
           </div>
         </aside>
       </div>

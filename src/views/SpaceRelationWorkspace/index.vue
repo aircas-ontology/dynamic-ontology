@@ -47,7 +47,7 @@
             <el-radio-button :value="1">1跳</el-radio-button>
             <el-radio-button :value="2">2跳</el-radio-button>
           </el-radio-group>
-          <el-button :icon="Plus" @click="openRelationCreate">添加</el-button>
+          <el-button :icon="Plus" data-onboarding="relation-create-open" @click="openRelationCreate">添加</el-button>
           <el-radio-group
             :model-value="relationViewMode"
             class="space-relation-workspace__view-switch"

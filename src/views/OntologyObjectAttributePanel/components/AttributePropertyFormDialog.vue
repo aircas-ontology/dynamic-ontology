@@ -8,7 +8,7 @@
     @update:model-value="$emit('update:visible', $event)"
   >
     <el-alert v-if="datasourceLocked" title="该属性已绑定数据源，仅支持修改属性名称和描述" type="info" show-icon :closable="false" />
-    <el-form ref="formRef" :model="draft" :rules="rules" label-position="top">
+    <el-form ref="formRef" :model="draft" :rules="rules" label-position="top" data-onboarding="attribute-create-required">
       <div class="ontology-object-attribute-panel__form-grid">
         <el-form-item label="属性名称" prop="displayName">
           <el-input v-model="draft.displayName" placeholder="例如：任务优先级" />
@@ -65,8 +65,8 @@
     </el-form>
     <p v-if="commandError" class="ontology-object-attribute-panel__dialog-error" role="alert">{{ commandError }}</p>
     <template #footer>
-      <el-button @click="$emit('update:visible', false)">取消</el-button>
-      <el-button :loading="saving" @click="confirmSave">保存</el-button>
+      <el-button data-onboarding="attribute-create-cancel" @click="$emit('update:visible', false)">取消</el-button>
+      <el-button :loading="saving" data-onboarding="attribute-create-save" @click="confirmSave">保存</el-button>
     </template>
   </el-dialog>
 </template>

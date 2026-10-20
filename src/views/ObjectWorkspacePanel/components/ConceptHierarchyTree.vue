@@ -9,7 +9,7 @@
       ></template>
     </el-input>
     <div v-if="tree.length === 0" class="concept-hierarchy__empty">
-      <el-button type="primary" @click="emit('create')">添加分类树</el-button>
+      <el-button type="primary" data-onboarding="object-tree-create" @click="emit('create')">添加分类树</el-button>
     </div>
     <el-tree
       v-else
@@ -43,7 +43,13 @@
             </span>
             <span class="concept-hierarchy__create-child-wrap" @click.stop>
               <el-tooltip content="新建子分类" placement="top" :show-after="200">
-                <button type="button" class="concept-hierarchy__create-child" aria-label="新建子分类" @click="openChildCategoryDialog(data)">
+                <button
+                  type="button"
+                  class="concept-hierarchy__create-child"
+                  data-onboarding="object-tree-create"
+                  aria-label="新建子分类"
+                  @click="openChildCategoryDialog(data)"
+                >
                   <el-icon><Plus /></el-icon>
                 </button>
               </el-tooltip>

@@ -17,7 +17,7 @@
     <p v-else-if="categoryTreeError" class="ontology-object-attribute-panel__tree-state is-error" role="alert">{{ categoryTreeError }}</p>
     <div v-else-if="categoryTreeEmpty" class="ontology-object-attribute-panel__tree-empty">
       <p class="ontology-object-attribute-panel__tree-state">暂无分类树数据</p>
-      <el-button @click="$emit('create-root')">创建分类</el-button>
+      <el-button data-onboarding="attribute-tree-create" @click="$emit('create-root')">创建分类</el-button>
     </div>
     <el-tree
       v-else
@@ -48,7 +48,13 @@
           </template>
           <span v-if="isCategoryNode(data)" class="ontology-object-attribute-panel__tree-actions" @click.stop>
             <el-tooltip content="添加子分类" placement="top" :show-after="200">
-              <button type="button" class="ontology-object-attribute-panel__tree-action" aria-label="添加子分类" @click="$emit('create-category', data)">
+              <button
+                type="button"
+                class="ontology-object-attribute-panel__tree-action"
+                data-onboarding="attribute-tree-create"
+                aria-label="添加子分类"
+                @click="$emit('create-category', data)"
+              >
                 <el-icon><Plus /></el-icon>
               </button>
             </el-tooltip>

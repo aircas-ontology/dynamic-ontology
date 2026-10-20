@@ -10,9 +10,9 @@
   >
     <el-radio-group v-if="!space" :model-value="mode" @update:model-value="setMode" :disabled="busy">
       <el-radio-button value="manual">手动创建</el-radio-button>
-      <el-radio-button value="import">导入创建</el-radio-button>
+      <el-radio-button value="import" data-onboarding="space-create-import-mode">导入创建</el-radio-button>
     </el-radio-group>
-    <el-form v-if="mode === 'manual'" class="space-form" label-position="top" :disabled="busy">
+    <el-form v-if="mode === 'manual'" class="space-form" data-onboarding="space-create-manual-form" label-position="top" :disabled="busy">
       <el-form-item label="API 名称（必填）" :error="apiNameError"
         ><el-input v-model="draft.apiName" ariaLabel="API 名称" :disabled="!!space" maxlength="63" placeholder="例如 example_space"
       /></el-form-item>
@@ -47,7 +47,7 @@
         </div>
       </el-form-item>
     </el-form>
-    <div v-else-if="mode === 'import'" class="space-form">
+    <div v-else-if="mode === 'import'" class="space-form" data-onboarding="space-create-import-file">
       <p>选择导入文件后点击确定。</p>
       <el-button link type="primary" :disabled="busy" @click="template">下载模板</el-button>
       <label class="space-form__file">选择文件<input type="file" :disabled="busy" @change="selectImportFile" /></label>
@@ -55,8 +55,8 @@
     </div>
     <p v-if="error || externalError" class="space-form__error" role="alert">{{ error || externalError }}</p>
     <template #footer>
-      <el-button :disabled="busy" @click="visible = false">取消</el-button>
-      <el-button type="primary" :loading="busy" @click="submit">确定</el-button>
+      <el-button :disabled="busy" data-onboarding="space-create-cancel" @click="visible = false">取消</el-button>
+      <el-button type="primary" data-onboarding="space-create-confirm" :loading="busy" @click="submit">确定</el-button>
     </template>
   </el-dialog>
 </template>
