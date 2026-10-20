@@ -26,3 +26,50 @@
 ]
 }
 }
+
+## 1 编辑函数算子外部API函数
+
+## 外部API函数详情参考格式
+
+{
+"code": 200,
+"message": "SUCCESS",
+"data": {
+"functionApi": "wb",
+"version": "1.0.0",
+"publishStatus": 0,
+"displayName": "外部测试",
+"description": "wb",
+"model": "OTHER",
+"type": "EXTERNAL",
+"language": "GROOVY",
+"ontologySpaceId": 1,
+"params": [
+{
+"paramId": 1334,
+"paramName": "result",
+"paramType": "OBJECT",
+"category": "OUTPUT",
+"paramOrder": 1,
+"description": "响应报文"
+},
+{
+"paramId": 1335,
+"paramName": "status",
+"paramType": "DOUBLE",
+"category": "OUTPUT",
+"paramOrder": 2,
+"description": "HTTP 状态码"
+}
+],
+"code": "{\"endpoint\":\"https://httpbin.org/post\",\"method\":\"POST\",\"authType\":\"none\",\"apiKeyHeader\":null,\"apiKey\":null,\"contentType\":\"application/json\",\"headers\":null,\"timeoutSeconds\":null,\"inputs\":[],\"outputs\":[]}",
+"apiConfig": {
+"endpoint": "https://httpbin.org/post",
+"method": "POST",
+"authType": "none",
+"contentType": "application/json",
+"inputs": [],
+"outputs": []
+}
+}
+}

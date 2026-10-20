@@ -1,4 +1,4 @@
-import type { CreateOntologyFunctionQueryConfig } from "./createOntologyFunctionType";
+import type { CreateOntologyFunctionApiConfig, CreateOntologyFunctionQueryConfig } from "./createOntologyFunctionType";
 
 /** 根据函数 API 查询详情的请求参数。 */
 export interface GetOntologyFunctionDetailParams {
@@ -45,4 +45,6 @@ export interface GetOntologyFunctionDetailData {
    */
   code: string;
   queryConfig?: CreateOntologyFunctionQueryConfig;
+  /** 外部 API 配置；与新建保存的 apiConfig 同结构。 */
+  apiConfig?: CreateOntologyFunctionApiConfig;
 }

@@ -6,9 +6,10 @@ export interface CompositeWorkflowParamBrief {
   fields?: CompositeWorkflowParamBrief[];
 }
 
-/** 函数节点入参绑定：手填或取自唯一前驱输出。 */
+/** 函数节点入参绑定：手填或取自唯一前驱输出。paramPath 为从根到叶子的参数名。 */
 export type CompositeWorkflowInputBinding =
-  { mode: "manual"; paramName: string; value: string } | { mode: "fromUpstream"; paramName: string; upstreamParamName: string };
+  | { mode: "manual"; paramName: string; paramPath: string[]; value: string }
+  | { mode: "fromUpstream"; paramName: string; paramPath: string[]; upstreamParamName: string };
 
 /** 循环节点配置。 */
 export interface CompositeWorkflowLoopConfig {

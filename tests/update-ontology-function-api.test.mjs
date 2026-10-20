@@ -24,7 +24,8 @@ test("update ontology function types expose the documented request fields", () =
   assert.match(source, /language\?: string/);
   assert.match(source, /code\?: string/);
   assert.match(source, /parameters\?: CreateOntologyFunctionParameter\[\]/);
-  assert.doesNotMatch(source, /basedOnOldVersion/);
+  assert.match(source, /basedOnOldVersion\?: boolean/);
+  assert.match(source, /apiConfig\?: CreateOntologyFunctionApiConfig/);
   assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
   assert.match(source, /export type UpdateOntologyFunctionData = null/);
@@ -79,8 +80,13 @@ test("function operator saveScriptOperator uses put when editing", () => {
   assert.match(saveScriptBlock, /updateOntologyFunctionInterface\(updateParams\)/);
   assert.match(saveScriptBlock, /createOntologyFunctionInterface\(params\)/);
   assert.match(saveScriptBlock, /脚本函数已更新/);
+  assert.match(saveScriptBlock, /keepScriptFormOpenAfterSave/);
+  assert.match(saveScriptBlock, /formVisible\.value = false/);
+  assert.match(saveScriptBlock, /editingOperator\.value = /);
+  assert.match(saveScriptBlock, /formDraft\.value = /);
   const formSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue");
-  assert.match(formSource, /:language-locked="Boolean\(operator\)"/);
+  assert.match(formSource, /:language-locked="Boolean\(operator\) || isSourceTemplateLocked"/);
+  assert.match(formSource, /scriptSessionGeneralLocked/);
   const ideSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptIdeDialog.vue");
   assert.match(ideSource, /languageLocked/);
   assert.match(ideSource, /:disabled="languageLocked"/);

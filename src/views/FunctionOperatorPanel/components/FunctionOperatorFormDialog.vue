@@ -106,12 +106,12 @@
           </el-form-item>
         </div>
         <el-form-item label="调用协议" prop="protocol">
-          <el-select v-model="form.protocol" placeholder="请选择调用协议">
+          <el-select v-model="form.protocol" placeholder="请选择调用协议" :disabled="scriptSessionGeneralLocked">
             <el-option v-for="item in PROTOCOL_OPTIONS" :key="item" :label="item" :value="item" />
           </el-select>
         </el-form-item>
         <el-form-item label="函数说明" prop="description">
-          <el-input v-model="form.description" type="textarea" :rows="3" maxlength="240" show-word-limit />
+          <el-input v-model="form.description" type="textarea" :rows="3" maxlength="240" show-word-limit :disabled="scriptSessionGeneralLocked" />
         </el-form-item>
       </section>
 
@@ -273,7 +273,7 @@
   </el-dialog>
 
   <FunctionOperatorScriptIdeDialog
-    v-model="scriptIdeVisible"
+    :model-value="scriptIdeVisible"
     v-model:code="scriptDraftCode"
     v-model:language="scriptDraftLanguage"
     v-model:test-params="scriptDraftTestParams"
@@ -287,6 +287,8 @@
     :saving="loading"
     v-model:parsed-input-parameters="scriptDraftInputParameters"
     v-model:parsed-output-parameters="scriptDraftOutputParameters"
+    @update:model-value="onScriptIdeVisibleChange"
+    @back="onScriptIdeBack"
     @save="emitSaveScript"
   />
 
@@ -319,7 +321,7 @@ import {
 } from "@/types";
 import { createEmptyBasicFilterDocument, stringifyBasicFilterConfig } from "@/utils/functionOperatorBasicFilter";
 import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToApi";
-import { mapOntologyFunctionDetailToDraft } from "@/utils/mapOntologyFunctionDetail";
+import { mapOntologyExternalApiConfigToForm, mapOntologyFunctionDetailToDraft } from "@/utils/mapOntologyFunctionDetail";
 
 import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBuilder.vue";
 import FunctionOperatorCompositeWorkflowDialog from "./FunctionOperatorCompositeWorkflowDialog.vue";
@@ -407,6 +409,8 @@ function emitSaveScript(params: CreateOntologyFunctionParams): void {
 const formRef = ref<FormInstance>();
 const sourceFunctionId = ref("");
 const sourceVersion = ref("");
+/** 新建脚本在 IDE 创建成功后，置灰上一步通用配置中的协议与说明。 */
+const scriptSessionGeneralLocked = ref(false);
 /** 脚本函数 Web-IDE 全屏弹框是否可见。 */
 const scriptIdeVisible = ref(false);
 /** 函数编排流程画布全屏弹框是否可见。 */
@@ -686,7 +690,38 @@ function toDraft(operator: FunctionOperator): FunctionOperatorDraft {
 const form = reactive<FunctionOperatorDraft>(createEmptyDraft());
 
 /**
- * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header 和参数行。
+ * @description 用详情 apiConfig 回填外部 API 表单。配置里的输入或输出为空时，改用详情 params。没有配置时清空这些字段，不改配置测试内容。
+ * @param draft 外部 API 草稿；其他类型不传。
+ */
+function applyExternalApiConfig(draft: FunctionOperatorDraft | undefined): void {
+  const formValues = mapOntologyExternalApiConfigToForm(draft?.externalApiConfig, {
+    inputs: draft?.inputParameters,
+    outputs: draft?.outputParameters,
+  });
+  if (!formValues) {
+    externalApiEndpoint.value = "";
+    externalApiMethod.value = "POST";
+    externalApiAuth.value = "none";
+    externalApiHeader.value = "";
+    externalApiInputParameters.value = [];
+    externalApiOutputParameters.value = [];
+    return;
+  }
+  externalApiEndpoint.value = formValues.endpoint;
+  externalApiMethod.value = formValues.method;
+  externalApiAuth.value = formValues.authType;
+  externalApiHeader.value = formValues.apiKey;
+  externalApiInputParameters.value = formValues.inputs.map((row) => ({
+    id: createExternalApiParameterId("input"),
+    ...row,
+  }));
+  externalApiOutputParameters.value = formValues.outputs.map((row) => ({
+    id: createExternalApiParameterId("output"),
+    ...row,
+  }));
+}
+/**
+ * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header、参数行和配置测试内容。
  */
 function resetExternalApiForm(): void {
   externalApiEndpoint.value = "";
@@ -891,14 +926,10 @@ async function submitDraft(): Promise<void> {
 }
 
 /**
- * @description 校验并提交新建外部 API 函数；编辑已有函数时不调用修改接口。
+ * @description 校验并提交外部 API 函数；新建与编辑使用同一套请求参数。
  */
 async function submitExternalApi(): Promise<void> {
   if (form.type !== "api") {
-    return;
-  }
-  if (props.operator) {
-    ElMessage.warning("外部 API 函数编辑本阶段暂未开放");
     return;
   }
   const valid = await formRef.value?.validate().catch(() => false);
@@ -962,9 +993,48 @@ async function goGeneralConfigNextStep(): Promise<void> {
 }
 
 watch(
+  () => props.operator,
+  (operator, previous) => {
+    if (props.modelValue && !previous && operator && scriptIdeVisible.value) {
+      scriptSessionGeneralLocked.value = true;
+    }
+  },
+);
+
+/** 返回上一步关闭 IDE 时，忽略随后的 update:modelValue，避免误关上层表单。 */
+let skipCloseFormOnScriptIdeHide = false;
+
+/**
+ * @description 脚本 IDE 通过右上角关闭时，一并关闭上层表单；返回上一步触发的关闭不处理表单。
+ * @param visible IDE 是否打开。
+ */
+function onScriptIdeVisibleChange(visible: boolean): void {
+  scriptIdeVisible.value = visible;
+  if (visible) {
+    return;
+  }
+  if (skipCloseFormOnScriptIdeHide) {
+    skipCloseFormOnScriptIdeHide = false;
+    return;
+  }
+  if (props.modelValue) {
+    emit("update:modelValue", false);
+  }
+}
+
+/**
+ * @description 脚本 IDE 返回上一步时只关闭 IDE，保留上层表单。
+ */
+function onScriptIdeBack(): void {
+  skipCloseFormOnScriptIdeHide = true;
+  scriptIdeVisible.value = false;
+}
+
+watch(
   () => [props.modelValue, props.operator, props.draft, props.spaceId] as const,
   ([visible]) => {
     if (!visible) {
+      scriptSessionGeneralLocked.value = false;
       scriptIdeVisible.value = false;
       compositeWorkflowVisible.value = false;
       resetScriptDraft();
@@ -985,6 +1055,7 @@ watch(
     } else {
       resetScriptDraft();
     }
+    applyExternalApiConfig(next.type === "api" ? next : undefined);
     resetSourceTemplateSelection();
     void loadSourceFunctionOptions();
   },

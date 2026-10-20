@@ -1,6 +1,6 @@
 /** 空间函数算子页面类型（本阶段以基础函数为主） */
 
-import type { CreateOntologyFunctionAggFunc } from "../apis/createOntologyFunctionType";
+import type { CreateOntologyFunctionAggFunc, CreateOntologyFunctionApiConfig } from "../apis/createOntologyFunctionType";
 
 export type FunctionOperatorType = "code" | "api" | "docker" | "composite" | "basic";
 export type FunctionOperatorBasicAction = "create" | "update" | "delete";
@@ -106,6 +106,8 @@ export interface FunctionOperator {
 
 export type FunctionOperatorDraft = Omit<FunctionOperator, "id" | "updatedAt" | "versions"> & {
   id?: string;
+  /** 外部 API 详情中的 apiConfig，用于编辑回显。 */
+  externalApiConfig?: CreateOntologyFunctionApiConfig;
 };
 
 export interface FunctionOperatorQuery {
