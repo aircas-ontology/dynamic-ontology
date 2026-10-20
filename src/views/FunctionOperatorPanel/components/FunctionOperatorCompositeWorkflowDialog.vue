@@ -82,7 +82,6 @@
 
       <section class="function-operator-composite-workflow__canvas-pane" aria-label="组合工作流画布">
         <div class="function-operator-composite-workflow__canvas-toolbar">
-          <p class="function-operator-composite-workflow__canvas-guide">左入右出连线；双击节点在右侧抽屉配置；条件分支菱形：右侧 true、下侧 false</p>
           <div class="function-operator-composite-workflow__canvas-tools">
             <el-button size="small" @click="autoLayoutCompositeWorkflowCanvas">自动布局</el-button>
             <el-button size="small" @click="fitCompositeWorkflowCanvas">适应画布</el-button>
@@ -622,16 +621,8 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
-}
-
-.function-operator-composite-workflow__canvas-guide {
-  margin: 0;
-  flex: 1 1 240px;
-  color: var(--aircas-color-text-secondary);
-  font-size: 12px;
-  line-height: 1.5;
 }
 
 .function-operator-composite-workflow__canvas-tools {

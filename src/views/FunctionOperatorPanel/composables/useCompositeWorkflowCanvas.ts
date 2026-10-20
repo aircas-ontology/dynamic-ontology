@@ -27,6 +27,7 @@ import {
 } from "../utils/compositeWorkflowGraph.ts";
 import { COMPOSITE_WORKFLOW_ANCHOR_SNAP_DISTANCE } from "../utils/compositeWorkflowAnchors.ts";
 import { createDefaultCompositeWorkflowBranchConfig, normalizeCompositeWorkflowBranchConfig } from "../utils/compositeWorkflowBranchDefaults.ts";
+import { layoutCompositeWorkflowNodesWithDagre } from "../utils/compositeWorkflowDagreLayout.ts";
 import { createDefaultCompositeWorkflowTransformConfig } from "../utils/compositeWorkflowTransformDefaults.ts";
 import { registerCompositeWorkflowNodes, resolveCompositeWorkflowLfNodeType } from "../utils/registerCompositeWorkflowNodes.ts";
 
@@ -704,21 +705,30 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
   }
 
   /**
-   * @description 简单网格排布当前节点（自动布局占位）。
+   * @description 使用 Dagre 按连线关系对当前画布做左右分层自动布局。
    */
-  function autoLayoutCompositeWorkflowCanvas(): void {
+  async function autoLayoutCompositeWorkflowCanvas(): Promise<void> {
     const lf = lfRef.value;
     if (!lf) {
       return;
     }
-    const raw = lf.getGraphRawData();
-    const nodes = raw.nodes ?? [];
-    const columns = Math.max(1, Math.ceil(Math.sqrt(nodes.length)));
-    nodes.forEach((node, index) => {
-      const col = index % columns;
-      const row = Math.floor(index / columns);
-      lf.graphModel.moveNode2Coordinate(node.id, 160 + col * 220, 120 + row * 120);
-    });
+    const graphNodes = readGraphNodes();
+    const graphEdges = readGraphEdges();
+    if (graphNodes.length === 0) {
+      return;
+    }
+    try {
+      const positions = await layoutCompositeWorkflowNodesWithDagre(
+        graphNodes.map((node) => ({ id: node.id, kind: node.kind })),
+        graphEdges.map((edge) => ({ sourceNodeId: edge.sourceNodeId, targetNodeId: edge.targetNodeId })),
+      );
+      for (const item of positions) {
+        lf.graphModel.moveNode2Coordinate(item.id, item.x, item.y);
+      }
+      fitCompositeWorkflowCanvas();
+    } catch {
+      ElMessage.warning("自动布局失败，请检查节点连线后重试");
+    }
   }
 
   /**

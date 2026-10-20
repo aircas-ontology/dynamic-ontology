@@ -77,7 +77,7 @@ export function registerCompositeWorkflowNodes(lf: LogicFlow): void {
         }
 
         /**
-         * @description 文本样式适配暗色面板。
+         * @description 文本样式适配暗色面板；autoWrap 使多行文案在节点内垂直居中。
          * @returns 文本样式。
          */
         getTextStyle() {
@@ -86,7 +86,7 @@ export function registerCompositeWorkflowNodes(lf: LogicFlow): void {
             ...style,
             color: "#e8eefc",
             fontSize: 12,
-            overflowMode: "ellipsis" as const,
+            overflowMode: "autoWrap" as const,
             lineHeight: 1.3,
             wrapPadding: "4px 8px",
           };
@@ -179,7 +179,7 @@ export function registerCompositeWorkflowNodes(lf: LogicFlow): void {
         }
 
         /**
-         * @description 文本样式适配暗色面板。
+         * @description 文本样式适配暗色面板；autoWrap 使多行文案在节点内垂直居中。
          * @returns 文本样式。
          */
         getTextStyle() {
@@ -188,7 +188,7 @@ export function registerCompositeWorkflowNodes(lf: LogicFlow): void {
             ...style,
             color: "#e8eefc",
             fontSize: 12,
-            overflowMode: "ellipsis" as const,
+            overflowMode: "autoWrap" as const,
             lineHeight: 1.3,
             wrapPadding: "4px 8px",
           };

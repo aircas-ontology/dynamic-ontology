@@ -43,6 +43,7 @@
     <template #footer>
       <div class="composite-transform-node-drawer__footer">
         <el-button :disabled="parsing" @click="emit('update:modelValue', false)">取消</el-button>
+        <el-button :loading="parsing" @click="onParseTransformScriptClick">解析</el-button>
         <el-button type="primary" :loading="parsing" @click="emitConfirm">确定</el-button>
       </div>
     </template>
@@ -113,7 +114,7 @@ const outputParameterTree = computed(() => mapCompositeParamBriefsToScriptParamT
 /**
  * @description 无 INPUT 时的提示文案。
  */
-const parseHint = computed(() => (inputs.value.length || outputs.value.length ? "该脚本无 INPUT 参数" : "点击确定将解析脚本并展示输入输出"));
+const parseHint = computed(() => (inputs.value.length || outputs.value.length ? "该脚本无 INPUT 参数" : "点击解析识别脚本输入输出"));
 
 /**
  * @description 从上下文回填表单与已解析参数。
@@ -264,6 +265,19 @@ async function parseTransformScript(): Promise<boolean> {
     if (requestId === parseGeneration) {
       parsing.value = false;
     }
+  }
+}
+
+/**
+ * @description 点击解析：调用解析接口刷新输入输出，不关闭抽屉。
+ */
+async function onParseTransformScriptClick(): Promise<void> {
+  if (parsing.value) {
+    return;
+  }
+  const parsed = await parseTransformScript();
+  if (parsed) {
+    ElMessage.success("解析成功");
   }
 }
 

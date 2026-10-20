@@ -65,6 +65,16 @@ test("transform dialog parses on confirm and uses script code editor", () => {
   assert.doesNotMatch(dialog, /outputKeys/);
 });
 
+test("transform dialog footer exposes parse button beside confirm", () => {
+  const dialog = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeTransformNodeDialog.vue");
+  assert.match(dialog, />\s*解析\s*</);
+  assert.match(dialog, /onParseTransformScriptClick/);
+  assert.match(dialog, /parseTransformScript/);
+  assert.match(dialog, /ElMessage\.success\(["']解析成功["']\)/);
+  assert.match(dialog, /点击解析识别脚本输入输出/);
+  assert.doesNotMatch(dialog, /点击确定将解析/);
+});
+
 test("canvas opens dedicated transform edit context", () => {
   const canvas = readSource("../src/views/FunctionOperatorPanel/composables/useCompositeWorkflowCanvas.ts");
   assert.match(canvas, /openTransformNodeEdit/);
