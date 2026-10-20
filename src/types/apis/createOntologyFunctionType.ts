@@ -59,7 +59,9 @@ export interface CreateOntologyFunctionApiConfig {
   method: "GET" | "POST" | "PUT" | "DELETE";
   authType: "none" | "apiKey";
   contentType: "application/json";
-  /** 认证 Header；仅 authType 为 apiKey 时提交。 */
+  /** 认证 Header 名；仅 authType 为 apiKey 时提交。 */
+  apiKeyHeader?: string;
+  /** 认证 Header 值；仅 authType 为 apiKey 时提交。 */
   apiKey?: string;
   inputs: CreateOntologyFunctionApiInput[];
   outputs: CreateOntologyFunctionApiOutput[];

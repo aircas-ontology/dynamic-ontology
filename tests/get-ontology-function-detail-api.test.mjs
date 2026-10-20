@@ -499,6 +499,7 @@ test("mapOntologyFunctionDetailToDraft keeps external apiConfig for form echo", 
     method: "PUT",
     authType: "apiKey",
     contentType: "application/json",
+    apiKeyHeader: " X-Api-Key ",
     apiKey: " secret ",
     inputs: [
       { name: "q", type: "string", required: true, location: "query", description: "关键词" },
@@ -532,6 +533,7 @@ test("mapOntologyFunctionDetailToDraft keeps external apiConfig for form echo", 
   assert.equal(formValues.endpoint, "https://service.example/run");
   assert.equal(formValues.method, "PUT");
   assert.equal(formValues.authType, "apiKey");
+  assert.equal(formValues.apiKeyHeader, "X-Api-Key");
   assert.equal(formValues.apiKey, "secret");
   assert.deepEqual(formValues.inputs, [{ name: "q", type: "string", description: "关键词", location: "Query", required: "yes" }]);
   assert.deepEqual(formValues.outputs, [{ name: "id", type: "number", description: "编号" }]);
@@ -540,10 +542,12 @@ test("mapOntologyFunctionDetailToDraft keeps external apiConfig for form echo", 
     method: "POST",
     authType: "none",
     contentType: "application/json",
+    apiKeyHeader: "ignored",
     apiKey: "ignored",
     inputs: [],
     outputs: [],
   });
+  assert.equal(noneValues.apiKeyHeader, "");
   assert.equal(noneValues.apiKey, "");
   assert.equal(mapOntologyExternalApiConfigToForm(undefined), null);
   const echoed = mapOntologyExternalApiConfigToForm(

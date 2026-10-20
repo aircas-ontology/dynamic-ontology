@@ -14,6 +14,7 @@ test("buildCreateOntologyExternalFunctionParams builds EXTERNAL payload without 
     endpoint: " https://httpbin.org/post ",
     method: "POST",
     authType: "none",
+    apiKeyHeader: "should-not-send",
     apiKey: "should-not-send",
     inputs: [
       { name: " title ", type: "string", description: " 标题 ", location: "Body", required: "yes" },
@@ -53,9 +54,10 @@ test("buildCreateOntologyExternalFunctionParams builds EXTERNAL payload without 
   assert.equal("queryConfig" in payload, false);
   assert.equal("parameters" in payload, false);
   assert.equal("apiKey" in payload.apiConfig, false);
+  assert.equal("apiKeyHeader" in payload.apiConfig, false);
 });
 
-test("buildCreateOntologyExternalFunctionParams sends trimmed apiKey for API Key auth", () => {
+test("buildCreateOntologyExternalFunctionParams sends trimmed apiKeyHeader and apiKey for API Key auth", () => {
   const payload = buildCreateOntologyExternalFunctionParams({
     functionApi: "echo",
     version: "1.0.0",
@@ -66,6 +68,7 @@ test("buildCreateOntologyExternalFunctionParams sends trimmed apiKey for API Key
     endpoint: "https://httpbin.org/post",
     method: "PUT",
     authType: "apiKey",
+    apiKeyHeader: " X-Api-Key ",
     apiKey: " secret-key ",
     inputs: [
       { name: "id", type: "number", description: "编号", location: "Path", required: "yes" },
@@ -76,6 +79,7 @@ test("buildCreateOntologyExternalFunctionParams sends trimmed apiKey for API Key
 
   assert.equal(payload.basedOnOldVersion, true);
   assert.equal(payload.apiConfig.authType, "apiKey");
+  assert.equal(payload.apiConfig.apiKeyHeader, "X-Api-Key");
   assert.equal(payload.apiConfig.apiKey, "secret-key");
   assert.deepEqual(payload.apiConfig.inputs, [
     { name: "id", type: "number", required: true, location: "path", description: "编号" },

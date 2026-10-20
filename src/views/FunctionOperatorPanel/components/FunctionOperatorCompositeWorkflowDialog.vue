@@ -82,7 +82,7 @@
 
       <section class="function-operator-composite-workflow__canvas-pane" aria-label="组合工作流画布">
         <div class="function-operator-composite-workflow__canvas-toolbar">
-          <p class="function-operator-composite-workflow__canvas-guide">左入右出连线；双击节点在右侧抽屉配置；分支右侧双出口为 true / false</p>
+          <p class="function-operator-composite-workflow__canvas-guide">左入右出连线；双击节点在右侧抽屉配置；条件分支菱形：右侧 true、下侧 false</p>
           <div class="function-operator-composite-workflow__canvas-tools">
             <el-button size="small" @click="autoLayoutCompositeWorkflowCanvas">自动布局</el-button>
             <el-button size="small" @click="fitCompositeWorkflowCanvas">适应画布</el-button>
@@ -110,6 +110,7 @@
 
     <FunctionOperatorCompositeFunctionNodeDialog v-model="functionNodeDialogVisible" :context="functionNodeEdit" @confirm="onFunctionNodeConfirm" />
     <FunctionOperatorCompositeLogicNodeDialog v-model="logicNodeDialogVisible" :context="logicNodeEdit" @confirm="applyLogicNodeEdit" />
+    <FunctionOperatorCompositeTransformNodeDialog v-model="transformNodeDialogVisible" :context="transformNodeEdit" @confirm="applyTransformNodeEdit" />
   </el-dialog>
 </template>
 
@@ -125,6 +126,7 @@ import { mapFunctionOperatorTypeFromApi } from "@/utils/mapFunctionOperatorTypeT
 import { useCompositeWorkflowCanvas } from "../composables/useCompositeWorkflowCanvas";
 import FunctionOperatorCompositeFunctionNodeDialog from "./FunctionOperatorCompositeFunctionNodeDialog.vue";
 import FunctionOperatorCompositeLogicNodeDialog from "./FunctionOperatorCompositeLogicNodeDialog.vue";
+import FunctionOperatorCompositeTransformNodeDialog from "./FunctionOperatorCompositeTransformNodeDialog.vue";
 
 /** 左侧逻辑节点展示项。 */
 interface CompositeWorkflowLogicItem {
@@ -166,6 +168,7 @@ const spaceFunctionLoading = ref(false);
 const spaceFunctionError = ref("");
 const functionNodeDialogVisible = ref(false);
 const logicNodeDialogVisible = ref(false);
+const transformNodeDialogVisible = ref(false);
 let spaceFunctionGeneration = 0;
 let disposed = false;
 
@@ -180,6 +183,7 @@ const {
   zoomPercent,
   functionNodeEdit,
   logicNodeEdit,
+  transformNodeEdit,
   initCompositeWorkflowCanvas,
   destroyCompositeWorkflowCanvas,
   startCompositeWorkflowNodeDrag,
@@ -192,6 +196,7 @@ const {
   saveCompositeWorkflowToConsole,
   applyFunctionNodeEdit,
   applyLogicNodeEdit,
+  applyTransformNodeEdit,
   clearNodeEditState,
 } = useCompositeWorkflowCanvas({
   displayName: toRef(props, "displayName"),
@@ -385,6 +390,10 @@ watch(logicNodeEdit, (value) => {
   logicNodeDialogVisible.value = Boolean(value);
 });
 
+watch(transformNodeEdit, (value) => {
+  transformNodeDialogVisible.value = Boolean(value);
+});
+
 watch(functionNodeDialogVisible, (visible) => {
   if (!visible) {
     clearNodeEditState();
@@ -392,6 +401,12 @@ watch(functionNodeDialogVisible, (visible) => {
 });
 
 watch(logicNodeDialogVisible, (visible) => {
+  if (!visible) {
+    clearNodeEditState();
+  }
+});
+
+watch(transformNodeDialogVisible, (visible) => {
   if (!visible) {
     clearNodeEditState();
   }
@@ -407,6 +422,7 @@ watch(
       clearNodeEditState();
       functionNodeDialogVisible.value = false;
       logicNodeDialogVisible.value = false;
+      transformNodeDialogVisible.value = false;
       return;
     }
     void loadSpaceFunctionList();

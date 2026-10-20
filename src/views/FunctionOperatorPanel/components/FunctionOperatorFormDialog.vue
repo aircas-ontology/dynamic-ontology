@@ -167,8 +167,12 @@
             </el-select>
           </el-form-item>
         </div>
-        <el-form-item label="认证 Header">
-          <el-input v-if="externalApiAuth === 'apiKey'" v-model="externalApiHeader" maxlength="500" clearable placeholder="请输入认证 Header" />
+        <el-form-item label="认证 Header key">
+          <el-input v-if="externalApiAuth === 'apiKey'" v-model="externalApiHeaderKey" maxlength="500" clearable placeholder="请输入认证 Header key" />
+          <el-input v-else model-value="仅作原型展示，正式密钥由后端托管" disabled />
+        </el-form-item>
+        <el-form-item label="认证 Header value">
+          <el-input v-if="externalApiAuth === 'apiKey'" v-model="externalApiHeader" maxlength="500" clearable placeholder="请输入认证 Header 值" />
           <el-input v-else model-value="仅作原型展示，正式密钥由后端托管" disabled />
         </el-form-item>
 
@@ -363,7 +367,9 @@ const externalApiEndpoint = ref("");
 const externalApiMethod = ref<(typeof EXTERNAL_API_METHOD_OPTIONS)[number]>("POST");
 /** 外部 API 认证方式，默认无认证。 */
 const externalApiAuth = ref<(typeof EXTERNAL_API_AUTH_OPTIONS)[number]["value"]>("none");
-/** API Key 模式下的认证 Header。 */
+/** API Key 模式下的认证 Header 名。 */
+const externalApiHeaderKey = ref("");
+/** API Key 模式下的认证 Header 值。 */
 const externalApiHeader = ref("");
 /** 配置测试左侧默认 JSON。 */
 const EXTERNAL_API_TEST_INPUT_DEFAULT = '{\n  "": ""\n}';
@@ -702,6 +708,7 @@ function applyExternalApiConfig(draft: FunctionOperatorDraft | undefined): void 
     externalApiEndpoint.value = "";
     externalApiMethod.value = "POST";
     externalApiAuth.value = "none";
+    externalApiHeaderKey.value = "";
     externalApiHeader.value = "";
     externalApiInputParameters.value = [];
     externalApiOutputParameters.value = [];
@@ -710,6 +717,7 @@ function applyExternalApiConfig(draft: FunctionOperatorDraft | undefined): void 
   externalApiEndpoint.value = formValues.endpoint;
   externalApiMethod.value = formValues.method;
   externalApiAuth.value = formValues.authType;
+  externalApiHeaderKey.value = formValues.apiKeyHeader;
   externalApiHeader.value = formValues.apiKey;
   externalApiInputParameters.value = formValues.inputs.map((row) => ({
     id: createExternalApiParameterId("input"),
@@ -727,6 +735,7 @@ function resetExternalApiForm(): void {
   externalApiEndpoint.value = "";
   externalApiMethod.value = "POST";
   externalApiAuth.value = "none";
+  externalApiHeaderKey.value = "";
   externalApiHeader.value = "";
   externalApiInputParameters.value = [];
   externalApiOutputParameters.value = [];
@@ -799,11 +808,12 @@ function removeExternalApiOutputParameter(index: number): void {
 }
 
 /**
- * @description 切换认证方式时清空 Header，避免无认证模式残留已填密钥。
+ * @description 切换认证方式时清空 Header key / 值，避免无认证模式残留已填内容。
  * @param value 当前认证方式。
  */
 function onExternalApiAuthChange(value: string | number | boolean | undefined): void {
   if (value !== "apiKey") {
+    externalApiHeaderKey.value = "";
     externalApiHeader.value = "";
   }
 }
@@ -940,8 +950,12 @@ async function submitExternalApi(): Promise<void> {
     ElMessage.warning("请填写接口地址");
     return;
   }
+  if (externalApiAuth.value === "apiKey" && !externalApiHeaderKey.value.trim()) {
+    ElMessage.warning("请填写认证 Header key");
+    return;
+  }
   if (externalApiAuth.value === "apiKey" && !externalApiHeader.value.trim()) {
-    ElMessage.warning("请填写认证 Header");
+    ElMessage.warning("请填写认证 Header 值");
     return;
   }
   emit(
@@ -956,6 +970,7 @@ async function submitExternalApi(): Promise<void> {
       endpoint: externalApiEndpoint.value,
       method: externalApiMethod.value,
       authType: externalApiAuth.value,
+      apiKeyHeader: externalApiHeaderKey.value,
       apiKey: externalApiHeader.value,
       inputs: externalApiInputParameters.value,
       outputs: externalApiOutputParameters.value,

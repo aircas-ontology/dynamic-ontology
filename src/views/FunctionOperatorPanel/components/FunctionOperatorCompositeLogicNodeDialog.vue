@@ -29,38 +29,26 @@
       </el-form-item>
     </el-form>
 
-    <el-form v-else-if="localKind === 'branch'" label-position="top">
-      <el-form-item label="左值来源">
-        <el-radio-group :model-value="branchLeftMode" @update:model-value="onBranchLeftModeChange">
-          <el-radio value="manual">手动</el-radio>
-          <el-radio value="fromUpstream">上游输出</el-radio>
-        </el-radio-group>
-      </el-form-item>
-      <el-form-item v-if="branchLeftMode === 'manual'" label="左值">
-        <el-input v-model="branchLeftManual" />
-      </el-form-item>
-      <el-form-item v-else label="上游输出名">
-        <el-input v-model="branchLeftUpstream" />
-      </el-form-item>
-      <el-form-item label="运算符">
-        <el-select v-model="branchOperator">
-          <el-option v-for="item in branchOperatorOptions" :key="item" :label="item" :value="item" />
+    <el-form v-else label-position="top">
+      <el-form-item label="上游输出">
+        <el-select
+          v-model="branchLeftPathKey"
+          filterable
+          clearable
+          :disabled="!hasUpstream"
+          :placeholder="hasUpstream ? '选择上游输出' : '无上游节点'"
+          style="width: 100%"
+        >
+          <el-option v-for="item in upstreamOutputOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-form-item>
-      <el-form-item v-if="branchOperator !== 'truthy'" label="右值">
-        <el-input v-model="branchRightManual" />
+      <el-form-item label="运算符">
+        <el-select v-model="branchOperator" style="width: 100%">
+          <el-option v-for="item in branchOperatorOptions" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
       </el-form-item>
-    </el-form>
-
-    <el-form v-else-if="localKind === 'transform'" label-position="top">
-      <el-form-item label="语言">
-        <el-input model-value="javascript" disabled />
-      </el-form-item>
-      <el-form-item label="转换脚本">
-        <el-input v-model="transformCode" type="textarea" :rows="10" />
-      </el-form-item>
-      <el-form-item label="输出字段（逗号分隔）">
-        <el-input v-model="transformOutputKeysText" placeholder="result" />
+      <el-form-item label="比较值">
+        <el-input v-model="branchRightManual" placeholder="填写具体数值或字符串" />
       </el-form-item>
     </el-form>
 
@@ -79,6 +67,7 @@ import { computed, ref, watch } from "vue";
 import type { CompositeWorkflowBranchOperator } from "@/types";
 
 import type { CompositeWorkflowLogicNodeEditContext } from "../composables/useCompositeWorkflowCanvas";
+import { compositeWorkflowParamPathKey, listCompositeWorkflowParamNodes, parseCompositeWorkflowParamPathKey } from "../utils/compositeWorkflowGraph.ts";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -90,30 +79,34 @@ const emit = defineEmits<{
   confirm: [context: CompositeWorkflowLogicNodeEditContext];
 }>();
 
-const localKind = ref<"loop" | "branch" | "transform">("loop");
+const localKind = ref<"loop" | "branch">("loop");
 const loopCollectionMode = ref<"manual" | "fromUpstream">("manual");
 const loopJsonText = ref("[]");
 const loopUpstreamParamName = ref("");
 const loopItemParamName = ref("item");
 const loopMaxIterations = ref(100);
-const branchLeftMode = ref<"manual" | "fromUpstream">("manual");
-const branchLeftManual = ref("");
-const branchLeftUpstream = ref("");
-const branchOperator = ref<CompositeWorkflowBranchOperator>("truthy");
+const branchLeftPathKey = ref("");
+const branchOperator = ref<CompositeWorkflowBranchOperator>("eq");
 const branchRightManual = ref("");
-const transformCode = ref("function transform(input) {\n  return { result: input };\n}\n");
-const transformOutputKeysText = ref("result");
+const hasUpstream = ref(false);
 
-const branchOperatorOptions: CompositeWorkflowBranchOperator[] = ["eq", "ne", "gt", "gte", "lt", "lte", "truthy"];
+const branchOperatorOptions: { value: CompositeWorkflowBranchOperator; label: string }[] = [
+  { value: "eq", label: "==" },
+  { value: "ne", label: "!==" },
+  { value: "gt", label: ">" },
+  { value: "gte", label: ">=" },
+  { value: "lt", label: "<" },
+  { value: "lte", label: "<=" },
+];
 
-const dialogTitle = computed(() => {
-  if (localKind.value === "loop") {
-    return "循环节点配置";
-  }
-  if (localKind.value === "branch") {
-    return "条件分支配置";
-  }
-  return "数据格式转换配置";
+const dialogTitle = computed(() => (localKind.value === "loop" ? "循环节点配置" : "条件分支配置"));
+
+const upstreamOutputOptions = computed(() => {
+  const outputs = props.context?.upstreamOutputs ?? [];
+  return listCompositeWorkflowParamNodes(outputs).map((node) => ({
+    value: compositeWorkflowParamPathKey(node.paramPath),
+    label: `${compositeWorkflowParamPathKey(node.paramPath)}（${node.brief.paramType}）`,
+  }));
 });
 
 /**
@@ -135,16 +128,6 @@ function onLoopMaxIterationsChange(value: number | undefined): void {
 }
 
 /**
- * @description 更新分支左值来源模式。
- * @param value 单选值。
- */
-function onBranchLeftModeChange(value: string | number | boolean | undefined): void {
-  if (value === "manual" || value === "fromUpstream") {
-    branchLeftMode.value = value;
-  }
-}
-
-/**
  * @description 从上下文回填表单。
  */
 function hydrateFromContext(): void {
@@ -153,6 +136,7 @@ function hydrateFromContext(): void {
     return;
   }
   localKind.value = context.kind;
+  hasUpstream.value = context.hasUpstream;
   if (context.kind === "loop") {
     const config = context.loopConfig;
     loopItemParamName.value = config?.itemParamName ?? "item";
@@ -166,22 +150,11 @@ function hydrateFromContext(): void {
     }
     return;
   }
-  if (context.kind === "branch") {
-    const config = context.branchConfig;
-    branchOperator.value = config?.operator ?? "truthy";
-    branchRightManual.value = config?.right?.value ?? "";
-    if (config?.left.mode === "fromUpstream") {
-      branchLeftMode.value = "fromUpstream";
-      branchLeftUpstream.value = config.left.upstreamParamName;
-    } else {
-      branchLeftMode.value = "manual";
-      branchLeftManual.value = config?.left.mode === "manual" ? config.left.value : "";
-    }
-    return;
-  }
-  const config = context.transformConfig;
-  transformCode.value = config?.code ?? transformCode.value;
-  transformOutputKeysText.value = (config?.outputKeys ?? ["result"]).join(",");
+  const config = context.branchConfig;
+  branchOperator.value = config?.operator ?? "eq";
+  branchRightManual.value = config?.right?.value ?? "";
+  const path = config?.left.upstreamParamPath ?? [];
+  branchLeftPathKey.value = path.length > 0 ? compositeWorkflowParamPathKey(path) : "";
 }
 
 /**
@@ -205,34 +178,26 @@ function emitConfirm(): void {
         itemParamName: loopItemParamName.value.trim() || "item",
         maxIterations: loopMaxIterations.value,
       },
+      hasUpstream: context.hasUpstream,
+      upstreamOutputs: context.upstreamOutputs,
     });
-  } else if (localKind.value === "branch") {
+  } else {
+    const upstreamParamPath = parseCompositeWorkflowParamPathKey(branchLeftPathKey.value);
     emit("confirm", {
       nodeId: context.nodeId,
       kind: "branch",
       branchConfig: {
         kind: "branch",
-        left:
-          branchLeftMode.value === "fromUpstream"
-            ? { mode: "fromUpstream", upstreamParamName: branchLeftUpstream.value.trim() }
-            : { mode: "manual", value: branchLeftManual.value },
+        left: {
+          mode: "fromUpstream",
+          upstreamParamName: upstreamParamPath[upstreamParamPath.length - 1] ?? "",
+          upstreamParamPath,
+        },
         operator: branchOperator.value,
-        right: branchOperator.value === "truthy" ? undefined : { mode: "manual", value: branchRightManual.value },
+        right: { mode: "manual", value: branchRightManual.value },
       },
-    });
-  } else {
-    emit("confirm", {
-      nodeId: context.nodeId,
-      kind: "transform",
-      transformConfig: {
-        kind: "transform",
-        language: "javascript",
-        code: transformCode.value,
-        outputKeys: transformOutputKeysText.value
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-      },
+      hasUpstream: context.hasUpstream,
+      upstreamOutputs: context.upstreamOutputs,
     });
   }
   emit("update:modelValue", false);

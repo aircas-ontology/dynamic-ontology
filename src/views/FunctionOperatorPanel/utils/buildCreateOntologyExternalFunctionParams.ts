@@ -34,7 +34,9 @@ export interface BuildCreateOntologyExternalFunctionParamsInput {
   endpoint: string;
   method: CreateOntologyFunctionApiConfig["method"];
   authType: CreateOntologyFunctionApiConfig["authType"];
-  /** 认证 Header；仅 authType 为 apiKey 时写入 apiConfig.apiKey。 */
+  /** 认证 Header 名；仅 authType 为 apiKey 时写入 apiConfig.apiKeyHeader。 */
+  apiKeyHeader: string;
+  /** 认证 Header 值；仅 authType 为 apiKey 时写入 apiConfig.apiKey。 */
   apiKey: string;
   inputs: BuildCreateOntologyExternalFunctionInputRow[];
   outputs: BuildCreateOntologyExternalFunctionOutputRow[];
@@ -92,7 +94,7 @@ function mapExternalApiOutputs(outputs: BuildCreateOntologyExternalFunctionOutpu
 }
 
 /**
- * @description 组装 EXTERNAL 外部 API 函数创建请求体；无认证时不提交 apiKey。
+ * @description 组装 EXTERNAL 外部 API 函数创建请求体；无认证时不提交 apiKeyHeader / apiKey。
  * @param input 通用配置、接口配置与参数行。
  * @returns 创建接口请求参数。
  */
@@ -106,6 +108,7 @@ export function buildCreateOntologyExternalFunctionParams(input: BuildCreateOnto
     outputs: mapExternalApiOutputs(input.outputs),
   };
   if (input.authType === "apiKey") {
+    apiConfig.apiKeyHeader = input.apiKeyHeader.trim();
     apiConfig.apiKey = input.apiKey.trim();
   }
   return {

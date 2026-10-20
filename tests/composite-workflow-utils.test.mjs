@@ -7,12 +7,20 @@ import {
   buildCompositeWorkflowSavePayload,
   buildDefaultCompositeWorkflowInputBindings,
   hasCompositeWorkflowIncomingEdge,
+  listCompositeWorkflowParamLeaves,
+  listCompositeWorkflowParamNodes,
   mapCompositeWorkflowDetailParamBriefs,
   repairCompositeWorkflowInputBindings,
+  resolveCompositeWorkflowNodeUpstreamOutputs,
+  resolveCompositeWorkflowParamsFromSnapshotAndDetail,
   validateCompositeWorkflowForSave,
   wouldCompositeWorkflowEdgeCreateCycle,
 } from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowGraph.ts";
 import { isCompositeWorkflowInputAnchorId, isCompositeWorkflowOutputAnchorId } from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowAnchors.ts";
+import {
+  createDefaultCompositeWorkflowBranchConfig,
+  normalizeCompositeWorkflowBranchConfig,
+} from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowBranchDefaults.ts";
 import {
   compareCompositeWorkflowParamTypes,
   normalizeCompositeWorkflowParamType,
@@ -49,7 +57,46 @@ test("hasCompositeWorkflowIncomingEdge respects exclude", () => {
   assert.equal(hasCompositeWorkflowIncomingEdge(edges, "a"), false);
 });
 
-test("buildDefaultCompositeWorkflowInputBindings prefers same-name upstream", () => {
+test("listCompositeWorkflowParamLeaves flattens nested OUTPUT to bottom leaves", () => {
+  const leaves = listCompositeWorkflowParamLeaves([
+    {
+      paramName: "Output",
+      paramType: "object",
+      fields: [
+        { paramName: "id", paramType: "number" },
+        { paramName: "name", paramType: "string" },
+      ],
+    },
+  ]);
+  assert.deepEqual(
+    leaves.map((item) => item.paramPath),
+    [
+      ["Output", "id"],
+      ["Output", "name"],
+    ],
+  );
+  assert.equal(leaves[0]?.brief.paramType, "number");
+});
+
+test("listCompositeWorkflowParamNodes includes every level of multiple roots", () => {
+  const nodes = listCompositeWorkflowParamNodes([
+    {
+      paramName: "Output",
+      paramType: "object",
+      fields: [
+        { paramName: "id", paramType: "number" },
+        { paramName: "name", paramType: "string" },
+      ],
+    },
+    { paramName: "flag", paramType: "boolean" },
+  ]);
+  assert.deepEqual(
+    nodes.map((item) => item.paramPath),
+    [["Output"], ["Output", "id"], ["Output", "name"], ["flag"]],
+  );
+});
+
+test("buildDefaultCompositeWorkflowInputBindings never auto-matches upstream", () => {
   const bindings = buildDefaultCompositeWorkflowInputBindings(
     [
       { paramName: "name", paramType: "string" },
@@ -59,12 +106,12 @@ test("buildDefaultCompositeWorkflowInputBindings prefers same-name upstream", ()
     true,
   );
   assert.deepEqual(bindings, [
-    { mode: "fromUpstream", paramName: "name", paramPath: ["name"], upstreamParamName: "name" },
+    { mode: "manual", paramName: "name", paramPath: ["name"], value: "" },
     { mode: "manual", paramName: "age", paramPath: ["age"], value: "" },
   ]);
 });
 
-test("buildDefaultCompositeWorkflowInputBindings binds only nested leaves", () => {
+test("buildDefaultCompositeWorkflowInputBindings binds only nested input leaves as manual", () => {
   const bindings = buildDefaultCompositeWorkflowInputBindings(
     [
       {
@@ -84,7 +131,7 @@ test("buildDefaultCompositeWorkflowInputBindings binds only nested leaves", () =
     true,
   );
   assert.deepEqual(bindings, [
-    { mode: "fromUpstream", paramName: "title", paramPath: ["input", "title"], upstreamParamName: "title" },
+    { mode: "manual", paramName: "title", paramPath: ["input", "title"], value: "" },
     { mode: "manual", paramName: "count", paramPath: ["input", "meta", "count"], value: "" },
   ]);
 });
@@ -92,8 +139,8 @@ test("buildDefaultCompositeWorkflowInputBindings binds only nested leaves", () =
 test("repairCompositeWorkflowInputBindings drops invalid upstream refs", () => {
   const repaired = repairCompositeWorkflowInputBindings(
     [
-      { mode: "fromUpstream", paramName: "a", upstreamParamName: "gone" },
-      { mode: "manual", paramName: "b", value: "1" },
+      { mode: "fromUpstream", paramName: "a", paramPath: ["a"], upstreamParamName: "gone", upstreamParamPath: ["gone"] },
+      { mode: "manual", paramName: "b", paramPath: ["b"], value: "1" },
     ],
     [{ paramName: "keep", paramType: "string" }],
     true,
@@ -102,6 +149,49 @@ test("repairCompositeWorkflowInputBindings drops invalid upstream refs", () => {
     { mode: "manual", paramName: "a", paramPath: ["a"], value: "" },
     { mode: "manual", paramName: "b", paramPath: ["b"], value: "1" },
   ]);
+});
+
+test("repair keeps explicit mid-level upstream object path", () => {
+  const repaired = repairCompositeWorkflowInputBindings(
+    [
+      {
+        mode: "fromUpstream",
+        paramName: "payload",
+        paramPath: ["payload"],
+        upstreamParamName: "Output",
+        upstreamParamPath: ["Output"],
+      },
+    ],
+    [
+      {
+        paramName: "Output",
+        paramType: "object",
+        fields: [{ paramName: "id", paramType: "number" }],
+      },
+    ],
+    true,
+  );
+  assert.deepEqual(repaired, [
+    {
+      mode: "fromUpstream",
+      paramName: "payload",
+      paramPath: ["payload"],
+      upstreamParamName: "Output",
+      upstreamParamPath: ["Output"],
+    },
+  ]);
+});
+
+test("input binding tree selects upstream by any node path without auto-fill", () => {
+  const tree = readFileSync(new URL("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeInputBindingTree.vue", import.meta.url), "utf8");
+  const dialog = readFileSync(
+    new URL("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeFunctionNodeDialog.vue", import.meta.url),
+    "utf8",
+  );
+  assert.match(tree, /请选择上游参数/);
+  assert.match(dialog, /listCompositeWorkflowParamNodes/);
+  assert.match(dialog, /upstreamParamPath: \[\]/);
+  assert.doesNotMatch(dialog, /upstreamOptions\.value\[0\]/);
 });
 
 test("validateCompositeWorkflowForSave blocks incompatible fromUpstream types", () => {
@@ -119,7 +209,7 @@ test("validateCompositeWorkflowForSave blocks incompatible fromUpstream types", 
         kind: "function",
         displayName: "下游",
         paramsSnapshot: { inputs: [{ paramName: "x", paramType: "number" }], outputs: [] },
-        inputBindings: [{ mode: "fromUpstream", paramName: "x", upstreamParamName: "x" }],
+        inputBindings: [{ mode: "fromUpstream", paramName: "x", paramPath: ["x"], upstreamParamName: "x", upstreamParamPath: ["x"] }],
       },
     ],
     [{ id: "e1", sourceNodeId: "u", targetNodeId: "d" }],
@@ -204,8 +294,84 @@ test("upstream outputs come from detail OUTPUT params even when INPUT values are
   assert.deepEqual(outputs, [{ paramName: "result", paramType: "object", fields: [{ paramName: "id", paramType: "string" }] }]);
   const canvas = readFileSync(new URL("../src/views/FunctionOperatorPanel/composables/useCompositeWorkflowCanvas.ts", import.meta.url), "utf8");
   assert.match(canvas, /ensureUpstreamFunctionOutputs/);
-  assert.match(canvas, /mapCompositeWorkflowDetailParamBriefs\(response\.data\.params \?\? \[\], "OUTPUT"\)/);
-  assert.match(canvas, /inputs: existing\?\.inputs \?\? \[\]/);
+  assert.match(canvas, /mapCompositeWorkflowDetailParamBriefs\(detailParams, "OUTPUT"\)/);
+  assert.match(canvas, /mapCompositeWorkflowDetailParamBriefs\(detailParams, "INPUT"\)/);
+});
+
+test("resolveCompositeWorkflowParamsFromSnapshotAndDetail fills INPUT when snapshot inputs are empty", () => {
+  const detailParams = [
+    {
+      paramName: "input",
+      paramType: "object",
+      category: "INPUT",
+      paramOrder: 1,
+      fields: [
+        { paramName: "id", paramType: "number", category: "INPUT", paramOrder: 1 },
+        { paramName: "name", paramType: "string", category: "INPUT", paramOrder: 2 },
+      ],
+    },
+    {
+      paramName: "output",
+      paramType: "object",
+      category: "OUTPUT",
+      paramOrder: 1,
+      fields: [
+        { paramName: "id", paramType: "number", category: "OUTPUT", paramOrder: 1 },
+        { paramName: "name", paramType: "string", category: "OUTPUT", paramOrder: 2 },
+      ],
+    },
+  ];
+  const resolved = resolveCompositeWorkflowParamsFromSnapshotAndDetail({ inputs: [], outputs: [{ paramName: "output", paramType: "object" }] }, detailParams);
+  assert.equal(resolved.inputs.length, 1);
+  assert.equal(resolved.inputs[0]?.paramName, "input");
+  assert.deepEqual(
+    resolved.inputs[0]?.fields?.map((item) => item.paramName),
+    ["id", "name"],
+  );
+  assert.deepEqual(resolved.outputs, [{ paramName: "output", paramType: "object" }]);
+});
+
+test("resolveCompositeWorkflowParamsFromSnapshotAndDetail keeps non-empty snapshot sides", () => {
+  const detailParams = [
+    { paramName: "fromDetail", paramType: "string", category: "INPUT", paramOrder: 1 },
+    { paramName: "outDetail", paramType: "string", category: "OUTPUT", paramOrder: 1 },
+  ];
+  const resolved = resolveCompositeWorkflowParamsFromSnapshotAndDetail(
+    {
+      inputs: [{ paramName: "fromSnapshot", paramType: "number" }],
+      outputs: [{ paramName: "outSnapshot", paramType: "boolean" }],
+    },
+    detailParams,
+  );
+  assert.deepEqual(resolved.inputs, [{ paramName: "fromSnapshot", paramType: "number" }]);
+  assert.deepEqual(resolved.outputs, [{ paramName: "outSnapshot", paramType: "boolean" }]);
+});
+
+test("no-upstream defaults to manual bindings for resolved INPUT leaves", () => {
+  const inputs = [
+    {
+      paramName: "input",
+      paramType: "object",
+      fields: [
+        { paramName: "id", paramType: "number" },
+        { paramName: "name", paramType: "string" },
+      ],
+    },
+  ];
+  const bindings = buildDefaultCompositeWorkflowInputBindings(inputs, [], false);
+  assert.deepEqual(bindings, [
+    { mode: "manual", paramName: "id", paramPath: ["input", "id"], value: "" },
+    { mode: "manual", paramName: "name", paramPath: ["input", "name"], value: "" },
+  ]);
+});
+
+test("function node dialog resolves params via snapshot-and-detail helper", () => {
+  const dialog = readFileSync(
+    new URL("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeFunctionNodeDialog.vue", import.meta.url),
+    "utf8",
+  );
+  assert.match(dialog, /resolveCompositeWorkflowParamsFromSnapshotAndDetail/);
+  assert.doesNotMatch(dialog, /Boolean\(context\.paramsSnapshot\?\.inputs\)/);
 });
 
 test("function node input binding tree shows nested leaves and types", () => {
@@ -235,4 +401,144 @@ test("buildCompositeWorkflowSavePayload assembles schemaVersion 1", () => {
   assert.equal(payload.schemaVersion, 1);
   assert.equal(payload.meta.functionApi, "comp.a");
   assert.equal(payload.nodes[0]?.kind, "loop");
+});
+
+test("createDefaultCompositeWorkflowBranchConfig uses fromUpstream left and eq", () => {
+  const config = createDefaultCompositeWorkflowBranchConfig();
+  assert.equal(config.kind, "branch");
+  assert.equal(config.left.mode, "fromUpstream");
+  assert.equal(config.left.upstreamParamName, "");
+  assert.deepEqual(config.left.upstreamParamPath, []);
+  assert.equal(config.operator, "eq");
+  assert.deepEqual(config.right, { mode: "manual", value: "" });
+});
+
+test("normalizeCompositeWorkflowBranchConfig migrates manual and truthy", () => {
+  assert.deepEqual(normalizeCompositeWorkflowBranchConfig(null), createDefaultCompositeWorkflowBranchConfig());
+  assert.deepEqual(normalizeCompositeWorkflowBranchConfig("bad"), createDefaultCompositeWorkflowBranchConfig());
+
+  const fromManual = normalizeCompositeWorkflowBranchConfig({
+    kind: "branch",
+    left: { mode: "manual", value: "1" },
+    operator: "truthy",
+  });
+  assert.equal(fromManual.left.mode, "fromUpstream");
+  assert.deepEqual(fromManual.left.upstreamParamPath, []);
+  assert.equal(fromManual.operator, "eq");
+  assert.deepEqual(fromManual.right, { mode: "manual", value: "" });
+
+  const fromNameOnly = normalizeCompositeWorkflowBranchConfig({
+    kind: "branch",
+    left: { mode: "fromUpstream", upstreamParamName: "score" },
+    operator: "gt",
+    right: { mode: "manual", value: "10" },
+  });
+  assert.deepEqual(fromNameOnly.left.upstreamParamPath, ["score"]);
+  assert.equal(fromNameOnly.operator, "gt");
+  assert.equal(fromNameOnly.right.value, "10");
+
+  const withPath = normalizeCompositeWorkflowBranchConfig({
+    kind: "branch",
+    left: { mode: "fromUpstream", upstreamParamName: "id", upstreamParamPath: ["result", "id"] },
+    operator: "ne",
+    right: { mode: "manual", value: "0" },
+  });
+  assert.deepEqual(withPath.left.upstreamParamPath, ["result", "id"]);
+  assert.equal(withPath.left.upstreamParamName, "id");
+  assert.equal(withPath.operator, "ne");
+});
+
+test("resolveCompositeWorkflowNodeUpstreamOutputs covers transform loop and missing source", () => {
+  const transformOutputs = resolveCompositeWorkflowNodeUpstreamOutputs(
+    [
+      {
+        id: "tr",
+        kind: "transform",
+        transformConfig: {
+          kind: "transform",
+          language: "typescript",
+          code: "",
+          paramsSnapshot: { inputs: [], outputs: [{ paramName: "out", paramType: "string" }] },
+        },
+      },
+      { id: "down", kind: "function" },
+    ],
+    [{ id: "e1", sourceNodeId: "tr", targetNodeId: "down" }],
+    "down",
+  );
+  assert.deepEqual(transformOutputs.upstreamOutputs, [{ paramName: "out", paramType: "string" }]);
+
+  const loopOutputs = resolveCompositeWorkflowNodeUpstreamOutputs(
+    [
+      { id: "lp", kind: "loop", loopConfig: { kind: "loop", collection: { mode: "manual", jsonText: "[]" }, itemParamName: "row" } },
+      { id: "down", kind: "function" },
+    ],
+    [{ id: "e1", sourceNodeId: "lp", targetNodeId: "down" }],
+    "down",
+  );
+  assert.deepEqual(loopOutputs.upstreamOutputs, [{ paramName: "row", paramType: "object" }]);
+
+  assert.deepEqual(resolveCompositeWorkflowNodeUpstreamOutputs([], [], "x"), { hasUpstream: false, upstreamOutputs: [] });
+  assert.deepEqual(resolveCompositeWorkflowNodeUpstreamOutputs([], [{ id: "e1", sourceNodeId: "gone", targetNodeId: "x" }], "x"), {
+    hasUpstream: true,
+    upstreamOutputs: [],
+  });
+});
+
+test("resolveCompositeWorkflowNodeUpstreamOutputs passes through branch predecessors", () => {
+  const outputs = [{ paramName: "result", paramType: "object", fields: [{ paramName: "id", paramType: "string" }] }];
+  const nodes = [
+    {
+      id: "fn",
+      kind: "function",
+      paramsSnapshot: { inputs: [], outputs },
+    },
+    {
+      id: "br",
+      kind: "branch",
+      branchConfig: createDefaultCompositeWorkflowBranchConfig(),
+    },
+    {
+      id: "down",
+      kind: "function",
+      paramsSnapshot: { inputs: [{ paramName: "x", paramType: "string" }], outputs: [] },
+    },
+  ];
+  const edges = [
+    { id: "e1", sourceNodeId: "fn", targetNodeId: "br" },
+    { id: "e2", sourceNodeId: "br", targetNodeId: "down", branch: "true" },
+  ];
+  const resolved = resolveCompositeWorkflowNodeUpstreamOutputs(nodes, edges, "down");
+  assert.equal(resolved.hasUpstream, true);
+  assert.deepEqual(resolved.upstreamOutputs, outputs);
+});
+
+test("branch node registers as diamond with right true and bottom false anchors", () => {
+  const source = readFileSync(new URL("../src/views/FunctionOperatorPanel/utils/registerCompositeWorkflowNodes.ts", import.meta.url), "utf8");
+  assert.match(source, /DiamondNode/);
+  assert.match(source, /DiamondNodeModel/);
+  assert.match(source, /\$\{id\}_out_true/);
+  assert.match(source, /\$\{id\}_out_false/);
+  assert.match(source, /y \+ ry|y\s*\+\s*ry/);
+  assert.match(source, /x \+ rx|x\s*\+\s*rx/);
+});
+
+test("branch diamond view labels true and false exits", () => {
+  const source = readFileSync(new URL("../src/views/FunctionOperatorPanel/utils/registerCompositeWorkflowNodes.ts", import.meta.url), "utf8");
+  assert.match(source, /class CompositeBranchDiamondView extends DiamondNode/);
+  assert.match(source, /getShape\s*\(/);
+  assert.match(source, /["']true["']/);
+  assert.match(source, /["']false["']/);
+  assert.match(source, /pointer-events["']?\s*:\s*["']none["']/);
+  assert.match(source, /view:\s*CompositeBranchDiamondView/);
+});
+
+test("branch logic dialog selects upstream output path without manual left", () => {
+  const dialog = readFileSync(new URL("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeLogicNodeDialog.vue", import.meta.url), "utf8");
+  assert.match(dialog, /listCompositeWorkflowParamNodes/);
+  assert.match(dialog, /compositeWorkflowParamPathKey/);
+  assert.doesNotMatch(dialog, /左值来源/);
+  assert.doesNotMatch(dialog, /truthy/);
+  assert.match(dialog, /==/);
+  assert.match(dialog, /!==/);
 });

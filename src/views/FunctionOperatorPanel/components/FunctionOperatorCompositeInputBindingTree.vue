@@ -14,7 +14,7 @@
         :upstream-options="upstreamOptions"
         @update-mode="(paramPath, mode) => emit('update-mode', paramPath, mode)"
         @update-value="(paramPath, value) => emit('update-value', paramPath, value)"
-        @update-upstream="(paramPath, upstreamParamName) => emit('update-upstream', paramPath, upstreamParamName)"
+        @update-upstream="(paramPath, upstreamPathKey) => emit('update-upstream', paramPath, upstreamPathKey)"
       />
       <div v-else class="composite-input-binding-tree__controls">
         <el-select
@@ -34,11 +34,11 @@
         <el-select
           v-else
           :model-value="upstreamValue(node.paramName)"
-          placeholder="选择上游输出"
+          placeholder="请选择上游参数"
           filterable
           @update:model-value="emit('update-upstream', childPath(node.paramName), String($event ?? ''))"
         >
-          <el-option v-for="item in upstreamOptions" :key="item.paramName" :label="`${item.paramName}（${item.paramType}）`" :value="item.paramName" />
+          <el-option v-for="item in upstreamOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </div>
     </li>
@@ -48,13 +48,24 @@
 <script setup lang="ts">
 import type { CompositeWorkflowInputBinding, CompositeWorkflowParamBrief } from "@/types";
 
+import { compositeWorkflowParamPathKey } from "../utils/compositeWorkflowGraph.ts";
+
+/** 上游 OUTPUT 叶子下拉项。 */
+export interface CompositeWorkflowUpstreamLeafOption {
+  value: string;
+  label: string;
+  paramPath: string[];
+  paramName: string;
+  paramType: string;
+}
+
 const props = defineProps<{
   nodes: CompositeWorkflowParamBrief[];
   /** 当前层之前的参数名。 */
   pathPrefix?: string[];
   bindings: CompositeWorkflowInputBinding[];
   hasUpstream: boolean;
-  upstreamOptions: CompositeWorkflowParamBrief[];
+  upstreamOptions: CompositeWorkflowUpstreamLeafOption[];
   /** 仅根列表提供。 */
   ariaLabel?: string;
 }>();
@@ -62,7 +73,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update-mode": [paramPath: string[], mode: string];
   "update-value": [paramPath: string[], value: string];
-  "update-upstream": [paramPath: string[], upstreamParamName: string];
+  "update-upstream": [paramPath: string[], upstreamPathKey: string];
 }>();
 
 /**
@@ -80,7 +91,7 @@ function childPath(paramName: string): string[] {
  * @returns 路径键。
  */
 function bindingPathKey(node: CompositeWorkflowParamBrief): string {
-  return childPath(node.paramName).join(".");
+  return compositeWorkflowParamPathKey(childPath(node.paramName));
 }
 
 /**
@@ -122,13 +133,19 @@ function manualValue(paramName: string): string {
 }
 
 /**
- * @description 读取叶子映射的上游输出名。
+ * @description 读取叶子映射的上游输出路径键。
  * @param paramName 叶子参数名。
- * @returns 上游参数名。
+ * @returns 上游路径键。
  */
 function upstreamValue(paramName: string): string {
   const binding = leafBinding(paramName);
-  return binding.mode === "fromUpstream" ? binding.upstreamParamName : "";
+  if (binding.mode !== "fromUpstream") {
+    return "";
+  }
+  if (Array.isArray(binding.upstreamParamPath) && binding.upstreamParamPath.length > 0) {
+    return compositeWorkflowParamPathKey(binding.upstreamParamPath);
+  }
+  return binding.upstreamParamName;
 }
 </script>
 
