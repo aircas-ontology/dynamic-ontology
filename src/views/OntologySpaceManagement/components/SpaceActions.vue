@@ -1,6 +1,14 @@
 <template>
   <div class="space-actions">
-    <el-button :class="{ 'aircas-button--gradient': gradient }" type="primary" plain size="small" :icon="Right" @click="$emit('action', 'enter', space)">
+    <el-button
+      data-onboarding="space-enter"
+      :class="{ 'aircas-button--gradient': gradient }"
+      type="primary"
+      plain
+      size="small"
+      :icon="Right"
+      @click="$emit('action', 'enter', space)"
+    >
       进入
     </el-button>
     <el-button type="primary" plain size="small" :icon="Edit" @click="$emit('action', 'edit', space)"> 编辑 </el-button>

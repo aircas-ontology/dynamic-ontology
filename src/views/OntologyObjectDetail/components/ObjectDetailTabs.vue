@@ -10,6 +10,7 @@
             'object-detail-tabs__item-active': tab.id === activeTab,
             'object-detail-tabs__item-object': tab.id === 'object',
           }"
+          :data-onboarding="`object-tab-${tab.id}`"
           role="tab"
           :aria-selected="tab.id === activeTab"
           @click="emit('update:activeTab', tab.id)"

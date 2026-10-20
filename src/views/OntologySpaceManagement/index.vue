@@ -1,6 +1,6 @@
 <template>
   <div class="ontology-space-management">
-    <button class="ontology-space-management__help" type="button" aria-label="打开新手引导" title="新手引导" @click="guideVisible = true">
+    <button class="ontology-space-management__help" type="button" aria-label="打开新手引导" title="新手引导" @click="openOnboardingGuide()">
       <el-icon><QuestionFilled /></el-icon>
     </button>
     <section class="ontology-space-management__overview">
@@ -42,17 +42,18 @@
       @confirm-delete="confirmDeleteOntologySpace"
       @confirm-export="confirmExportOntologySpace"
     />
-    <OnboardingGuideOverlay v-model="guideVisible" :steps="guideSteps" :start-id="isEmbedded ? 'create-object' : 'create-space'" />
+    <OnboardingGuideOverlay v-model="guideVisible" :steps="onboardingGuideSteps" :start-id="guideStartId" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { QuestionFilled } from "@element-plus/icons-vue";
-import type { OnboardingGuideStep } from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
+import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
 import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
 import AircasLoading from "@/components/AircasLoading.vue";
+import { CHAIN_CREATE_SPACE, ONBOARDING_GUIDE_EMBEDDED_ENTRY_IDS, ONBOARDING_GUIDE_ENTRY_IDS, ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
 import SectionToolbar from "./components/SectionToolbar.vue";
 import SpaceCollection from "./components/SpaceCollection.vue";
 import SpaceCommandDialogs from "./components/SpaceCommandDialogs.vue";
@@ -95,39 +96,17 @@ const {
 } = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace, loadOntologySpaces });
 const route = useRoute();
 const isEmbedded = computed(() => typeof route.query.userName === "string" && route.query.userName.trim().length > 0);
-const guideVisible = ref(false);
-const guideSteps = computed<OnboardingGuideStep[]>(() => {
-  const steps: OnboardingGuideStep[] = [
-    {
-      id: "create-space",
-      title: "创建空间",
-      description: "在这里创建一个对象空间。引导示例不会提交数据。",
-      targetSelector: ".welcome-panel__create",
-      mockLabel: "新建对象空间",
-    },
-    {
-      id: "create-object",
-      title: "进入空间，建对象",
-      description: "进入对象空间后，在对象工作区创建对象。引导示例不会提交数据。",
-      targetSelector: ".workspace-type-tabs__item",
-      mockLabel: "进入空间并创建对象",
-    },
-    {
-      id: "create-property",
-      title: "建属性",
-      description: "在对象详情的属性页签中维护对象属性。引导示例不会提交数据。",
-      targetSelector: ".object-detail-tabs__item",
-      mockLabel: "属性",
-    },
-    {
-      id: "create-relation",
-      title: "建关系",
-      description: "在关系工作区中维护对象关系。引导示例不会提交数据。",
-      targetSelector: ".workspace-type-tabs__item",
-      mockLabel: "关系",
-    },
-  ];
-  return isEmbedded.value ? steps.filter((step) => step.id !== "create-space") : steps;
+const onboardingGuideSteps = computed(() =>
+  isEmbedded.value ? ONBOARDING_GUIDE_STEPS.filter((step) => step.chain !== CHAIN_CREATE_SPACE) : ONBOARDING_GUIDE_STEPS,
+);
+const {
+  visible: guideVisible,
+  startId: guideStartId,
+  openOnboardingGuide,
+} = useOnboardingGuide({
+  steps: onboardingGuideSteps.value,
+  page: "space-list",
+  entryStepId: isEmbedded.value ? ONBOARDING_GUIDE_EMBEDDED_ENTRY_IDS["space-list"] : ONBOARDING_GUIDE_ENTRY_IDS["space-list"],
 });
 
 onMounted(() => {

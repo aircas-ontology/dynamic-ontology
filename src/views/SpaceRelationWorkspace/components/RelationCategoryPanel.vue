@@ -10,7 +10,7 @@
     </el-input>
     <div class="relation-category-panel__content">
       <div v-if="!displayTreeData.length" class="relation-category-panel__empty">
-        <el-button @click="emit('create', '')">添加关系分类</el-button>
+        <el-button data-onboarding="relation-tree-create" @click="emit('create', '')">添加关系分类</el-button>
       </div>
       <el-tree
         v-else-if="displayTreeData.length"
@@ -42,6 +42,7 @@
                   <button
                     type="button"
                     class="relation-category-panel__action relation-category-panel__action--add"
+                    data-onboarding="relation-tree-create"
                     aria-label="添加子分类"
                     @click="emit('create', data.id)"
                   >

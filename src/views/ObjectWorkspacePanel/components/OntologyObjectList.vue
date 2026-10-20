@@ -21,7 +21,7 @@
             <span class="ontology-object-list__visually-hidden">列表视图</span>
           </el-radio-button>
         </el-radio-group>
-        <el-button type="primary" @click="emit('action', 'create')"
+        <el-button type="primary" data-onboarding="object-create-open" @click="emit('action', 'create')"
           ><el-icon><Plus /></el-icon>新建对象</el-button
         >
       </div>
@@ -84,6 +84,7 @@
               <footer class="ontology-object-card__actions">
                 <el-button
                   class="ontology-object-action ontology-object-action--view aircas-button--gradient"
+                  data-onboarding="object-detail-open"
                   size="small"
                   @click="emit('action', 'view', item)"
                 >

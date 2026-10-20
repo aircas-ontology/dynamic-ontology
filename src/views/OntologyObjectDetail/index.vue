@@ -1,6 +1,6 @@
 <template>
   <div class="ontology-object-detail">
-    <button class="ontology-object-detail__help" type="button" aria-label="打开新手引导" title="新手引导" @click="guideVisible = true">
+    <button class="ontology-object-detail__help" type="button" aria-label="打开新手引导" title="新手引导" @click="openOnboardingGuide()">
       <el-icon><QuestionFilled /></el-icon>
     </button>
     <div class="ontology-object-detail__layout">
@@ -17,17 +17,18 @@
         </router-view>
       </div>
     </div>
-    <OnboardingGuideOverlay v-model="guideVisible" :steps="guideSteps" start-id="create-property" />
+    <OnboardingGuideOverlay v-model="guideVisible" :steps="onboardingGuideSteps" :start-id="guideStartId" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { QuestionFilled } from "@element-plus/icons-vue";
-import type { OnboardingGuideStep } from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
+import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
 import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
 import type { OntologyObjectDetailTab } from "@/types";
+import { ONBOARDING_GUIDE_ENTRY_IDS, ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
 import ObjectDetailTabs from "./components/ObjectDetailTabs.vue";
 import { useObjectDetailWorkspace } from "./composables/useObjectDetailWorkspace";
 import { useObjectResourceStatistic } from "./composables/useObjectResourceStatistic";
@@ -37,23 +38,16 @@ const router = useRouter();
 const route = useRoute();
 const { activeTab, availableTabs, objectName, objectId, spaceId, spaceName, spaceType } = useObjectDetailWorkspace();
 const { counts: objectCounts, loading: statisticLoading, error: statisticError, loadObjectResourceStatistic } = useObjectResourceStatistic(objectId);
-const guideVisible = ref(false);
-const guideSteps: OnboardingGuideStep[] = [
-  {
-    id: "create-property",
-    title: "建属性",
-    description: "在属性页签中维护对象属性。引导示例不会提交数据。",
-    targetSelector: ".object-detail-tabs__item",
-    mockLabel: "属性",
-  },
-  {
-    id: "create-relation",
-    title: "建关系",
-    description: "在关系页签中维护对象关系。引导示例不会提交数据。",
-    targetSelector: ".object-detail-tabs__item",
-    mockLabel: "关系",
-  },
-];
+const onboardingGuideSteps = ONBOARDING_GUIDE_STEPS;
+const {
+  visible: guideVisible,
+  startId: guideStartId,
+  openOnboardingGuide,
+} = useOnboardingGuide({
+  steps: onboardingGuideSteps,
+  page: "object-detail",
+  entryStepId: ONBOARDING_GUIDE_ENTRY_IDS["object-detail"],
+});
 
 /** @description 向当前子页面传递统计计数；对象概览同时传递加载和错误状态。 */
 const detailChildProps = computed(() => {

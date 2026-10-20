@@ -6,7 +6,7 @@
       type="button"
       aria-label="打开新手引导"
       title="新手引导"
-      @click="guideVisible = true"
+      @click="openOnboardingGuide()"
     >
       <el-icon><QuestionFilled /></el-icon>
     </button>
@@ -28,18 +28,19 @@
         <router-view />
       </div>
     </div>
-    <OnboardingGuideOverlay v-model="guideVisible" :steps="guideSteps" :start-id="activeGuideStep" />
+    <OnboardingGuideOverlay v-model="guideVisible" :steps="onboardingGuideSteps" :start-id="guideStartId" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { QuestionFilled } from "@element-plus/icons-vue";
-import type { OnboardingGuideStep } from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
+import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
 import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
 import AircasLoading from "@/components/AircasLoading.vue";
 import type { ManagementWorkspaceTab } from "@/types";
+import { ONBOARDING_GUIDE_ENTRY_IDS, ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
 import WorkspaceTypeTabs from "./components/WorkspaceTypeTabs.vue";
 import { useSpaceWorkspace } from "./composables/useSpaceWorkspace";
 import { routeNameForTab } from "./utils/workspaceTabs";
@@ -48,31 +49,16 @@ const router = useRouter();
 const route = useRoute();
 const { status, error, spaceId, activeTab, availableTabs, spaceDisplayName, load } = useSpaceWorkspace();
 const isWorkflowPage = computed(() => route.name === "OntologyLlmBuilder" || route.name === "OntologySubspaceCreate");
-const guideVisible = ref(false);
-const activeGuideStep = computed(() => (route.name === "OntologySpaceManagementDetailRelation" ? "create-relation" : "create-object"));
-const guideSteps: OnboardingGuideStep[] = [
-  {
-    id: "create-object",
-    title: "进入空间，建对象",
-    description: "在对象工作区创建对象。引导示例不会提交数据。",
-    targetSelector: ".workspace-type-tabs__item",
-    mockLabel: "对象",
-  },
-  {
-    id: "create-property",
-    title: "建属性",
-    description: "在对象详情的属性页签中维护对象属性。引导示例不会提交数据。",
-    targetSelector: ".object-detail-tabs__item",
-    mockLabel: "属性",
-  },
-  {
-    id: "create-relation",
-    title: "建关系",
-    description: "在当前空间的关系工作区维护对象关系。引导示例不会提交数据。",
-    targetSelector: ".space-relation-workspace__create",
-    mockLabel: "新建关系",
-  },
-];
+const onboardingGuideSteps = ONBOARDING_GUIDE_STEPS;
+const {
+  visible: guideVisible,
+  startId: guideStartId,
+  openOnboardingGuide,
+} = useOnboardingGuide({
+  steps: onboardingGuideSteps,
+  page: "space-manage",
+  entryStepId: ONBOARDING_GUIDE_ENTRY_IDS["space-manage"],
+});
 
 /** @description 切换空间内管理的工作区 tab，透传当前 query 以保持来源标识与空间名。 @param tab 目标 tab。 */
 function openTab(tab: ManagementWorkspaceTab) {

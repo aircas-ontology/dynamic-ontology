@@ -10,6 +10,7 @@
         type="button"
         class="ontology-object-create-dialog__mode"
         :class="{ 'is-active': createMode === mode.value }"
+        :data-onboarding="`object-create-mode-${mode.value}`"
         role="tab"
         :aria-selected="createMode === mode.value"
         @click="selectCreateMode(mode.value)"
@@ -20,7 +21,7 @@
       </button>
     </div>
 
-    <div v-if="createMode === 'manual'" class="ontology-object-create-dialog__panel">
+    <div v-if="createMode === 'manual'" class="ontology-object-create-dialog__panel" data-onboarding="object-create-required">
       <el-form label-position="top">
         <div class="ontology-object-create-dialog__grid">
           <el-form-item label="API 名称" required :error="apiNameError">
@@ -82,7 +83,7 @@
       </el-form>
     </div>
 
-    <div v-else-if="createMode === 'import'" class="ontology-object-create-dialog__panel">
+    <div v-else-if="createMode === 'import'" class="ontology-object-create-dialog__panel" data-onboarding="object-create-import-file">
       <div class="ontology-object-create-dialog__import-head">
         <p>上传符合字段结构的 JSON 文件，支持批量导入当前分类。</p>
         <el-button :disabled="submitting" @click="downloadTemplate">下载模板</el-button>
@@ -114,9 +115,11 @@
     <p v-if="validationError" class="ontology-object-create-dialog__error" role="alert">{{ validationError }}</p>
     <p v-if="error" class="ontology-object-create-dialog__error" role="alert">{{ error }}</p>
     <template #footer>
-      <el-button :disabled="submitting" @click="visible = false">取消</el-button>
+      <el-button :disabled="submitting" data-onboarding="object-create-cancel" @click="visible = false">取消</el-button>
       <el-button v-if="createMode === 'llm'" type="primary" :disabled="submitting" @click="emit('open-llm')">进入大模型构建</el-button>
-      <el-button v-else type="primary" :loading="submitting" @click="submitCreate">{{ editingItem ? "保存修改" : "确认创建" }}</el-button>
+      <el-button v-else type="primary" data-onboarding="object-create-confirm" :loading="submitting" @click="submitCreate">{{
+        editingItem ? "保存修改" : "确认创建"
+      }}</el-button>
     </template>
   </el-dialog>
 </template>
