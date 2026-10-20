@@ -29,6 +29,7 @@ import type {
 } from "@/types";
 import { buildOntologyFunctionQueryConfig, parseBasicFilterConfig } from "@/utils/functionOperatorBasicFilter";
 import { mapOntologyFunctionDetailToDraft, mapOntologyFunctionDetailToOperator } from "@/utils/mapOntologyFunctionDetail";
+import { mapScriptLanguageFromApi } from "@/utils/mapFunctionOperatorScriptLanguage";
 import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToApi";
 import { mapOntologyFunctionListItem } from "@/utils/mapOntologyFunctionList";
 import {
@@ -122,6 +123,8 @@ export function useFunctionOperatorWorkspace() {
   const editingOperator = ref<FunctionOperator | null>(null);
   const formDraft = ref<FunctionOperatorDraft | null>(null);
   const formVisible = ref(false);
+  /** 新建脚本在 IDE 中创建成功后保留弹框，同会话后续保存走 PUT 且不关闭。 */
+  const keepScriptFormOpenAfterSave = ref(false);
   const testVisible = ref(false);
   const testingOperator = ref<FunctionOperator | null>(null);
   const testInput = ref("{}");
@@ -373,6 +376,7 @@ export function useFunctionOperatorWorkspace() {
    * @description 打开新建弹框。
    */
   function openCreate(): void {
+    keepScriptFormOpenAfterSave.value = false;
     editingOperator.value = null;
     formDraft.value = null;
     formVisible.value = true;
@@ -397,6 +401,7 @@ export function useFunctionOperatorWorkspace() {
       ElMessage.error("缺少函数版本，无法编辑");
       return;
     }
+    keepScriptFormOpenAfterSave.value = false;
     editingOperator.value = operator;
     formDraft.value = null;
     formVisible.value = true;
@@ -420,7 +425,76 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 保存脚本函数（CUSTOMIZE）；无 editingOperator 走创建 POST，有则走修改 PUT。
+   * @description 由脚本创建/修改请求体组装编辑态算子，供创建成功后置灰上一步表单并走后续 PUT。
+   * @param params 保存请求体。
+   * @returns 编辑态 FunctionOperator。
+   */
+  function buildScriptOperatorFromSaveParams(params: CreateOntologyFunctionParams): FunctionOperator {
+    const language = mapScriptLanguageFromApi(params.language);
+    const code = typeof params.code === "string" ? params.code : "";
+    return {
+      id: params.functionApi.trim(),
+      spaceId: params.ontologySpaceId,
+      name: params.displayName.trim(),
+      functionApi: params.functionApi.trim(),
+      type: "code",
+      apiModelType: "CUSTOMIZE",
+      protocol: "HTTP",
+      version: params.version.trim(),
+      description: params.description.trim(),
+      createdBy: "",
+      createdAt: "",
+      updatedAt: "",
+      status: "draft",
+      category: "",
+      inputParameters: [],
+      outputParameters: [],
+      timeout: 0,
+      retryCount: 0,
+      retryInterval: 0,
+      definition: { kind: "code", language, code },
+      dependencies: [],
+      testStatus: "untested",
+      testedAt: "",
+      versions: [],
+    };
+  }
+
+  /**
+   * @description 由脚本保存请求体组装表单草稿，避免创建成功后回填冲掉 IDE 中的代码。
+   * @param params 保存请求体。
+   * @returns 表单草稿。
+   */
+  function buildScriptDraftFromSaveParams(params: CreateOntologyFunctionParams): FunctionOperatorDraft {
+    const operator = buildScriptOperatorFromSaveParams(params);
+    return {
+      id: operator.id,
+      spaceId: operator.spaceId,
+      name: operator.name,
+      functionApi: operator.functionApi,
+      type: operator.type,
+      apiModelType: operator.apiModelType,
+      protocol: operator.protocol,
+      version: operator.version,
+      description: operator.description,
+      createdBy: operator.createdBy,
+      createdAt: operator.createdAt,
+      status: operator.status,
+      category: operator.category,
+      inputParameters: [],
+      outputParameters: [],
+      timeout: operator.timeout,
+      retryCount: operator.retryCount,
+      retryInterval: operator.retryInterval,
+      definition: { ...operator.definition },
+      dependencies: [],
+      testStatus: operator.testStatus,
+      testedAt: operator.testedAt,
+    };
+  }
+
+  /**
+   * @description 保存脚本函数（CUSTOMIZE）；无 editingOperator 走创建 POST，有则走修改 PUT。新建成功后保留弹框并切换为编辑态。
    * @param params 创建/修改请求体（同形）。
    */
   async function saveScriptOperator(params: CreateOntologyFunctionParams): Promise<void> {
@@ -440,16 +514,26 @@ export function useFunctionOperatorWorkspace() {
           throw new Error(response.message || "脚本函数保存失败");
         }
         ElMessage.success("脚本函数已更新");
+        if (keepScriptFormOpenAfterSave.value) {
+          const nextOperator = buildScriptOperatorFromSaveParams(params);
+          editingOperator.value = nextOperator;
+          formDraft.value = buildScriptDraftFromSaveParams(params);
+        } else {
+          formVisible.value = false;
+          formDraft.value = null;
+          editingOperator.value = null;
+        }
       } else {
         const response = await createOntologyFunctionInterface(params);
         if (response.code !== 200) {
           throw new Error(response.message || "脚本函数创建失败");
         }
         ElMessage.success("脚本函数草稿已保存");
+        keepScriptFormOpenAfterSave.value = true;
+        const nextOperator = buildScriptOperatorFromSaveParams(params);
+        editingOperator.value = nextOperator;
+        formDraft.value = buildScriptDraftFromSaveParams(params);
       }
-      formVisible.value = false;
-      formDraft.value = null;
-      editingOperator.value = null;
       await loadOperators();
     } catch (error) {
       ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "脚本函数保存失败");
@@ -1000,6 +1084,12 @@ export function useFunctionOperatorWorkspace() {
       }
     }
   }
+
+  watch(formVisible, (visible) => {
+    if (!visible) {
+      keepScriptFormOpenAfterSave.value = false;
+    }
+  });
 
   watch(detailVisible, (visible) => {
     if (!visible) {

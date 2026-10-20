@@ -106,12 +106,12 @@
           </el-form-item>
         </div>
         <el-form-item label="调用协议" prop="protocol">
-          <el-select v-model="form.protocol" placeholder="请选择调用协议">
+          <el-select v-model="form.protocol" placeholder="请选择调用协议" :disabled="scriptSessionGeneralLocked">
             <el-option v-for="item in PROTOCOL_OPTIONS" :key="item" :label="item" :value="item" />
           </el-select>
         </el-form-item>
         <el-form-item label="函数说明" prop="description">
-          <el-input v-model="form.description" type="textarea" :rows="3" maxlength="240" show-word-limit />
+          <el-input v-model="form.description" type="textarea" :rows="3" maxlength="240" show-word-limit :disabled="scriptSessionGeneralLocked" />
         </el-form-item>
       </section>
 
@@ -273,7 +273,7 @@
   </el-dialog>
 
   <FunctionOperatorScriptIdeDialog
-    v-model="scriptIdeVisible"
+    :model-value="scriptIdeVisible"
     v-model:code="scriptDraftCode"
     v-model:language="scriptDraftLanguage"
     v-model:test-params="scriptDraftTestParams"
@@ -287,6 +287,8 @@
     :saving="loading"
     v-model:parsed-input-parameters="scriptDraftInputParameters"
     v-model:parsed-output-parameters="scriptDraftOutputParameters"
+    @update:model-value="onScriptIdeVisibleChange"
+    @back="onScriptIdeBack"
     @save="emitSaveScript"
   />
 
@@ -407,6 +409,8 @@ function emitSaveScript(params: CreateOntologyFunctionParams): void {
 const formRef = ref<FormInstance>();
 const sourceFunctionId = ref("");
 const sourceVersion = ref("");
+/** 新建脚本在 IDE 创建成功后，置灰上一步通用配置中的协议与说明。 */
+const scriptSessionGeneralLocked = ref(false);
 /** 脚本函数 Web-IDE 全屏弹框是否可见。 */
 const scriptIdeVisible = ref(false);
 /** 函数编排流程画布全屏弹框是否可见。 */
@@ -989,9 +993,48 @@ async function goGeneralConfigNextStep(): Promise<void> {
 }
 
 watch(
+  () => props.operator,
+  (operator, previous) => {
+    if (props.modelValue && !previous && operator && scriptIdeVisible.value) {
+      scriptSessionGeneralLocked.value = true;
+    }
+  },
+);
+
+/** 返回上一步关闭 IDE 时，忽略随后的 update:modelValue，避免误关上层表单。 */
+let skipCloseFormOnScriptIdeHide = false;
+
+/**
+ * @description 脚本 IDE 通过右上角关闭时，一并关闭上层表单；返回上一步触发的关闭不处理表单。
+ * @param visible IDE 是否打开。
+ */
+function onScriptIdeVisibleChange(visible: boolean): void {
+  scriptIdeVisible.value = visible;
+  if (visible) {
+    return;
+  }
+  if (skipCloseFormOnScriptIdeHide) {
+    skipCloseFormOnScriptIdeHide = false;
+    return;
+  }
+  if (props.modelValue) {
+    emit("update:modelValue", false);
+  }
+}
+
+/**
+ * @description 脚本 IDE 返回上一步时只关闭 IDE，保留上层表单。
+ */
+function onScriptIdeBack(): void {
+  skipCloseFormOnScriptIdeHide = true;
+  scriptIdeVisible.value = false;
+}
+
+watch(
   () => [props.modelValue, props.operator, props.draft, props.spaceId] as const,
   ([visible]) => {
     if (!visible) {
+      scriptSessionGeneralLocked.value = false;
       scriptIdeVisible.value = false;
       compositeWorkflowVisible.value = false;
       resetScriptDraft();

@@ -16,7 +16,7 @@
         <div class="function-operator-script-ide__actions">
           <el-button :disabled="saving" @click="goBackPreviousStep">返回上一步</el-button>
           <el-button :disabled="saving" @click="notifyScriptFeatureUnavailable('测试')">测试</el-button>
-          <el-button type="primary" :loading="saving" @click="submitScriptFunctionCreate">保存</el-button>
+          <el-button type="primary" :loading="saving || parsing" @click="submitScriptFunctionCreate">保存</el-button>
         </div>
       </div>
     </template>
@@ -40,9 +40,6 @@
       </aside>
 
       <section class="function-operator-script-ide__editor-pane" aria-label="脚本代码编辑区">
-        <el-button class="function-operator-script-ide__parse" size="small" :loading="parsing" :disabled="parseLocked" @click="parseScriptParameters">
-          解析
-        </el-button>
         <FunctionOperatorScriptCodeEditor :model-value="code" :language="language" @update:model-value="emit('update:code', $event)" />
       </section>
 
@@ -117,6 +114,8 @@ const emit = defineEmits<{
   "update:parsedInputParameters": [value: ParseOntologyFunctionParamItem[]];
   "update:parsedOutputParameters": [value: ParseOntologyFunctionParamItem[]];
   save: [params: CreateOntologyFunctionParams];
+  /** 仅返回上一步通用配置，不关闭上层表单。 */
+  back: [];
 }>();
 
 const lastStarterLanguage = ref<FunctionOperatorScriptLanguage>(props.language);
@@ -162,10 +161,10 @@ function applyIncomingParsedParameters(): void {
 }
 
 /**
- * @description 关闭 IDE 并返回上一步通用配置表单。
+ * @description 返回上一步通用配置表单，不关闭上层新建/编辑弹框。
  */
 function goBackPreviousStep(): void {
-  emit("update:modelValue", false);
+  emit("back");
 }
 
 /**
@@ -178,15 +177,16 @@ function notifyScriptFeatureUnavailable(actionLabel: string): void {
 
 /**
  * @description 调用解析接口，并用返回的参数树刷新左侧输入、输出展示。
+ * @returns 解析是否成功。
  */
-async function parseScriptParameters(): Promise<void> {
+async function parseScriptParameters(): Promise<boolean> {
   if (parsing.value) {
-    return;
+    return false;
   }
   const source = props.code;
   if (!source.trim()) {
     ElMessage.warning("请输入脚本代码");
-    return;
+    return false;
   }
   const requestId = ++parseGeneration;
   parsing.value = true;
@@ -196,7 +196,7 @@ async function parseScriptParameters(): Promise<void> {
       code: source,
     });
     if (requestId !== parseGeneration) {
-      return;
+      return false;
     }
     if (response.code !== 200 || !response.data?.parsed) {
       throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "脚本解析失败");
@@ -209,14 +209,15 @@ async function parseScriptParameters(): Promise<void> {
     parseLocked.value = true;
     emit("update:parsedInputParameters", split.inputParameters);
     emit("update:parsedOutputParameters", split.outputParameters);
-    ElMessage.success("解析完成");
+    return true;
   } catch (error) {
     if (requestId !== parseGeneration) {
-      return;
+      return false;
     }
     clearParsedScriptParameters();
     const message = error instanceof Error && error.message.trim() ? error.message : "脚本解析失败";
     ElMessage.error(message);
+    return false;
   } finally {
     if (requestId === parseGeneration) {
       parsing.value = false;
@@ -225,19 +226,15 @@ async function parseScriptParameters(): Promise<void> {
 }
 
 /**
- * @description 校验并组装创建请求，向父组件提交脚本函数保存。
+ * @description 先解析脚本参数，再组装创建或修改请求并提交保存。
  */
-function submitScriptFunctionCreate(): void {
-  if (props.saving) {
+async function submitScriptFunctionCreate(): Promise<void> {
+  if (props.saving || parsing.value) {
     return;
   }
   const code = props.code;
   if (!code.trim()) {
     ElMessage.warning("请输入脚本代码");
-    return;
-  }
-  if (!parseLocked.value) {
-    ElMessage.warning("请先执行解析");
     return;
   }
   if (props.language === "typescript" && !/\bexport\s+(?:async\s+)?function\b/.test(code)) {
@@ -250,6 +247,10 @@ function submitScriptFunctionCreate(): void {
   }
   if (!props.spaceId) {
     ElMessage.error("无效的空间标识，无法保存");
+    return;
+  }
+  const parsed = await parseScriptParameters();
+  if (!parsed) {
     return;
   }
   const params = buildCreateOntologyScriptFunctionParams({
@@ -368,13 +369,6 @@ watch(
   min-width: 0;
   min-height: 0;
   height: 100%;
-}
-
-.function-operator-script-ide__parse {
-  position: absolute;
-  top: 8px;
-  right: 16px;
-  z-index: 2;
 }
 
 .function-operator-script-ide__field {
