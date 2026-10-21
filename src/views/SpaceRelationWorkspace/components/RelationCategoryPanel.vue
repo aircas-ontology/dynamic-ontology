@@ -378,7 +378,8 @@ watch(
   transition: opacity 0.15s ease;
 }
 .relation-category-panel :deep(.el-tree-node__content:hover) .relation-category-panel__actions,
-.relation-category-panel :deep(.el-tree-node__content:focus-within) .relation-category-panel__actions {
+.relation-category-panel :deep(.el-tree-node__content:focus-within) .relation-category-panel__actions,
+.relation-category-panel__actions:has(.onboarding-guide__target-revealed) {
   opacity: 1;
   pointer-events: auto;
 }

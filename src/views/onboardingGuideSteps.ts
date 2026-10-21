@@ -3,6 +3,9 @@ import type { OnboardingGuidePageId, OnboardingGuideStep } from "@/composables/s
 /** 大步骤（chain）名称：新建对象空间。 */
 export const CHAIN_CREATE_SPACE = "新建对象空间";
 
+/** 大步骤（chain）名称：新建主题。 */
+export const CHAIN_CREATE_THEME = "新建主题";
+
 /**
  * 六步流程式新手引导的统一步骤配置。
  *
@@ -472,9 +475,160 @@ export const ONBOARDING_GUIDE_STEPS: readonly OnboardingGuideStep[] = [
   },
 ];
 
+/** 主题引导中对象空间链「新建对象」对应的链名。 */
+const THEME_OBJECT_CHAIN_NAME = "创建对象";
+
+/**
+ * 主题模块六链新手引导的统一步骤配置。
+ *
+ * 链 1「新建主题」覆盖主题列表页（新建主题弹窗）与主题创建页（选对象、实例、属性、关系、创建）；
+ * 链 2「创建对象」从主题列表页「进入」按钮进入主题内管理页，后续小步复用对象空间配置；
+ * 链 3-6 与对象空间一致，直接复用 ONBOARDING_GUIDE_STEPS 中 space-manage / object-detail 页步骤，
+ * 仅将链名「新建对象」映射为「创建对象」。跨页续接机制与对象空间引导保持一致。
+ */
+export const THEME_ONBOARDING_GUIDE_STEPS: readonly OnboardingGuideStep[] = [
+  // ── 步骤1 新建主题（主题列表页 → 主题创建页） ──────────────────────────────────
+  {
+    id: "theme-create-open",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-list",
+    title: "新建主题",
+    description: "点击左上角「新建主题」按钮，打开创建弹窗。",
+    targetSelector: ".welcome-panel__create",
+    advanceOnTargetClick: true,
+    exitClickSelector: "[data-onboarding='theme-create-cancel']",
+    mockLabel: "新建主题",
+  },
+  {
+    id: "theme-create-select-space",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-list",
+    title: "选择对象空间",
+    description: "在弹窗的「选择对象空间」下拉中选择主题要基于的对象空间（默认已选中第一条）。",
+    targetSelector: "[data-onboarding='theme-create-space-select']",
+    enterTriggerSelector: ".welcome-panel__create",
+    exitClickSelector: "[data-onboarding='theme-create-cancel']",
+    mockLabel: "选择对象空间",
+  },
+  {
+    id: "theme-create-confirm",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-list",
+    title: "确认并进入创建页",
+    description: "点击「确认」进入主题创建页面；页面跳转后引导会自动继续。",
+    targetSelector: "[data-onboarding='theme-create-confirm']",
+    enterTriggerSelector: ".welcome-panel__create",
+    advanceOnTargetClick: true,
+    exitClickSelector: "[data-onboarding='theme-create-cancel']",
+    mockLabel: "确认",
+  },
+  {
+    id: "theme-subspace-tree",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-create",
+    title: "选择对象",
+    description: "在左侧分类体系树中勾选两个需要纳入主题的对象。",
+    targetSelector: "[data-onboarding='subspace-create-tree']",
+    mockLabel: "分类体系树",
+  },
+  {
+    id: "theme-subspace-cards",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-create",
+    title: "确认已选对象",
+    description: "中间内容区展示已勾选的对象卡片，可在此核对选择结果。",
+    targetSelector: "[data-onboarding='subspace-create-selected-cards']",
+    mockLabel: "已选对象卡片",
+  },
+  {
+    id: "theme-subspace-next-objects",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-create",
+    title: "进入实例选择",
+    description: "点击「下一步」，进入对象实例选择步骤。",
+    targetSelector: "[data-onboarding='subspace-create-next']",
+    advanceOnTargetClick: true,
+    mockLabel: "下一步",
+  },
+  {
+    id: "theme-subspace-instances",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-create",
+    title: "选择对象实例",
+    description: "按需勾选各对象的实例数据，也可以直接跳过本步。",
+    targetSelector: "[data-onboarding='subspace-create-instance-panel']",
+    mockLabel: "对象实例列表",
+  },
+  {
+    id: "theme-subspace-next-instances",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-create",
+    title: "进入属性配置",
+    description: "点击「下一步」，进入属性配置步骤。",
+    targetSelector: "[data-onboarding='subspace-create-next']",
+    advanceOnTargetClick: true,
+    mockLabel: "下一步",
+  },
+  {
+    id: "theme-subspace-properties",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-create",
+    title: "选择对象属性",
+    description: "为每个对象至少勾选 1 条属性，且需包含主键属性。",
+    targetSelector: "[data-onboarding='subspace-create-property-panel']",
+    mockLabel: "对象属性列表",
+  },
+  {
+    id: "theme-subspace-next-properties",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-create",
+    title: "进入关系选择",
+    description: "点击「下一步」，进入关系选择步骤。",
+    targetSelector: "[data-onboarding='subspace-create-next']",
+    advanceOnTargetClick: true,
+    mockLabel: "下一步",
+  },
+  {
+    id: "theme-subspace-relations",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-create",
+    title: "选择关系",
+    description: "按需勾选要纳入主题的关系，也可以直接跳过本步。",
+    targetSelector: "[data-onboarding='subspace-create-relation-panel']",
+    mockLabel: "关系列表",
+  },
+  {
+    id: "theme-subspace-create",
+    chain: CHAIN_CREATE_THEME,
+    page: "theme-create",
+    title: "创建主题",
+    description: "点击「创建」完成主题创建；创建成功后返回主题列表，引导自动继续。",
+    targetSelector: "[data-onboarding='subspace-create-create']",
+    advanceOnTargetClick: true,
+    mockLabel: "创建",
+  },
+  // ── 步骤2 创建对象（主题列表页进入空间内管理，后续小步复用对象空间配置） ──────────
+  {
+    id: "theme-list-enter",
+    chain: THEME_OBJECT_CHAIN_NAME,
+    page: "theme-list",
+    title: "进入主题",
+    description: "点击主题卡片中的「进入」按钮，进入主题内管理页；页面跳转后引导会自动继续。",
+    targetSelector: "[data-onboarding='theme-enter']",
+    advanceOnTargetClick: true,
+    mockLabel: "进入",
+  },
+  // ── 步骤2-6：复用对象空间空间内管理与对象详情页步骤 ─────────────────────────────
+  ...ONBOARDING_GUIDE_STEPS.filter((step) => step.page === "space-manage" || step.page === "object-detail").map((step) =>
+    step.chain === "新建对象" ? { ...step, chain: THEME_OBJECT_CHAIN_NAME } : step,
+  ),
+];
+
 /** 各页面帮助入口的起始步骤 id。 */
 export const ONBOARDING_GUIDE_ENTRY_IDS: Record<OnboardingGuidePageId, string> = {
   "space-list": "space-create-open",
+  "theme-list": "theme-create-open",
+  "theme-create": "theme-subspace-tree",
   "space-manage": "object-menu",
   "object-detail": "attribute-menu",
 };
@@ -482,6 +636,8 @@ export const ONBOARDING_GUIDE_ENTRY_IDS: Record<OnboardingGuidePageId, string> =
 /** 嵌入模式（无创建空间权限）下各页面帮助入口的起始步骤 id。 */
 export const ONBOARDING_GUIDE_EMBEDDED_ENTRY_IDS: Record<OnboardingGuidePageId, string> = {
   "space-list": "space-list-enter",
+  "theme-list": "theme-create-open",
+  "theme-create": "theme-subspace-tree",
   "space-manage": "object-menu",
   "object-detail": "attribute-menu",
 };

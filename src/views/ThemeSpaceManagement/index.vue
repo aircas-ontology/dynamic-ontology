@@ -1,14 +1,17 @@
 <template>
   <div class="theme-space-management">
+    <button class="theme-space-management__help" type="button" aria-label="打开新手引导" title="新手引导" @click="openOnboardingGuide()">
+      <el-icon><QuestionFilled /></el-icon>
+    </button>
     <section class="theme-space-management__overview">
-      <WelcomePanel space-label="主题空间" @create="openCreateThemeSpaceDialog()" />
+      <WelcomePanel space-label="主题" @create="openCreateThemeSpaceDialog()" />
       <div class="theme-space-management__stats"><StatCard v-for="stat in stats" :key="stat.id" :stat="stat" /></div>
     </section>
-    <SectionToolbar title="主题空间管理" space-label="主题空间" v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
-    <section class="theme-space-management__list" aria-label="主题空间列表">
-      <div v-if="themeSpacesLoading" class="theme-space-management__empty">正在加载主题空间…</div>
+    <SectionToolbar title="主题管理" space-label="主题" v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
+    <section class="theme-space-management__list" aria-label="主题列表">
+      <div v-if="themeSpacesLoading" class="theme-space-management__empty">正在加载主题…</div>
       <div v-else-if="themeSpacesError" class="theme-space-management__empty">{{ themeSpacesError }}</div>
-      <div v-else-if="!filteredSpaces.length" class="theme-space-management__empty">暂无主题空间，请调整搜索条件</div>
+      <div v-else-if="!filteredSpaces.length" class="theme-space-management__empty">暂无主题，请调整搜索条件</div>
       <div v-else-if="viewMode === 'card'" class="theme-space-management__grid">
         <article v-for="space in pagedSpaces" :key="space.id" class="theme-space-card">
           <div class="theme-space-card__name">
@@ -53,15 +56,15 @@
               ><span>更新：{{ space.updatedTime }}</span>
             </div>
             <div>
-              <el-button type="primary" plain size="small" @click="enterThemeSpace(space)">→ 进入</el-button
+              <el-button type="primary" plain size="small" data-onboarding="theme-enter" @click="enterThemeSpace(space)">→ 进入</el-button
               ><el-button type="primary" plain size="small" @click="openEditThemeSpaceDialog(space)">✎ 编辑</el-button
               ><el-dropdown trigger="click" @command="(command) => handleThemeSpaceCommand(command, space)"
                 ><el-button type="primary" plain size="small"
                   >更多<el-icon><ArrowDown /></el-icon></el-button
                 ><template #dropdown
                   ><el-dropdown-menu
-                    ><el-dropdown-item command="导出主题空间">导出</el-dropdown-item
-                    ><el-dropdown-item command="删除主题空间" divided>删除</el-dropdown-item></el-dropdown-menu
+                    ><el-dropdown-item command="导出主题">导出</el-dropdown-item
+                    ><el-dropdown-item command="删除主题" divided>删除</el-dropdown-item></el-dropdown-menu
                   ></template
                 ></el-dropdown
               >
@@ -88,15 +91,15 @@
         <el-table-column prop="updatedTime" label="更新时间" width="180" />
         <el-table-column label="操作" width="230" fixed="right"
           ><template #default="{ row }"
-            ><el-button type="primary" plain size="small" @click="enterThemeSpace(asThemeSpace(row))">→ 进入</el-button
+            ><el-button type="primary" plain size="small" data-onboarding="theme-enter" @click="enterThemeSpace(asThemeSpace(row))">→ 进入</el-button
             ><el-button type="primary" plain size="small" @click="openEditThemeSpaceDialog(asThemeSpace(row))">✎ 编辑</el-button
             ><el-dropdown trigger="click" @command="(command) => handleThemeSpaceCommand(command, asThemeSpace(row))"
               ><el-button type="primary" plain size="small"
                 >更多<el-icon><ArrowDown /></el-icon></el-button
               ><template #dropdown
                 ><el-dropdown-menu
-                  ><el-dropdown-item command="导出主题空间">导出</el-dropdown-item
-                  ><el-dropdown-item command="删除主题空间" divided>删除</el-dropdown-item></el-dropdown-menu
+                  ><el-dropdown-item command="导出主题">导出</el-dropdown-item
+                  ><el-dropdown-item command="删除主题" divided>删除</el-dropdown-item></el-dropdown-menu
                 ></template
               ></el-dropdown
             ></template
@@ -116,17 +119,18 @@
         />
       </footer>
     </section>
-    <el-dialog v-model="createDialogVisible" title="新建主题空间" width="420px">
+    <el-dialog v-model="createDialogVisible" title="新建主题" width="420px">
       <el-form label-position="top"
-        ><el-form-item label="选择对象空间"
+        ><el-form-item label="选择对象空间" data-onboarding="theme-create-space-select"
           ><el-select v-model="selectedObjectSpace" placeholder="请选择对象空间" :loading="objectSpacesLoading" style="width: 100%"
             ><el-option v-for="space in objectSpaces" :key="space.id" :label="space.displayName" :value="space.id" /></el-select></el-form-item
       ></el-form>
       <template #footer
-        ><el-button @click="createDialogVisible = false">取消</el-button><el-button type="primary" @click="confirmCreateThemeSpace">确认</el-button></template
+        ><el-button data-onboarding="theme-create-cancel" @click="createDialogVisible = false">取消</el-button
+        ><el-button type="primary" data-onboarding="theme-create-confirm" @click="confirmCreateThemeSpace">确认</el-button></template
       >
     </el-dialog>
-    <el-dialog v-model="editDialogVisible" title="编辑主题空间" width="min(640px, 94vw)"
+    <el-dialog v-model="editDialogVisible" title="编辑主题" width="min(640px, 94vw)"
       ><el-form label-position="top"
         ><el-form-item label="API 名称（必填）" :error="editApiNameError"><el-input v-model="editDraft.apiName" disabled /></el-form-item
         ><el-form-item label="空间名称（必填）" :error="editDisplayNameError"><el-input v-model="editDraft.displayName" maxlength="64" /></el-form-item
@@ -134,7 +138,7 @@
         ><el-form-item label="空间图标"
           ><div class="theme-edit-upload">
             <div v-if="editDraft.iconUrl" class="theme-edit-preview">
-              <img :src="editDraft.iconUrl" alt="主题空间图标预览" /><el-button link :disabled="editBusy" @click="editDraft.iconUrl = ''">清除图片</el-button>
+              <img :src="editDraft.iconUrl" alt="主题图标预览" /><el-button link :disabled="editBusy" @click="editDraft.iconUrl = ''">清除图片</el-button>
             </div>
             <el-upload
               v-if="!editDraft.iconUrl"
@@ -158,15 +162,15 @@
         ><el-button type="primary" :loading="editBusy" @click="confirmEditThemeSpace">确定</el-button></template
       ></el-dialog
     >
-    <el-dialog v-model="deleteDialogVisible" title="删除主题空间" width="min(460px, 94vw)" :close-on-click-modal="false">
-      <p>确认删除「{{ deleteSpace?.displayName }}」主题空间数据？</p>
+    <el-dialog v-model="deleteDialogVisible" title="删除主题" width="min(460px, 94vw)" :close-on-click-modal="false">
+      <p>确认删除「{{ deleteSpace?.displayName }}」主题数据？</p>
       <p v-if="deleteError" class="theme-space-management__error" role="alert">{{ deleteError }}</p>
       <template #footer
         ><el-button :disabled="deleteBusy" @click="deleteDialogVisible = false">取消</el-button
         ><el-button type="danger" :loading="deleteBusy" @click="confirmDeleteThemeSpace">删除</el-button></template
       >
     </el-dialog>
-    <el-dialog v-model="exportDialogVisible" title="导出主题空间" width="min(460px, 94vw)"
+    <el-dialog v-model="exportDialogVisible" title="导出主题" width="min(460px, 94vw)"
       ><p>导出「{{ exportSpace?.displayName }}」。</p>
       <el-radio-group v-model="exportType"><el-radio value="SCHEMA">仅结构</el-radio><el-radio value="INSTANCE">含实例数据</el-radio></el-radio-group>
       <p v-if="exportError" class="theme-space-management__error">{{ exportError }}</p>
@@ -175,6 +179,7 @@
         ><el-button type="primary" :loading="exportBusy" @click="confirmExportThemeSpace">导出</el-button></template
       ></el-dialog
     >
+    <OnboardingGuideOverlay v-model="guideVisible" :steps="themeOnboardingGuideSteps" :start-id="guideStartId" />
   </div>
 </template>
 <script setup lang="ts">
@@ -194,12 +199,25 @@ import type { OntologySpaceExportType } from "@/types";
 import { mapOntologySpaceList } from "@/utils/mapOntologySpaceList";
 import { downloadSpaceFile } from "../OntologySpaceManagement/utils/downloadSpaceJson";
 import { resolveExportOntologySpaceFileName } from "../OntologySpaceManagement/utils/resolveExportOntologySpaceFileName";
-import { ArrowDown, Connection, DataLine, Operation, Plus, Tickets } from "@element-plus/icons-vue";
+import { ArrowDown, Connection, DataLine, Operation, Plus, QuestionFilled, Tickets } from "@element-plus/icons-vue";
 import type { UploadFile } from "element-plus";
 import SectionToolbar from "../OntologySpaceManagement/components/SectionToolbar.vue";
 import StatCard from "../OntologySpaceManagement/components/StatCard.vue";
 import WelcomePanel from "../OntologySpaceManagement/components/WelcomePanel.vue";
+import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
+import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
+import { ONBOARDING_GUIDE_ENTRY_IDS, THEME_ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
 import type { OntologySpaceSummary } from "@/types";
+const themeOnboardingGuideSteps = THEME_ONBOARDING_GUIDE_STEPS;
+const {
+  visible: guideVisible,
+  startId: guideStartId,
+  openOnboardingGuide,
+} = useOnboardingGuide({
+  steps: themeOnboardingGuideSteps,
+  page: "theme-list",
+  entryStepId: ONBOARDING_GUIDE_ENTRY_IDS["theme-list"],
+});
 const keyword = ref("");
 const order = ref<"asc" | "desc">("asc");
 const page = ref(1);
@@ -237,24 +255,24 @@ const filteredSpaces = computed(() =>
 );
 const pagedSpaces = computed(() => filteredSpaces.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value));
 const stats = computed<OntologySpaceSummary[]>(() => [
-  { id: "space", label: "主题空间", value: overviewCount.value.spaceCount ?? 0, icon: "Box" },
+  { id: "space", label: "主题", value: overviewCount.value.spaceCount ?? 0, icon: "Box" },
   { id: "object", label: "对象", value: overviewCount.value.ontologyCount ?? 0, icon: "Connection" },
   { id: "behavior", label: "行为数量", value: overviewCount.value.actionCount ?? 0, icon: "Share" },
   { id: "relation", label: "关系", value: overviewCount.value.linkCount ?? 0, icon: "Link" },
 ]);
-/** @description 提示主题空间功能尚未接入。 @param action 被点击的操作名称。 */
+/** @description 提示主题功能尚未接入。 @param action 被点击的操作名称。 */
 function notifyUnavailable(action: string): void {
   ElMessage.info(`${action}功能暂未接入`);
 }
-/** @description 处理主题空间更多菜单命令。 @param command 菜单命令。 @param space 当前主题空间。 */
+/** @description 处理主题更多菜单命令。 @param command 菜单命令。 @param space 当前主题。 */
 function handleThemeSpaceCommand(command: unknown, space: OntologySpaceItem): void {
-  if (command === "删除主题空间") {
+  if (command === "删除主题") {
     deleteSpace.value = space;
     deleteError.value = "";
     deleteDialogVisible.value = true;
     return;
   }
-  if (command === "导出主题空间") {
+  if (command === "导出主题") {
     exportSpace.value = space;
     exportType.value = "INSTANCE";
     exportError.value = "";
@@ -263,7 +281,7 @@ function handleThemeSpaceCommand(command: unknown, space: OntologySpaceItem): vo
   }
   notifyUnavailable(String(command));
 }
-/** @description 调用对象空间导出接口并下载主题空间文件。 */
+/** @description 调用对象空间导出接口并下载主题文件。 */
 async function confirmExportThemeSpace(): Promise<void> {
   if (!exportSpace.value || exportBusy.value) return;
   const spaceId = Number(exportSpace.value.id);
@@ -290,30 +308,30 @@ async function confirmExportThemeSpace(): Promise<void> {
     exportBusy.value = false;
   }
 }
-/** @description 调用对象空间删除接口删除当前主题空间并刷新列表。 */
+/** @description 调用对象空间删除接口删除当前主题并刷新列表。 */
 async function confirmDeleteThemeSpace(): Promise<void> {
   if (!deleteSpace.value || deleteBusy.value) return;
   deleteBusy.value = true;
   deleteError.value = "";
   try {
     const response = await deleteOntologySpaceInterface({ spaceId: Number(deleteSpace.value.id) });
-    if (response.code !== 200) throw new Error(response.message || "删除主题空间失败");
+    if (response.code !== 200) throw new Error(response.message || "删除主题失败");
     deleteDialogVisible.value = false;
     ElMessage.success("删除成功");
     await loadThemeSpaces();
   } catch (cause) {
-    deleteError.value = cause instanceof Error ? cause.message : "删除主题空间失败，请重试。";
+    deleteError.value = cause instanceof Error ? cause.message : "删除主题失败，请重试。";
   } finally {
     deleteBusy.value = false;
   }
 }
-/** @description 打开新建主题空间弹窗并清空上次选择。 */
+/** @description 打开新建主题弹窗并默认选中第一条已加载的对象空间，随后刷新对象空间列表。 */
 function openCreateThemeSpaceDialog(): void {
-  selectedObjectSpace.value = "";
+  selectedObjectSpace.value = objectSpaces.value[0]?.id ?? "";
   void loadObjectSpaces();
   createDialogVisible.value = true;
 }
-/** @description 查询对象空间管理使用的对象空间列表供主题空间选择。 */
+/** @description 查询对象空间管理使用的对象空间列表供主题选择。 */
 async function loadObjectSpaces(): Promise<void> {
   objectSpacesLoading.value = true;
   objectSpacesError.value = "";
@@ -321,6 +339,8 @@ async function loadObjectSpaces(): Promise<void> {
     const response = await getOntologySpaceListInterface({ type: 0 });
     if (response.code !== 200) throw new Error(response.message || "对象空间列表加载失败");
     objectSpaces.value = mapOntologySpaceList(response.data);
+    // 弹窗打开时列表尚未加载完成的场景：加载成功后补默认选中第一条，用户已手动选择时保持不变。
+    selectedObjectSpace.value ||= objectSpaces.value[0]?.id ?? "";
   } catch (cause) {
     objectSpacesError.value = cause instanceof Error ? cause.message : "对象空间列表加载失败";
     ElMessage.error(objectSpacesError.value);
@@ -328,22 +348,22 @@ async function loadObjectSpaces(): Promise<void> {
     objectSpacesLoading.value = false;
   }
 }
-/** @description 查询主题空间列表供页面卡片、表格与统计展示。 */
+/** @description 查询主题列表供页面卡片、表格与统计展示。 */
 async function loadThemeSpaces(): Promise<void> {
   themeSpacesLoading.value = true;
   themeSpacesError.value = "";
   try {
     const response = await getOntologySpaceListInterface({ type: 1 });
-    if (response.code !== 200) throw new Error(response.message || "主题空间列表加载失败");
+    if (response.code !== 200) throw new Error(response.message || "主题列表加载失败");
     themeSpaces.value = mapOntologySpaceList(response.data);
   } catch (cause) {
-    themeSpacesError.value = cause instanceof Error ? cause.message : "主题空间列表加载失败";
+    themeSpacesError.value = cause instanceof Error ? cause.message : "主题列表加载失败";
     ElMessage.error(themeSpacesError.value);
   } finally {
     themeSpacesLoading.value = false;
   }
 }
-/** @description 查询主题空间概览统计，使用主题类型参数。 */
+/** @description 查询主题概览统计，使用主题类型参数。 */
 async function loadThemeOverviewCount(): Promise<void> {
   try {
     const response = await getOntologyOverviewCountInterface({ type: 1 });
@@ -371,7 +391,7 @@ function confirmCreateThemeSpace(): void {
     query: { spaceId: selectedSpace.id, spaceName: selectedSpace.displayName, from: "theme-space-management" },
   });
 }
-/** @description 进入主题空间对应的空间内管理页，携带空间名与来源标识供面包屑展示。 @param space 目标主题空间。 */
+/** @description 进入主题对应的空间内管理页，携带空间名与来源标识供面包屑展示。 @param space 目标主题。 */
 function enterThemeSpace(space: OntologySpaceItem): void {
   void router.push({
     name: "OntologySpaceManagementDetailOverview",
@@ -380,14 +400,14 @@ function enterThemeSpace(space: OntologySpaceItem): void {
   });
 }
 /**
- * @description 将表格行收窄为主题空间条目。
+ * @description 将表格行收窄为主题条目。
  * @param row 表格行。
- * @returns 主题空间条目。
+ * @returns 主题条目。
  */
 function asThemeSpace(row: unknown): OntologySpaceItem {
   return row as OntologySpaceItem;
 }
-/** @description 打开主题空间编辑弹窗并回填当前主题空间。 @param space 当前主题空间。 */
+/** @description 打开主题编辑弹窗并回填当前主题。 @param space 当前主题。 */
 function openEditThemeSpaceDialog(space: OntologySpaceItem): void {
   editSpace.value = space;
   editError.value = "";
@@ -396,7 +416,7 @@ function openEditThemeSpaceDialog(space: OntologySpaceItem): void {
   editDraft.value = { apiName: space.apiName, displayName: space.displayName, description: space.description, iconUrl: space.iconUrl };
   editDialogVisible.value = true;
 }
-/** @description 上传主题空间图片并回显接口返回的图片地址。 @param event 图片选择事件。 */
+/** @description 上传主题图片并回显接口返回的图片地址。 @param event 图片选择事件。 */
 async function readThemeIcon(upload: UploadFile): Promise<void> {
   const file = upload.raw;
   if (!file || editBusy.value) return;
@@ -416,11 +436,11 @@ async function readThemeIcon(upload: UploadFile): Promise<void> {
     editBusy.value = false;
   }
 }
-/** @description 提示主题空间图标仅允许选择一张图片。 */
+/** @description 提示主题图标仅允许选择一张图片。 */
 function handleThemeIconExceed(): void {
   editError.value = "空间图标仅支持上传一张图片，请先清除当前图片。";
 }
-/** @description 调用对象空间编辑接口更新主题空间名称、描述和图标，并刷新主题空间列表。 */
+/** @description 调用对象空间编辑接口更新主题名称、描述和图标，并刷新主题列表。 */
 async function confirmEditThemeSpace(): Promise<void> {
   if (!editSpace.value || editBusy.value) return;
   const spaceId = Number(editSpace.value.id);
@@ -444,12 +464,12 @@ async function confirmEditThemeSpace(): Promise<void> {
       iconUrl: editDraft.value.iconUrl,
       description: editDraft.value.description.trim(),
     });
-    if (response.code !== 200) throw new Error(response.message || "编辑主题空间失败");
+    if (response.code !== 200) throw new Error(response.message || "编辑主题失败");
     editDialogVisible.value = false;
     ElMessage.success("更新成功");
     await loadThemeSpaces();
   } catch (cause) {
-    editError.value = cause instanceof Error ? cause.message : "编辑主题空间失败，请重试。";
+    editError.value = cause instanceof Error ? cause.message : "编辑主题失败，请重试。";
   } finally {
     editBusy.value = false;
   }
@@ -469,6 +489,26 @@ watch([keyword, order, pageSize], () => {
   overflow: auto;
   color: var(--aircas-color-text-primary);
   background: var(--aircas-color-page-background);
+}
+.theme-space-management__help {
+  position: fixed;
+  top: 62px;
+  right: 18px;
+  z-index: 4;
+  display: inline-flex;
+  padding: 6px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 6px;
+  color: var(--aircas-color-text-secondary);
+  background: var(--aircas-color-panel-background);
+  cursor: pointer;
+}
+.theme-space-management__help:hover {
+  color: var(--aircas-color-primary);
+}
+.theme-space-management__help:focus-visible {
+  outline: 2px solid var(--aircas-color-primary);
+  outline-offset: 2px;
 }
 .theme-space-management__overview {
   display: grid;

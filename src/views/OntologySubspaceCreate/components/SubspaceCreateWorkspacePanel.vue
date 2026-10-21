@@ -5,14 +5,23 @@
       <span>对象空间：{{ parentSpaceName }}</span>
       <div class="subspace-create-workspace__header-actions">
         <el-button v-if="currentStepIndex > 0" class="aircas-button" @click="emit('previous')">上一步</el-button>
-        <el-button v-if="currentStepIndex < flowSteps.length - 1" class="aircas-button" type="primary" @click="emit('next')">下一步</el-button>
-        <el-button v-else class="aircas-button" type="primary" :loading="creating" @click="emit('create')">创建</el-button>
+        <el-button
+          v-if="currentStepIndex < flowSteps.length - 1"
+          class="aircas-button"
+          type="primary"
+          data-onboarding="subspace-create-next"
+          @click="emit('next')"
+          >下一步</el-button
+        >
+        <el-button v-else class="aircas-button" type="primary" :loading="creating" data-onboarding="subspace-create-create" @click="emit('create')"
+          >创建</el-button
+        >
       </div>
     </header>
 
     <el-form class="aircas-form subspace-create-workspace__form" label-position="left" label-width="88px">
-      <el-form-item label="主题空间名称">
-        <el-input :model-value="spaceName" class="aircas-input" ariaLabel="主题空间名称" @update:model-value="emit('update:spaceName', String($event ?? ''))" />
+      <el-form-item label="主题名称">
+        <el-input :model-value="spaceName" class="aircas-input" ariaLabel="主题名称" @update:model-value="emit('update:spaceName', String($event ?? ''))" />
       </el-form-item>
       <el-form-item label="API 名称">
         <el-input :model-value="apiName" class="aircas-input" ariaLabel="API 名称" @update:model-value="emit('update:apiName', String($event ?? ''))" />
@@ -44,7 +53,7 @@
         </div>
         <strong v-else>{{ stepPanelCopy.summary }}</strong>
       </header>
-      <div v-if="currentStepIndex === 0 && selectedObjects.length" class="subspace-create-workspace__cards">
+      <div v-if="currentStepIndex === 0 && selectedObjects.length" class="subspace-create-workspace__cards" data-onboarding="subspace-create-selected-cards">
         <article v-for="item in selectedObjects" :key="item.id" class="subspace-create-workspace__card" :aria-label="`${item.label}，${item.apiName}`">
           <el-icon class="subspace-create-workspace__card-icon"><Ship /></el-icon>
           <div class="subspace-create-workspace__card-body">
@@ -60,6 +69,7 @@
       </div>
       <SubspaceCreateInstancePanel
         v-else-if="currentStepIndex === 1 && instanceGroups.length"
+        data-onboarding="subspace-create-instance-panel"
         :instance-groups="instanceGroups"
         :selected-instance-ids="selectedInstanceIds"
         @update:selected-instance-ids="emit('update:selectedInstanceIds', $event)"
@@ -83,7 +93,11 @@
         <span>{{ relationLoadError }}</span>
         <el-button class="aircas-button" @click="emit('relation-retry')">重试关系查询</el-button>
       </div>
-      <div v-else-if="currentStepIndex === 2 && propertyGroups.some((group) => group.properties.length)" class="subspace-create-workspace__properties">
+      <div
+        v-else-if="currentStepIndex === 2 && propertyGroups.some((group) => group.properties.length)"
+        class="subspace-create-workspace__properties"
+        data-onboarding="subspace-create-property-panel"
+      >
         <section v-for="group in propertyGroups" :key="group.objectId" class="subspace-create-workspace__property-group">
           <header class="subspace-create-workspace__property-group-header">
             <div>
@@ -178,6 +192,7 @@
       <el-table
         v-else-if="currentStepIndex === 3 && relationRows.length"
         ref="relationTableRef"
+        data-onboarding="subspace-create-relation-panel"
         class="aircas-table aircas-table--flat subspace-create-workspace__table"
         :data="relationRows"
         row-key="id"
@@ -190,7 +205,12 @@
         <el-table-column prop="sourceLabel" label="源对象" min-width="220" show-overflow-tooltip />
         <el-table-column prop="targetLabel" label="目标对象" min-width="220" show-overflow-tooltip />
       </el-table>
-      <el-empty v-else-if="shouldShowStepEmpty()" class="aircas-empty" :description="resolveEmptyDescription()" />
+      <el-empty
+        v-else-if="shouldShowStepEmpty()"
+        class="aircas-empty"
+        data-onboarding="subspace-create-relation-panel"
+        :description="resolveEmptyDescription()"
+      />
     </section>
   </main>
 </template>

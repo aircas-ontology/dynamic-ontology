@@ -89,6 +89,10 @@ test("onboarding guide overlay auto-opens dialog steps by clicking the configure
   assert.match(source, /clickWithSuppress\(trigger\)/);
   assert.match(source, /void nextTick\(locateTarget\)/);
   assert.match(source, /window\.setTimeout\(\(\) => \{\s*runEnterClick\(step\);\s*locateTarget\(\);\s*\}, 360\)/);
+  assert.match(
+    source,
+    /if \(!trigger\) \{\s*locateTarget\(\);[\s\S]*?window\.setTimeout\(\(\) => \{\s*runEnterClick\(step\);\s*locateTarget\(\);\s*\}, 360\);\s*return;\s*\}/,
+  );
   assert.match(source, /index\.value = nextIndex;\r?\n  writeOnboardingGuideStepId\(props\.steps\[nextIndex\]\?\.id \?\? ""\);\r?\n  activateCurrentStep\(\);/);
 });
 
@@ -100,7 +104,10 @@ test("onboarding guide overlay interaction corrections for exit skip mask and cl
   assert.match(source, /@click="move\(1\)">{{ index === steps\.length - 1 \? "完成" : "下一步" }}<\/el-button>/);
   assert.match(source, /function goToStep/);
   assert.match(source, /function skipChain/);
-  assert.match(source, /next\.chain !== current\.chain/);
+  assert.match(source, /function shouldExitCurrentDialog/);
+  assert.match(source, /current\.exitClickSelector/);
+  assert.match(source, /currentTarget\?\.closest\("\.el-overlay"\)/);
+  assert.match(source, /\(nextTarget\?\.closest\("\.el-overlay"\) \?\? null\) !== currentDialog/);
   assert.match(source, /next\.page !== current\.page/);
   assert.match(source, /step\.exitClickSelector/);
   assert.match(source, /leaveClickSelector \|\| step\.targetSelector/);
@@ -121,6 +128,26 @@ test("onboarding guide overlay interaction corrections for exit skip mask and cl
   assert.match(source, /suppressAdvanceClick = true;\s*element\.click\(\);\s*window\.setTimeout\(\(\) => \{\s*suppressAdvanceClick = false;\s*\}, 0\);/);
   assert.match(source, /clickWithSuppress\(clickTarget\)/);
   assert.match(source, /clickWithSuppress\(trigger\)/);
+  assert.match(source, /const TARGET_REVEALED_CLASS = "onboarding-guide__target-revealed";/);
+  assert.match(source, /function applyRevealClass/);
+  assert.match(source, /revealedTarget\?\.classList\.remove\(TARGET_REVEALED_CLASS\);/);
+  assert.match(source, /applyRevealClass\(target\);/);
+  assert.match(source, /applyRevealClass\(null\);/);
+});
+
+test("concept hierarchy tree keeps hover actions visible while the guide highlights the create button", () => {
+  const source = readSource("../src/views/ObjectWorkspacePanel/components/ConceptHierarchyTree.vue");
+  assert.match(source, /\.concept-hierarchy__create-child-wrap:has\(\.onboarding-guide__target-revealed\) \{/);
+});
+
+test("relation category panel keeps hover actions visible while the guide highlights the create button", () => {
+  const source = readSource("../src/views/SpaceRelationWorkspace/components/RelationCategoryPanel.vue");
+  assert.match(source, /\.relation-category-panel__actions:has\(\.onboarding-guide__target-revealed\) \{/);
+});
+
+test("attribute category tree keeps hover actions visible while the guide highlights the create button", () => {
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeCategoryTree.vue");
+  assert.match(source, /\.ontology-object-attribute-panel__tree-actions:has\(\.onboarding-guide__target-revealed\) \{/);
 });
 
 test("onboarding guide overlay persists progress via session storage and clears on close", () => {
@@ -136,7 +163,7 @@ test("onboarding guide overlay persists progress via session storage and clears 
 
 test("onboarding guide composable resumes pending step for the matching page only", () => {
   const source = readSource("../src/composables/shared/useOnboardingGuide.ts");
-  assert.match(source, /export type OnboardingGuidePageId = "space-list" \| "space-manage" \| "object-detail";/);
+  assert.match(source, /export type OnboardingGuidePageId = "space-list" \| "space-manage" \| "object-detail" \| "theme-list" \| "theme-create";/);
   assert.match(source, /export interface OnboardingGuideStep/);
   assert.match(source, /export function useOnboardingGuide/);
   assert.match(source, /const ONBOARDING_GUIDE_STORAGE_KEY = "onboarding-guide-active-step";/);
@@ -176,7 +203,7 @@ test("unified step config defines the six-chain 39-step flow with page ownership
   assert.match(source, /id: "space-create-confirm"[\s\S]*?targetSelector: "\[data-onboarding='space-create-confirm'\]"/);
   assert.match(source, /id: "associate-auto"[\s\S]*?targetSelector: "\[data-onboarding='associate-auto'\]"/);
   const triggerCount = source.match(/enterTriggerSelector:/g)?.length ?? 0;
-  assert.equal(triggerCount, 24);
+  assert.equal(triggerCount, 26);
   assert.match(source, /id: "space-create-manual"[\s\S]*?enterTriggerSelector: "\.welcome-panel__create"/);
   assert.match(source, /id: "object-tree-child-confirm"[\s\S]*?enterTriggerSelector: "\[data-onboarding='object-tree-create'\]"/);
   assert.match(source, /id: "object-create-required"[\s\S]*?enterTriggerSelector: "\[data-onboarding='object-create-open'\]"/);
@@ -191,7 +218,7 @@ test("unified step config defines the six-chain 39-step flow with page ownership
   assert.match(source, /id: "object-menu-back"[\s\S]*?enterClickSelector: "\[data-onboarding='workspace-tab-object'\]"/);
   assert.match(source, /id: "attribute-menu"[\s\S]*?enterClickSelector: "\[data-onboarding='object-tab-attribute'\]"/);
   const exitClickCount = source.match(/exitClickSelector:/g)?.length ?? 0;
-  assert.equal(exitClickCount, 30);
+  assert.equal(exitClickCount, 33);
   assert.match(source, /id: "space-create-open"[\s\S]*?exitClickSelector: "\[data-onboarding='space-create-cancel'\]"/);
   assert.match(source, /id: "object-tree-child-confirm"[\s\S]*?exitClickSelector: "\[data-onboarding='object-tree-child-cancel'\]"/);
   assert.match(source, /id: "relation-create-confirm"[\s\S]*?exitClickSelector: "\[data-onboarding='relation-create-cancel'\]"/);
@@ -201,7 +228,7 @@ test("unified step config defines the six-chain 39-step flow with page ownership
   assert.equal(leaveClickCount, 6);
   assert.match(source, /id: "space-create-manual"[\s\S]*?leaveClickSelector: "\[data-onboarding='space-enter'\]"/);
   const advanceCount = source.match(/advanceOnTargetClick: true/g)?.length ?? 0;
-  assert.equal(advanceCount, 29);
+  assert.equal(advanceCount, 36);
   assert.match(
     source,
     /id: "space-create-open"[\s\S]*?targetSelector: "\.welcome-panel__create"[\s\S]*?advanceOnTargetClick: true[\s\S]*?mockLabel: "新建对象空间"/,
@@ -291,4 +318,102 @@ test("onboarding guide overlay registers as a global component", () => {
   const source = readSource("../src/components/register.ts");
   assert.match(source, /import OnboardingGuideOverlay from "\.\/OnboardingGuide\/OnboardingGuideOverlay\.vue";/);
   assert.match(source, /app\.component\("OnboardingGuideOverlay", OnboardingGuideOverlay\);/);
+});
+
+test("theme guide config defines theme chains and reuses object space steps", () => {
+  const source = readSource("../src/views/onboardingGuideSteps.ts");
+  const themeStepIds = [
+    "theme-create-open",
+    "theme-create-select-space",
+    "theme-create-confirm",
+    "theme-subspace-tree",
+    "theme-subspace-cards",
+    "theme-subspace-next-objects",
+    "theme-subspace-instances",
+    "theme-subspace-next-instances",
+    "theme-subspace-properties",
+    "theme-subspace-next-properties",
+    "theme-subspace-relations",
+    "theme-subspace-create",
+    "theme-list-enter",
+  ];
+  for (const id of themeStepIds) {
+    assert.match(source, new RegExp(`id: "${id}"`), `missing theme step id: ${id}`);
+  }
+  assert.match(source, /export const CHAIN_CREATE_THEME = "新建主题";/);
+  assert.match(source, /chain: CHAIN_CREATE_THEME/);
+  assert.match(source, /const THEME_OBJECT_CHAIN_NAME = "创建对象";/);
+  assert.match(source, /chain: THEME_OBJECT_CHAIN_NAME/);
+  assert.match(source, /export const THEME_ONBOARDING_GUIDE_STEPS/);
+  assert.match(source, /\.\.\.ONBOARDING_GUIDE_STEPS\.filter\(\(step\) => step\.page === "space-manage" \|\| step\.page === "object-detail"\)/);
+  assert.match(source, /step\.chain === "新建对象" \? \{ \.\.\.step, chain: THEME_OBJECT_CHAIN_NAME \} : step/);
+  assert.match(source, /id: "theme-create-open"[\s\S]*?targetSelector: "\.welcome-panel__create"[\s\S]*?advanceOnTargetClick: true/);
+  assert.match(source, /id: "theme-create-select-space"[\s\S]*?enterTriggerSelector: "\.welcome-panel__create"/);
+  assert.match(source, /id: "theme-create-confirm"[\s\S]*?advanceOnTargetClick: true[\s\S]*?exitClickSelector: "\[data-onboarding='theme-create-cancel'\]"/);
+  assert.match(source, /id: "theme-subspace-create"[\s\S]*?targetSelector: "\[data-onboarding='subspace-create-create'\]"[\s\S]*?advanceOnTargetClick: true/);
+  assert.match(source, /id: "theme-list-enter"[\s\S]*?targetSelector: "\[data-onboarding='theme-enter'\]"[\s\S]*?advanceOnTargetClick: true/);
+  assert.match(source, /"theme-list": "theme-create-open"/);
+  assert.match(source, /"theme-create": "theme-subspace-tree"/);
+});
+
+test("theme list page wires the theme guide with a content top-right help button and anchors", () => {
+  const source = readSource("../src/views/ThemeSpaceManagement/index.vue");
+  assert.match(source, /class="theme-space-management__help"/);
+  assert.match(source, /aria-label="打开新手引导"/);
+  assert.match(source, /@click="openOnboardingGuide\(\)"/);
+  assert.match(source, /\.theme-space-management__help \{\s*position: fixed;\s*top: 62px;\s*right: 18px;/);
+  assert.match(source, /import \{ ONBOARDING_GUIDE_ENTRY_IDS, THEME_ONBOARDING_GUIDE_STEPS \} from "@\/views\/onboardingGuideSteps";/);
+  assert.match(source, /steps: themeOnboardingGuideSteps,/);
+  assert.match(source, /page: "theme-list"/);
+  assert.match(source, /entryStepId: ONBOARDING_GUIDE_ENTRY_IDS\["theme-list"\]/);
+  assert.match(source, /<OnboardingGuideOverlay v-model="guideVisible" :steps="themeOnboardingGuideSteps" :start-id="guideStartId" \/>/);
+  assert.match(source, /data-onboarding="theme-create-space-select"/);
+  assert.match(source, /data-onboarding="theme-create-cancel"/);
+  assert.match(source, /data-onboarding="theme-create-confirm"/);
+  const enterAnchorCount = source.match(/data-onboarding="theme-enter"/g)?.length ?? 0;
+  assert.equal(enterAnchorCount, 2);
+});
+
+test("theme create page wires the guide only for theme-space-management origin", () => {
+  const source = readSource("../src/views/OntologySubspaceCreate/index.vue");
+  assert.match(source, /const isThemeSpaceCreation = computed\(\(\) => route\.query\.from === "theme-space-management"\);/);
+  assert.match(source, /<button\s+v-if="isThemeSpaceCreation"\s+class="ontology-subspace-create__help"/);
+  assert.match(
+    source,
+    /<OnboardingGuideOverlay v-if="isThemeSpaceCreation" v-model="guideVisible" :steps="themeOnboardingGuideSteps" :start-id="guideStartId" \/>/,
+  );
+  assert.match(source, /page: "theme-create"/);
+  assert.match(source, /entryStepId: ONBOARDING_GUIDE_ENTRY_IDS\["theme-create"\]/);
+});
+
+test("subspace create panels expose data-onboarding anchors for the theme chain", () => {
+  const anchors = [
+    ["../src/views/OntologySubspaceCreate/components/SubspaceCreateTreePanel.vue", 'data-onboarding="subspace-create-tree"'],
+    ["../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", 'data-onboarding="subspace-create-selected-cards"'],
+    ["../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", 'data-onboarding="subspace-create-next"'],
+    ["../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", 'data-onboarding="subspace-create-instance-panel"'],
+    ["../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", 'data-onboarding="subspace-create-property-panel"'],
+    ["../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", 'data-onboarding="subspace-create-relation-panel"'],
+    ["../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", 'data-onboarding="subspace-create-create"'],
+  ];
+  for (const [file, anchor] of anchors) {
+    const source = readSource(file);
+    assert.match(source, new RegExp(anchor.replaceAll("$", "\\$")), `missing anchor ${anchor} in ${file}`);
+  }
+});
+
+test("space manage page switches to theme steps only for theme-space-management origin", () => {
+  const source = readSource("../src/views/OntologySpaceManagementDetail/index.vue");
+  assert.match(source, /import \{ ONBOARDING_GUIDE_ENTRY_IDS, ONBOARDING_GUIDE_STEPS, THEME_ONBOARDING_GUIDE_STEPS \} from "@\/views\/onboardingGuideSteps";/);
+  assert.match(source, /route\.query\.from === "theme-space-management"/);
+  assert.match(source, /isThemeSpaceGuide\.value \? THEME_ONBOARDING_GUIDE_STEPS : ONBOARDING_GUIDE_STEPS/);
+  assert.match(source, /page: "space-manage"/);
+  assert.match(source, /entryStepId: ONBOARDING_GUIDE_ENTRY_IDS\["space-manage"\]/);
+});
+
+test("header bar no longer renders the disabled help placeholder button", () => {
+  const source = readSource("../src/layout/components/HeaderBar.vue");
+  assert.doesNotMatch(source, /帮助暂未开放/);
+  assert.doesNotMatch(source, /QuestionFilled/);
+  assert.match(source, /aria-label="消息暂未开放"/);
 });

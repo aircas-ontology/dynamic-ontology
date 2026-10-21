@@ -84,10 +84,29 @@ const cardStyle = computed(() => {
   return { left: `${left}px`, top: `${top}px` };
 });
 
-/** @description 定位当前步骤的目标元素；找不到时回退 Mock 兜底展示。 */
+/** 引导定位目标的揭示类：依赖悬浮才显示的控件可据其在引导高亮期间保持可见。 */
+const TARGET_REVEALED_CLASS = "onboarding-guide__target-revealed";
+
+let revealedTarget: HTMLElement | null = null;
+
+/**
+ * @description 切换定位目标的揭示类：清除上一目标的类并为当前目标添加，供概念层级树操作按钮等
+ *              悬浮显示控件在引导高亮期间保持可见，避免洞内出现空白占位。
+ * @param element 当前定位到的目标元素；空值表示仅清除既有揭示类。
+ */
+function applyRevealClass(element: HTMLElement | null) {
+  if (revealedTarget === element) return;
+  revealedTarget?.classList.remove(TARGET_REVEALED_CLASS);
+  revealedTarget = element;
+  element?.classList.add(TARGET_REVEALED_CLASS);
+}
+
+/** @description 定位当前步骤的目标元素并维护揭示类；找不到时回退 Mock 兜底展示。 */
 function locateTarget() {
   const selector = currentStep.value?.targetSelector;
-  targetRect.value = selector ? (document.querySelector<HTMLElement>(selector)?.getBoundingClientRect() ?? null) : null;
+  const target = selector ? (document.querySelector<HTMLElement>(selector) ?? null) : null;
+  targetRect.value = target?.getBoundingClientRect() ?? null;
+  applyRevealClass(target);
 }
 
 /** @description 在下一次渲染后重新定位目标元素，跟随弹窗展开与布局变化。 */
@@ -154,7 +173,11 @@ function activateCurrentStep() {
   const trigger = triggerSelector ? document.querySelector<HTMLElement>(triggerSelector) : null;
   if (!trigger) {
     locateTarget();
-    window.setTimeout(locateTarget, 360);
+    // 跨页续接时页签等目标可能尚未渲染完成，重试时需补执行进入点击（如自动切到属性页签），避免页签停留在默认页。
+    window.setTimeout(() => {
+      runEnterClick(step);
+      locateTarget();
+    }, 360);
     return;
   }
   clickWithSuppress(trigger);
@@ -166,8 +189,25 @@ function activateCurrentStep() {
 }
 
 /**
- * @description 跳转到指定小步：跨大步骤时先点击退出元素关闭遗留弹窗，跨页面时点击离开元素由页面自身完成真实路由跳转，
- *              随后写入续接状态并激活目标步骤；索引越界时关闭引导。
+ * @description 判断换步时是否需要点击当前步骤的退出元素：当前步骤配置了退出选择器且其目标位于弹窗内，
+ *              下一步目标不在同一弹窗（回到页面或切换到其他弹窗）时需关闭遗留弹窗；
+ *              同一弹窗内的连续小步（如关系创建弹窗的打开、填写、确认）不触发关闭。
+ * @param current 当前引导步骤。
+ * @param next 目标引导步骤。
+ * @returns 需要关闭遗留弹窗时为 true。
+ */
+function shouldExitCurrentDialog(current: OnboardingGuideStep, next: OnboardingGuideStep): boolean {
+  if (!current.exitClickSelector) return false;
+  const currentTarget = document.querySelector<HTMLElement>(current.targetSelector);
+  const currentDialog = currentTarget?.closest(".el-overlay") ?? null;
+  if (!currentDialog) return false;
+  const nextTarget = document.querySelector<HTMLElement>(next.targetSelector);
+  return (nextTarget?.closest(".el-overlay") ?? null) !== currentDialog;
+}
+
+/**
+ * @description 跳转到指定小步：当前步骤目标处于弹窗且下一步不在同一弹窗时先点击退出元素关闭遗留弹窗，
+ *              跨页面时点击离开元素由页面自身完成真实路由跳转，随后写入续接状态并激活目标步骤；索引越界时关闭引导。
  * @param nextIndex 目标小步索引。
  */
 function goToStep(nextIndex: number) {
@@ -181,7 +221,7 @@ function goToStep(nextIndex: number) {
     close();
     return;
   }
-  if (next.chain !== current.chain) runExitClick(current);
+  if (shouldExitCurrentDialog(current, next)) runExitClick(current);
   if (next.page !== current.page) runLeaveClick(current);
   index.value = nextIndex;
   writeOnboardingGuideStepId(props.steps[nextIndex]?.id ?? "");
@@ -236,7 +276,10 @@ watch(
       activateCurrentStep();
       return;
     }
-    if (previous) clearOnboardingGuideStep();
+    if (previous) {
+      applyRevealClass(null);
+      clearOnboardingGuideStep();
+    }
   },
   { immediate: true },
 );
@@ -246,6 +289,7 @@ window.addEventListener("resize", refreshTarget);
 window.addEventListener("scroll", refreshTarget, true);
 window.addEventListener("click", handleTargetClick, true);
 onBeforeUnmount(() => {
+  applyRevealClass(null);
   window.removeEventListener("resize", refreshTarget);
   window.removeEventListener("scroll", refreshTarget, true);
   window.removeEventListener("click", handleTargetClick, true);

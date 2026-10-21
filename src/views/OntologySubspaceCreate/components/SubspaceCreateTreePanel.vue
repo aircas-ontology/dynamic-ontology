@@ -14,6 +14,7 @@
     <el-tree
       v-else
       ref="treeRef"
+      data-onboarding="subspace-create-tree"
       class="aircas-tree subspace-create-tree-panel__tree"
       node-key="id"
       show-checkbox

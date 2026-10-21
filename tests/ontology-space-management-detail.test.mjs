@@ -37,7 +37,7 @@ test("space detail parent and child routes resolve under the workspace layout", 
 test("subspace create page composes left tree and right workspace panels", () => {
   const source = readFileSync(new URL("../src/views/OntologySubspaceCreate/index.vue", import.meta.url), "utf8");
   assert.match(source, /class="ontology-subspace-create"/);
-  assert.match(source, /aria-label="创建主题空间"/);
+  assert.match(source, /aria-label="创建主题"/);
   assert.match(source, /SubspaceCreateTreePanel/);
   assert.match(source, /SubspaceCreateWorkspacePanel/);
   assert.doesNotMatch(source, /<el-tree/);
@@ -126,4 +126,21 @@ test("workspace type tabs keep prototype labels including function operator", ()
     /:root:not\(\.dark\) \.workspace-type-tabs[\s\S]*linear-gradient\(135deg, var\(--aircas-color-card-background\), var\(--aircas-color-panel-background-deep\)\)/,
   );
   assert.match(source, /box-shadow: inset 0 0 20px var\(--aircas-color-effect-page-glow\)/);
+});
+
+test("workspace type tabs show resource counts as text suffix", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/WorkspaceTypeTabs.vue", import.meta.url), "utf8");
+  assert.match(source, /counts\?: Partial<Record<Exclude<ManagementWorkspaceTab, "overview">, number>>/);
+  assert.match(source, /countsLoading\?: boolean/);
+  assert.match(source, /formatOverviewStat/);
+  assert.match(source, /workspace-type-tabs__count/);
+  assert.match(source, /workspace-type-tabs__item-active \.workspace-type-tabs__count/);
+});
+
+test("space detail layout loads overview statistics once and passes counts to tabs", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/index.vue", import.meta.url), "utf8");
+  assert.match(source, /useSpaceOverview\(spaceId\)/);
+  assert.match(source, /provide\(SPACE_OVERVIEW_KEY, spaceOverview\)/);
+  assert.match(source, /:counts="spaceOverviewCounts"/);
+  assert.match(source, /:counts-loading="spaceOverviewCountsLoading"/);
 });

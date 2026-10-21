@@ -97,7 +97,7 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, />创建</);
   assert.match(source, /currentStepIndex/);
   assert.match(source, /class="aircas-form /);
-  assert.match(source, /主题空间名称/);
+  assert.match(source, /主题名称/);
   assert.match(source, /API 名称/);
   assert.match(source, /class="aircas-input"/);
   assert.doesNotMatch(source, /\.el-input__wrapper\) \{[\s\S]*background: var\(--aircas-color-transparent\)/);
@@ -509,7 +509,7 @@ test("subspace create page orchestrates names and next-step validation", () => {
   assert.match(source, /relationLoadStatus/);
   assert.match(source, /currentStepIndex.value = 3/);
   assert.match(source, /OntologySpaceManagement/);
-  assert.match(source, /请填写主题空间名称和 API 名称/);
+  assert.match(source, /请填写主题名称和 API 名称/);
   assert.match(source, /请至少选择一个对象/);
   assert.match(source, /getOntologyEntitiesInterface/);
   assert.match(source, /:property-load-status="propertyLoadStatus"/);

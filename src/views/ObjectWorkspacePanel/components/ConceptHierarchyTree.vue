@@ -407,7 +407,8 @@ function openDeleteCategoryDialog(value: unknown) {
 }
 
 .concept-hierarchy__tree :deep(.el-tree-node__content:hover) .concept-hierarchy__create-child-wrap,
-.concept-hierarchy__tree :deep(.el-tree-node__content:focus-within) .concept-hierarchy__create-child-wrap {
+.concept-hierarchy__tree :deep(.el-tree-node__content:focus-within) .concept-hierarchy__create-child-wrap,
+.concept-hierarchy__create-child-wrap:has(.onboarding-guide__target-revealed) {
   opacity: 1;
   pointer-events: auto;
 }

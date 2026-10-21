@@ -1,5 +1,15 @@
 <template>
-  <section class="ontology-subspace-create" aria-label="创建主题空间">
+  <section class="ontology-subspace-create" aria-label="创建主题">
+    <button
+      v-if="isThemeSpaceCreation"
+      class="ontology-subspace-create__help"
+      type="button"
+      aria-label="打开新手引导"
+      title="新手引导"
+      @click="openOnboardingGuide()"
+    >
+      <el-icon><QuestionFilled /></el-icon>
+    </button>
     <SubspaceCreateTreePanel :current-step-index="currentStepIndex" @update:selected-objects="selectedObjects = $event" />
     <SubspaceCreateWorkspacePanel
       v-model:space-name="spaceName"
@@ -37,6 +47,7 @@
       @relation-retry="retryParentSpaceRelations"
       @update:property-filters="propertyFilters = $event"
     />
+    <OnboardingGuideOverlay v-if="isThemeSpaceCreation" v-model="guideVisible" :steps="themeOnboardingGuideSteps" :start-id="guideStartId" />
   </section>
 </template>
 
@@ -52,6 +63,10 @@ import {
 } from "@/apis";
 import SubspaceCreateTreePanel from "./components/SubspaceCreateTreePanel.vue";
 import SubspaceCreateWorkspacePanel from "./components/SubspaceCreateWorkspacePanel.vue";
+import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
+import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
+import { ONBOARDING_GUIDE_ENTRY_IDS, THEME_ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
+import { QuestionFilled } from "@element-plus/icons-vue";
 import { listSubspaceCreateObjectsMissingProperties, mapSubspaceCreateObjectPropertyGroup } from "./utils/mapSubspaceCreateObjectProperty";
 import type { SubspaceCreateObjectPropertyGroup } from "./utils/mapSubspaceCreateObjectProperty";
 import { mapSubspaceCreateSelectedInstances, SUBSPACE_CREATE_INSTANCE_PAGE_SIZE } from "./utils/mapSubspaceCreateSelectedInstance";
@@ -87,9 +102,19 @@ let relationRequestGeneration = 0;
 const creating = ref(false);
 const parentSpaceId = computed(() => String(route.params.spaceId || route.query.spaceId || "").trim());
 const isThemeSpaceCreation = computed(() => route.query.from === "theme-space-management");
-const spaceName = ref(`${String(route.query.spaceName || "海军对象空间")}${isThemeSpaceCreation.value ? "主题空间" : "子空间"}`);
+const spaceName = ref(`${String(route.query.spaceName || "海军对象空间")}${isThemeSpaceCreation.value ? "主题" : "子空间"}`);
 const apiName = ref(`subspace_${Date.now()}`);
 const parentSpaceName = computed(() => String(route.query.spaceName || "海军对象空间"));
+const themeOnboardingGuideSteps = THEME_ONBOARDING_GUIDE_STEPS;
+const {
+  visible: guideVisible,
+  startId: guideStartId,
+  openOnboardingGuide,
+} = useOnboardingGuide({
+  steps: themeOnboardingGuideSteps,
+  page: "theme-create",
+  entryStepId: ONBOARDING_GUIDE_ENTRY_IDS["theme-create"],
+});
 
 watch(selectedObjects, () => {
   instanceRequestGeneration += 1;
@@ -117,7 +142,7 @@ watch(propertyGroups, (groups) => {
 });
 
 /**
- * @description 按路由历史返回进入主题空间创建页之前的页面。
+ * @description 按路由历史返回进入主题创建页之前的页面。
  */
 function goBackToSpaceList() {
   void router.back();
@@ -176,7 +201,7 @@ function toggleObjectProperty(propertyId: string, checked: boolean) {
  */
 async function advanceSubspaceCreateStep() {
   if (!spaceName.value.trim() || !apiName.value.trim()) {
-    ElMessage.warning("请填写主题空间名称和 API 名称");
+    ElMessage.warning("请填写主题名称和 API 名称");
     return;
   }
   if (currentStepIndex.value === 0) {
@@ -414,7 +439,7 @@ function retryObjectInstancePage(objectId: string) {
  */
 async function createSubspace() {
   if (!spaceName.value.trim() || !apiName.value.trim()) {
-    ElMessage.warning("请填写主题空间名称和 API 名称");
+    ElMessage.warning("请填写主题名称和 API 名称");
     return;
   }
   if (creating.value) return;
@@ -461,6 +486,27 @@ async function createSubspace() {
   flex: 1;
   grid-template-columns: 320px minmax(0, 1fr);
   gap: 8px;
+}
+
+.ontology-subspace-create__help {
+  position: fixed;
+  top: 53px;
+  right: 18px;
+  z-index: 4;
+  display: inline-flex;
+  padding: 6px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 6px;
+  color: var(--aircas-color-text-secondary);
+  background: var(--aircas-color-panel-background);
+  cursor: pointer;
+}
+.ontology-subspace-create__help:hover {
+  color: var(--aircas-color-primary);
+}
+.ontology-subspace-create__help:focus-visible {
+  outline: 2px solid var(--aircas-color-primary);
+  outline-offset: 2px;
 }
 
 @media (max-width: 1000px) {

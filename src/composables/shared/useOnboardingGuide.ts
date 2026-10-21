@@ -1,7 +1,7 @@
 import { ref, type Ref } from "vue";
 
 /** 引导步骤链覆盖的页面标识；用于跨页续接时判断步骤归属。 */
-export type OnboardingGuidePageId = "space-list" | "space-manage" | "object-detail";
+export type OnboardingGuidePageId = "space-list" | "space-manage" | "object-detail" | "theme-list" | "theme-create";
 
 /** 六步流程式新手引导的单个小步骤定义。 */
 export interface OnboardingGuideStep {

@@ -16,6 +16,7 @@
           @click="emit('update:activeTab', tab.id)"
         >
           <span>{{ tab.label }}</span>
+          <span v-if="countSuffix(tab.id)" class="workspace-type-tabs__count">{{ countSuffix(tab.id) }}</span>
         </button>
       </template>
     </div>
@@ -25,11 +26,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ManagementWorkspaceTab } from "@/types";
+import { formatOverviewStat } from "@/views/SpaceOverviewPanel/utils/overviewStats";
 
 const props = defineProps<{
   activeTab: ManagementWorkspaceTab;
   availableTabs: readonly ManagementWorkspaceTab[];
   spaceName: string;
+  counts?: Partial<Record<Exclude<ManagementWorkspaceTab, "overview">, number>>;
+  countsLoading?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -46,6 +50,18 @@ const workspaceTabs = computed(() => [
 ]);
 
 const visibleWorkspaceTabs = computed(() => workspaceTabs.value.filter((tab) => props.availableTabs.includes(tab.id)));
+
+/**
+ * @description 计算资源 tab 的统计后缀文本；概览 tab 或未传统计数据时不显示。
+ * @param tabId tab id。
+ * @returns 格式化后的统计文本（千分位，加载中或无数据显示「—」）；无需显示时返回空字符串。
+ */
+function countSuffix(tabId: ManagementWorkspaceTab): string {
+  if (tabId === "overview" || !props.counts) {
+    return "";
+  }
+  return formatOverviewStat(props.counts[tabId], props.countsLoading ?? false).value;
+}
 </script>
 
 <style lang="scss" scoped>
@@ -108,6 +124,17 @@ const visibleWorkspaceTabs = computed(() => workspaceTabs.value.filter((tab) => 
   margin: 0 8px;
   flex-shrink: 0;
   background: var(--aircas-color-border-light);
+}
+
+.workspace-type-tabs__count {
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-type-tabs__item-active .workspace-type-tabs__count {
+  color: var(--aircas-color-primary);
 }
 
 .workspace-type-tabs__item:hover {
