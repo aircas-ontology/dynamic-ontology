@@ -14,7 +14,8 @@
 "endpoint": "https://httpbin.org/post",
 "method": "POST",
 "authType": "none",
-"apiKey": "",
+"apiKeyHeader": "",//api-key 模式的请求头名
+"apiKey": "",//api-key 模式的密钥
 "contentType": "application/json",
 "inputs": [
 { "name": "title", "type": "string", "required": true, "location": "body", "description": "标题" },

@@ -57,10 +57,17 @@ import { ElMessage } from "element-plus";
 
 import { getOntologyFunctionDetailInterface } from "@/apis";
 import AircasLoading from "@/components/AircasLoading.vue";
-import type { CompositeWorkflowInputBinding, CompositeWorkflowParamBrief, GetOntologyFunctionDetailParamItem } from "@/types";
+import type { CompositeWorkflowInputBinding, CompositeWorkflowParamBrief } from "@/types";
 
 import type { CompositeWorkflowFunctionNodeEditContext } from "../composables/useCompositeWorkflowCanvas";
-import { alignCompositeWorkflowInputBindings } from "../utils/compositeWorkflowGraph.ts";
+import {
+  alignCompositeWorkflowInputBindings,
+  compositeWorkflowParamPathKey,
+  findCompositeWorkflowParamLeaf,
+  listCompositeWorkflowParamNodes,
+  parseCompositeWorkflowParamPathKey,
+  resolveCompositeWorkflowParamsFromSnapshotAndDetail,
+} from "../utils/compositeWorkflowGraph.ts";
 import { compareCompositeWorkflowParamTypes } from "../utils/compositeWorkflowParamType.ts";
 import { mapCompositeParamBriefsToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
 import FunctionOperatorCompositeInputBindingTree from "./FunctionOperatorCompositeInputBindingTree.vue";
@@ -92,7 +99,18 @@ const scriptLanguage = ref("");
 const scriptCode = ref("");
 let detailGeneration = 0;
 
-const upstreamOptions = computed(() => props.context?.upstreamOutputs ?? []);
+/**
+ * @description 上游 OUTPUT 全节点选项（多参数、多级结构均可选），不自动预选。
+ */
+const upstreamOptions = computed(() =>
+  listCompositeWorkflowParamNodes(props.context?.upstreamOutputs ?? []).map((node) => ({
+    value: compositeWorkflowParamPathKey(node.paramPath),
+    label: `${compositeWorkflowParamPathKey(node.paramPath)}（${node.brief.paramType}）`,
+    paramPath: node.paramPath,
+    paramName: node.brief.paramName,
+    paramType: node.brief.paramType,
+  })),
+);
 
 /**
  * @description 输入参数树，展示方式与脚本 IDE 解析结果一致。
@@ -105,26 +123,7 @@ const inputParameterTree = computed(() => mapCompositeParamBriefsToScriptParamTr
 const outputParameterTree = computed(() => mapCompositeParamBriefsToScriptParamTree(outputs.value, "OUTPUT"));
 
 /**
- * @description 将详情 params 项递归转为编排参数摘要。
- * @param item 详情参数项。
- * @returns 参数摘要。
- */
-function mapDetailParamItemToBrief(item: GetOntologyFunctionDetailParamItem): CompositeWorkflowParamBrief {
-  const brief: CompositeWorkflowParamBrief = {
-    paramName: typeof item.paramName === "string" ? item.paramName.trim() : "",
-    paramType: typeof item.paramType === "string" ? item.paramType : "",
-  };
-  if (Array.isArray(item.fields) && item.fields.length > 0) {
-    brief.fields = [...item.fields]
-      .sort((left, right) => (left.paramOrder ?? 0) - (right.paramOrder ?? 0))
-      .map((child) => mapDetailParamItemToBrief(child))
-      .filter((child) => child.paramName);
-  }
-  return brief;
-}
-
-/**
- * @description 拉取详情并初始化绑定表单。
+ * @description 拉取详情并初始化绑定表单。空 inputs 快照不会挡住详情 INPUT。
  */
 async function loadFunctionDetail(): Promise<void> {
   const context = props.context;
@@ -138,12 +137,6 @@ async function loadFunctionDetail(): Promise<void> {
   scriptLanguage.value = "";
   scriptCode.value = "";
   try {
-    const hasParamsSnapshot = Boolean(context.paramsSnapshot?.inputs);
-    if (hasParamsSnapshot && context.paramsSnapshot) {
-      inputs.value = context.paramsSnapshot.inputs;
-      outputs.value = context.paramsSnapshot.outputs ?? [];
-      bindings.value = alignCompositeWorkflowInputBindings(context.paramsSnapshot.inputs, context.inputBindings, context.upstreamOutputs, context.hasUpstream);
-    }
     const response = await getOntologyFunctionDetailInterface({
       functionApi: context.functionApi,
       version: context.version,
@@ -157,27 +150,10 @@ async function loadFunctionDetail(): Promise<void> {
     description.value = typeof response.data.description === "string" ? response.data.description : "";
     scriptLanguage.value = typeof response.data.language === "string" ? response.data.language.trim() : "";
     scriptCode.value = typeof response.data.code === "string" ? response.data.code : "";
-    if (hasParamsSnapshot) {
-      return;
-    }
-    const nextInputs: CompositeWorkflowParamBrief[] = [];
-    const nextOutputs: CompositeWorkflowParamBrief[] = [];
-    const sortedParams = [...(response.data.params ?? [])].sort((left, right) => (left.paramOrder ?? 0) - (right.paramOrder ?? 0));
-    for (const item of sortedParams) {
-      const category = typeof item.category === "string" ? item.category.trim().toUpperCase() : "";
-      const brief = mapDetailParamItemToBrief(item);
-      if (!brief.paramName) {
-        continue;
-      }
-      if (category === "INPUT") {
-        nextInputs.push(brief);
-      } else if (category === "OUTPUT") {
-        nextOutputs.push(brief);
-      }
-    }
-    inputs.value = nextInputs;
-    outputs.value = nextOutputs;
-    bindings.value = alignCompositeWorkflowInputBindings(nextInputs, context.inputBindings, context.upstreamOutputs, context.hasUpstream);
+    const resolved = resolveCompositeWorkflowParamsFromSnapshotAndDetail(context.paramsSnapshot, response.data.params ?? []);
+    inputs.value = resolved.inputs;
+    outputs.value = resolved.outputs;
+    bindings.value = alignCompositeWorkflowInputBindings(resolved.inputs, context.inputBindings, context.upstreamOutputs, context.hasUpstream);
   } catch (error) {
     if (requestId !== detailGeneration) {
       return;
@@ -247,8 +223,13 @@ function replaceBinding(paramPath: string[], next: CompositeWorkflowInputBinding
 function onBindingModeChange(paramPath: string[], mode: string): void {
   const paramName = paramPath[paramPath.length - 1] ?? "";
   if (mode === "fromUpstream") {
-    const first = upstreamOptions.value[0]?.paramName ?? "";
-    replaceBinding(paramPath, { mode: "fromUpstream", paramName, paramPath, upstreamParamName: first });
+    replaceBinding(paramPath, {
+      mode: "fromUpstream",
+      paramName,
+      paramPath,
+      upstreamParamName: "",
+      upstreamParamPath: [],
+    });
     return;
   }
   replaceBinding(paramPath, { mode: "manual", paramName, paramPath, value: "" });
@@ -268,16 +249,22 @@ function onManualValueChange(paramPath: string[], value: string): void {
 }
 
 /**
- * @description 更新上游输出映射。
- * @param paramPath 叶子路径。
- * @param upstreamParamName 上游输出名。
+ * @description 更新上游输出节点映射。
+ * @param paramPath 下游入参叶子路径。
+ * @param upstreamPathKey 上游节点路径键。
  */
-function onUpstreamParamChange(paramPath: string[], upstreamParamName: string): void {
+function onUpstreamParamChange(paramPath: string[], upstreamPathKey: string): void {
   const current = bindings.value.find((item) => isSameParamPath(item.paramPath, paramPath) && item.mode === "fromUpstream");
   if (!current || current.mode !== "fromUpstream") {
     return;
   }
-  replaceBinding(paramPath, { ...current, upstreamParamName });
+  const upstreamParamPath = parseCompositeWorkflowParamPathKey(upstreamPathKey);
+  const option = upstreamOptions.value.find((item) => item.value === upstreamPathKey);
+  replaceBinding(paramPath, {
+    ...current,
+    upstreamParamName: option?.paramName ?? upstreamParamPath[upstreamParamPath.length - 1] ?? "",
+    upstreamParamPath,
+  });
 }
 
 /**
@@ -288,20 +275,22 @@ function emitConfirm(): void {
   if (!context) {
     return;
   }
+  const outputNodes = listCompositeWorkflowParamNodes(context.upstreamOutputs);
   for (const binding of bindings.value) {
     if (binding.mode !== "fromUpstream") {
       continue;
     }
     const input = findLeafInput(inputs.value, binding.paramPath.length > 0 ? binding.paramPath : [binding.paramName]);
-    const upstream = upstreamOptions.value.find((item) => item.paramName === binding.upstreamParamName);
+    const upstreamPath = Array.isArray(binding.upstreamParamPath) && binding.upstreamParamPath.length > 0 ? binding.upstreamParamPath : [];
+    const upstream = upstreamPath.length > 0 ? findCompositeWorkflowParamLeaf(outputNodes, upstreamPath) : undefined;
     const label = (binding.paramPath.length > 0 ? binding.paramPath : [binding.paramName]).join(".");
     if (!input || !upstream) {
-      ElMessage.error(`入参「${label}」上游映射无效`);
+      ElMessage.error(`入参「${label}」请选择上游参数`);
       return;
     }
-    const compared = compareCompositeWorkflowParamTypes(upstream.paramType, input.paramType);
+    const compared = compareCompositeWorkflowParamTypes(upstream.brief.paramType, input.paramType);
     if (!compared.compatible) {
-      ElMessage.error(`入参「${label}」与上游「${upstream.paramName}」类型不兼容`);
+      ElMessage.error(`入参「${label}」与上游「${compositeWorkflowParamPathKey(upstream.paramPath)}」类型不兼容`);
       return;
     }
   }

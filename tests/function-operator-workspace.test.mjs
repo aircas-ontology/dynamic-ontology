@@ -345,8 +345,10 @@ test("external api function create form shows endpoint method and auth without s
   assert.match(formSource, /无认证/);
   assert.match(formSource, /API Key/);
   assert.match(formSource, /externalApiAuth === ['"]apiKey['"]/);
+  assert.match(formSource, /v-model="externalApiHeaderKey"/);
   assert.match(formSource, /v-model="externalApiHeader"/);
-  assert.match(formSource, /label="认证 Header"/);
+  assert.match(formSource, /label="认证 Header key"/);
+  assert.match(formSource, /label="认证 Header 值"/);
   assert.match(formSource, /输入参数/);
   assert.match(formSource, /<el-table\b/);
   assert.match(formSource, /:data="externalApiInputParameters"/);
@@ -387,7 +389,8 @@ test("external api function create form shows endpoint method and auth without s
   assert.match(formSource, /buildCreateOntologyExternalFunctionParams/);
   assert.match(formSource, /save-external/);
   assert.doesNotMatch(formSource, /外部 API 函数编辑本阶段暂未开放/);
-  assert.match(formSource, /请填写认证 Header/);
+  assert.match(formSource, /请填写认证 Header key/);
+  assert.match(formSource, /请填写认证 Header 值/);
   assert.doesNotMatch(formSource, /:disabled="form\.type !== 'basic'"/);
   assert.match(workspaceSource, /saveExternalApiOperator/);
   const externalSaveStart = workspaceSource.indexOf("async function saveExternalApiOperator");

@@ -7,6 +7,7 @@ import { nextTick, onBeforeUnmount, ref, watch } from "vue";
 import type { editor as MonacoEditor } from "monaco-editor";
 import { useDocumentTheme } from "@/composables/shared/useDocumentTheme";
 import type { FunctionOperatorScriptLanguage } from "@/types";
+import { ensureMonacoEnvironment } from "@/utils/ensureMonacoEnvironment";
 
 const props = defineProps<{
   modelValue: string;
@@ -208,21 +209,6 @@ function disposeEditor(): void {
   }
   editor?.dispose();
   editor = null;
-}
-
-/**
- * @description 配置 Monaco worker，仅使用明文编辑器 worker。
- */
-function ensureMonacoEnvironment(): void {
-  const globalScope = globalThis as typeof globalThis & { MonacoEnvironment?: { getWorker(): Worker } };
-  if (globalScope.MonacoEnvironment) {
-    return;
-  }
-  globalScope.MonacoEnvironment = {
-    getWorker() {
-      return new Worker(new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url), { type: "module" });
-    },
-  };
 }
 
 /**

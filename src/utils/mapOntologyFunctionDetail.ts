@@ -28,6 +28,9 @@ export interface OntologyExternalApiFormValues {
   endpoint: string;
   method: "GET" | "POST" | "PUT" | "DELETE";
   authType: "none" | "apiKey";
+  /** 认证 Header 名。 */
+  apiKeyHeader: string;
+  /** 认证 Header 值。 */
   apiKey: string;
   inputs: Array<{
     name: string;
@@ -80,6 +83,7 @@ export function mapOntologyExternalApiConfigToForm(
     endpoint: typeof config?.endpoint === "string" ? config.endpoint.trim() : "",
     method,
     authType,
+    apiKeyHeader: authType === "apiKey" && typeof config?.apiKeyHeader === "string" ? config.apiKeyHeader.trim() : "",
     apiKey: authType === "apiKey" && typeof config?.apiKey === "string" ? config.apiKey.trim() : "",
     inputs: configInputs.length > 0 ? configInputs : mapDetailParametersToExternalInputs(detailParameters?.inputs ?? []),
     outputs: configOutputs.length > 0 ? configOutputs : mapDetailParametersToExternalOutputs(detailParameters?.outputs ?? []),

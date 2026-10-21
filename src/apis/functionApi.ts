@@ -36,7 +36,7 @@ import { request } from "@/utils/request";
  * @param params.type 函数模型：BASIC_QUERY、CUSTOMIZE 或 EXTERNAL。
  * @param params.ontologySpaceId 所属对象空间 id。
  * @param params.queryConfig 可选的基础查询配置（filters / aggFunc）。
- * @param params.apiConfig 可选的外部 API 配置（endpoint / method / authType / apiKey / inputs / outputs）。
+ * @param params.apiConfig 可选的外部 API 配置（endpoint / method / authType / apiKeyHeader / apiKey / inputs / outputs）。
  * @returns 标准 API 响应；成功时 data 为 null。
  */
 export function createOntologyFunctionInterface(params: CreateOntologyFunctionParams): Promise<ApiResponse<CreateOntologyFunctionData>> {
@@ -64,7 +64,7 @@ export function createOntologyFunctionInterface(params: CreateOntologyFunctionPa
  * @param params.parameters 可选脚本参数列表（仅 CUSTOMIZE）。
  * @param params.basedOnOldVersion 可选，外部 API 编辑与新建请求保持一致。
  * @param params.queryConfig 可选的基础查询配置（filters / aggFunc）。
- * @param params.apiConfig 可选的外部 API 配置（endpoint / method / authType / apiKey / inputs / outputs）。
+ * @param params.apiConfig 可选的外部 API 配置（endpoint / method / authType / apiKeyHeader / apiKey / inputs / outputs）。
  * @returns 标准 API 响应；成功时 data 为 null。
  */
 export function updateOntologyFunctionInterface(params: UpdateOntologyFunctionParams): Promise<ApiResponse<UpdateOntologyFunctionData>> {

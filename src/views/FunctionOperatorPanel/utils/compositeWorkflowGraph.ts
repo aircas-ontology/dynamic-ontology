@@ -12,7 +12,9 @@ import type {
   GetOntologyFunctionDetailParamItem,
 } from "@/types";
 
+import { createDefaultCompositeWorkflowBranchConfig, normalizeCompositeWorkflowBranchConfig } from "./compositeWorkflowBranchDefaults.ts";
 import { compareCompositeWorkflowParamTypes } from "./compositeWorkflowParamType.ts";
+import { createDefaultCompositeWorkflowTransformConfig, resolveCompositeWorkflowTransformOutputs } from "./compositeWorkflowTransformDefaults.ts";
 
 /** 图中用于校验的边。 */
 export interface CompositeWorkflowGraphEdge {
@@ -78,6 +80,75 @@ export function mapCompositeWorkflowDetailParamBriefs(
     }
   }
   return briefs;
+}
+
+/**
+ * @description 合并节点 paramsSnapshot 与详情 params：某一方向快照非空时保留快照，否则从详情按 category 补齐。避免空 `inputs: []` 挡住详情 INPUT。
+ * @param snapshot 节点上已有参数快照；可为空。
+ * @param detailParams 函数详情 params。
+ * @returns 用于展示与绑定的 inputs / outputs。
+ */
+export function resolveCompositeWorkflowParamsFromSnapshotAndDetail(
+  snapshot: { inputs?: CompositeWorkflowParamBrief[]; outputs?: CompositeWorkflowParamBrief[] } | null | undefined,
+  detailParams: GetOntologyFunctionDetailParamItem[],
+): { inputs: CompositeWorkflowParamBrief[]; outputs: CompositeWorkflowParamBrief[] } {
+  const snapshotInputs = snapshot?.inputs;
+  const snapshotOutputs = snapshot?.outputs;
+  return {
+    inputs: Array.isArray(snapshotInputs) && snapshotInputs.length > 0 ? snapshotInputs : mapCompositeWorkflowDetailParamBriefs(detailParams, "INPUT"),
+    outputs: Array.isArray(snapshotOutputs) && snapshotOutputs.length > 0 ? snapshotOutputs : mapCompositeWorkflowDetailParamBriefs(detailParams, "OUTPUT"),
+  };
+}
+
+/**
+ * @description 解析目标节点直接前驱可供下游选择的输出树；条件分支透传其自身上游输出，不另造输出。
+ * @param nodes 图节点摘要。
+ * @param edges 图边。
+ * @param nodeId 目标节点 id。
+ * @returns hasUpstream 与 upstreamOutputs。
+ */
+export function resolveCompositeWorkflowNodeUpstreamOutputs(
+  nodes: CompositeWorkflowGraphNodeSummary[],
+  edges: CompositeWorkflowGraphEdge[],
+  nodeId: string,
+): { hasUpstream: boolean; upstreamOutputs: CompositeWorkflowParamBrief[] } {
+  const visited = new Set<string>();
+
+  /**
+   * @description 沿入边递归解析输出树；遇分支则继续追其前驱。
+   * @param currentNodeId 当前目标节点。
+   * @returns 解析结果。
+   */
+  function resolveForNode(currentNodeId: string): { hasUpstream: boolean; upstreamOutputs: CompositeWorkflowParamBrief[] } {
+    if (visited.has(currentNodeId)) {
+      return { hasUpstream: true, upstreamOutputs: [] };
+    }
+    visited.add(currentNodeId);
+    const incoming = edges.filter((edge) => edge.targetNodeId === currentNodeId);
+    if (incoming.length === 0) {
+      return { hasUpstream: false, upstreamOutputs: [] };
+    }
+    const source = nodes.find((node) => node.id === incoming[0]?.sourceNodeId);
+    if (!source) {
+      return { hasUpstream: true, upstreamOutputs: [] };
+    }
+    if (source.kind === "function") {
+      return { hasUpstream: true, upstreamOutputs: source.paramsSnapshot?.outputs ?? [] };
+    }
+    if (source.kind === "transform") {
+      return { hasUpstream: true, upstreamOutputs: resolveCompositeWorkflowTransformOutputs(source.transformConfig) };
+    }
+    if (source.kind === "loop") {
+      const itemName = source.loopConfig?.itemParamName?.trim() || "item";
+      return { hasUpstream: true, upstreamOutputs: [{ paramName: itemName, paramType: "object" }] };
+    }
+    if (source.kind === "branch") {
+      return resolveForNode(source.id);
+    }
+    return { hasUpstream: true, upstreamOutputs: [] };
+  }
+
+  return resolveForNode(nodeId);
 }
 
 /**
@@ -149,50 +220,119 @@ function isSameCompositeWorkflowParamPath(left: string[], right: string[]): bool
 }
 
 /**
- * @description 收集无下级字段的入参叶子。
- * @param inputs 参数树。
+ * @description 收集参数树无下级字段的叶子（下游入参绑定位用）。
+ * @param params 参数树。
  * @param prefix 已走过的参数名。
  * @returns 叶子及其路径。
  */
-function listCompositeWorkflowInputLeaves(
-  inputs: CompositeWorkflowParamBrief[],
+export function listCompositeWorkflowParamLeaves(
+  params: CompositeWorkflowParamBrief[],
   prefix: string[] = [],
 ): Array<{ brief: CompositeWorkflowParamBrief; paramPath: string[] }> {
   const leaves: Array<{ brief: CompositeWorkflowParamBrief; paramPath: string[] }> = [];
-  for (const input of inputs) {
-    const paramPath = [...prefix, input.paramName];
-    if (input.fields && input.fields.length > 0) {
-      leaves.push(...listCompositeWorkflowInputLeaves(input.fields, paramPath));
+  for (const item of params) {
+    const paramPath = [...prefix, item.paramName];
+    if (item.fields && item.fields.length > 0) {
+      leaves.push(...listCompositeWorkflowParamLeaves(item.fields, paramPath));
       continue;
     }
-    leaves.push({ brief: input, paramPath });
+    leaves.push({ brief: item, paramPath });
   }
   return leaves;
 }
 
 /**
- * @description 按上游 OUTPUT 与下游 INPUT 叶子生成默认同名 fromUpstream 绑定；无前驱则全部 manual 空值。
+ * @description 前序收集参数树全部节点（含中间 OBJECT），供上游任意层级选择。
+ * @param params 参数树。
+ * @param prefix 已走过的参数名。
+ * @returns 节点及其路径。
+ */
+export function listCompositeWorkflowParamNodes(
+  params: CompositeWorkflowParamBrief[],
+  prefix: string[] = [],
+): Array<{ brief: CompositeWorkflowParamBrief; paramPath: string[] }> {
+  const nodes: Array<{ brief: CompositeWorkflowParamBrief; paramPath: string[] }> = [];
+  for (const item of params) {
+    const paramPath = [...prefix, item.paramName];
+    nodes.push({ brief: item, paramPath });
+    if (item.fields && item.fields.length > 0) {
+      nodes.push(...listCompositeWorkflowParamNodes(item.fields, paramPath));
+    }
+  }
+  return nodes;
+}
+
+/**
+ * @description 将参数路径编码为下拉选项值。
+ * @param paramPath 从根到节点的路径。
+ * @returns 以 `.` 连接的路径键。
+ */
+export function compositeWorkflowParamPathKey(paramPath: string[]): string {
+  return paramPath.join(".");
+}
+
+/**
+ * @description 解析路径键为参数路径。
+ * @param pathKey 路径键。
+ * @returns 参数路径；空键返回空数组。
+ */
+export function parseCompositeWorkflowParamPathKey(pathKey: string): string[] {
+  const trimmed = pathKey.trim();
+  return trimmed ? trimmed.split(".") : [];
+}
+
+/**
+ * @description 在节点列表中按路径查找。
+ * @param nodes 节点列表。
+ * @param paramPath 目标路径。
+ * @returns 匹配节点；未找到返回 undefined。
+ */
+export function findCompositeWorkflowParamLeaf(
+  nodes: Array<{ brief: CompositeWorkflowParamBrief; paramPath: string[] }>,
+  paramPath: string[],
+): { brief: CompositeWorkflowParamBrief; paramPath: string[] } | undefined {
+  return nodes.find((item) => isSameCompositeWorkflowParamPath(item.paramPath, paramPath));
+}
+
+/**
+ * @description 解析 fromUpstream 绑定的上游路径；仅认完整路径或顶层单段精确名，不做同名猜测。
+ * @param binding 上游绑定。
+ * @param outputNodes 上游 OUTPUT 全节点。
+ * @returns 上游路径；无法解析返回 null。
+ */
+function resolveCompositeWorkflowUpstreamNodePath(
+  binding: Extract<CompositeWorkflowInputBinding, { mode: "fromUpstream" }>,
+  outputNodes: Array<{ brief: CompositeWorkflowParamBrief; paramPath: string[] }>,
+): string[] | null {
+  if (Array.isArray(binding.upstreamParamPath) && binding.upstreamParamPath.length > 0) {
+    return binding.upstreamParamPath;
+  }
+  const exactTop = outputNodes.find((item) => item.paramPath.length === 1 && item.paramPath[0] === binding.upstreamParamName);
+  return exactTop?.paramPath ?? null;
+}
+
+/**
+ * @description 为下游 INPUT 叶子生成默认绑定：一律 manual 空值，不自动匹配上游。
  * @param inputs 下游 INPUT。
- * @param upstreamOutputs 上游 OUTPUT；无前驱传空数组。
- * @param hasUpstream 是否存在前驱。
+ * @param _upstreamOutputs 上游 OUTPUT（保留参数以兼容调用方）。
+ * @param _hasUpstream 是否存在前驱（保留参数以兼容调用方）。
  * @returns 叶子绑定列表。
  */
 export function buildDefaultCompositeWorkflowInputBindings(
   inputs: CompositeWorkflowParamBrief[],
-  upstreamOutputs: CompositeWorkflowParamBrief[],
-  hasUpstream: boolean,
+  _upstreamOutputs: CompositeWorkflowParamBrief[],
+  _hasUpstream: boolean,
 ): CompositeWorkflowInputBinding[] {
-  const outputNames = new Set(upstreamOutputs.map((item) => item.paramName));
-  return listCompositeWorkflowInputLeaves(inputs).map(({ brief, paramPath }) => {
-    if (hasUpstream && outputNames.has(brief.paramName)) {
-      return { mode: "fromUpstream" as const, paramName: brief.paramName, paramPath, upstreamParamName: brief.paramName };
-    }
-    return { mode: "manual" as const, paramName: brief.paramName, paramPath, value: "" };
-  });
+  return listCompositeWorkflowParamLeaves(inputs).map(({ brief, paramPath }) => ({
+    mode: "manual" as const,
+    paramName: brief.paramName,
+    paramPath,
+    value: "",
+  }));
 }
 
 /**
- * @description 前驱变更后修复绑定：无效 fromUpstream 降为 manual，并补齐 paramPath。
+ * @description 前驱变更后修复绑定：无效 fromUpstream 降为 manual，并补齐 paramPath / upstreamParamPath。
  * @param bindings 原绑定。
  * @param upstreamOutputs 新前驱 OUTPUT；无前驱传空。
  * @param hasUpstream 是否有前驱。
@@ -203,16 +343,27 @@ export function repairCompositeWorkflowInputBindings(
   upstreamOutputs: CompositeWorkflowParamBrief[],
   hasUpstream: boolean,
 ): CompositeWorkflowInputBinding[] {
-  const outputNames = new Set(upstreamOutputs.map((item) => item.paramName));
+  const outputNodes = listCompositeWorkflowParamNodes(upstreamOutputs);
   return bindings.map((binding) => {
     const paramPath = compositeWorkflowBindingPath(binding);
     if (binding.mode === "manual") {
       return { ...binding, paramPath };
     }
-    if (!hasUpstream || !outputNames.has(binding.upstreamParamName)) {
+    if (!hasUpstream) {
       return { mode: "manual" as const, paramName: binding.paramName, paramPath, value: "" };
     }
-    return { ...binding, paramPath };
+    const upstreamPath = resolveCompositeWorkflowUpstreamNodePath(binding, outputNodes);
+    const node = upstreamPath ? findCompositeWorkflowParamLeaf(outputNodes, upstreamPath) : undefined;
+    if (!node) {
+      return { mode: "manual" as const, paramName: binding.paramName, paramPath, value: "" };
+    }
+    return {
+      mode: "fromUpstream" as const,
+      paramName: binding.paramName,
+      paramPath,
+      upstreamParamName: node.brief.paramName,
+      upstreamParamPath: node.paramPath,
+    };
   });
 }
 
@@ -258,7 +409,8 @@ export function validateCompositeWorkflowFunctionBindings(
   hasUpstream: boolean,
 ): string | null {
   const inputs = node.paramsSnapshot?.inputs ?? [];
-  const leaves = listCompositeWorkflowInputLeaves(inputs);
+  const leaves = listCompositeWorkflowParamLeaves(inputs);
+  const outputNodes = listCompositeWorkflowParamNodes(upstreamOutputs);
   const bindings = node.inputBindings ?? [];
   if (leaves.length === 0) {
     return null;
@@ -273,13 +425,14 @@ export function validateCompositeWorkflowFunctionBindings(
       if (!hasUpstream) {
         return `节点「${node.displayName || node.id}」入参「${label}」引用了上游但无前驱`;
       }
-      const upstream = upstreamOutputs.find((item) => item.paramName === binding.upstreamParamName);
+      const upstreamPath = resolveCompositeWorkflowUpstreamNodePath(binding, outputNodes);
+      const upstream = upstreamPath ? findCompositeWorkflowParamLeaf(outputNodes, upstreamPath) : undefined;
       if (!upstream) {
         return `节点「${node.displayName || node.id}」入参「${label}」引用的上游输出不存在`;
       }
-      const compared = compareCompositeWorkflowParamTypes(upstream.paramType, leaf.brief.paramType);
+      const compared = compareCompositeWorkflowParamTypes(upstream.brief.paramType, leaf.brief.paramType);
       if (!compared.compatible) {
-        return `节点「${node.displayName || node.id}」入参「${label}」类型与上游「${upstream.paramName}」不兼容`;
+        return `节点「${node.displayName || node.id}」入参「${label}」类型与上游「${compositeWorkflowParamPathKey(upstream.paramPath)}」不兼容`;
       }
     }
   }
@@ -329,22 +482,13 @@ export function buildCompositeWorkflowSavePayload(options: {
       return {
         id: node.id,
         kind: "branch",
-        config: node.branchConfig ?? {
-          kind: "branch",
-          left: { mode: "manual", value: "" },
-          operator: "truthy",
-        },
+        config: normalizeCompositeWorkflowBranchConfig(node.branchConfig ?? createDefaultCompositeWorkflowBranchConfig()),
       };
     }
     return {
       id: node.id,
       kind: "transform",
-      config: node.transformConfig ?? {
-        kind: "transform",
-        language: "javascript",
-        code: "function transform(input) {\n  return { result: input };\n}\n",
-        outputKeys: ["result"],
-      },
+      config: node.transformConfig ?? createDefaultCompositeWorkflowTransformConfig(),
     };
   });
   const edges: CompositeWorkflowEdgePayload[] = options.edges.map((edge) => ({
@@ -380,32 +524,26 @@ export function validateCompositeWorkflowForSave(
 ): { error: string | null; warning: string | null } {
   const functionNodes = nodes.filter((node) => node.kind === "function");
   const warning = functionNodes.length === 0 ? "画布尚无函数节点" : null;
-  const incomingByTarget = new Map<string, CompositeWorkflowGraphEdge[]>();
-  for (const edge of edges) {
-    const list = incomingByTarget.get(edge.targetNodeId) ?? [];
-    list.push(edge);
-    incomingByTarget.set(edge.targetNodeId, list);
-  }
-  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+
   for (const node of functionNodes) {
-    const incoming = incomingByTarget.get(node.id) ?? [];
-    const hasUpstream = incoming.length > 0;
-    let upstreamOutputs: CompositeWorkflowParamBrief[] = [];
-    if (hasUpstream) {
-      const source = nodeById.get(incoming[0]?.sourceNodeId ?? "");
-      if (source?.kind === "function") {
-        upstreamOutputs = source.paramsSnapshot?.outputs ?? [];
-      } else if (source?.kind === "transform") {
-        upstreamOutputs = (source.transformConfig?.outputKeys ?? ["result"]).map((paramName) => ({
-          paramName,
-          paramType: "object",
-        }));
-      } else if (source?.kind === "loop") {
-        const itemName = source.loopConfig?.itemParamName?.trim() || "item";
-        upstreamOutputs = [{ paramName: itemName, paramType: "object" }];
-      }
-    }
+    const { hasUpstream, upstreamOutputs } = resolveCompositeWorkflowNodeUpstreamOutputs(nodes, edges, node.id);
     const error = validateCompositeWorkflowFunctionBindings(node, upstreamOutputs, hasUpstream);
+    if (error) {
+      return { error, warning };
+    }
+  }
+  for (const node of nodes.filter((item) => item.kind === "transform")) {
+    const inputs = node.transformConfig?.paramsSnapshot?.inputs ?? [];
+    if (inputs.length === 0) {
+      continue;
+    }
+    const { hasUpstream, upstreamOutputs } = resolveCompositeWorkflowNodeUpstreamOutputs(nodes, edges, node.id);
+    const synthetic: CompositeWorkflowGraphNodeSummary = {
+      ...node,
+      inputBindings: node.transformConfig?.inputBindings,
+      paramsSnapshot: node.transformConfig?.paramsSnapshot,
+    };
+    const error = validateCompositeWorkflowFunctionBindings(synthetic, upstreamOutputs, hasUpstream);
     if (error) {
       return { error, warning };
     }

@@ -6,10 +6,10 @@ export interface CompositeWorkflowParamBrief {
   fields?: CompositeWorkflowParamBrief[];
 }
 
-/** 函数节点入参绑定：手填或取自唯一前驱输出。paramPath 为从根到叶子的参数名。 */
+/** 函数节点入参绑定：手填或取自唯一前驱输出叶子。paramPath / upstreamParamPath 为从根到叶子的参数名。 */
 export type CompositeWorkflowInputBinding =
   | { mode: "manual"; paramName: string; paramPath: string[]; value: string }
-  | { mode: "fromUpstream"; paramName: string; paramPath: string[]; upstreamParamName: string };
+  | { mode: "fromUpstream"; paramName: string; paramPath: string[]; upstreamParamName: string; upstreamParamPath: string[] };
 
 /** 循环节点配置。 */
 export interface CompositeWorkflowLoopConfig {
@@ -20,22 +20,30 @@ export interface CompositeWorkflowLoopConfig {
 }
 
 /** 条件分支比较运算符。 */
-export type CompositeWorkflowBranchOperator = "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "truthy";
+export type CompositeWorkflowBranchOperator = "eq" | "ne" | "gt" | "gte" | "lt" | "lte";
 
-/** 条件分支节点配置。 */
+/** 条件分支节点配置（左值取上游输出路径，右值手填比较值）。 */
 export interface CompositeWorkflowBranchConfig {
   kind: "branch";
-  left: { mode: "fromUpstream"; upstreamParamName: string } | { mode: "manual"; value: string };
+  left: { mode: "fromUpstream"; upstreamParamName: string; upstreamParamPath: string[] };
   operator: CompositeWorkflowBranchOperator;
-  right?: { mode: "manual"; value: string };
+  right: { mode: "manual"; value: string };
 }
 
-/** 数据格式转换节点配置。 */
+/** 数据格式转换节点配置（仅 TypeScript；参数由解析接口写入）。 */
 export interface CompositeWorkflowTransformConfig {
   kind: "transform";
-  language: "javascript";
+  language: "typescript";
   code: string;
-  outputKeys: string[];
+  /** 解析得到的 INPUT / OUTPUT 树；确定解析成功后写入。 */
+  paramsSnapshot?: { inputs: CompositeWorkflowParamBrief[]; outputs: CompositeWorkflowParamBrief[] };
+  /** 下游入参叶子绑定；无前驱时多为 manual。 */
+  inputBindings?: CompositeWorkflowInputBinding[];
+  /**
+   * 旧版手填输出 key；新节点不再写入。
+   * @deprecated 优先使用 paramsSnapshot.outputs。
+   */
+  outputKeys?: string[];
 }
 
 /** 画布节点业务 kind。 */
