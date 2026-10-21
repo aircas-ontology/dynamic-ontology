@@ -129,7 +129,7 @@ import FunctionOperatorCompositeTransformNodeDialog from "./FunctionOperatorComp
 
 /** 左侧逻辑节点展示项。 */
 interface CompositeWorkflowLogicItem {
-  nodeKind: "loop" | "branch" | "transform";
+  nodeKind: "loop" | "branch" | "transform" | "switch";
   title: string;
   description: string;
 }
@@ -174,6 +174,7 @@ let disposed = false;
 const logicNodeItems: ReadonlyArray<CompositeWorkflowLogicItem> = [
   { nodeKind: "loop", title: "循环", description: "遍历集合或固定次数执行" },
   { nodeKind: "branch", title: "条件分支", description: "按条件走 true / false 分支" },
+  { nodeKind: "switch", title: "Switch Case", description: "按上游值匹配多个 case 与 default" },
   { nodeKind: "transform", title: "数据格式转换", description: "用脚本转换节点间数据" },
 ];
 
@@ -300,7 +301,7 @@ async function loadSpaceFunctionList(): Promise<void> {
  * @param event 指针事件。
  * @param nodeKind 逻辑 kind。
  */
-function onLogicPointerDown(event: PointerEvent, nodeKind: "loop" | "branch" | "transform"): void {
+function onLogicPointerDown(event: PointerEvent, nodeKind: "loop" | "branch" | "transform" | "switch"): void {
   if (event.button !== 0) {
     return;
   }
@@ -311,7 +312,7 @@ function onLogicPointerDown(event: PointerEvent, nodeKind: "loop" | "branch" | "
  * @description 点击逻辑节点：未拖入画布时在中心添加。
  * @param nodeKind 逻辑 kind。
  */
-function onLogicClick(nodeKind: "loop" | "branch" | "transform"): void {
+function onLogicClick(nodeKind: "loop" | "branch" | "transform" | "switch"): void {
   if (consumeSidebarDndAddedFlag()) {
     return;
   }

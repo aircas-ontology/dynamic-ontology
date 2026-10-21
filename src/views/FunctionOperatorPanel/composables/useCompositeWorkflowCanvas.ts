@@ -10,6 +10,7 @@ import type {
   CompositeWorkflowLoopConfig,
   CompositeWorkflowNodeKind,
   CompositeWorkflowParamBrief,
+  CompositeWorkflowSwitchConfig,
   CompositeWorkflowTransformConfig,
 } from "@/types";
 import { buildCompositeWorkflowLiteFlowEl } from "../utils/compositeWorkflowLiteFlowEl.ts";
@@ -25,9 +26,16 @@ import {
   type CompositeWorkflowGraphEdge,
   type CompositeWorkflowGraphNodeSummary,
 } from "../utils/compositeWorkflowGraph.ts";
-import { COMPOSITE_WORKFLOW_ANCHOR_SNAP_DISTANCE } from "../utils/compositeWorkflowAnchors.ts";
+import {
+  COMPOSITE_WORKFLOW_ANCHOR_SNAP_DISTANCE,
+  isCompositeWorkflowInputAnchorId,
+  isCompositeWorkflowOutputAnchorId,
+  parseCompositeWorkflowSwitchOutletFromAnchorId,
+  pickClosestAllowedCompositeWorkflowAnchor,
+} from "../utils/compositeWorkflowAnchors.ts";
 import { createDefaultCompositeWorkflowBranchConfig, normalizeCompositeWorkflowBranchConfig } from "../utils/compositeWorkflowBranchDefaults.ts";
 import { layoutCompositeWorkflowNodesWithDagre } from "../utils/compositeWorkflowDagreLayout.ts";
+import { createDefaultCompositeWorkflowSwitchConfig, normalizeCompositeWorkflowSwitchConfig } from "../utils/compositeWorkflowSwitchDefaults.ts";
 import { createDefaultCompositeWorkflowTransformConfig } from "../utils/compositeWorkflowTransformDefaults.ts";
 import { registerCompositeWorkflowNodes, resolveCompositeWorkflowLfNodeType } from "../utils/registerCompositeWorkflowNodes.ts";
 
@@ -43,12 +51,13 @@ export interface CompositeWorkflowFunctionNodeEditContext {
   upstreamOutputs: CompositeWorkflowParamBrief[];
 }
 
-/** 画布打开逻辑节点配置时的上下文（循环 / 分支）。 */
+/** 画布打开逻辑节点配置时的上下文（循环 / 分支 / Switch）。 */
 export interface CompositeWorkflowLogicNodeEditContext {
   nodeId: string;
-  kind: "loop" | "branch";
+  kind: "loop" | "branch" | "switch";
   loopConfig?: CompositeWorkflowLoopConfig;
   branchConfig?: CompositeWorkflowBranchConfig;
+  switchConfig?: CompositeWorkflowSwitchConfig;
   hasUpstream: boolean;
   upstreamOutputs: CompositeWorkflowParamBrief[];
 }
@@ -91,11 +100,13 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
     return (raw.edges ?? []).map((edge) => {
       const properties = (edge.properties ?? {}) as Record<string, unknown>;
       const branch = properties.branch === "true" || properties.branch === "false" ? properties.branch : undefined;
+      const switchOutlet = typeof properties.switchOutlet === "string" && properties.switchOutlet.trim() ? properties.switchOutlet.trim() : undefined;
       return {
         id: edge.id,
         sourceNodeId: edge.sourceNodeId,
         targetNodeId: edge.targetNodeId,
         branch,
+        switchOutlet,
       };
     });
   }
@@ -130,6 +141,10 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
             ? normalizeCompositeWorkflowBranchConfig(properties.branchConfig)
             : (properties.branchConfig as CompositeWorkflowBranchConfig | undefined),
         transformConfig: properties.transformConfig as CompositeWorkflowTransformConfig | undefined,
+        switchConfig:
+          kind === "switch"
+            ? normalizeCompositeWorkflowSwitchConfig(properties.switchConfig)
+            : (properties.switchConfig as CompositeWorkflowSwitchConfig | undefined),
       };
     });
   }
@@ -292,7 +307,7 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
         await ensureUpstreamFunctionOutputs(sourceNodeId);
         return;
       }
-      if (source.kind === "branch") {
+      if (source.kind === "branch" || source.kind === "switch") {
         currentNodeId = sourceNodeId;
         continue;
       }
@@ -301,15 +316,15 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
   }
 
   /**
-   * @description 打开循环 / 条件分支配置；分支时加载上游输出树供左值选择。
+   * @description 打开循环 / 条件分支 / Switch 配置；分支与 Switch 时加载上游输出树。
    * @param nodeId 节点 id。
    * @param kind 逻辑节点 kind。
    * @param properties 节点属性。
    */
-  async function openLogicNodeEdit(nodeId: string, kind: "loop" | "branch", properties: Record<string, unknown>): Promise<void> {
+  async function openLogicNodeEdit(nodeId: string, kind: "loop" | "branch" | "switch", properties: Record<string, unknown>): Promise<void> {
     const requestId = functionNodeOpenGeneration + 1;
     functionNodeOpenGeneration = requestId;
-    if (kind === "branch") {
+    if (kind === "branch" || kind === "switch") {
       try {
         await ensureFunctionOutputsAlongIncoming(nodeId);
       } catch (error) {
@@ -325,6 +340,7 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
       kind,
       loopConfig: properties.loopConfig as CompositeWorkflowLoopConfig | undefined,
       branchConfig: kind === "branch" ? normalizeCompositeWorkflowBranchConfig(properties.branchConfig) : undefined,
+      switchConfig: kind === "switch" ? normalizeCompositeWorkflowSwitchConfig(properties.switchConfig) : undefined,
       hasUpstream,
       upstreamOutputs,
     };
@@ -411,37 +427,22 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
         edgeType: "polyline",
         stopScrollGraph: true,
         stopZoomGraph: false,
-        // 仅当落点足够靠近某一锚点时才吸附，避免拖到节点边框中部自动连上。
+        // 落点仅吸附左侧入口锚点：入口只能接另一节点的出口。
         customTargetAnchor: (nodeModel, position) => {
-          const anchors = nodeModel.anchors;
-          if (!anchors.length) {
-            return undefined;
-          }
-          let closestIndex = 0;
-          let minDistance = Number.POSITIVE_INFINITY;
-          for (let index = 0; index < anchors.length; index += 1) {
-            const anchor = anchors[index];
-            if (!anchor) {
-              continue;
-            }
-            const distance = Math.hypot(position.x - anchor.x, position.y - anchor.y);
-            if (distance < minDistance) {
-              minDistance = distance;
-              closestIndex = index;
-            }
-          }
-          if (minDistance > COMPOSITE_WORKFLOW_ANCHOR_SNAP_DISTANCE) {
-            return undefined;
-          }
-          const closest = anchors[closestIndex];
-          if (!closest) {
-            return undefined;
-          }
-          return { index: closestIndex, anchor: closest };
+          return pickClosestAllowedCompositeWorkflowAnchor(
+            nodeModel.anchors,
+            position,
+            COMPOSITE_WORKFLOW_ANCHOR_SNAP_DISTANCE,
+            isCompositeWorkflowInputAnchorId,
+          );
         },
       }),
     );
     registerCompositeWorkflowNodes(lf);
+    lf.updateEditConfig({
+      nodeSelectedOutline: false,
+      edgeSelectedOutline: false,
+    });
     lf.setTheme({
       rect: {
         radius: 8,
@@ -452,6 +453,28 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
       polyline: {
         stroke: "#6b7a99",
         strokeWidth: 2,
+      },
+      /** 从锚点拖出连线过程中的临时轨迹（非落边后的 polyline）。 */
+      anchorLine: {
+        stroke: "#79bbff",
+        strokeWidth: 2.5,
+        strokeDasharray: "6,4",
+      },
+      outline: {
+        fill: "none",
+        stroke: "transparent",
+        strokeWidth: 0,
+        hover: {
+          stroke: "transparent",
+        },
+      },
+      edgeOutline: {
+        fill: "none",
+        stroke: "transparent",
+        strokeWidth: 0,
+        hover: {
+          stroke: "transparent",
+        },
       },
       nodeText: {
         overflowMode: "ellipsis",
@@ -480,7 +503,7 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
         void openTransformNodeEdit(data.id, properties);
         return;
       }
-      if (kind === "loop" || kind === "branch") {
+      if (kind === "loop" || kind === "branch" || kind === "switch") {
         functionNodeEdit.value = null;
         transformNodeEdit.value = null;
         void openLogicNodeEdit(data.id, kind, properties);
@@ -490,6 +513,13 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
       clearNodeEditState();
     });
     lf.on("edge:add", ({ data }) => {
+      const sourceAnchorId = typeof data.sourceAnchorId === "string" ? data.sourceAnchorId : "";
+      const targetAnchorId = typeof data.targetAnchorId === "string" ? data.targetAnchorId : "";
+      if (!isCompositeWorkflowOutputAnchorId(sourceAnchorId) || !isCompositeWorkflowInputAnchorId(targetAnchorId)) {
+        ElMessage.warning("只能从节点右侧出口连到另一节点左侧入口");
+        lf.deleteEdge(data.id);
+        return;
+      }
       const edgesBefore = readGraphEdges().filter((edge) => edge.id !== data.id);
       if (wouldCompositeWorkflowEdgeCreateCycle(edgesBefore, data.sourceNodeId, data.targetNodeId)) {
         ElMessage.warning("不允许形成环路");
@@ -506,10 +536,16 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
       const sourceModel = lf.getNodeModelById(data.sourceNodeId);
       const sourceKind = (sourceModel?.getProperties() as Record<string, unknown> | undefined)?.kind;
       if (sourceKind === "branch") {
-        const sourceAnchorId = typeof data.sourceAnchorId === "string" ? data.sourceAnchorId : "";
         const branch = sourceAnchorId.endsWith("_out_false") ? "false" : "true";
         const edgeModel = lf.getEdgeModelById(data.id);
         edgeModel?.setProperties({ ...(edgeModel.getProperties() as object), branch });
+      }
+      if (sourceKind === "switch") {
+        const switchOutlet = parseCompositeWorkflowSwitchOutletFromAnchorId(sourceAnchorId);
+        if (switchOutlet) {
+          const edgeModel = lf.getEdgeModelById(data.id);
+          edgeModel?.setProperties({ ...(edgeModel.getProperties() as object), switchOutlet });
+        }
       }
       void (async () => {
         try {
@@ -581,10 +617,11 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
         },
       };
     }
-    const titles: Record<"loop" | "branch" | "transform", string> = {
+    const titles: Record<"loop" | "branch" | "transform" | "switch", string> = {
       loop: "循环",
       branch: "条件分支",
       transform: "数据格式转换",
+      switch: "Switch Case",
     };
     const title = titles[payload.nodeKind];
     const properties: Record<string, unknown> = {
@@ -601,6 +638,8 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
       } satisfies CompositeWorkflowLoopConfig;
     } else if (payload.nodeKind === "branch") {
       properties.branchConfig = createDefaultCompositeWorkflowBranchConfig();
+    } else if (payload.nodeKind === "switch") {
+      properties.switchConfig = createDefaultCompositeWorkflowSwitchConfig();
     } else {
       properties.transformConfig = createDefaultCompositeWorkflowTransformConfig();
     }
@@ -770,8 +809,24 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
     const properties = model.getProperties() as Record<string, unknown>;
     if (context.kind === "loop") {
       model.setProperties({ ...properties, loopConfig: context.loopConfig });
-    } else {
+    } else if (context.kind === "branch") {
       model.setProperties({ ...properties, branchConfig: context.branchConfig });
+    } else if (context.kind === "switch" && context.switchConfig) {
+      const switchConfig = normalizeCompositeWorkflowSwitchConfig(context.switchConfig);
+      model.setProperties({ ...properties, switchConfig });
+      model.setAttributes();
+      const validOutlets = new Set<string>(["default", ...switchConfig.cases.map((item) => item.id)]);
+      const raw = lf?.getGraphRawData();
+      for (const edge of raw?.edges ?? []) {
+        if (edge.sourceNodeId !== context.nodeId) {
+          continue;
+        }
+        const edgeProperties = (edge.properties ?? {}) as Record<string, unknown>;
+        const outlet = typeof edgeProperties.switchOutlet === "string" ? edgeProperties.switchOutlet : "";
+        if (outlet && !validOutlets.has(outlet)) {
+          lf?.deleteEdge(edge.id);
+        }
+      }
     }
     logicNodeEdit.value = null;
   }

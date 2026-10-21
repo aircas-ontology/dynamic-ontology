@@ -16,11 +16,22 @@ import {
   validateCompositeWorkflowForSave,
   wouldCompositeWorkflowEdgeCreateCycle,
 } from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowGraph.ts";
-import { isCompositeWorkflowInputAnchorId, isCompositeWorkflowOutputAnchorId } from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowAnchors.ts";
+import {
+  buildCompositeWorkflowSwitchCaseOutletAnchorId,
+  buildCompositeWorkflowSwitchDefaultOutletAnchorId,
+  isCompositeWorkflowInputAnchorId,
+  isCompositeWorkflowOutputAnchorId,
+  parseCompositeWorkflowSwitchOutletFromAnchorId,
+  pickClosestAllowedCompositeWorkflowAnchor,
+} from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowAnchors.ts";
 import {
   createDefaultCompositeWorkflowBranchConfig,
   normalizeCompositeWorkflowBranchConfig,
 } from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowBranchDefaults.ts";
+import {
+  createDefaultCompositeWorkflowSwitchConfig,
+  normalizeCompositeWorkflowSwitchConfig,
+} from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowSwitchDefaults.ts";
 import {
   compareCompositeWorkflowParamTypes,
   normalizeCompositeWorkflowParamType,
@@ -221,6 +232,8 @@ test("isCompositeWorkflowOutputAnchorId recognizes right-side outlets", () => {
   assert.equal(isCompositeWorkflowOutputAnchorId("n1_out"), true);
   assert.equal(isCompositeWorkflowOutputAnchorId("n1_out_true"), true);
   assert.equal(isCompositeWorkflowOutputAnchorId("n1_out_false"), true);
+  assert.equal(isCompositeWorkflowOutputAnchorId("n1_out_default"), true);
+  assert.equal(isCompositeWorkflowOutputAnchorId("n1_out_case_abc"), true);
   assert.equal(isCompositeWorkflowOutputAnchorId("n1_in"), false);
   assert.equal(isCompositeWorkflowOutputAnchorId(undefined), false);
 });
@@ -275,6 +288,59 @@ test("buildCompositeWorkflowLiteFlowEl serializes chain, when, and if", () => {
     ],
   );
   assert.equal(branch.expression, "THEN(a, IF(br, t, f));");
+});
+
+test("buildCompositeWorkflowLiteFlowEl serializes SWITCH CASE DEFAULT", () => {
+  const result = buildCompositeWorkflowLiteFlowEl(
+    [
+      { id: "a", kind: "function" },
+      {
+        id: "sw",
+        kind: "switch",
+        switchConfig: {
+          kind: "switch",
+          switchOn: { mode: "fromUpstream", upstreamParamName: "status", upstreamParamPath: ["status"] },
+          cases: [
+            { id: "cid_a", value: "A" },
+            { id: "cid_b", value: "B" },
+          ],
+        },
+      },
+      { id: "c1", kind: "function" },
+      { id: "c2", kind: "function" },
+      { id: "d", kind: "function" },
+    ],
+    [
+      { id: "e1", sourceNodeId: "a", targetNodeId: "sw" },
+      { id: "e2", sourceNodeId: "sw", targetNodeId: "c1", switchOutlet: "cid_a" },
+      { id: "e3", sourceNodeId: "sw", targetNodeId: "c2", switchOutlet: "cid_b" },
+      { id: "e4", sourceNodeId: "sw", targetNodeId: "d", switchOutlet: "default" },
+    ],
+  );
+  assert.match(result.expression, /SWITCH\(sw\)\.TO\(/);
+  assert.match(result.expression, /CASE\("A", c1\)/);
+  assert.match(result.expression, /CASE\("B", c2\)/);
+  assert.match(result.expression, /DEFAULT\(d\)/);
+});
+
+test("buildCompositeWorkflowLiteFlowEl warns when switch outlets are missing", () => {
+  const result = buildCompositeWorkflowLiteFlowEl(
+    [
+      {
+        id: "sw",
+        kind: "switch",
+        switchConfig: {
+          kind: "switch",
+          switchOn: { mode: "fromUpstream", upstreamParamName: "x", upstreamParamPath: ["x"] },
+          cases: [{ id: "cid_a", value: "A" }],
+        },
+      },
+    ],
+    [],
+  );
+  assert.equal(result.expression, "sw;");
+  assert.ok(result.warnings.some((item) => item.includes("缺少 case")));
+  assert.ok(result.warnings.some((item) => item.includes("缺少 default")));
 });
 
 test("upstream outputs come from detail OUTPUT params even when INPUT values are empty", () => {
@@ -541,4 +607,101 @@ test("branch logic dialog selects upstream output path without manual left", () 
   assert.doesNotMatch(dialog, /truthy/);
   assert.match(dialog, /==/);
   assert.match(dialog, /!==/);
+});
+
+test("createDefaultCompositeWorkflowSwitchConfig has one case and fromUpstream switchOn", () => {
+  const config = createDefaultCompositeWorkflowSwitchConfig();
+  assert.equal(config.kind, "switch");
+  assert.equal(config.switchOn.mode, "fromUpstream");
+  assert.deepEqual(config.switchOn.upstreamParamPath, []);
+  assert.equal(config.cases.length, 1);
+  assert.equal(typeof config.cases[0]?.id, "string");
+  assert.ok((config.cases[0]?.id ?? "").length > 0);
+  assert.equal(config.cases[0]?.value, "");
+});
+
+test("normalizeCompositeWorkflowSwitchConfig fills missing fields and keeps case ids", () => {
+  assert.equal(normalizeCompositeWorkflowSwitchConfig(null).kind, "switch");
+  const normalized = normalizeCompositeWorkflowSwitchConfig({
+    kind: "switch",
+    switchOn: { mode: "fromUpstream", upstreamParamName: "status", upstreamParamPath: ["result", "status"] },
+    cases: [{ id: "c1", value: "A" }, { value: "B" }, null],
+  });
+  assert.deepEqual(normalized.switchOn.upstreamParamPath, ["result", "status"]);
+  assert.equal(normalized.switchOn.upstreamParamName, "status");
+  assert.equal(normalized.cases[0]?.id, "c1");
+  assert.equal(normalized.cases[0]?.value, "A");
+  assert.equal(normalized.cases[1]?.value, "B");
+  assert.ok((normalized.cases[1]?.id ?? "").length > 0);
+
+  const nameOnly = normalizeCompositeWorkflowSwitchConfig({
+    kind: "switch",
+    switchOn: { mode: "fromUpstream", upstreamParamName: "code" },
+    cases: [],
+  });
+  assert.deepEqual(nameOnly.switchOn.upstreamParamPath, ["code"]);
+  assert.equal(nameOnly.cases.length, 1);
+});
+
+test("switch outlet anchor helpers encode and parse case and default", () => {
+  assert.equal(buildCompositeWorkflowSwitchDefaultOutletAnchorId("n1"), "n1_out_default");
+  assert.equal(buildCompositeWorkflowSwitchCaseOutletAnchorId("n1", "abc"), "n1_out_case_abc");
+  assert.equal(parseCompositeWorkflowSwitchOutletFromAnchorId("n1_out_default"), "default");
+  assert.equal(parseCompositeWorkflowSwitchOutletFromAnchorId("n1_out_case_abc"), "abc");
+  assert.equal(parseCompositeWorkflowSwitchOutletFromAnchorId("n1_out_case_"), null);
+  assert.equal(parseCompositeWorkflowSwitchOutletFromAnchorId("n1_out"), null);
+  assert.equal(parseCompositeWorkflowSwitchOutletFromAnchorId(undefined), null);
+});
+
+test("pickClosestAllowedCompositeWorkflowAnchor only snaps to allowed side", () => {
+  const anchors = [
+    { x: 0, y: 0, id: "n1_in" },
+    { x: 100, y: 0, id: "n1_out" },
+  ];
+  const toInput = pickClosestAllowedCompositeWorkflowAnchor(anchors, { x: 95, y: 0 }, 18, isCompositeWorkflowInputAnchorId);
+  assert.equal(toInput, undefined);
+  const nearInput = pickClosestAllowedCompositeWorkflowAnchor(anchors, { x: 5, y: 0 }, 18, isCompositeWorkflowInputAnchorId);
+  assert.equal(nearInput?.anchor.id, "n1_in");
+  const nearOutput = pickClosestAllowedCompositeWorkflowAnchor(anchors, { x: 95, y: 0 }, 18, isCompositeWorkflowOutputAnchorId);
+  assert.equal(nearOutput?.anchor.id, "n1_out");
+});
+
+test("resolveCompositeWorkflowNodeUpstreamOutputs passes through switch predecessors", () => {
+  const outputs = [{ paramName: "result", paramType: "object", fields: [{ paramName: "id", paramType: "string" }] }];
+  const nodes = [
+    { id: "fn", kind: "function", paramsSnapshot: { inputs: [], outputs } },
+    { id: "sw", kind: "switch", switchConfig: createDefaultCompositeWorkflowSwitchConfig() },
+    { id: "down", kind: "function", paramsSnapshot: { inputs: [{ paramName: "x", paramType: "string" }], outputs: [] } },
+  ];
+  const edges = [
+    { id: "e1", sourceNodeId: "fn", targetNodeId: "sw" },
+    { id: "e2", sourceNodeId: "sw", targetNodeId: "down", switchOutlet: "default" },
+  ];
+  const resolved = resolveCompositeWorkflowNodeUpstreamOutputs(nodes, edges, "down");
+  assert.equal(resolved.hasUpstream, true);
+  assert.deepEqual(resolved.upstreamOutputs, outputs);
+});
+
+test("switch node registers rect with case and default outlets and labels", () => {
+  const source = readFileSync(new URL("../src/views/FunctionOperatorPanel/utils/registerCompositeWorkflowNodes.ts", import.meta.url), "utf8");
+  assert.match(source, /composite-switch/);
+  assert.match(source, /buildCompositeWorkflowSwitchCaseOutletAnchorId/);
+  assert.match(source, /buildCompositeWorkflowSwitchDefaultOutletAnchorId/);
+  assert.match(source, /["']default["']/);
+  assert.match(source, /switchConfig/);
+});
+
+test("workflow dialog lists switch under branch in logic items", () => {
+  const dialog = readFileSync(new URL("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeWorkflowDialog.vue", import.meta.url), "utf8");
+  assert.match(dialog, /nodeKind:\s*["']switch["']/);
+  const branchIndex = dialog.indexOf('nodeKind: "branch"');
+  const switchIndex = dialog.indexOf('nodeKind: "switch"');
+  assert.ok(branchIndex >= 0 && switchIndex > branchIndex);
+});
+
+test("switch logic dialog configures switchOn and editable cases", () => {
+  const dialog = readFileSync(new URL("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeLogicNodeDialog.vue", import.meta.url), "utf8");
+  assert.match(dialog, /switchOn|switchPathKey|localKind === ["']switch["']/);
+  assert.match(dialog, /cases/);
+  assert.match(dialog, /添加.*case|addSwitchCase|增/);
 });

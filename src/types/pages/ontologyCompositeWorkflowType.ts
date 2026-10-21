@@ -46,8 +46,21 @@ export interface CompositeWorkflowTransformConfig {
   outputKeys?: string[];
 }
 
+/** Switch Case 单条 case（id 稳定，供锚点与边关联；value 为手填匹配值）。 */
+export interface CompositeWorkflowSwitchCaseItem {
+  id: string;
+  value: string;
+}
+
+/** Switch Case 节点配置（switch 值取上游输出路径，cases 手填）。 */
+export interface CompositeWorkflowSwitchConfig {
+  kind: "switch";
+  switchOn: { mode: "fromUpstream"; upstreamParamName: string; upstreamParamPath: string[] };
+  cases: CompositeWorkflowSwitchCaseItem[];
+}
+
 /** 画布节点业务 kind。 */
-export type CompositeWorkflowNodeKind = "function" | "loop" | "branch" | "transform";
+export type CompositeWorkflowNodeKind = "function" | "loop" | "branch" | "transform" | "switch";
 
 /** 保存载荷中的函数节点。 */
 export interface CompositeWorkflowFunctionNodePayload {
@@ -64,7 +77,8 @@ export interface CompositeWorkflowFunctionNodePayload {
 export type CompositeWorkflowLogicNodePayload =
   | { id: string; kind: "loop"; config: CompositeWorkflowLoopConfig }
   | { id: string; kind: "branch"; config: CompositeWorkflowBranchConfig }
-  | { id: string; kind: "transform"; config: CompositeWorkflowTransformConfig };
+  | { id: string; kind: "transform"; config: CompositeWorkflowTransformConfig }
+  | { id: string; kind: "switch"; config: CompositeWorkflowSwitchConfig };
 
 /** 保存载荷边。 */
 export interface CompositeWorkflowEdgePayload {
@@ -72,6 +86,8 @@ export interface CompositeWorkflowEdgePayload {
   sourceNodeId: string;
   targetNodeId: string;
   branch?: "true" | "false";
+  /** Switch 出口：case.id 或 "default"。 */
+  switchOutlet?: string;
 }
 
 /** 编排工作流保存载荷（P0 console / 未来 API）。 */
@@ -93,7 +109,7 @@ export interface CompositeWorkflowSavePayload {
 
 /** 侧栏拖入画布的数据载荷。 */
 export type CompositeWorkflowDndPayload =
-  { nodeKind: "loop" | "branch" | "transform" } | { nodeKind: "function"; functionApi: string; version: string; displayName: string };
+  { nodeKind: "loop" | "branch" | "transform" | "switch" } | { nodeKind: "function"; functionApi: string; version: string; displayName: string };
 
 /** 拖拽 MIME。 */
 export const COMPOSITE_WORKFLOW_DND_MIME = "application/x-composite-workflow-node";

@@ -7,7 +7,7 @@ export interface CompositeWorkflowLiteFlowElResult {
 }
 
 /**
- * @description 将编排图转为 LiteFlow EL。串行用 THEN，扇出用 WHEN，分支用 IF；循环与转换按普通组件顺序输出。
+ * @description 将编排图转为 LiteFlow EL。串行用 THEN，扇出用 WHEN，分支用 IF，Switch 用 SWITCH/CASE/DEFAULT；循环与转换按普通组件顺序输出。
  * @param nodes 节点摘要。
  * @param edges 边。
  * @returns EL 表达式与无法完整表达时的警告。
@@ -67,6 +67,8 @@ export function buildCompositeWorkflowLiteFlowEl(
     let expression = "";
     if (node.kind === "branch") {
       expression = emitBranch(elId, outs, stopIds, stack);
+    } else if (node.kind === "switch") {
+      expression = emitSwitch(node, elId, outs, stopIds, stack);
     } else if (outs.length === 0) {
       expression = elId;
     } else if (outs.length === 1) {
@@ -77,6 +79,62 @@ export function buildCompositeWorkflowLiteFlowEl(
     }
     stack.delete(nodeId);
     return expression;
+  }
+
+  /**
+   * @description 生成 Switch：SWITCH(id).TO(CASE("v", …), …, DEFAULT(…))。
+   * @param node Switch 节点摘要。
+   * @param elId Switch 组件 id。
+   * @param outs 出边。
+   * @param stopIds 上层汇合点。
+   * @param stack 路径栈。
+   * @returns SWITCH 表达式，若之后还有汇合节点则串成 THEN。
+   */
+  function emitSwitch(
+    node: CompositeWorkflowGraphNodeSummary,
+    elId: string,
+    outs: CompositeWorkflowGraphEdge[],
+    stopIds: Set<string>,
+    stack: Set<string>,
+  ): string {
+    const cases = node.switchConfig?.cases ?? [];
+    const targets: string[] = [];
+    const caseEdges: Array<{ value: string; edge: CompositeWorkflowGraphEdge }> = [];
+    for (const caseItem of cases) {
+      const edge = outs.find((item) => item.switchOutlet === caseItem.id);
+      if (!edge) {
+        warnings.push(`Switch「${elId}」缺少 case「${caseItem.value || caseItem.id}」出口`);
+        continue;
+      }
+      targets.push(edge.targetNodeId);
+      caseEdges.push({ value: caseItem.value, edge });
+    }
+    const defaultEdge = outs.find((item) => item.switchOutlet === "default");
+    if (!defaultEdge) {
+      warnings.push(`Switch「${elId}」缺少 default 出口`);
+    } else {
+      targets.push(defaultEdge.targetNodeId);
+    }
+    const joinId = findClosestCommonDescendant(targets, adjacency);
+    const nextStop = new Set(stopIds);
+    if (joinId) {
+      nextStop.add(joinId);
+    }
+    const toArgs: string[] = [];
+    for (const item of caseEdges) {
+      const branchExpression = emitFrom(item.edge.targetNodeId, nextStop, stack);
+      const escapedValue = item.value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+      toArgs.push(`CASE("${escapedValue}", ${branchExpression || item.edge.targetNodeId})`);
+    }
+    if (defaultEdge) {
+      const defaultExpression = emitFrom(defaultEdge.targetNodeId, nextStop, stack);
+      toArgs.push(`DEFAULT(${defaultExpression || defaultEdge.targetNodeId})`);
+    }
+    const switchExpression = toArgs.length > 0 ? `SWITCH(${elId}).TO(${toArgs.join(", ")})` : elId;
+    if (!joinId || stopIds.has(joinId)) {
+      return switchExpression;
+    }
+    return combineSerial(switchExpression, emitFrom(joinId, stopIds, stack));
   }
 
   /**

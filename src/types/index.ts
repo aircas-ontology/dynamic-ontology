@@ -183,6 +183,8 @@ export type {
   CompositeWorkflowNodeKind,
   CompositeWorkflowParamBrief,
   CompositeWorkflowSavePayload,
+  CompositeWorkflowSwitchCaseItem,
+  CompositeWorkflowSwitchConfig,
   CompositeWorkflowTransformConfig,
 } from "./pages/ontologyCompositeWorkflowType";
 export type {

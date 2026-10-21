@@ -8,12 +8,14 @@ import type {
   CompositeWorkflowNodeKind,
   CompositeWorkflowParamBrief,
   CompositeWorkflowSavePayload,
+  CompositeWorkflowSwitchConfig,
   CompositeWorkflowTransformConfig,
   GetOntologyFunctionDetailParamItem,
 } from "@/types";
 
 import { createDefaultCompositeWorkflowBranchConfig, normalizeCompositeWorkflowBranchConfig } from "./compositeWorkflowBranchDefaults.ts";
 import { compareCompositeWorkflowParamTypes } from "./compositeWorkflowParamType.ts";
+import { createDefaultCompositeWorkflowSwitchConfig, normalizeCompositeWorkflowSwitchConfig } from "./compositeWorkflowSwitchDefaults.ts";
 import { createDefaultCompositeWorkflowTransformConfig, resolveCompositeWorkflowTransformOutputs } from "./compositeWorkflowTransformDefaults.ts";
 
 /** 图中用于校验的边。 */
@@ -22,6 +24,7 @@ export interface CompositeWorkflowGraphEdge {
   sourceNodeId: string;
   targetNodeId: string;
   branch?: "true" | "false";
+  switchOutlet?: string;
 }
 
 /** 图中用于校验的节点摘要。 */
@@ -36,6 +39,7 @@ export interface CompositeWorkflowGraphNodeSummary {
   loopConfig?: CompositeWorkflowLoopConfig;
   branchConfig?: CompositeWorkflowBranchConfig;
   transformConfig?: CompositeWorkflowTransformConfig;
+  switchConfig?: CompositeWorkflowSwitchConfig;
 }
 
 /**
@@ -142,7 +146,7 @@ export function resolveCompositeWorkflowNodeUpstreamOutputs(
       const itemName = source.loopConfig?.itemParamName?.trim() || "item";
       return { hasUpstream: true, upstreamOutputs: [{ paramName: itemName, paramType: "object" }] };
     }
-    if (source.kind === "branch") {
+    if (source.kind === "branch" || source.kind === "switch") {
       return resolveForNode(source.id);
     }
     return { hasUpstream: true, upstreamOutputs: [] };
@@ -485,6 +489,13 @@ export function buildCompositeWorkflowSavePayload(options: {
         config: normalizeCompositeWorkflowBranchConfig(node.branchConfig ?? createDefaultCompositeWorkflowBranchConfig()),
       };
     }
+    if (node.kind === "switch") {
+      return {
+        id: node.id,
+        kind: "switch",
+        config: normalizeCompositeWorkflowSwitchConfig(node.switchConfig ?? createDefaultCompositeWorkflowSwitchConfig()),
+      };
+    }
     return {
       id: node.id,
       kind: "transform",
@@ -496,6 +507,7 @@ export function buildCompositeWorkflowSavePayload(options: {
     sourceNodeId: edge.sourceNodeId,
     targetNodeId: edge.targetNodeId,
     branch: edge.branch,
+    switchOutlet: edge.switchOutlet,
   }));
   return {
     schemaVersion: 1,
