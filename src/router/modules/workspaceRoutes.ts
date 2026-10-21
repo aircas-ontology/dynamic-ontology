@@ -30,14 +30,8 @@ export const workspaceRoutes: RouteRecordRaw[] = [
         name: "OntologySpaceManagementDetail",
         component: () => import("@/views/OntologySpaceManagementDetail/index.vue"),
         meta: { title: "空间内管理" },
-        redirect: { name: "OntologySpaceManagementDetailOverview" },
+        redirect: { name: "OntologySpaceManagementDetailObject" },
         children: [
-          {
-            path: "overview",
-            name: "OntologySpaceManagementDetailOverview",
-            component: () => import("@/views/SpaceOverviewPanel/index.vue"),
-            meta: { title: "空间内管理", workspaceTab: "overview" },
-          },
           {
             path: "object",
             name: "OntologySpaceManagementDetailObject",
@@ -87,14 +81,8 @@ export const workspaceRoutes: RouteRecordRaw[] = [
         name: "OntologyObjectDetail",
         component: () => import("@/views/OntologyObjectDetail/index.vue"),
         meta: { title: "对象详情" },
-        redirect: { name: "OntologyObjectDetailObject" },
+        redirect: { name: "OntologyObjectDetailAttribute" },
         children: [
-          {
-            path: "object",
-            name: "OntologyObjectDetailObject",
-            component: () => import("@/views/OntologyObjectOverviewPanel/index.vue"),
-            meta: { title: "对象详情", objectDetailTab: "object" },
-          },
           {
             path: "attribute",
             name: "OntologyObjectDetailAttribute",

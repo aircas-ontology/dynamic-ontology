@@ -273,7 +273,7 @@ test("attribute layout uses a 360px tree, zebra rows, and prototype detail tabs"
   assert.match(panelSource, /grid-template-columns: 360px minmax\(0, 1fr\)/);
   assert.match(tableSource, /stripe/);
   assert.match(tableSource, /<el-table/);
-  assert.match(tabsSource, /object-detail-tabs__separator/);
+  assert.doesNotMatch(tabsSource, /object-detail-tabs__separator/);
   assert.match(tabsSource, /linear-gradient\(135deg, var\(--aircas-color-panel-background\), var\(--aircas-color-panel-background-deep\)\)/);
   assert.match(tabsSource, /box-shadow: inset 0 0 20px var\(--aircas-color-effect-page-glow\)/);
 });

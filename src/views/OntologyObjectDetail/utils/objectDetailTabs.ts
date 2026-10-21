@@ -1,7 +1,6 @@
 import type { OntologyObjectDetailRouteName, OntologyObjectDetailTab } from "@/types";
 
 const TAB_ROUTE_NAMES: Record<OntologyObjectDetailTab, OntologyObjectDetailRouteName> = {
-  object: "OntologyObjectDetailObject",
   attribute: "OntologyObjectDetailAttribute",
   relation: "OntologyObjectDetailRelation",
   behavior: "OntologyObjectDetailBehavior",
@@ -12,7 +11,7 @@ const ROUTE_TAB_IDS = Object.fromEntries(Object.entries(TAB_ROUTE_NAMES).map(([t
   OntologyObjectDetailTab
 >;
 
-export const AVAILABLE_OBJECT_DETAIL_TABS: readonly OntologyObjectDetailTab[] = ["object", "attribute", "relation", "behavior"];
+export const AVAILABLE_OBJECT_DETAIL_TABS: readonly OntologyObjectDetailTab[] = ["attribute", "relation", "behavior"];
 
 /**
  * @description 根据 Tab 标识解析对应的路由名称。

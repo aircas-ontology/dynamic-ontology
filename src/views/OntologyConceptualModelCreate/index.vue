@@ -550,7 +550,7 @@ async function saveConceptualModel() {
     if (response.code !== 200 || !Number.isFinite(spaceId))
       throw new Error(response.message || (routeSpaceId.value === undefined ? "空间创建失败" : "保存失败"));
     ElMessage.success(routeSpaceId.value === undefined ? "空间创建成功" : "保存成功");
-    await router.push({ name: "OntologySpaceManagementDetailOverview", params: { spaceId: String(spaceId) } });
+    await router.push({ name: "OntologySpaceManagementDetailObject", params: { spaceId: String(spaceId) } });
   } catch (cause) {
     saveError.value =
       cause instanceof Error && cause.message.trim() ? cause.message : routeSpaceId.value === undefined ? "空间创建失败，请重试。" : "保存失败，请重试。";

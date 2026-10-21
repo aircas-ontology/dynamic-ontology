@@ -90,7 +90,7 @@ test("theme space create dialog confirms into the subspace create flow with rout
 test("theme space cards and table rows enter the space management detail with route context", () => {
   const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
   assert.match(source, /function enterThemeSpace/);
-  assert.match(source, /name: "OntologySpaceManagementDetailOverview"/);
+  assert.match(source, /name: "OntologySpaceManagementDetailObject"/);
   assert.match(source, /from: "theme-space-management"/);
   assert.doesNotMatch(source, /notifyUnavailable\('进入主题'\)/);
   assert.doesNotMatch(source, /进入主题功能暂未接入/);

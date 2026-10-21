@@ -43,6 +43,7 @@ import { ElMessage } from "element-plus";
 import type { TreeInstance, TreeNodeData } from "element-plus";
 import type { OntologyConceptNode, OntologyObjectWorkspace } from "@/types";
 import { useOntologyObjectWorkspace } from "@/views/ObjectWorkspacePanel/composables/useOntologyObjectWorkspace";
+import { loadGuideObjectWorkspace } from "../utils/loadGuideObjectWorkspace";
 import { mapSubspaceCreateSelectedObjects } from "../utils/mapSubspaceCreateSelectedObject";
 import type { SubspaceCreateSelectedObject } from "../utils/mapSubspaceCreateSelectedObject";
 
@@ -54,7 +55,7 @@ interface SubspaceCreateTreeNode {
   children?: SubspaceCreateTreeNode[];
 }
 
-const props = defineProps<{ currentStepIndex: number }>();
+const props = defineProps<{ currentStepIndex: number; guideMode?: boolean }>();
 const emit = defineEmits<{
   "update:selectedCount": [value: number];
   "update:selectedObjects": [value: SubspaceCreateSelectedObject[]];
@@ -62,7 +63,7 @@ const emit = defineEmits<{
 
 const route = useRoute();
 const spaceId = computed(() => String(route.params.spaceId || route.query.spaceId || ""));
-const { status, error, workspace, load } = useOntologyObjectWorkspace(spaceId);
+const { status, error, workspace, load } = useOntologyObjectWorkspace(spaceId, props.guideMode ? loadGuideObjectWorkspace : undefined);
 const treeRef = ref<TreeInstance>();
 const keyword = ref("");
 const selectedIds = ref<string[]>([]);
@@ -115,6 +116,28 @@ async function syncSelectedTreeObjects() {
   emit("update:selectedObjects", objects);
   emit("update:selectedCount", objects.length);
 }
+
+/**
+ * @description 递归收集树节点中的对象叶子 id。
+ * @param nodes 子空间树节点列表。
+ * @returns 对象叶子 id 列表。
+ */
+function collectObjectIds(nodes: SubspaceCreateTreeNode[]): string[] {
+  return nodes.flatMap((node) => (node.kind === "object" ? [node.id] : collectObjectIds(node.children ?? [])));
+}
+
+/**
+ * @description 演示模式下分类树加载完成后自动勾选全部演示对象，保证右侧直接展示对象卡片。
+ */
+watch(treeData, async (nodes) => {
+  if (!props.guideMode || props.currentStepIndex !== 0 || selectedIds.value.length > 0) return;
+  const objectIds = collectObjectIds(nodes);
+  if (objectIds.length === 0) return;
+  await nextTick();
+  if (props.currentStepIndex !== 0) return;
+  treeRef.value?.setCheckedKeys(objectIds);
+  await syncSelectedTreeObjects();
+});
 
 watch(keyword, (value) => treeRef.value?.filter(value));
 </script>

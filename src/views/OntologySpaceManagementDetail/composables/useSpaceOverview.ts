@@ -1,9 +1,9 @@
-import { inject, onScopeDispose, ref, watch, type InjectionKey, type Ref } from "vue";
+import { onScopeDispose, ref, watch, type Ref } from "vue";
 import type { ManagementWorkspaceTab, OntologySpaceOverview, OntologySpaceStatisticVO } from "@/types";
 import { getOntologySpaceStatisticInterface } from "@/apis";
 
 /** 统计接口字段到工作区 tab 的映射。 */
-const STATISTIC_FIELD_TO_TAB: ReadonlyArray<{ field: keyof OntologySpaceStatisticVO; tab: Exclude<ManagementWorkspaceTab, "overview"> }> = [
+const STATISTIC_FIELD_TO_TAB: ReadonlyArray<{ field: keyof OntologySpaceStatisticVO; tab: ManagementWorkspaceTab }> = [
   { field: "ontologyCount", tab: "object" },
   { field: "linkCount", tab: "relation" },
   { field: "functionCount", tab: "function-operator" },
@@ -18,7 +18,7 @@ const STATISTIC_FIELD_TO_TAB: ReadonlyArray<{ field: keyof OntologySpaceStatisti
  */
 export function mapOntologySpaceStatistic(statistic: OntologySpaceStatisticVO): OntologySpaceOverview {
   const counts: OntologySpaceOverview["counts"] = {};
-  const availableTabs: ManagementWorkspaceTab[] = ["overview"];
+  const availableTabs: ManagementWorkspaceTab[] = [];
   for (const { field, tab } of STATISTIC_FIELD_TO_TAB) {
     const value = statistic[field] ?? 0;
     counts[tab] = value;
@@ -87,22 +87,4 @@ export function useSpaceOverview(spaceId: Ref<string>, loader: (id: string) => P
     generation++;
   });
   return { data, loading, error, loadSpaceOverview };
-}
-
-/** 空间统计共享上下文结构（useSpaceOverview 的返回值）。 */
-export type SpaceOverviewContext = ReturnType<typeof useSpaceOverview>;
-
-/** 空间统计 provide/inject 键：详情布局加载一次，tab 菜单与概览页共享同一份数据。 */
-export const SPACE_OVERVIEW_KEY: InjectionKey<SpaceOverviewContext> = Symbol("space-overview");
-
-/**
- * @description 在概览页注入详情布局提供的空间统计上下文；缺失时快速失败，概览页仅应作为详情布局子路由渲染。
- * @returns 空间统计共享上下文。
- */
-export function injectSpaceOverviewContext(): SpaceOverviewContext {
-  const context = inject(SPACE_OVERVIEW_KEY);
-  if (!context) {
-    throw new Error("空间统计上下文缺失，概览页必须运行在空间详情布局内。");
-  }
-  return context;
 }

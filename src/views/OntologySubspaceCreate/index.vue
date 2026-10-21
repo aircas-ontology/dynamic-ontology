@@ -10,7 +10,7 @@
     >
       <el-icon><QuestionFilled /></el-icon>
     </button>
-    <SubspaceCreateTreePanel :current-step-index="currentStepIndex" @update:selected-objects="selectedObjects = $event" />
+    <SubspaceCreateTreePanel :current-step-index="currentStepIndex" :guide-mode="isGuideDemoMode" @update:selected-objects="selectedObjects = $event" />
     <SubspaceCreateWorkspacePanel
       v-model:space-name="spaceName"
       v-model:api-name="apiName"
@@ -47,7 +47,13 @@
       @relation-retry="retryParentSpaceRelations"
       @update:property-filters="propertyFilters = $event"
     />
-    <OnboardingGuideOverlay v-if="isThemeSpaceCreation" v-model="guideVisible" :steps="themeOnboardingGuideSteps" :start-id="guideStartId" />
+    <OnboardingGuideOverlay
+      v-if="isThemeSpaceCreation"
+      v-model="guideVisible"
+      :steps="themeOnboardingGuideSteps"
+      :start-id="guideStartId"
+      @step-change="handleGuideStepChange"
+    />
   </section>
 </template>
 
@@ -65,8 +71,15 @@ import SubspaceCreateTreePanel from "./components/SubspaceCreateTreePanel.vue";
 import SubspaceCreateWorkspacePanel from "./components/SubspaceCreateWorkspacePanel.vue";
 import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
 import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
+import type { OnboardingGuideStep } from "@/composables/shared/useOnboardingGuide";
+import {
+  queryGuideOntologyEntities,
+  queryGuideOntologyProperties,
+  queryGuideOntologyRelationTree,
+} from "@/mocks/ontologySubspaceCreateGuideMock/ontologySubspaceCreateGuideMock";
 import { ONBOARDING_GUIDE_ENTRY_IDS, THEME_ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
 import { QuestionFilled } from "@element-plus/icons-vue";
+import type { ApiResponse, OntologyRelationCategoryTreeData } from "@/types";
 import { listSubspaceCreateObjectsMissingProperties, mapSubspaceCreateObjectPropertyGroup } from "./utils/mapSubspaceCreateObjectProperty";
 import type { SubspaceCreateObjectPropertyGroup } from "./utils/mapSubspaceCreateObjectProperty";
 import { mapSubspaceCreateSelectedInstances, SUBSPACE_CREATE_INSTANCE_PAGE_SIZE } from "./utils/mapSubspaceCreateSelectedInstance";
@@ -102,6 +115,11 @@ let relationRequestGeneration = 0;
 const creating = ref(false);
 const parentSpaceId = computed(() => String(route.params.spaceId || route.query.spaceId || "").trim());
 const isThemeSpaceCreation = computed(() => route.query.from === "theme-space-management");
+/**
+ * @description 引导演示模式：仅当从主题管理页的新手引导进入（query 携带 guide=1）时生效；
+ *              真实「新建主题」入口不带 guide 参数，仍走真实接口与真实创建。
+ */
+const isGuideDemoMode = computed(() => isThemeSpaceCreation.value && route.query.guide === "1");
 const spaceName = ref(`${String(route.query.spaceName || "海军对象空间")}${isThemeSpaceCreation.value ? "主题" : "子空间"}`);
 const apiName = ref(`subspace_${Date.now()}`);
 const parentSpaceName = computed(() => String(route.query.spaceName || "海军对象空间"));
@@ -114,6 +132,31 @@ const {
   steps: themeOnboardingGuideSteps,
   page: "theme-create",
   entryStepId: ONBOARDING_GUIDE_ENTRY_IDS["theme-create"],
+});
+
+/** 演示流程退出导航进行中标志，避免创建成功与引导关闭两条路径重复触发路由跳转。 */
+let guideDemoLeaving = false;
+
+/**
+ * @description 退出创建主题演示流程并直接回到主题管理页；使用 replace 替换当前记录，不留历史回退。
+ */
+async function leaveGuideDemoToThemeManagement() {
+  if (guideDemoLeaving || route.name === "ThemeSpaceManagement") return;
+  guideDemoLeaving = true;
+  await router.replace({ name: "ThemeSpaceManagement" });
+}
+
+/**
+ * @description 引导步骤变化时同步页面导航：演示模式下引导切到其他页面的步骤（如跳过新建主题、进入创建对象步骤）时，
+ *              回到主题管理页让引导在同一页面续接；不清空续接状态，保证后续大步骤自动继续。
+ * @param step 切换后的引导步骤。
+ */
+function handleGuideStepChange(step: OnboardingGuideStep) {
+  if (isGuideDemoMode.value && step.page !== "theme-create") void leaveGuideDemoToThemeManagement();
+}
+
+watch(guideVisible, (value, previous) => {
+  if (previous && !value && isGuideDemoMode.value) void leaveGuideDemoToThemeManagement();
 });
 
 watch(selectedObjects, () => {
@@ -142,9 +185,13 @@ watch(propertyGroups, (groups) => {
 });
 
 /**
- * @description 按路由历史返回进入主题创建页之前的页面。
+ * @description 按路由历史返回进入主题创建页之前的页面；演示模式下直接回到主题管理页。
  */
 function goBackToSpaceList() {
+  if (isGuideDemoMode.value) {
+    void leaveGuideDemoToThemeManagement();
+    return;
+  }
   void router.back();
 }
 
@@ -212,6 +259,7 @@ async function advanceSubspaceCreateStep() {
     if (instanceLoadStatus.value === "loading") return;
     await loadSelectedObjectInstances();
     if (instanceLoadStatus.value === "error") return;
+    if (isGuideDemoMode.value) selectAllObjectInstances();
     currentStepIndex.value = 1;
     return;
   }
@@ -219,6 +267,7 @@ async function advanceSubspaceCreateStep() {
     if (propertyLoadStatus.value === "loading") return;
     await loadSelectedObjectProperties();
     if (propertyLoadStatus.value === "error") return;
+    if (isGuideDemoMode.value) selectAllObjectProperties();
     currentStepIndex.value = 2;
     return;
   }
@@ -231,8 +280,19 @@ async function advanceSubspaceCreateStep() {
     if (relationLoadStatus.value === "loading") return;
     await loadParentSpaceRelations();
     if (relationLoadStatus.value === "error") return;
+    if (isGuideDemoMode.value) selectAllObjectRelations();
     currentStepIndex.value = 3;
   }
+}
+
+/** @description 演示模式下默认勾选当前已加载的全部对象实例。 */
+function selectAllObjectInstances() {
+  selectedInstanceIds.value = instanceGroups.value.flatMap((group) => group.instances.map((instance) => instance.id));
+}
+
+/** @description 演示模式下默认勾选当前已加载的全部关系。 */
+function selectAllObjectRelations() {
+  selectedRelationIds.value = relationRows.value.map((row) => row.id);
 }
 
 /**
@@ -250,14 +310,7 @@ async function loadParentSpaceRelations() {
     return;
   }
   try {
-    const results = await Promise.allSettled(
-      selectedObjects.value.map((object) =>
-        getOntologyRelationCategoryTreeInterface({
-          spaceId,
-          ontologyUniqueIdentifierFrom: object.id,
-        }),
-      ),
-    );
+    const results = await Promise.allSettled(selectedObjects.value.map((object) => querySpaceRelationTree(spaceId, object.id)));
     if (requestGeneration !== relationRequestGeneration) return;
     const failedResult = results.find((result) => result.status === "rejected");
     if (failedResult?.status === "rejected") {
@@ -281,11 +334,27 @@ async function loadParentSpaceRelations() {
 }
 
 /**
+ * @description 查询父空间关系分类树；演示模式返回演示关系数据。
+ * @param spaceId 父空间 id。
+ * @param objectId 关系起点对象 id。
+ * @returns 关系分类树响应。
+ */
+function querySpaceRelationTree(spaceId: string, objectId: string): Promise<ApiResponse<OntologyRelationCategoryTreeData>> {
+  if (isGuideDemoMode.value) {
+    return Promise.resolve(queryGuideOntologyRelationTree({ spaceId, ontologyUniqueIdentifierFrom: objectId }));
+  }
+  return getOntologyRelationCategoryTreeInterface({ spaceId, ontologyUniqueIdentifierFrom: objectId });
+}
+
+/**
  * @description 重试父空间关系列表查询。
  */
 async function retryParentSpaceRelations() {
   await loadParentSpaceRelations();
-  if (relationLoadStatus.value !== "error") currentStepIndex.value = 3;
+  if (relationLoadStatus.value !== "error") {
+    if (isGuideDemoMode.value) selectAllObjectRelations();
+    currentStepIndex.value = 3;
+  }
 }
 
 /** @description 按选中对象逐个查询对象属性列表。 */
@@ -310,9 +379,11 @@ async function loadSelectedObjectProperties() {
   if (hasError) propertyLoadError.value = "部分对象属性查询失败，请重试。";
 }
 
-/** @description 查询指定对象的属性列表。 @param object 对象。 @returns 属性分组。 */
+/** @description 查询指定对象的属性列表；演示模式返回演示属性数据。 @param object 对象。 @returns 属性分组。 */
 async function queryObjectProperties(object: SubspaceCreateSelectedObject): Promise<SubspaceCreateObjectPropertyGroup> {
-  const response = await getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier: object.id });
+  const response = isGuideDemoMode.value
+    ? queryGuideOntologyProperties({ ontologyUniqueIdentifier: object.id })
+    : await getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier: object.id });
   if (response.code !== 200) throw new Error(response.message || "属性查询失败");
   return mapSubspaceCreateObjectPropertyGroup(Array.isArray(response.data) ? response.data : [], object);
 }
@@ -323,6 +394,7 @@ async function queryObjectProperties(object: SubspaceCreateSelectedObject): Prom
 async function retryObjectProperties() {
   await loadSelectedObjectProperties();
   if (propertyLoadStatus.value !== "error") {
+    if (isGuideDemoMode.value) selectAllObjectProperties();
     currentStepIndex.value = 2;
   }
 }
@@ -362,9 +434,11 @@ async function loadSelectedObjectInstances() {
   }
 }
 
-/** @description 查询指定对象的一页实体实例并映射为页面分组。 */
+/** @description 查询指定对象的一页实体实例并映射为页面分组；演示模式返回演示实例数据。 */
 async function queryObjectInstances(objectId: string, objectLabel: string, page: number, pageSize: number): Promise<SubspaceCreateInstanceGroup> {
-  const response = await getOntologyEntitiesInterface({ ontologyUniqueIdentifier: objectId, pageNum: page, pageSize });
+  const response = isGuideDemoMode.value
+    ? queryGuideOntologyEntities({ ontologyUniqueIdentifier: objectId, pageNum: page, pageSize })
+    : await getOntologyEntitiesInterface({ ontologyUniqueIdentifier: objectId, pageNum: page, pageSize });
   if (response.code !== 200) throw new Error(response.message || "实例查询失败");
   const data = response.data;
   const records = Array.isArray(data.records) ? data.records : [];
@@ -435,7 +509,8 @@ function retryObjectInstancePage(objectId: string) {
 }
 
 /**
- * @description 校验已选关系后完成子空间创建，并返回进入本页之前的路由。
+ * @description 校验已选关系后完成子空间创建，并返回进入本页之前的路由；
+ *              演示模式不调用创建接口，仅提示演示完成并回到主题管理页。
  */
 async function createSubspace() {
   if (!spaceName.value.trim() || !apiName.value.trim()) {
@@ -446,6 +521,12 @@ async function createSubspace() {
   const parentSpaceId = String(route.params.spaceId ?? route.query.spaceId ?? "").trim();
   if (!parentSpaceId) {
     ElMessage.error("缺少父空间标识，无法创建子空间");
+    return;
+  }
+  if (isGuideDemoMode.value) {
+    ElMessage.success("引导演示已完成，未真实创建主题");
+    // 不清空引导续接状态：引导在主题管理页继续「创建对象」大步骤。
+    await leaveGuideDemoToThemeManagement();
     return;
   }
   creating.value = true;

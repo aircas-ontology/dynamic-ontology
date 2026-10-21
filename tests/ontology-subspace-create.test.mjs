@@ -502,7 +502,8 @@ test("subspace create page orchestrates names and next-step validation", () => {
   assert.match(source, /selectedRelationIds/);
   assert.match(source, /currentStepIndex.value = 3/);
   assert.match(source, /getOntologyRelationCategoryTreeInterface/);
-  assert.match(source, /ontologyUniqueIdentifierFrom: object.id/);
+  assert.match(source, /querySpaceRelationTree\(spaceId, object\.id\)/);
+  assert.match(source, /ontologyUniqueIdentifierFrom: objectId/);
   assert.match(source, /Promise\.allSettled/);
   assert.match(source, /loadParentSpaceRelations/);
   assert.match(source, /mapSubspaceCreateRelationsFromTree/);

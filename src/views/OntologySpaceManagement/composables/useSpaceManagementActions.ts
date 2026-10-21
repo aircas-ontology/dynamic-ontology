@@ -55,7 +55,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
     activeSpace.value = space;
     resetOntologySpaceCommandState();
     if (action === "enter") {
-      void router.push({ name: "OntologySpaceManagementDetailOverview", params: { spaceId: space.id } });
+      void router.push({ name: "OntologySpaceManagementDetailObject", params: { spaceId: space.id } });
     } else if (action === "edit") {
       openOntologySpaceForm(space);
     } else if (action === "delete") {

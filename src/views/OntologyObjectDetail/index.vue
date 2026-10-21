@@ -4,7 +4,7 @@
       <el-icon><QuestionFilled /></el-icon>
     </button>
     <div class="ontology-object-detail__layout">
-      <ObjectDetailTabs :active-tab="activeTab" :available-tabs="availableTabs" :object-name="objectName" :counts="tabCounts" @update:active-tab="openTab" />
+      <ObjectDetailTabs :active-tab="activeTab" :available-tabs="availableTabs" :counts="tabCounts" @update:active-tab="openTab" />
       <div class="ontology-object-detail__content">
         <router-view v-slot="{ Component, route: childRoute }">
           <component
@@ -12,7 +12,6 @@
             :is="Component as any"
             :key="`${String(childRoute.params.objectId)}-${String(childRoute.name)}`"
             v-bind="detailChildProps"
-            v-on="overviewListeners"
           />
         </router-view>
       </div>
@@ -37,7 +36,7 @@ import { routeNameForObjectDetailTab } from "./utils/objectDetailTabs";
 const router = useRouter();
 const route = useRoute();
 const { activeTab, availableTabs, objectName, objectId, spaceId, spaceName, spaceType } = useObjectDetailWorkspace();
-const { counts: objectCounts, loading: statisticLoading, error: statisticError, loadObjectResourceStatistic } = useObjectResourceStatistic(objectId);
+const { counts: objectCounts } = useObjectResourceStatistic(objectId);
 const onboardingGuideSteps = ONBOARDING_GUIDE_STEPS;
 const {
   visible: guideVisible,
@@ -49,17 +48,11 @@ const {
   entryStepId: ONBOARDING_GUIDE_ENTRY_IDS["object-detail"],
 });
 
-/** @description 向当前子页面传递统计计数；对象概览同时传递加载和错误状态。 */
-const detailChildProps = computed(() => {
-  if (activeTab.value !== "object") return { counts: objectCounts.value };
-  return { counts: objectCounts.value, loading: statisticLoading.value, error: statisticError.value };
-});
+/** @description 向当前子页面传递统计计数。 */
+const detailChildProps = computed(() => ({ counts: objectCounts.value }));
 
-/** @description 仅在对象概览页把重试交给统计加载。 */
-const overviewListeners = computed(() => (activeTab.value === "object" ? { retry: loadObjectResourceStatistic } : {}));
-
-/** Tab 徽标计数：属性/关系/行为，对象 Tab 不显示计数。 */
-const tabCounts = computed<Partial<Record<Exclude<OntologyObjectDetailTab, "object">, number>>>(() => ({
+/** Tab 徽标计数：属性/关系/行为。 */
+const tabCounts = computed<Partial<Record<OntologyObjectDetailTab, number>>>(() => ({
   attribute: objectCounts.value.property,
   relation: objectCounts.value.relation,
   behavior: objectCounts.value.behavior,

@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { workspaceRoutes } from "../src/router/modules/workspaceRoutes.ts";
-import { filterConceptTree, findObjectWorkspace, makeCategoryLocationTarget } from "../src/views/ObjectWorkspacePanel/utils/objectWorkspace.ts";
+import {
+  filterConceptTree,
+  findObjectWorkspace,
+  makeCategoryLocationTarget,
+  makeObjectLocationTarget,
+} from "../src/views/ObjectWorkspacePanel/utils/objectWorkspace.ts";
 
 const sampleWorkspaces = [
   {
@@ -63,6 +68,22 @@ test("concept tree search retains matching ancestors and category anchor request
   assert.equal(filtered.length, 1);
   assert.equal(filtered[0]?.children[0]?.children[0]?.label, "航空母舰");
   assert.deepEqual(makeCategoryLocationTarget("carrier", 3), { categoryId: "carrier", requestId: 3 });
+});
+
+test("object location target carries the object id for card level locating", () => {
+  assert.deepEqual(makeObjectLocationTarget("carrier", "carrier-1", 5), { categoryId: "carrier", objectId: "carrier-1", requestId: 5 });
+});
+
+test("tree object clicks locate the object in the list instead of entering detail", () => {
+  const panelSource = readFileSync(new URL("../src/views/ObjectWorkspacePanel/index.vue", import.meta.url), "utf8");
+  const listSource = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue", import.meta.url), "utf8");
+  assert.match(panelSource, /@select-object="locateObjectFromTree"/);
+  assert.match(panelSource, /function locateObjectFromTree/);
+  assert.match(panelSource, /makeObjectLocationTarget/);
+  assert.doesNotMatch(panelSource, /openObjectDetailFromTree/);
+  assert.match(listSource, /data-object-id/);
+  assert.match(listSource, /activeObjectId/);
+  assert.match(listSource, /row-class-name/);
 });
 
 test("missing category tree data opens an add dialog instead of a load error", () => {

@@ -377,7 +377,7 @@ onMounted(() => {
   void loadThemeOverviewCount();
 });
 const router = useRouter();
-/** @description 校验已选对象空间后关闭弹窗并跳转子空间创建流程，携带空间上下文与来源标识。 */
+/** @description 校验已选对象空间后关闭弹窗并跳转子空间创建流程，携带空间上下文与来源标识；引导进行中时追加 guide 标记，让创建页进入演示模式。 */
 function confirmCreateThemeSpace(): void {
   const selectedSpace = objectSpaces.value.find((space) => space.id === selectedObjectSpace.value);
   if (!selectedSpace) {
@@ -388,13 +388,18 @@ function confirmCreateThemeSpace(): void {
   void router.push({
     name: "OntologySubspaceCreate",
     params: { spaceId: selectedSpace.id },
-    query: { spaceId: selectedSpace.id, spaceName: selectedSpace.displayName, from: "theme-space-management" },
+    query: {
+      spaceId: selectedSpace.id,
+      spaceName: selectedSpace.displayName,
+      from: "theme-space-management",
+      ...(guideVisible.value ? { guide: "1" } : {}),
+    },
   });
 }
 /** @description 进入主题对应的空间内管理页，携带空间名与来源标识供面包屑展示。 @param space 目标主题。 */
 function enterThemeSpace(space: OntologySpaceItem): void {
   void router.push({
-    name: "OntologySpaceManagementDetailOverview",
+    name: "OntologySpaceManagementDetailObject",
     params: { spaceId: space.id },
     query: { spaceName: space.displayName, from: "theme-space-management" },
   });

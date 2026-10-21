@@ -12,7 +12,7 @@ export function useObjectDetailWorkspace() {
   const route = useRoute();
 
   const objectId = computed(() => String(route.params.objectId || ""));
-  const activeTab = computed<OntologyObjectDetailTab>(() => objectDetailTabFromRouteName(route.name) ?? "object");
+  const activeTab = computed<OntologyObjectDetailTab>(() => objectDetailTabFromRouteName(route.name) ?? "attribute");
   const availableTabs = computed(() => AVAILABLE_OBJECT_DETAIL_TABS);
 
   const objectName = computed(() => {

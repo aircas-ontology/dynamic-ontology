@@ -39,6 +39,8 @@ import { clearOnboardingGuideStep, writeOnboardingGuideStepId } from "@/composab
 
 const props = withDefaults(defineProps<{ steps: readonly OnboardingGuideStep[]; startId?: string }>(), { startId: "" });
 
+const emit = defineEmits<{ "step-change": [step: OnboardingGuideStep] }>();
+
 const visible = defineModel<boolean>({ default: false });
 const index = ref(0);
 const targetRect = ref<DOMRect | null>(null);
@@ -221,18 +223,25 @@ function goToStep(nextIndex: number) {
     close();
     return;
   }
-  if (shouldExitCurrentDialog(current, next)) runExitClick(current);
-  if (next.page !== current.page) runLeaveClick(current);
   index.value = nextIndex;
   writeOnboardingGuideStepId(props.steps[nextIndex]?.id ?? "");
+  emit("step-change", currentStep.value);
+  if (shouldExitCurrentDialog(current, next)) runExitClick(current);
+  if (next.page !== current.page) runLeaveClick(current);
   activateCurrentStep();
 }
 
 /**
  * @description 前进或后退一步；越界关闭与跨链、跨页处理由 goToStep 统一完成。
+ *              按钮类步骤（advanceOnTargetClick）点击引导卡片「下一步」时，同步触发真实目标点击，
+ *              保证页面动作（如步骤推进）与引导推进一致；程序化点击 isTrusted 为 false，不会重复推进引导。
  * @param offset 步进偏移，1 为下一步，-1 为上一步。
  */
 function move(offset: number) {
+  if (offset > 0 && currentStep.value.advanceOnTargetClick) {
+    const target = document.querySelector<HTMLElement>(currentStep.value.targetSelector);
+    target?.click();
+  }
   goToStep(index.value + offset);
 }
 

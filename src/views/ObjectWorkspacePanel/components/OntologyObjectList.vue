@@ -42,7 +42,13 @@
         </header>
 
         <div v-if="viewMode === 'card'" class="ontology-object-section__cards">
-          <article v-for="item in section.items" :key="item.id" class="ontology-object-card">
+          <article
+            v-for="item in section.items"
+            :key="item.id"
+            class="ontology-object-card"
+            :class="{ 'is-located': activeObjectId === item.id }"
+            :data-object-id="item.id"
+          >
             <div class="ontology-object-card__visual">
               <img v-if="item.iconUrl" :src="item.iconUrl" alt="" />
               <el-icon v-else><Ship /></el-icon>
@@ -121,7 +127,7 @@
         </div>
 
         <div v-else class="ontology-object-section__table">
-          <el-table class="aircas-table--accent-header" :data="section.items" row-key="id" height="100%" stripe>
+          <el-table class="aircas-table--accent-header" :data="section.items" row-key="id" height="100%" stripe :row-class-name="objectRowClassName">
             <el-table-column label="对象名称" min-width="220">
               <template #default="{ row }"
                 ><strong>{{ objectRow(row).displayName }}</strong
@@ -185,6 +191,7 @@ const emit = defineEmits<{
 
 const scrollContainer = ref<HTMLElement | null>(null);
 const activeCategoryId = ref("");
+const activeObjectId = ref("");
 let highlightTimer: number | undefined;
 
 function objectRow(row: unknown): OntologyObjectItem {
@@ -195,6 +202,16 @@ function objectRow(row: unknown): OntologyObjectItem {
     }
   }
   throw new Error("无效的对象数据行。");
+}
+
+/**
+ * @description 为表格行追加定位高亮类。
+ * @param row 当前行数据。
+ * @returns 需要高亮的行返回 is-located，否则返回空字符串。
+ */
+function objectRowClassName({ row }: { row: unknown }): string {
+  const item = row as { id?: unknown };
+  return typeof item?.id === "string" && item.id === activeObjectId.value ? "is-located" : "";
 }
 
 function categoryAnchorId(categoryId: string) {
@@ -218,10 +235,24 @@ async function locateCategory(target: OntologyObjectLocationTarget | null) {
   if (!section) return;
   section.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
   activeCategoryId.value = target.categoryId;
+  if (target.objectId) await locateObjectElement(section, target.objectId);
   if (highlightTimer) window.clearTimeout(highlightTimer);
   highlightTimer = window.setTimeout(() => {
     activeCategoryId.value = "";
+    activeObjectId.value = "";
   }, 1600);
+}
+
+/**
+ * @description 在分区元素内滚动到目标对象（卡片或表格行）并标记高亮。
+ * @param section 对象所属分区根元素。
+ * @param objectId 对象唯一标识。
+ */
+async function locateObjectElement(section: HTMLElement, objectId: string) {
+  activeObjectId.value = objectId;
+  await nextTick();
+  const objectElement = section.querySelector<HTMLElement>(`[data-object-id="${objectId}"]`) ?? section.querySelector<HTMLElement>("tr.is-located");
+  objectElement?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
 }
 
 watch(
@@ -324,7 +355,9 @@ onBeforeUnmount(() => {
 }
 .ontology-object-section.is-active {
   border-color: var(--aircas-color-primary);
-  box-shadow: 0 0 12px var(--aircas-color-effect-primary-fill);
+  box-shadow:
+    0 0 0 1px var(--aircas-color-primary),
+    0 0 18px var(--aircas-color-effect-primary-shadow);
 }
 .ontology-object-section__header {
   display: flex;
@@ -396,6 +429,25 @@ onBeforeUnmount(() => {
   box-shadow:
     0 0 18px var(--aircas-color-effect-primary-shadow),
     inset 0 0 20px var(--aircas-color-effect-page-glow);
+}
+
+/* 树节点定位高亮：卡片，最细白边 + 白色光晕投影 */
+.ontology-object-card.is-located,
+.ontology-object-card.is-located:hover {
+  border-color: var(--aircas-color-white);
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--aircas-color-white) 40%, transparent),
+    0 0 30px color-mix(in srgb, var(--aircas-color-white) 22%, transparent),
+    0 8px 20px color-mix(in srgb, var(--aircas-color-black) 50%, transparent);
+}
+
+/* 亮色主题下白色描边需要深色晕圈衬托 */
+:root:not(.dark) .ontology-object-card.is-located,
+:root:not(.dark) .ontology-object-card.is-located:hover {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--aircas-color-black) 22%, transparent),
+    0 0 12px color-mix(in srgb, var(--aircas-color-white) 60%, transparent),
+    0 6px 16px color-mix(in srgb, var(--aircas-color-black) 20%, transparent);
 }
 
 .ontology-object-card__visual {
@@ -558,6 +610,17 @@ onBeforeUnmount(() => {
 }
 .ontology-object-section__table .el-button {
   white-space: nowrap;
+}
+/* 树节点定位高亮：表格行，细白边 + 柔和投影 */
+.ontology-object-section__table :deep(tr.is-located td.el-table__cell) {
+  background-color: color-mix(in srgb, var(--aircas-color-white) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aircas-color-white) 35%, transparent);
+}
+
+/* 亮色主题下白色底色不可见，改用中性底色与描边 */
+:root:not(.dark) .ontology-object-section__table :deep(tr.is-located td.el-table__cell) {
+  background-color: color-mix(in srgb, var(--aircas-color-black) 6%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aircas-color-black) 30%, transparent);
 }
 .ontology-object-table__api {
   display: block;

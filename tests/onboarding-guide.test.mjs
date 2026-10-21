@@ -93,7 +93,10 @@ test("onboarding guide overlay auto-opens dialog steps by clicking the configure
     source,
     /if \(!trigger\) \{\s*locateTarget\(\);[\s\S]*?window\.setTimeout\(\(\) => \{\s*runEnterClick\(step\);\s*locateTarget\(\);\s*\}, 360\);\s*return;\s*\}/,
   );
-  assert.match(source, /index\.value = nextIndex;\r?\n  writeOnboardingGuideStepId\(props\.steps\[nextIndex\]\?\.id \?\? ""\);\r?\n  activateCurrentStep\(\);/);
+  assert.match(
+    source,
+    /index\.value = nextIndex;\r?\n  writeOnboardingGuideStepId\(props\.steps\[nextIndex\]\?\.id \?\? ""\);\r?\n  emit\("step-change", currentStep\.value\);[\s\S]*?activateCurrentStep\(\);/,
+  );
 });
 
 test("onboarding guide overlay interaction corrections for exit skip mask and click advance", () => {
@@ -380,7 +383,7 @@ test("theme create page wires the guide only for theme-space-management origin",
   assert.match(source, /<button\s+v-if="isThemeSpaceCreation"\s+class="ontology-subspace-create__help"/);
   assert.match(
     source,
-    /<OnboardingGuideOverlay v-if="isThemeSpaceCreation" v-model="guideVisible" :steps="themeOnboardingGuideSteps" :start-id="guideStartId" \/>/,
+    /<OnboardingGuideOverlay\s+v-if="isThemeSpaceCreation"\s+v-model="guideVisible"\s+:steps="themeOnboardingGuideSteps"\s+:start-id="guideStartId"\s+@step-change="handleGuideStepChange"\s*\/>/,
   );
   assert.match(source, /page: "theme-create"/);
   assert.match(source, /entryStepId: ONBOARDING_GUIDE_ENTRY_IDS\["theme-create"\]/);

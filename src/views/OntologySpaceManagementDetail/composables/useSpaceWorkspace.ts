@@ -21,9 +21,8 @@ export function useSpaceWorkspace() {
   let disposed = false;
 
   const spaceId = computed(() => String(route.params.spaceId || ""));
-  const activeTab = computed(() => tabFromRouteName(route.name) ?? "overview");
+  const activeTab = computed(() => tabFromRouteName(route.name) ?? "object");
   const availableTabs = computed(() => AVAILABLE_WORKSPACE_TABS);
-  const spaceDisplayName = computed(() => space.value?.displayName.trim() || "未命名空间");
 
   /**
    * @description 请求列表接口并按当前 spaceId 匹配空间；无 id/未命中为 empty，请求失败为 error。
@@ -88,7 +87,6 @@ export function useSpaceWorkspace() {
     spaceId,
     activeTab,
     availableTabs,
-    spaceDisplayName,
     load,
   };
 }

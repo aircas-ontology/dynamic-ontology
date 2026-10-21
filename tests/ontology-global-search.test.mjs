@@ -63,7 +63,7 @@ test("global search mock mirrors the documented success sample", () => {
 
 test("resolveOntologyGlobalSearchRoute maps space and relation-group types", () => {
   assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "sj测试", type: "空间", spaceId: 37 }), {
-    name: "OntologySpaceManagementDetailOverview",
+    name: "OntologySpaceManagementDetailObject",
     params: { spaceId: "37" },
   });
   assert.equal(resolveOntologyGlobalSearchRoute({ name: "对象A", type: "对象", spaceId: 11, objectId: 9 }), null);
@@ -76,7 +76,7 @@ test("resolveOntologyGlobalSearchRoute maps space and relation-group types", () 
 
 test("resolveOntologyGlobalSearchRoute adds theme-space context for space and relation results", () => {
   assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "主题空间", type: "空间", spaceId: 122, spaceName: "环境本体空间主题空间1", spaceType: 1 }), {
-    name: "OntologySpaceManagementDetailOverview",
+    name: "OntologySpaceManagementDetailObject",
     params: { spaceId: "122" },
     query: { spaceName: "环境本体空间主题空间1", from: "theme-space-management", spaceType: "1" },
   });
@@ -97,7 +97,7 @@ test("resolveOntologyGlobalSearchObjectRoute uses item uniqueIdentifier spaceNam
       uniqueIdentifier: "ae6cca59ced9432189da4af315554957",
     }),
     {
-      name: "OntologyObjectDetailObject",
+      name: "OntologyObjectDetailAttribute",
       params: { objectId: "ae6cca59ced9432189da4af315554957" },
       query: { spaceId: "11", spaceName: "测试空间", objectName: "测试对象-修改" },
     },
@@ -113,7 +113,7 @@ test("resolveOntologyGlobalSearchObjectRoute uses item uniqueIdentifier spaceNam
       spaceType: 1,
     }),
     {
-      name: "OntologyObjectDetailObject",
+      name: "OntologyObjectDetailAttribute",
       params: { objectId: "35f6b1662164495ea462afea4ed6f52e" },
       query: { spaceId: "122", spaceName: "环境本体空间主题空间1", objectName: "aaa", from: "theme-space-management", spaceType: "1" },
     },

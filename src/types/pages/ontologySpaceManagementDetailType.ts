@@ -1,8 +1,7 @@
 /** 空间内管理工作区 Tab 标识。 */
-export type ManagementWorkspaceTab = "overview" | "object" | "relation" | "function-operator" | "behavior" | "behavior-schedule";
+export type ManagementWorkspaceTab = "object" | "relation" | "function-operator" | "behavior" | "behavior-schedule";
 
 export type OntologySpaceDetailRouteName =
-  | "OntologySpaceManagementDetailOverview"
   | "OntologySpaceManagementDetailObject"
   | "OntologySpaceManagementDetailRelation"
   | "OntologySpaceManagementDetailFunctionOperator"
@@ -13,7 +12,7 @@ export type OntologySpaceDetailLoadStatus = "loading" | "ready" | "empty" | "err
 
 export interface OntologySpaceOverview {
   spaceId: string;
-  counts: Partial<Record<Exclude<ManagementWorkspaceTab, "overview">, number>>;
+  counts: Partial<Record<ManagementWorkspaceTab, number>>;
   availableTabs: ManagementWorkspaceTab[];
 }
 
@@ -77,5 +76,7 @@ export interface OntologyObjectWorkspace {
 
 export interface OntologyObjectLocationTarget {
   categoryId: string;
+  /** 需要定位高亮的对象 id；缺省时仅定位分类分区。 */
+  objectId?: string;
   requestId: number;
 }

@@ -63,11 +63,13 @@ test("concept hierarchy tree renders object names below each category node", () 
   assert.match(source, /concept-hierarchy__object-name/);
 });
 
-test("clicking a tree object node navigates to the object detail page", () => {
+test("clicking a tree object node locates the object in the list instead of navigating", () => {
   const treeSource = readSource("../src/views/ObjectWorkspacePanel/components/ConceptHierarchyTree.vue");
   assert.match(treeSource, /"select-object": \[object: OntologyConceptObjectRef\]/);
   assert.match(treeSource, /emit\("select-object", \{ uniqueIdentifier: value\.objectId, displayName: value\.label \}\)/);
   const panelSource = readSource("../src/views/ObjectWorkspacePanel/index.vue");
-  assert.match(panelSource, /@select-object="openObjectDetailFromTree"/);
-  assert.match(panelSource, /name: "OntologyObjectDetail", params: \{ objectId \}/);
+  assert.match(panelSource, /@select-object="locateObjectFromTree"/);
+  assert.doesNotMatch(panelSource, /function openObjectDetailFromTree/);
+  assert.doesNotMatch(panelSource, /缺少对象唯一标识，无法进入对象详情/);
+  assert.match(panelSource, /name: "OntologyObjectDetail", params: \{ objectId: item\.id \}/);
 });

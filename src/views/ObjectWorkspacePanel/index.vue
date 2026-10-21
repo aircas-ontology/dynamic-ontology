@@ -10,7 +10,7 @@
         :tree="workspaceTree"
         :selected-node-id="selectedNodeId"
         @select="selectNode"
-        @select-object="openObjectDetailFromTree"
+        @select-object="locateObjectFromTree"
         @create="openCategoryTreeCreateDialog"
         @create-child="openCategoryChildDialog"
         @rename="openCategoryRenameDialog"
@@ -100,7 +100,7 @@ import { useObjectWorkspaceCategoryActions } from "./composables/useObjectWorksp
 import { useObjectWorkspaceObjectActions } from "./composables/useObjectWorkspaceObjectActions";
 import { useOntologyObjectWorkspace } from "./composables/useOntologyObjectWorkspace";
 import { useOntologySpaceDetailStore } from "@/stores/useOntologySpaceDetailStore";
-import { makeCategoryLocationTarget } from "./utils/objectWorkspace";
+import { makeCategoryLocationTarget, makeObjectLocationTarget } from "./utils/objectWorkspace";
 
 const route = useRoute();
 const router = useRouter();
@@ -200,21 +200,22 @@ function openOntologyLlmBuilderPage() {
 }
 
 /**
- * @description 从概念层级树点击对象节点跳转到对象详情页。
+ * @description 从概念层级树点击对象节点时，在右侧列表定位并高亮该对象，不进入详情。
  * @param object 被点击的对象引用，含对象唯一标识与显示名称。
  */
-function openObjectDetailFromTree(object: OntologyConceptObjectRef) {
+function locateObjectFromTree(object: OntologyConceptObjectRef) {
   const objectId = object.uniqueIdentifier.trim();
   if (!objectId) {
-    ElMessage.error("缺少对象唯一标识，无法进入对象详情。");
+    ElMessage.error("缺少对象唯一标识，无法定位对象。");
     return;
   }
-  const query: Record<string, string> = {};
-  if (spaceId.value) query.spaceId = spaceId.value;
-  if (spaceDisplayName.value.trim()) query.spaceName = spaceDisplayName.value.trim();
-  if (route.query.from === "theme-space-management") query.from = "theme-space-management";
-  if (object.displayName.trim()) query.objectName = object.displayName.trim();
-  void router.push({ name: "OntologyObjectDetail", params: { objectId }, query });
+  const item = workspaceSections.value.flatMap((section) => section.items).find((candidate) => candidate.id === objectId);
+  if (!item) {
+    ElMessage.warning(`未在对象列表中找到“${object.displayName}”，无法定位。`);
+    return;
+  }
+  selectedNodeId.value = item.categoryId;
+  locationTarget.value = makeObjectLocationTarget(item.categoryId, item.id, ++locationRequestId);
 }
 
 /**

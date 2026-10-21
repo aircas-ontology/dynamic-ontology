@@ -21,7 +21,6 @@
         v-if="!isWorkflowPage"
         :active-tab="activeTab"
         :available-tabs="availableTabs"
-        :space-name="spaceDisplayName"
         :counts="spaceOverviewCounts"
         :counts-loading="spaceOverviewCountsLoading"
         @update:active-tab="openTab"
@@ -35,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, provide } from "vue";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { QuestionFilled } from "@element-plus/icons-vue";
 import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
@@ -44,16 +43,15 @@ import AircasLoading from "@/components/AircasLoading.vue";
 import type { ManagementWorkspaceTab } from "@/types";
 import { ONBOARDING_GUIDE_ENTRY_IDS, ONBOARDING_GUIDE_STEPS, THEME_ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
 import WorkspaceTypeTabs from "./components/WorkspaceTypeTabs.vue";
-import { SPACE_OVERVIEW_KEY, useSpaceOverview } from "@/views/SpaceOverviewPanel/composables/useSpaceOverview";
+import { useSpaceOverview } from "./composables/useSpaceOverview";
 import { useSpaceWorkspace } from "./composables/useSpaceWorkspace";
 import { routeNameForTab } from "./utils/workspaceTabs";
 
 const router = useRouter();
 const route = useRoute();
-const { status, error, space, spaceId, activeTab, availableTabs, spaceDisplayName, load } = useSpaceWorkspace();
-// 空间统计由布局层加载一次，tab 菜单后缀与概览页卡片共享同一份数据。
+const { status, error, spaceId, activeTab, availableTabs, load } = useSpaceWorkspace();
+// 空间统计由布局层加载一次，供 tab 菜单后缀使用。
 const spaceOverview = useSpaceOverview(spaceId);
-provide(SPACE_OVERVIEW_KEY, spaceOverview);
 const spaceOverviewCounts = computed(() => spaceOverview.data.value?.counts);
 const spaceOverviewCountsLoading = computed(() => spaceOverview.loading.value);
 const isWorkflowPage = computed(() => route.name === "OntologyLlmBuilder" || route.name === "OntologySubspaceCreate");

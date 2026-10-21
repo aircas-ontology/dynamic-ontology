@@ -44,8 +44,8 @@ test("ontology meta statistic mock mirrors the documented success sample", () =>
 test("object detail statistic replaces the hardcoded counts with the meta statistic api", () => {
   const pageSource = readSource("../src/views/OntologyObjectDetail/index.vue");
   const composableSource = readSource("../src/views/OntologyObjectDetail/composables/useObjectResourceStatistic.ts");
-  const panelSource = readSource("../src/views/OntologyObjectOverviewPanel/index.vue");
   assert.match(pageSource, /useObjectResourceStatistic/);
+  assert.match(pageSource, /:counts="tabCounts"/);
   assert.match(composableSource, /getOntologyMetaStatisticInterface/);
   assert.match(composableSource, /uniqueIdentifier: objectId/);
   assert.match(composableSource, /entity: statistic\.entityCount/);
@@ -54,7 +54,4 @@ test("object detail statistic replaces the hardcoded counts with the meta statis
   assert.match(composableSource, /behavior: statistic\.actionCount/);
   assert.match(composableSource, /response\.code === 200/);
   assert.doesNotMatch(pageSource, /28_640/);
-  assert.match(panelSource, /统计加载中\.\.\./);
-  assert.match(panelSource, /重试/);
-  assert.match(panelSource, /@click="emit\('retry'\)"/);
 });

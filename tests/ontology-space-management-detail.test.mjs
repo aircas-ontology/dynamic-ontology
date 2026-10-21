@@ -10,15 +10,12 @@ import { useOntologySpaceDetailStore } from "../src/stores/useOntologySpaceDetai
 
 test("space detail parent and child routes resolve under the workspace layout", () => {
   const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
-  const overview = router.resolve({ name: "OntologySpaceManagementDetailOverview", params: { spaceId: "army" } });
-  assert.equal(overview.path, "/workspace/ontology-space-management/army/overview");
-  assert.deepEqual(
-    overview.matched.map((record) => record.name),
-    ["Workspace", "OntologySpaceManagementDetail", "OntologySpaceManagementDetailOverview"],
-  );
-
   const objectRoute = router.resolve({ name: "OntologySpaceManagementDetailObject", params: { spaceId: "army" } });
   assert.equal(objectRoute.path, "/workspace/ontology-space-management/army/object");
+  assert.deepEqual(
+    objectRoute.matched.map((record) => record.name),
+    ["Workspace", "OntologySpaceManagementDetail", "OntologySpaceManagementDetailObject"],
+  );
 
   const functionRoute = router.resolve({
     name: "OntologySpaceManagementDetailFunctionOperator",
@@ -50,11 +47,15 @@ test("theme space create back button follows the route history", () => {
   assert.doesNotMatch(source, /function goBackToSpaceList\(\)[\s\S]*router\.push\(\{ name: "OntologySpaceManagement" \}/);
 });
 
-test("space detail parent redirects to overview for a space id", () => {
+test("space detail parent redirects to the object tab for a space id", () => {
   const detailRoute = workspaceRoutes[0]?.children?.find((route) => route.name === "OntologySpaceManagementDetail");
   assert.ok(detailRoute);
-  assert.deepEqual(detailRoute.redirect, { name: "OntologySpaceManagementDetailOverview" });
-  assert.equal(detailRoute.children?.length, 8);
+  assert.deepEqual(detailRoute.redirect, { name: "OntologySpaceManagementDetailObject" });
+  assert.equal(detailRoute.children?.length, 7);
+  assert.equal(
+    detailRoute.children?.some((route) => route.name === "OntologySpaceManagementDetailOverview"),
+    false,
+  );
 });
 
 test("theme space creation resolves its selected parent from object spaces", () => {
@@ -102,10 +103,10 @@ test("ontology space detail store keeps and clears the breadcrumb space name", (
   assert.equal(store.displayName, "");
 });
 
-test("space management enter action navigates to the overview route", () => {
+test("space management enter action navigates to the object tab route", () => {
   const source = readFileSync(new URL("../src/views/OntologySpaceManagement/composables/useSpaceManagementActions.ts", import.meta.url), "utf8");
   assert.match(source, /action === ["']enter["']/);
-  assert.match(source, /OntologySpaceManagementDetailOverview/);
+  assert.match(source, /OntologySpaceManagementDetailObject/);
 });
 
 test("breadcrumb includes the current space name while inside a space", () => {
@@ -130,7 +131,7 @@ test("workspace type tabs keep prototype labels including function operator", ()
 
 test("workspace type tabs show resource counts as text suffix", () => {
   const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/WorkspaceTypeTabs.vue", import.meta.url), "utf8");
-  assert.match(source, /counts\?: Partial<Record<Exclude<ManagementWorkspaceTab, "overview">, number>>/);
+  assert.match(source, /counts\?: Partial<Record<ManagementWorkspaceTab, number>>/);
   assert.match(source, /countsLoading\?: boolean/);
   assert.match(source, /formatOverviewStat/);
   assert.match(source, /workspace-type-tabs__count/);
@@ -140,7 +141,8 @@ test("workspace type tabs show resource counts as text suffix", () => {
 test("space detail layout loads overview statistics once and passes counts to tabs", () => {
   const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/index.vue", import.meta.url), "utf8");
   assert.match(source, /useSpaceOverview\(spaceId\)/);
-  assert.match(source, /provide\(SPACE_OVERVIEW_KEY, spaceOverview\)/);
   assert.match(source, /:counts="spaceOverviewCounts"/);
   assert.match(source, /:counts-loading="spaceOverviewCountsLoading"/);
+  assert.doesNotMatch(source, /:space-name=/);
+  assert.doesNotMatch(source, /SPACE_OVERVIEW_KEY/);
 });
