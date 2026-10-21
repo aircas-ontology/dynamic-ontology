@@ -40,3 +40,16 @@ test("overview distinguishes zero, loading and absent data", () => {
   assert.deepEqual(formatOverviewStat(undefined, true), { value: "—", note: "正在统计" });
   assert.deepEqual(formatOverviewStat(undefined, false), { value: "—", note: "暂无统计数据" });
 });
+
+test("overview panel consumes shared statistics context instead of loading itself", () => {
+  const source = readFileSync(new URL("../src/views/SpaceOverviewPanel/index.vue", import.meta.url), "utf8");
+  assert.match(source, /injectSpaceOverviewContext\(\)/);
+  assert.doesNotMatch(source, /useSpaceOverview\(spaceId\)/);
+  assert.doesNotMatch(source, /getOntologySpaceStatisticInterface/);
+});
+
+test("overview composable exports a typed injection key for shared statistics", () => {
+  const source = readFileSync(new URL("../src/views/SpaceOverviewPanel/composables/useSpaceOverview.ts", import.meta.url), "utf8");
+  assert.match(source, /SPACE_OVERVIEW_KEY: InjectionKey<SpaceOverviewContext>/);
+  assert.match(source, /injectSpaceOverviewContext/);
+});

@@ -24,16 +24,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { useRoute } from "vue-router";
 import { Connection, Cpu, Grid, Share, Timer } from "@element-plus/icons-vue";
 import type { ManagementWorkspaceTab } from "@/types";
-import { useSpaceOverview } from "./composables/useSpaceOverview";
+import { injectSpaceOverviewContext } from "./composables/useSpaceOverview";
 import { formatOverviewStat } from "./utils/overviewStats";
 
-const route = useRoute();
-const spaceId = computed(() => String(route.params.spaceId || ""));
-const { data, loading, error, loadSpaceOverview } = useSpaceOverview(spaceId);
+const { data, loading, error, loadSpaceOverview } = injectSpaceOverviewContext();
 const statItems: ReadonlyArray<{ id: Exclude<ManagementWorkspaceTab, "overview">; label: string; icon: typeof Grid; tone: string }> = [
   { id: "object", label: "对象", icon: Grid, tone: "cyan" },
   { id: "relation", label: "关系", icon: Share, tone: "purple" },

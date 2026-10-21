@@ -19,7 +19,7 @@
       </el-menu-item>
       <el-menu-item index="/workspace/theme-space-management" :route="{ name: 'ThemeSpaceManagement' }">
         <el-icon><Collection /></el-icon>
-        <template #title>主题空间管理</template>
+        <template #title>主题管理</template>
       </el-menu-item>
       <el-menu-item index="/workspace/full-text-search" :route="{ name: 'FullTextSearch' }">
         <el-icon><Search /></el-icon>

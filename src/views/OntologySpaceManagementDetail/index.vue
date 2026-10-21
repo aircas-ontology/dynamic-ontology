@@ -1,7 +1,7 @@
 <template>
   <div class="space-management-detail" :class="{ 'is-empty': status === 'empty' }">
     <button
-      v-if="status === 'ready'"
+      v-if="status === 'ready' && !isWorkflowPage"
       class="space-management-detail__help"
       type="button"
       aria-label="打开新手引导"
@@ -22,6 +22,8 @@
         :active-tab="activeTab"
         :available-tabs="availableTabs"
         :space-name="spaceDisplayName"
+        :counts="spaceOverviewCounts"
+        :counts-loading="spaceOverviewCountsLoading"
         @update:active-tab="openTab"
       />
       <div class="space-management-detail__content">
@@ -33,29 +35,37 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, provide } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { QuestionFilled } from "@element-plus/icons-vue";
 import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
 import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
 import AircasLoading from "@/components/AircasLoading.vue";
 import type { ManagementWorkspaceTab } from "@/types";
-import { ONBOARDING_GUIDE_ENTRY_IDS, ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
+import { ONBOARDING_GUIDE_ENTRY_IDS, ONBOARDING_GUIDE_STEPS, THEME_ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
 import WorkspaceTypeTabs from "./components/WorkspaceTypeTabs.vue";
+import { SPACE_OVERVIEW_KEY, useSpaceOverview } from "@/views/SpaceOverviewPanel/composables/useSpaceOverview";
 import { useSpaceWorkspace } from "./composables/useSpaceWorkspace";
 import { routeNameForTab } from "./utils/workspaceTabs";
 
 const router = useRouter();
 const route = useRoute();
-const { status, error, spaceId, activeTab, availableTabs, spaceDisplayName, load } = useSpaceWorkspace();
+const { status, error, space, spaceId, activeTab, availableTabs, spaceDisplayName, load } = useSpaceWorkspace();
+// 空间统计由布局层加载一次，tab 菜单后缀与概览页卡片共享同一份数据。
+const spaceOverview = useSpaceOverview(spaceId);
+provide(SPACE_OVERVIEW_KEY, spaceOverview);
+const spaceOverviewCounts = computed(() => spaceOverview.data.value?.counts);
+const spaceOverviewCountsLoading = computed(() => spaceOverview.loading.value);
 const isWorkflowPage = computed(() => route.name === "OntologyLlmBuilder" || route.name === "OntologySubspaceCreate");
-const onboardingGuideSteps = ONBOARDING_GUIDE_STEPS;
+// 主题来源（from=theme-space-management）时切换为主题链步骤；对象空间来源保持原配置，行为不变。
+const isThemeSpaceGuide = computed(() => route.query.from === "theme-space-management");
+const onboardingGuideSteps = computed(() => (isThemeSpaceGuide.value ? THEME_ONBOARDING_GUIDE_STEPS : ONBOARDING_GUIDE_STEPS));
 const {
   visible: guideVisible,
   startId: guideStartId,
   openOnboardingGuide,
 } = useOnboardingGuide({
-  steps: onboardingGuideSteps,
+  steps: onboardingGuideSteps.value,
   page: "space-manage",
   entryStepId: ONBOARDING_GUIDE_ENTRY_IDS["space-manage"],
 });
@@ -98,8 +108,8 @@ function openTab(tab: ManagementWorkspaceTab) {
 }
 
 .space-management-detail__help {
-  position: absolute;
-  top: 8px;
+  position: fixed;
+  top: 53px;
   right: 18px;
   z-index: 4;
   display: inline-flex;

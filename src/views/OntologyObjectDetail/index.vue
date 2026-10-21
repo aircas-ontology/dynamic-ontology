@@ -112,8 +112,8 @@ function openTab(tab: OntologyObjectDetailTab) {
 }
 
 .ontology-object-detail__help {
-  position: absolute;
-  top: 8px;
+  position: fixed;
+  top: 53px;
   right: 18px;
   z-index: 4;
   display: inline-flex;

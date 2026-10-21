@@ -17,7 +17,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
         path: "theme-space-management",
         name: "ThemeSpaceManagement",
         component: () => import("@/views/ThemeSpaceManagement/index.vue"),
-        meta: { title: "主题空间管理" },
+        meta: { title: "主题管理" },
       },
       {
         path: "ontology-space-management/conceptual-model-create",
@@ -78,7 +78,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
             path: "subspace-create",
             name: "OntologySubspaceCreate",
             component: () => import("@/views/OntologySubspaceCreate/index.vue"),
-            meta: { title: "创建主题空间" },
+            meta: { title: "创建主题" },
           },
         ],
       },
