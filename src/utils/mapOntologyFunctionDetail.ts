@@ -23,6 +23,14 @@ type ExternalApiFormParameterType = "string" | "number" | "boolean" | "array" | 
 /** 外部 API 表单可回显的参数位置。 */
 type ExternalApiFormLocation = "Body" | "Path" | "Query" | "Header";
 
+/** 外部 API 表单嵌套属性行（无 location / required）。 */
+export interface OntologyExternalApiFormField {
+  name: string;
+  type: ExternalApiFormParameterType;
+  description: string;
+  fields?: OntologyExternalApiFormField[];
+}
+
 /** 详情 apiConfig 转成外部 API 表单后的值。 */
 export interface OntologyExternalApiFormValues {
   endpoint: string;
@@ -32,18 +40,13 @@ export interface OntologyExternalApiFormValues {
   apiKeyHeader: string;
   /** 认证 Header 值。 */
   apiKey: string;
-  inputs: Array<{
-    name: string;
-    type: ExternalApiFormParameterType;
-    description: string;
-    location: ExternalApiFormLocation;
-    required: "yes" | "no";
-  }>;
-  outputs: Array<{
-    name: string;
-    type: ExternalApiFormParameterType;
-    description: string;
-  }>;
+  inputs: Array<
+    OntologyExternalApiFormField & {
+      location: ExternalApiFormLocation;
+      required: "yes" | "no";
+    }
+  >;
+  outputs: OntologyExternalApiFormField[];
 }
 
 const EXTERNAL_API_LOCATION_TO_FORM: Record<string, ExternalApiFormLocation> = {
@@ -60,6 +63,84 @@ const EXTERNAL_API_LOCATION_TO_FORM: Record<string, ExternalApiFormLocation> = {
  */
 function isExternalApiFormParameterType(value: string): value is ExternalApiFormParameterType {
   return value === "string" || value === "number" || value === "boolean" || value === "array" || value === "object";
+}
+
+/**
+ * @description 将接口或详情参数类型规范为外部 API 表单类型；integer 按 number 处理。
+ * @param value 原始类型字符串。
+ * @returns 表单类型；无法识别时返回 null。
+ */
+function normalizeExternalApiFormParameterType(value: string): ExternalApiFormParameterType | null {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "integer") {
+    return "number";
+  }
+  if (isExternalApiFormParameterType(normalized)) {
+    return normalized;
+  }
+  return null;
+}
+
+/**
+ * @description 递归将 apiConfig.fields 转为表单嵌套属性；跳过无法识别的类型，非 object 不带 fields。
+ * @param fields 配置中的嵌套属性。
+ * @returns 表单嵌套属性；无有效项时返回 undefined。
+ */
+function mapExternalApiConfigFields(fields: CreateOntologyFunctionApiConfig["inputs"][number]["fields"]): OntologyExternalApiFormField[] | undefined {
+  if (!Array.isArray(fields) || fields.length === 0) {
+    return undefined;
+  }
+  const mapped: OntologyExternalApiFormField[] = [];
+  for (const row of fields) {
+    const parameterType = typeof row.type === "string" ? normalizeExternalApiFormParameterType(row.type) : null;
+    if (!parameterType) {
+      continue;
+    }
+    const item: OntologyExternalApiFormField = {
+      name: typeof row.name === "string" ? row.name.trim() : "",
+      type: parameterType,
+      description: typeof row.description === "string" ? row.description.trim() : "",
+    };
+    if (parameterType === "object") {
+      const nested = mapExternalApiConfigFields(row.fields);
+      if (nested) {
+        item.fields = nested;
+      }
+    }
+    mapped.push(item);
+  }
+  return mapped.length > 0 ? mapped : undefined;
+}
+
+/**
+ * @description 将详情参数 itemFields 转为外部 API 表单嵌套 fields。
+ * @param itemFields 详情映射后的嵌套字段。
+ * @returns 表单嵌套属性；无有效项时返回 undefined。
+ */
+function mapDetailItemFieldsToExternalFields(itemFields: FunctionOperatorParameterField[] | undefined): OntologyExternalApiFormField[] | undefined {
+  if (!Array.isArray(itemFields) || itemFields.length === 0) {
+    return undefined;
+  }
+  const mapped: OntologyExternalApiFormField[] = [];
+  for (const field of itemFields) {
+    const name = field.name.trim();
+    if (!name || !isExternalApiFormParameterType(field.type)) {
+      continue;
+    }
+    const item: OntologyExternalApiFormField = {
+      name,
+      type: field.type,
+      description: field.description.trim(),
+    };
+    if (field.type === "object") {
+      const nested = mapDetailItemFieldsToExternalFields(field.itemFields);
+      if (nested) {
+        item.fields = nested;
+      }
+    }
+    mapped.push(item);
+  }
+  return mapped.length > 0 ? mapped : undefined;
 }
 
 /**
@@ -91,53 +172,67 @@ export function mapOntologyExternalApiConfigToForm(
 }
 
 /**
- * @description 将 apiConfig.inputs 转为表单行，并跳过无法识别的类型或位置。
+ * @description 将 apiConfig.inputs 转为表单行，并跳过无法识别的类型或位置；object 递归还原 fields。
  * @param rows 配置中的输入参数。
  * @returns 表单输入行。
  */
 function mapExternalApiConfigInputs(rows: CreateOntologyFunctionApiConfig["inputs"]): OntologyExternalApiFormValues["inputs"] {
   const inputs: OntologyExternalApiFormValues["inputs"] = [];
   for (const row of rows) {
-    const parameterType = typeof row.type === "string" ? row.type.trim().toLowerCase() : "";
+    const parameterType = typeof row.type === "string" ? normalizeExternalApiFormParameterType(row.type) : null;
     const locationKey = typeof row.location === "string" ? row.location.trim().toLowerCase() : "";
     const location = EXTERNAL_API_LOCATION_TO_FORM[locationKey];
-    if (!isExternalApiFormParameterType(parameterType) || !location || typeof row.required !== "boolean") {
+    if (!parameterType || !location || typeof row.required !== "boolean") {
       continue;
     }
-    inputs.push({
+    const item: OntologyExternalApiFormValues["inputs"][number] = {
       name: typeof row.name === "string" ? row.name.trim() : "",
       type: parameterType,
       description: typeof row.description === "string" ? row.description.trim() : "",
       location,
       required: row.required ? "yes" : "no",
-    });
+    };
+    if (parameterType === "object") {
+      const nested = mapExternalApiConfigFields(row.fields);
+      if (nested) {
+        item.fields = nested;
+      }
+    }
+    inputs.push(item);
   }
   return inputs;
 }
 
 /**
- * @description 将 apiConfig.outputs 转为表单行，并跳过无法识别的类型。
+ * @description 将 apiConfig.outputs 转为表单行，并跳过无法识别的类型；object 递归还原 fields。
  * @param rows 配置中的输出参数。
  * @returns 表单输出行。
  */
 function mapExternalApiConfigOutputs(rows: CreateOntologyFunctionApiConfig["outputs"]): OntologyExternalApiFormValues["outputs"] {
   const outputs: OntologyExternalApiFormValues["outputs"] = [];
   for (const row of rows) {
-    const parameterType = typeof row.type === "string" ? row.type.trim().toLowerCase() : "";
-    if (!isExternalApiFormParameterType(parameterType)) {
+    const parameterType = typeof row.type === "string" ? normalizeExternalApiFormParameterType(row.type) : null;
+    if (!parameterType) {
       continue;
     }
-    outputs.push({
+    const item: OntologyExternalApiFormField = {
       name: typeof row.name === "string" ? row.name.trim() : "",
       type: parameterType,
       description: typeof row.description === "string" ? row.description.trim() : "",
-    });
+    };
+    if (parameterType === "object") {
+      const nested = mapExternalApiConfigFields(row.fields);
+      if (nested) {
+        item.fields = nested;
+      }
+    }
+    outputs.push(item);
   }
   return outputs;
 }
 
 /**
- * @description 将详情 params 映射出的输入参数转为外部 API 表单行。详情不含位置时默认 Body，必填默认否。
+ * @description 将详情 params 映射出的输入参数转为外部 API 表单行。详情不含位置时默认 Body，必填默认否；object 递归还原 fields。
  * @param parameters 详情 INPUT 参数。
  * @returns 表单输入行。
  */
@@ -148,19 +243,26 @@ function mapDetailParametersToExternalInputs(parameters: FunctionOperatorParamet
     if (!name || !isExternalApiFormParameterType(parameter.type)) {
       continue;
     }
-    inputs.push({
+    const item: OntologyExternalApiFormValues["inputs"][number] = {
       name,
       type: parameter.type,
       description: parameter.description.trim(),
       location: "Body",
       required: parameter.required ? "yes" : "no",
-    });
+    };
+    if (parameter.type === "object") {
+      const nested = mapDetailItemFieldsToExternalFields(parameter.itemFields);
+      if (nested) {
+        item.fields = nested;
+      }
+    }
+    inputs.push(item);
   }
   return inputs;
 }
 
 /**
- * @description 将详情 params 映射出的输出参数转为外部 API 表单行。
+ * @description 将详情 params 映射出的输出参数转为外部 API 表单行；object 递归还原 fields。
  * @param parameters 详情 OUTPUT 参数。
  * @returns 表单输出行。
  */
@@ -171,11 +273,18 @@ function mapDetailParametersToExternalOutputs(parameters: FunctionOperatorParame
     if (!name || !isExternalApiFormParameterType(parameter.type)) {
       continue;
     }
-    outputs.push({
+    const item: OntologyExternalApiFormField = {
       name,
       type: parameter.type,
       description: parameter.description.trim(),
-    });
+    };
+    if (parameter.type === "object") {
+      const nested = mapDetailItemFieldsToExternalFields(parameter.itemFields);
+      if (nested) {
+        item.fields = nested;
+      }
+    }
+    outputs.push(item);
   }
   return outputs;
 }

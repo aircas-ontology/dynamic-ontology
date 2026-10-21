@@ -2,6 +2,43 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { mapOperatorParametersToScriptParamTree } from "../src/views/FunctionOperatorPanel/utils/mapOperatorParametersToScriptParamTree.ts";
 
+test("mapOperatorParametersToScriptParamTree passes non-empty description and omits blank", () => {
+  const nodes = mapOperatorParametersToScriptParamTree(
+    [
+      {
+        id: "in-1",
+        name: "arg0",
+        type: "string",
+        required: false,
+        description: " 入参说明 ",
+        apiParamType: "STRING",
+      },
+      {
+        id: "in-2",
+        name: "flag",
+        type: "boolean",
+        required: false,
+        description: "   ",
+        apiParamType: "BOOLEAN",
+        itemFields: [
+          {
+            id: "in-2-a",
+            name: "nested",
+            type: "string",
+            required: false,
+            description: "子属性说明",
+            apiParamType: "STRING",
+          },
+        ],
+      },
+    ],
+    "INPUT",
+  );
+  assert.equal(nodes[0]?.description, "入参说明");
+  assert.equal("description" in (nodes[1] ?? {}), false);
+  assert.equal(nodes[1]?.fields?.[0]?.description, "子属性说明");
+});
+
 test("mapOperatorParametersToScriptParamTree uses apiParamType and nested itemFields", () => {
   const nodes = mapOperatorParametersToScriptParamTree(
     [

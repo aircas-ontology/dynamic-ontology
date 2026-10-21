@@ -5,6 +5,7 @@ const FUNCTION_OPERATOR_TYPE_TO_API: Partial<Record<FunctionOperatorType, string
   basic: "BASIC_QUERY",
   code: "CUSTOMIZE",
   api: "EXTERNAL",
+  docker: "CONTAINER",
   composite: "COMPOSITE",
 };
 
@@ -14,6 +15,7 @@ const FUNCTION_OPERATOR_TYPE_FROM_API: Record<string, FunctionOperatorType> = {
   BASIC: "basic",
   CUSTOMIZE: "code",
   EXTERNAL: "api",
+  CONTAINER: "docker",
   COMPOSITE: "composite",
 };
 

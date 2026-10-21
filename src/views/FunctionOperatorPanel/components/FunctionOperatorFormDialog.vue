@@ -180,7 +180,24 @@
           <div class="function-operator-form__section-title">输入参数</div>
           <el-button type="primary" plain native-type="button" @click="addExternalApiInputParameter">添加</el-button>
         </div>
-        <el-table class="function-operator-form__param-table" :data="externalApiInputParameters" row-key="id" empty-text="暂无输入参数">
+        <el-table
+          class="function-operator-form__param-table"
+          :data="externalApiInputParameters"
+          row-key="id"
+          :expand-row-keys="externalApiInputExpandKeys"
+          empty-text="暂无输入参数"
+        >
+          <el-table-column type="expand">
+            <template #default="{ row }">
+              <FunctionOperatorExternalApiParamFieldsEditor
+                v-if="resolveExternalApiParamRow(row).type === 'object'"
+                :model-value="ensureExternalApiObjectFields(resolveExternalApiParamRow(row))"
+                :type-options="EXTERNAL_API_PARAMETER_TYPE_OPTIONS"
+                :create-field-id="createExternalApiNestedFieldId"
+                @update:model-value="(next) => onExternalApiNestedFieldsChange(resolveExternalApiParamRow(row), next)"
+              />
+            </template>
+          </el-table-column>
           <el-table-column label="name" min-width="140">
             <template #default="{ row }">
               <el-input v-model="row.name" maxlength="64" placeholder="请输入字段名称" />
@@ -188,7 +205,7 @@
           </el-table-column>
           <el-table-column label="type" min-width="140">
             <template #default="{ row }">
-              <el-select v-model="row.type" placeholder="请选择 type">
+              <el-select v-model="row.type" placeholder="请选择 type" @change="onExternalApiParameterTypeChange(resolveExternalApiParamRow(row))">
                 <el-option v-for="item in EXTERNAL_API_PARAMETER_TYPE_OPTIONS" :key="item" :label="item" :value="item" />
               </el-select>
             </template>
@@ -224,7 +241,24 @@
           <div class="function-operator-form__section-title">输出参数</div>
           <el-button type="primary" plain native-type="button" @click="addExternalApiOutputParameter">添加</el-button>
         </div>
-        <el-table class="function-operator-form__param-table" :data="externalApiOutputParameters" row-key="id" empty-text="暂无输出参数">
+        <el-table
+          class="function-operator-form__param-table"
+          :data="externalApiOutputParameters"
+          row-key="id"
+          :expand-row-keys="externalApiOutputExpandKeys"
+          empty-text="暂无输出参数"
+        >
+          <el-table-column type="expand">
+            <template #default="{ row }">
+              <FunctionOperatorExternalApiParamFieldsEditor
+                v-if="resolveExternalApiParamRow(row).type === 'object'"
+                :model-value="ensureExternalApiObjectFields(resolveExternalApiParamRow(row))"
+                :type-options="EXTERNAL_API_PARAMETER_TYPE_OPTIONS"
+                :create-field-id="createExternalApiNestedFieldId"
+                @update:model-value="(next) => onExternalApiNestedFieldsChange(resolveExternalApiParamRow(row), next)"
+              />
+            </template>
+          </el-table-column>
           <el-table-column label="name" min-width="160">
             <template #default="{ row }">
               <el-input v-model="row.name" maxlength="64" placeholder="请输入字段名称" />
@@ -232,7 +266,7 @@
           </el-table-column>
           <el-table-column label="type" min-width="160">
             <template #default="{ row }">
-              <el-select v-model="row.type" placeholder="请选择 type">
+              <el-select v-model="row.type" placeholder="请选择 type" @change="onExternalApiParameterTypeChange(resolveExternalApiParamRow(row))">
                 <el-option v-for="item in EXTERNAL_API_PARAMETER_TYPE_OPTIONS" :key="`output-${item}`" :label="item" :value="item" />
               </el-select>
             </template>
@@ -264,15 +298,130 @@
         </div>
       </section>
 
+      <section v-else-if="form.type === 'docker'" class="function-operator-form__section">
+        <div class="function-operator-form__section-title">通用配置</div>
+        <el-form-item label="函数名称" prop="name">
+          <el-input v-model="form.name" maxlength="64" placeholder="例如：目标识别算子" :disabled="Boolean(operator)" />
+        </el-form-item>
+        <el-form-item label="版本">
+          <el-input :model-value="form.version" disabled />
+        </el-form-item>
+        <el-form-item label="API名称" prop="functionApi">
+          <el-input v-model="form.functionApi" maxlength="64" placeholder="例如：TargetDetectFn" :disabled="Boolean(operator)" />
+        </el-form-item>
+        <el-form-item label="调用协议" prop="protocol">
+          <el-select v-model="form.protocol" placeholder="请选择调用协议">
+            <el-option v-for="item in PROTOCOL_OPTIONS" :key="item" :label="item" :value="item" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="函数说明" prop="description">
+          <el-input v-model="form.description" type="textarea" :rows="3" maxlength="240" show-word-limit />
+        </el-form-item>
+
+        <div class="function-operator-form__section-title">容器算子函数配置</div>
+        <el-form-item label="上传镜像">
+          <div class="function-operator-form__upload-row">
+            <el-upload
+              :auto-upload="false"
+              :show-file-list="false"
+              :disabled="dockerImageUploading"
+              accept=".tar,.tar.gz,.tgz"
+              :on-change="onDockerImageFileChange"
+            >
+              <el-button type="primary" plain native-type="button" :loading="dockerImageUploading" :disabled="dockerImageUploading">上传镜像</el-button>
+            </el-upload>
+            <span class="function-operator-form__upload-hint">支持 .tar / .tar.gz / .tgz</span>
+            <span v-if="dockerImageFileName" class="function-operator-form__upload-name">{{ dockerImageFileName }}</span>
+            <el-button v-if="dockerImageFileName" link type="primary" native-type="button" @click="clearDockerImageFile">清除</el-button>
+          </div>
+        </el-form-item>
+        <el-form-item label="上传接口文档">
+          <div class="function-operator-form__upload-row">
+            <el-upload
+              :auto-upload="false"
+              :show-file-list="false"
+              :disabled="dockerApiDocUploading"
+              accept=".json,.yaml,.yml"
+              :on-change="onDockerApiDocFileChange"
+            >
+              <el-button type="primary" plain native-type="button" :loading="dockerApiDocUploading" :disabled="dockerApiDocUploading"> 上传接口文档 </el-button>
+            </el-upload>
+            <span class="function-operator-form__upload-hint">支持 OpenAPI / Swagger (.json / .yaml / .yml)</span>
+            <span v-if="dockerApiDocFileName" class="function-operator-form__upload-name">{{ dockerApiDocFileName }}</span>
+            <el-button v-if="dockerApiDocFileName" link type="primary" native-type="button" @click="clearDockerApiDocFile">清除</el-button>
+          </div>
+        </el-form-item>
+        <el-form-item label="启动命令">
+          <el-input v-model="dockerStartupCommand" maxlength="500" placeholder="python /app/main.py" />
+        </el-form-item>
+        <div class="function-operator-form__param-head">
+          <div class="function-operator-form__section-title">已发现接口</div>
+          <span class="function-operator-form__upload-hint">请选择本算子绑定的接口</span>
+        </div>
+        <el-table
+          v-if="dockerDiscoveredInterfaces.length > 0"
+          class="function-operator-form__param-table"
+          :data="dockerDiscoveredInterfaces"
+          :row-key="resolveDockerDiscoveredInterfaceRowKey"
+          empty-text="暂无已发现接口"
+          @selection-change="onDockerDiscoveredInterfacesSelectionChange"
+        >
+          <el-table-column type="selection" width="48" />
+          <el-table-column type="expand">
+            <template #default="{ row }">
+              <div class="function-operator-form__probe-expand">
+                <div class="function-operator-form__section-subtitle">入参</div>
+                <el-table class="function-operator-form__param-table" :data="row.inputParameters" empty-text="暂无入参">
+                  <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
+                  <el-table-column prop="in" label="in" width="88" />
+                  <el-table-column label="required" width="88">
+                    <template #default="{ row: paramRow }">
+                      {{ paramRow.required ? "是" : "否" }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="type" label="type" width="100" />
+                  <el-table-column prop="description" label="description" min-width="160" show-overflow-tooltip />
+                </el-table>
+                <div class="function-operator-form__section-subtitle">出参</div>
+                <el-table class="function-operator-form__param-table" :data="row.outputParameters" empty-text="暂无出参">
+                  <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
+                  <el-table-column prop="in" label="in" width="88" />
+                  <el-table-column label="required" width="88">
+                    <template #default="{ row: paramRow }">
+                      {{ paramRow.required ? "是" : "否" }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="type" label="type" width="100" />
+                  <el-table-column prop="description" label="description" min-width="160" show-overflow-tooltip />
+                </el-table>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="name" label="接口名称" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="method" label="请求方式" width="100" />
+          <el-table-column prop="path" label="路径" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
+        </el-table>
+        <el-empty v-else description="上传接口文档并探测后展示" />
+      </section>
+
       <section v-else class="function-operator-form__section function-operator-form__section--empty">
-        <el-empty description="该函数类型本阶段暂未开放，请选择基础函数、脚本函数或函数编排" />
+        <el-empty description="该函数类型本阶段暂未开放，请选择基础函数、脚本函数、外部 API、容器算子或函数编排" />
       </section>
     </el-form>
 
     <template #footer>
       <el-button @click="emit('update:modelValue', false)">取消</el-button>
       <el-button v-if="form.type === 'composite' || form.type === 'code'" type="primary" :loading="loading" @click="goGeneralConfigNextStep">下一步</el-button>
-      <el-button v-else type="primary" :loading="loading" :disabled="form.type !== 'basic' && form.type !== 'api'" @click="submitCurrentDraft">保存</el-button>
+      <el-button
+        v-else
+        type="primary"
+        :loading="loading"
+        :disabled="form.type !== 'basic' && form.type !== 'api' && form.type !== 'docker'"
+        @click="submitCurrentDraft"
+      >
+        保存
+      </el-button>
     </template>
   </el-dialog>
 
@@ -307,13 +456,21 @@
 
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, toRaw, watch } from "vue";
-import type { FormInstance, FormRules } from "element-plus";
+import type { FormInstance, FormRules, UploadFile } from "element-plus";
 import { ElMessage } from "element-plus";
 
-import { getOntologyFunctionDetailInterface, getOntologyFunctionListInterface, getOntologyFunctionVersionsInterface } from "@/apis";
+import {
+  getOntologyFunctionDetailInterface,
+  getOntologyFunctionListInterface,
+  getOntologyFunctionVersionsInterface,
+  postProbeOntologyFunctionContainerInterfacesInterface,
+  postUploadOntologyFunctionContainerDocInterface,
+  postUploadOntologyFunctionContainerImageInterface,
+} from "@/apis";
 import {
   FUNCTION_OPERATOR_AGG_FUNC_OPTIONS,
   FUNCTION_OPERATOR_TYPE_OPTIONS,
+  type CreateOntologyFunctionContainerParams,
   type CreateOntologyFunctionParams,
   type FunctionOperator,
   type FunctionOperatorDraft,
@@ -322,16 +479,21 @@ import {
   type FunctionOperatorType,
   type GetOntologyFunctionListItem,
   type ParseOntologyFunctionParamItem,
+  type ProbeOntologyFunctionContainerInterfaceItem,
+  type UploadOntologyFunctionContainerDocData,
+  type UploadOntologyFunctionContainerImageData,
 } from "@/types";
 import { createEmptyBasicFilterDocument, stringifyBasicFilterConfig } from "@/utils/functionOperatorBasicFilter";
 import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToApi";
-import { mapOntologyExternalApiConfigToForm, mapOntologyFunctionDetailToDraft } from "@/utils/mapOntologyFunctionDetail";
+import { mapOntologyExternalApiConfigToForm, mapOntologyFunctionDetailToDraft, type OntologyExternalApiFormField } from "@/utils/mapOntologyFunctionDetail";
 
 import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBuilder.vue";
 import FunctionOperatorCompositeWorkflowDialog from "./FunctionOperatorCompositeWorkflowDialog.vue";
+import FunctionOperatorExternalApiParamFieldsEditor, { type ExternalApiParamFieldRow } from "./FunctionOperatorExternalApiParamFieldsEditor.vue";
 import FunctionOperatorScriptIdeDialog from "./FunctionOperatorScriptIdeDialog.vue";
 import { createDefaultScriptFunctionCode, DEFAULT_SCRIPT_FUNCTION_LANGUAGE, DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS } from "../utils/scriptFunctionStarters";
 import { buildCreateOntologyExternalFunctionParams } from "../utils/buildCreateOntologyExternalFunctionParams";
+import { buildCreateOntologyFunctionContainerParams } from "../utils/buildCreateOntologyFunctionContainerParams";
 import { mapOperatorParametersToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
 
 const PROTOCOL_OPTIONS: ReadonlyArray<Extract<FunctionOperatorProtocol, "HTTP">> = ["HTTP"];
@@ -343,23 +505,14 @@ const EXTERNAL_API_AUTH_OPTIONS = [
 const EXTERNAL_API_PARAMETER_TYPE_OPTIONS = ["string", "number", "boolean", "array", "object"] as const;
 const EXTERNAL_API_PARAMETER_LOCATION_OPTIONS = ["Body", "Path", "Query", "Header"] as const;
 
-/** 外部 API 输入参数行。 */
-interface ExternalApiInputParameterRow {
-  id: string;
-  name: string;
-  type: (typeof EXTERNAL_API_PARAMETER_TYPE_OPTIONS)[number];
-  description: string;
+/** 外部 API 输入参数行；object 可嵌套 fields。 */
+interface ExternalApiInputParameterRow extends ExternalApiParamFieldRow {
   location: (typeof EXTERNAL_API_PARAMETER_LOCATION_OPTIONS)[number];
   required: "yes" | "no";
 }
 
-/** 外部 API 输出参数行。 */
-interface ExternalApiOutputParameterRow {
-  id: string;
-  name: string;
-  type: (typeof EXTERNAL_API_PARAMETER_TYPE_OPTIONS)[number];
-  description: string;
-}
+/** 外部 API 输出参数行；object 可嵌套 fields。 */
+type ExternalApiOutputParameterRow = ExternalApiParamFieldRow;
 
 /** 外部 API 接口地址，仅表单展示，尚未提交创建接口。 */
 const externalApiEndpoint = ref("");
@@ -379,7 +532,34 @@ const externalApiTestInput = ref(EXTERNAL_API_TEST_INPUT_DEFAULT);
 const externalApiInputParameters = ref<ExternalApiInputParameterRow[]>([]);
 /** 外部 API 输出参数，仅表单展示。 */
 const externalApiOutputParameters = ref<ExternalApiOutputParameterRow[]>([]);
+/** object 输入行自动展开，便于编辑嵌套属性。 */
+const externalApiInputExpandKeys = computed(() => externalApiInputParameters.value.filter((row) => row.type === "object").map((row) => row.id));
+/** object 输出行自动展开，便于编辑嵌套属性。 */
+const externalApiOutputExpandKeys = computed(() => externalApiOutputParameters.value.filter((row) => row.type === "object").map((row) => row.id));
 let externalApiParameterSerial = 0;
+
+/** 容器算子已选镜像文件名，仅表单展示。 */
+const dockerImageFileName = ref("");
+/** 上传镜像接口返回的完整镜像信息，供保存回填。 */
+const dockerImageInfo = ref<UploadOntologyFunctionContainerImageData | null>(null);
+/** 容器算子镜像是否正在上传。 */
+const dockerImageUploading = ref(false);
+/** 容器算子已选接口文档文件名，仅表单展示。 */
+const dockerApiDocFileName = ref("");
+/** 上传接口文档返回的完整文档信息，供探查与保存回填。 */
+const dockerInterfaceDoc = ref<UploadOntologyFunctionContainerDocData | null>(null);
+/** 容器算子接口文档是否正在上传或随后探查。 */
+const dockerApiDocUploading = ref(false);
+/** 探查得到的已发现接口列表。 */
+const dockerDiscoveredInterfaces = ref<ProbeOntologyFunctionContainerInterfaceItem[]>([]);
+/** 多选绑定的接口 api 标识列表。 */
+const dockerSelectedInterfaceApis = ref<string[]>([]);
+/** 容器算子启动命令（完整 docker run），映射为 runCommand。 */
+const dockerStartupCommand = ref("");
+/** 镜像上传代数，用于丢弃过期响应。 */
+let dockerImageUploadGeneration = 0;
+/** 接口文档上传/探查代数，用于丢弃过期响应。 */
+let dockerApiDocUploadGeneration = 0;
 
 /**
  * @description 生成新建基础函数的默认 parameterConfig。
@@ -402,6 +582,7 @@ const emit = defineEmits<{
   submit: [draft: FunctionOperatorDraft];
   "save-script": [params: CreateOntologyFunctionParams];
   "save-external": [params: CreateOntologyFunctionParams];
+  "save-container": [params: CreateOntologyFunctionContainerParams];
 }>();
 
 /**
@@ -720,13 +901,11 @@ function applyExternalApiConfig(draft: FunctionOperatorDraft | undefined): void 
   externalApiHeaderKey.value = formValues.apiKeyHeader;
   externalApiHeader.value = formValues.apiKey;
   externalApiInputParameters.value = formValues.inputs.map((row) => ({
-    id: createExternalApiParameterId("input"),
-    ...row,
+    ...mapExternalApiFormFieldWithIds(row, "input"),
+    location: row.location,
+    required: row.required,
   }));
-  externalApiOutputParameters.value = formValues.outputs.map((row) => ({
-    id: createExternalApiParameterId("output"),
-    ...row,
-  }));
+  externalApiOutputParameters.value = formValues.outputs.map((row) => mapExternalApiFormFieldWithIds(row, "output"));
 }
 /**
  * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header、参数行和配置测试内容。
@@ -743,6 +922,198 @@ function resetExternalApiForm(): void {
 }
 
 /**
+ * @description 清空容器算子表单中的镜像、接口文档与启动命令本地状态，并取消进行中的上传代数。
+ */
+function resetDockerOperatorForm(): void {
+  dockerImageUploadGeneration += 1;
+  dockerApiDocUploadGeneration += 1;
+  dockerImageFileName.value = "";
+  dockerImageInfo.value = null;
+  dockerImageUploading.value = false;
+  dockerApiDocFileName.value = "";
+  dockerInterfaceDoc.value = null;
+  dockerApiDocUploading.value = false;
+  dockerDiscoveredInterfaces.value = [];
+  dockerSelectedInterfaceApis.value = [];
+  dockerStartupCommand.value = "";
+}
+
+/**
+ * @description 判断文件名是否为允许的容器镜像包扩展名。
+ * @param fileName 文件名。
+ * @returns 是否为 .tar / .tar.gz / .tgz。
+ */
+function isDockerImageFileName(fileName: string): boolean {
+  const lower = fileName.trim().toLowerCase();
+  return lower.endsWith(".tar.gz") || lower.endsWith(".tgz") || lower.endsWith(".tar");
+}
+
+/**
+ * @description 判断文件名是否为允许的接口文档扩展名。
+ * @param fileName 文件名。
+ * @returns 是否为 .json / .yaml / .yml。
+ */
+function isDockerApiDocFileName(fileName: string): boolean {
+  const lower = fileName.trim().toLowerCase();
+  return lower.endsWith(".json") || lower.endsWith(".yaml") || lower.endsWith(".yml");
+}
+
+/**
+ * @description 选择镜像文件：校验扩展名后调用上传接口；成功保留镜像信息并提示上传成功。
+ * @param uploadFile Element Plus 上传文件。
+ */
+async function onDockerImageFileChange(uploadFile: UploadFile): Promise<void> {
+  const name = typeof uploadFile.name === "string" ? uploadFile.name.trim() : "";
+  const rawFile = uploadFile.raw;
+  if (!name || !isDockerImageFileName(name) || !rawFile) {
+    ElMessage.warning("请选择 .tar / .tar.gz / .tgz 镜像文件");
+    return;
+  }
+  if (dockerImageUploading.value) {
+    return;
+  }
+  dockerImageUploading.value = true;
+  const current = ++dockerImageUploadGeneration;
+  try {
+    const response = await postUploadOntologyFunctionContainerImageInterface({ file: rawFile });
+    if (current !== dockerImageUploadGeneration) {
+      return;
+    }
+    const imagePath = typeof response.data?.path === "string" ? response.data.path.trim() : "";
+    if (response.code !== 200 || !response.data || !imagePath) {
+      dockerImageFileName.value = "";
+      dockerImageInfo.value = null;
+      ElMessage.error(response.message.trim() || "镜像上传失败");
+      return;
+    }
+    dockerImageFileName.value = name;
+    dockerImageInfo.value = response.data;
+    ElMessage.success("上传成功");
+  } catch (cause) {
+    if (current !== dockerImageUploadGeneration) {
+      return;
+    }
+    dockerImageFileName.value = "";
+    dockerImageInfo.value = null;
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "镜像上传失败");
+  } finally {
+    if (current === dockerImageUploadGeneration) {
+      dockerImageUploading.value = false;
+    }
+  }
+}
+
+/**
+ * @description 清除已选镜像文件名与镜像信息。
+ */
+function clearDockerImageFile(): void {
+  dockerImageFileName.value = "";
+  dockerImageInfo.value = null;
+}
+
+/**
+ * @description 选择接口文档：校验扩展名后上传；成功保存文档信息并自动探查，结果写入已发现接口表格。
+ * @param uploadFile Element Plus 上传文件。
+ */
+async function onDockerApiDocFileChange(uploadFile: UploadFile): Promise<void> {
+  const name = typeof uploadFile.name === "string" ? uploadFile.name.trim() : "";
+  const rawFile = uploadFile.raw;
+  if (!name || !isDockerApiDocFileName(name) || !rawFile) {
+    ElMessage.warning("请选择 OpenAPI / Swagger（.json / .yaml / .yml）文件");
+    return;
+  }
+  if (dockerApiDocUploading.value) {
+    return;
+  }
+  dockerApiDocUploading.value = true;
+  const current = ++dockerApiDocUploadGeneration;
+  let docPath = "";
+  try {
+    try {
+      const response = await postUploadOntologyFunctionContainerDocInterface({ file: rawFile });
+      if (current !== dockerApiDocUploadGeneration) {
+        return;
+      }
+      docPath = typeof response.data?.path === "string" ? response.data.path.trim() : "";
+      if (response.code !== 200 || !response.data || !docPath) {
+        dockerApiDocFileName.value = "";
+        dockerInterfaceDoc.value = null;
+        dockerDiscoveredInterfaces.value = [];
+        dockerSelectedInterfaceApis.value = [];
+        ElMessage.error(response.message.trim() || "接口文档上传失败");
+        return;
+      }
+      dockerApiDocFileName.value = name;
+      dockerInterfaceDoc.value = response.data;
+      ElMessage.success("上传成功");
+    } catch (cause) {
+      if (current !== dockerApiDocUploadGeneration) {
+        return;
+      }
+      dockerApiDocFileName.value = "";
+      dockerInterfaceDoc.value = null;
+      dockerDiscoveredInterfaces.value = [];
+      dockerSelectedInterfaceApis.value = [];
+      ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "接口文档上传失败");
+      return;
+    }
+
+    try {
+      const probeResponse = await postProbeOntologyFunctionContainerInterfacesInterface({ docPath });
+      if (current !== dockerApiDocUploadGeneration) {
+        return;
+      }
+      if (probeResponse.code !== 200) {
+        ElMessage.error(probeResponse.message.trim() || "接口探查失败");
+        return;
+      }
+      dockerDiscoveredInterfaces.value = Array.isArray(probeResponse.data) ? probeResponse.data : [];
+      dockerSelectedInterfaceApis.value = [];
+    } catch (cause) {
+      if (current !== dockerApiDocUploadGeneration) {
+        return;
+      }
+      ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "接口探查失败");
+    }
+  } finally {
+    if (current === dockerApiDocUploadGeneration) {
+      dockerApiDocUploading.value = false;
+    }
+  }
+}
+
+/**
+ * @description 解析已发现接口行的稳定 row-key；优先使用 api，否则回退 method+path+name。
+ * @param row 探查接口项。
+ * @returns 行键。
+ */
+function resolveDockerDiscoveredInterfaceRowKey(row: ProbeOntologyFunctionContainerInterfaceItem): string {
+  const api = typeof row.api === "string" ? row.api.trim() : "";
+  if (api) {
+    return api;
+  }
+  return `${row.method.trim()} ${row.path.trim()} ${row.name.trim()}`.trim();
+}
+
+/**
+ * @description 同步已发现接口多选绑定结果到本地选中 api 列表。
+ * @param selection 当前选中行。
+ */
+function onDockerDiscoveredInterfacesSelectionChange(selection: ProbeOntologyFunctionContainerInterfaceItem[]): void {
+  dockerSelectedInterfaceApis.value = selection.map((item) => resolveDockerDiscoveredInterfaceRowKey(item));
+}
+
+/**
+ * @description 清除已选接口文档、文档信息与探查结果。
+ */
+function clearDockerApiDocFile(): void {
+  dockerApiDocFileName.value = "";
+  dockerInterfaceDoc.value = null;
+  dockerDiscoveredInterfaces.value = [];
+  dockerSelectedInterfaceApis.value = [];
+}
+
+/**
  * @description 提示外部 API 配置测试本阶段未开放，不调用测试接口。
  */
 function notifyExternalApiTestUnavailable(): void {
@@ -754,9 +1125,150 @@ function notifyExternalApiTestUnavailable(): void {
  * @param prefix 输入或输出前缀。
  * @returns 不重复的行 id。
  */
-function createExternalApiParameterId(prefix: "input" | "output"): string {
+function createExternalApiParameterId(prefix: "input" | "output" | "field"): string {
   externalApiParameterSerial += 1;
   return `${prefix}-${externalApiParameterSerial}`;
+}
+
+/**
+ * @description 生成嵌套属性行 id，供递归编辑组件使用。
+ * @returns 不重复的嵌套行 id。
+ */
+function createExternalApiNestedFieldId(): string {
+  return createExternalApiParameterId("field");
+}
+
+/**
+ * @description 将回填字段树转为带稳定 id 的表单行；object 递归挂 fields。
+ * @param row 回填字段。
+ * @param prefix 输入或输出前缀。
+ * @returns 带 id 的表单行。
+ */
+function mapExternalApiFormFieldWithIds(row: OntologyExternalApiFormField, prefix: "input" | "output"): ExternalApiParamFieldRow {
+  const mapped: ExternalApiParamFieldRow = {
+    id: createExternalApiParameterId(prefix),
+    name: row.name,
+    type: row.type,
+    description: row.description,
+  };
+  if (row.type === "object" && Array.isArray(row.fields) && row.fields.length > 0) {
+    mapped.fields = row.fields.map((child) => mapExternalApiFormFieldWithIds(child, prefix));
+  }
+  return mapped;
+}
+
+/**
+ * @description 将 el-table 槽位行收窄为外部 API 参数行；校验 id / name / type / description 字段形态。
+ * @param row 表格行。
+ * @returns 外部 API 参数行。
+ */
+function resolveExternalApiParamRow(row: unknown): ExternalApiParamFieldRow {
+  if (!row || typeof row !== "object") {
+    throw new Error("invalid external api param row");
+  }
+  const candidate = row as Partial<ExternalApiParamFieldRow>;
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.name !== "string" ||
+    typeof candidate.type !== "string" ||
+    typeof candidate.description !== "string"
+  ) {
+    throw new Error("invalid external api param row");
+  }
+  return candidate as ExternalApiParamFieldRow;
+}
+
+/**
+ * @description 保证 object 行具备可编辑的 fields 数组引用。
+ * @param row 顶层参数行。
+ * @returns fields 数组。
+ */
+function ensureExternalApiObjectFields(row: ExternalApiParamFieldRow): ExternalApiParamFieldRow[] {
+  if (!row.fields) {
+    row.fields = [];
+  }
+  return row.fields;
+}
+
+/**
+ * @description 同步嵌套 fields 变更到顶层参数行。
+ * @param row 顶层参数行。
+ * @param next 嵌套 fields。
+ */
+function onExternalApiNestedFieldsChange(row: ExternalApiParamFieldRow, next: ExternalApiParamFieldRow[]): void {
+  row.fields = next;
+}
+
+/**
+ * @description 顶层参数 type 变更时，非 object 清空 fields，object 初始化空 fields。
+ * @param row 顶层参数行。
+ */
+function onExternalApiParameterTypeChange(row: ExternalApiParamFieldRow): void {
+  if (row.type !== "object") {
+    delete row.fields;
+    return;
+  }
+  if (!row.fields) {
+    row.fields = [];
+  }
+}
+
+/**
+ * @description 递归校验 object 下级属性：同级 name 非空且不重复。
+ * @param fields 嵌套属性行。
+ * @param parentLabel 父级路径文案，用于错误提示。
+ * @returns 错误文案；通过时返回空串。
+ */
+function validateExternalApiNestedFields(fields: ExternalApiParamFieldRow[] | undefined, parentLabel: string): string {
+  if (!Array.isArray(fields) || fields.length === 0) {
+    return "";
+  }
+  const seen = new Set<string>();
+  for (const field of fields) {
+    const name = field.name.trim();
+    if (!name) {
+      return `${parentLabel}下存在未填写名称的属性`;
+    }
+    if (seen.has(name)) {
+      return `${parentLabel}下属性名称重复：${name}`;
+    }
+    seen.add(name);
+    if (field.type === "object") {
+      const nestedError = validateExternalApiNestedFields(field.fields, `${parentLabel}.${name}`);
+      if (nestedError) {
+        return nestedError;
+      }
+    }
+  }
+  return "";
+}
+
+/**
+ * @description 校验外部 API 输入、输出中 object 嵌套属性。
+ * @returns 错误文案；通过时返回空串。
+ */
+function validateExternalApiParameterTrees(): string {
+  for (const row of externalApiInputParameters.value) {
+    if (row.type !== "object") {
+      continue;
+    }
+    const label = row.name.trim() || "输入参数";
+    const error = validateExternalApiNestedFields(row.fields, label);
+    if (error) {
+      return error;
+    }
+  }
+  for (const row of externalApiOutputParameters.value) {
+    if (row.type !== "object") {
+      continue;
+    }
+    const label = row.name.trim() || "输出参数";
+    const error = validateExternalApiNestedFields(row.fields, label);
+    if (error) {
+      return error;
+    }
+  }
+  return "";
 }
 
 /**
@@ -818,8 +1330,16 @@ function onExternalApiAuthChange(value: string | number | boolean | undefined): 
   }
 }
 
-/** 按函数类型切换校验文案；编排、脚本与外部 API 额外校验协议与说明。 */
+/** 按函数类型切换校验文案；编排、脚本、外部 API 与容器算子额外校验协议与说明；容器算子不校验版本。 */
 const rules = computed<FormRules>(() => {
+  if (form.type === "docker") {
+    return {
+      name: [{ required: true, message: "请输入函数名称", trigger: "blur" }],
+      functionApi: [{ required: true, message: "请输入API名称", trigger: "blur" }],
+      protocol: [{ required: true, message: "请选择调用协议", trigger: "change" }],
+      description: [{ required: true, message: "请输入函数说明", trigger: "blur" }],
+    };
+  }
   if (form.type === "composite" || form.type === "code" || form.type === "api") {
     return {
       name: [{ required: true, message: "请输入函数名称", trigger: "blur" }],
@@ -858,10 +1378,15 @@ function changeType(type: FunctionOperatorType): void {
   } else if (type === "api") {
     next.protocol = "HTTP";
     next.definition = { kind: "api" };
+  } else if (type === "docker") {
+    next.protocol = "HTTP";
+    next.version = "1.0.0";
+    next.definition = { kind: "docker" };
   } else {
     next.definition = { kind: type };
   }
   resetExternalApiForm();
+  resetDockerOperatorForm();
   Object.assign(form, next);
   delete form.id;
   if (previousType === "code" && type !== "code") {
@@ -958,6 +1483,11 @@ async function submitExternalApi(): Promise<void> {
     ElMessage.warning("请填写认证 Header 值");
     return;
   }
+  const nestedFieldsError = validateExternalApiParameterTrees();
+  if (nestedFieldsError) {
+    ElMessage.warning(nestedFieldsError);
+    return;
+  }
   emit(
     "save-external",
     buildCreateOntologyExternalFunctionParams({
@@ -979,11 +1509,58 @@ async function submitExternalApi(): Promise<void> {
 }
 
 /**
- * @description 按当前函数类型提交基础函数或外部 API 函数。
+ * @description 校验容器算子配置后组装创建参数并发给工作区保存。
+ */
+async function submitDockerOperator(): Promise<void> {
+  if (form.type !== "docker") {
+    return;
+  }
+  const valid = await formRef.value?.validate().catch(() => false);
+  if (!valid) {
+    return;
+  }
+  const image = dockerImageInfo.value;
+  if (!image?.path.trim()) {
+    ElMessage.warning("请先上传镜像");
+    return;
+  }
+  const runCommand = dockerStartupCommand.value.trim();
+  if (!runCommand) {
+    ElMessage.warning("请填写启动命令");
+    return;
+  }
+  const selectedKeySet = new Set(dockerSelectedInterfaceApis.value);
+  const selectedInterfaces = dockerDiscoveredInterfaces.value.filter((item) => selectedKeySet.has(resolveDockerDiscoveredInterfaceRowKey(item)));
+  if (selectedInterfaces.length === 0) {
+    ElMessage.warning("请至少勾选一条已发现接口");
+    return;
+  }
+  emit(
+    "save-container",
+    buildCreateOntologyFunctionContainerParams({
+      functionApi: form.functionApi,
+      version: form.version,
+      displayName: form.name,
+      description: form.description,
+      ontologySpaceId: form.spaceId,
+      image,
+      interfaceDoc: dockerInterfaceDoc.value,
+      runCommand,
+      selectedInterfaces,
+    }),
+  );
+}
+
+/**
+ * @description 按当前函数类型提交基础函数、外部 API 或容器算子函数。
  */
 function submitCurrentDraft(): void {
   if (form.type === "api") {
     void submitExternalApi();
+    return;
+  }
+  if (form.type === "docker") {
+    void submitDockerOperator();
     return;
   }
   void submitDraft();
@@ -1054,6 +1631,7 @@ watch(
       compositeWorkflowVisible.value = false;
       resetScriptDraft();
       resetExternalApiForm();
+      resetDockerOperatorForm();
       sourceFunctionListGeneration += 1;
       sourceFunctionOptions.value = [];
       resetSourceTemplateSelection();
@@ -1071,6 +1649,7 @@ watch(
       resetScriptDraft();
     }
     applyExternalApiConfig(next.type === "api" ? next : undefined);
+    resetDockerOperatorForm();
     resetSourceTemplateSelection();
     void loadSourceFunctionOptions();
   },
@@ -1148,9 +1727,35 @@ watch(
   margin-bottom: 0;
 }
 
+.function-operator-form__probe-expand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px 12px;
+}
+
 .function-operator-form__param-table {
   width: 100%;
   margin-bottom: 12px;
+}
+
+.function-operator-form__upload-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.function-operator-form__upload-hint {
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+}
+
+.function-operator-form__upload-name {
+  min-width: 0;
+  color: var(--aircas-color-text-primary);
+  font-size: 12px;
+  word-break: break-all;
 }
 
 .function-operator-form__test {

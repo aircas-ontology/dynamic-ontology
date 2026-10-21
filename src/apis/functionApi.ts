@@ -1,5 +1,7 @@
 import type {
   ApiResponse,
+  CreateOntologyFunctionContainerData,
+  CreateOntologyFunctionContainerParams,
   CreateOntologyFunctionData,
   CreateOntologyFunctionParams,
   DeleteOntologyFunctionData,
@@ -16,10 +18,16 @@ import type {
   GetOntologyFunctionVersionsParams,
   ParseOntologyFunctionParamsData,
   ParseOntologyFunctionParamsParams,
+  ProbeOntologyFunctionContainerInterfacesData,
+  ProbeOntologyFunctionContainerInterfacesParams,
   TestOntologyFunctionData,
   TestOntologyFunctionParams,
   UpdateOntologyFunctionData,
   UpdateOntologyFunctionParams,
+  UploadOntologyFunctionContainerDocData,
+  UploadOntologyFunctionContainerDocParams,
+  UploadOntologyFunctionContainerImageData,
+  UploadOntologyFunctionContainerImageParams,
 } from "@/types";
 import { request } from "@/utils/request";
 
@@ -224,5 +232,86 @@ export function postOntologyFunctionUnpublishInterface(params: FunctionUnpublish
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/unpublish",
     method: "post",
     params,
+  });
+}
+
+/**
+ * @description 创建容器算子（按勾选接口派生多条 CONTAINER 函数）。
+ *
+ * 请求方式：POST `/ontology/function`。
+ *
+ * @param params 创建参数。
+ * @returns 标准 API 响应；成功时 data 为派生后的算子 api 列表。
+ */
+export function postCreateOntologyFunctionContainerInterface(
+  params: CreateOntologyFunctionContainerParams,
+): Promise<ApiResponse<CreateOntologyFunctionContainerData>> {
+  return request<CreateOntologyFunctionContainerData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function",
+    method: "post",
+    data: params,
+  });
+}
+
+/**
+ * @description 上传容器算子镜像包（tar/tar.gz），由服务端校验 ARM64 架构。
+ *
+ * 请求方式：POST `/ontology/function/container/upload_image`（multipart/form-data，字段名 `file`）。
+ *
+ * @param params 上传参数。
+ * @param params.file 必填镜像包文件。
+ * @returns 标准 API 响应；成功时 data 含 fileName、path、size、architecture、repoTags。
+ */
+export function postUploadOntologyFunctionContainerImageInterface(
+  params: UploadOntologyFunctionContainerImageParams,
+): Promise<ApiResponse<UploadOntologyFunctionContainerImageData>> {
+  const formData = new FormData();
+  formData.append("file", params.file);
+  return request<UploadOntologyFunctionContainerImageData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/container/upload_image",
+    method: "post",
+    data: formData,
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+}
+
+/**
+ * @description 上传容器算子接口文档（json/yaml/yml），返回文档信息与存储路径。
+ *
+ * 请求方式：POST `/ontology/function/container/upload_doc`（multipart/form-data，字段名 `file`）。
+ *
+ * @param params 上传参数。
+ * @param params.file 必填接口文档文件。
+ * @returns 标准 API 响应；成功时 data 含 fileName、path、format。
+ */
+export function postUploadOntologyFunctionContainerDocInterface(
+  params: UploadOntologyFunctionContainerDocParams,
+): Promise<ApiResponse<UploadOntologyFunctionContainerDocData>> {
+  const formData = new FormData();
+  formData.append("file", params.file);
+  return request<UploadOntologyFunctionContainerDocData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/container/upload_doc",
+    method: "post",
+    data: formData,
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+}
+
+/**
+ * @description 按上传文档存储路径探查容器算子接口列表（名称/请求方式/路径/描述/出入参）。
+ *
+ * 请求方式：POST `/ontology/function/container/probe_interfaces`。
+ *
+ * @param params 探查参数。
+ * @param params.docPath 上传接口文档返回的存储路径。
+ * @returns 标准 API 响应；成功时 data 为接口项数组。
+ */
+export function postProbeOntologyFunctionContainerInterfacesInterface(
+  params: ProbeOntologyFunctionContainerInterfacesParams,
+): Promise<ApiResponse<ProbeOntologyFunctionContainerInterfacesData>> {
+  return request<ProbeOntologyFunctionContainerInterfacesData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/container/probe_interfaces",
+    method: "post",
+    data: params,
   });
 }

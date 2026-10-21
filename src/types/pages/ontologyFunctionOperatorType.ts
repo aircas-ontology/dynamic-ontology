@@ -143,7 +143,7 @@ export const FUNCTION_OPERATOR_TYPE_OPTIONS: ReadonlyArray<{ value: FunctionOper
   { value: "basic", label: "基础函数", description: "配置基础参数的轻量函数" },
   { value: "code", label: "脚本函数", description: "通过脚本编写自定义函数逻辑" },
   { value: "api", label: "外部 API 函数", description: "调用外部 HTTP 接口" },
-  { value: "docker", label: "容器算子函数", description: "本阶段暂未开放" },
+  { value: "docker", label: "容器算子函数", description: "部署容器镜像并绑定接口" },
   { value: "composite", label: "函数编排", description: "通过编排多个函数构建复杂流程" },
 ];
 

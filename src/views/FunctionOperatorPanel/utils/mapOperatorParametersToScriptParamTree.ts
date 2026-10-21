@@ -19,6 +19,10 @@ function mapParameterFieldToScriptParamTreeNode(
     paramOrder: order,
     referenceType: "",
   };
+  const description = field.description.trim();
+  if (description) {
+    node.description = description;
+  }
   if (field.itemFields && field.itemFields.length > 0) {
     node.fields = field.itemFields.map((child, index) => mapParameterFieldToScriptParamTreeNode(child, category, index + 1));
   }

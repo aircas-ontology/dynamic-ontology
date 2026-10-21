@@ -21,8 +21,15 @@ export type {
 } from "./apis/batchUpdateOntologyPropertiesType";
 export type { ActionCategoryNode, CreateActionCategoryParams } from "./apis/createActionCategoryType";
 export type {
+  CreateOntologyFunctionContainerConfig,
+  CreateOntologyFunctionContainerData,
+  CreateOntologyFunctionContainerParams,
+  CreateOntologyFunctionContainerType,
+} from "./apis/createOntologyFunctionContainerType";
+export type {
   CreateOntologyFunctionAggFunc,
   CreateOntologyFunctionApiConfig,
+  CreateOntologyFunctionApiField,
   CreateOntologyFunctionApiInput,
   CreateOntologyFunctionApiOutput,
   CreateOntologyFunctionData,
@@ -142,6 +149,12 @@ export type {
   ParseOntologyFunctionParamsParams,
 } from "./apis/parseOntologyFunctionParamsType";
 export type {
+  ProbeOntologyFunctionContainerInterfaceItem,
+  ProbeOntologyFunctionContainerInterfaceParameter,
+  ProbeOntologyFunctionContainerInterfacesData,
+  ProbeOntologyFunctionContainerInterfacesParams,
+} from "./apis/probeOntologyFunctionContainerInterfacesType";
+export type {
   StreamAgentChatData,
   StreamAgentChatEvent,
   StreamAgentChatEventType,
@@ -157,6 +170,8 @@ export type { UpdateOntologyObjectArrTypeTreeParams } from "./apis/updateOntolog
 export type { UpdateOntologyObjectData, UpdateOntologyObjectParams } from "./apis/updateOntologyObjectType";
 export type { UpdateOntologyPropertyData, UpdateOntologyPropertyParams } from "./apis/updateOntologyPropertyType";
 export type { UpdateOntologySpaceData, UpdateOntologySpaceParams } from "./apis/updateOntologySpaceType";
+export type { UploadOntologyFunctionContainerDocData, UploadOntologyFunctionContainerDocParams } from "./apis/uploadOntologyFunctionContainerDocType";
+export type { UploadOntologyFunctionContainerImageData, UploadOntologyFunctionContainerImageParams } from "./apis/uploadOntologyFunctionContainerImageType";
 export type { UploadOntologyThumbnailData, UploadOntologyThumbnailParams } from "./apis/uploadOntologyThumbnailType";
 export type { LoginCredentials } from "./auth/credentialsType";
 export type { MapConfig } from "./map/configType";

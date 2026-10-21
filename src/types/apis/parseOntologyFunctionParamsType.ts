@@ -18,6 +18,8 @@ export interface ParseOntologyFunctionParamItem {
   paramOrder: number;
   /** 引用类型；无引用时为空字符串。 */
   referenceType: string;
+  /** 参数说明；详情回填时写入，解析接口可能缺省。 */
+  description?: string;
   /** 对象或列表的下级属性；无下级时省略。 */
   fields?: ParseOntologyFunctionParamItem[];
 }

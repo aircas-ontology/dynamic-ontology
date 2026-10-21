@@ -1,0 +1,15 @@
+import type { ApiResponse, UploadOntologyFunctionContainerImageData } from "@/types";
+
+/** 上传容器算子镜像成功样例。 */
+export const uploadOntologyFunctionContainerImageMock: ApiResponse<UploadOntologyFunctionContainerImageData> = {
+  code: 200,
+  message: "SUCCESS",
+  success: true,
+  data: {
+    fileName: "go-httpbin.tar",
+    path: "/app/container-images/faf84381-bf1f-4498-9c98-4f3541c06824go-httpbin.tar",
+    size: 5573632,
+    architecture: "unknown",
+    repoTags: ["mccutchen/go-httpbin:latest"],
+  },
+};

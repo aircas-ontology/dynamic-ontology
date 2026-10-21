@@ -458,6 +458,11 @@ test("function operator openDetail fetches detail for drawer", () => {
   assert.match(drawer, /输出参数/);
   assert.match(drawer, /FunctionOperatorScriptParamTree/);
   assert.match(drawer, /mapOperatorParametersToScriptParamTree/);
+  const paramTree = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptParamTree.vue");
+  assert.match(paramTree, /item\.description/);
+  assert.match(paramTree, /function-operator-script-param-tree__description/);
+  const parseType = readSource("../src/types/apis/parseOntologyFunctionParamsType.ts");
+  assert.match(parseType, /description\?: string/);
   assert.doesNotMatch(drawer, /el-table/);
   assert.match(drawer, /props\.operator\?\.inputParameters/);
   assert.match(drawer, /props\.operator\?\.outputParameters/);
@@ -608,6 +613,69 @@ test("mapOntologyFunctionDetailToDraft keeps external apiConfig for form echo", 
     { name: "status", type: "number", description: "HTTP 状态码" },
   ]);
   assert.deepEqual(detailForm.inputs, [{ name: "title", type: "string", description: "标题", location: "Body", required: "no" }]);
+  const nestedForm = mapOntologyExternalApiConfigToForm({
+    endpoint: "https://example.com/nested",
+    method: "POST",
+    authType: "none",
+    contentType: "application/json",
+    inputs: [
+      {
+        name: "payload",
+        type: "object",
+        required: true,
+        location: "body",
+        description: "请求体",
+        fields: [
+          { name: "title", type: "string", description: "标题" },
+          {
+            name: "meta",
+            type: "object",
+            description: "元数据",
+            fields: [{ name: "count", type: "integer", description: "数量" }],
+          },
+        ],
+      },
+    ],
+    outputs: [
+      {
+        name: "data",
+        type: "object",
+        description: "响应",
+        fields: [{ name: "id", type: "number", description: "编号" }],
+      },
+    ],
+  });
+  assert.deepEqual(nestedForm.inputs, [
+    {
+      name: "payload",
+      type: "object",
+      description: "请求体",
+      location: "Body",
+      required: "yes",
+      fields: [
+        { name: "title", type: "string", description: "标题" },
+        {
+          name: "meta",
+          type: "object",
+          description: "元数据",
+          fields: [{ name: "count", type: "number", description: "数量" }],
+        },
+      ],
+    },
+  ]);
+  assert.deepEqual(nestedForm.outputs, [
+    {
+      name: "data",
+      type: "object",
+      description: "响应",
+      fields: [{ name: "id", type: "number", description: "编号" }],
+    },
+  ]);
   const formSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue");
+  const fieldsEditorSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorExternalApiParamFieldsEditor.vue");
   assert.match(formSource, /mapOntologyExternalApiConfigToForm/);
+  assert.match(formSource, /FunctionOperatorExternalApiParamFieldsEditor/);
+  assert.match(formSource, /onExternalApiParameterTypeChange/);
+  assert.match(formSource, /validateExternalApiNestedFields/);
+  assert.match(fieldsEditorSource, /添加属性/);
 });

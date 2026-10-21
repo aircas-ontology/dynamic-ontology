@@ -75,6 +75,21 @@
     "file": "fixtures/ontology/file/thumbnail.post.json"
   },
   {
+    "method": "POST",
+    "path": "/ontology/function/container/upload_image",
+    "file": "fixtures/ontology/function/container/upload_image.post.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/function/container/upload_doc",
+    "file": "fixtures/ontology/function/container/upload_doc.post.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/function/container/probe_interfaces",
+    "file": "fixtures/ontology/function/container/probe_interfaces.post.json"
+  },
+  {
     "method": "GET",
     "path": "/ontology/category/tree",
     "file": "fixtures/ontology/category/tree.get.json"

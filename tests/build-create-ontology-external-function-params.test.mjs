@@ -87,3 +87,90 @@ test("buildCreateOntologyExternalFunctionParams sends trimmed apiKeyHeader and a
   ]);
   assert.deepEqual(payload.apiConfig.outputs, [{ name: "ok", type: "array", description: "结果" }]);
 });
+
+test("buildCreateOntologyExternalFunctionParams maps nested object fields and omits fields for non-object", () => {
+  const payload = buildCreateOntologyExternalFunctionParams({
+    functionApi: "nested",
+    version: "1.0.0",
+    displayName: "嵌套",
+    description: "嵌套 fields",
+    ontologySpaceId: 1,
+    sourceVersion: "",
+    endpoint: "https://example.com/api",
+    method: "POST",
+    authType: "none",
+    apiKeyHeader: "",
+    apiKey: "",
+    inputs: [
+      {
+        name: "payload",
+        type: "object",
+        description: "请求体",
+        location: "Body",
+        required: "yes",
+        fields: [
+          { name: " title ", type: "string", description: " 标题 " },
+          { name: "   ", type: "string", description: "跳过空名" },
+          {
+            name: "meta",
+            type: "object",
+            description: "元数据",
+            fields: [
+              { name: "count", type: "number", description: "数量" },
+              { name: "tags", type: "array", description: "标签", fields: [{ name: "ignored", type: "string", description: "非 object 不提交" }] },
+            ],
+          },
+        ],
+      },
+      {
+        name: "plain",
+        type: "string",
+        description: "普通字段",
+        location: "Query",
+        required: "no",
+        fields: [{ name: "should-omit", type: "string", description: "非 object 不带 fields" }],
+      },
+    ],
+    outputs: [
+      {
+        name: "data",
+        type: "object",
+        description: "响应",
+        fields: [{ name: "id", type: "number", description: "编号" }],
+      },
+      { name: "ok", type: "boolean", description: "成功", fields: [{ name: "x", type: "string", description: "忽略" }] },
+    ],
+  });
+
+  assert.deepEqual(payload.apiConfig.inputs, [
+    {
+      name: "payload",
+      type: "object",
+      required: true,
+      location: "body",
+      description: "请求体",
+      fields: [
+        { name: "title", type: "string", description: "标题" },
+        {
+          name: "meta",
+          type: "object",
+          description: "元数据",
+          fields: [
+            { name: "count", type: "number", description: "数量" },
+            { name: "tags", type: "array", description: "标签" },
+          ],
+        },
+      ],
+    },
+    { name: "plain", type: "string", required: false, location: "query", description: "普通字段" },
+  ]);
+  assert.deepEqual(payload.apiConfig.outputs, [
+    {
+      name: "data",
+      type: "object",
+      description: "响应",
+      fields: [{ name: "id", type: "number", description: "编号" }],
+    },
+    { name: "ok", type: "boolean", description: "成功" },
+  ]);
+});

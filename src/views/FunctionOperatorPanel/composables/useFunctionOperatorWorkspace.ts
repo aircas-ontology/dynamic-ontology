@@ -10,12 +10,14 @@ import {
   getOntologyFunctionListInterface,
   getOntologyFunctionVersionsInterface,
   getOntologyPropertyByOntologyIdInterface,
+  postCreateOntologyFunctionContainerInterface,
   postOntologyFunctionPublishInterface,
   postOntologyFunctionUnpublishInterface,
   testOntologyFunctionInterface,
   updateOntologyFunctionInterface,
 } from "@/apis";
 import type {
+  CreateOntologyFunctionContainerParams,
   CreateOntologyFunctionParams,
   FunctionOperator,
   FunctionOperatorDraft,
@@ -575,6 +577,32 @@ export function useFunctionOperatorWorkspace() {
       await loadOperators();
     } catch (error) {
       ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "外部 API 函数保存失败");
+    } finally {
+      actionLoading.value = false;
+    }
+  }
+
+  /**
+   * @description 新建容器算子：调用容器创建接口，成功后关闭表单并刷新列表。
+   * @param params 容器算子创建请求参数。
+   */
+  async function saveContainerOperator(params: CreateOntologyFunctionContainerParams): Promise<void> {
+    if (actionLoading.value) {
+      return;
+    }
+    actionLoading.value = true;
+    try {
+      const response = await postCreateOntologyFunctionContainerInterface(params);
+      if (response.code !== 200) {
+        throw new Error(response.message || "容器算子创建失败");
+      }
+      ElMessage.success("容器算子草稿已保存");
+      formVisible.value = false;
+      formDraft.value = null;
+      editingOperator.value = null;
+      await loadOperators();
+    } catch (error) {
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "容器算子保存失败");
     } finally {
       actionLoading.value = false;
     }
@@ -1170,6 +1198,7 @@ export function useFunctionOperatorWorkspace() {
     saveOperator,
     saveScriptOperator,
     saveExternalApiOperator,
+    saveContainerOperator,
     openDeleteOperator,
     confirmDeleteOperator,
     togglePublish,

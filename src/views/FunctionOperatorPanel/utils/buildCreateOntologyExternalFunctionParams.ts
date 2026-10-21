@@ -1,26 +1,33 @@
-import type { CreateOntologyFunctionApiConfig, CreateOntologyFunctionApiInput, CreateOntologyFunctionApiOutput, CreateOntologyFunctionParams } from "@/types";
+import type {
+  CreateOntologyFunctionApiConfig,
+  CreateOntologyFunctionApiField,
+  CreateOntologyFunctionApiInput,
+  CreateOntologyFunctionApiOutput,
+  CreateOntologyFunctionParams,
+} from "@/types";
 
 /** 外部 API 表单中的参数位置。 */
 type ExternalApiFormLocation = "Body" | "Path" | "Query" | "Header";
 
 /** 外部 API 表单中的参数类型。 */
-type ExternalApiFormParameterType = CreateOntologyFunctionApiInput["type"];
+type ExternalApiFormParameterType = CreateOntologyFunctionApiField["type"];
 
-/** 组装外部 API 函数创建请求的输入参数行。 */
-export interface BuildCreateOntologyExternalFunctionInputRow {
+/** 组装外部 API 函数创建请求的嵌套属性行。 */
+export interface BuildCreateOntologyExternalFunctionFieldRow {
   name: string;
   type: ExternalApiFormParameterType;
   description: string;
+  fields?: BuildCreateOntologyExternalFunctionFieldRow[];
+}
+
+/** 组装外部 API 函数创建请求的输入参数行。 */
+export interface BuildCreateOntologyExternalFunctionInputRow extends BuildCreateOntologyExternalFunctionFieldRow {
   location: ExternalApiFormLocation;
   required: "yes" | "no";
 }
 
 /** 组装外部 API 函数创建请求的输出参数行。 */
-export interface BuildCreateOntologyExternalFunctionOutputRow {
-  name: string;
-  type: ExternalApiFormParameterType;
-  description: string;
-}
+export type BuildCreateOntologyExternalFunctionOutputRow = BuildCreateOntologyExternalFunctionFieldRow;
 
 /** 组装外部 API 函数创建请求的输入。 */
 export interface BuildCreateOntologyExternalFunctionParamsInput {
@@ -50,7 +57,38 @@ const EXTERNAL_API_LOCATION_MAP: Record<ExternalApiFormLocation, CreateOntologyF
 };
 
 /**
- * @description 将外部 API 输入行转为创建接口 inputs，并跳过名称为空的行。
+ * @description 递归将表单嵌套属性转为接口 fields；跳过空名，非 object 不带 fields。
+ * @param fields 表单嵌套属性行。
+ * @returns 可提交的 fields；无有效项时返回 undefined。
+ */
+function mapExternalApiFields(fields: BuildCreateOntologyExternalFunctionFieldRow[] | undefined): CreateOntologyFunctionApiField[] | undefined {
+  if (!Array.isArray(fields) || fields.length === 0) {
+    return undefined;
+  }
+  const mapped: CreateOntologyFunctionApiField[] = [];
+  for (const row of fields) {
+    const name = row.name.trim();
+    if (!name) {
+      continue;
+    }
+    const item: CreateOntologyFunctionApiField = {
+      name,
+      type: row.type,
+      description: row.description.trim(),
+    };
+    if (row.type === "object") {
+      const nested = mapExternalApiFields(row.fields);
+      if (nested) {
+        item.fields = nested;
+      }
+    }
+    mapped.push(item);
+  }
+  return mapped.length > 0 ? mapped : undefined;
+}
+
+/**
+ * @description 将外部 API 输入行转为创建接口 inputs，并跳过名称为空的行；object 递归带 fields。
  * @param inputs 表单输入参数行。
  * @returns 可提交的输入参数。
  */
@@ -61,19 +99,26 @@ function mapExternalApiInputs(inputs: BuildCreateOntologyExternalFunctionInputRo
     if (!name) {
       continue;
     }
-    mapped.push({
+    const item: CreateOntologyFunctionApiInput = {
       name,
       type: row.type,
       required: row.required === "yes",
       location: EXTERNAL_API_LOCATION_MAP[row.location],
       description: row.description.trim(),
-    });
+    };
+    if (row.type === "object") {
+      const nested = mapExternalApiFields(row.fields);
+      if (nested) {
+        item.fields = nested;
+      }
+    }
+    mapped.push(item);
   }
   return mapped;
 }
 
 /**
- * @description 将外部 API 输出行转为创建接口 outputs，并跳过名称为空的行。
+ * @description 将外部 API 输出行转为创建接口 outputs，并跳过名称为空的行；object 递归带 fields。
  * @param outputs 表单输出参数行。
  * @returns 可提交的输出参数。
  */
@@ -84,11 +129,18 @@ function mapExternalApiOutputs(outputs: BuildCreateOntologyExternalFunctionOutpu
     if (!name) {
       continue;
     }
-    mapped.push({
+    const item: CreateOntologyFunctionApiOutput = {
       name,
       type: row.type,
       description: row.description.trim(),
-    });
+    };
+    if (row.type === "object") {
+      const nested = mapExternalApiFields(row.fields);
+      if (nested) {
+        item.fields = nested;
+      }
+    }
+    mapped.push(item);
   }
   return mapped;
 }

@@ -49,85 +49,28 @@ mocks与types文件名自行语义化命名
     "model": "BASIC",
     "type": "BASIC_QUERY",
     "ontologySpaceId": 46,
-    "params":[
-      {
-        "paramId": 1327,
-        "paramName": "input",
-        "paramType": "OBJECT",
-        "category": "INPUT",
-        "paramOrder": 1,
-        "fields": [
-          {
-            "paramName": "a",
-            "paramType": "OBJECT",
-            "category": "INPUT",
-            "paramOrder": 1,
-            "fields": [
-              {
-                "paramName": "aa",
-                "paramType": "OBJECT",
-                "category": "INPUT",
-                "paramOrder": 1,
-                "fields": [
-                  {
-                    "paramName": "aaa1",
-                    "paramType": "STRING",
-                    "category": "INPUT",
-                    "paramOrder": 1
-                  },
-                  {
-                    "paramName": "aaa2",
-                    "paramType": "STRING",
-                    "category": "INPUT",
-                    "paramOrder": 2
-                  }
-                ]
-              },
-              {
-                "paramName": "data",
-                "paramType": "STRING",
-                "category": "INPUT",
-                "paramOrder": 2
-              }
-            ]
-          },
-          {
-            "paramName": "b",
-            "paramType": "LIST",
-            "category": "INPUT",
-            "paramOrder": 2
-          }
-        ]
-      },
-      {
-        "paramId": 1328,
-        "paramName": "Output",
-        "paramType": "OBJECT",
-        "category": "OUTPUT",
-        "paramOrder": 1,
-        "fields": [
-          {
-            "paramName": "id",
-            "paramType": "DOUBLE",
-            "category": "OUTPUT",
-            "paramOrder": 1
-          },
-          {
-            "paramName": "name",
-            "paramType": "STRING",
-            "category": "OUTPUT",
-            "paramOrder": 2
-          }
-        ]
-      },
-      {
-        "paramId": 1329,
-        "paramName": "age",
-        "paramType": "DOUBLE",
-        "category": "INPUT",
-        "paramOrder": 2
-      }
-    ],
+    "params":
+    [
+  {
+    "paramId": 1412,
+    "paramName": "arg0",
+    "paramType": "STRING",
+    "category": "INPUT",
+    "paramOrder": 1,
+    "paramSchema": "{\"type\":\"string\"}",
+    "description": ""
+  },
+  {
+    "paramId": 1413,
+    "paramName": "result",
+    "paramType": "OBJECT",
+    "category": "OUTPUT",
+    "paramOrder": 1,
+    "paramSchema": "{\"type\":\"object\",\"id\":\"urn:jsonschema:com:aircas:ptr:foundry:ontology:model:vo:FunctionResultVO\",\"properties\":{\"startTime\":{\"type\":\"integer\",\"format\":\"utc-millisec\"},\"endTime\":{\"type\":\"integer\",\"format\":\"utc-millisec\"},\"data\":{\"type\":\"object\",\"id\":\"urn:jsonschema:java:lang:Object\"},\"description\":{\"type\":\"string\"},\"taskId\":{\"type\":\"string\"},\"timeWindows\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"id\":\"urn:jsonschema:com:aircas:ptr:foundry:ontology:model:common:VisibilityWindow\",\"properties\":{\"startTime\":{\"type\":\"integer\",\"format\":\"utc-millisec\"},\"endTime\":{\"type\":\"integer\",\"format\":\"utc-millisec\"}}}},\"extraFields\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"object\",\"$ref\":\"urn:jsonschema:java:lang:Object\"}}}}",
+    "description": ""
+  }
+]
+    ,
     "code": "{\"aggFunc\":null,\"targetProperty\":null,\"filters\":{\"logic\":\"AND\",\"children\":[{\"type\":\"FILTER\",\"filter\":{\"propertyApiName\":\"age\",\"op\":\"EQ\",\"value\":\"10\",\"values\":null,\"dataType\":\"STRING\"},\"group\":null}]}}",
     "queryConfig": {
       "aggFunc":"",

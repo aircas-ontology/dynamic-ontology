@@ -37,21 +37,23 @@ export interface CreateOntologyFunctionQueryConfig {
 /** 创建函数算子类型。 */
 export type CreateOntologyFunctionType = "BASIC_QUERY" | "CUSTOMIZE" | "EXTERNAL";
 
-/** 外部 API 输入参数。 */
-export interface CreateOntologyFunctionApiInput {
+/** 外部 API 参数树节点（可嵌套 fields）。 */
+export interface CreateOntologyFunctionApiField {
   name: string;
   type: "string" | "number" | "boolean" | "array" | "object";
+  description: string;
+  /** type 为 object 时的下级属性；非 object 不提交。 */
+  fields?: CreateOntologyFunctionApiField[];
+}
+
+/** 外部 API 输入参数；仅顶层含 location / required。 */
+export interface CreateOntologyFunctionApiInput extends CreateOntologyFunctionApiField {
   required: boolean;
   location: "body" | "path" | "query" | "header";
-  description: string;
 }
 
 /** 外部 API 输出参数。 */
-export interface CreateOntologyFunctionApiOutput {
-  name: string;
-  type: "string" | "number" | "boolean" | "array" | "object";
-  description: string;
-}
+export interface CreateOntologyFunctionApiOutput extends CreateOntologyFunctionApiField {}
 
 /** 外部 API 算子 apiConfig。 */
 export interface CreateOntologyFunctionApiConfig {

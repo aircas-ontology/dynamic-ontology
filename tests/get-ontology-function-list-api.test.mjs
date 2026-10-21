@@ -192,6 +192,8 @@ test("function operator workspace loads list from getOntologyFunctionListInterfa
   assert.match(typeMap, /BASIC_QUERY/);
   assert.match(typeMap, /CUSTOMIZE/);
   assert.match(typeMap, /COMPOSITE/);
+  assert.match(typeMap, /docker:\s*"CONTAINER"/);
+  assert.match(typeMap, /CONTAINER:\s*"docker"/);
   assert.match(typeMap, /mapFunctionOperatorTypeFromApi/);
   assert.doesNotMatch(workspace, /records\.filter/);
   assert.doesNotMatch(workspace, /queryFunctionOperatorsMock\(buildQuery\(\)\)/);
