@@ -21,6 +21,7 @@ import {
   buildCompositeWorkflowSwitchDefaultOutletAnchorId,
   isCompositeWorkflowInputAnchorId,
   isCompositeWorkflowOutputAnchorId,
+  parseCompositeWorkflowLoopOutletFromAnchorId,
   parseCompositeWorkflowSwitchOutletFromAnchorId,
   pickClosestAllowedCompositeWorkflowAnchor,
 } from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowAnchors.ts";
@@ -28,6 +29,10 @@ import {
   createDefaultCompositeWorkflowBranchConfig,
   normalizeCompositeWorkflowBranchConfig,
 } from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowBranchDefaults.ts";
+import {
+  createDefaultCompositeWorkflowLoopConfig,
+  normalizeCompositeWorkflowLoopConfig,
+} from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowLoopDefaults.ts";
 import {
   createDefaultCompositeWorkflowSwitchConfig,
   normalizeCompositeWorkflowSwitchConfig,
@@ -232,10 +237,19 @@ test("isCompositeWorkflowOutputAnchorId recognizes right-side outlets", () => {
   assert.equal(isCompositeWorkflowOutputAnchorId("n1_out"), true);
   assert.equal(isCompositeWorkflowOutputAnchorId("n1_out_true"), true);
   assert.equal(isCompositeWorkflowOutputAnchorId("n1_out_false"), true);
+  assert.equal(isCompositeWorkflowOutputAnchorId("n1_out_body"), true);
+  assert.equal(isCompositeWorkflowOutputAnchorId("n1_out_done"), true);
   assert.equal(isCompositeWorkflowOutputAnchorId("n1_out_default"), true);
   assert.equal(isCompositeWorkflowOutputAnchorId("n1_out_case_abc"), true);
   assert.equal(isCompositeWorkflowOutputAnchorId("n1_in"), false);
   assert.equal(isCompositeWorkflowOutputAnchorId(undefined), false);
+});
+
+test("parseCompositeWorkflowLoopOutletFromAnchorId maps body and done", () => {
+  assert.equal(parseCompositeWorkflowLoopOutletFromAnchorId("lp_out_body"), "body");
+  assert.equal(parseCompositeWorkflowLoopOutletFromAnchorId("lp_out_done"), "done");
+  assert.equal(parseCompositeWorkflowLoopOutletFromAnchorId("lp_out"), null);
+  assert.equal(parseCompositeWorkflowLoopOutletFromAnchorId(undefined), null);
 });
 
 test("isCompositeWorkflowInputAnchorId recognizes left inlet", () => {
@@ -288,6 +302,32 @@ test("buildCompositeWorkflowLiteFlowEl serializes chain, when, and if", () => {
     ],
   );
   assert.equal(branch.expression, "THEN(a, IF(br, t, f));");
+});
+
+test("buildCompositeWorkflowLiteFlowEl serializes FOR DO with done path", () => {
+  const result = buildCompositeWorkflowLiteFlowEl(
+    [
+      { id: "a", kind: "function" },
+      { id: "lp", kind: "loop", loopConfig: createDefaultCompositeWorkflowLoopConfig() },
+      { id: "body", kind: "function" },
+      { id: "after", kind: "function" },
+    ],
+    [
+      { id: "e1", sourceNodeId: "a", targetNodeId: "lp" },
+      { id: "e2", sourceNodeId: "lp", targetNodeId: "body", loopOutlet: "body" },
+      { id: "e3", sourceNodeId: "lp", targetNodeId: "after", loopOutlet: "done" },
+      { id: "e4", sourceNodeId: "body", targetNodeId: "after" },
+    ],
+  );
+  assert.match(result.expression, /FOR\(lp\)\.DO\(/);
+  assert.match(result.expression, /body/);
+  assert.match(result.expression, /after/);
+});
+
+test("buildCompositeWorkflowLiteFlowEl warns when loop body outlet is missing", () => {
+  const result = buildCompositeWorkflowLiteFlowEl([{ id: "lp", kind: "loop", loopConfig: createDefaultCompositeWorkflowLoopConfig() }], []);
+  assert.equal(result.expression, "lp;");
+  assert.ok(result.warnings.some((item) => item.includes("缺少 body")));
 });
 
 test("buildCompositeWorkflowLiteFlowEl serializes SWITCH CASE DEFAULT", () => {
@@ -460,13 +500,59 @@ test("buildCompositeWorkflowSavePayload assembles schemaVersion 1", () => {
     version: "1.0.0",
     ontologySpaceId: 9,
     logicFlowGraph: { nodes: [], edges: [] },
-    nodes: [{ id: "n1", kind: "loop", loopConfig: { kind: "loop", collection: { mode: "manual", jsonText: "[]" }, itemParamName: "item" } }],
-    edges: [],
+    nodes: [
+      {
+        id: "n1",
+        kind: "loop",
+        loopConfig: {
+          kind: "loop",
+          collection: { mode: "fromUpstream", upstreamParamName: "items", upstreamParamPath: ["items"] },
+          itemParamName: "item",
+          maxIterations: 100,
+        },
+      },
+    ],
+    edges: [{ id: "e1", sourceNodeId: "n1", targetNodeId: "n2", loopOutlet: "body" }],
     savedAt: "2026-10-15T00:00:00.000Z",
   });
   assert.equal(payload.schemaVersion, 1);
   assert.equal(payload.meta.functionApi, "comp.a");
   assert.equal(payload.nodes[0]?.kind, "loop");
+  assert.equal(payload.nodes[0]?.kind === "loop" ? payload.nodes[0].config.collection.mode : "", "fromUpstream");
+  assert.equal(payload.edges[0]?.loopOutlet, "body");
+});
+
+test("createDefaultCompositeWorkflowLoopConfig uses fromUpstream collection", () => {
+  const config = createDefaultCompositeWorkflowLoopConfig();
+  assert.equal(config.kind, "loop");
+  assert.equal(config.collection.mode, "fromUpstream");
+  assert.deepEqual(config.collection.upstreamParamPath, []);
+  assert.equal(config.itemParamName, "item");
+  assert.equal(config.maxIterations, 100);
+  assert.equal(config.indexParamName, undefined);
+});
+
+test("normalizeCompositeWorkflowLoopConfig migrates manual and fills path", () => {
+  assert.deepEqual(normalizeCompositeWorkflowLoopConfig(null), createDefaultCompositeWorkflowLoopConfig());
+  const fromManual = normalizeCompositeWorkflowLoopConfig({
+    kind: "loop",
+    collection: { mode: "manual", jsonText: "[1]" },
+    itemParamName: "row",
+    maxIterations: 5,
+  });
+  assert.equal(fromManual.collection.mode, "fromUpstream");
+  assert.deepEqual(fromManual.collection.upstreamParamPath, []);
+  assert.equal(fromManual.itemParamName, "row");
+  assert.equal(fromManual.maxIterations, 5);
+
+  const fromNameOnly = normalizeCompositeWorkflowLoopConfig({
+    kind: "loop",
+    collection: { mode: "fromUpstream", upstreamParamName: "items" },
+    itemParamName: "item",
+    indexParamName: "i",
+  });
+  assert.deepEqual(fromNameOnly.collection.upstreamParamPath, ["items"]);
+  assert.equal(fromNameOnly.indexParamName, "i");
 });
 
 test("createDefaultCompositeWorkflowBranchConfig uses fromUpstream left and eq", () => {
@@ -534,15 +620,46 @@ test("resolveCompositeWorkflowNodeUpstreamOutputs covers transform loop and miss
   );
   assert.deepEqual(transformOutputs.upstreamOutputs, [{ paramName: "out", paramType: "string" }]);
 
-  const loopOutputs = resolveCompositeWorkflowNodeUpstreamOutputs(
+  const loopBodyOutputs = resolveCompositeWorkflowNodeUpstreamOutputs(
     [
-      { id: "lp", kind: "loop", loopConfig: { kind: "loop", collection: { mode: "manual", jsonText: "[]" }, itemParamName: "row" } },
+      {
+        id: "lp",
+        kind: "loop",
+        loopConfig: {
+          kind: "loop",
+          collection: { mode: "fromUpstream", upstreamParamName: "items", upstreamParamPath: ["items"] },
+          itemParamName: "row",
+          indexParamName: "idx",
+        },
+      },
       { id: "down", kind: "function" },
     ],
-    [{ id: "e1", sourceNodeId: "lp", targetNodeId: "down" }],
+    [{ id: "e1", sourceNodeId: "lp", targetNodeId: "down", loopOutlet: "body" }],
     "down",
   );
-  assert.deepEqual(loopOutputs.upstreamOutputs, [{ paramName: "row", paramType: "object" }]);
+  assert.deepEqual(loopBodyOutputs.upstreamOutputs, [
+    { paramName: "row", paramType: "object" },
+    { paramName: "idx", paramType: "number" },
+  ]);
+
+  const upstreamOutputs = [{ paramName: "items", paramType: "array" }];
+  const loopDoneOutputs = resolveCompositeWorkflowNodeUpstreamOutputs(
+    [
+      { id: "fn", kind: "function", paramsSnapshot: { inputs: [], outputs: upstreamOutputs } },
+      {
+        id: "lp",
+        kind: "loop",
+        loopConfig: createDefaultCompositeWorkflowLoopConfig(),
+      },
+      { id: "after", kind: "function" },
+    ],
+    [
+      { id: "e0", sourceNodeId: "fn", targetNodeId: "lp" },
+      { id: "e1", sourceNodeId: "lp", targetNodeId: "after", loopOutlet: "done" },
+    ],
+    "after",
+  );
+  assert.deepEqual(loopDoneOutputs.upstreamOutputs, upstreamOutputs);
 
   assert.deepEqual(resolveCompositeWorkflowNodeUpstreamOutputs([], [], "x"), { hasUpstream: false, upstreamOutputs: [] });
   assert.deepEqual(resolveCompositeWorkflowNodeUpstreamOutputs([], [{ id: "e1", sourceNodeId: "gone", targetNodeId: "x" }], "x"), {
@@ -599,6 +716,16 @@ test("branch diamond view labels true and false exits", () => {
   assert.match(source, /view:\s*CompositeBranchDiamondView/);
 });
 
+test("loop node registers body and done outlets with labels", () => {
+  const source = readFileSync(new URL("../src/views/FunctionOperatorPanel/utils/registerCompositeWorkflowNodes.ts", import.meta.url), "utf8");
+  assert.match(source, /registerLoopRectNodeType/);
+  assert.match(source, /\$\{id\}_out_body/);
+  assert.match(source, /\$\{id\}_out_done/);
+  assert.match(source, /循环体/);
+  assert.match(source, /结束后/);
+  assert.match(source, /CompositeLoopRectView/);
+});
+
 test("branch logic dialog selects upstream output path without manual left", () => {
   const dialog = readFileSync(new URL("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeLogicNodeDialog.vue", import.meta.url), "utf8");
   assert.match(dialog, /listCompositeWorkflowParamNodes/);
@@ -607,6 +734,18 @@ test("branch logic dialog selects upstream output path without manual left", () 
   assert.doesNotMatch(dialog, /truthy/);
   assert.match(dialog, /==/);
   assert.match(dialog, /!==/);
+});
+
+test("loop logic dialog selects upstream collection path without manual JSON", () => {
+  const dialog = readFileSync(new URL("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeLogicNodeDialog.vue", import.meta.url), "utf8");
+  assert.match(dialog, /loopCollectionPathKey/);
+  assert.match(dialog, /集合（上游输出）/);
+  assert.match(dialog, /最大迭代次数/);
+  assert.doesNotMatch(dialog, /单项变量名/);
+  assert.doesNotMatch(dialog, /索引变量名/);
+  assert.doesNotMatch(dialog, /手动 JSON/);
+  assert.doesNotMatch(dialog, /jsonText/);
+  assert.doesNotMatch(dialog, /loopCollectionMode/);
 });
 
 test("createDefaultCompositeWorkflowSwitchConfig has one case and fromUpstream switchOn", () => {

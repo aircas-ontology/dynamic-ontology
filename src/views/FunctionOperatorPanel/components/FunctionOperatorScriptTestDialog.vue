@@ -39,7 +39,7 @@ const visible = defineModel<boolean>({ required: true });
 
 const props = defineProps<{
   operatorName: string;
-  /** 页面函数类型；外部 API 使用独立标题。 */
+  /** 页面函数类型；外部 API、容器算子使用独立标题。 */
   functionType: FunctionOperatorType | "";
   detailLoading: boolean;
   submitting: boolean;
@@ -54,9 +54,17 @@ const emit = defineEmits<{
 
 /**
  * @description 按函数类型返回测试弹框标题。
- * @returns 外部 API 或脚本函数标题。
+ * @returns 外部 API、容器算子或脚本函数标题。
  */
-const dialogTitle = computed(() => (props.functionType === "api" ? "外部 API 函数测试" : "脚本函数测试"));
+const dialogTitle = computed(() => {
+  if (props.functionType === "api") {
+    return "外部 API 函数测试";
+  }
+  if (props.functionType === "docker") {
+    return "容器算子测试";
+  }
+  return "脚本函数测试";
+});
 </script>
 
 <style scoped lang="scss">

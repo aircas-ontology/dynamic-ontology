@@ -1,141 +1,145 @@
 <template>
   <section class="function-operator-panel">
-    <div class="function-operator-panel__filters">
-      <div class="function-operator-panel__filter-fields">
-        <el-input v-model="filters.keyword" class="function-operator-panel__keyword" clearable placeholder="按函数名称搜索" />
-        <el-select v-model="filters.type" class="function-operator-panel__filter" clearable placeholder="函数类型">
-          <el-option v-for="item in FUNCTION_OPERATOR_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
-        </el-select>
-        <el-select v-model="filters.creator" class="function-operator-panel__filter" clearable placeholder="创建人">
-          <el-option v-for="item in creatorOptions" :key="item" :label="item" :value="item" />
-        </el-select>
-        <el-select v-model="filters.status" class="function-operator-panel__filter" clearable placeholder="状态">
-          <el-option v-for="item in FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
-        </el-select>
-        <el-date-picker
-          v-model="updatedRange"
-          class="function-operator-panel__date"
-          type="daterange"
-          value-format="YYYY-MM-DD"
-          range-separator="至"
-          start-placeholder="开始日期(创建)"
-          end-placeholder="结束日期(创建)"
-        />
+    <FunctionOperatorContainerRuntimePanel v-if="runtimePanelVisible" :active="runtimePanelVisible" :space-id="spaceId" @back="runtimePanelVisible = false" />
+    <template v-else>
+      <div class="function-operator-panel__filters">
+        <div class="function-operator-panel__filter-fields">
+          <el-input v-model="filters.keyword" class="function-operator-panel__keyword" clearable placeholder="按函数名称搜索" />
+          <el-select v-model="filters.type" class="function-operator-panel__filter" clearable placeholder="函数类型">
+            <el-option v-for="item in FUNCTION_OPERATOR_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+          <el-select v-model="filters.creator" class="function-operator-panel__filter" clearable placeholder="创建人">
+            <el-option v-for="item in creatorOptions" :key="item" :label="item" :value="item" />
+          </el-select>
+          <el-select v-model="filters.status" class="function-operator-panel__filter" clearable placeholder="状态">
+            <el-option v-for="item in FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+          <el-date-picker
+            v-model="updatedRange"
+            class="function-operator-panel__date"
+            type="daterange"
+            value-format="YYYY-MM-DD"
+            range-separator="至"
+            start-placeholder="开始日期(创建)"
+            end-placeholder="结束日期(创建)"
+          />
+        </div>
+
+        <div class="function-operator-panel__filter-actions">
+          <el-button @click="runtimePanelVisible = true">运行配置</el-button>
+          <el-button type="primary" @click="openCreate">新建函数</el-button>
+          <el-button type="primary" @click="applyFilters">查询</el-button>
+          <el-button @click="resetFilters">重置</el-button>
+        </div>
       </div>
 
-      <div class="function-operator-panel__filter-actions">
-        <el-button type="primary" @click="openCreate">新建函数</el-button>
-        <el-button type="primary" @click="applyFilters">查询</el-button>
-        <el-button @click="resetFilters">重置</el-button>
+      <div class="function-operator-panel__toolbar">
+        <span class="function-operator-panel__count">共 {{ total }} 个函数算子</span>
+        <div class="function-operator-panel__toolbar-actions">
+          <el-select v-model="sortValue" style="width: 170px" @change="loadOperators">
+            <el-option label="更新时间（倒序）" value="updatedAt-desc" />
+            <el-option label="更新时间（正序）" value="updatedAt-asc" />
+            <el-option label="名称（正序）" value="name-asc" />
+            <el-option label="名称（倒序）" value="name-desc" />
+          </el-select>
+          <el-radio-group :model-value="viewMode" class="function-operator-panel__view" ariaLabel="展示方式" @update:model-value="setViewMode">
+            <el-radio-button value="card">
+              <svg class="function-operator-panel__view-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="3" width="8" height="8" rx="1.5" />
+                <rect x="13" y="3" width="8" height="8" rx="1.5" />
+                <rect x="3" y="13" width="8" height="8" rx="1.5" />
+                <rect x="13" y="13" width="8" height="8" rx="1.5" />
+              </svg>
+              <span class="function-operator-panel__view-label">卡片视图</span>
+            </el-radio-button>
+            <el-radio-button value="table">
+              <svg class="function-operator-panel__view-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <path d="M3 9h18M3 14h18M9 9v11M15 9v11" />
+              </svg>
+              <span class="function-operator-panel__view-label">表格视图</span>
+            </el-radio-button>
+          </el-radio-group>
+        </div>
       </div>
-    </div>
 
-    <div class="function-operator-panel__toolbar">
-      <span class="function-operator-panel__count">共 {{ total }} 个函数算子</span>
-      <div class="function-operator-panel__toolbar-actions">
-        <el-select v-model="sortValue" style="width: 170px" @change="loadOperators">
-          <el-option label="更新时间（倒序）" value="updatedAt-desc" />
-          <el-option label="更新时间（正序）" value="updatedAt-asc" />
-          <el-option label="名称（正序）" value="name-asc" />
-          <el-option label="名称（倒序）" value="name-desc" />
-        </el-select>
-        <el-radio-group :model-value="viewMode" class="function-operator-panel__view" ariaLabel="展示方式" @update:model-value="setViewMode">
-          <el-radio-button value="card">
-            <svg class="function-operator-panel__view-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="3" y="3" width="8" height="8" rx="1.5" />
-              <rect x="13" y="3" width="8" height="8" rx="1.5" />
-              <rect x="3" y="13" width="8" height="8" rx="1.5" />
-              <rect x="13" y="13" width="8" height="8" rx="1.5" />
-            </svg>
-            <span class="function-operator-panel__view-label">卡片视图</span>
-          </el-radio-button>
-          <el-radio-button value="table">
-            <svg class="function-operator-panel__view-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="16" rx="2" />
-              <path d="M3 9h18M3 14h18M9 9v11M15 9v11" />
-            </svg>
-            <span class="function-operator-panel__view-label">表格视图</span>
-          </el-radio-button>
-        </el-radio-group>
+      <div v-if="loading" class="function-operator-panel__state">正在加载函数算子...</div>
+      <div v-else-if="errorMessage" class="function-operator-panel__state function-operator-panel__state--error">
+        <span>{{ errorMessage }}</span>
+        <el-button size="small" @click="loadOperators">重试</el-button>
       </div>
-    </div>
+      <el-empty v-else-if="!operators.length" class="function-operator-panel__empty" description="当前空间暂无函数算子" />
+      <div v-else-if="viewMode === 'card'" class="function-operator-panel__cards">
+        <article v-for="operator in operators" :key="operator.id" class="function-operator-card" @click="openDetail(operator)">
+          <div class="function-operator-card__header">
+            <div class="function-operator-card__name">{{ operator.name }}</div>
+            <el-tag size="small" :type="statusTagType(operator.status)">{{ statusLabel(operator.status) }}</el-tag>
+          </div>
+          <div class="function-operator-card__meta">
+            <el-tag size="small" effect="plain">{{ typeLabel(operator) }}</el-tag>
+            <span>v{{ operator.version }}</span>
+          </div>
+          <p class="function-operator-card__description">{{ operator.description || "暂无说明" }}</p>
+          <div class="function-operator-card__footer">
+            <span>创建时间<br />{{ operator.createdAt || "-" }}</span>
+            <span>更新时间<br />{{ operator.updatedAt || "-" }}</span>
+          </div>
+          <div class="function-operator-card__actions" @click.stop>
+            <el-button type="primary" text size="small" @click="openTest(operator)">测试</el-button>
+            <el-button v-if="operator.status !== 'published'" text size="small" @click="openEdit(operator)">编辑</el-button>
+            <el-button type="warning" text size="small" @click="togglePublish(operator)">
+              {{ operator.status === "published" ? "下线" : "发布" }}
+            </el-button>
+            <el-button type="danger" text size="small" @click="openDeleteOperator(operator)">删除</el-button>
+          </div>
+        </article>
+      </div>
+      <el-table
+        v-else
+        :data="operators"
+        class="aircas-table--accent-header function-operator-panel__table"
+        height="100%"
+        @row-click="(row) => openDetail(asOperator(row))"
+      >
+        <el-table-column prop="name" label="函数名称" min-width="180" show-overflow-tooltip />
+        <el-table-column label="类型" width="120">
+          <template #default="{ row }">
+            <el-tag size="small" effect="plain">{{ typeLabel(asOperator(row)) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="protocol" label="协议" width="90" />
+        <el-table-column prop="version" label="版本" width="100" />
+        <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="statusTagType(asOperator(row).status)">{{ statusLabel(asOperator(row).status) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createdAt" label="创建时间" width="160" />
+        <el-table-column prop="updatedAt" label="最后更新" width="160" />
+        <el-table-column label="操作" width="260" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click.stop="openTest(asOperator(row))">测试</el-button>
+            <el-button v-if="asOperator(row).status !== 'published'" link @click.stop="openEdit(asOperator(row))">编辑</el-button>
+            <el-button link @click.stop="togglePublish(asOperator(row))">{{ asOperator(row).status === "published" ? "下线" : "发布" }}</el-button>
+            <el-button link type="danger" @click.stop="openDeleteOperator(asOperator(row))">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <div v-if="loading" class="function-operator-panel__state">正在加载函数算子...</div>
-    <div v-else-if="errorMessage" class="function-operator-panel__state function-operator-panel__state--error">
-      <span>{{ errorMessage }}</span>
-      <el-button size="small" @click="loadOperators">重试</el-button>
-    </div>
-    <el-empty v-else-if="!operators.length" class="function-operator-panel__empty" description="当前空间暂无函数算子" />
-    <div v-else-if="viewMode === 'card'" class="function-operator-panel__cards">
-      <article v-for="operator in operators" :key="operator.id" class="function-operator-card" @click="openDetail(operator)">
-        <div class="function-operator-card__header">
-          <div class="function-operator-card__name">{{ operator.name }}</div>
-          <el-tag size="small" :type="statusTagType(operator.status)">{{ statusLabel(operator.status) }}</el-tag>
-        </div>
-        <div class="function-operator-card__meta">
-          <el-tag size="small" effect="plain">{{ typeLabel(operator) }}</el-tag>
-          <span>v{{ operator.version }}</span>
-        </div>
-        <p class="function-operator-card__description">{{ operator.description || "暂无说明" }}</p>
-        <div class="function-operator-card__footer">
-          <span>创建时间<br />{{ operator.createdAt || "-" }}</span>
-          <span>更新时间<br />{{ operator.updatedAt || "-" }}</span>
-        </div>
-        <div class="function-operator-card__actions" @click.stop>
-          <el-button type="primary" text size="small" @click="openTest(operator)">测试</el-button>
-          <el-button v-if="operator.status !== 'published'" text size="small" @click="openEdit(operator)">编辑</el-button>
-          <el-button type="warning" text size="small" @click="togglePublish(operator)">
-            {{ operator.status === "published" ? "下线" : "发布" }}
-          </el-button>
-          <el-button type="danger" text size="small" @click="openDeleteOperator(operator)">删除</el-button>
-        </div>
-      </article>
-    </div>
-    <el-table
-      v-else
-      :data="operators"
-      class="aircas-table--accent-header function-operator-panel__table"
-      height="100%"
-      @row-click="(row) => openDetail(asOperator(row))"
-    >
-      <el-table-column prop="name" label="函数名称" min-width="180" show-overflow-tooltip />
-      <el-table-column label="类型" width="120">
-        <template #default="{ row }">
-          <el-tag size="small" effect="plain">{{ typeLabel(asOperator(row)) }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="protocol" label="协议" width="90" />
-      <el-table-column prop="version" label="版本" width="100" />
-      <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag size="small" :type="statusTagType(asOperator(row).status)">{{ statusLabel(asOperator(row).status) }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="createdAt" label="创建时间" width="160" />
-      <el-table-column prop="updatedAt" label="最后更新" width="160" />
-      <el-table-column label="操作" width="260" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" @click.stop="openTest(asOperator(row))">测试</el-button>
-          <el-button v-if="asOperator(row).status !== 'published'" link @click.stop="openEdit(asOperator(row))">编辑</el-button>
-          <el-button link @click.stop="togglePublish(asOperator(row))">{{ asOperator(row).status === "published" ? "下线" : "发布" }}</el-button>
-          <el-button link type="danger" @click.stop="openDeleteOperator(asOperator(row))">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <el-pagination
-      background
-      v-if="total > 0"
-      v-model:current-page="page"
-      v-model:page-size="pageSize"
-      class="function-operator-panel__pagination"
-      layout="total, sizes, prev, pager, next"
-      :total="total"
-      :page-sizes="[8, 16, 32]"
-      @current-change="loadOperators"
-      @size-change="loadOperators"
-    />
+      <el-pagination
+        background
+        v-if="total > 0"
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        class="function-operator-panel__pagination"
+        layout="total, sizes, prev, pager, next"
+        :total="total"
+        :page-sizes="[8, 16, 32]"
+        @current-change="loadOperators"
+        @size-change="loadOperators"
+      />
+    </template>
 
     <FunctionOperatorDetailDrawer
       v-model="detailVisible"
@@ -246,11 +250,16 @@ import {
 } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 
+import { ref } from "vue";
+
 import { useFunctionOperatorWorkspace } from "./composables/useFunctionOperatorWorkspace";
+import FunctionOperatorContainerRuntimePanel from "./components/FunctionOperatorContainerRuntimePanel.vue";
 import FunctionOperatorDeleteDialog from "./components/FunctionOperatorDeleteDialog.vue";
 import FunctionOperatorDetailDrawer from "./components/FunctionOperatorDetailDrawer.vue";
 import FunctionOperatorFormDialog from "./components/FunctionOperatorFormDialog.vue";
 import FunctionOperatorScriptTestDialog from "./components/FunctionOperatorScriptTestDialog.vue";
+
+const runtimePanelVisible = ref(false);
 
 const {
   spaceId,

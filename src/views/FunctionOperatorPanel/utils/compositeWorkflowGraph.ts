@@ -14,6 +14,7 @@ import type {
 } from "@/types";
 
 import { createDefaultCompositeWorkflowBranchConfig, normalizeCompositeWorkflowBranchConfig } from "./compositeWorkflowBranchDefaults.ts";
+import { createDefaultCompositeWorkflowLoopConfig, normalizeCompositeWorkflowLoopConfig } from "./compositeWorkflowLoopDefaults.ts";
 import { compareCompositeWorkflowParamTypes } from "./compositeWorkflowParamType.ts";
 import { createDefaultCompositeWorkflowSwitchConfig, normalizeCompositeWorkflowSwitchConfig } from "./compositeWorkflowSwitchDefaults.ts";
 import { createDefaultCompositeWorkflowTransformConfig, resolveCompositeWorkflowTransformOutputs } from "./compositeWorkflowTransformDefaults.ts";
@@ -25,6 +26,7 @@ export interface CompositeWorkflowGraphEdge {
   targetNodeId: string;
   branch?: "true" | "false";
   switchOutlet?: string;
+  loopOutlet?: "body" | "done";
 }
 
 /** 图中用于校验的节点摘要。 */
@@ -143,8 +145,17 @@ export function resolveCompositeWorkflowNodeUpstreamOutputs(
       return { hasUpstream: true, upstreamOutputs: resolveCompositeWorkflowTransformOutputs(source.transformConfig) };
     }
     if (source.kind === "loop") {
-      const itemName = source.loopConfig?.itemParamName?.trim() || "item";
-      return { hasUpstream: true, upstreamOutputs: [{ paramName: itemName, paramType: "object" }] };
+      const incomingEdge = incoming[0];
+      if (incomingEdge?.loopOutlet === "body") {
+        const itemName = source.loopConfig?.itemParamName?.trim() || "item";
+        const upstreamOutputs: CompositeWorkflowParamBrief[] = [{ paramName: itemName, paramType: "object" }];
+        const indexName = source.loopConfig?.indexParamName?.trim();
+        if (indexName) {
+          upstreamOutputs.push({ paramName: indexName, paramType: "number" });
+        }
+        return { hasUpstream: true, upstreamOutputs };
+      }
+      return resolveForNode(source.id);
     }
     if (source.kind === "branch" || source.kind === "switch") {
       return resolveForNode(source.id);
@@ -474,12 +485,7 @@ export function buildCompositeWorkflowSavePayload(options: {
       return {
         id: node.id,
         kind: "loop",
-        config: node.loopConfig ?? {
-          kind: "loop",
-          collection: { mode: "manual", jsonText: "[]" },
-          itemParamName: "item",
-          maxIterations: 100,
-        },
+        config: normalizeCompositeWorkflowLoopConfig(node.loopConfig ?? createDefaultCompositeWorkflowLoopConfig()),
       };
     }
     if (node.kind === "branch") {
@@ -508,6 +514,7 @@ export function buildCompositeWorkflowSavePayload(options: {
     targetNodeId: edge.targetNodeId,
     branch: edge.branch,
     switchOutlet: edge.switchOutlet,
+    loopOutlet: edge.loopOutlet,
   }));
   return {
     schemaVersion: 1,

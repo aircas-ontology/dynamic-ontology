@@ -17,6 +17,8 @@ export function isCompositeWorkflowOutputAnchorId(anchorId: string | undefined):
     anchorId.endsWith("_out") ||
     anchorId.endsWith("_out_true") ||
     anchorId.endsWith("_out_false") ||
+    anchorId.endsWith("_out_body") ||
+    anchorId.endsWith("_out_done") ||
     anchorId.endsWith("_out_default") ||
     anchorId.includes("_out_case_")
   );
@@ -92,6 +94,24 @@ export function buildCompositeWorkflowSwitchCaseOutletAnchorId(nodeId: string, c
  */
 export function buildCompositeWorkflowSwitchDefaultOutletAnchorId(nodeId: string): string {
   return `${nodeId}_out_default`;
+}
+
+/**
+ * @description 从循环出口锚点解析 loopOutlet（body / done）。
+ * @param anchorId 锚点 id。
+ * @returns loopOutlet；非循环出口时返回 null。
+ */
+export function parseCompositeWorkflowLoopOutletFromAnchorId(anchorId: string | undefined): "body" | "done" | null {
+  if (!anchorId) {
+    return null;
+  }
+  if (anchorId.endsWith("_out_body")) {
+    return "body";
+  }
+  if (anchorId.endsWith("_out_done")) {
+    return "done";
+  }
+  return null;
 }
 
 /**

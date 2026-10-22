@@ -69,6 +69,9 @@ function resolveCompositeWorkflowNodeStroke(kind: unknown): string {
   if (kind === "switch") {
     return "#67c23a";
   }
+  if (kind === "loop") {
+    return "#909399";
+  }
   return "#6b7a99";
 }
 
@@ -82,7 +85,7 @@ function resolveCompositeWorkflowNodeStrokeWidth(selected: boolean): number {
 }
 
 /**
- * @description 向 LogicFlow 注册编排节点（普通矩形左入右出；分支菱形；Switch 多出口矩形）。
+ * @description 向 LogicFlow 注册编排节点（普通矩形左入右出；循环双出口；分支菱形；Switch 多出口矩形）。
  * @param lf LogicFlow 实例。
  */
 export function registerCompositeWorkflowNodes(lf: LogicFlow): void {
@@ -328,6 +331,143 @@ export function registerCompositeWorkflowNodes(lf: LogicFlow): void {
   }
 
   /**
+   * @description 注册循环矩形节点：左入、右 body、下 done，并在出口旁标注文字。
+   */
+  function registerLoopRectNodeType(): void {
+    lf.register(COMPOSITE_WORKFLOW_LF_NODE_TYPES.loop, () => {
+      class CompositeLoopRectModel extends RectNodeModel {
+        /**
+         * @description 初始化尺寸与不可编辑文本。
+         */
+        initNodeData(data: LogicFlow.NodeConfig): void {
+          super.initNodeData(data);
+          this.width = 180;
+          this.height = 72;
+          this.radius = 8;
+          this.text.editable = false;
+          this.text.draggable = false;
+        }
+
+        /**
+         * @description 循环灰色描边。
+         * @returns 节点样式。
+         */
+        getNodeStyle() {
+          const style = super.getNodeStyle();
+          return {
+            ...style,
+            fill: "#1a2236",
+            stroke: resolveCompositeWorkflowNodeStroke("loop"),
+            strokeWidth: resolveCompositeWorkflowNodeStrokeWidth(this.isSelected),
+            radius: 8,
+          };
+        }
+
+        /**
+         * @description 文本样式适配暗色面板。
+         * @returns 文本样式。
+         */
+        getTextStyle() {
+          const style = super.getTextStyle();
+          return {
+            ...style,
+            color: "#e8eefc",
+            fontSize: 12,
+            overflowMode: "autoWrap" as const,
+            lineHeight: 1.3,
+            wrapPadding: "4px 8px",
+          };
+        }
+
+        /**
+         * @description 左入、右 body、下 done。
+         * @returns 锚点配置。
+         */
+        getDefaultAnchor() {
+          const { x, y, width, height, id } = this;
+          return [
+            { x: x - width / 2, y, id: `${id}_in` },
+            { x: x + width / 2, y, id: `${id}_out_body` },
+            { x, y: y + height / 2, id: `${id}_out_done` },
+          ];
+        }
+
+        /**
+         * @description 仅允许从右侧/下侧输出锚点拉出连线。
+         * @returns 作为 source 的连接规则。
+         */
+        getConnectedSourceRules() {
+          const rules = super.getConnectedSourceRules();
+          rules.push({
+            message: "只能从右侧/下侧输出锚点连出",
+            validate: (_source, _target, sourceAnchor) => isCompositeWorkflowOutputAnchorId(sourceAnchor?.id),
+          });
+          return rules;
+        }
+
+        /**
+         * @description 仅允许连入左侧输入锚点。
+         * @returns 作为 target 的连接规则。
+         */
+        getConnectedTargetRules() {
+          const rules = super.getConnectedTargetRules();
+          rules.push({
+            message: "只能连到左侧输入锚点",
+            validate: (_source, _target, _sourceAnchor, targetAnchor) => isCompositeWorkflowInputAnchorId(targetAnchor?.id),
+          });
+          return rules;
+        }
+      }
+
+      /**
+       * @description 循环视图：在右侧/下侧出口旁绘制「循环体 / 结束后」标注。
+       */
+      class CompositeLoopRectView extends RectNode {
+        /**
+         * @description 绘制矩形与出口文字；文字不拦截锚点拖线。
+         * @returns 节点 SVG 形状。
+         */
+        getShape() {
+          const { model } = this.props;
+          const { x, y, width, height } = model;
+          const labelStyle = {
+            fill: "#e8eefc",
+            fontSize: 11,
+            "pointer-events": "none",
+          };
+          return h("g", {}, [
+            super.getShape(),
+            h(
+              "text",
+              {
+                ...labelStyle,
+                x: x + width / 2 + 6,
+                y: y - 4,
+              },
+              "循环体",
+            ),
+            h(
+              "text",
+              {
+                ...labelStyle,
+                x,
+                y: y + height / 2 + 14,
+                "text-anchor": "middle",
+              },
+              "结束后",
+            ),
+          ]);
+        }
+      }
+
+      return {
+        view: CompositeLoopRectView,
+        model: CompositeLoopRectModel,
+      };
+    });
+  }
+
+  /**
    * @description 注册 Switch Case 矩形：左入、右侧 case… + default，高度随 case 数伸缩。
    */
   function registerSwitchRectNodeType(): void {
@@ -537,8 +677,8 @@ export function registerCompositeWorkflowNodes(lf: LogicFlow): void {
   }
 
   registerRectNodeType(COMPOSITE_WORKFLOW_LF_NODE_TYPES.function);
-  registerRectNodeType(COMPOSITE_WORKFLOW_LF_NODE_TYPES.loop);
   registerRectNodeType(COMPOSITE_WORKFLOW_LF_NODE_TYPES.transform);
+  registerLoopRectNodeType();
   registerBranchDiamondNodeType();
   registerSwitchRectNodeType();
   registerCompositeWorkflowPolylineEdge();

@@ -211,9 +211,12 @@ test("function operator script test uses dedicated dialog and parameters body", 
   assert.match(workspace, /isScriptFunctionOperator/);
   assert.match(workspace, /type === "code"/);
   assert.match(workspace, /type === "api"/);
+  assert.match(workspace, /type === "docker"/);
   assert.match(workspace, /apiModelType === "CUSTOMIZE"/);
   assert.match(workspace, /apiModelType === "EXTERNAL"/);
+  assert.match(workspace, /apiModelType === "CONTAINER"/);
   assert.match(dialog, /外部 API 函数测试/);
+  assert.match(dialog, /容器算子测试/);
   assert.match(panel, /:function-type="scriptTestingOperator\?\.type/);
   assert.match(workspace, /async function openScriptTest/);
   assert.match(workspace, /async function runScriptTest/);

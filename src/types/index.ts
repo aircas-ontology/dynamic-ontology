@@ -92,6 +92,12 @@ export type {
 } from "./apis/getOntologyDatasourceColumnsType";
 export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
 export type { GetOntologyEntitiesData, GetOntologyEntitiesParams, OntologyEntityInfo } from "./apis/getOntologyEntitiesType";
+export type {
+  GetOntologyFunctionContainerRuntimeListData,
+  GetOntologyFunctionContainerRuntimeListParams,
+  OntologyFunctionContainerRuntimeItem,
+  OntologyFunctionContainerRuntimePhase,
+} from "./apis/getOntologyFunctionContainerRuntimeListType";
 export type { GetOntologyFunctionDetailData, GetOntologyFunctionDetailParamItem, GetOntologyFunctionDetailParams } from "./apis/getOntologyFunctionDetailType";
 export type { GetOntologyFunctionListData, GetOntologyFunctionListItem, GetOntologyFunctionListParams } from "./apis/getOntologyFunctionListType";
 export type { GetOntologyFunctionVersionsData, GetOntologyFunctionVersionsParams } from "./apis/getOntologyFunctionVersionsType";
@@ -149,6 +155,14 @@ export type {
   ParseOntologyFunctionParamsParams,
 } from "./apis/parseOntologyFunctionParamsType";
 export type {
+  PostOntologyFunctionContainerRuntimeStartData,
+  PostOntologyFunctionContainerRuntimeStartParams,
+} from "./apis/postOntologyFunctionContainerRuntimeStartType";
+export type {
+  PostOntologyFunctionContainerRuntimeStopData,
+  PostOntologyFunctionContainerRuntimeStopParams,
+} from "./apis/postOntologyFunctionContainerRuntimeStopType";
+export type {
   ProbeOntologyFunctionContainerInterfaceItem,
   ProbeOntologyFunctionContainerInterfaceParameter,
   ProbeOntologyFunctionContainerInterfacesData,
@@ -195,6 +209,7 @@ export type {
   CompositeWorkflowInputBinding,
   CompositeWorkflowLogicNodePayload,
   CompositeWorkflowLoopConfig,
+  CompositeWorkflowLoopOutlet,
   CompositeWorkflowNodeKind,
   CompositeWorkflowParamBrief,
   CompositeWorkflowSavePayload,

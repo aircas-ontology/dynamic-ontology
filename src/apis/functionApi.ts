@@ -10,6 +10,8 @@ import type {
   FunctionPublishParams,
   FunctionUnpublishData,
   FunctionUnpublishParams,
+  GetOntologyFunctionContainerRuntimeListData,
+  GetOntologyFunctionContainerRuntimeListParams,
   GetOntologyFunctionDetailData,
   GetOntologyFunctionDetailParams,
   GetOntologyFunctionListData,
@@ -18,6 +20,10 @@ import type {
   GetOntologyFunctionVersionsParams,
   ParseOntologyFunctionParamsData,
   ParseOntologyFunctionParamsParams,
+  PostOntologyFunctionContainerRuntimeStartData,
+  PostOntologyFunctionContainerRuntimeStartParams,
+  PostOntologyFunctionContainerRuntimeStopData,
+  PostOntologyFunctionContainerRuntimeStopParams,
   ProbeOntologyFunctionContainerInterfacesData,
   ProbeOntologyFunctionContainerInterfacesParams,
   TestOntologyFunctionData,
@@ -313,5 +319,62 @@ export function postProbeOntologyFunctionContainerInterfacesInterface(
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/container/probe_interfaces",
     method: "post",
     data: params,
+  });
+}
+
+/**
+ * @description 列出容器运行实例（启停管理页数据源；按空间筛选）。
+ *
+ * 请求方式：GET `/ontology/function/container/runtime/list`（`spaceId` 以 query 传递）。
+ *
+ * @param params 查询参数。
+ * @param params.spaceId 空间 id。
+ * @returns 标准 API 响应；成功时 data 为容器运行实例数组。
+ */
+export function getOntologyFunctionContainerRuntimeListInterface(
+  params: GetOntologyFunctionContainerRuntimeListParams,
+): Promise<ApiResponse<GetOntologyFunctionContainerRuntimeListData>> {
+  return request<GetOntologyFunctionContainerRuntimeListData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/container/runtime/list",
+    method: "get",
+    params,
+  });
+}
+
+/**
+ * @description 启动容器运行实例。
+ *
+ * 请求方式：POST `/ontology/function/container/runtime/start`（`containerKey` 以 query 传递）。
+ *
+ * @param params 启动参数（query）。
+ * @param params.containerKey 容器实例归组键。
+ * @returns 标准 API 响应；成功时 data 为更新后的运行实例。
+ */
+export function postOntologyFunctionContainerRuntimeStartInterface(
+  params: PostOntologyFunctionContainerRuntimeStartParams,
+): Promise<ApiResponse<PostOntologyFunctionContainerRuntimeStartData>> {
+  return request<PostOntologyFunctionContainerRuntimeStartData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/container/runtime/start",
+    method: "post",
+    params,
+  });
+}
+
+/**
+ * @description 停止并移除容器运行实例。
+ *
+ * 请求方式：POST `/ontology/function/container/runtime/stop`（`containerKey` 以 query 传递）。
+ *
+ * @param params 停止参数（query）。
+ * @param params.containerKey 容器实例归组键。
+ * @returns 标准 API 响应；成功时 data 为更新后的运行实例。
+ */
+export function postOntologyFunctionContainerRuntimeStopInterface(
+  params: PostOntologyFunctionContainerRuntimeStopParams,
+): Promise<ApiResponse<PostOntologyFunctionContainerRuntimeStopData>> {
+  return request<PostOntologyFunctionContainerRuntimeStopData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/container/runtime/stop",
+    method: "post",
+    params,
   });
 }

@@ -9,24 +9,22 @@
     @update:model-value="emit('update:modelValue', $event)"
   >
     <el-form v-if="localKind === 'loop'" label-position="top">
-      <el-form-item label="集合来源">
-        <el-radio-group :model-value="loopCollectionMode" @update:model-value="onLoopCollectionModeChange">
-          <el-radio value="manual">手动 JSON 数组</el-radio>
-          <el-radio value="fromUpstream">上游输出</el-radio>
-        </el-radio-group>
-      </el-form-item>
-      <el-form-item v-if="loopCollectionMode === 'manual'" label="JSON 数组">
-        <el-input v-model="loopJsonText" type="textarea" :rows="4" />
-      </el-form-item>
-      <el-form-item v-else label="上游输出名">
-        <el-input v-model="loopUpstreamParamName" placeholder="例如：items" />
-      </el-form-item>
-      <el-form-item label="单项变量名">
-        <el-input v-model="loopItemParamName" placeholder="item" />
+      <el-form-item label="集合（上游输出）">
+        <el-select
+          v-model="loopCollectionPathKey"
+          filterable
+          clearable
+          :disabled="!hasUpstream"
+          :placeholder="hasUpstream ? '选择上游输出' : '无上游节点'"
+          style="width: 100%"
+        >
+          <el-option v-for="item in upstreamOutputOptions" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
       </el-form-item>
       <el-form-item label="最大迭代次数">
         <el-input-number :model-value="loopMaxIterations" :min="1" :max="10000" @update:model-value="onLoopMaxIterationsChange" />
       </el-form-item>
+      <p class="composite-logic-node-drawer__hint">右侧「循环体」出口进入循环体；下侧「结束后」出口在循环完成后继续。</p>
     </el-form>
 
     <el-form v-else-if="localKind === 'branch'" label-position="top">
@@ -94,6 +92,7 @@ import type { CompositeWorkflowBranchOperator, CompositeWorkflowSwitchCaseItem }
 
 import type { CompositeWorkflowLogicNodeEditContext } from "../composables/useCompositeWorkflowCanvas";
 import { compositeWorkflowParamPathKey, listCompositeWorkflowParamNodes, parseCompositeWorkflowParamPathKey } from "../utils/compositeWorkflowGraph.ts";
+import { createDefaultCompositeWorkflowLoopConfig, normalizeCompositeWorkflowLoopConfig } from "../utils/compositeWorkflowLoopDefaults.ts";
 import { createCompositeWorkflowSwitchCaseItem } from "../utils/compositeWorkflowSwitchDefaults.ts";
 
 const props = defineProps<{
@@ -107,10 +106,7 @@ const emit = defineEmits<{
 }>();
 
 const localKind = ref<"loop" | "branch" | "switch">("loop");
-const loopCollectionMode = ref<"manual" | "fromUpstream">("manual");
-const loopJsonText = ref("[]");
-const loopUpstreamParamName = ref("");
-const loopItemParamName = ref("item");
+const loopCollectionPathKey = ref("");
 const loopMaxIterations = ref(100);
 const branchLeftPathKey = ref("");
 const branchOperator = ref<CompositeWorkflowBranchOperator>("eq");
@@ -145,16 +141,6 @@ const upstreamOutputOptions = computed(() => {
     label: `${compositeWorkflowParamPathKey(node.paramPath)}（${node.brief.paramType}）`,
   }));
 });
-
-/**
- * @description 更新循环集合来源模式。
- * @param value 单选值。
- */
-function onLoopCollectionModeChange(value: string | number | boolean | undefined): void {
-  if (value === "manual" || value === "fromUpstream") {
-    loopCollectionMode.value = value;
-  }
-}
 
 /**
  * @description 更新最大迭代次数。
@@ -193,16 +179,10 @@ function hydrateFromContext(): void {
   localKind.value = context.kind;
   hasUpstream.value = context.hasUpstream;
   if (context.kind === "loop") {
-    const config = context.loopConfig;
-    loopItemParamName.value = config?.itemParamName ?? "item";
-    loopMaxIterations.value = config?.maxIterations ?? 100;
-    if (config?.collection.mode === "fromUpstream") {
-      loopCollectionMode.value = "fromUpstream";
-      loopUpstreamParamName.value = config.collection.upstreamParamName;
-    } else {
-      loopCollectionMode.value = "manual";
-      loopJsonText.value = config?.collection.mode === "manual" ? config.collection.jsonText : "[]";
-    }
+    const config = normalizeCompositeWorkflowLoopConfig(context.loopConfig ?? createDefaultCompositeWorkflowLoopConfig());
+    loopMaxIterations.value = config.maxIterations ?? 100;
+    const path = config.collection.upstreamParamPath;
+    loopCollectionPathKey.value = path.length > 0 ? compositeWorkflowParamPathKey(path) : "";
     return;
   }
   if (context.kind === "switch") {
@@ -229,16 +209,22 @@ function emitConfirm(): void {
     return;
   }
   if (localKind.value === "loop") {
+    if (!loopCollectionPathKey.value.trim()) {
+      ElMessage.error("请选择集合（上游输出）");
+      return;
+    }
+    const upstreamParamPath = parseCompositeWorkflowParamPathKey(loopCollectionPathKey.value);
     emit("confirm", {
       nodeId: context.nodeId,
       kind: "loop",
       loopConfig: {
         kind: "loop",
-        collection:
-          loopCollectionMode.value === "fromUpstream"
-            ? { mode: "fromUpstream", upstreamParamName: loopUpstreamParamName.value.trim() }
-            : { mode: "manual", jsonText: loopJsonText.value },
-        itemParamName: loopItemParamName.value.trim() || "item",
+        collection: {
+          mode: "fromUpstream",
+          upstreamParamName: upstreamParamPath[upstreamParamPath.length - 1] ?? "",
+          upstreamParamPath,
+        },
+        itemParamName: "item",
         maxIterations: loopMaxIterations.value,
       },
       hasUpstream: context.hasUpstream,

@@ -114,7 +114,9 @@ test("function operator panel wires workspace composable and basic form", () => 
   const workspaceSource = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
   assert.match(workspaceSource, /operator\.status === ['"]published['"]/);
   assert.match(workspaceSource, /已发布函数不可编辑/);
-  assert.doesNotMatch(panelSource, /运行配置/);
+  assert.match(panelSource, /运行配置/);
+  assert.match(panelSource, /FunctionOperatorContainerRuntimePanel/);
+  assert.match(panelSource, /runtimePanelVisible/);
   assert.match(formSource, /FunctionOperatorBasicFilterBuilder/);
   assert.match(formSource, /本阶段暂未开放/);
   assert.match(formSource, /class="function-operator-form-dialog"/);

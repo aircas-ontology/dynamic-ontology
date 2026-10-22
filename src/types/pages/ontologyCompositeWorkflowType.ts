@@ -11,11 +11,13 @@ export type CompositeWorkflowInputBinding =
   | { mode: "manual"; paramName: string; paramPath: string[]; value: string }
   | { mode: "fromUpstream"; paramName: string; paramPath: string[]; upstreamParamName: string; upstreamParamPath: string[] };
 
-/** 循环节点配置。 */
+/** 循环节点配置（foreach：集合取自上游路径，body/done 双出口）。 */
 export interface CompositeWorkflowLoopConfig {
   kind: "loop";
-  collection: { mode: "fromUpstream"; upstreamParamName: string } | { mode: "manual"; jsonText: string };
+  collection: { mode: "fromUpstream"; upstreamParamName: string; upstreamParamPath: string[] };
   itemParamName: string;
+  /** 可选索引变量名；未配置时不向循环体暴露 index。 */
+  indexParamName?: string;
   maxIterations?: number;
 }
 
@@ -80,6 +82,9 @@ export type CompositeWorkflowLogicNodePayload =
   | { id: string; kind: "transform"; config: CompositeWorkflowTransformConfig }
   | { id: string; kind: "switch"; config: CompositeWorkflowSwitchConfig };
 
+/** 循环出口：循环体或结束后。 */
+export type CompositeWorkflowLoopOutlet = "body" | "done";
+
 /** 保存载荷边。 */
 export interface CompositeWorkflowEdgePayload {
   id: string;
@@ -88,6 +93,8 @@ export interface CompositeWorkflowEdgePayload {
   branch?: "true" | "false";
   /** Switch 出口：case.id 或 "default"。 */
   switchOutlet?: string;
+  /** 循环出口：body / done。 */
+  loopOutlet?: CompositeWorkflowLoopOutlet;
 }
 
 /** 编排工作流保存载荷（P0 console / 未来 API）。 */

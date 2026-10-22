@@ -172,7 +172,7 @@ let spaceFunctionGeneration = 0;
 let disposed = false;
 
 const logicNodeItems: ReadonlyArray<CompositeWorkflowLogicItem> = [
-  { nodeKind: "loop", title: "循环", description: "遍历集合或固定次数执行" },
+  { nodeKind: "loop", title: "循环", description: "对上游集合逐项执行循环体" },
   { nodeKind: "branch", title: "条件分支", description: "按条件走 true / false 分支" },
   { nodeKind: "switch", title: "Switch Case", description: "按上游值匹配多个 case 与 default" },
   { nodeKind: "transform", title: "数据格式转换", description: "用脚本转换节点间数据" },

@@ -7,7 +7,7 @@ export interface CompositeWorkflowLiteFlowElResult {
 }
 
 /**
- * @description 将编排图转为 LiteFlow EL。串行用 THEN，扇出用 WHEN，分支用 IF，Switch 用 SWITCH/CASE/DEFAULT；循环与转换按普通组件顺序输出。
+ * @description 将编排图转为 LiteFlow EL。串行用 THEN，扇出用 WHEN，分支用 IF，Switch 用 SWITCH/CASE/DEFAULT，循环用 FOR.DO；转换按普通组件顺序输出。
  * @param nodes 节点摘要。
  * @param edges 边。
  * @returns EL 表达式与无法完整表达时的警告。
@@ -69,6 +69,8 @@ export function buildCompositeWorkflowLiteFlowEl(
       expression = emitBranch(elId, outs, stopIds, stack);
     } else if (node.kind === "switch") {
       expression = emitSwitch(node, elId, outs, stopIds, stack);
+    } else if (node.kind === "loop") {
+      expression = emitLoop(elId, outs, stopIds, stack);
     } else if (outs.length === 0) {
       expression = elId;
     } else if (outs.length === 1) {
@@ -135,6 +137,41 @@ export function buildCompositeWorkflowLiteFlowEl(
       return switchExpression;
     }
     return combineSerial(switchExpression, emitFrom(joinId, stopIds, stack));
+  }
+
+  /**
+   * @description 生成循环 FOR.DO；body 在 DO 内展开，done 与循环串行，汇合后再续写。
+   * @param elId 循环组件 id。
+   * @param outs 出边。
+   * @param stopIds 上层汇合点。
+   * @param stack 路径栈。
+   * @returns FOR 表达式，若之后还有汇合节点则串成 THEN。
+   */
+  function emitLoop(elId: string, outs: CompositeWorkflowGraphEdge[], stopIds: Set<string>, stack: Set<string>): string {
+    const bodyEdge = outs.find((edge) => edge.loopOutlet === "body");
+    const doneEdge = outs.find((edge) => edge.loopOutlet === "done");
+    if (!bodyEdge) {
+      warnings.push(`循环「${elId}」缺少 body 出口`);
+    }
+    const targets = [bodyEdge?.targetNodeId, doneEdge?.targetNodeId].filter((item): item is string => Boolean(item));
+    const joinId = findClosestCommonDescendant(targets, adjacency);
+    const nextStop = new Set(stopIds);
+    if (joinId) {
+      nextStop.add(joinId);
+    }
+    const bodyExpression = bodyEdge ? emitFrom(bodyEdge.targetNodeId, nextStop, stack) : "";
+    const doneExpression = doneEdge ? emitFrom(doneEdge.targetNodeId, nextStop, stack) : "";
+    let loopExpression = elId;
+    if (bodyExpression) {
+      loopExpression = `FOR(${elId}).DO(${bodyExpression})`;
+    } else if (bodyEdge) {
+      loopExpression = `FOR(${elId}).DO(${bodyEdge.targetNodeId})`;
+    }
+    const head = combineSerial(loopExpression, doneExpression);
+    if (!joinId || stopIds.has(joinId)) {
+      return head;
+    }
+    return combineSerial(head, emitFrom(joinId, stopIds, stack));
   }
 
   /**
