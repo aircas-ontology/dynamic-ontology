@@ -441,8 +441,9 @@ test("docker container operator form shows general and container config with rea
   const dockerSection = formSource.slice(dockerSectionStart, dockerSectionEnd === -1 ? undefined : dockerSectionEnd);
   assert.match(dockerSection, /label="函数名称"[\s\S]*label="版本"[\s\S]*label="API名称"/);
   assert.match(dockerSection, /label="版本"[\s\S]*:model-value="form\.version"[\s\S]*disabled/);
-  assert.match(dockerSection, /label="调用协议"/);
+  assert.match(dockerSection, /label="调用协议"[\s\S]*:disabled="Boolean\(operator\)"/);
   assert.match(dockerSection, /label="函数说明"/);
+  assert.match(dockerSection, /v-if="!operator"[\s\S]*容器算子函数配置/);
   assert.doesNotMatch(dockerSection, /基于已有函数/);
   assert.doesNotMatch(dockerSection, /label="源版本"/);
   assert.match(formSource, /form\.type !== ['"]basic['"] && form\.type !== ['"]api['"] && form\.type !== ['"]docker['"]/);

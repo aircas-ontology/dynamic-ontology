@@ -175,17 +175,21 @@ const treeNodes = computed<ConceptTreeNode[]>(() => {
   return keywordValue ? filterMixedTree(raw, keywordValue) : raw;
 });
 
-/** 分类节点默认展开；对象节点不需要展开。 */
+/** 仅展开存在子分类的分类节点；分类下只有对象内容时保持收起。 */
 const defaultExpandedKeys = computed<string[]>(() => collectCategoryIds(treeNodes.value));
 
-/** @description 递归收集所有分类节点的 id，供 el-tree 默认展开使用。 */
+/**
+ * @description 递归收集存在子分类的分类节点 id，供 el-tree 默认展开使用。
+ * @param nodes 混合树节点。
+ * @returns 需要默认展开的分类 id 列表。
+ */
 function collectCategoryIds(nodes: ConceptTreeNode[]): string[] {
   const ids: string[] = [];
   for (const node of nodes) {
-    if (node.kind === "category") {
-      ids.push(node.id);
-      ids.push(...collectCategoryIds(node.children));
-    }
+    if (node.kind !== "category") continue;
+    const hasChildCategory = node.children.some((child) => child.kind === "category");
+    if (hasChildCategory) ids.push(node.id);
+    ids.push(...collectCategoryIds(node.children));
   }
   return ids;
 }

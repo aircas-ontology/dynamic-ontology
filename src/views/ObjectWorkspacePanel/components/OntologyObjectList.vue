@@ -135,7 +135,6 @@
               >
             </el-table-column>
             <el-table-column prop="parentDisplayName" label="父对象" min-width="120" />
-            <el-table-column prop="createdAt" label="创建时间" width="170" />
             <el-table-column label="属性" width="80"
               ><template #default="{ row }">{{ objectRow(row).metrics.attribute }}</template></el-table-column
             >
@@ -145,6 +144,7 @@
             <el-table-column label="行为" width="80"
               ><template #default="{ row }">{{ objectRow(row).metrics.behavior }}</template></el-table-column
             >
+            <el-table-column prop="createdAt" label="创建时间" width="170" />
             <el-table-column label="操作" width="300" fixed="right">
               <template #default="{ row }">
                 <el-button class="ontology-object-action ontology-object-action--view" size="small" @click="emit('action', 'view', objectRow(row))"

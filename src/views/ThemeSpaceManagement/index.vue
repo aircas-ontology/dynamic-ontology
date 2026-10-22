@@ -87,6 +87,18 @@
           ></el-table-column
         >
         <el-table-column prop="description" label="描述" min-width="220" show-overflow-tooltip />
+        <el-table-column label="对象" width="90" align="center"
+          ><template #default="{ row }">{{ row.metrics.ontology }}</template></el-table-column
+        >
+        <el-table-column label="行为" width="90" align="center"
+          ><template #default="{ row }">{{ row.metrics.behavior }}</template></el-table-column
+        >
+        <el-table-column label="关系" width="90" align="center"
+          ><template #default="{ row }">{{ row.metrics.relation }}</template></el-table-column
+        >
+        <el-table-column label="规则" width="90" align="center"
+          ><template #default="{ row }">{{ row.metrics.rule }}</template></el-table-column
+        >
         <el-table-column prop="createdTime" label="创建时间" width="180" />
         <el-table-column prop="updatedTime" label="更新时间" width="180" />
         <el-table-column label="操作" width="230" fixed="right"

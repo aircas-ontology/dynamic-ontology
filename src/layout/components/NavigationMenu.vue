@@ -30,15 +30,25 @@
         <template #title>应用管理</template>
       </el-menu-item>
     </el-menu>
-    <AiAssistantDrawer />
+    <button
+      class="ai-assistant-launcher"
+      type="button"
+      :aria-label="assistantVisible ? '关闭 AI 助手' : '打开 AI 助手'"
+      :aria-expanded="assistantVisible"
+      @click="assistantVisible = !assistantVisible"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 6.5h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" />
+      </svg>
+    </button>
   </aside>
 </template>
 
 <script setup lang="ts">
 import { useRoute } from "vue-router";
 import { Box, Collection, Document, Expand, Fold, Search } from "@element-plus/icons-vue";
-import AiAssistantDrawer from "@/layout/components/AiAssistantDrawer.vue";
 const collapsed = defineModel<boolean>("collapsed", { default: true });
+const assistantVisible = defineModel<boolean>("assistantVisible", { default: false });
 const route = useRoute();
 </script>
 
@@ -91,5 +101,38 @@ const route = useRoute();
 }
 :deep(.el-menu-item:focus-visible) {
   outline-offset: -2px;
+}
+.ai-assistant-launcher {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  z-index: 20;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  transform: translateX(-50%);
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+  color: var(--aircas-color-text-primary);
+  background: color-mix(in srgb, var(--aircas-color-primary) 60%, transparent);
+  box-shadow: 0 8px 20px var(--aircas-color-border-light);
+  cursor: pointer;
+}
+.ai-assistant-launcher svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.ai-assistant-launcher:hover,
+.ai-assistant-launcher:focus-visible {
+  border-color: var(--aircas-color-primary);
+  color: var(--aircas-color-primary);
+  outline: none;
 }
 </style>

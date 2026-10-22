@@ -310,7 +310,7 @@
           <el-input v-model="form.functionApi" maxlength="64" placeholder="例如：TargetDetectFn" :disabled="Boolean(operator)" />
         </el-form-item>
         <el-form-item label="调用协议" prop="protocol">
-          <el-select v-model="form.protocol" placeholder="请选择调用协议">
+          <el-select v-model="form.protocol" placeholder="请选择调用协议" :disabled="Boolean(operator)">
             <el-option v-for="item in PROTOCOL_OPTIONS" :key="item" :label="item" :value="item" />
           </el-select>
         </el-form-item>
@@ -318,91 +318,95 @@
           <el-input v-model="form.description" type="textarea" :rows="3" maxlength="240" show-word-limit />
         </el-form-item>
 
-        <div class="function-operator-form__section-title">容器算子函数配置</div>
-        <el-form-item label="上传镜像">
-          <div class="function-operator-form__upload-row">
-            <el-upload
-              :auto-upload="false"
-              :show-file-list="false"
-              :disabled="dockerImageUploading"
-              accept=".tar,.tar.gz,.tgz"
-              :on-change="onDockerImageFileChange"
-            >
-              <el-button type="primary" plain native-type="button" :loading="dockerImageUploading" :disabled="dockerImageUploading">上传镜像</el-button>
-            </el-upload>
-            <span class="function-operator-form__upload-hint">支持 .tar / .tar.gz / .tgz</span>
-            <span v-if="dockerImageFileName" class="function-operator-form__upload-name">{{ dockerImageFileName }}</span>
-            <el-button v-if="dockerImageFileName" link type="primary" native-type="button" @click="clearDockerImageFile">清除</el-button>
+        <template v-if="!operator">
+          <div class="function-operator-form__section-title">容器算子函数配置</div>
+          <el-form-item label="上传镜像">
+            <div class="function-operator-form__upload-row">
+              <el-upload
+                :auto-upload="false"
+                :show-file-list="false"
+                :disabled="dockerImageUploading"
+                accept=".tar,.tar.gz,.tgz"
+                :on-change="onDockerImageFileChange"
+              >
+                <el-button type="primary" plain native-type="button" :loading="dockerImageUploading" :disabled="dockerImageUploading">上传镜像</el-button>
+              </el-upload>
+              <span class="function-operator-form__upload-hint">支持 .tar / .tar.gz / .tgz</span>
+              <span v-if="dockerImageFileName" class="function-operator-form__upload-name">{{ dockerImageFileName }}</span>
+              <el-button v-if="dockerImageFileName" link type="primary" native-type="button" @click="clearDockerImageFile">清除</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="上传接口文档">
+            <div class="function-operator-form__upload-row">
+              <el-upload
+                :auto-upload="false"
+                :show-file-list="false"
+                :disabled="dockerApiDocUploading"
+                accept=".json,.yaml,.yml"
+                :on-change="onDockerApiDocFileChange"
+              >
+                <el-button type="primary" plain native-type="button" :loading="dockerApiDocUploading" :disabled="dockerApiDocUploading">
+                  上传接口文档
+                </el-button>
+              </el-upload>
+              <span class="function-operator-form__upload-hint">支持 OpenAPI / Swagger (.json / .yaml / .yml)</span>
+              <span v-if="dockerApiDocFileName" class="function-operator-form__upload-name">{{ dockerApiDocFileName }}</span>
+              <el-button v-if="dockerApiDocFileName" link type="primary" native-type="button" @click="clearDockerApiDocFile">清除</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="启动命令">
+            <el-input v-model="dockerStartupCommand" maxlength="500" placeholder="python /app/main.py" />
+          </el-form-item>
+          <div class="function-operator-form__param-head">
+            <div class="function-operator-form__section-title">已发现接口</div>
+            <span class="function-operator-form__upload-hint">请选择本算子绑定的接口</span>
           </div>
-        </el-form-item>
-        <el-form-item label="上传接口文档">
-          <div class="function-operator-form__upload-row">
-            <el-upload
-              :auto-upload="false"
-              :show-file-list="false"
-              :disabled="dockerApiDocUploading"
-              accept=".json,.yaml,.yml"
-              :on-change="onDockerApiDocFileChange"
-            >
-              <el-button type="primary" plain native-type="button" :loading="dockerApiDocUploading" :disabled="dockerApiDocUploading"> 上传接口文档 </el-button>
-            </el-upload>
-            <span class="function-operator-form__upload-hint">支持 OpenAPI / Swagger (.json / .yaml / .yml)</span>
-            <span v-if="dockerApiDocFileName" class="function-operator-form__upload-name">{{ dockerApiDocFileName }}</span>
-            <el-button v-if="dockerApiDocFileName" link type="primary" native-type="button" @click="clearDockerApiDocFile">清除</el-button>
-          </div>
-        </el-form-item>
-        <el-form-item label="启动命令">
-          <el-input v-model="dockerStartupCommand" maxlength="500" placeholder="python /app/main.py" />
-        </el-form-item>
-        <div class="function-operator-form__param-head">
-          <div class="function-operator-form__section-title">已发现接口</div>
-          <span class="function-operator-form__upload-hint">请选择本算子绑定的接口</span>
-        </div>
-        <el-table
-          v-if="dockerDiscoveredInterfaces.length > 0"
-          class="function-operator-form__param-table"
-          :data="dockerDiscoveredInterfaces"
-          :row-key="resolveDockerDiscoveredInterfaceRowKey"
-          empty-text="暂无已发现接口"
-          @selection-change="onDockerDiscoveredInterfacesSelectionChange"
-        >
-          <el-table-column type="selection" width="48" />
-          <el-table-column type="expand">
-            <template #default="{ row }">
-              <div class="function-operator-form__probe-expand">
-                <div class="function-operator-form__section-subtitle">入参</div>
-                <el-table class="function-operator-form__param-table" :data="row.inputParameters" empty-text="暂无入参">
-                  <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
-                  <el-table-column prop="in" label="in" width="88" />
-                  <el-table-column label="required" width="88">
-                    <template #default="{ row: paramRow }">
-                      {{ paramRow.required ? "是" : "否" }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="type" label="type" width="100" />
-                  <el-table-column prop="description" label="description" min-width="160" show-overflow-tooltip />
-                </el-table>
-                <div class="function-operator-form__section-subtitle">出参</div>
-                <el-table class="function-operator-form__param-table" :data="row.outputParameters" empty-text="暂无出参">
-                  <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
-                  <el-table-column prop="in" label="in" width="88" />
-                  <el-table-column label="required" width="88">
-                    <template #default="{ row: paramRow }">
-                      {{ paramRow.required ? "是" : "否" }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="type" label="type" width="100" />
-                  <el-table-column prop="description" label="description" min-width="160" show-overflow-tooltip />
-                </el-table>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column prop="name" label="接口名称" min-width="140" show-overflow-tooltip />
-          <el-table-column prop="method" label="请求方式" width="100" />
-          <el-table-column prop="path" label="路径" min-width="140" show-overflow-tooltip />
-          <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
-        </el-table>
-        <el-empty v-else description="上传接口文档并探测后展示" />
+          <el-table
+            v-if="dockerDiscoveredInterfaces.length > 0"
+            class="function-operator-form__param-table"
+            :data="dockerDiscoveredInterfaces"
+            :row-key="resolveDockerDiscoveredInterfaceRowKey"
+            empty-text="暂无已发现接口"
+            @selection-change="onDockerDiscoveredInterfacesSelectionChange"
+          >
+            <el-table-column type="selection" width="48" />
+            <el-table-column type="expand">
+              <template #default="{ row }">
+                <div class="function-operator-form__probe-expand">
+                  <div class="function-operator-form__section-subtitle">入参</div>
+                  <el-table class="function-operator-form__param-table" :data="row.inputParameters" empty-text="暂无入参">
+                    <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
+                    <el-table-column prop="in" label="in" width="88" />
+                    <el-table-column label="required" width="88">
+                      <template #default="{ row: paramRow }">
+                        {{ paramRow.required ? "是" : "否" }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="type" label="type" width="100" />
+                    <el-table-column prop="description" label="description" min-width="160" show-overflow-tooltip />
+                  </el-table>
+                  <div class="function-operator-form__section-subtitle">出参</div>
+                  <el-table class="function-operator-form__param-table" :data="row.outputParameters" empty-text="暂无出参">
+                    <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
+                    <el-table-column prop="in" label="in" width="88" />
+                    <el-table-column label="required" width="88">
+                      <template #default="{ row: paramRow }">
+                        {{ paramRow.required ? "是" : "否" }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="type" label="type" width="100" />
+                    <el-table-column prop="description" label="description" min-width="160" show-overflow-tooltip />
+                  </el-table>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="name" label="接口名称" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="method" label="请求方式" width="100" />
+            <el-table-column prop="path" label="路径" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
+          </el-table>
+          <el-empty v-else description="上传接口文档并探测后展示" />
+        </template>
       </section>
 
       <section v-else class="function-operator-form__section function-operator-form__section--empty">

@@ -2,8 +2,7 @@
   <aside class="ontology-object-attribute-panel__categories" aria-label="属性分类树">
     <header class="ontology-object-attribute-panel__section-header">
       <div>
-        <h1>属性分类树 <small>/ Property Category</small></h1>
-        <p>按分类浏览当前对象的属性</p>
+        <h1>属性分类树</h1>
       </div>
     </header>
     <el-input
