@@ -455,6 +455,9 @@
     :function-api="form.functionApi"
     :display-name="form.name"
     :version="form.version"
+    :description="form.description"
+    :saving="loading"
+    @save="emitSaveComposite"
   />
 </template>
 
@@ -487,7 +490,12 @@ import {
   type UploadOntologyFunctionContainerDocData,
   type UploadOntologyFunctionContainerImageData,
 } from "@/types";
-import { createEmptyBasicFilterDocument, stringifyBasicFilterConfig } from "@/utils/functionOperatorBasicFilter";
+import {
+  createEmptyBasicFilterDocument,
+  parseBasicFilterConfig,
+  stringifyBasicFilterConfig,
+  validateBasicFilterDocument,
+} from "@/utils/functionOperatorBasicFilter";
 import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToApi";
 import { mapOntologyExternalApiConfigToForm, mapOntologyFunctionDetailToDraft, type OntologyExternalApiFormField } from "@/utils/mapOntologyFunctionDetail";
 
@@ -587,6 +595,7 @@ const emit = defineEmits<{
   "save-script": [params: CreateOntologyFunctionParams];
   "save-external": [params: CreateOntologyFunctionParams];
   "save-container": [params: CreateOntologyFunctionContainerParams];
+  "save-composite": [params: CreateOntologyFunctionParams];
 }>();
 
 /**
@@ -595,6 +604,14 @@ const emit = defineEmits<{
  */
 function emitSaveScript(params: CreateOntologyFunctionParams): void {
   emit("save-script", params);
+}
+
+/**
+ * @description 将编排画布组装的创建请求转发给工作区保存。
+ * @param params COMPOSITE 创建参数。
+ */
+function emitSaveComposite(params: CreateOntologyFunctionParams): void {
+  emit("save-composite", params);
 }
 
 const formRef = ref<FormInstance>();
@@ -1446,6 +1463,12 @@ async function submitDraft(): Promise<void> {
   }
   if (!form.definition.parameterConfig.trim()) {
     ElMessage.warning("请配置参数");
+    return;
+  }
+  const filterDoc = parseBasicFilterConfig(form.definition.parameterConfig);
+  const filterError = validateBasicFilterDocument(filterDoc);
+  if (filterError) {
+    ElMessage.warning(filterError);
     return;
   }
   const aggFunc = form.definition.aggFunc || "";

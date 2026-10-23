@@ -12,8 +12,8 @@ import type {
   CompositeWorkflowParamBrief,
   CompositeWorkflowSwitchConfig,
   CompositeWorkflowTransformConfig,
+  CreateOntologyFunctionParams,
 } from "@/types";
-import { buildCompositeWorkflowLiteFlowEl } from "../utils/compositeWorkflowLiteFlowEl.ts";
 import {
   buildCompositeWorkflowSavePayload,
   buildDefaultCompositeWorkflowInputBindings,
@@ -77,7 +77,13 @@ export interface CompositeWorkflowTransformNodeEditContext {
  * @param options 画布选项。
  * @returns 画布操作与配置弹框状态。
  */
-export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; functionApi: Ref<string>; version: Ref<string>; spaceId: Ref<number> }) {
+export function useCompositeWorkflowCanvas(options: {
+  displayName: Ref<string>;
+  functionApi: Ref<string>;
+  version: Ref<string>;
+  description: Ref<string>;
+  spaceId: Ref<number>;
+}) {
   const canvasHostRef = ref<HTMLElement | null>(null);
   const lfRef: ShallowRef<LogicFlow | null> = shallowRef(null);
   const zoomPercent = ref(100);
@@ -860,40 +866,58 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
   }
 
   /**
-   * @description 校验并 console.log 保存载荷。
+   * @description 校验画布并组装 COMPOSITE 创建请求体；校验失败返回 null。
+   * @returns 创建请求参数；画布未就绪或校验失败时为 null。
    */
-  function saveCompositeWorkflowToConsole(): void {
+  function buildCompositeWorkflowCreateParams(): CreateOntologyFunctionParams | null {
     const lf = lfRef.value;
     if (!lf) {
       ElMessage.error("画布未初始化");
-      return;
+      return null;
     }
     const nodes = readGraphNodes();
     const edges = readGraphEdges();
     const { error, warning } = validateCompositeWorkflowForSave(nodes, edges);
     if (error) {
       ElMessage.error(error);
-      return;
+      return null;
     }
     if (warning) {
       ElMessage.warning(warning);
     }
-    const payload = buildCompositeWorkflowSavePayload({
-      displayName: options.displayName.value,
-      functionApi: options.functionApi.value,
-      version: options.version.value,
+    const functionApi = options.functionApi.value.trim();
+    const version = options.version.value.trim();
+    const displayName = options.displayName.value.trim();
+    if (!functionApi) {
+      ElMessage.error("缺少函数 API 名称，无法保存");
+      return null;
+    }
+    if (!version) {
+      ElMessage.error("缺少函数版本，无法保存");
+      return null;
+    }
+    if (!displayName) {
+      ElMessage.error("缺少函数名称，无法保存");
+      return null;
+    }
+    const compositeConfig = buildCompositeWorkflowSavePayload({
+      displayName,
+      functionApi,
+      version,
       ontologySpaceId: options.spaceId.value,
       logicFlowGraph: lf.getGraphRawData(),
       nodes,
       edges,
     });
-    const liteFlow = buildCompositeWorkflowLiteFlowEl(nodes, edges);
-    console.log("[composite-workflow]", payload);
-    console.log("[composite-workflow][liteflow-el]", liteFlow.expression);
-    if (liteFlow.warnings.length > 0) {
-      console.warn("[composite-workflow][liteflow-el]", liteFlow.warnings);
-    }
-    ElMessage.success("已在控制台打印流程数据与 LiteFlow EL");
+    return {
+      functionApi,
+      version,
+      displayName,
+      description: options.description.value.trim(),
+      type: "COMPOSITE",
+      ontologySpaceId: options.spaceId.value,
+      compositeConfig,
+    };
   }
 
   /**
@@ -926,7 +950,7 @@ export function useCompositeWorkflowCanvas(options: { displayName: Ref<string>; 
     fitCompositeWorkflowCanvas,
     zoomCompositeWorkflowCanvas,
     autoLayoutCompositeWorkflowCanvas,
-    saveCompositeWorkflowToConsole,
+    buildCompositeWorkflowCreateParams,
     applyFunctionNodeEdit,
     applyLogicNodeEdit,
     applyTransformNodeEdit,

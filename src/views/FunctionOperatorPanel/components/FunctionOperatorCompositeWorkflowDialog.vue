@@ -16,7 +16,7 @@
         <div class="function-operator-composite-workflow__actions">
           <el-button @click="goBackPreviousStep">返回上一步</el-button>
           <el-button @click="notifyFeatureUnavailable('测试')">测试</el-button>
-          <el-button type="primary" @click="saveCompositeWorkflowToConsole">保存</el-button>
+          <el-button type="primary" :loading="saving" :disabled="saving" @click="saveCompositeWorkflow">保存</el-button>
         </div>
       </div>
     </template>
@@ -119,7 +119,7 @@ import { ElMessage } from "element-plus";
 import "@logicflow/core/dist/index.css";
 
 import { getOntologyFunctionListInterface } from "@/apis";
-import { FUNCTION_OPERATOR_TYPE_LABELS, type CompositeWorkflowDndPayload, type GetOntologyFunctionListItem } from "@/types";
+import { FUNCTION_OPERATOR_TYPE_LABELS, type CompositeWorkflowDndPayload, type CreateOntologyFunctionParams, type GetOntologyFunctionListItem } from "@/types";
 import { mapFunctionOperatorTypeFromApi } from "@/utils/mapFunctionOperatorTypeToApi";
 
 import { useCompositeWorkflowCanvas } from "../composables/useCompositeWorkflowCanvas";
@@ -153,10 +153,15 @@ const props = defineProps<{
   displayName: string;
   /** 版本号。 */
   version: string;
+  /** 函数说明。 */
+  description: string;
+  /** 外层保存请求进行中。 */
+  saving?: boolean;
 }>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
+  save: [params: CreateOntologyFunctionParams];
 }>();
 
 const functionSearchKeyword = ref("");
@@ -193,7 +198,7 @@ const {
   fitCompositeWorkflowCanvas,
   zoomCompositeWorkflowCanvas,
   autoLayoutCompositeWorkflowCanvas,
-  saveCompositeWorkflowToConsole,
+  buildCompositeWorkflowCreateParams,
   applyFunctionNodeEdit,
   applyLogicNodeEdit,
   applyTransformNodeEdit,
@@ -202,8 +207,23 @@ const {
   displayName: toRef(props, "displayName"),
   functionApi: toRef(props, "functionApi"),
   version: toRef(props, "version"),
+  description: toRef(props, "description"),
   spaceId: toRef(props, "spaceId"),
 });
+
+/**
+ * @description 校验并组装创建请求后交给外层保存。
+ */
+function saveCompositeWorkflow(): void {
+  if (props.saving) {
+    return;
+  }
+  const params = buildCompositeWorkflowCreateParams();
+  if (!params) {
+    return;
+  }
+  emit("save", params);
+}
 
 const subtitleText = computed(() => {
   const name = props.displayName.trim() || "-";

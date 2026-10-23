@@ -22,8 +22,9 @@ test("create ontology function types expose the documented request fields", () =
   assert.match(source, /version: string/);
   assert.match(source, /displayName: string/);
   assert.match(source, /description: string/);
-  assert.match(source, /type CreateOntologyFunctionType = "BASIC_QUERY" \| "CUSTOMIZE" \| "EXTERNAL"/);
+  assert.match(source, /type CreateOntologyFunctionType = "BASIC_QUERY" \| "CUSTOMIZE" \| "EXTERNAL" \| "COMPOSITE"/);
   assert.match(source, /apiConfig\?: CreateOntologyFunctionApiConfig/);
+  assert.match(source, /compositeConfig\?: CompositeWorkflowSavePayload/);
   assert.match(source, /apiKeyHeader\?: string/);
   assert.match(source, /apiKey\?: string/);
   assert.match(source, /type: CreateOntologyFunctionType/);
@@ -36,7 +37,7 @@ test("create ontology function types expose the documented request fields", () =
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
   assert.match(source, /aggFunc\?: CreateOntologyFunctionAggFunc/);
   assert.match(source, /targetProperty\?: string/);
-  assert.match(source, /filters: CreateOntologyFunctionFilters/);
+  assert.match(source, /filters\?: CreateOntologyFunctionFilters/);
   assert.match(source, /dataType: CreateOntologyFunctionFilterDataType/);
   assert.match(source, /export type CreateOntologyFunctionData = null/);
 });
@@ -84,12 +85,12 @@ test("buildOntologyFunctionQueryConfig maps filters dataType and omits empty agg
   const withoutAgg = buildOntologyFunctionQueryConfig(doc, "");
   assert.equal("aggFunc" in withoutAgg, false);
   assert.equal("targetProperty" in withoutAgg, false);
-  assert.equal(withoutAgg.filters.logic, "AND");
-  assert.equal(withoutAgg.filters.children[0]?.filter?.dataType, "STRING");
-  assert.equal(withoutAgg.filters.children[1]?.filter?.dataType, "NUMBER");
-  assert.equal(withoutAgg.filters.children[2]?.filter?.dataType, "BOOLEAN");
-  assert.equal(withoutAgg.filters.children[0]?.filter?.value, "1");
-  assert.equal(withoutAgg.filters.children[1]?.filter?.value, 100);
+  assert.equal(withoutAgg.filters?.logic, "AND");
+  assert.equal(withoutAgg.filters?.children[0]?.filter?.dataType, "STRING");
+  assert.equal(withoutAgg.filters?.children[1]?.filter?.dataType, "NUMBER");
+  assert.equal(withoutAgg.filters?.children[2]?.filter?.dataType, "BOOLEAN");
+  assert.equal(withoutAgg.filters?.children[0]?.filter?.value, "1");
+  assert.equal(withoutAgg.filters?.children[1]?.filter?.value, 100);
 
   const withAgg = buildOntologyFunctionQueryConfig(doc, "SUM");
   assert.equal(withAgg.aggFunc, "SUM");
@@ -101,6 +102,14 @@ test("buildOntologyFunctionQueryConfig maps filters dataType and omits empty agg
 
   const blankTarget = buildOntologyFunctionQueryConfig(doc, "SUM", "  ");
   assert.equal("targetProperty" in blankTarget, false);
+
+  const emptyFilters = buildOntologyFunctionQueryConfig({ logic: "AND", children: [] }, "");
+  assert.equal("filters" in emptyFilters, false);
+  assert.equal("aggFunc" in emptyFilters, false);
+
+  const emptyFiltersWithAgg = buildOntologyFunctionQueryConfig({ logic: "AND", children: [] }, "COUNT");
+  assert.equal("filters" in emptyFiltersWithAgg, false);
+  assert.equal(emptyFiltersWithAgg.aggFunc, "COUNT");
 });
 
 test("function operator create form exposes aggFunc targetProperty and workspace posts create api", () => {
@@ -127,4 +136,6 @@ test("function operator create form exposes aggFunc targetProperty and workspace
   assert.match(saveBlock, /draft\.version\.trim\(\)/);
   assert.match(saveBlock, /缺少函数版本/);
   assert.match(saveBlock, /createOntologyFunctionInterface\(payload\)/);
+  assert.match(saveBlock, /queryConfig,/);
+  assert.doesNotMatch(saveBlock, /queryConfig\.filters \|\| queryConfig\.aggFunc/);
 });

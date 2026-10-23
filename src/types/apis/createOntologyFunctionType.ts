@@ -1,3 +1,5 @@
+import type { CompositeWorkflowSavePayload } from "../pages/ontologyCompositeWorkflowType";
+
 /** 基础查询算子聚合类型。 */
 export type CreateOntologyFunctionAggFunc = "SUM" | "COUNT" | "AVG" | "MAX" | "MIN" | "DISTINCT";
 
@@ -28,14 +30,15 @@ export interface CreateOntologyFunctionFilters {
 
 /** 基础查询算子 queryConfig。 */
 export interface CreateOntologyFunctionQueryConfig {
-  filters: CreateOntologyFunctionFilters;
+  /** 过滤条件；无条件时不传。 */
+  filters?: CreateOntologyFunctionFilters;
   aggFunc?: CreateOntologyFunctionAggFunc;
   /** 目标占位符名；未传时后端可自动生成为 target。 */
   targetProperty?: string;
 }
 
 /** 创建函数算子类型。 */
-export type CreateOntologyFunctionType = "BASIC_QUERY" | "CUSTOMIZE" | "EXTERNAL";
+export type CreateOntologyFunctionType = "BASIC_QUERY" | "CUSTOMIZE" | "EXTERNAL" | "COMPOSITE";
 
 /** 外部 API 参数树节点（可嵌套 fields）。 */
 export interface CreateOntologyFunctionApiField {
@@ -111,6 +114,8 @@ export interface CreateOntologyFunctionParams {
   queryConfig?: CreateOntologyFunctionQueryConfig;
   /** 外部 API 配置（仅 EXTERNAL 有效）。 */
   apiConfig?: CreateOntologyFunctionApiConfig;
+  /** 函数编排配置（仅 COMPOSITE 有效）。 */
+  compositeConfig?: CompositeWorkflowSavePayload;
 }
 
 /** 创建函数算子响应 data（契约样例无业务载荷）。 */

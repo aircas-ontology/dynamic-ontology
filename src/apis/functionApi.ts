@@ -47,10 +47,11 @@ import { request } from "@/utils/request";
  * @param params.version 版本号，格式 x.y.z。
  * @param params.displayName 函数显示名称。
  * @param params.description 函数说明。
- * @param params.type 函数模型：BASIC_QUERY、CUSTOMIZE 或 EXTERNAL。
+ * @param params.type 函数模型：BASIC_QUERY、CUSTOMIZE、EXTERNAL 或 COMPOSITE。
  * @param params.ontologySpaceId 所属对象空间 id。
  * @param params.queryConfig 可选的基础查询配置（filters / aggFunc）。
  * @param params.apiConfig 可选的外部 API 配置（endpoint / method / authType / apiKeyHeader / apiKey / inputs / outputs）。
+ * @param params.compositeConfig 可选的函数编排配置（仅 COMPOSITE）。
  * @returns 标准 API 响应；成功时 data 为 null。
  */
 export function createOntologyFunctionInterface(params: CreateOntologyFunctionParams): Promise<ApiResponse<CreateOntologyFunctionData>> {

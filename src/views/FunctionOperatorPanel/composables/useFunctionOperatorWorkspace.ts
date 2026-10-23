@@ -609,6 +609,36 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
+   * @description 新建函数编排（COMPOSITE）：调用创建接口，成功后关闭表单并刷新列表。
+   * @param params COMPOSITE 创建请求参数。
+   */
+  async function saveCompositeOperator(params: CreateOntologyFunctionParams): Promise<void> {
+    if (actionLoading.value) {
+      return;
+    }
+    if (params.type !== "COMPOSITE") {
+      ElMessage.warning("仅支持保存函数编排");
+      return;
+    }
+    actionLoading.value = true;
+    try {
+      const response = await createOntologyFunctionInterface(params);
+      if (response.code !== 200) {
+        throw new Error(response.message || "函数编排创建失败");
+      }
+      ElMessage.success("函数编排草稿已保存");
+      formVisible.value = false;
+      formDraft.value = null;
+      editingOperator.value = null;
+      await loadOperators();
+    } catch (error) {
+      ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数编排保存失败");
+    } finally {
+      actionLoading.value = false;
+    }
+  }
+
+  /**
    * @description 保存新建或编辑草稿；无 editingOperator 走创建 POST，有则走修改 PUT。
    * @param draft 表单草稿。
    */
@@ -629,12 +659,12 @@ export function useFunctionOperatorWorkspace() {
         ElMessage.error("缺少函数版本，无法保存");
         return;
       }
-      const payload = {
+      const payload: CreateOntologyFunctionParams = {
         functionApi: draft.functionApi.trim(),
         version: version,
         displayName: draft.name.trim(),
         description: draft.description.trim(),
-        type: "BASIC_QUERY" as const,
+        type: "BASIC_QUERY",
         ontologySpaceId: draft.spaceId,
         queryConfig,
       };
@@ -1206,6 +1236,7 @@ export function useFunctionOperatorWorkspace() {
     saveScriptOperator,
     saveExternalApiOperator,
     saveContainerOperator,
+    saveCompositeOperator,
     openDeleteOperator,
     confirmDeleteOperator,
     togglePublish,

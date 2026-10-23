@@ -164,6 +164,7 @@
       @save-script="saveScriptOperator"
       @save-external="saveExternalApiOperator"
       @save-container="saveContainerOperator"
+      @save-composite="saveCompositeOperator"
     />
     <FunctionOperatorDeleteDialog
       v-model="deleteVisible"
@@ -318,6 +319,7 @@ const {
   saveScriptOperator,
   saveExternalApiOperator,
   saveContainerOperator,
+  saveCompositeOperator,
   openDeleteOperator,
   confirmDeleteOperator,
   togglePublish,
