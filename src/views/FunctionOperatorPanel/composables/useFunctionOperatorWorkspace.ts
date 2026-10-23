@@ -807,18 +807,20 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 判断算子是否应按脚本函数测试弹框处理。脚本函数、外部 API 与容器算子共用该弹框。
+   * @description 判断算子是否应按脚本函数测试弹框处理。脚本函数、外部 API、容器算子与函数编排共用该弹框。
    * @param operator 目标算子。
-   * @returns 为脚本函数、外部 API 或容器算子时返回 true。
+   * @returns 为脚本函数、外部 API、容器算子或函数编排时返回 true。
    */
   function isScriptFunctionOperator(operator: FunctionOperator): boolean {
     return (
       operator.type === "code" ||
       operator.type === "api" ||
       operator.type === "docker" ||
+      operator.type === "composite" ||
       operator.apiModelType === "CUSTOMIZE" ||
       operator.apiModelType === "EXTERNAL" ||
-      operator.apiModelType === "CONTAINER"
+      operator.apiModelType === "CONTAINER" ||
+      operator.apiModelType === "COMPOSITE"
     );
   }
 
@@ -906,7 +908,7 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 打开测试对话框：脚本函数、外部 API 与容器算子走独立弹框，基础函数拉详情生成绑定键并加载对象列表。
+   * @description 打开测试对话框：脚本函数、外部 API、容器算子与函数编排走独立弹框，基础函数拉详情生成绑定键并加载对象列表。
    * @param operator 目标算子。
    */
   async function openTest(operator: FunctionOperator): Promise<void> {

@@ -155,6 +155,10 @@ export type {
   ParseOntologyFunctionParamsParams,
 } from "./apis/parseOntologyFunctionParamsType";
 export type {
+  PostOntologyFunctionContainerRuntimeRestartData,
+  PostOntologyFunctionContainerRuntimeRestartParams,
+} from "./apis/postOntologyFunctionContainerRuntimeRestartType";
+export type {
   PostOntologyFunctionContainerRuntimeStartData,
   PostOntologyFunctionContainerRuntimeStartParams,
 } from "./apis/postOntologyFunctionContainerRuntimeStartType";

@@ -80,7 +80,8 @@ test("buildCreateOntologyFunctionContainerParams maps form fields to create body
   assert.match(utilSource, /type:\s*["']CONTAINER["']/);
   assert.match(utilSource, /containerConfig:\s*\{/);
   assert.match(utilSource, /runCommand:\s*input\.runCommand\.trim\(\)/);
-  assert.match(utilSource, /selectedInterfaces:\s*input\.selectedInterfaces/);
+  assert.match(utilSource, /selectedInterfaces:\s*stripProbeContainerInterfaceDisplayKeys\(input\.selectedInterfaces\)/);
+  assert.match(utilSource, /stripProbeContainerParamDisplayKeys/);
   assert.match(utilSource, /image:\s*input\.image/);
 });
 

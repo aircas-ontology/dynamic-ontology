@@ -39,10 +39,13 @@ test("get ontology function detail types expose documented fields", () => {
   assert.match(source, /description\?: string/);
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
   assert.match(source, /apiConfig\?: CreateOntologyFunctionApiConfig/);
+  assert.match(source, /compositeConfig\?: CompositeWorkflowSavePayload/);
   const barrel = readSource("../src/types/index.ts");
   assert.match(barrel, /GetOntologyFunctionDetailData/);
   assert.match(barrel, /getOntologyFunctionDetailType/);
   assert.match(barrel, /FunctionOperatorCodeDefinition/);
+  const draftType = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
+  assert.match(draftType, /compositeConfig\?: CompositeWorkflowSavePayload/);
 });
 
 test("get ontology function detail api gets detail by functionApi query", () => {
@@ -496,6 +499,39 @@ test("function operator openDetail fetches detail for drawer", () => {
   assert.match(panel, /togglePublish\(selectedOperator\.value\)/);
   assert.match(panel, /openDeleteOperator\(selectedOperator\.value\)/);
   assert.match(panel, /openTest\(selectedOperator\.value\)/);
+});
+
+test("mapOntologyFunctionDetailToDraft keeps compositeConfig for workflow echo", () => {
+  const compositeConfig = {
+    schemaVersion: 1,
+    meta: {
+      displayName: "编排A",
+      functionApi: "comp.a",
+      version: "1.0.0",
+      ontologySpaceId: 7,
+      savedAt: "2026-10-23T00:00:00.000Z",
+    },
+    graph: { logicFlow: { nodes: [{ id: "n1" }], edges: [] } },
+    nodes: [],
+    edges: [],
+  };
+  const draft = mapOntologyFunctionDetailToDraft(
+    {
+      functionApi: "comp.a",
+      version: "1.0.0",
+      displayName: "编排A",
+      description: "说明",
+      model: "OTHER",
+      type: "COMPOSITE",
+      ontologySpaceId: 7,
+      params: [],
+      code: "",
+      compositeConfig,
+    },
+    7,
+  );
+  assert.equal(draft.type, "composite");
+  assert.deepEqual(draft.compositeConfig, compositeConfig);
 });
 
 test("mapOntologyFunctionDetailToDraft keeps external apiConfig for form echo", () => {

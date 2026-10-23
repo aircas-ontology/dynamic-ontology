@@ -14,6 +14,10 @@ export const postOntologyFunctionContainerRuntimeStartMock: ApiResponse<PostOnto
     phaseLabel: "运行中",
     hostPort: 18080,
     containerPort: 8080,
+    nodeIp: "172.16.18.58",
+    nodePort: 37002,
+    lastAction: "start",
+    lastActionAt: "2026-10-23T07:49:56.589+00:00",
     message: "容器已启动",
   },
 };

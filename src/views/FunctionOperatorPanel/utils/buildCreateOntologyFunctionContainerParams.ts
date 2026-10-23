@@ -1,6 +1,7 @@
 import type {
   CreateOntologyFunctionContainerParams,
   ProbeOntologyFunctionContainerInterfaceItem,
+  ProbeOntologyFunctionContainerInterfaceParameter,
   UploadOntologyFunctionContainerDocData,
   UploadOntologyFunctionContainerImageData,
 } from "@/types";
@@ -16,6 +17,41 @@ export interface BuildCreateOntologyFunctionContainerParamsInput {
   interfaceDoc: UploadOntologyFunctionContainerDocData | null;
   runCommand: string;
   selectedInterfaces: ProbeOntologyFunctionContainerInterfaceItem[];
+}
+
+/**
+ * @description 递归剥离探查参数上的展示字段 _rowKey，保留契约 fields。
+ * @param params 参数树。
+ * @returns 可提交的参数树。
+ */
+function stripProbeContainerParamDisplayKeys(params: ProbeOntologyFunctionContainerInterfaceParameter[]): ProbeOntologyFunctionContainerInterfaceParameter[] {
+  return params.map((param) => {
+    const { _rowKey: _ignored, ...rest } = param as ProbeOntologyFunctionContainerInterfaceParameter & { _rowKey?: string };
+    const next: ProbeOntologyFunctionContainerInterfaceParameter = {
+      name: rest.name,
+      in: rest.in,
+      required: rest.required,
+      type: rest.type,
+      description: rest.description,
+    };
+    if (Array.isArray(rest.fields) && rest.fields.length > 0) {
+      next.fields = stripProbeContainerParamDisplayKeys(rest.fields);
+    }
+    return next;
+  });
+}
+
+/**
+ * @description 剥离已选接口上的展示字段，保留探查契约结构。
+ * @param items 已选接口。
+ * @returns 可提交的接口列表。
+ */
+function stripProbeContainerInterfaceDisplayKeys(items: ProbeOntologyFunctionContainerInterfaceItem[]): ProbeOntologyFunctionContainerInterfaceItem[] {
+  return items.map((item) => ({
+    ...item,
+    inputParameters: stripProbeContainerParamDisplayKeys(item.inputParameters ?? []),
+    outputParameters: stripProbeContainerParamDisplayKeys(item.outputParameters ?? []),
+  }));
 }
 
 /**
@@ -36,7 +72,7 @@ export function buildCreateOntologyFunctionContainerParams(input: BuildCreateOnt
       image: input.image,
       ...(input.interfaceDoc ? { interfaceDoc: input.interfaceDoc } : {}),
       runCommand: input.runCommand.trim(),
-      selectedInterfaces: input.selectedInterfaces,
+      selectedInterfaces: stripProbeContainerInterfaceDisplayKeys(input.selectedInterfaces),
     },
   };
 }

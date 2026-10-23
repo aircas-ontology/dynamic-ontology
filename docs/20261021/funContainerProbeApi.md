@@ -36,81 +36,412 @@
 
 ```JSON
 {
-    "code": 200,
-    "message": "SUCCESS",
-    "data": [
+  "code": 200,
+  "message": "SUCCESS",
+  "data": [
+    {
+      "name": "createStudent",
+      "api": "POST /api/v1/students",
+      "method": "POST",
+      "path": "/api/v1/students",
+      "description": "创建学生",
+      "inputParameters": [
         {
-            "name": "getEcho",
-            "api": "GET /get",
-            "method": "GET",
-            "path": "/get",
-            "description": "GET 回显查询参数",
-            "inputParameters": [
-                {
-                    "name": "name",
-                    "in": "query",
-                    "required": false,
-                    "type": "string",
-                    "description": "要回显的名字"
-                }
-            ],
-            "outputParameters": [
-                {
-                    "name": "args",
-                    "in": "body",
-                    "required": false,
-                    "type": "object",
-                    "description": "回显的查询参数"
-                },
-                {
-                    "name": "origin",
-                    "in": "body",
-                    "required": false,
-                    "type": "string",
-                    "description": "调用方地址"
-                },
-                {
-                    "name": "url",
-                    "in": "body",
-                    "required": false,
-                    "type": "string",
-                    "description": "完整请求 URL"
-                }
-            ]
+          "name": "operator",
+          "in": "body",
+          "required": false,
+          "type": "string",
+          "description": "操作人账号"
         },
         {
-            "name": "postEcho",
-            "api": "POST /post",
-            "method": "POST",
-            "path": "/post",
-            "description": "POST 回显请求体",
-            "inputParameters": [
+          "name": "remark",
+          "in": "body",
+          "required": false,
+          "type": "string",
+          "description": "备注"
+        },
+        {
+          "name": "student",
+          "in": "body",
+          "required": true,
+          "type": "object",
+          "description": "学生对象",
+          "fields": [
+            {
+              "name": "id",
+              "in": "body",
+              "required": false,
+              "type": "integer",
+              "description": "学生主键，新增时可不传，由服务端生成"
+            },
+            {
+              "name": "name",
+              "in": "body",
+              "required": true,
+              "type": "string",
+              "description": "姓名"
+            },
+            {
+              "name": "age",
+              "in": "body",
+              "required": false,
+              "type": "integer",
+              "description": "年龄"
+            },
+            {
+              "name": "gender",
+              "in": "body",
+              "required": false,
+              "type": "string",
+              "description": "性别：MALE 男，FEMALE 女，UNKNOWN 未知"
+            },
+            {
+              "name": "email",
+              "in": "body",
+              "required": false,
+              "type": "string",
+              "description": "邮箱"
+            },
+            {
+              "name": "className",
+              "in": "body",
+              "required": false,
+              "type": "string",
+              "description": "所在班级"
+            },
+            {
+              "name": "tags",
+              "in": "body",
+              "required": false,
+              "type": "array",
+              "description": "标签列表"
+            },
+            {
+              "name": "courses",
+              "in": "body",
+              "required": false,
+              "type": "array",
+              "description": "成绩列表（数组套对象，用于验证子字段展开到元素层）",
+              "fields": [
                 {
-                    "name": "title",
-                    "in": "body",
-                    "required": false,
-                    "type": "string",
-                    "description": "标题"
+                  "name": "courseId",
+                  "in": "body",
+                  "required": true,
+                  "type": "integer",
+                  "description": "课程主键"
                 },
                 {
-                    "name": "content",
-                    "in": "body",
-                    "required": false,
-                    "type": "string",
-                    "description": "内容"
-                }
-            ],
-            "outputParameters": [
+                  "name": "courseName",
+                  "in": "body",
+                  "required": false,
+                  "type": "string",
+                  "description": "课程名"
+                },
                 {
-                    "name": "json",
-                    "in": "body",
-                    "required": false,
-                    "type": "object",
-                    "description": "回显的请求体"
+                  "name": "score",
+                  "in": "body",
+                  "required": false,
+                  "type": "number",
+                  "description": "得分"
                 }
-            ]
+              ]
+            },
+            {
+              "name": "enrollment",
+              "in": "body",
+              "required": false,
+              "type": "object",
+              "description": "学籍信息（二级嵌套对象）",
+              "fields": [
+                {
+                  "name": "grade",
+                  "in": "body",
+                  "required": false,
+                  "type": "string",
+                  "description": "入学年级"
+                },
+                {
+                  "name": "enrollDate",
+                  "in": "body",
+                  "required": false,
+                  "type": "string",
+                  "description": "入学日期"
+                },
+                {
+                  "name": "source",
+                  "in": "body",
+                  "required": false,
+                  "type": "string",
+                  "description": "生源类型"
+                }
+              ]
+            }
+          ]
         }
-    ]
+      ],
+      "outputParameters": [
+        {
+          "name": "code",
+          "in": "body",
+          "required": true,
+          "type": "string",
+          "description": "业务码，成功为 200"
+        },
+        {
+          "name": "msg",
+          "in": "body",
+          "required": true,
+          "type": "string",
+          "description": "提示信息"
+        },
+        {
+          "name": "data",
+          "in": "body",
+          "required": false,
+          "type": "integer",
+          "description": "新建学生主键"
+        }
+      ]
+    },
+    {
+      "name": "getStudentDetail",
+      "api": "GET /api/v1/students/{id}",
+      "method": "GET",
+      "path": "/api/v1/students/{id}",
+      "description": "查询学生详情",
+      "inputParameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "type": "integer",
+          "description": "学生主键"
+        }
+      ],
+      "outputParameters": [
+        {
+          "name": "code",
+          "in": "body",
+          "required": true,
+          "type": "string",
+          "description": ""
+        },
+        {
+          "name": "msg",
+          "in": "body",
+          "required": true,
+          "type": "string",
+          "description": ""
+        },
+        {
+          "name": "data",
+          "in": "body",
+          "required": false,
+          "type": "object",
+          "description": "学生详情",
+          "fields": [
+            {
+              "name": "id",
+              "in": "body",
+              "required": false,
+              "type": "integer",
+              "description": ""
+            },
+            {
+              "name": "name",
+              "in": "body",
+              "required": false,
+              "type": "string",
+              "description": ""
+            },
+            {
+              "name": "age",
+              "in": "body",
+              "required": false,
+              "type": "integer",
+              "description": ""
+            },
+            {
+              "name": "gender",
+              "in": "body",
+              "required": false,
+              "type": "string",
+              "description": ""
+            },
+            {
+              "name": "email",
+              "in": "body",
+              "required": false,
+              "type": "string",
+              "description": ""
+            },
+            {
+              "name": "className",
+              "in": "body",
+              "required": false,
+              "type": "string",
+              "description": ""
+            },
+            {
+              "name": "createTime",
+              "in": "body",
+              "required": false,
+              "type": "string",
+              "description": "创建时间"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "listStudents",
+      "api": "GET /api/v1/students/list",
+      "method": "GET",
+      "path": "/api/v1/students/list",
+      "description": "分页查询学生列表",
+      "inputParameters": [
+        {
+          "name": "keyword",
+          "in": "query",
+          "required": false,
+          "type": "string",
+          "description": "姓名模糊搜索"
+        },
+        {
+          "name": "gender",
+          "in": "query",
+          "required": false,
+          "type": "string",
+          "description": "性别精确筛选"
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "required": false,
+          "type": "integer",
+          "description": "页码，从 1 开始"
+        },
+        {
+          "name": "size",
+          "in": "query",
+          "required": false,
+          "type": "integer",
+          "description": "每页条数"
+        }
+      ],
+      "outputParameters": [
+        {
+          "name": "code",
+          "in": "body",
+          "required": true,
+          "type": "string",
+          "description": ""
+        },
+        {
+          "name": "msg",
+          "in": "body",
+          "required": true,
+          "type": "string",
+          "description": ""
+        },
+        {
+          "name": "data",
+          "in": "body",
+          "required": false,
+          "type": "object",
+          "description": "分页数据",
+          "fields": [
+            {
+              "name": "records",
+              "in": "body",
+              "required": false,
+              "type": "array",
+              "description": "",
+              "fields": [
+                {
+                  "name": "id",
+                  "in": "body",
+                  "required": false,
+                  "type": "integer",
+                  "description": ""
+                },
+                {
+                  "name": "name",
+                  "in": "body",
+                  "required": false,
+                  "type": "string",
+                  "description": ""
+                },
+                {
+                  "name": "age",
+                  "in": "body",
+                  "required": false,
+                  "type": "integer",
+                  "description": ""
+                },
+                {
+                  "name": "gender",
+                  "in": "body",
+                  "required": false,
+                  "type": "string",
+                  "description": ""
+                },
+                {
+                  "name": "email",
+                  "in": "body",
+                  "required": false,
+                  "type": "string",
+                  "description": ""
+                },
+                {
+                  "name": "className",
+                  "in": "body",
+                  "required": false,
+                  "type": "string",
+                  "description": ""
+                },
+                {
+                  "name": "createTime",
+                  "in": "body",
+                  "required": false,
+                  "type": "string",
+                  "description": "创建时间"
+                }
+              ]
+            },
+            {
+              "name": "total",
+              "in": "body",
+              "required": false,
+              "type": "integer",
+              "description": "总条数"
+            },
+            {
+              "name": "page",
+              "in": "body",
+              "required": false,
+              "type": "integer",
+              "description": "当前页码"
+            },
+            {
+              "name": "size",
+              "in": "body",
+              "required": false,
+              "type": "integer",
+              "description": "每页条数"
+            },
+            {
+              "name": "pages",
+              "in": "body",
+              "required": false,
+              "type": "integer",
+              "description": "总页数"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
 ```
 

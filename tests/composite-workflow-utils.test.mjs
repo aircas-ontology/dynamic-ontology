@@ -11,6 +11,7 @@ import {
   listCompositeWorkflowParamNodes,
   mapCompositeWorkflowDetailParamBriefs,
   repairCompositeWorkflowInputBindings,
+  resolveCompositeWorkflowLogicFlowForRender,
   resolveCompositeWorkflowNodeUpstreamOutputs,
   resolveCompositeWorkflowParamsFromSnapshotAndDetail,
   validateCompositeWorkflowForSave,
@@ -491,6 +492,27 @@ test("function node input binding tree shows nested leaves and types", () => {
   assert.match(tree, /fields && node\.fields\.length > 0/);
   assert.match(tree, /手动输入/);
   assert.match(tree, /来自上游/);
+});
+
+test("resolveCompositeWorkflowLogicFlowForRender reads valid logicFlow", () => {
+  const logicFlow = { nodes: [{ id: "n1" }], edges: [{ id: "e1" }] };
+  const resolved = resolveCompositeWorkflowLogicFlowForRender({
+    schemaVersion: 1,
+    meta: {
+      displayName: "编排A",
+      functionApi: "comp.a",
+      version: "1.0.0",
+      ontologySpaceId: 1,
+      savedAt: "2026-10-23T00:00:00.000Z",
+    },
+    graph: { logicFlow },
+    nodes: [],
+    edges: [],
+  });
+  assert.deepEqual(resolved, logicFlow);
+  assert.equal(resolveCompositeWorkflowLogicFlowForRender(undefined), null);
+  assert.equal(resolveCompositeWorkflowLogicFlowForRender({ graph: { logicFlow: { nodes: [] } } }), null);
+  assert.equal(resolveCompositeWorkflowLogicFlowForRender({ graph: { logicFlow: null } }), null);
 });
 
 test("buildCompositeWorkflowSavePayload assembles schemaVersion 1", () => {

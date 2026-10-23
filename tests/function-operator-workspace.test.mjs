@@ -191,6 +191,8 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(formSource, /compositeWorkflowVisible\.value\s*=\s*true/);
   assert.match(formSource, /:space-id="form\.spaceId"/);
   assert.match(formSource, /:function-api="form\.functionApi"/);
+  assert.match(formSource, /:composite-config="form\.type === ['"]composite['"] \? form\.compositeConfig : undefined"/);
+  assert.match(formSource, /delete form\.compositeConfig/);
   assert.doesNotMatch(formSource, /函数编排后续步骤暂未开放/);
   assert.doesNotMatch(formSource, /脚本函数后续步骤暂未开放/);
   const compositeWorkflowSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeWorkflowDialog.vue");
@@ -214,6 +216,8 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(compositeWorkflowSource, /emit\(["']save["']/);
   assert.match(compositeWorkflowSource, /initCompositeWorkflowCanvas/);
   assert.match(compositeWorkflowSource, /description/);
+  assert.match(compositeWorkflowSource, /compositeConfig/);
+  assert.match(compositeWorkflowSource, /initialCompositeConfig/);
   assert.doesNotMatch(compositeWorkflowSource, /sampleFunctionItems/);
   assert.doesNotMatch(compositeWorkflowSource, /入\s*\/\s*.*出/);
   assert.doesNotMatch(compositeWorkflowSource, /saveCompositeWorkflowToConsole/);
@@ -222,6 +226,9 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(canvasComposable, /buildCompositeWorkflowCreateParams/);
   assert.match(canvasComposable, /type:\s*["']COMPOSITE["']/);
   assert.match(canvasComposable, /compositeConfig/);
+  assert.match(canvasComposable, /initialCompositeConfig/);
+  assert.match(canvasComposable, /resolveCompositeWorkflowLogicFlowForRender/);
+  assert.match(canvasComposable, /lf\.render\(/);
   assert.doesNotMatch(canvasComposable, /console\.log\("\[composite-workflow\]"/);
   assert.match(canvasComposable, /wouldCompositeWorkflowEdgeCreateCycle/);
   assert.match(workspaceSource, /async function saveCompositeOperator/);

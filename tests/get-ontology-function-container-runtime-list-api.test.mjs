@@ -34,6 +34,11 @@ test("container runtime list types expose spaceId params and runtime item data",
   assert.match(typeSource, /phaseLabel:\s*string/);
   assert.match(typeSource, /hostPort:\s*number/);
   assert.match(typeSource, /containerPort:\s*number/);
+  assert.match(typeSource, /nodeIp:\s*string/);
+  assert.match(typeSource, /nodePort:\s*number/);
+  assert.match(typeSource, /containerId\?:\s*string/);
+  assert.match(typeSource, /lastAction\?:\s*string/);
+  assert.match(typeSource, /lastActionAt\?:\s*string/);
   assert.match(typeSource, /message:\s*string/);
   assert.match(typeSource, /export type GetOntologyFunctionContainerRuntimeListData = OntologyFunctionContainerRuntimeItem\[\]/);
   assert.match(barrel, /GetOntologyFunctionContainerRuntimeListData/);
@@ -71,6 +76,8 @@ test("container runtime list mock mirrors SUCCESS sample item", () => {
   assert.match(mockSource, /phaseLabel:\s*["']已创建["']/);
   assert.match(mockSource, /hostPort:\s*18080/);
   assert.match(mockSource, /containerPort:\s*8080/);
+  assert.match(mockSource, /nodeIp:/);
+  assert.match(mockSource, /nodePort:/);
 });
 
 test("function operator panel wires runtime config button and secondary panel", () => {
@@ -86,17 +93,35 @@ test("function operator panel wires runtime config button and secondary panel", 
   assert.match(runtimePanelSource, /getOntologyFunctionContainerRuntimeListInterface/);
   assert.match(runtimePanelSource, /label="容器算子名"/);
   assert.match(runtimePanelSource, /label="运行状态"/);
-  assert.match(runtimePanelSource, /label="操作"/);
+  assert.match(runtimePanelSource, /type="expand"/);
+  assert.match(runtimePanelSource, /容器生命周期/);
+  assert.match(runtimePanelSource, /最近操作/);
+  assert.match(runtimePanelSource, /说明/);
+  assert.match(runtimePanelSource, /formatRuntimeActionAt/);
+  assert.match(runtimePanelSource, /\$\{matched\[1\]\} \$\{matched\[2\]\}/);
+  assert.match(runtimePanelSource, /部署信息/);
+  assert.match(runtimePanelSource, /label="容器名"/);
+  assert.match(runtimePanelSource, /label="宿主机 IP"/);
+  assert.match(runtimePanelSource, /label="宿主机端口"/);
+  assert.match(runtimePanelSource, /label="容器端口"/);
+  assert.match(runtimePanelSource, /label="宿主映射端口"/);
+  assert.match(runtimePanelSource, /nodeIp/);
+  assert.match(runtimePanelSource, /nodePort/);
   assert.match(runtimePanelSource, />\s*启动\s*</);
   assert.match(runtimePanelSource, />\s*停止\s*</);
+  assert.match(runtimePanelSource, />\s*重启\s*</);
   assert.match(runtimePanelSource, /postOntologyFunctionContainerRuntimeStartInterface/);
   assert.match(runtimePanelSource, /postOntologyFunctionContainerRuntimeStopInterface/);
+  assert.match(runtimePanelSource, /postOntologyFunctionContainerRuntimeRestartInterface/);
   assert.match(runtimePanelSource, /canStartRuntime/);
   assert.match(runtimePanelSource, /canStopRuntime/);
+  assert.match(runtimePanelSource, /canRestartRuntime/);
   assert.match(runtimePanelSource, /ElMessage\.success\(.*启动成功/);
   assert.match(runtimePanelSource, /ElMessage\.success\(.*停止成功/);
+  assert.match(runtimePanelSource, /ElMessage\.success\(.*重启成功/);
   assert.match(runtimePanelSource, /ElMessage\.error\(.*启动失败/);
   assert.match(runtimePanelSource, /ElMessage\.error\(.*停止失败/);
+  assert.match(runtimePanelSource, /ElMessage\.error\(.*重启失败/);
   assert.match(runtimePanelSource, /displayName/);
   assert.match(runtimePanelSource, /phaseLabel/);
   assert.match(runtimePanelSource, /row-key="containerKey"/);

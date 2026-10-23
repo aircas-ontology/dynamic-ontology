@@ -1,3 +1,4 @@
+import type { CompositeWorkflowSavePayload } from "../pages/ontologyCompositeWorkflowType";
 import type { CreateOntologyFunctionApiConfig, CreateOntologyFunctionQueryConfig } from "./createOntologyFunctionType";
 
 /** 根据函数 API 查询详情的请求参数。 */
@@ -47,4 +48,6 @@ export interface GetOntologyFunctionDetailData {
   queryConfig?: CreateOntologyFunctionQueryConfig;
   /** 外部 API 配置；与新建保存的 apiConfig 同结构。 */
   apiConfig?: CreateOntologyFunctionApiConfig;
+  /** 函数编排配置；与新建保存的 compositeConfig 同结构。 */
+  compositeConfig?: CompositeWorkflowSavePayload;
 }

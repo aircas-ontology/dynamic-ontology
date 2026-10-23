@@ -490,6 +490,7 @@ export function mapOntologyFunctionDetailToDraft(
     testStatus: "untested",
     testedAt: "",
     ...(type === "api" && detail.apiConfig ? { externalApiConfig: detail.apiConfig } : {}),
+    ...(type === "composite" && detail.compositeConfig ? { compositeConfig: detail.compositeConfig } : {}),
   };
 }
 

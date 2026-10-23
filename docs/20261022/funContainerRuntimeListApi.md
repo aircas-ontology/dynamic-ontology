@@ -40,15 +40,20 @@
   "message": "SUCCESS",
   "data": [
     {
-      "containerKey": "e7b65c92b0a24e17bf42c7f0b8c5ed5b",
+      "containerKey": "2970626ab500497386d1a6e98debc30f",
       "ontologySpaceId": 1,
-      "displayName": "rongqi",
+      "displayName": "zhangliang",
       "containerName": "httpbin-ctr-18080",
-      "phase": "CREATED",
-      "phaseLabel": "已创建",
-      "hostPort": 18080,
+      "phase": "RUNNING",
+      "phaseLabel": "运行中",
+      "hostPort": 18089,
       "containerPort": 8080,
-      "message": "容器算子已创建，尚未启动"
+      "nodeIp": "172.16.18.58",
+      "nodePort": 37002,
+      "containerId": "71389d4b623b9ccdecbad7e8c2b20159d424c85204908d4f1563e246c938f5c5",
+      "lastAction": "start",
+      "lastActionAt": "2026-10-23T07:49:56.589+00:00",
+      "message": "容器已启动"
     }
   ]
 }
@@ -56,6 +61,11 @@
 
 - `code`：【number】响应码
 - `message`：【string】消息描述
+- `data.displayName`：【string】算子名
+- `data.containerName`：【string】容器名
+- `data.hostPort`：【string】容器端口号
+- `data.nodeIp`：【string】容器宿主机IP
+- `nodePort`： 【string】容器宿主机端口
 
 ## code
 

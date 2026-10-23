@@ -119,7 +119,13 @@ import { ElMessage } from "element-plus";
 import "@logicflow/core/dist/index.css";
 
 import { getOntologyFunctionListInterface } from "@/apis";
-import { FUNCTION_OPERATOR_TYPE_LABELS, type CompositeWorkflowDndPayload, type CreateOntologyFunctionParams, type GetOntologyFunctionListItem } from "@/types";
+import {
+  FUNCTION_OPERATOR_TYPE_LABELS,
+  type CompositeWorkflowDndPayload,
+  type CompositeWorkflowSavePayload,
+  type CreateOntologyFunctionParams,
+  type GetOntologyFunctionListItem,
+} from "@/types";
 import { mapFunctionOperatorTypeFromApi } from "@/utils/mapFunctionOperatorTypeToApi";
 
 import { useCompositeWorkflowCanvas } from "../composables/useCompositeWorkflowCanvas";
@@ -155,6 +161,8 @@ const props = defineProps<{
   version: string;
   /** 函数说明。 */
   description: string;
+  /** 编辑回显用的编排配置；新建为空。 */
+  compositeConfig?: CompositeWorkflowSavePayload | null;
   /** 外层保存请求进行中。 */
   saving?: boolean;
 }>();
@@ -209,6 +217,7 @@ const {
   version: toRef(props, "version"),
   description: toRef(props, "description"),
   spaceId: toRef(props, "spaceId"),
+  initialCompositeConfig: toRef(props, "compositeConfig"),
 });
 
 /**

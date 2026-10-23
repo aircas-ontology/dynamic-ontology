@@ -10,6 +10,7 @@ import type {
   CompositeWorkflowLoopConfig,
   CompositeWorkflowNodeKind,
   CompositeWorkflowParamBrief,
+  CompositeWorkflowSavePayload,
   CompositeWorkflowSwitchConfig,
   CompositeWorkflowTransformConfig,
   CreateOntologyFunctionParams,
@@ -20,6 +21,7 @@ import {
   hasCompositeWorkflowIncomingEdge,
   mapCompositeWorkflowDetailParamBriefs,
   repairCompositeWorkflowInputBindings,
+  resolveCompositeWorkflowLogicFlowForRender,
   resolveCompositeWorkflowNodeUpstreamOutputs,
   validateCompositeWorkflowForSave,
   wouldCompositeWorkflowEdgeCreateCycle,
@@ -83,6 +85,8 @@ export function useCompositeWorkflowCanvas(options: {
   version: Ref<string>;
   description: Ref<string>;
   spaceId: Ref<number>;
+  /** 编辑回显用的编排配置；新建为空。 */
+  initialCompositeConfig?: Ref<CompositeWorkflowSavePayload | null | undefined>;
 }) {
   const canvasHostRef = ref<HTMLElement | null>(null);
   const lfRef: ShallowRef<LogicFlow | null> = shallowRef(null);
@@ -500,11 +504,16 @@ export function useCompositeWorkflowCanvas(options: {
       },
     });
     // LogicFlow 必须先 render 才会挂载 Preact Graph；否则 addNode 只改 model、画布无视图。
-    lf.render({});
+    const echoGraph = resolveCompositeWorkflowLogicFlowForRender(options.initialCompositeConfig?.value);
+    // 详情回传的 logicFlow 与 getGraphRawData 同形，运行时按 GraphConfigData 渲染。
+    lf.render((echoGraph ?? {}) as LogicFlow.GraphConfigData);
     const lfContainer = lf.container;
     lfContainer.style.width = "100%";
     lfContainer.style.height = "100%";
     lf.resize(hostWidth, hostHeight);
+    if (echoGraph && (echoGraph.nodes.length > 0 || echoGraph.edges.length > 0)) {
+      lf.fitView(40, 40);
+    }
     lf.on("node:dbclick", ({ data }) => {
       const properties = (data.properties ?? {}) as Record<string, unknown>;
       const kind = properties.kind;

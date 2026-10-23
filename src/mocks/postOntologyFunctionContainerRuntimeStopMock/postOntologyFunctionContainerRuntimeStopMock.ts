@@ -14,6 +14,10 @@ export const postOntologyFunctionContainerRuntimeStopMock: ApiResponse<PostOntol
     phaseLabel: "已停止",
     hostPort: 18080,
     containerPort: 8080,
+    nodeIp: "172.16.18.58",
+    nodePort: 37002,
+    lastAction: "stop",
+    lastActionAt: "2026-10-23T08:00:00.000+00:00",
     message: "容器已停止并移除",
   },
 };

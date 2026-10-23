@@ -374,7 +374,14 @@
               <template #default="{ row }">
                 <div class="function-operator-form__probe-expand">
                   <div class="function-operator-form__section-subtitle">入参</div>
-                  <el-table class="function-operator-form__param-table" :data="row.inputParameters" empty-text="暂无入参">
+                  <el-table
+                    class="function-operator-form__param-table"
+                    :data="row.inputParameters"
+                    row-key="_rowKey"
+                    :tree-props="{ children: 'fields' }"
+                    default-expand-all
+                    empty-text="暂无入参"
+                  >
                     <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
                     <el-table-column prop="in" label="in" width="88" />
                     <el-table-column label="required" width="88">
@@ -386,7 +393,14 @@
                     <el-table-column prop="description" label="description" min-width="160" show-overflow-tooltip />
                   </el-table>
                   <div class="function-operator-form__section-subtitle">出参</div>
-                  <el-table class="function-operator-form__param-table" :data="row.outputParameters" empty-text="暂无出参">
+                  <el-table
+                    class="function-operator-form__param-table"
+                    :data="row.outputParameters"
+                    row-key="_rowKey"
+                    :tree-props="{ children: 'fields' }"
+                    default-expand-all
+                    empty-text="暂无出参"
+                  >
                     <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
                     <el-table-column prop="in" label="in" width="88" />
                     <el-table-column label="required" width="88">
@@ -456,6 +470,7 @@
     :display-name="form.name"
     :version="form.version"
     :description="form.description"
+    :composite-config="form.type === 'composite' ? form.compositeConfig : undefined"
     :saving="loading"
     @save="emitSaveComposite"
   />
@@ -487,9 +502,22 @@ import {
   type GetOntologyFunctionListItem,
   type ParseOntologyFunctionParamItem,
   type ProbeOntologyFunctionContainerInterfaceItem,
+  type ProbeOntologyFunctionContainerInterfaceParameter,
   type UploadOntologyFunctionContainerDocData,
   type UploadOntologyFunctionContainerImageData,
 } from "@/types";
+
+/** 探查参数树展示行：在契约字段上附加稳定 _rowKey。 */
+type ProbeContainerParamTreeRow = ProbeOntologyFunctionContainerInterfaceParameter & {
+  _rowKey: string;
+  fields?: ProbeContainerParamTreeRow[];
+};
+
+/** 探查接口展示项：入出参带树表 row-key。 */
+type ProbeContainerInterfaceDisplayItem = Omit<ProbeOntologyFunctionContainerInterfaceItem, "inputParameters" | "outputParameters"> & {
+  inputParameters: ProbeContainerParamTreeRow[];
+  outputParameters: ProbeContainerParamTreeRow[];
+};
 import {
   createEmptyBasicFilterDocument,
   parseBasicFilterConfig,
@@ -562,8 +590,8 @@ const dockerApiDocFileName = ref("");
 const dockerInterfaceDoc = ref<UploadOntologyFunctionContainerDocData | null>(null);
 /** 容器算子接口文档是否正在上传或随后探查。 */
 const dockerApiDocUploading = ref(false);
-/** 探查得到的已发现接口列表。 */
-const dockerDiscoveredInterfaces = ref<ProbeOntologyFunctionContainerInterfaceItem[]>([]);
+/** 探查得到的已发现接口列表（入出参已注入树表 _rowKey）。 */
+const dockerDiscoveredInterfaces = ref<ProbeContainerInterfaceDisplayItem[]>([]);
 /** 多选绑定的接口 api 标识列表。 */
 const dockerSelectedInterfaceApis = ref<string[]>([]);
 /** 容器算子启动命令（完整 docker run），映射为 runCommand。 */
@@ -1088,7 +1116,7 @@ async function onDockerApiDocFileChange(uploadFile: UploadFile): Promise<void> {
         ElMessage.error(probeResponse.message.trim() || "接口探查失败");
         return;
       }
-      dockerDiscoveredInterfaces.value = Array.isArray(probeResponse.data) ? probeResponse.data : [];
+      dockerDiscoveredInterfaces.value = Array.isArray(probeResponse.data) ? probeResponse.data.map((item) => mapProbeContainerInterfaceForDisplay(item)) : [];
       dockerSelectedInterfaceApis.value = [];
     } catch (cause) {
       if (current !== dockerApiDocUploadGeneration) {
@@ -1101,6 +1129,43 @@ async function onDockerApiDocFileChange(uploadFile: UploadFile): Promise<void> {
       dockerApiDocUploading.value = false;
     }
   }
+}
+
+/**
+ * @description 为探查参数树递归注入稳定 _rowKey，供树表展开。
+ * @param params 探查参数列表。
+ * @param prefix 路径前缀。
+ * @returns 带 _rowKey 的参数树。
+ */
+function mapProbeContainerParamsForDisplay(params: ProbeOntologyFunctionContainerInterfaceParameter[], prefix = ""): ProbeContainerParamTreeRow[] {
+  return params.map((param, index) => {
+    const _rowKey = `${prefix}${index}-${param.name}`;
+    const row: ProbeContainerParamTreeRow = {
+      name: param.name,
+      in: param.in,
+      required: param.required,
+      type: param.type,
+      description: param.description,
+      _rowKey,
+    };
+    if (Array.isArray(param.fields) && param.fields.length > 0) {
+      row.fields = mapProbeContainerParamsForDisplay(param.fields, `${_rowKey}.`);
+    }
+    return row;
+  });
+}
+
+/**
+ * @description 将探查接口项映射为树表展示结构。
+ * @param item 探查接口项。
+ * @returns 带参数树 row-key 的展示项。
+ */
+function mapProbeContainerInterfaceForDisplay(item: ProbeOntologyFunctionContainerInterfaceItem): ProbeContainerInterfaceDisplayItem {
+  return {
+    ...item,
+    inputParameters: mapProbeContainerParamsForDisplay(item.inputParameters ?? []),
+    outputParameters: mapProbeContainerParamsForDisplay(item.outputParameters ?? []),
+  };
 }
 
 /**
@@ -1120,7 +1185,7 @@ function resolveDockerDiscoveredInterfaceRowKey(row: ProbeOntologyFunctionContai
  * @description 同步已发现接口多选绑定结果到本地选中 api 列表。
  * @param selection 当前选中行。
  */
-function onDockerDiscoveredInterfacesSelectionChange(selection: ProbeOntologyFunctionContainerInterfaceItem[]): void {
+function onDockerDiscoveredInterfacesSelectionChange(selection: ProbeContainerInterfaceDisplayItem[]): void {
   dockerSelectedInterfaceApis.value = selection.map((item) => resolveDockerDiscoveredInterfaceRowKey(item));
 }
 
@@ -1410,6 +1475,7 @@ function changeType(type: FunctionOperatorType): void {
   resetDockerOperatorForm();
   Object.assign(form, next);
   delete form.id;
+  delete form.compositeConfig;
   if (previousType === "code" && type !== "code") {
     scriptIdeVisible.value = false;
     resetScriptDraft();
@@ -1669,6 +1735,11 @@ watch(
     Object.assign(form, next);
     if (!next.id) {
       delete form.id;
+    }
+    if (next.type === "composite" && next.compositeConfig) {
+      form.compositeConfig = next.compositeConfig;
+    } else {
+      delete form.compositeConfig;
     }
     if (next.definition.kind === "code") {
       applyScriptDraftFromDefinition(next);

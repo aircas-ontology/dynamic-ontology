@@ -16,6 +16,8 @@ export interface ProbeOntologyFunctionContainerInterfaceParameter {
   type: string;
   /** 参数说明。 */
   description: string;
+  /** object / array 元素对象的下级属性；可递归嵌套。 */
+  fields?: ProbeOntologyFunctionContainerInterfaceParameter[];
 }
 
 /** 探查得到的单个接口项。 */

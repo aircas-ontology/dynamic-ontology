@@ -532,6 +532,30 @@ export function buildCompositeWorkflowSavePayload(options: {
 }
 
 /**
+ * @description 从编排保存载荷中解析可供 LogicFlow.render 的 logicFlow 图数据。
+ * @param config 详情或草稿中的 compositeConfig；缺省或结构非法时返回 null。
+ * @returns `{ nodes, edges }`；无法回显时为 null。
+ */
+export function resolveCompositeWorkflowLogicFlowForRender(config: unknown): { nodes: unknown[]; edges: unknown[] } | null {
+  if (!config || typeof config !== "object") {
+    return null;
+  }
+  const graph = (config as { graph?: unknown }).graph;
+  if (!graph || typeof graph !== "object") {
+    return null;
+  }
+  const logicFlow = (graph as { logicFlow?: unknown }).logicFlow;
+  if (!logicFlow || typeof logicFlow !== "object") {
+    return null;
+  }
+  const record = logicFlow as { nodes?: unknown; edges?: unknown };
+  if (!Array.isArray(record.nodes) || !Array.isArray(record.edges)) {
+    return null;
+  }
+  return { nodes: record.nodes, edges: record.edges };
+}
+
+/**
  * @description 保存前校验整图：函数绑定与类型；返回首条错误。无函数节点返回 warning 文案（调用方可仍打印）。
  * @param nodes 节点摘要。
  * @param edges 边。

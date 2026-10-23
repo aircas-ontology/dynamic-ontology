@@ -20,28 +20,83 @@
         stripe
         height="100%"
       >
-        <el-table-column prop="displayName" label="容器算子名" min-width="240" show-overflow-tooltip />
-        <el-table-column prop="phaseLabel" label="运行状态" width="160" />
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column type="expand">
           <template #default="{ row }">
-            <el-button
-              link
-              type="primary"
-              :disabled="!canStartRuntime(asRuntimeRow(row)) || isRuntimeActionSubmitting(asRuntimeRow(row).containerKey)"
-              @click.stop="startContainerRuntime(asRuntimeRow(row))"
-            >
-              启动
-            </el-button>
-            <el-button
-              link
-              type="danger"
-              :disabled="!canStopRuntime(asRuntimeRow(row)) || isRuntimeActionSubmitting(asRuntimeRow(row).containerKey)"
-              @click.stop="stopContainerRuntime(asRuntimeRow(row))"
-            >
-              停止
-            </el-button>
+            <div class="function-operator-container-runtime-panel__expand">
+              <section class="function-operator-container-runtime-panel__section" aria-label="容器生命周期">
+                <div class="function-operator-container-runtime-panel__section-head">
+                  <h3 class="function-operator-container-runtime-panel__section-title">容器生命周期</h3>
+                  <div class="function-operator-container-runtime-panel__section-actions">
+                    <el-button
+                      size="small"
+                      :disabled="!canStartRuntime(asRuntimeRow(row)) || isRuntimeActionSubmitting(asRuntimeRow(row).containerKey)"
+                      @click="startContainerRuntime(asRuntimeRow(row))"
+                    >
+                      启动
+                    </el-button>
+                    <el-button
+                      size="small"
+                      type="danger"
+                      plain
+                      :disabled="!canStopRuntime(asRuntimeRow(row)) || isRuntimeActionSubmitting(asRuntimeRow(row).containerKey)"
+                      @click="stopContainerRuntime(asRuntimeRow(row))"
+                    >
+                      停止
+                    </el-button>
+                    <el-button
+                      size="small"
+                      :disabled="!canRestartRuntime(asRuntimeRow(row)) || isRuntimeActionSubmitting(asRuntimeRow(row).containerKey)"
+                      @click="restartContainerRuntime(asRuntimeRow(row))"
+                    >
+                      重启
+                    </el-button>
+                  </div>
+                </div>
+                <div class="function-operator-container-runtime-panel__lifecycle-grid">
+                  <div class="function-operator-container-runtime-panel__lifecycle-item">
+                    <span class="function-operator-container-runtime-panel__lifecycle-label">最近操作</span>
+                    <span class="function-operator-container-runtime-panel__lifecycle-value">{{ formatRuntimeLastAction(asRuntimeRow(row)) }}</span>
+                  </div>
+                  <div class="function-operator-container-runtime-panel__lifecycle-item">
+                    <span class="function-operator-container-runtime-panel__lifecycle-label">说明</span>
+                    <span class="function-operator-container-runtime-panel__lifecycle-value">{{ formatRuntimeDisplayText(asRuntimeRow(row).message) }}</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="function-operator-container-runtime-panel__section" aria-label="部署信息">
+                <div class="function-operator-container-runtime-panel__section-head">
+                  <h3 class="function-operator-container-runtime-panel__section-title">部署信息</h3>
+                </div>
+                <el-table
+                  class="aircas-table--accent-header function-operator-container-runtime-panel__deploy-table"
+                  :data="[asRuntimeRow(row)]"
+                  row-key="containerKey"
+                  size="small"
+                  border
+                >
+                  <el-table-column label="容器名" min-width="160" show-overflow-tooltip>
+                    <template #default="{ row: deployRow }">{{ formatRuntimeDisplayText(asRuntimeRow(deployRow).containerName) }}</template>
+                  </el-table-column>
+                  <el-table-column label="宿主机 IP" min-width="140" show-overflow-tooltip>
+                    <template #default="{ row: deployRow }">{{ formatRuntimeDisplayText(asRuntimeRow(deployRow).nodeIp) }}</template>
+                  </el-table-column>
+                  <el-table-column label="宿主机端口" width="110">
+                    <template #default="{ row: deployRow }">{{ formatRuntimePort(asRuntimeRow(deployRow).nodePort) }}</template>
+                  </el-table-column>
+                  <el-table-column label="容器端口" width="100">
+                    <template #default="{ row: deployRow }">{{ formatRuntimePort(asRuntimeRow(deployRow).containerPort) }}</template>
+                  </el-table-column>
+                  <el-table-column label="宿主映射端口" width="120">
+                    <template #default="{ row: deployRow }">{{ formatRuntimePort(asRuntimeRow(deployRow).hostPort) }}</template>
+                  </el-table-column>
+                </el-table>
+              </section>
+            </div>
           </template>
         </el-table-column>
+        <el-table-column prop="displayName" label="容器算子名" min-width="240" show-overflow-tooltip />
+        <el-table-column prop="phaseLabel" label="运行状态" width="160" />
       </el-table>
     </div>
   </section>
@@ -53,6 +108,7 @@ import { ElMessage } from "element-plus";
 
 import {
   getOntologyFunctionContainerRuntimeListInterface,
+  postOntologyFunctionContainerRuntimeRestartInterface,
   postOntologyFunctionContainerRuntimeStartInterface,
   postOntologyFunctionContainerRuntimeStopInterface,
 } from "@/apis";
@@ -85,6 +141,63 @@ function asRuntimeRow(row: unknown): OntologyFunctionContainerRuntimeItem {
 }
 
 /**
+ * @description 空文案统一显示为破折号。
+ * @param value 原始字符串。
+ * @returns 展示文案。
+ */
+function formatRuntimeDisplayText(value: string | null | undefined): string {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text || "—";
+}
+
+/**
+ * @description 端口展示；非法或缺省显示破折号。
+ * @param value 端口值。
+ * @returns 展示文案。
+ */
+function formatRuntimePort(value: number | null | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return "—";
+  }
+  return String(value);
+}
+
+/**
+ * @description 将最近操作时间格式化为 `YYYY-MM-DD HH:mm:ss`；非法值回落原文或空串。
+ * @param value 接口 ISO 时间字符串。
+ * @returns 展示时间。
+ */
+function formatRuntimeActionAt(value: string): string {
+  const raw = value.trim();
+  if (!raw) {
+    return "";
+  }
+  const matched = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})/.exec(raw);
+  if (matched) {
+    return `${matched[1]} ${matched[2]}`;
+  }
+  return raw;
+}
+
+/**
+ * @description 组装最近操作展示（操作名 + 可选时间）。
+ * @param row 运行实例。
+ * @returns 展示文案。
+ */
+function formatRuntimeLastAction(row: OntologyFunctionContainerRuntimeItem): string {
+  const action = typeof row.lastAction === "string" ? row.lastAction.trim() : "";
+  const actionAtRaw = typeof row.lastActionAt === "string" ? row.lastActionAt.trim() : "";
+  const actionAt = actionAtRaw ? formatRuntimeActionAt(actionAtRaw) : "";
+  if (!action && !actionAt) {
+    return "—";
+  }
+  if (action && actionAt) {
+    return `${action} · ${actionAt}`;
+  }
+  return action || actionAt;
+}
+
+/**
  * @description 判断当前 phase 是否允许启动。
  * @param row 运行实例行。
  * @returns 允许启动时 true。
@@ -100,6 +213,15 @@ function canStartRuntime(row: OntologyFunctionContainerRuntimeItem): boolean {
  * @returns 允许停止时 true。
  */
 function canStopRuntime(row: OntologyFunctionContainerRuntimeItem): boolean {
+  return row.phase === "RUNNING";
+}
+
+/**
+ * @description 判断当前 phase 是否允许重启（与停止相同，仅 RUNNING）。
+ * @param row 运行实例行。
+ * @returns 允许重启时 true。
+ */
+function canRestartRuntime(row: OntologyFunctionContainerRuntimeItem): boolean {
   return row.phase === "RUNNING";
 }
 
@@ -242,6 +364,38 @@ async function stopContainerRuntime(row: OntologyFunctionContainerRuntimeItem): 
   }
 }
 
+/**
+ * @description 重启指定容器运行实例（先停后启）。
+ * @param row 运行实例行。
+ */
+async function restartContainerRuntime(row: OntologyFunctionContainerRuntimeItem): Promise<void> {
+  if (!canRestartRuntime(row) || isRuntimeActionSubmitting(row.containerKey)) {
+    return;
+  }
+  const currentAction = ++actionSequence;
+  setRuntimeActionSubmitting(row.containerKey, true);
+  try {
+    const response = await postOntologyFunctionContainerRuntimeRestartInterface({ containerKey: row.containerKey });
+    if (currentAction !== actionSequence || !props.active) {
+      return;
+    }
+    if (response.code !== 200) {
+      ElMessage.error(response.message || "重启失败");
+      return;
+    }
+    applyRuntimeItemOrReload(response.data);
+    ElMessage.success(response.message?.trim() || "重启成功");
+  } catch (cause) {
+    if (currentAction === actionSequence && props.active) {
+      ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "重启失败");
+    }
+  } finally {
+    if (currentAction === actionSequence) {
+      setRuntimeActionSubmitting(row.containerKey, false);
+    }
+  }
+}
+
 watch(
   () => props.active,
   (active) => {
@@ -309,5 +463,73 @@ watch(
 .function-operator-container-runtime-panel__table {
   flex: 1;
   min-height: 0;
+}
+
+.function-operator-container-runtime-panel__expand {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 12px 16px 48px;
+}
+
+.function-operator-container-runtime-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.function-operator-container-runtime-panel__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.function-operator-container-runtime-panel__section-title {
+  margin: 0;
+  color: var(--aircas-color-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.function-operator-container-runtime-panel__section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.function-operator-container-runtime-panel__lifecycle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+}
+
+.function-operator-container-runtime-panel__lifecycle-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.function-operator-container-runtime-panel__lifecycle-label {
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+}
+
+.function-operator-container-runtime-panel__lifecycle-value {
+  color: var(--aircas-color-text-primary);
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.function-operator-container-runtime-panel__deploy-table {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .function-operator-container-runtime-panel__lifecycle-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

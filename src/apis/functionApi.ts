@@ -20,6 +20,8 @@ import type {
   GetOntologyFunctionVersionsParams,
   ParseOntologyFunctionParamsData,
   ParseOntologyFunctionParamsParams,
+  PostOntologyFunctionContainerRuntimeRestartData,
+  PostOntologyFunctionContainerRuntimeRestartParams,
   PostOntologyFunctionContainerRuntimeStartData,
   PostOntologyFunctionContainerRuntimeStartParams,
   PostOntologyFunctionContainerRuntimeStopData,
@@ -375,6 +377,25 @@ export function postOntologyFunctionContainerRuntimeStopInterface(
 ): Promise<ApiResponse<PostOntologyFunctionContainerRuntimeStopData>> {
   return request<PostOntologyFunctionContainerRuntimeStopData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/container/runtime/stop",
+    method: "post",
+    params,
+  });
+}
+
+/**
+ * @description 重启容器运行实例（先停后启）。
+ *
+ * 请求方式：POST `/ontology/function/container/runtime/restart`（`containerKey` 以 query 传递）。
+ *
+ * @param params 重启参数（query）。
+ * @param params.containerKey 容器实例归组键。
+ * @returns 标准 API 响应；成功时 data 为更新后的运行实例（期望 RUNNING）。
+ */
+export function postOntologyFunctionContainerRuntimeRestartInterface(
+  params: PostOntologyFunctionContainerRuntimeRestartParams,
+): Promise<ApiResponse<PostOntologyFunctionContainerRuntimeRestartData>> {
+  return request<PostOntologyFunctionContainerRuntimeRestartData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/function/container/runtime/restart",
     method: "post",
     params,
   });

@@ -19,6 +19,7 @@ test("probe ontology function container interfaces types expose docPath params a
   assert.match(typeSource, /export interface ProbeOntologyFunctionContainerInterfacesParams/);
   assert.match(typeSource, /docPath:\s*string/);
   assert.match(typeSource, /export interface ProbeOntologyFunctionContainerInterfaceParameter/);
+  assert.match(typeSource, /fields\?:\s*ProbeOntologyFunctionContainerInterfaceParameter\[\]/);
   assert.match(typeSource, /export interface ProbeOntologyFunctionContainerInterfaceItem/);
   assert.match(typeSource, /inputParameters:\s*ProbeOntologyFunctionContainerInterfaceParameter\[\]/);
   assert.match(typeSource, /outputParameters:\s*ProbeOntologyFunctionContainerInterfaceParameter\[\]/);
@@ -56,6 +57,7 @@ test("probe ontology function container interfaces mock mirrors SUCCESS sample w
   assert.match(mockSource, /api:\s*["']GET \/get["']/);
   assert.match(mockSource, /inputParameters:/);
   assert.match(mockSource, /outputParameters:/);
+  assert.match(mockSource, /fields:\s*\[/);
   assert.match(mockSource, /name:\s*["']postEcho["']/);
 });
 
@@ -67,6 +69,7 @@ test("mockData registers container interfaces probe route with interface list", 
   assert.match(fixture, /"name":\s*"getEcho"/);
   assert.match(fixture, /"inputParameters"/);
   assert.match(fixture, /"outputParameters"/);
+  assert.match(fixture, /"fields"/);
   assert.match(fixture, /"name":\s*"postEcho"/);
 });
 
@@ -85,4 +88,12 @@ test("docker form shows discovered interfaces multi-select expandable table", ()
   assert.match(formSource, /出参/);
   assert.match(formSource, /onDockerDiscoveredInterfacesSelectionChange/);
   assert.match(formSource, /resolveDockerDiscoveredInterfaceRowKey/);
+  assert.match(formSource, /mapProbeContainerParamsForDisplay/);
+  assert.match(formSource, /_rowKey/);
+  assert.match(formSource, /tree-props/);
+  assert.match(formSource, /children:\s*['"]fields['"]/);
+  assert.match(formSource, /default-expand-all/);
+  const buildSource = readSource("../src/views/FunctionOperatorPanel/utils/buildCreateOntologyFunctionContainerParams.ts");
+  assert.match(buildSource, /stripProbeContainerInterfaceDisplayKeys/);
+  assert.match(buildSource, /_rowKey/);
 });

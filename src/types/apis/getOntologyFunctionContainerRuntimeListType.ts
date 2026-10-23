@@ -21,10 +21,20 @@ export interface OntologyFunctionContainerRuntimeItem {
   phase: OntologyFunctionContainerRuntimePhase;
   /** 运行状态中文标签。 */
   phaseLabel: string;
-  /** 宿主端口。 */
+  /** 宿主映射端口。 */
   hostPort: number;
   /** 容器端口。 */
   containerPort: number;
+  /** 容器宿主机 IP。 */
+  nodeIp: string;
+  /** 容器宿主机端口。 */
+  nodePort: number;
+  /** docker 容器 id；部分环境可能未返回。 */
+  containerId?: string;
+  /** 最近操作名（如 start / stop）。 */
+  lastAction?: string;
+  /** 最近操作时间（ISO 字符串）。 */
+  lastActionAt?: string;
   /** 状态描述或失败原因。 */
   message: string;
 }

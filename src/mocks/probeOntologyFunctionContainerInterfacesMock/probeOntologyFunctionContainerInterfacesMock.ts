@@ -28,6 +28,15 @@ export const probeOntologyFunctionContainerInterfacesMock: ApiResponse<ProbeOnto
           required: false,
           type: "object",
           description: "回显的查询参数",
+          fields: [
+            {
+              name: "name",
+              in: "body",
+              required: false,
+              type: "string",
+              description: "回显的名字",
+            },
+          ],
         },
         {
           name: "origin",
@@ -74,6 +83,22 @@ export const probeOntologyFunctionContainerInterfacesMock: ApiResponse<ProbeOnto
           required: false,
           type: "object",
           description: "回显的请求体",
+          fields: [
+            {
+              name: "title",
+              in: "body",
+              required: false,
+              type: "string",
+              description: "标题",
+            },
+            {
+              name: "content",
+              in: "body",
+              required: false,
+              type: "string",
+              description: "内容",
+            },
+          ],
         },
       ],
     },
