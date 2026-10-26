@@ -39,6 +39,7 @@ import {
   buildOntologyFunctionScriptTestRequest,
   buildOntologyFunctionTestBindingKeys,
   buildOntologyFunctionTestRequest,
+  writeOntologyFunctionScriptTestParamValue,
   type OntologyFunctionScriptTestInputRow,
 } from "@/utils/mapOntologyFunctionTest";
 
@@ -125,8 +126,6 @@ export function useFunctionOperatorWorkspace() {
   const editingOperator = ref<FunctionOperator | null>(null);
   const formDraft = ref<FunctionOperatorDraft | null>(null);
   const formVisible = ref(false);
-  /** 新建脚本在 IDE 中创建成功后保留弹框，同会话后续保存走 PUT 且不关闭。 */
-  const keepScriptFormOpenAfterSave = ref(false);
   const testVisible = ref(false);
   const testingOperator = ref<FunctionOperator | null>(null);
   const testInput = ref("{}");
@@ -378,7 +377,6 @@ export function useFunctionOperatorWorkspace() {
    * @description 打开新建弹框。
    */
   function openCreate(): void {
-    keepScriptFormOpenAfterSave.value = false;
     editingOperator.value = null;
     formDraft.value = null;
     formVisible.value = true;
@@ -403,7 +401,6 @@ export function useFunctionOperatorWorkspace() {
       ElMessage.error("缺少函数版本，无法编辑");
       return;
     }
-    keepScriptFormOpenAfterSave.value = false;
     editingOperator.value = operator;
     formDraft.value = null;
     formVisible.value = true;
@@ -496,7 +493,7 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 保存脚本函数（CUSTOMIZE）；无 editingOperator 走创建 POST，有则走修改 PUT。新建成功后保留弹框并切换为编辑态。
+   * @description 保存脚本函数（CUSTOMIZE）；无 editingOperator 走创建 POST，有则走修改 PUT。创建与编辑成功后均保留弹框并刷新编辑态。
    * @param params 创建/修改请求体（同形）。
    */
   async function saveScriptOperator(params: CreateOntologyFunctionParams): Promise<void> {
@@ -516,26 +513,16 @@ export function useFunctionOperatorWorkspace() {
           throw new Error(response.message || "脚本函数保存失败");
         }
         ElMessage.success("脚本函数已更新");
-        if (keepScriptFormOpenAfterSave.value) {
-          const nextOperator = buildScriptOperatorFromSaveParams(params);
-          editingOperator.value = nextOperator;
-          formDraft.value = buildScriptDraftFromSaveParams(params);
-        } else {
-          formVisible.value = false;
-          formDraft.value = null;
-          editingOperator.value = null;
-        }
       } else {
         const response = await createOntologyFunctionInterface(params);
         if (response.code !== 200) {
           throw new Error(response.message || "脚本函数创建失败");
         }
         ElMessage.success("脚本函数草稿已保存");
-        keepScriptFormOpenAfterSave.value = true;
-        const nextOperator = buildScriptOperatorFromSaveParams(params);
-        editingOperator.value = nextOperator;
-        formDraft.value = buildScriptDraftFromSaveParams(params);
       }
+      const nextOperator = buildScriptOperatorFromSaveParams(params);
+      editingOperator.value = nextOperator;
+      formDraft.value = buildScriptDraftFromSaveParams(params);
       await loadOperators();
     } catch (error) {
       ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "脚本函数保存失败");
@@ -675,6 +662,7 @@ export function useFunctionOperatorWorkspace() {
         }
         ElMessage.success("函数已更新");
       } else {
+        payload.basedOnOldVersion = Boolean(draft.sourceVersion?.trim());
         const response = await createOntologyFunctionInterface(payload);
         if (response.code !== 200) {
           throw new Error(response.message || "函数创建失败");
@@ -1000,32 +988,7 @@ export function useFunctionOperatorWorkspace() {
    * @param paramValue 参数值。
    */
   function updateScriptTestParamValue(path: number[], paramValue: string): void {
-    scriptTestInputRows.value = writeScriptTestParamValue(scriptTestInputRows.value, path, paramValue);
-  }
-
-  /**
-   * @description 按序号路径写入叶子参数值，并返回新的入参树。
-   * @param rows 当前层入参行。
-   * @param path 剩余序号路径。
-   * @param paramValue 参数值。
-   * @returns 更新后的入参行。
-   */
-  function writeScriptTestParamValue(rows: OntologyFunctionScriptTestInputRow[], path: number[], paramValue: string): OntologyFunctionScriptTestInputRow[] {
-    const [index, ...rest] = path;
-    if (index === undefined || !Number.isInteger(index) || index < 0 || index >= rows.length) {
-      return rows;
-    }
-    const current = rows[index];
-    if (!current) {
-      return rows;
-    }
-    const next = [...rows];
-    if (rest.length === 0) {
-      next[index] = { ...current, paramValue };
-      return next;
-    }
-    next[index] = { ...current, fields: writeScriptTestParamValue(current.fields ?? [], rest, paramValue) };
-    return next;
+    scriptTestInputRows.value = writeOntologyFunctionScriptTestParamValue(scriptTestInputRows.value, path, paramValue);
   }
 
   /**
@@ -1151,12 +1114,6 @@ export function useFunctionOperatorWorkspace() {
       }
     }
   }
-
-  watch(formVisible, (visible) => {
-    if (!visible) {
-      keepScriptFormOpenAfterSave.value = false;
-    }
-  });
 
   watch(detailVisible, (visible) => {
     if (!visible) {

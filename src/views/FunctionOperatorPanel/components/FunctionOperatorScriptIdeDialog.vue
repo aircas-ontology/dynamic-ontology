@@ -14,10 +14,10 @@
           <span class="function-operator-script-ide__meta">{{ subtitleText }}</span>
         </div>
         <div class="function-operator-script-ide__actions">
-          <el-button :disabled="saving" @click="goBackPreviousStep">返回上一步</el-button>
-          <el-button :disabled="saving" @click="notifyScriptFeatureUnavailable('测试')">测试</el-button>
-          <el-button :disabled="saving" @click="templateDrawerVisible = true">模板管理</el-button>
-          <el-button type="primary" :loading="saving || parsing" @click="submitScriptFunctionCreate">保存</el-button>
+          <el-button :disabled="saving || testing" @click="goBackPreviousStep">返回上一步</el-button>
+          <el-button :disabled="saving || parsing" :loading="testing" @click="runScriptIdeTest">测试</el-button>
+          <el-button :disabled="saving || testing" @click="templateDrawerVisible = true">模板管理</el-button>
+          <el-button type="primary" :loading="saving || parsing" :disabled="testing" @click="submitScriptFunctionCreate">保存</el-button>
         </div>
       </div>
     </template>
@@ -56,19 +56,15 @@
       <aside class="function-operator-script-ide__side function-operator-script-ide__side--right">
         <div class="function-operator-script-ide__field function-operator-script-ide__field--grow">
           <div class="function-operator-script-ide__label">测试参数</div>
-          <el-input
-            :model-value="testParams"
-            type="textarea"
-            :rows="6"
-            class="function-operator-script-ide__test-input"
-            resize="none"
-            @update:model-value="emit('update:testParams', $event)"
-          />
-          <p class="function-operator-script-ide__status">尚未测试</p>
+          <div class="function-operator-script-ide__test-params">
+            <p v-if="ideTestInputRows.length === 0" class="function-operator-script-ide__empty">请先保存以生成测试参数</p>
+            <FunctionOperatorScriptTestParamTree v-else :rows="ideTestInputRows" ariaLabel="脚本 IDE 测试入参" @update-param="updateIdeTestParamValue" />
+          </div>
+          <p class="function-operator-script-ide__status">{{ ideTestStatusText }}</p>
         </div>
         <div class="function-operator-script-ide__field function-operator-script-ide__field--grow">
           <div class="function-operator-script-ide__label">运行结果</div>
-          <div class="function-operator-script-ide__result" aria-live="polite">测试结果将在这里显示</div>
+          <pre class="function-operator-script-ide__result" aria-live="polite">{{ ideTestOutput || "测试结果将在这里显示" }}</pre>
         </div>
       </aside>
     </div>
@@ -79,7 +75,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { postParseOntologyFunctionParamsInterface } from "@/apis";
+import { postParseOntologyFunctionParamsInterface, testOntologyFunctionInterface } from "@/apis";
 import {
   FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS,
   type CreateOntologyFunctionParams,
@@ -87,12 +83,22 @@ import {
   type ParseOntologyFunctionParamItem,
 } from "@/types";
 import { mapScriptLanguageToApi } from "@/utils/mapFunctionOperatorScriptLanguage";
+import {
+  buildOntologyFunctionScriptTestInputRowsFromParsed,
+  buildOntologyFunctionScriptTestRequest,
+  writeOntologyFunctionScriptTestParamValue,
+  type OntologyFunctionScriptTestInputRow,
+} from "@/utils/mapOntologyFunctionTest";
 import FunctionOperatorScriptCodeEditor from "./FunctionOperatorScriptCodeEditor.vue";
 import FunctionOperatorScriptParamTree from "./FunctionOperatorScriptParamTree.vue";
+import FunctionOperatorScriptTestParamTree from "./FunctionOperatorScriptTestParamTree.vue";
 import FunctionOperatorTemplateDrawer from "./FunctionOperatorTemplateDrawer.vue";
 import { buildCreateOntologyScriptFunctionParams } from "../utils/buildCreateOntologyScriptFunctionParams";
 import { SCRIPT_FUNCTION_STARTERS } from "../utils/scriptFunctionStarters";
 import { splitParsedScriptParameters } from "../utils/splitParsedScriptParameters";
+
+/** IDE 内测试命令状态。 */
+type IdeTestStatus = "idle" | "testing" | "success" | "error";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -100,8 +106,6 @@ const props = defineProps<{
   code: string;
   /** 父级持有的脚本语言草稿。 */
   language: FunctionOperatorScriptLanguage;
-  /** 父级持有的测试参数草稿。 */
-  testParams: string;
   functionApi: string;
   version: string;
   displayName: string;
@@ -122,7 +126,6 @@ const emit = defineEmits<{
   "update:modelValue": [value: boolean];
   "update:code": [value: string];
   "update:language": [value: FunctionOperatorScriptLanguage];
-  "update:testParams": [value: string];
   "update:parsedInputParameters": [value: ParseOntologyFunctionParamItem[]];
   "update:parsedOutputParameters": [value: ParseOntologyFunctionParamItem[]];
   save: [params: CreateOntologyFunctionParams];
@@ -137,9 +140,14 @@ const parsing = ref(false);
 const templateDrawerVisible = ref(false);
 const selectedTemplate = ref<string>();
 const parseLocked = ref(false);
+const testing = ref(false);
+const ideTestStatus = ref<IdeTestStatus>("idle");
+const ideTestOutput = ref("");
+const ideTestInputRows = ref<OntologyFunctionScriptTestInputRow[]>([]);
 let parsedCodeSnapshot = "";
 let parsedLanguageSnapshot: FunctionOperatorScriptLanguage | "" = "";
 let parseGeneration = 0;
+let ideTestGeneration = 0;
 
 const templateOptions = computed(() => [{ label: `${languageLabel(props.language)} 默认模板`, value: props.language }]);
 
@@ -176,18 +184,44 @@ const subtitleText = computed(() => {
   return `${apiName} · ${versionText}`;
 });
 
+const ideTestStatusText = computed(() => {
+  if (ideTestStatus.value === "testing") {
+    return "测试中…";
+  }
+  if (ideTestStatus.value === "success") {
+    return "测试成功";
+  }
+  if (ideTestStatus.value === "error") {
+    return "测试失败";
+  }
+  return "尚未测试";
+});
+
 /**
- * @description 清空左侧参数树，并同步清空父级草稿。
+ * @description 按解析得到的 INPUT 树刷新右侧测试入参，并重置运行结果状态。
+ * @param items 输入参数树。
+ */
+function refreshIdeTestInputRows(items: ParseOntologyFunctionParamItem[]): void {
+  ideTestInputRows.value = buildOntologyFunctionScriptTestInputRowsFromParsed(items);
+  ideTestStatus.value = "idle";
+  ideTestOutput.value = "";
+}
+
+/**
+ * @description 清空左侧参数树与右侧测试入参，并同步清空父级草稿。
  */
 function clearParsedScriptParameters(): void {
   inputParameters.value = [];
   outputParameters.value = [];
+  ideTestInputRows.value = [];
+  ideTestStatus.value = "idle";
+  ideTestOutput.value = "";
   emit("update:parsedInputParameters", []);
   emit("update:parsedOutputParameters", []);
 }
 
 /**
- * @description 打开 IDE 时套用详情或上次解析得到的参数树；有参数则视为已解析。
+ * @description 打开 IDE 时套用详情或上次解析得到的参数树；有参数则视为已解析并初始化测试入参。
  */
 function applyIncomingParsedParameters(): void {
   inputParameters.value = props.parsedInputParameters.map((item) => ({ ...item }));
@@ -196,11 +230,15 @@ function applyIncomingParsedParameters(): void {
     parsedCodeSnapshot = props.code;
     parsedLanguageSnapshot = props.language;
     parseLocked.value = true;
+    refreshIdeTestInputRows(inputParameters.value);
     return;
   }
   parseLocked.value = false;
   parsedCodeSnapshot = "";
   parsedLanguageSnapshot = "";
+  ideTestInputRows.value = [];
+  ideTestStatus.value = "idle";
+  ideTestOutput.value = "";
 }
 
 /**
@@ -211,11 +249,66 @@ function goBackPreviousStep(): void {
 }
 
 /**
- * @description 提示测试本阶段未开放。
- * @param actionLabel 操作名称。
+ * @description 按路径更新 IDE 测试入参叶子值。
+ * @param path 各层序号。
+ * @param paramValue 参数值。
  */
-function notifyScriptFeatureUnavailable(actionLabel: string): void {
-  ElMessage.info(`脚本函数${actionLabel}本阶段暂未开放`);
+function updateIdeTestParamValue(path: number[], paramValue: string): void {
+  ideTestInputRows.value = writeOntologyFunctionScriptTestParamValue(ideTestInputRows.value, path, paramValue);
+}
+
+/**
+ * @description 调用与列表脚本测试相同的请求体测试当前已保存函数。
+ */
+async function runScriptIdeTest(): Promise<void> {
+  if (testing.value || props.saving || parsing.value) {
+    return;
+  }
+  const functionApi = props.functionApi.trim();
+  const version = props.version.trim();
+  if (!functionApi) {
+    ElMessage.error("缺少函数 API 名称，无法测试");
+    return;
+  }
+  if (!version) {
+    ElMessage.error("缺少函数版本，无法测试");
+    return;
+  }
+  const requestId = ++ideTestGeneration;
+  const payload = buildOntologyFunctionScriptTestRequest({
+    functionApi,
+    version,
+    rows: ideTestInputRows.value,
+  });
+  testing.value = true;
+  ideTestStatus.value = "testing";
+  ideTestOutput.value = "";
+  try {
+    const response = await testOntologyFunctionInterface(payload);
+    if (requestId !== ideTestGeneration) {
+      return;
+    }
+    ideTestOutput.value = `${JSON.stringify(response, null, 2)}\n`;
+    if (response.code !== 200) {
+      throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数测试失败");
+    }
+    ideTestStatus.value = "success";
+    ElMessage.success("测试成功");
+  } catch (error) {
+    if (requestId !== ideTestGeneration) {
+      return;
+    }
+    const message = error instanceof Error && error.message.trim() ? error.message : "函数测试失败";
+    if (!ideTestOutput.value.trim()) {
+      ideTestOutput.value = `${JSON.stringify({ code: null, message, success: false, data: null }, null, 2)}\n`;
+    }
+    ideTestStatus.value = "error";
+    ElMessage.error(message);
+  } finally {
+    if (requestId === ideTestGeneration) {
+      testing.value = false;
+    }
+  }
 }
 
 /**
@@ -269,10 +362,10 @@ async function parseScriptParameters(): Promise<boolean> {
 }
 
 /**
- * @description 先解析脚本参数，再组装创建或修改请求并提交保存。
+ * @description 先解析脚本参数，再组装创建或修改请求并提交保存；解析成功后刷新右侧测试入参。
  */
 async function submitScriptFunctionCreate(): Promise<void> {
-  if (props.saving || parsing.value) {
+  if (props.saving || parsing.value || testing.value) {
     return;
   }
   const code = props.code;
@@ -296,6 +389,7 @@ async function submitScriptFunctionCreate(): Promise<void> {
   if (!parsed) {
     return;
   }
+  refreshIdeTestInputRows(inputParameters.value);
   const params = buildCreateOntologyScriptFunctionParams({
     functionApi: props.functionApi,
     version: props.version,
@@ -343,6 +437,10 @@ watch(
     if (!visible) {
       parseGeneration += 1;
       parsing.value = false;
+      ideTestGeneration += 1;
+      testing.value = false;
+      ideTestStatus.value = "idle";
+      ideTestOutput.value = "";
       return;
     }
     applyIncomingParsedParameters();
@@ -446,6 +544,18 @@ watch(
   color: var(--aircas-color-text-primary);
 }
 
+.function-operator-script-ide__test-params {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.function-operator-script-ide__empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--aircas-color-text-secondary);
+}
+
 .function-operator-script-ide__status {
   margin: 0;
   font-size: 12px;
@@ -455,30 +565,17 @@ watch(
 .function-operator-script-ide__result {
   flex: 1 1 auto;
   min-height: 120px;
+  margin: 0;
   padding: 10px;
   overflow: auto;
   border: 1px solid var(--aircas-color-border);
   border-radius: 6px;
   background: var(--aircas-color-panel-background-deep);
   color: var(--aircas-color-text-secondary);
-  font-size: 12px;
-}
-
-.function-operator-script-ide__test-input {
-  flex: 1 1 auto;
-}
-
-:deep(.function-operator-script-ide__test-input .el-textarea__inner) {
-  height: 100%;
-  min-height: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  background: var(--aircas-color-panel-background-deep);
-}
-
-:deep(.function-operator-script-ide__test-input.el-textarea) {
-  flex: 1 1 auto;
-  height: 100%;
-  min-height: 0;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>
 

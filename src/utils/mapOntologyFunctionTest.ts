@@ -1,4 +1,9 @@
-import type { GetOntologyFunctionDetailParamItem, TestOntologyFunctionParameterItem, TestOntologyFunctionParams } from "@/types";
+import type {
+  GetOntologyFunctionDetailParamItem,
+  ParseOntologyFunctionParamItem,
+  TestOntologyFunctionParameterItem,
+  TestOntologyFunctionParams,
+} from "@/types";
 
 /** 脚本测试表单入参行（含类型展示与可选下级）。 */
 export interface OntologyFunctionScriptTestInputRow {
@@ -8,6 +13,15 @@ export interface OntologyFunctionScriptTestInputRow {
   paramValue?: string;
   /** 下级参数。无下级时省略。 */
   fields?: OntologyFunctionScriptTestInputRow[];
+}
+
+/** 详情或解析参数树中用于生成测试入参的最小字段。 */
+interface OntologyFunctionScriptTestParamSourceItem {
+  paramName: string;
+  paramType: string;
+  category?: string;
+  paramOrder?: number;
+  fields?: OntologyFunctionScriptTestParamSourceItem[];
 }
 
 /**
@@ -40,7 +54,7 @@ export function buildOntologyFunctionTestBindingKeys(params: GetOntologyFunction
  * @param filterInput 为 true 时只保留 category 为 INPUT 的项。
  * @returns 脚本测试表单入参行。
  */
-function mapDetailItemsToScriptTestRows(items: GetOntologyFunctionDetailParamItem[], filterInput: boolean): OntologyFunctionScriptTestInputRow[] {
+function mapDetailItemsToScriptTestRows(items: OntologyFunctionScriptTestParamSourceItem[], filterInput: boolean): OntologyFunctionScriptTestInputRow[] {
   const sortable: Array<OntologyFunctionScriptTestInputRow & { paramOrder: number }> = [];
   for (const item of items) {
     if (filterInput) {
@@ -83,6 +97,44 @@ function mapDetailItemsToScriptTestRows(items: GetOntologyFunctionDetailParamIte
  */
 export function buildOntologyFunctionScriptTestInputRows(params: GetOntologyFunctionDetailParamItem[]): OntologyFunctionScriptTestInputRow[] {
   return mapDetailItemsToScriptTestRows(params, true);
+}
+
+/**
+ * @description 将解析得到的参数树转为脚本测试入参行；顶层仅保留 INPUT，叶子 paramValue 初始为空字符串。
+ * @param items 解析接口参数项（IDE 左侧或保存解析结果）。
+ * @returns 脚本测试表单入参行。
+ */
+export function buildOntologyFunctionScriptTestInputRowsFromParsed(items: ParseOntologyFunctionParamItem[]): OntologyFunctionScriptTestInputRow[] {
+  return mapDetailItemsToScriptTestRows(items, true);
+}
+
+/**
+ * @description 按从根到叶子的序号路径写入叶子参数值，并返回新的入参树。
+ * @param rows 当前层入参行。
+ * @param path 剩余序号路径。
+ * @param paramValue 参数值。
+ * @returns 更新后的入参行。
+ */
+export function writeOntologyFunctionScriptTestParamValue(
+  rows: OntologyFunctionScriptTestInputRow[],
+  path: number[],
+  paramValue: string,
+): OntologyFunctionScriptTestInputRow[] {
+  const [index, ...rest] = path;
+  if (index === undefined || !Number.isInteger(index) || index < 0 || index >= rows.length) {
+    return rows;
+  }
+  const current = rows[index];
+  if (!current) {
+    return rows;
+  }
+  const next = [...rows];
+  if (rest.length === 0) {
+    next[index] = { ...current, paramValue };
+    return next;
+  }
+  next[index] = { ...current, fields: writeOntologyFunctionScriptTestParamValue(current.fields ?? [], rest, paramValue) };
+  return next;
 }
 
 /**

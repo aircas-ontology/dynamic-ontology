@@ -6,6 +6,7 @@
     width="min(960px, calc(100vw - 48px))"
     align-center
     destroy-on-close
+    :close-on-click-modal="false"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="function-operator-form">
@@ -176,6 +177,95 @@
           <el-input v-else model-value="仅作原型展示，正式密钥由后端托管" disabled />
         </el-form-item>
 
+        <el-form-item label="上传接口文档">
+          <div class="function-operator-form__upload-row">
+            <el-upload
+              :auto-upload="false"
+              :show-file-list="false"
+              accept=".json,.yaml,.yml,application/json,application/x-yaml,text/yaml"
+              :disabled="externalApiDocUploading"
+              :on-change="onExternalApiDocFileChange"
+            >
+              <el-button type="primary" plain native-type="button" :loading="externalApiDocUploading" :disabled="externalApiDocUploading">
+                上传接口文档
+              </el-button>
+            </el-upload>
+            <span class="function-operator-form__upload-hint">支持 OpenAPI / Swagger (.json / .yaml / .yml)</span>
+            <span v-if="externalApiDocFileName" class="function-operator-form__upload-name">{{ externalApiDocFileName }}</span>
+            <el-button v-if="externalApiDocFileName" link type="primary" native-type="button" @click="clearExternalApiDocFile">清除</el-button>
+          </div>
+        </el-form-item>
+        <div class="function-operator-form__param-head">
+          <div class="function-operator-form__section-title">已发现接口</div>
+          <span class="function-operator-form__upload-hint">请勾选一条接口以回填入出参</span>
+        </div>
+        <el-table
+          v-if="externalApiDiscoveredInterfaces.length > 0"
+          class="function-operator-form__param-table"
+          :data="externalApiDiscoveredInterfaces"
+          :row-key="resolveExternalApiDiscoveredInterfaceRowKey"
+          empty-text="暂无已发现接口"
+        >
+          <el-table-column width="52" label="">
+            <template #default="{ row }">
+              <el-radio
+                :model-value="externalApiSelectedInterfaceKey"
+                :value="resolveExternalApiDiscoveredInterfaceRowKey(row)"
+                @change="onExternalApiDiscoveredInterfaceSelect(resolveExternalApiDiscoveredInterfaceRowKey(row))"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column type="expand">
+            <template #default="{ row }">
+              <div class="function-operator-form__probe-expand">
+                <div class="function-operator-form__section-subtitle">入参</div>
+                <el-table
+                  class="function-operator-form__param-table"
+                  :data="row.inputParameters"
+                  row-key="_rowKey"
+                  :tree-props="{ children: 'fields' }"
+                  default-expand-all
+                  empty-text="暂无入参"
+                >
+                  <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
+                  <el-table-column prop="in" label="in" width="88" />
+                  <el-table-column label="required" width="88">
+                    <template #default="{ row: paramRow }">
+                      {{ paramRow.required ? "是" : "否" }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="type" label="type" width="100" />
+                  <el-table-column prop="description" label="description" min-width="160" show-overflow-tooltip />
+                </el-table>
+                <div class="function-operator-form__section-subtitle">出参</div>
+                <el-table
+                  class="function-operator-form__param-table"
+                  :data="row.outputParameters"
+                  row-key="_rowKey"
+                  :tree-props="{ children: 'fields' }"
+                  default-expand-all
+                  empty-text="暂无出参"
+                >
+                  <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
+                  <el-table-column prop="in" label="in" width="88" />
+                  <el-table-column label="required" width="88">
+                    <template #default="{ row: paramRow }">
+                      {{ paramRow.required ? "是" : "否" }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="type" label="type" width="100" />
+                  <el-table-column prop="description" label="description" min-width="160" show-overflow-tooltip />
+                </el-table>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="name" label="接口名称" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="method" label="请求方式" width="100" />
+          <el-table-column prop="path" label="路径" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
+        </el-table>
+        <el-empty v-else description="上传接口文档并探测后展示" />
+
         <div class="function-operator-form__param-head">
           <div class="function-operator-form__section-title">输入参数</div>
           <el-button type="primary" plain native-type="button" @click="addExternalApiInputParameter">添加</el-button>
@@ -282,20 +372,6 @@
             </template>
           </el-table-column>
         </el-table>
-
-        <div class="function-operator-form__test">
-          <div class="function-operator-form__param-head">
-            <div class="function-operator-form__section-title">配置测试</div>
-            <span class="function-operator-form__test-status">尚未测试</span>
-          </div>
-          <div class="function-operator-form__test-panes">
-            <div class="function-operator-form__test-editor">
-              <el-input v-model="externalApiTestInput" class="function-operator-form__test-input" type="textarea" :rows="8" resize="vertical" />
-              <el-button type="primary" plain native-type="button" @click="notifyExternalApiTestUnavailable">运行测试</el-button>
-            </div>
-            <div class="function-operator-form__test-result" aria-live="polite">测试结果将在这里显示</div>
-          </div>
-        </div>
       </section>
 
       <section v-else-if="form.type === 'docker'" class="function-operator-form__section">
@@ -447,7 +523,6 @@
     :model-value="scriptIdeVisible"
     v-model:code="scriptDraftCode"
     v-model:language="scriptDraftLanguage"
-    v-model:test-params="scriptDraftTestParams"
     :function-api="form.functionApi"
     :version="form.version"
     :display-name="form.name"
@@ -526,12 +601,13 @@ import {
 } from "@/utils/functionOperatorBasicFilter";
 import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToApi";
 import { mapOntologyExternalApiConfigToForm, mapOntologyFunctionDetailToDraft, type OntologyExternalApiFormField } from "@/utils/mapOntologyFunctionDetail";
+import { mapProbeInterfaceToExternalApiFormParams } from "@/utils/mapProbeInterfaceToExternalApiForm";
 
 import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBuilder.vue";
 import FunctionOperatorCompositeWorkflowDialog from "./FunctionOperatorCompositeWorkflowDialog.vue";
 import FunctionOperatorExternalApiParamFieldsEditor, { type ExternalApiParamFieldRow } from "./FunctionOperatorExternalApiParamFieldsEditor.vue";
 import FunctionOperatorScriptIdeDialog from "./FunctionOperatorScriptIdeDialog.vue";
-import { createDefaultScriptFunctionCode, DEFAULT_SCRIPT_FUNCTION_LANGUAGE, DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS } from "../utils/scriptFunctionStarters";
+import { createDefaultScriptFunctionCode, DEFAULT_SCRIPT_FUNCTION_LANGUAGE } from "../utils/scriptFunctionStarters";
 import { buildCreateOntologyExternalFunctionParams } from "../utils/buildCreateOntologyExternalFunctionParams";
 import { buildCreateOntologyFunctionContainerParams } from "../utils/buildCreateOntologyFunctionContainerParams";
 import { mapOperatorParametersToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
@@ -564,10 +640,6 @@ const externalApiAuth = ref<(typeof EXTERNAL_API_AUTH_OPTIONS)[number]["value"]>
 const externalApiHeaderKey = ref("");
 /** API Key 模式下的认证 Header 值。 */
 const externalApiHeader = ref("");
-/** 配置测试左侧默认 JSON。 */
-const EXTERNAL_API_TEST_INPUT_DEFAULT = '{\n  "": ""\n}';
-/** 配置测试输入，仅表单展示。 */
-const externalApiTestInput = ref(EXTERNAL_API_TEST_INPUT_DEFAULT);
 /** 外部 API 输入参数，仅表单展示。 */
 const externalApiInputParameters = ref<ExternalApiInputParameterRow[]>([]);
 /** 外部 API 输出参数，仅表单展示。 */
@@ -577,6 +649,16 @@ const externalApiInputExpandKeys = computed(() => externalApiInputParameters.val
 /** object 输出行自动展开，便于编辑嵌套属性。 */
 const externalApiOutputExpandKeys = computed(() => externalApiOutputParameters.value.filter((row) => row.type === "object").map((row) => row.id));
 let externalApiParameterSerial = 0;
+/** 外部 API 已选接口文档文件名，仅表单展示。 */
+const externalApiDocFileName = ref("");
+/** 外部 API 接口文档是否正在上传或随后探查。 */
+const externalApiDocUploading = ref(false);
+/** 外部 API 探查得到的已发现接口列表。 */
+const externalApiDiscoveredInterfaces = ref<ProbeContainerInterfaceDisplayItem[]>([]);
+/** 外部 API 当前单选的已发现接口 row-key。 */
+const externalApiSelectedInterfaceKey = ref("");
+/** 外部 API 接口文档上传/探查代数，用于丢弃过期响应。 */
+let externalApiDocUploadGeneration = 0;
 
 /** 容器算子已选镜像文件名，仅表单展示。 */
 const dockerImageFileName = ref("");
@@ -655,8 +737,6 @@ const compositeWorkflowVisible = ref(false);
 const scriptDraftCode = ref(createDefaultScriptFunctionCode());
 /** 脚本 IDE 语言草稿。 */
 const scriptDraftLanguage = ref<FunctionOperatorScriptLanguage>(DEFAULT_SCRIPT_FUNCTION_LANGUAGE);
-/** 脚本 IDE 测试参数草稿。 */
-const scriptDraftTestParams = ref(DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS);
 /** 脚本 IDE 已展示的输入参数树草稿。 */
 const scriptDraftInputParameters = ref<ParseOntologyFunctionParamItem[]>([]);
 /** 脚本 IDE 已展示的输出参数树草稿。 */
@@ -668,7 +748,6 @@ const scriptDraftOutputParameters = ref<ParseOntologyFunctionParamItem[]>([]);
 function resetScriptDraft(): void {
   scriptDraftCode.value = createDefaultScriptFunctionCode();
   scriptDraftLanguage.value = DEFAULT_SCRIPT_FUNCTION_LANGUAGE;
-  scriptDraftTestParams.value = DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS;
   scriptDraftInputParameters.value = [];
   scriptDraftOutputParameters.value = [];
 }
@@ -683,7 +762,6 @@ function applyScriptDraftFromDefinition(draft: FunctionOperatorDraft): void {
   }
   scriptDraftCode.value = draft.definition.code;
   scriptDraftLanguage.value = draft.definition.language;
-  scriptDraftTestParams.value = DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS;
   scriptDraftInputParameters.value = mapOperatorParametersToScriptParamTree(draft.inputParameters, "INPUT");
   scriptDraftOutputParameters.value = mapOperatorParametersToScriptParamTree(draft.outputParameters, "OUTPUT");
 }
@@ -926,7 +1004,7 @@ function toDraft(operator: FunctionOperator): FunctionOperatorDraft {
 const form = reactive<FunctionOperatorDraft>(createEmptyDraft());
 
 /**
- * @description 用详情 apiConfig 回填外部 API 表单。配置里的输入或输出为空时，改用详情 params。没有配置时清空这些字段，不改配置测试内容。
+ * @description 用详情 apiConfig 回填外部 API 表单。配置里的输入或输出为空时，改用详情 params。没有配置时清空这些字段。
  * @param draft 外部 API 草稿；其他类型不传。
  */
 function applyExternalApiConfig(draft: FunctionOperatorDraft | undefined): void {
@@ -957,9 +1035,10 @@ function applyExternalApiConfig(draft: FunctionOperatorDraft | undefined): void 
   externalApiOutputParameters.value = formValues.outputs.map((row) => mapExternalApiFormFieldWithIds(row, "output"));
 }
 /**
- * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header、参数行和配置测试内容。
+ * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header、文档探查与参数行。
  */
 function resetExternalApiForm(): void {
+  externalApiDocUploadGeneration += 1;
   externalApiEndpoint.value = "";
   externalApiMethod.value = "POST";
   externalApiAuth.value = "none";
@@ -967,7 +1046,10 @@ function resetExternalApiForm(): void {
   externalApiHeader.value = "";
   externalApiInputParameters.value = [];
   externalApiOutputParameters.value = [];
-  externalApiTestInput.value = EXTERNAL_API_TEST_INPUT_DEFAULT;
+  externalApiDocFileName.value = "";
+  externalApiDocUploading.value = false;
+  externalApiDiscoveredInterfaces.value = [];
+  externalApiSelectedInterfaceKey.value = "";
 }
 
 /**
@@ -1200,10 +1282,140 @@ function clearDockerApiDocFile(): void {
 }
 
 /**
- * @description 提示外部 API 配置测试本阶段未开放，不调用测试接口。
+ * @description 解析外部 API 已发现接口行的稳定 row-key；表格槽位行按对象收窄。
+ * @param row 探查接口项或表格行。
+ * @returns 行键。
  */
-function notifyExternalApiTestUnavailable(): void {
-  ElMessage.info("配置测试本阶段暂未开放");
+function resolveExternalApiDiscoveredInterfaceRowKey(row: unknown): string {
+  if (!row || typeof row !== "object") {
+    return "";
+  }
+  return resolveDockerDiscoveredInterfaceRowKey(row as ProbeOntologyFunctionContainerInterfaceItem);
+}
+
+/**
+ * @description 将选中的探查接口回填到外部 API 入出参表，并同步可识别的请求方法。
+ * @param item 探查接口展示项。
+ */
+function applyExternalApiDiscoveredInterface(item: ProbeContainerInterfaceDisplayItem): void {
+  const mapped = mapProbeInterfaceToExternalApiFormParams(item);
+  externalApiInputParameters.value = mapped.inputs.map((row) => ({
+    ...mapExternalApiFormFieldWithIds(row, "input"),
+    location: row.location,
+    required: row.required,
+  }));
+  externalApiOutputParameters.value = mapped.outputs.map((row) => mapExternalApiFormFieldWithIds(row, "output"));
+  if (mapped.method) {
+    externalApiMethod.value = mapped.method;
+  }
+}
+
+/**
+ * @description 单选已发现接口：按 row-key 回填入出参。
+ * @param key 选中行键。
+ */
+function onExternalApiDiscoveredInterfaceSelect(key: string | number | boolean | undefined): void {
+  const selectedKey = typeof key === "string" ? key : "";
+  externalApiSelectedInterfaceKey.value = selectedKey;
+  if (!selectedKey) {
+    return;
+  }
+  const selected = externalApiDiscoveredInterfaces.value.find((item) => resolveExternalApiDiscoveredInterfaceRowKey(item) === selectedKey);
+  if (!selected) {
+    return;
+  }
+  applyExternalApiDiscoveredInterface(selected);
+}
+
+/**
+ * @description 选择外部 API 接口文档：上传后自动探查；仅 1 条结果时自动选中回填。
+ * @param upload 上传组件文件对象。
+ */
+async function onExternalApiDocFileChange(upload: UploadFile): Promise<void> {
+  const rawFile = upload.raw;
+  if (!rawFile) {
+    return;
+  }
+  const name = typeof rawFile.name === "string" ? rawFile.name : "";
+  if (!isDockerApiDocFileName(name)) {
+    ElMessage.warning("请选择 OpenAPI / Swagger（.json / .yaml / .yml）文件");
+    return;
+  }
+  if (externalApiDocUploading.value) {
+    return;
+  }
+  externalApiDocUploading.value = true;
+  const current = ++externalApiDocUploadGeneration;
+  let docPath = "";
+  try {
+    const response = await postUploadOntologyFunctionContainerDocInterface({ file: rawFile });
+    if (current !== externalApiDocUploadGeneration) {
+      return;
+    }
+    if (response.code !== 200 || !response.data) {
+      externalApiDocFileName.value = "";
+      externalApiDiscoveredInterfaces.value = [];
+      externalApiSelectedInterfaceKey.value = "";
+      ElMessage.error(response.message.trim() || "接口文档上传失败");
+      return;
+    }
+    externalApiDocFileName.value = name;
+    docPath = response.data.path;
+    ElMessage.success("上传成功");
+  } catch (cause) {
+    if (current !== externalApiDocUploadGeneration) {
+      return;
+    }
+    externalApiDocFileName.value = "";
+    externalApiDiscoveredInterfaces.value = [];
+    externalApiSelectedInterfaceKey.value = "";
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "接口文档上传失败");
+    return;
+  }
+
+  try {
+    const probeResponse = await postProbeOntologyFunctionContainerInterfacesInterface({ docPath });
+    if (current !== externalApiDocUploadGeneration) {
+      return;
+    }
+    if (probeResponse.code !== 200) {
+      externalApiDiscoveredInterfaces.value = [];
+      externalApiSelectedInterfaceKey.value = "";
+      ElMessage.error(probeResponse.message.trim() || "接口探查失败");
+      return;
+    }
+    const discovered = Array.isArray(probeResponse.data) ? probeResponse.data.map((item) => mapProbeContainerInterfaceForDisplay(item)) : [];
+    externalApiDiscoveredInterfaces.value = discovered;
+    if (discovered.length === 1 && discovered[0]) {
+      const onlyKey = resolveExternalApiDiscoveredInterfaceRowKey(discovered[0]);
+      externalApiSelectedInterfaceKey.value = onlyKey;
+      applyExternalApiDiscoveredInterface(discovered[0]);
+    } else {
+      externalApiSelectedInterfaceKey.value = "";
+    }
+  } catch (cause) {
+    if (current !== externalApiDocUploadGeneration) {
+      return;
+    }
+    externalApiDiscoveredInterfaces.value = [];
+    externalApiSelectedInterfaceKey.value = "";
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "接口探查失败");
+  } finally {
+    if (current === externalApiDocUploadGeneration) {
+      externalApiDocUploading.value = false;
+    }
+  }
+}
+
+/**
+ * @description 清除外部 API 已选接口文档与探查结果；不强制清空入出参表。
+ */
+function clearExternalApiDocFile(): void {
+  externalApiDocUploadGeneration += 1;
+  externalApiDocFileName.value = "";
+  externalApiDocUploading.value = false;
+  externalApiDiscoveredInterfaces.value = [];
+  externalApiSelectedInterfaceKey.value = "";
 }
 
 /**
@@ -1545,6 +1757,7 @@ async function submitDraft(): Promise<void> {
     version: form.version.trim(),
     description: form.description.trim(),
     type: "basic",
+    sourceVersion: props.operator ? "" : sourceVersion.value.trim(),
     definition: {
       ...form.definition,
       aggFunc,
@@ -1856,54 +2069,12 @@ watch(
   word-break: break-all;
 }
 
-.function-operator-form__test {
-  margin-top: 8px;
-}
-
-.function-operator-form__test-status {
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--aircas-color-panel-background-deep);
-  color: var(--aircas-color-text-secondary);
-  font-size: 12px;
-}
-
-.function-operator-form__test-panes {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-
-.function-operator-form__test-editor {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.function-operator-form__test-input {
-  width: 100%;
-}
-
-.function-operator-form__test-result {
-  min-height: 168px;
-  padding: 8px 12px;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 6px;
-  background: var(--aircas-color-panel-background-deep);
-  color: var(--aircas-color-text-secondary);
-  font-size: 13px;
-  white-space: pre-wrap;
-}
-
 .function-operator-form__section--empty {
   padding: 24px 0;
 }
 
 @media (max-width: 640px) {
-  .function-operator-form__name-grid,
-  .function-operator-form__test-panes {
+  .function-operator-form__name-grid {
     grid-template-columns: 1fr;
   }
 }

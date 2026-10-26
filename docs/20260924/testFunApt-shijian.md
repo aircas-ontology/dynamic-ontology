@@ -29,6 +29,9 @@ mocks与types文件名自行语义化命名
     "functionApi": "a",
     "version": "",
     "ontologyIdentifier": "",
+    "type":"",
+    "code":"",
+    "language":"",
     "variableBindings": {
 
     },
@@ -41,6 +44,9 @@ mocks与types文件名自行语义化命名
 - `functionApi`：【string，必填】 函数api
 - `version`：【string，必填】 版本号（必填，格式 x.y.z）
 - `ontologyIdentifier`：【string，必填】 本体唯一值
+- `type`：【string，非必填】 未创建函数时的草稿测试必填
+- `code`：【string，非必填】 脚本源码（CUSTOMIZE 草稿测试必填）
+- `language`：【string，非必填】 脚本语言（CUSTOMIZE 草稿测试必填，不传默认 GROOVY）
 - `variableBindings`：【object，非必填】 BASIC_QUERY 类型需要传该参数
 - `parameters`：【array，非必填】 CUSTOMIZE/EXTERNAL 类型需要传该参数
 - `pageNum`：【number，非必填】 分页，默认1

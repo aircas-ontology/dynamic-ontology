@@ -111,6 +111,8 @@ export type FunctionOperatorDraft = Omit<FunctionOperator, "id" | "updatedAt" | 
   externalApiConfig?: CreateOntologyFunctionApiConfig;
   /** 函数编排详情中的 compositeConfig，用于画布回显。 */
   compositeConfig?: CompositeWorkflowSavePayload;
+  /** 新建时所选源版本；非空则创建请求 basedOnOldVersion 为 true。 */
+  sourceVersion?: string;
 };
 
 export interface FunctionOperatorQuery {
