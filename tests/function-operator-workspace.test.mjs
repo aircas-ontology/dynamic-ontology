@@ -390,6 +390,15 @@ test("external api function create form shows endpoint method and auth without s
   assert.doesNotMatch(formSource, /配置测试本阶段暂未开放/);
   assert.doesNotMatch(formSource, /testOntologyFunctionInterface/);
   assert.doesNotMatch(formSource, /function-operator-form__param-card/);
+  assert.match(formSource, /上传接口文档/);
+  assert.match(formSource, /已发现接口/);
+  assert.match(formSource, /请勾选一条接口以回填入出参/);
+  assert.match(formSource, /postUploadOntologyFunctionContainerDocInterface/);
+  assert.match(formSource, /postProbeOntologyFunctionContainerInterfacesInterface/);
+  assert.match(formSource, /onExternalApiDocFileChange/);
+  assert.match(formSource, /onExternalApiDiscoveredInterfaceSelect/);
+  assert.match(formSource, /mapProbeInterfaceToExternalApiFormParams/);
+  assert.match(formSource, /externalApiSelectedInterfaceKey/);
   assert.match(formSource, /输出参数/);
   assert.match(formSource, /addExternalApiInputParameter/);
   assert.match(formSource, /removeExternalApiInputParameter/);

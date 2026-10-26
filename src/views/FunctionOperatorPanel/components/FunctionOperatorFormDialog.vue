@@ -177,6 +177,95 @@
           <el-input v-else model-value="仅作原型展示，正式密钥由后端托管" disabled />
         </el-form-item>
 
+        <el-form-item label="上传接口文档">
+          <div class="function-operator-form__upload-row">
+            <el-upload
+              :auto-upload="false"
+              :show-file-list="false"
+              accept=".json,.yaml,.yml,application/json,application/x-yaml,text/yaml"
+              :disabled="externalApiDocUploading"
+              :on-change="onExternalApiDocFileChange"
+            >
+              <el-button type="primary" plain native-type="button" :loading="externalApiDocUploading" :disabled="externalApiDocUploading">
+                上传接口文档
+              </el-button>
+            </el-upload>
+            <span class="function-operator-form__upload-hint">支持 OpenAPI / Swagger (.json / .yaml / .yml)</span>
+            <span v-if="externalApiDocFileName" class="function-operator-form__upload-name">{{ externalApiDocFileName }}</span>
+            <el-button v-if="externalApiDocFileName" link type="primary" native-type="button" @click="clearExternalApiDocFile">清除</el-button>
+          </div>
+        </el-form-item>
+        <div class="function-operator-form__param-head">
+          <div class="function-operator-form__section-title">已发现接口</div>
+          <span class="function-operator-form__upload-hint">请勾选一条接口以回填入出参</span>
+        </div>
+        <el-table
+          v-if="externalApiDiscoveredInterfaces.length > 0"
+          class="function-operator-form__param-table"
+          :data="externalApiDiscoveredInterfaces"
+          :row-key="resolveExternalApiDiscoveredInterfaceRowKey"
+          empty-text="暂无已发现接口"
+        >
+          <el-table-column width="52" label="">
+            <template #default="{ row }">
+              <el-radio
+                :model-value="externalApiSelectedInterfaceKey"
+                :value="resolveExternalApiDiscoveredInterfaceRowKey(row)"
+                @change="onExternalApiDiscoveredInterfaceSelect(resolveExternalApiDiscoveredInterfaceRowKey(row))"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column type="expand">
+            <template #default="{ row }">
+              <div class="function-operator-form__probe-expand">
+                <div class="function-operator-form__section-subtitle">入参</div>
+                <el-table
+                  class="function-operator-form__param-table"
+                  :data="row.inputParameters"
+                  row-key="_rowKey"
+                  :tree-props="{ children: 'fields' }"
+                  default-expand-all
+                  empty-text="暂无入参"
+                >
+                  <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
+                  <el-table-column prop="in" label="in" width="88" />
+                  <el-table-column label="required" width="88">
+                    <template #default="{ row: paramRow }">
+                      {{ paramRow.required ? "是" : "否" }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="type" label="type" width="100" />
+                  <el-table-column prop="description" label="description" min-width="160" show-overflow-tooltip />
+                </el-table>
+                <div class="function-operator-form__section-subtitle">出参</div>
+                <el-table
+                  class="function-operator-form__param-table"
+                  :data="row.outputParameters"
+                  row-key="_rowKey"
+                  :tree-props="{ children: 'fields' }"
+                  default-expand-all
+                  empty-text="暂无出参"
+                >
+                  <el-table-column prop="name" label="name" min-width="120" show-overflow-tooltip />
+                  <el-table-column prop="in" label="in" width="88" />
+                  <el-table-column label="required" width="88">
+                    <template #default="{ row: paramRow }">
+                      {{ paramRow.required ? "是" : "否" }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="type" label="type" width="100" />
+                  <el-table-column prop="description" label="description" min-width="160" show-overflow-tooltip />
+                </el-table>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="name" label="接口名称" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="method" label="请求方式" width="100" />
+          <el-table-column prop="path" label="路径" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip />
+        </el-table>
+        <el-empty v-else description="上传接口文档并探测后展示" />
+
         <div class="function-operator-form__param-head">
           <div class="function-operator-form__section-title">输入参数</div>
           <el-button type="primary" plain native-type="button" @click="addExternalApiInputParameter">添加</el-button>
@@ -512,6 +601,7 @@ import {
 } from "@/utils/functionOperatorBasicFilter";
 import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToApi";
 import { mapOntologyExternalApiConfigToForm, mapOntologyFunctionDetailToDraft, type OntologyExternalApiFormField } from "@/utils/mapOntologyFunctionDetail";
+import { mapProbeInterfaceToExternalApiFormParams } from "@/utils/mapProbeInterfaceToExternalApiForm";
 
 import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBuilder.vue";
 import FunctionOperatorCompositeWorkflowDialog from "./FunctionOperatorCompositeWorkflowDialog.vue";
@@ -559,6 +649,16 @@ const externalApiInputExpandKeys = computed(() => externalApiInputParameters.val
 /** object 输出行自动展开，便于编辑嵌套属性。 */
 const externalApiOutputExpandKeys = computed(() => externalApiOutputParameters.value.filter((row) => row.type === "object").map((row) => row.id));
 let externalApiParameterSerial = 0;
+/** 外部 API 已选接口文档文件名，仅表单展示。 */
+const externalApiDocFileName = ref("");
+/** 外部 API 接口文档是否正在上传或随后探查。 */
+const externalApiDocUploading = ref(false);
+/** 外部 API 探查得到的已发现接口列表。 */
+const externalApiDiscoveredInterfaces = ref<ProbeContainerInterfaceDisplayItem[]>([]);
+/** 外部 API 当前单选的已发现接口 row-key。 */
+const externalApiSelectedInterfaceKey = ref("");
+/** 外部 API 接口文档上传/探查代数，用于丢弃过期响应。 */
+let externalApiDocUploadGeneration = 0;
 
 /** 容器算子已选镜像文件名，仅表单展示。 */
 const dockerImageFileName = ref("");
@@ -935,9 +1035,10 @@ function applyExternalApiConfig(draft: FunctionOperatorDraft | undefined): void 
   externalApiOutputParameters.value = formValues.outputs.map((row) => mapExternalApiFormFieldWithIds(row, "output"));
 }
 /**
- * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header 与参数行。
+ * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header、文档探查与参数行。
  */
 function resetExternalApiForm(): void {
+  externalApiDocUploadGeneration += 1;
   externalApiEndpoint.value = "";
   externalApiMethod.value = "POST";
   externalApiAuth.value = "none";
@@ -945,6 +1046,10 @@ function resetExternalApiForm(): void {
   externalApiHeader.value = "";
   externalApiInputParameters.value = [];
   externalApiOutputParameters.value = [];
+  externalApiDocFileName.value = "";
+  externalApiDocUploading.value = false;
+  externalApiDiscoveredInterfaces.value = [];
+  externalApiSelectedInterfaceKey.value = "";
 }
 
 /**
@@ -1174,6 +1279,143 @@ function clearDockerApiDocFile(): void {
   dockerInterfaceDoc.value = null;
   dockerDiscoveredInterfaces.value = [];
   dockerSelectedInterfaceApis.value = [];
+}
+
+/**
+ * @description 解析外部 API 已发现接口行的稳定 row-key；表格槽位行按对象收窄。
+ * @param row 探查接口项或表格行。
+ * @returns 行键。
+ */
+function resolveExternalApiDiscoveredInterfaceRowKey(row: unknown): string {
+  if (!row || typeof row !== "object") {
+    return "";
+  }
+  return resolveDockerDiscoveredInterfaceRowKey(row as ProbeOntologyFunctionContainerInterfaceItem);
+}
+
+/**
+ * @description 将选中的探查接口回填到外部 API 入出参表，并同步可识别的请求方法。
+ * @param item 探查接口展示项。
+ */
+function applyExternalApiDiscoveredInterface(item: ProbeContainerInterfaceDisplayItem): void {
+  const mapped = mapProbeInterfaceToExternalApiFormParams(item);
+  externalApiInputParameters.value = mapped.inputs.map((row) => ({
+    ...mapExternalApiFormFieldWithIds(row, "input"),
+    location: row.location,
+    required: row.required,
+  }));
+  externalApiOutputParameters.value = mapped.outputs.map((row) => mapExternalApiFormFieldWithIds(row, "output"));
+  if (mapped.method) {
+    externalApiMethod.value = mapped.method;
+  }
+}
+
+/**
+ * @description 单选已发现接口：按 row-key 回填入出参。
+ * @param key 选中行键。
+ */
+function onExternalApiDiscoveredInterfaceSelect(key: string | number | boolean | undefined): void {
+  const selectedKey = typeof key === "string" ? key : "";
+  externalApiSelectedInterfaceKey.value = selectedKey;
+  if (!selectedKey) {
+    return;
+  }
+  const selected = externalApiDiscoveredInterfaces.value.find((item) => resolveExternalApiDiscoveredInterfaceRowKey(item) === selectedKey);
+  if (!selected) {
+    return;
+  }
+  applyExternalApiDiscoveredInterface(selected);
+}
+
+/**
+ * @description 选择外部 API 接口文档：上传后自动探查；仅 1 条结果时自动选中回填。
+ * @param upload 上传组件文件对象。
+ */
+async function onExternalApiDocFileChange(upload: UploadFile): Promise<void> {
+  const rawFile = upload.raw;
+  if (!rawFile) {
+    return;
+  }
+  const name = typeof rawFile.name === "string" ? rawFile.name : "";
+  if (!isDockerApiDocFileName(name)) {
+    ElMessage.warning("请选择 OpenAPI / Swagger（.json / .yaml / .yml）文件");
+    return;
+  }
+  if (externalApiDocUploading.value) {
+    return;
+  }
+  externalApiDocUploading.value = true;
+  const current = ++externalApiDocUploadGeneration;
+  let docPath = "";
+  try {
+    const response = await postUploadOntologyFunctionContainerDocInterface({ file: rawFile });
+    if (current !== externalApiDocUploadGeneration) {
+      return;
+    }
+    if (response.code !== 200 || !response.data) {
+      externalApiDocFileName.value = "";
+      externalApiDiscoveredInterfaces.value = [];
+      externalApiSelectedInterfaceKey.value = "";
+      ElMessage.error(response.message.trim() || "接口文档上传失败");
+      return;
+    }
+    externalApiDocFileName.value = name;
+    docPath = response.data.path;
+    ElMessage.success("上传成功");
+  } catch (cause) {
+    if (current !== externalApiDocUploadGeneration) {
+      return;
+    }
+    externalApiDocFileName.value = "";
+    externalApiDiscoveredInterfaces.value = [];
+    externalApiSelectedInterfaceKey.value = "";
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "接口文档上传失败");
+    return;
+  }
+
+  try {
+    const probeResponse = await postProbeOntologyFunctionContainerInterfacesInterface({ docPath });
+    if (current !== externalApiDocUploadGeneration) {
+      return;
+    }
+    if (probeResponse.code !== 200) {
+      externalApiDiscoveredInterfaces.value = [];
+      externalApiSelectedInterfaceKey.value = "";
+      ElMessage.error(probeResponse.message.trim() || "接口探查失败");
+      return;
+    }
+    const discovered = Array.isArray(probeResponse.data) ? probeResponse.data.map((item) => mapProbeContainerInterfaceForDisplay(item)) : [];
+    externalApiDiscoveredInterfaces.value = discovered;
+    if (discovered.length === 1 && discovered[0]) {
+      const onlyKey = resolveExternalApiDiscoveredInterfaceRowKey(discovered[0]);
+      externalApiSelectedInterfaceKey.value = onlyKey;
+      applyExternalApiDiscoveredInterface(discovered[0]);
+    } else {
+      externalApiSelectedInterfaceKey.value = "";
+    }
+  } catch (cause) {
+    if (current !== externalApiDocUploadGeneration) {
+      return;
+    }
+    externalApiDiscoveredInterfaces.value = [];
+    externalApiSelectedInterfaceKey.value = "";
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "接口探查失败");
+  } finally {
+    if (current === externalApiDocUploadGeneration) {
+      externalApiDocUploading.value = false;
+    }
+  }
+}
+
+/**
+ * @description 清除外部 API 已选接口文档与探查结果；不强制清空入出参表。
+ */
+function clearExternalApiDocFile(): void {
+  externalApiDocUploadGeneration += 1;
+  externalApiDocFileName.value = "";
+  externalApiDocUploading.value = false;
+  externalApiDiscoveredInterfaces.value = [];
+  externalApiSelectedInterfaceKey.value = "";
 }
 
 /**
