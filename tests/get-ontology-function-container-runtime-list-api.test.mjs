@@ -40,11 +40,23 @@ test("container runtime list types expose spaceId params and runtime item data",
   assert.match(typeSource, /lastAction\?:\s*string/);
   assert.match(typeSource, /lastActionAt\?:\s*string/);
   assert.match(typeSource, /message:\s*string/);
+  assert.match(typeSource, /imageAddress\?:\s*string/);
+  assert.match(typeSource, /heartbeatStatus\?:/);
+  assert.match(typeSource, /heartbeatLabel\?:/);
+  assert.match(typeSource, /lastHeartbeatAt\?:/);
+  assert.match(typeSource, /containerSource\?:/);
+  assert.match(typeSource, /containerSourceLabel\?:/);
+  assert.match(typeSource, /"USER"/);
+  assert.match(typeSource, /"SYSTEM"/);
+  assert.match(typeSource, /"HEALTHY"/);
+  assert.match(typeSource, /"UNHEALTHY"/);
   assert.match(typeSource, /export type GetOntologyFunctionContainerRuntimeListData = OntologyFunctionContainerRuntimeItem\[\]/);
   assert.match(barrel, /GetOntologyFunctionContainerRuntimeListData/);
   assert.match(barrel, /GetOntologyFunctionContainerRuntimeListParams/);
   assert.match(barrel, /OntologyFunctionContainerRuntimeItem/);
   assert.match(barrel, /OntologyFunctionContainerRuntimePhase/);
+  assert.match(barrel, /OntologyFunctionContainerRuntimeHeartbeatStatus/);
+  assert.match(barrel, /OntologyFunctionContainerRuntimeSource/);
 });
 
 test("container runtime list api gets spaceId query on manage domain uri", () => {
@@ -78,6 +90,11 @@ test("container runtime list mock mirrors SUCCESS sample item", () => {
   assert.match(mockSource, /containerPort:\s*8080/);
   assert.match(mockSource, /nodeIp:/);
   assert.match(mockSource, /nodePort:/);
+  assert.match(mockSource, /imageAddress:\s*["']mccutchen\/go-httpbin:latest["']/);
+  assert.match(mockSource, /containerSource:\s*["']USER["']/);
+  assert.match(mockSource, /containerSource:\s*["']SYSTEM["']/);
+  assert.match(mockSource, /heartbeatStatus:\s*["']HEALTHY["']/);
+  assert.match(mockSource, /heartbeatLabel:\s*["']健康["']/);
 });
 
 test("function operator panel wires runtime config button and secondary panel", () => {
@@ -95,8 +112,11 @@ test("function operator panel wires runtime config button and secondary panel", 
   assert.match(runtimePanelSource, /label="运行状态"/);
   assert.match(runtimePanelSource, /type="expand"/);
   assert.match(runtimePanelSource, /容器生命周期/);
+  assert.match(runtimePanelSource, /镜像地址/);
   assert.match(runtimePanelSource, /最近操作/);
+  assert.match(runtimePanelSource, /运行状态/);
   assert.match(runtimePanelSource, /说明/);
+  assert.match(runtimePanelSource, /imageAddress/);
   assert.match(runtimePanelSource, /formatRuntimeActionAt/);
   assert.match(runtimePanelSource, /\$\{matched\[1\]\} \$\{matched\[2\]\}/);
   assert.match(runtimePanelSource, /部署信息/);
@@ -105,6 +125,10 @@ test("function operator panel wires runtime config button and secondary panel", 
   assert.match(runtimePanelSource, /label="宿主机端口"/);
   assert.match(runtimePanelSource, /label="容器端口"/);
   assert.match(runtimePanelSource, /label="宿主映射端口"/);
+  assert.match(runtimePanelSource, /label="心跳状态"/);
+  assert.match(runtimePanelSource, /formatRuntimeHeartbeatStatus/);
+  assert.match(runtimePanelSource, /isUserManagedRuntime/);
+  assert.match(runtimePanelSource, /containerSource === ["']USER["']/);
   assert.match(runtimePanelSource, /nodeIp/);
   assert.match(runtimePanelSource, /nodePort/);
   assert.match(runtimePanelSource, />\s*启动\s*</);

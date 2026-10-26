@@ -40,20 +40,26 @@
   "message": "SUCCESS",
   "data": [
     {
-      "containerKey": "2970626ab500497386d1a6e98debc30f",
+      "containerKey": "df27adab8fd64713a383e906eea070ca",
       "ontologySpaceId": 1,
-      "displayName": "zhangliang",
+      "displayName": "rongqi",
+      "imageAddress": "mccutchen/go-httpbin:latest",//镜像地址（repoTags 首条，如 registry/image:tag）
       "containerName": "httpbin-ctr-18080",
-      "phase": "RUNNING",
-      "phaseLabel": "运行中",
+      "phase": "CREATED",
+      "phaseLabel": "已创建",//运行状态中文标签
       "hostPort": 18089,
       "containerPort": 8080,
       "nodeIp": "172.16.18.58",
       "nodePort": 37002,
-      "containerId": "71389d4b623b9ccdecbad7e8c2b20159d424c85204908d4f1563e246c938f5c5",
-      "lastAction": "start",
-      "lastActionAt": "2026-10-23T07:49:56.589+00:00",
-      "message": "容器已启动"
+      "containerId": null,
+      "lastAction": null,
+      "lastActionAt": null,
+      "message": "容器算子已创建，尚未启动",
+      "heartbeatStatus": null, //心跳状态：HEALTHY（健康）/UNHEALTHY（不健康）（仅 phase=RUNNING 时有意义）
+      "heartbeatLabel": null,
+      "lastHeartbeatAt": null,
+      "containerSource": "USER",//容器来源：USER 用户创建（可操作）/ SYSTEM 系统预置（只读）
+      "containerSourceLabel": "用户创建"
     }
   ]
 }

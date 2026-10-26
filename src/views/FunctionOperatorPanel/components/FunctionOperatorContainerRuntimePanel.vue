@@ -26,7 +26,7 @@
               <section class="function-operator-container-runtime-panel__section" aria-label="容器生命周期">
                 <div class="function-operator-container-runtime-panel__section-head">
                   <h3 class="function-operator-container-runtime-panel__section-title">容器生命周期</h3>
-                  <div class="function-operator-container-runtime-panel__section-actions">
+                  <div v-if="isUserManagedRuntime(asRuntimeRow(row))" class="function-operator-container-runtime-panel__section-actions">
                     <el-button
                       size="small"
                       :disabled="!canStartRuntime(asRuntimeRow(row)) || isRuntimeActionSubmitting(asRuntimeRow(row).containerKey)"
@@ -54,8 +54,18 @@
                 </div>
                 <div class="function-operator-container-runtime-panel__lifecycle-grid">
                   <div class="function-operator-container-runtime-panel__lifecycle-item">
+                    <span class="function-operator-container-runtime-panel__lifecycle-label">镜像地址</span>
+                    <span class="function-operator-container-runtime-panel__lifecycle-value">{{
+                      formatRuntimeDisplayText(asRuntimeRow(row).imageAddress)
+                    }}</span>
+                  </div>
+                  <div class="function-operator-container-runtime-panel__lifecycle-item">
                     <span class="function-operator-container-runtime-panel__lifecycle-label">最近操作</span>
                     <span class="function-operator-container-runtime-panel__lifecycle-value">{{ formatRuntimeLastAction(asRuntimeRow(row)) }}</span>
+                  </div>
+                  <div class="function-operator-container-runtime-panel__lifecycle-item">
+                    <span class="function-operator-container-runtime-panel__lifecycle-label">运行状态</span>
+                    <span class="function-operator-container-runtime-panel__lifecycle-value">{{ formatRuntimeDisplayText(asRuntimeRow(row).phaseLabel) }}</span>
                   </div>
                   <div class="function-operator-container-runtime-panel__lifecycle-item">
                     <span class="function-operator-container-runtime-panel__lifecycle-label">说明</span>
@@ -89,6 +99,9 @@
                   </el-table-column>
                   <el-table-column label="宿主映射端口" width="120">
                     <template #default="{ row: deployRow }">{{ formatRuntimePort(asRuntimeRow(deployRow).hostPort) }}</template>
+                  </el-table-column>
+                  <el-table-column label="心跳状态" min-width="120" show-overflow-tooltip>
+                    <template #default="{ row: deployRow }">{{ formatRuntimeHeartbeatStatus(asRuntimeRow(deployRow)) }}</template>
                   </el-table-column>
                 </el-table>
               </section>
@@ -177,6 +190,29 @@ function formatRuntimeActionAt(value: string): string {
     return `${matched[1]} ${matched[2]}`;
   }
   return raw;
+}
+
+/**
+ * @description 心跳状态展示；优先中文标签，否则枚举值，空为破折号。
+ * @param row 运行实例。
+ * @returns 展示文案。
+ */
+function formatRuntimeHeartbeatStatus(row: OntologyFunctionContainerRuntimeItem): string {
+  const label = typeof row.heartbeatLabel === "string" ? row.heartbeatLabel.trim() : "";
+  if (label) {
+    return label;
+  }
+  const status = typeof row.heartbeatStatus === "string" ? row.heartbeatStatus.trim() : "";
+  return status || "—";
+}
+
+/**
+ * @description 是否用户创建容器（可展示启停重启操作）。
+ * @param row 运行实例。
+ * @returns containerSource 为 USER 时 true。
+ */
+function isUserManagedRuntime(row: OntologyFunctionContainerRuntimeItem): boolean {
+  return row.containerSource === "USER";
 }
 
 /**

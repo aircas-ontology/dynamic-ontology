@@ -99,8 +99,10 @@ export type { GetOntologyEntitiesData, GetOntologyEntitiesParams, OntologyEntity
 export type {
   GetOntologyFunctionContainerRuntimeListData,
   GetOntologyFunctionContainerRuntimeListParams,
+  OntologyFunctionContainerRuntimeHeartbeatStatus,
   OntologyFunctionContainerRuntimeItem,
   OntologyFunctionContainerRuntimePhase,
+  OntologyFunctionContainerRuntimeSource,
 } from "./apis/getOntologyFunctionContainerRuntimeListType";
 export type { GetOntologyFunctionDetailData, GetOntologyFunctionDetailParamItem, GetOntologyFunctionDetailParams } from "./apis/getOntologyFunctionDetailType";
 export type { GetOntologyFunctionListData, GetOntologyFunctionListItem, GetOntologyFunctionListParams } from "./apis/getOntologyFunctionListType";
