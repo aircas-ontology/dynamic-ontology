@@ -91,6 +91,7 @@ import { mapSubspaceCreateRequest } from "./utils/mapSubspaceCreateRequest";
 import type { SubspaceCreatePropertyFilterState } from "./utils/mapSubspaceCreateRequest";
 
 const route = useRoute();
+const isEmbedded = computed(() => typeof route.query.userName === "string" && route.query.userName.trim().length > 0);
 const router = useRouter();
 const currentStepIndex = ref(0);
 const selectedObjects = ref<SubspaceCreateSelectedObject[]>([]);
@@ -571,7 +572,7 @@ async function createSubspace() {
 
 .ontology-subspace-create__help {
   position: fixed;
-  top: 53px;
+  top: 58px;
   right: 18px;
   z-index: 4;
   display: inline-flex;
@@ -581,6 +582,10 @@ async function createSubspace() {
   color: var(--aircas-color-text-secondary);
   background: var(--aircas-color-panel-background);
   cursor: pointer;
+}
+
+.ontology-subspace-create__help.is-embedded {
+  top: 8px;
 }
 .ontology-subspace-create__help:hover {
   color: var(--aircas-color-primary);

@@ -1,6 +1,13 @@
 <template>
   <div class="ontology-object-detail">
-    <button class="ontology-object-detail__help" type="button" aria-label="打开新手引导" title="新手引导" @click="openOnboardingGuide()">
+    <button
+      :class="{ 'is-embedded': isEmbedded }"
+      class="ontology-object-detail__help"
+      type="button"
+      aria-label="打开新手引导"
+      title="新手引导"
+      @click="openOnboardingGuide()"
+    >
       <el-icon><QuestionFilled /></el-icon>
     </button>
     <div class="ontology-object-detail__layout">
@@ -35,6 +42,7 @@ import { routeNameForObjectDetailTab } from "./utils/objectDetailTabs";
 
 const router = useRouter();
 const route = useRoute();
+const isEmbedded = computed(() => typeof route.query.userName === "string" && route.query.userName.trim().length > 0);
 const { activeTab, availableTabs, objectName, objectId, spaceId, spaceName, spaceType } = useObjectDetailWorkspace();
 const { counts: objectCounts } = useObjectResourceStatistic(objectId);
 const onboardingGuideSteps = ONBOARDING_GUIDE_STEPS;
@@ -106,7 +114,7 @@ function openTab(tab: OntologyObjectDetailTab) {
 
 .ontology-object-detail__help {
   position: fixed;
-  top: 53px;
+  top: 58px;
   right: 18px;
   z-index: 4;
   display: inline-flex;
@@ -116,6 +124,10 @@ function openTab(tab: OntologyObjectDetailTab) {
   color: var(--aircas-color-text-secondary);
   background: var(--aircas-color-panel-background);
   cursor: pointer;
+}
+
+.ontology-object-detail__help.is-embedded {
+  top: 8px;
 }
 .ontology-object-detail__help:hover {
   color: var(--aircas-color-primary);

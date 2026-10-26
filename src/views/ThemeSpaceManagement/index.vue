@@ -1,6 +1,13 @@
 <template>
   <div class="theme-space-management">
-    <button class="theme-space-management__help" type="button" aria-label="打开新手引导" title="新手引导" @click="openOnboardingGuide()">
+    <button
+      :class="{ 'is-embedded': isEmbedded }"
+      class="theme-space-management__help"
+      type="button"
+      aria-label="打开新手引导"
+      title="新手引导"
+      @click="openOnboardingGuide()"
+    >
       <el-icon><QuestionFilled /></el-icon>
     </button>
     <section class="theme-space-management__overview">
@@ -197,7 +204,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
   deleteOntologySpaceInterface,
   getExportOntologySpaceInterface,
@@ -389,6 +396,8 @@ onMounted(() => {
   void loadThemeOverviewCount();
 });
 const router = useRouter();
+const route = useRoute();
+const isEmbedded = computed(() => typeof route.query.userName === "string" && route.query.userName.trim().length > 0);
 /** @description 校验已选对象空间后关闭弹窗并跳转子空间创建流程，携带空间上下文与来源标识；引导进行中时追加 guide 标记，让创建页进入演示模式。 */
 function confirmCreateThemeSpace(): void {
   const selectedSpace = objectSpaces.value.find((space) => space.id === selectedObjectSpace.value);
@@ -509,7 +518,7 @@ watch([keyword, order, pageSize], () => {
 }
 .theme-space-management__help {
   position: fixed;
-  top: 62px;
+  top: 58px;
   right: 18px;
   z-index: 4;
   display: inline-flex;
@@ -519,6 +528,10 @@ watch([keyword, order, pageSize], () => {
   color: var(--aircas-color-text-secondary);
   background: var(--aircas-color-panel-background);
   cursor: pointer;
+}
+
+.theme-space-management__help.is-embedded {
+  top: 8px;
 }
 .theme-space-management__help:hover {
   color: var(--aircas-color-primary);

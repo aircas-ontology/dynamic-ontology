@@ -1,6 +1,13 @@
 <template>
   <div class="ontology-space-management">
-    <button class="ontology-space-management__help" type="button" aria-label="打开新手引导" title="新手引导" @click="openOnboardingGuide()">
+    <button
+      :class="{ 'is-embedded': isEmbedded }"
+      class="ontology-space-management__help"
+      type="button"
+      aria-label="打开新手引导"
+      title="新手引导"
+      @click="openOnboardingGuide()"
+    >
       <el-icon><QuestionFilled /></el-icon>
     </button>
     <section class="ontology-space-management__overview">
@@ -116,6 +123,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .ontology-space-management {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -131,7 +139,7 @@ onMounted(() => {
 
 .ontology-space-management__help {
   position: fixed;
-  top: 62px;
+  top: 58px;
   right: 18px;
   z-index: 4;
   display: inline-flex;
@@ -141,6 +149,9 @@ onMounted(() => {
   color: var(--aircas-color-text-secondary);
   background: var(--aircas-color-panel-background);
   cursor: pointer;
+}
+.ontology-space-management__help.is-embedded {
+  top: 8px;
 }
 .ontology-space-management__help:hover {
   color: var(--aircas-color-primary);

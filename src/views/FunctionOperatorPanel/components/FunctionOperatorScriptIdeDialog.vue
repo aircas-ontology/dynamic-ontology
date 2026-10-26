@@ -16,6 +16,7 @@
         <div class="function-operator-script-ide__actions">
           <el-button :disabled="saving" @click="goBackPreviousStep">返回上一步</el-button>
           <el-button :disabled="saving" @click="notifyScriptFeatureUnavailable('测试')">测试</el-button>
+          <el-button :disabled="saving" @click="templateDrawerVisible = true">模板管理</el-button>
           <el-button type="primary" :loading="saving || parsing" @click="submitScriptFunctionCreate">保存</el-button>
         </div>
       </div>
@@ -40,6 +41,15 @@
       </aside>
 
       <section class="function-operator-script-ide__editor-pane" aria-label="脚本代码编辑区">
+        <el-select
+          v-model="selectedTemplate"
+          class="function-operator-script-ide__template-select"
+          clearable
+          placeholder="选择模板"
+          @change="applySelectedTemplate"
+        >
+          <el-option v-for="item in templateOptions" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
         <FunctionOperatorScriptCodeEditor :model-value="code" :language="language" @update:model-value="emit('update:code', $event)" />
       </section>
 
@@ -63,6 +73,7 @@
       </aside>
     </div>
   </el-dialog>
+  <FunctionOperatorTemplateDrawer v-model="templateDrawerVisible" :current-language="language" :current-code="code" @use="applyTemplate" />
 </template>
 
 <script setup lang="ts">
@@ -78,6 +89,7 @@ import {
 import { mapScriptLanguageToApi } from "@/utils/mapFunctionOperatorScriptLanguage";
 import FunctionOperatorScriptCodeEditor from "./FunctionOperatorScriptCodeEditor.vue";
 import FunctionOperatorScriptParamTree from "./FunctionOperatorScriptParamTree.vue";
+import FunctionOperatorTemplateDrawer from "./FunctionOperatorTemplateDrawer.vue";
 import { buildCreateOntologyScriptFunctionParams } from "../utils/buildCreateOntologyScriptFunctionParams";
 import { SCRIPT_FUNCTION_STARTERS } from "../utils/scriptFunctionStarters";
 import { splitParsedScriptParameters } from "../utils/splitParsedScriptParameters";
@@ -122,10 +134,41 @@ const lastStarterLanguage = ref<FunctionOperatorScriptLanguage>(props.language);
 const inputParameters = ref<ParseOntologyFunctionParamItem[]>([]);
 const outputParameters = ref<ParseOntologyFunctionParamItem[]>([]);
 const parsing = ref(false);
+const templateDrawerVisible = ref(false);
+const selectedTemplate = ref<string>();
 const parseLocked = ref(false);
 let parsedCodeSnapshot = "";
 let parsedLanguageSnapshot: FunctionOperatorScriptLanguage | "" = "";
 let parseGeneration = 0;
+
+const templateOptions = computed(() => [{ label: `${languageLabel(props.language)} 默认模板`, value: props.language }]);
+
+function languageLabel(value: FunctionOperatorScriptLanguage): string {
+  return FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS.find((item) => item.value === value)?.label ?? value;
+}
+
+/**
+ * @description 选择模板后将对应代码写入当前编辑器。
+ * @param value 模板语言标识。
+ */
+function applySelectedTemplate(value: string | undefined): void {
+  if (!value || !(value in SCRIPT_FUNCTION_STARTERS)) return;
+  const templateLanguage = value as FunctionOperatorScriptLanguage;
+  if (templateLanguage !== props.language) emit("update:language", templateLanguage);
+  emit("update:code", SCRIPT_FUNCTION_STARTERS[templateLanguage]);
+  clearParsedScriptParameters();
+}
+
+/**
+ * @description 将模板代码和语言回填到当前 Web-IDE 草稿。
+ * @param template 模板语言与代码。
+ */
+function applyTemplate(template: { language: FunctionOperatorScriptLanguage; code: string }): void {
+  emit("update:language", template.language);
+  emit("update:code", template.code);
+  clearParsedScriptParameters();
+  ElMessage.success("模板已应用");
+}
 
 const subtitleText = computed(() => {
   const apiName = props.functionApi.trim() || "-";
@@ -369,6 +412,14 @@ watch(
   min-width: 0;
   min-height: 0;
   height: 100%;
+}
+
+.function-operator-script-ide__template-select {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 12px;
+  width: 150px;
 }
 
 .function-operator-script-ide__field {
