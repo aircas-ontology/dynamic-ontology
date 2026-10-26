@@ -2,6 +2,7 @@
   <div class="space-management-detail" :class="{ 'is-empty': status === 'empty' }">
     <button
       v-if="status === 'ready' && !isWorkflowPage"
+      :class="{ 'is-embedded': isEmbedded }"
       class="space-management-detail__help"
       type="button"
       aria-label="打开新手引导"
@@ -49,6 +50,7 @@ import { routeNameForTab } from "./utils/workspaceTabs";
 
 const router = useRouter();
 const route = useRoute();
+const isEmbedded = computed(() => typeof route.query.userName === "string" && route.query.userName.trim().length > 0);
 const { status, error, spaceId, activeTab, availableTabs, load } = useSpaceWorkspace();
 // 空间统计由布局层加载一次，供 tab 菜单后缀使用。
 const spaceOverview = useSpaceOverview(spaceId);
@@ -107,7 +109,7 @@ function openTab(tab: ManagementWorkspaceTab) {
 
 .space-management-detail__help {
   position: fixed;
-  top: 53px;
+  top: 58px;
   right: 18px;
   z-index: 4;
   display: inline-flex;
@@ -117,6 +119,10 @@ function openTab(tab: ManagementWorkspaceTab) {
   color: var(--aircas-color-text-secondary);
   background: var(--aircas-color-panel-background);
   cursor: pointer;
+}
+
+.space-management-detail__help.is-embedded {
+  top: 8px;
 }
 .space-management-detail__help:hover {
   color: var(--aircas-color-primary);
