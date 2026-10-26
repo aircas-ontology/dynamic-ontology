@@ -31,7 +31,7 @@
             <el-option v-for="group in storageGroups" :key="group.value" :label="group.label" :value="group.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="默认值" class="ontology-object-attribute-panel__form-full">
+        <el-form-item label="默认值" prop="defaultValue" class="ontology-object-attribute-panel__form-full">
           <el-input v-model="draft.defaultValue" placeholder="可选" :disabled="datasourceLocked" />
         </el-form-item>
       </div>

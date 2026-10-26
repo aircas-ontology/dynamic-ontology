@@ -26,6 +26,7 @@
         </div>
 
         <div class="function-operator-panel__filter-actions">
+          <el-button @click="runtimeTemplateVisible = true">运行配置模板</el-button>
           <el-button @click="runtimePanelVisible = true">运行配置</el-button>
           <el-button type="primary" @click="openCreate">新建函数</el-button>
           <el-button type="primary" @click="applyFilters">查询</el-button>
@@ -236,6 +237,7 @@
       @update-param="updateScriptTestParamValue"
       @run="runScriptTest"
     />
+    <RuntimeConfigTemplateDialog v-model="runtimeTemplateVisible" />
   </section>
 </template>
 
@@ -255,12 +257,14 @@ import { ref } from "vue";
 
 import { useFunctionOperatorWorkspace } from "./composables/useFunctionOperatorWorkspace";
 import FunctionOperatorContainerRuntimePanel from "./components/FunctionOperatorContainerRuntimePanel.vue";
+import RuntimeConfigTemplateDialog from "./components/RuntimeConfigTemplateDialog.vue";
 import FunctionOperatorDeleteDialog from "./components/FunctionOperatorDeleteDialog.vue";
 import FunctionOperatorDetailDrawer from "./components/FunctionOperatorDetailDrawer.vue";
 import FunctionOperatorFormDialog from "./components/FunctionOperatorFormDialog.vue";
 import FunctionOperatorScriptTestDialog from "./components/FunctionOperatorScriptTestDialog.vue";
 
 const runtimePanelVisible = ref(false);
+const runtimeTemplateVisible = ref(false);
 
 const {
   spaceId,

@@ -1,6 +1,11 @@
 [
   {
     "method": "POST",
+    "path": "/ontology/function/rate_limit_template",
+    "file": "fixtures/ontology/function/rateLimitTemplate.post.json"
+  },
+  {
+    "method": "POST",
     "path": "/agent/chat/stream",
     "file": "fixtures/agent/chat.stream.post.json",
     "responseType": "sse"
@@ -313,5 +318,30 @@
     "method": "GET",
     "path": "/ontology/v3/api-docs/ontology",
     "file": "fixtures/ontology/v3/api-docs.ontology.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/function/rate_limit_template/list",
+    "file": "fixtures/ontology/function/rateLimitTemplateList.get.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/function/rate_limit_template",
+    "file": "fixtures/ontology/function/rateLimitTemplate.put.json"
+  },
+  {
+    "method": "DELETE",
+    "path": "/ontology/function/rate_limit_template",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/function/rate_limit_template/enable",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/function/rate_limit_template/disable",
+    "file": "fixtures/common/success.json"
   }
 ]

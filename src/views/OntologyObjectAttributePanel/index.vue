@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, onScopeDispose, ref } from "vue";
 import { ElMessage } from "element-plus";
 import {
   autoBindOntologyPropertyDatasourceInterface,
@@ -257,22 +257,34 @@ function openAttributeDetailFromTree(data: OntologyAttributePropertyTreeNode) {
  * @description 查询属性详情后判断数据源绑定状态，再打开编辑表单并按绑定状态锁定名称和描述以外的字段。
  * @param value 待编辑的属性列表项。
  */
+let editLookupPending = false;
+let attributePanelDisposed = false;
+onScopeDispose(() => {
+  attributePanelDisposed = true;
+});
 async function handleEditAttribute(value: unknown): Promise<void> {
+  if (editLookupPending) return;
   if (!isAttributeItem(value)) return;
   const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
   if (!ontologyUniqueIdentifier || !value.uniqueIdentifier.trim()) {
-    openEditAttribute(value);
+    ElMessage.error("缺少对象或属性标识，无法编辑");
     return;
   }
+  editLookupPending = true;
   try {
-    if (!ontologyPropertyDetails.value.length) {
-      await loadPropertyDataSourceDetails(ontologyUniqueIdentifier);
-    }
-    const detail = ontologyPropertyDetails.value.find((item) => item.uniqueIdentifier === value.uniqueIdentifier);
+    const response = await getOntologyPropertyDetailByOntologyIdInterface({ ontologyUniqueIdentifier });
+    if (attributePanelDisposed || String(route.params.objectId || "").trim() !== ontologyUniqueIdentifier) return;
+    if (response.code !== 200) throw new Error("属性绑定状态查询失败");
+    const detail = response.data.find((item) => item.uniqueIdentifier === value.uniqueIdentifier);
+    if (!detail) throw new Error("属性详情不存在，请刷新列表后重试");
+    ontologyPropertyDetails.value = response.data;
     openEditAttribute(value, Boolean(detail?.datasourceId?.trim() && detail.datasourceColumnName?.trim()));
-  } catch {
-    ElMessage.error("属性绑定状态查询失败，请稍后重试");
+  } catch (cause) {
+    if (attributePanelDisposed || String(route.params.objectId || "").trim() !== ontologyUniqueIdentifier) return;
+    ElMessage.error(cause instanceof Error ? cause.message : "属性绑定状态查询失败，请稍后重试");
     return;
+  } finally {
+    editLookupPending = false;
   }
 }
 

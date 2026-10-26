@@ -7,6 +7,14 @@ import {
 } from "./actionCategoryApi";
 import { getExampleInterface } from "./exampleApi";
 import {
+  deleteFunctionRateLimitTemplateInterface,
+  getListFunctionRateLimitTemplateInterface,
+  postCreateFunctionRateLimitTemplateInterface,
+  putDisableFunctionRateLimitTemplateInterface,
+  putEnableFunctionRateLimitTemplateInterface,
+  putUpdateFunctionRateLimitTemplateInterface,
+} from "./functionRateLimitTemplateApi";
+import {
   createOntologyFunctionInterface,
   deleteOntologyFunctionInterface,
   getOntologyFunctionContainerRuntimeListInterface,
@@ -83,6 +91,12 @@ import {
 } from "./ontologyPropertyApi";
 
 export {
+  deleteFunctionRateLimitTemplateInterface,
+  getListFunctionRateLimitTemplateInterface,
+  postCreateFunctionRateLimitTemplateInterface,
+  putDisableFunctionRateLimitTemplateInterface,
+  putEnableFunctionRateLimitTemplateInterface,
+  putUpdateFunctionRateLimitTemplateInterface,
   autoBindOntologyPropertyDatasourceInterface,
   createActionCategoryInterface,
   deleteActionCategoryInterface,
