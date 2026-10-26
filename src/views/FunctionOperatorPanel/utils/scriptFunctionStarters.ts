@@ -91,9 +91,6 @@ public class ScriptFunction {
 /** 新建脚本草稿默认语言。 */
 export const DEFAULT_SCRIPT_FUNCTION_LANGUAGE: FunctionOperatorScriptLanguage = "typescript";
 
-/** 新建脚本草稿默认测试参数 JSON。 */
-export const DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS = "{}";
-
 /**
  * @description 生成新建会话用的默认脚本代码草稿。
  * @returns TypeScript starter 文本。

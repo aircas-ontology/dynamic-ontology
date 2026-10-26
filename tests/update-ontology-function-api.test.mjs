@@ -73,17 +73,20 @@ test("function operator saveScriptOperator uses put when editing", () => {
   const workspaceSource = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
   const saveScriptBlock = workspaceSource.slice(
     workspaceSource.indexOf("async function saveScriptOperator"),
-    workspaceSource.indexOf("async function saveOperator"),
+    workspaceSource.indexOf("async function saveExternalApiOperator"),
   );
   assert.match(saveScriptBlock, /if \(editingOperator\.value\)/);
   assert.match(saveScriptBlock, /basedOnOldVersion:\s*_basedOnOldVersion/);
   assert.match(saveScriptBlock, /updateOntologyFunctionInterface\(updateParams\)/);
   assert.match(saveScriptBlock, /createOntologyFunctionInterface\(params\)/);
   assert.match(saveScriptBlock, /脚本函数已更新/);
-  assert.match(saveScriptBlock, /keepScriptFormOpenAfterSave/);
-  assert.match(saveScriptBlock, /formVisible\.value = false/);
+  assert.match(saveScriptBlock, /buildScriptOperatorFromSaveParams/);
+  assert.match(saveScriptBlock, /buildScriptDraftFromSaveParams/);
   assert.match(saveScriptBlock, /editingOperator\.value = /);
   assert.match(saveScriptBlock, /formDraft\.value = /);
+  assert.doesNotMatch(saveScriptBlock, /keepScriptFormOpenAfterSave/);
+  assert.doesNotMatch(saveScriptBlock, /formVisible\.value = false/);
+  assert.doesNotMatch(workspaceSource, /keepScriptFormOpenAfterSave/);
   const formSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue");
   assert.match(formSource, /:language-locked="Boolean\(operator\) || isSourceTemplateLocked"/);
   assert.match(formSource, /scriptSessionGeneralLocked/);

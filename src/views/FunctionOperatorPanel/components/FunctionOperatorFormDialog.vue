@@ -6,6 +6,7 @@
     width="min(960px, calc(100vw - 48px))"
     align-center
     destroy-on-close
+    :close-on-click-modal="false"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="function-operator-form">
@@ -282,20 +283,6 @@
             </template>
           </el-table-column>
         </el-table>
-
-        <div class="function-operator-form__test">
-          <div class="function-operator-form__param-head">
-            <div class="function-operator-form__section-title">配置测试</div>
-            <span class="function-operator-form__test-status">尚未测试</span>
-          </div>
-          <div class="function-operator-form__test-panes">
-            <div class="function-operator-form__test-editor">
-              <el-input v-model="externalApiTestInput" class="function-operator-form__test-input" type="textarea" :rows="8" resize="vertical" />
-              <el-button type="primary" plain native-type="button" @click="notifyExternalApiTestUnavailable">运行测试</el-button>
-            </div>
-            <div class="function-operator-form__test-result" aria-live="polite">测试结果将在这里显示</div>
-          </div>
-        </div>
       </section>
 
       <section v-else-if="form.type === 'docker'" class="function-operator-form__section">
@@ -447,7 +434,6 @@
     :model-value="scriptIdeVisible"
     v-model:code="scriptDraftCode"
     v-model:language="scriptDraftLanguage"
-    v-model:test-params="scriptDraftTestParams"
     :function-api="form.functionApi"
     :version="form.version"
     :display-name="form.name"
@@ -531,7 +517,7 @@ import FunctionOperatorBasicFilterBuilder from "./FunctionOperatorBasicFilterBui
 import FunctionOperatorCompositeWorkflowDialog from "./FunctionOperatorCompositeWorkflowDialog.vue";
 import FunctionOperatorExternalApiParamFieldsEditor, { type ExternalApiParamFieldRow } from "./FunctionOperatorExternalApiParamFieldsEditor.vue";
 import FunctionOperatorScriptIdeDialog from "./FunctionOperatorScriptIdeDialog.vue";
-import { createDefaultScriptFunctionCode, DEFAULT_SCRIPT_FUNCTION_LANGUAGE, DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS } from "../utils/scriptFunctionStarters";
+import { createDefaultScriptFunctionCode, DEFAULT_SCRIPT_FUNCTION_LANGUAGE } from "../utils/scriptFunctionStarters";
 import { buildCreateOntologyExternalFunctionParams } from "../utils/buildCreateOntologyExternalFunctionParams";
 import { buildCreateOntologyFunctionContainerParams } from "../utils/buildCreateOntologyFunctionContainerParams";
 import { mapOperatorParametersToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
@@ -564,10 +550,6 @@ const externalApiAuth = ref<(typeof EXTERNAL_API_AUTH_OPTIONS)[number]["value"]>
 const externalApiHeaderKey = ref("");
 /** API Key 模式下的认证 Header 值。 */
 const externalApiHeader = ref("");
-/** 配置测试左侧默认 JSON。 */
-const EXTERNAL_API_TEST_INPUT_DEFAULT = '{\n  "": ""\n}';
-/** 配置测试输入，仅表单展示。 */
-const externalApiTestInput = ref(EXTERNAL_API_TEST_INPUT_DEFAULT);
 /** 外部 API 输入参数，仅表单展示。 */
 const externalApiInputParameters = ref<ExternalApiInputParameterRow[]>([]);
 /** 外部 API 输出参数，仅表单展示。 */
@@ -655,8 +637,6 @@ const compositeWorkflowVisible = ref(false);
 const scriptDraftCode = ref(createDefaultScriptFunctionCode());
 /** 脚本 IDE 语言草稿。 */
 const scriptDraftLanguage = ref<FunctionOperatorScriptLanguage>(DEFAULT_SCRIPT_FUNCTION_LANGUAGE);
-/** 脚本 IDE 测试参数草稿。 */
-const scriptDraftTestParams = ref(DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS);
 /** 脚本 IDE 已展示的输入参数树草稿。 */
 const scriptDraftInputParameters = ref<ParseOntologyFunctionParamItem[]>([]);
 /** 脚本 IDE 已展示的输出参数树草稿。 */
@@ -668,7 +648,6 @@ const scriptDraftOutputParameters = ref<ParseOntologyFunctionParamItem[]>([]);
 function resetScriptDraft(): void {
   scriptDraftCode.value = createDefaultScriptFunctionCode();
   scriptDraftLanguage.value = DEFAULT_SCRIPT_FUNCTION_LANGUAGE;
-  scriptDraftTestParams.value = DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS;
   scriptDraftInputParameters.value = [];
   scriptDraftOutputParameters.value = [];
 }
@@ -683,7 +662,6 @@ function applyScriptDraftFromDefinition(draft: FunctionOperatorDraft): void {
   }
   scriptDraftCode.value = draft.definition.code;
   scriptDraftLanguage.value = draft.definition.language;
-  scriptDraftTestParams.value = DEFAULT_SCRIPT_FUNCTION_TEST_PARAMS;
   scriptDraftInputParameters.value = mapOperatorParametersToScriptParamTree(draft.inputParameters, "INPUT");
   scriptDraftOutputParameters.value = mapOperatorParametersToScriptParamTree(draft.outputParameters, "OUTPUT");
 }
@@ -926,7 +904,7 @@ function toDraft(operator: FunctionOperator): FunctionOperatorDraft {
 const form = reactive<FunctionOperatorDraft>(createEmptyDraft());
 
 /**
- * @description 用详情 apiConfig 回填外部 API 表单。配置里的输入或输出为空时，改用详情 params。没有配置时清空这些字段，不改配置测试内容。
+ * @description 用详情 apiConfig 回填外部 API 表单。配置里的输入或输出为空时，改用详情 params。没有配置时清空这些字段。
  * @param draft 外部 API 草稿；其他类型不传。
  */
 function applyExternalApiConfig(draft: FunctionOperatorDraft | undefined): void {
@@ -957,7 +935,7 @@ function applyExternalApiConfig(draft: FunctionOperatorDraft | undefined): void 
   externalApiOutputParameters.value = formValues.outputs.map((row) => mapExternalApiFormFieldWithIds(row, "output"));
 }
 /**
- * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header、参数行和配置测试内容。
+ * @description 清空外部 API 表单中的接口地址、请求方法、认证方式、Header 与参数行。
  */
 function resetExternalApiForm(): void {
   externalApiEndpoint.value = "";
@@ -967,7 +945,6 @@ function resetExternalApiForm(): void {
   externalApiHeader.value = "";
   externalApiInputParameters.value = [];
   externalApiOutputParameters.value = [];
-  externalApiTestInput.value = EXTERNAL_API_TEST_INPUT_DEFAULT;
 }
 
 /**
@@ -1197,13 +1174,6 @@ function clearDockerApiDocFile(): void {
   dockerInterfaceDoc.value = null;
   dockerDiscoveredInterfaces.value = [];
   dockerSelectedInterfaceApis.value = [];
-}
-
-/**
- * @description 提示外部 API 配置测试本阶段未开放，不调用测试接口。
- */
-function notifyExternalApiTestUnavailable(): void {
-  ElMessage.info("配置测试本阶段暂未开放");
 }
 
 /**
@@ -1545,6 +1515,7 @@ async function submitDraft(): Promise<void> {
     version: form.version.trim(),
     description: form.description.trim(),
     type: "basic",
+    sourceVersion: props.operator ? "" : sourceVersion.value.trim(),
     definition: {
       ...form.definition,
       aggFunc,
@@ -1856,54 +1827,12 @@ watch(
   word-break: break-all;
 }
 
-.function-operator-form__test {
-  margin-top: 8px;
-}
-
-.function-operator-form__test-status {
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--aircas-color-panel-background-deep);
-  color: var(--aircas-color-text-secondary);
-  font-size: 12px;
-}
-
-.function-operator-form__test-panes {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-
-.function-operator-form__test-editor {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.function-operator-form__test-input {
-  width: 100%;
-}
-
-.function-operator-form__test-result {
-  min-height: 168px;
-  padding: 8px 12px;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 6px;
-  background: var(--aircas-color-panel-background-deep);
-  color: var(--aircas-color-text-secondary);
-  font-size: 13px;
-  white-space: pre-wrap;
-}
-
 .function-operator-form__section--empty {
   padding: 24px 0;
 }
 
 @media (max-width: 640px) {
-  .function-operator-form__name-grid,
-  .function-operator-form__test-panes {
+  .function-operator-form__name-grid {
     grid-template-columns: 1fr;
   }
 }

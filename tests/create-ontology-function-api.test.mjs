@@ -137,5 +137,9 @@ test("function operator create form exposes aggFunc targetProperty and workspace
   assert.match(saveBlock, /缺少函数版本/);
   assert.match(saveBlock, /createOntologyFunctionInterface\(payload\)/);
   assert.match(saveBlock, /queryConfig,/);
+  assert.match(saveBlock, /basedOnOldVersion\s*=\s*Boolean\(draft\.sourceVersion\?\.trim\(\)\)/);
   assert.doesNotMatch(saveBlock, /queryConfig\.filters \|\| queryConfig\.aggFunc/);
+  assert.match(formSource, /sourceVersion:\s*props\.operator \? "" : sourceVersion\.value\.trim\(\)/);
+  const draftType = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
+  assert.match(draftType, /sourceVersion\?: string/);
 });

@@ -4,9 +4,11 @@ import { test } from "node:test";
 
 import {
   buildOntologyFunctionScriptTestInputRows,
+  buildOntologyFunctionScriptTestInputRowsFromParsed,
   buildOntologyFunctionScriptTestRequest,
   buildOntologyFunctionTestBindingKeys,
   buildOntologyFunctionTestRequest,
+  writeOntologyFunctionScriptTestParamValue,
 } from "../src/utils/mapOntologyFunctionTest.ts";
 
 /**
@@ -181,6 +183,62 @@ test("buildOntologyFunctionScriptTestRequest assembles functionApi version and p
     version: "1.0.0",
     parameters: [{ paramName: "name", paramValue: "foundry" }],
   });
+});
+
+test("buildOntologyFunctionScriptTestInputRowsFromParsed keeps INPUT tree for ide test form", () => {
+  const rows = buildOntologyFunctionScriptTestInputRowsFromParsed([
+    {
+      paramName: "input",
+      paramType: "OBJECT",
+      category: "INPUT",
+      paramOrder: 1,
+      referenceType: "",
+      fields: [
+        { paramName: "str1", paramType: "STRING", category: "INPUT", paramOrder: 1, referenceType: "" },
+        { paramName: "str2", paramType: "STRING", category: "INPUT", paramOrder: 2, referenceType: "" },
+      ],
+    },
+    { paramName: "Output", paramType: "OBJECT", category: "OUTPUT", paramOrder: 1, referenceType: "" },
+  ]);
+  assert.deepEqual(rows, [
+    {
+      paramName: "input",
+      paramType: "OBJECT",
+      fields: [
+        { paramName: "str1", paramType: "STRING", paramValue: "" },
+        { paramName: "str2", paramType: "STRING", paramValue: "" },
+      ],
+    },
+  ]);
+});
+
+test("writeOntologyFunctionScriptTestParamValue updates nested leaf by path", () => {
+  const rows = [
+    {
+      paramName: "input",
+      paramType: "OBJECT",
+      fields: [
+        { paramName: "str1", paramType: "STRING", paramValue: "" },
+        { paramName: "str2", paramType: "STRING", paramValue: "" },
+      ],
+    },
+  ];
+  const next = writeOntologyFunctionScriptTestParamValue(rows, [0, 1], "hello");
+  assert.equal(next[0]?.fields?.[1]?.paramValue, "hello");
+  assert.equal(rows[0]?.fields?.[1]?.paramValue, "");
+});
+
+test("function operator script ide test uses param tree and list-style request", () => {
+  const scriptIdeSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptIdeDialog.vue");
+  assert.match(scriptIdeSource, /FunctionOperatorScriptTestParamTree/);
+  assert.match(scriptIdeSource, /buildOntologyFunctionScriptTestInputRowsFromParsed/);
+  assert.match(scriptIdeSource, /buildOntologyFunctionScriptTestRequest/);
+  assert.match(scriptIdeSource, /testOntologyFunctionInterface/);
+  assert.match(scriptIdeSource, /async function runScriptIdeTest/);
+  assert.match(scriptIdeSource, /refreshIdeTestInputRows/);
+  assert.doesNotMatch(scriptIdeSource, /notifyScriptFeatureUnavailable\(['"]测试['"]\)/);
+  assert.doesNotMatch(scriptIdeSource, /update:testParams/);
+  assert.doesNotMatch(scriptIdeSource, /type:\s*["']CUSTOMIZE["']/);
 });
 
 test("function operator openTest loads detail and runTest shows output panel", () => {
