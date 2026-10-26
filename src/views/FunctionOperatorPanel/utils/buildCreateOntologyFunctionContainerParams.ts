@@ -17,6 +17,8 @@ export interface BuildCreateOntologyFunctionContainerParamsInput {
   interfaceDoc: UploadOntologyFunctionContainerDocData | null;
   runCommand: string;
   selectedInterfaces: ProbeOntologyFunctionContainerInterfaceItem[];
+  /** 限流配置模板 ID；有值才写入请求体。 */
+  rateLimitTemplateId?: number;
 }
 
 /**
@@ -61,7 +63,7 @@ function stripProbeContainerInterfaceDisplayKeys(items: ProbeOntologyFunctionCon
  */
 export function buildCreateOntologyFunctionContainerParams(input: BuildCreateOntologyFunctionContainerParamsInput): CreateOntologyFunctionContainerParams {
   const description = input.description.trim();
-  return {
+  const params: CreateOntologyFunctionContainerParams = {
     functionApi: input.functionApi.trim(),
     version: input.version.trim(),
     displayName: input.displayName.trim(),
@@ -75,4 +77,8 @@ export function buildCreateOntologyFunctionContainerParams(input: BuildCreateOnt
       selectedInterfaces: stripProbeContainerInterfaceDisplayKeys(input.selectedInterfaces),
     },
   };
+  if (typeof input.rateLimitTemplateId === "number" && Number.isFinite(input.rateLimitTemplateId)) {
+    params.rateLimitTemplateId = input.rateLimitTemplateId;
+  }
+  return params;
 }

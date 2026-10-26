@@ -63,6 +63,18 @@
         <el-form-item label="函数说明" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="2" maxlength="240" show-word-limit />
         </el-form-item>
+        <el-form-item label="限流配置模版">
+          <el-select
+            v-model="form.rateLimitTemplateId"
+            clearable
+            filterable
+            placeholder="不选则使用默认模版"
+            :loading="rateLimitTemplateLoading"
+            :disabled="Boolean(operator)"
+          >
+            <el-option v-for="item in rateLimitTemplateOptions" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
+        </el-form-item>
         <div v-if="form.definition.kind === 'basic'" class="function-operator-form__name-grid">
           <el-form-item label="聚合类型">
             <el-select v-model="form.definition.aggFunc" clearable placeholder="请选择聚合类型" @clear="clearTargetProperty" @change="onAggFuncChange">
@@ -114,6 +126,18 @@
         <el-form-item label="函数说明" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="3" maxlength="240" show-word-limit :disabled="scriptSessionGeneralLocked" />
         </el-form-item>
+        <el-form-item label="限流配置模版">
+          <el-select
+            v-model="form.rateLimitTemplateId"
+            clearable
+            filterable
+            placeholder="不选则使用默认模版"
+            :loading="rateLimitTemplateLoading"
+            :disabled="Boolean(operator) || scriptSessionGeneralLocked"
+          >
+            <el-option v-for="item in rateLimitTemplateOptions" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
+        </el-form-item>
       </section>
 
       <section v-else-if="form.type === 'api'" class="function-operator-form__section">
@@ -151,6 +175,18 @@
         </el-form-item>
         <el-form-item label="函数说明" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="3" maxlength="240" show-word-limit />
+        </el-form-item>
+        <el-form-item label="限流配置模版">
+          <el-select
+            v-model="form.rateLimitTemplateId"
+            clearable
+            filterable
+            placeholder="不选则使用默认模版"
+            :loading="rateLimitTemplateLoading"
+            :disabled="Boolean(operator)"
+          >
+            <el-option v-for="item in rateLimitTemplateOptions" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
         </el-form-item>
         <div class="function-operator-form__section-title">外部 API 函数配置</div>
         <el-form-item label="接口地址">
@@ -393,6 +429,18 @@
         <el-form-item label="函数说明" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="3" maxlength="240" show-word-limit />
         </el-form-item>
+        <el-form-item label="限流配置模版">
+          <el-select
+            v-model="form.rateLimitTemplateId"
+            clearable
+            filterable
+            placeholder="不选则使用默认模版"
+            :loading="rateLimitTemplateLoading"
+            :disabled="Boolean(operator)"
+          >
+            <el-option v-for="item in rateLimitTemplateOptions" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
+        </el-form-item>
 
         <template v-if="!operator">
           <div class="function-operator-form__section-title">容器算子函数配置</div>
@@ -529,6 +577,7 @@
     :description="form.description"
     :space-id="form.spaceId"
     :source-version="sourceVersion"
+    :rate-limit-template-id="form.rateLimitTemplateId"
     :language-locked="Boolean(operator) || isSourceTemplateLocked"
     :saving="loading"
     v-model:parsed-input-parameters="scriptDraftInputParameters"
@@ -557,6 +606,7 @@ import type { FormInstance, FormRules, UploadFile } from "element-plus";
 import { ElMessage } from "element-plus";
 
 import {
+  getListFunctionRateLimitTemplateInterface,
   getOntologyFunctionDetailInterface,
   getOntologyFunctionListInterface,
   getOntologyFunctionVersionsInterface,
@@ -575,6 +625,7 @@ import {
   type FunctionOperatorScriptLanguage,
   type FunctionOperatorType,
   type GetOntologyFunctionListItem,
+  type ListFunctionRateLimitTemplateItem,
   type ParseOntologyFunctionParamItem,
   type ProbeOntologyFunctionContainerInterfaceItem,
   type ProbeOntologyFunctionContainerInterfaceParameter,
@@ -717,11 +768,56 @@ function emitSaveScript(params: CreateOntologyFunctionParams): void {
 }
 
 /**
- * @description 将编排画布组装的创建请求转发给工作区保存。
+ * @description 将编排画布组装的创建请求转发给工作区保存，并附带表单所选限流模版。
  * @param params COMPOSITE 创建参数。
  */
 function emitSaveComposite(params: CreateOntologyFunctionParams): void {
-  emit("save-composite", params);
+  const next: CreateOntologyFunctionParams = { ...params };
+  if (typeof form.rateLimitTemplateId === "number" && Number.isFinite(form.rateLimitTemplateId)) {
+    next.rateLimitTemplateId = form.rateLimitTemplateId;
+  } else {
+    delete next.rateLimitTemplateId;
+  }
+  emit("save-composite", next);
+}
+
+/** 启用中的限流配置模版选项。 */
+const rateLimitTemplateOptions = ref<Array<{ id: number; name: string }>>([]);
+/** 限流模版列表加载中。 */
+const rateLimitTemplateLoading = ref(false);
+/** 限流模版列表请求代数，用于丢弃过期响应。 */
+let rateLimitTemplateListGeneration = 0;
+
+/**
+ * @description 拉取启用中的限流配置模版列表（enabled=1），供新建/编辑表单下拉。
+ */
+async function loadRateLimitTemplateOptions(): Promise<void> {
+  const requestId = ++rateLimitTemplateListGeneration;
+  rateLimitTemplateLoading.value = true;
+  try {
+    const response = await getListFunctionRateLimitTemplateInterface({ enabled: 1 });
+    if (requestId !== rateLimitTemplateListGeneration) {
+      return;
+    }
+    if (response.code !== 200 || !Array.isArray(response.data)) {
+      throw new Error(response.message || "限流配置模版列表加载失败");
+    }
+    rateLimitTemplateOptions.value = response.data
+      .filter((item: ListFunctionRateLimitTemplateItem): item is ListFunctionRateLimitTemplateItem & { id: number; name: string } => {
+        return typeof item.id === "number" && Number.isFinite(item.id) && typeof item.name === "string" && item.name.trim().length > 0;
+      })
+      .map((item) => ({ id: item.id, name: item.name.trim() }));
+  } catch (error) {
+    if (requestId !== rateLimitTemplateListGeneration) {
+      return;
+    }
+    rateLimitTemplateOptions.value = [];
+    ElMessage.error(error instanceof Error ? error.message : "限流配置模版列表加载失败");
+  } finally {
+    if (requestId === rateLimitTemplateListGeneration) {
+      rateLimitTemplateLoading.value = false;
+    }
+  }
 }
 
 const formRef = ref<FormInstance>();
@@ -1810,6 +1906,7 @@ async function submitExternalApi(): Promise<void> {
       apiKey: externalApiHeader.value,
       inputs: externalApiInputParameters.value,
       outputs: externalApiOutputParameters.value,
+      rateLimitTemplateId: form.rateLimitTemplateId,
     }),
   );
 }
@@ -1853,6 +1950,7 @@ async function submitDockerOperator(): Promise<void> {
       interfaceDoc: dockerInterfaceDoc.value,
       runCommand,
       selectedInterfaces,
+      rateLimitTemplateId: form.rateLimitTemplateId,
     }),
   );
 }
@@ -1940,6 +2038,9 @@ watch(
       resetDockerOperatorForm();
       sourceFunctionListGeneration += 1;
       sourceFunctionOptions.value = [];
+      rateLimitTemplateListGeneration += 1;
+      rateLimitTemplateOptions.value = [];
+      rateLimitTemplateLoading.value = false;
       resetSourceTemplateSelection();
       return;
     }
@@ -1948,6 +2049,11 @@ watch(
     Object.assign(form, next);
     if (!next.id) {
       delete form.id;
+    }
+    if (typeof next.rateLimitTemplateId === "number" && Number.isFinite(next.rateLimitTemplateId)) {
+      form.rateLimitTemplateId = next.rateLimitTemplateId;
+    } else {
+      delete form.rateLimitTemplateId;
     }
     if (next.type === "composite" && next.compositeConfig) {
       form.compositeConfig = next.compositeConfig;
@@ -1963,6 +2069,7 @@ watch(
     resetDockerOperatorForm();
     resetSourceTemplateSelection();
     void loadSourceFunctionOptions();
+    void loadRateLimitTemplateOptions();
   },
 );
 </script>

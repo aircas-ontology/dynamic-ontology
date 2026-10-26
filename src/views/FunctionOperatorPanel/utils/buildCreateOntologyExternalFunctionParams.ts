@@ -47,6 +47,8 @@ export interface BuildCreateOntologyExternalFunctionParamsInput {
   apiKey: string;
   inputs: BuildCreateOntologyExternalFunctionInputRow[];
   outputs: BuildCreateOntologyExternalFunctionOutputRow[];
+  /** 限流配置模板 ID；有值才写入请求体。 */
+  rateLimitTemplateId?: number;
 }
 
 const EXTERNAL_API_LOCATION_MAP: Record<ExternalApiFormLocation, CreateOntologyFunctionApiInput["location"]> = {
@@ -163,7 +165,7 @@ export function buildCreateOntologyExternalFunctionParams(input: BuildCreateOnto
     apiConfig.apiKeyHeader = input.apiKeyHeader.trim();
     apiConfig.apiKey = input.apiKey.trim();
   }
-  return {
+  const params: CreateOntologyFunctionParams = {
     functionApi: input.functionApi.trim(),
     version: input.version.trim(),
     displayName: input.displayName.trim(),
@@ -173,4 +175,8 @@ export function buildCreateOntologyExternalFunctionParams(input: BuildCreateOnto
     basedOnOldVersion: Boolean(input.sourceVersion.trim()),
     apiConfig,
   };
+  if (typeof input.rateLimitTemplateId === "number" && Number.isFinite(input.rateLimitTemplateId)) {
+    params.rateLimitTemplateId = input.rateLimitTemplateId;
+  }
+  return params;
 }

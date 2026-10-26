@@ -174,3 +174,40 @@ test("buildCreateOntologyExternalFunctionParams maps nested object fields and om
     { name: "ok", type: "boolean", description: "成功" },
   ]);
 });
+
+test("buildCreateOntologyExternalFunctionParams includes rateLimitTemplateId when provided", () => {
+  const withId = buildCreateOntologyExternalFunctionParams({
+    functionApi: "echo",
+    version: "1.0.0",
+    displayName: "回显",
+    description: "说明",
+    ontologySpaceId: 3,
+    sourceVersion: "",
+    endpoint: "https://httpbin.org/post",
+    method: "POST",
+    authType: "none",
+    apiKeyHeader: "",
+    apiKey: "",
+    inputs: [],
+    outputs: [],
+    rateLimitTemplateId: 5,
+  });
+  assert.equal(withId.rateLimitTemplateId, 5);
+
+  const withoutId = buildCreateOntologyExternalFunctionParams({
+    functionApi: "echo",
+    version: "1.0.0",
+    displayName: "回显",
+    description: "说明",
+    ontologySpaceId: 3,
+    sourceVersion: "",
+    endpoint: "https://httpbin.org/post",
+    method: "POST",
+    authType: "none",
+    apiKeyHeader: "",
+    apiKey: "",
+    inputs: [],
+    outputs: [],
+  });
+  assert.equal("rateLimitTemplateId" in withoutId, false);
+});

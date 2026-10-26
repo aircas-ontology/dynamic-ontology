@@ -77,6 +77,7 @@ test("function operator saveScriptOperator uses put when editing", () => {
   );
   assert.match(saveScriptBlock, /if \(editingOperator\.value\)/);
   assert.match(saveScriptBlock, /basedOnOldVersion:\s*_basedOnOldVersion/);
+  assert.match(saveScriptBlock, /rateLimitTemplateId:\s*_rateLimitTemplateId/);
   assert.match(saveScriptBlock, /updateOntologyFunctionInterface\(updateParams\)/);
   assert.match(saveScriptBlock, /createOntologyFunctionInterface\(params\)/);
   assert.match(saveScriptBlock, /脚本函数已更新/);

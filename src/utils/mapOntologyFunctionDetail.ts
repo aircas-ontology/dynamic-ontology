@@ -491,6 +491,9 @@ export function mapOntologyFunctionDetailToDraft(
     testedAt: "",
     ...(type === "api" && detail.apiConfig ? { externalApiConfig: detail.apiConfig } : {}),
     ...(type === "composite" && detail.compositeConfig ? { compositeConfig: detail.compositeConfig } : {}),
+    ...(typeof detail.rateLimitTemplateId === "number" && Number.isFinite(detail.rateLimitTemplateId)
+      ? { rateLimitTemplateId: detail.rateLimitTemplateId }
+      : {}),
   };
 }
 

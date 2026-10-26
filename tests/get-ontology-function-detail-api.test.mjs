@@ -40,12 +40,14 @@ test("get ontology function detail types expose documented fields", () => {
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
   assert.match(source, /apiConfig\?: CreateOntologyFunctionApiConfig/);
   assert.match(source, /compositeConfig\?: CompositeWorkflowSavePayload/);
+  assert.match(source, /rateLimitTemplateId\?: number/);
   const barrel = readSource("../src/types/index.ts");
   assert.match(barrel, /GetOntologyFunctionDetailData/);
   assert.match(barrel, /getOntologyFunctionDetailType/);
   assert.match(barrel, /FunctionOperatorCodeDefinition/);
   const draftType = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
   assert.match(draftType, /compositeConfig\?: CompositeWorkflowSavePayload/);
+  assert.match(draftType, /rateLimitTemplateId\?: number/);
 });
 
 test("get ontology function detail api gets detail by functionApi query", () => {
@@ -127,11 +129,31 @@ test("mapOntologyFunctionDetailToDraft fills basic form fields from detail", () 
   assert.equal(draft.version, "1.2.3");
   assert.equal(draft.type, "basic");
   assert.equal(draft.definition.kind, "basic");
+  assert.equal("rateLimitTemplateId" in draft, false);
   if (draft.definition.kind === "basic") {
     assert.equal(draft.definition.aggFunc, "SUM");
     assert.equal(draft.definition.targetProperty, "age");
     assert.match(draft.definition.parameterConfig, /"propertyApiName": "age"/);
   }
+});
+
+test("mapOntologyFunctionDetailToDraft keeps rateLimitTemplateId when detail provides it", () => {
+  const draft = mapOntologyFunctionDetailToDraft(
+    {
+      functionApi: "ss",
+      displayName: "ss",
+      description: "ss",
+      model: "BASIC",
+      type: "BASIC_QUERY",
+      ontologySpaceId: 46,
+      version: "1.0.0",
+      params: [],
+      code: "{}",
+      rateLimitTemplateId: 7,
+    },
+    46,
+  );
+  assert.equal(draft.rateLimitTemplateId, 7);
 });
 
 test("mapOntologyFunctionDetailToDraft falls back to list version when detail omits version", () => {

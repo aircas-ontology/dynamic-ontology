@@ -14,6 +14,8 @@ export interface BuildCreateOntologyScriptFunctionParamsInput {
   parameters: ParseOntologyFunctionParamItem[];
   /** 新建表单所选源版本；非空表示基于旧版本创建。 */
   sourceVersion: string;
+  /** 限流配置模板 ID；有值才写入请求体。 */
+  rateLimitTemplateId?: number;
 }
 
 export { mapScriptLanguageFromApi, mapScriptLanguageToApi } from "../../../utils/mapFunctionOperatorScriptLanguage.ts";
@@ -51,7 +53,7 @@ function mapParsedParameters(parameters: ParseOntologyFunctionParamItem[]): Crea
  * @returns 创建接口请求参数。
  */
 export function buildCreateOntologyScriptFunctionParams(input: BuildCreateOntologyScriptFunctionParamsInput): CreateOntologyFunctionParams {
-  return {
+  const params: CreateOntologyFunctionParams = {
     functionApi: input.functionApi.trim(),
     version: input.version.trim(),
     displayName: input.displayName.trim(),
@@ -63,4 +65,8 @@ export function buildCreateOntologyScriptFunctionParams(input: BuildCreateOntolo
     parameters: mapParsedParameters(input.parameters),
     basedOnOldVersion: Boolean(input.sourceVersion.trim()),
   };
+  if (typeof input.rateLimitTemplateId === "number" && Number.isFinite(input.rateLimitTemplateId)) {
+    params.rateLimitTemplateId = input.rateLimitTemplateId;
+  }
+  return params;
 }

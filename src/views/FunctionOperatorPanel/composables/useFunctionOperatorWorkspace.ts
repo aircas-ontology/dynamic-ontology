@@ -507,7 +507,7 @@ export function useFunctionOperatorWorkspace() {
     actionLoading.value = true;
     try {
       if (editingOperator.value) {
-        const { basedOnOldVersion: _basedOnOldVersion, ...updateParams } = params;
+        const { basedOnOldVersion: _basedOnOldVersion, rateLimitTemplateId: _rateLimitTemplateId, ...updateParams } = params;
         const response = await updateOntologyFunctionInterface(updateParams);
         if (response.code !== 200) {
           throw new Error(response.message || "脚本函数保存失败");
@@ -546,7 +546,8 @@ export function useFunctionOperatorWorkspace() {
     actionLoading.value = true;
     try {
       if (editingOperator.value) {
-        const response = await updateOntologyFunctionInterface(params);
+        const { rateLimitTemplateId: _rateLimitTemplateId, ...updateParams } = params;
+        const response = await updateOntologyFunctionInterface(updateParams);
         if (response.code !== 200) {
           throw new Error(response.message || "外部 API 函数保存失败");
         }
@@ -663,6 +664,9 @@ export function useFunctionOperatorWorkspace() {
         ElMessage.success("函数已更新");
       } else {
         payload.basedOnOldVersion = Boolean(draft.sourceVersion?.trim());
+        if (typeof draft.rateLimitTemplateId === "number" && Number.isFinite(draft.rateLimitTemplateId)) {
+          payload.rateLimitTemplateId = draft.rateLimitTemplateId;
+        }
         const response = await createOntologyFunctionInterface(payload);
         if (response.code !== 200) {
           throw new Error(response.message || "函数创建失败");

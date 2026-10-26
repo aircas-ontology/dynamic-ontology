@@ -27,6 +27,7 @@ test("create ontology function container types expose create params and string a
   assert.match(typeSource, /image:\s*UploadOntologyFunctionContainerImageData/);
   assert.match(typeSource, /runCommand:\s*string/);
   assert.match(typeSource, /selectedInterfaces:\s*ProbeOntologyFunctionContainerInterfaceItem\[\]/);
+  assert.match(typeSource, /rateLimitTemplateId\?:\s*number/);
   assert.match(typeSource, /export type CreateOntologyFunctionContainerData = string\[\]/);
   assert.match(barrel, /CreateOntologyFunctionContainerConfig/);
   assert.match(barrel, /CreateOntologyFunctionContainerData/);
@@ -83,6 +84,8 @@ test("buildCreateOntologyFunctionContainerParams maps form fields to create body
   assert.match(utilSource, /selectedInterfaces:\s*stripProbeContainerInterfaceDisplayKeys\(input\.selectedInterfaces\)/);
   assert.match(utilSource, /stripProbeContainerParamDisplayKeys/);
   assert.match(utilSource, /image:\s*input\.image/);
+  assert.match(utilSource, /rateLimitTemplateId/);
+  assert.match(utilSource, /Number\.isFinite\(input\.rateLimitTemplateId\)/);
 });
 
 test("docker form emits save-container with built create params", () => {

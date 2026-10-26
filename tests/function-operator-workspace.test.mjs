@@ -271,6 +271,7 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(scriptIdeSource, /submitScriptFunctionCreate/);
   assert.match(scriptIdeSource, /buildCreateOntologyScriptFunctionParams/);
   assert.match(scriptIdeSource, /sourceVersion:\s*props\.sourceVersion/);
+  assert.match(scriptIdeSource, /rateLimitTemplateId:\s*props\.rateLimitTemplateId/);
   assert.match(scriptIdeSource, /emit\(["']save["']/);
   assert.doesNotMatch(scriptIdeSource, /notifyScriptFeatureUnavailable\(['"]保存['"]\)/);
   assert.doesNotMatch(scriptIdeSource, /notifyScriptFeatureUnavailable\(['"]测试['"]\)/);
@@ -282,6 +283,11 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(scriptStartersSource, /export function handle/);
   assert.match(scriptStartersSource, /SCRIPT_FUNCTION_STARTERS/);
   assert.match(formSource, /:source-version="sourceVersion"/);
+  assert.match(formSource, /:rate-limit-template-id="form\.rateLimitTemplateId"/);
+  assert.match(formSource, /label="限流配置模版"/);
+  assert.match(formSource, /getListFunctionRateLimitTemplateInterface/);
+  assert.match(formSource, /enabled:\s*1/);
+  assert.match(formSource, /loadRateLimitTemplateOptions/);
   assert.match(formSource, /save-script|emitSaveScript|@save=/);
   assert.match(formSource, /emit\(["']save-script["']/);
   const buildScriptParamsSource = readSource("../src/views/FunctionOperatorPanel/utils/buildCreateOntologyScriptFunctionParams.ts");
@@ -442,7 +448,8 @@ test("external api function create form shows endpoint method and auth without s
   assert.match(externalSaveSource, /createOntologyFunctionInterface\(params\)/);
   assert.match(externalSaveSource, /外部 API 函数草稿已保存/);
   assert.match(externalSaveSource, /if \(editingOperator\.value\)/);
-  assert.match(externalSaveSource, /updateOntologyFunctionInterface\(params\)/);
+  assert.match(externalSaveSource, /rateLimitTemplateId:\s*_rateLimitTemplateId/);
+  assert.match(externalSaveSource, /updateOntologyFunctionInterface\(updateParams\)/);
   assert.match(externalSaveSource, /外部 API 函数已更新/);
   assert.match(pageSource, /@save-external="saveExternalApiOperator"/);
   assert.doesNotMatch(formSource, /form\.type === ['"]api['"][\s\S]{0,80}goGeneralConfigNextStep/);

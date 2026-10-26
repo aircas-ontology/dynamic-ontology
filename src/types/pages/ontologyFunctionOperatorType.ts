@@ -113,6 +113,8 @@ export type FunctionOperatorDraft = Omit<FunctionOperator, "id" | "updatedAt" | 
   compositeConfig?: CompositeWorkflowSavePayload;
   /** 新建时所选源版本；非空则创建请求 basedOnOldVersion 为 true。 */
   sourceVersion?: string;
+  /** 限流配置模板 ID；仅创建提交，编辑只读回显。 */
+  rateLimitTemplateId?: number;
 };
 
 export interface FunctionOperatorQuery {

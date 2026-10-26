@@ -32,6 +32,7 @@ test("create ontology function types expose the documented request fields", () =
   assert.match(source, /code\?: string/);
   assert.match(source, /parameters\?: CreateOntologyFunctionParameter\[\]/);
   assert.match(source, /basedOnOldVersion\?: boolean/);
+  assert.match(source, /rateLimitTemplateId\?: number/);
   assert.match(source, /export interface CreateOntologyFunctionParameter/);
   assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
@@ -138,8 +139,11 @@ test("function operator create form exposes aggFunc targetProperty and workspace
   assert.match(saveBlock, /createOntologyFunctionInterface\(payload\)/);
   assert.match(saveBlock, /queryConfig,/);
   assert.match(saveBlock, /basedOnOldVersion\s*=\s*Boolean\(draft\.sourceVersion\?\.trim\(\)\)/);
+  assert.match(saveBlock, /rateLimitTemplateId/);
+  assert.match(saveBlock, /draft\.rateLimitTemplateId/);
   assert.doesNotMatch(saveBlock, /queryConfig\.filters \|\| queryConfig\.aggFunc/);
   assert.match(formSource, /sourceVersion:\s*props\.operator \? "" : sourceVersion\.value\.trim\(\)/);
   const draftType = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
   assert.match(draftType, /sourceVersion\?: string/);
+  assert.match(draftType, /rateLimitTemplateId\?: number/);
 });

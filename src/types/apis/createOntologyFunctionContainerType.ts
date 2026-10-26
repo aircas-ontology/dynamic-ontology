@@ -33,6 +33,8 @@ export interface CreateOntologyFunctionContainerParams {
   ontologySpaceId?: number;
   /** 容器算子配置（镜像、文档、启动命令、勾选接口）。 */
   containerConfig: CreateOntologyFunctionContainerConfig;
+  /** 限流配置模板 ID；不传则使用默认模板，创建后不可修改。 */
+  rateLimitTemplateId?: number;
 }
 
 /** 创建容器算子成功后的响应 data：派生后的算子 api 列表。 */

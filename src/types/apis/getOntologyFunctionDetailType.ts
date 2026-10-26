@@ -50,4 +50,6 @@ export interface GetOntologyFunctionDetailData {
   apiConfig?: CreateOntologyFunctionApiConfig;
   /** 函数编排配置；与新建保存的 compositeConfig 同结构。 */
   compositeConfig?: CompositeWorkflowSavePayload;
+  /** 限流配置模板 ID；创建后不可修改，编辑回显用。 */
+  rateLimitTemplateId?: number;
 }

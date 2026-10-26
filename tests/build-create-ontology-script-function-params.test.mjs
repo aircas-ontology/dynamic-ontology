@@ -140,3 +140,32 @@ test("buildCreateOntologyScriptFunctionParams maps blank sourceVersion to basedO
   });
   assert.equal(payload.basedOnOldVersion, false);
 });
+
+test("buildCreateOntologyScriptFunctionParams includes rateLimitTemplateId when provided", () => {
+  const withId = buildCreateOntologyScriptFunctionParams({
+    functionApi: "fn",
+    version: "1.0.0",
+    displayName: "n",
+    description: "d",
+    ontologySpaceId: 1,
+    language: "typescript",
+    code: "export function handle() { return {}; }",
+    parameters: [],
+    sourceVersion: "",
+    rateLimitTemplateId: 2,
+  });
+  assert.equal(withId.rateLimitTemplateId, 2);
+
+  const withoutId = buildCreateOntologyScriptFunctionParams({
+    functionApi: "fn",
+    version: "1.0.0",
+    displayName: "n",
+    description: "d",
+    ontologySpaceId: 1,
+    language: "typescript",
+    code: "export function handle() { return {}; }",
+    parameters: [],
+    sourceVersion: "",
+  });
+  assert.equal("rateLimitTemplateId" in withoutId, false);
+});

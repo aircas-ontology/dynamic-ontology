@@ -113,6 +113,8 @@ const props = defineProps<{
   spaceId: number;
   /** 新建表单所选源版本；非空时创建请求 basedOnOldVersion 为 true。 */
   sourceVersion: string;
+  /** 限流配置模板 ID；有值才写入创建请求。 */
+  rateLimitTemplateId?: number;
   /** 编辑态或基于源函数创建时锁定语言（不可切换 language）。 */
   languageLocked: boolean;
   saving: boolean;
@@ -400,6 +402,7 @@ async function submitScriptFunctionCreate(): Promise<void> {
     code,
     parameters: [...inputParameters.value, ...outputParameters.value],
     sourceVersion: props.sourceVersion,
+    rateLimitTemplateId: props.rateLimitTemplateId,
   });
   emit("save", params);
 }

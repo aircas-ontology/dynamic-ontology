@@ -116,6 +116,8 @@ export interface CreateOntologyFunctionParams {
   apiConfig?: CreateOntologyFunctionApiConfig;
   /** 函数编排配置（仅 COMPOSITE 有效）。 */
   compositeConfig?: CompositeWorkflowSavePayload;
+  /** 限流配置模板 ID；不传则使用默认模板，创建后不可修改。 */
+  rateLimitTemplateId?: number;
 }
 
 /** 创建函数算子响应 data（契约样例无业务载荷）。 */
