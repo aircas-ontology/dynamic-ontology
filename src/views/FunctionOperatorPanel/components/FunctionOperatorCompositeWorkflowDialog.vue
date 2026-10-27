@@ -88,7 +88,7 @@
             <el-button size="small" @click="zoomCompositeWorkflowCanvas(-0.1)">缩小</el-button>
             <span class="function-operator-composite-workflow__zoom" aria-label="缩放比例">{{ zoomPercent }}%</span>
             <el-button size="small" @click="zoomCompositeWorkflowCanvas(0.1)">放大</el-button>
-            <el-button size="small" type="danger" plain @click="deleteSelectedElements">删除选中</el-button>
+            <el-button size="small" type="danger" plain @click="onDeleteSelectedElements">删除选中</el-button>
           </div>
         </div>
         <div ref="canvasHostRef" class="function-operator-composite-workflow__canvas" />
@@ -96,34 +96,12 @@
 
       <aside class="function-operator-composite-workflow__side function-operator-composite-workflow__side--right" aria-label="测试与结果">
         <div class="function-operator-composite-workflow__field function-operator-composite-workflow__field--grow">
-          <div class="function-operator-composite-workflow__label">
-            测试参数
-            <el-tooltip placement="top" effect="light">
-              <template #content>
-                <div>输入 JSON 对象，键为参数名，值支持任意类型（数字、字符串、对象、数组等）</div>
-                <div style="margin-top: 8px; font-family: monospace; font-size: 12px">
-                  示例：<br />
-                  {<br />
-                  &nbsp;&nbsp;"simpleParam": 123,<br />
-                  &nbsp;&nbsp;"objectParam": { "key": "value" },<br />
-                  &nbsp;&nbsp;"arrayParam": [1, 2, 3]<br />
-                  }
-                </div>
-              </template>
-              <el-icon style="margin-left: 4px; cursor: help; vertical-align: middle"><QuestionFilled /></el-icon>
-            </el-tooltip>
+          <div class="function-operator-composite-workflow__label">测试参数</div>
+          <div class="function-operator-composite-workflow__test-params">
+            <p v-if="testInputRows.length === 0" class="function-operator-composite-workflow__empty">请先在开始节点配置入参</p>
+            <FunctionOperatorScriptTestParamTree v-else :rows="testInputRows" ariaLabel="编排测试入参" @update-param="updateCompositeWorkflowTestParamValue" />
           </div>
-          <el-input
-            v-model="testParamsText"
-            type="textarea"
-            :rows="8"
-            class="function-operator-composite-workflow__test-input"
-            :class="{ 'is-error': testParamsJsonError }"
-            resize="none"
-            placeholder='输入 JSON 对象，支持复杂嵌套结构&#10;示例：&#10;{&#10;  "numberParam": 42,&#10;  "objectParam": { "nested": "value" },&#10;  "arrayParam": [1, 2, 3]&#10;}'
-          />
-          <p v-if="testParamsJsonError" class="function-operator-composite-workflow__json-error">{{ testParamsJsonError }}</p>
-          <p class="function-operator-composite-workflow__status">尚未测试</p>
+          <p class="function-operator-composite-workflow__status">{{ testStatusText }}</p>
         </div>
         <div class="function-operator-composite-workflow__field function-operator-composite-workflow__field--grow">
           <div class="function-operator-composite-workflow__label">运行结果</div>
@@ -149,7 +127,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, toRef, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { QuestionFilled } from "@element-plus/icons-vue";
 import "@logicflow/core/dist/index.css";
 
 import { getOntologyFunctionListInterface, testOntologyFunctionInterface } from "@/apis";
@@ -162,12 +139,22 @@ import {
   type OntologyCompositeConfig,
 } from "@/types";
 import { mapFunctionOperatorTypeFromApi } from "@/utils/mapFunctionOperatorTypeToApi";
+import {
+  buildOntologyFunctionScriptTestRequest,
+  writeOntologyFunctionScriptTestParamValue,
+  type OntologyFunctionScriptTestInputRow,
+} from "@/utils/mapOntologyFunctionTest";
 
 import { useCompositeWorkflowCanvas } from "../composables/useCompositeWorkflowCanvas";
+import { syncCompositeWorkflowTestInputRows } from "../utils/compositeWorkflowTestParams.ts";
 import FunctionOperatorCompositeEndpointNodeDialog from "./FunctionOperatorCompositeEndpointNodeDialog.vue";
 import FunctionOperatorCompositeFunctionNodeDialog from "./FunctionOperatorCompositeFunctionNodeDialog.vue";
 import FunctionOperatorCompositeLogicNodeDialog from "./FunctionOperatorCompositeLogicNodeDialog.vue";
 import FunctionOperatorCompositeTransformNodeDialog from "./FunctionOperatorCompositeTransformNodeDialog.vue";
+import FunctionOperatorScriptTestParamTree from "./FunctionOperatorScriptTestParamTree.vue";
+
+/** 编排弹框内测试命令状态。 */
+type CompositeWorkflowTestStatus = "idle" | "testing" | "success" | "error";
 
 /** 左侧逻辑节点展示项。 */
 interface CompositeWorkflowLogicItem {
@@ -209,26 +196,21 @@ const emit = defineEmits<{
 }>();
 
 const functionSearchKeyword = ref("");
-const testParamsText = ref("{\n  \n}");
+const testInputRows = ref<OntologyFunctionScriptTestInputRow[]>([]);
 const testOutputText = ref("");
 const testing = ref(false);
-const testParamsJsonError = computed<string>(() => {
-  const text = testParamsText.value.trim();
-  if (!text) {
-    return "";
+const testStatus = ref<CompositeWorkflowTestStatus>("idle");
+const testStatusText = computed(() => {
+  if (testStatus.value === "testing") {
+    return "测试中…";
   }
-  try {
-    const parsed = JSON.parse(text);
-    if (parsed !== null && typeof parsed !== "object") {
-      return "测试参数必须是 JSON 对象";
-    }
-    if (Array.isArray(parsed)) {
-      return "测试参数不能是数组，请使用对象格式";
-    }
-    return "";
-  } catch (error) {
-    return "JSON 格式错误，请检查语法";
+  if (testStatus.value === "success") {
+    return "测试成功";
   }
+  if (testStatus.value === "error") {
+    return "测试失败";
+  }
+  return "尚未测试";
 });
 const spaceFunctionItems = ref<CompositeWorkflowSpaceFunctionItem[]>([]);
 const spaceFunctionTotal = ref(0);
@@ -271,6 +253,7 @@ const {
   applyLogicNodeEdit,
   applyTransformNodeEdit,
   applyEndpointNodeEdit,
+  readStartNodeOutputParameters,
   clearNodeEditState,
 } = useCompositeWorkflowCanvas({
   displayName: toRef(props, "displayName"),
@@ -280,6 +263,30 @@ const {
   spaceId: toRef(props, "spaceId"),
   initialCompositeConfig: toRef(props, "compositeConfig"),
 });
+
+/**
+ * @description 按画布开始节点入参同步测试表单行，同名保留已填值。
+ */
+function syncCompositeWorkflowTestParamsFromStartNode(): void {
+  testInputRows.value = syncCompositeWorkflowTestInputRows(testInputRows.value, readStartNodeOutputParameters());
+}
+
+/**
+ * @description 写入测试入参叶子值。
+ * @param path 行序号路径。
+ * @param paramValue 参数值。
+ */
+function updateCompositeWorkflowTestParamValue(path: number[], paramValue: string): void {
+  testInputRows.value = writeOntologyFunctionScriptTestParamValue(testInputRows.value, path, paramValue);
+}
+
+/**
+ * @description 删除选中画布元素后同步测试参数结构。
+ */
+function onDeleteSelectedElements(): void {
+  deleteSelectedElements();
+  syncCompositeWorkflowTestParamsFromStartNode();
+}
 
 /**
  * @description 校验并组装创建请求后交给外层保存。
@@ -404,9 +411,15 @@ function onLogicPointerDown(event: PointerEvent, nodeKind: "loop" | "branch" | "
  */
 function onLogicClick(nodeKind: "loop" | "branch" | "transform" | "switch" | "start" | "end"): void {
   if (consumeSidebarDndAddedFlag()) {
+    if (nodeKind === "start") {
+      syncCompositeWorkflowTestParamsFromStartNode();
+    }
     return;
   }
   addCompositeWorkflowNodeAtCanvasCenter({ nodeKind });
+  if (nodeKind === "start") {
+    syncCompositeWorkflowTestParamsFromStartNode();
+  }
 }
 
 /**
@@ -463,33 +476,29 @@ async function runTest(): Promise<void> {
     ElMessage.error("缺少函数版本，无法测试");
     return;
   }
-  let parameters: Array<{ paramName: string; paramValue: string }> = [];
-  try {
-    const parsed = testParamsText.value.trim() ? JSON.parse(testParamsText.value) : {};
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      parameters = Object.entries(parsed as Record<string, unknown>).map(([key, value]) => ({
-        paramName: key,
-        paramValue: value === undefined || value === null ? "" : typeof value === "string" ? value : JSON.stringify(value),
-      }));
-    }
-  } catch {
-    ElMessage.error("测试参数 JSON 格式错误");
+  syncCompositeWorkflowTestParamsFromStartNode();
+  if (testInputRows.value.length === 0) {
+    ElMessage.error("请先在开始节点配置入参");
     return;
   }
+  const request = buildOntologyFunctionScriptTestRequest({
+    functionApi,
+    version,
+    rows: testInputRows.value,
+  });
   testing.value = true;
+  testStatus.value = "testing";
   testOutputText.value = "";
   try {
-    const response = await testOntologyFunctionInterface({
-      functionApi,
-      version,
-      parameters,
-    });
+    const response = await testOntologyFunctionInterface(request);
     testOutputText.value = JSON.stringify(response, null, 2);
     if (response.code !== 200) {
       throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数编排测试失败");
     }
+    testStatus.value = "success";
     ElMessage.success("测试成功");
   } catch (error) {
+    testStatus.value = "error";
     const message = error instanceof Error && error.message.trim() ? error.message : "函数编排测试失败";
     if (!testOutputText.value.trim()) {
       testOutputText.value = JSON.stringify({ code: null, message, success: false, data: null }, null, 2);
@@ -530,6 +539,9 @@ function onEndpointNodeConfirm(payload: {
     params: payload.params,
     inputBindings: payload.inputBindings,
   });
+  if (payload.kind === "start") {
+    syncCompositeWorkflowTestParamsFromStartNode();
+  }
 }
 
 watch(functionNodeEdit, (value) => {
@@ -583,6 +595,9 @@ watch(
       functionNodeDialogVisible.value = false;
       logicNodeDialogVisible.value = false;
       transformNodeDialogVisible.value = false;
+      testInputRows.value = [];
+      testOutputText.value = "";
+      testStatus.value = "idle";
       return;
     }
     void loadSpaceFunctionList();
@@ -600,6 +615,7 @@ watch(
       return;
     }
     initCompositeWorkflowCanvas();
+    syncCompositeWorkflowTestParamsFromStartNode();
   },
 );
 
@@ -862,32 +878,17 @@ onUnmounted(() => {
   font-size: 12px;
 }
 
-.function-operator-composite-workflow__test-input {
+.function-operator-composite-workflow__test-params {
   flex: 1 1 auto;
-}
-
-:deep(.function-operator-composite-workflow__test-input .el-textarea__inner) {
-  height: 100%;
   min-height: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  background: var(--aircas-color-panel-background-deep);
+  overflow: auto;
 }
 
-:deep(.function-operator-composite-workflow__test-input.el-textarea) {
-  flex: 1 1 auto;
-  height: 100%;
-  min-height: 0;
-}
-
-:deep(.function-operator-composite-workflow__test-input.is-error .el-textarea__inner) {
-  border-color: var(--el-color-danger);
-}
-
-.function-operator-composite-workflow__json-error {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--el-color-danger);
-  line-height: 1.4;
+.function-operator-composite-workflow__empty {
+  margin: 0;
+  color: var(--aircas-color-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
 }
 </style>
 

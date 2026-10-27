@@ -20,11 +20,7 @@
         <div v-for="(param, index) in params" :key="param.id" class="composite-endpoint-node-drawer__param-row">
           <el-input v-model="param.name" placeholder="参数名" class="composite-endpoint-node-drawer__param-name" />
           <el-select v-model="param.type" class="composite-endpoint-node-drawer__param-type">
-            <el-option label="数字" value="number" />
-            <el-option label="字符串" value="string" />
-            <el-option label="布尔" value="boolean" />
-            <el-option label="对象" value="object" />
-            <el-option label="数组" value="array" />
+            <el-option v-for="item in paramTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
           <el-button @click="removeParam(index)">删除</el-button>
         </div>
@@ -64,13 +60,7 @@ import { computed, ref, watch } from "vue";
 import type { CompositeWorkflowInputBinding, CompositeWorkflowParamBrief } from "@/types";
 
 import type { CompositeWorkflowEndpointNodeEditContext } from "../composables/useCompositeWorkflowCanvas";
-import {
-  alignCompositeWorkflowInputBindings,
-  compositeWorkflowParamPathKey,
-  listCompositeWorkflowParamNodes,
-  parseCompositeWorkflowParamPathKey,
-} from "../utils/compositeWorkflowGraph.ts";
-import { compareCompositeWorkflowParamTypes } from "../utils/compositeWorkflowParamType.ts";
+import { alignCompositeWorkflowInputBindings, compositeWorkflowParamPathKey, listCompositeWorkflowParamNodes } from "../utils/compositeWorkflowGraph.ts";
 import FunctionOperatorCompositeInputBindingTree from "./FunctionOperatorCompositeInputBindingTree.vue";
 
 /** 参数行。 */
@@ -107,6 +97,22 @@ const emit = defineEmits<{
   ];
 }>();
 
+/** 开始节点仅允许标量类型。 */
+const START_PARAM_TYPE_OPTIONS = [
+  { label: "数字", value: "number" },
+  { label: "字符串", value: "string" },
+  { label: "布尔", value: "boolean" },
+] as const;
+
+/** 结束节点保留五类基础类型。 */
+const END_PARAM_TYPE_OPTIONS = [
+  { label: "数字", value: "number" },
+  { label: "字符串", value: "string" },
+  { label: "布尔", value: "boolean" },
+  { label: "对象", value: "object" },
+  { label: "数组", value: "array" },
+] as const;
+
 const localKind = ref<"start" | "end">("start");
 const localNodeId = ref("");
 const params = ref<EndpointParamRow[]>([]);
@@ -115,6 +121,23 @@ const upstreamOutputs = ref<CompositeWorkflowParamBrief[]>([]);
 const bindings = ref<CompositeWorkflowInputBinding[]>([]);
 
 const dialogTitle = computed(() => (localKind.value === "start" ? "开始节点 — 配置入参" : "结束节点 — 配置出参"));
+
+/**
+ * @description 按节点 kind 返回可选参数类型。
+ */
+const paramTypeOptions = computed(() => (localKind.value === "start" ? START_PARAM_TYPE_OPTIONS : END_PARAM_TYPE_OPTIONS));
+
+/**
+ * @description 规范化开始节点参数类型：object/array 回落为 string。
+ * @param type 原始类型。
+ * @returns 允许的类型。
+ */
+function normalizeStartParamType(type: string): string {
+  if (type === "number" || type === "string" || type === "boolean") {
+    return type;
+  }
+  return "string";
+}
 
 /**
  * @description 将出参列表转为绑定树节点。
@@ -163,7 +186,7 @@ watch(
     params.value = ctx.params.map((item, index) => ({
       id: item.id || `p_${Date.now()}_${index}`,
       name: item.name,
-      type: item.type,
+      type: ctx.kind === "start" ? normalizeStartParamType(item.type) : item.type,
     }));
     if (ctx.kind === "end") {
       hasUpstream.value = ctx.hasUpstream ?? false;
@@ -285,7 +308,11 @@ function emitConfirm(): void {
   } = {
     nodeId: localNodeId.value,
     kind: localKind.value,
-    params: validParams.map((item) => ({ id: item.id, name: item.name.trim(), type: item.type })),
+    params: validParams.map((item) => ({
+      id: item.id,
+      name: item.name.trim(),
+      type: localKind.value === "start" ? normalizeStartParamType(item.type) : item.type,
+    })),
   };
   if (localKind.value === "end") {
     payload.inputBindings = bindings.value;

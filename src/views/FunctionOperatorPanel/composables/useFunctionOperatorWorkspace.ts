@@ -597,7 +597,75 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 保存函数编排（COMPOSITE）；无 editingOperator 走创建 POST，有则走修改 PUT。
+   * @description 由编排创建/修改请求体组装编辑态算子，供创建成功后保留弹框并走后续 PUT。
+   * @param params 保存请求体。
+   * @returns 编辑态 FunctionOperator。
+   */
+  function buildCompositeOperatorFromSaveParams(params: CreateOntologyFunctionParams): FunctionOperator {
+    return {
+      id: params.functionApi.trim(),
+      spaceId: params.ontologySpaceId,
+      name: params.displayName.trim(),
+      functionApi: params.functionApi.trim(),
+      type: "composite",
+      apiModelType: "COMPOSITE",
+      protocol: "HTTP",
+      version: params.version.trim(),
+      description: params.description.trim(),
+      createdBy: "",
+      createdAt: "",
+      updatedAt: "",
+      status: "draft",
+      category: "",
+      inputParameters: [],
+      outputParameters: [],
+      timeout: 0,
+      retryCount: 0,
+      retryInterval: 0,
+      definition: { kind: "composite" },
+      dependencies: [],
+      testStatus: "untested",
+      testedAt: "",
+      versions: [],
+    };
+  }
+
+  /**
+   * @description 由编排保存请求体组装表单草稿，写入 compositeConfig 供画布回显。
+   * @param params 保存请求体。
+   * @returns 表单草稿。
+   */
+  function buildCompositeDraftFromSaveParams(params: CreateOntologyFunctionParams): FunctionOperatorDraft {
+    const operator = buildCompositeOperatorFromSaveParams(params);
+    return {
+      id: operator.id,
+      spaceId: operator.spaceId,
+      name: operator.name,
+      functionApi: operator.functionApi,
+      type: operator.type,
+      apiModelType: operator.apiModelType,
+      protocol: operator.protocol,
+      version: operator.version,
+      description: operator.description,
+      createdBy: operator.createdBy,
+      createdAt: operator.createdAt,
+      status: operator.status,
+      category: operator.category,
+      inputParameters: [],
+      outputParameters: [],
+      timeout: operator.timeout,
+      retryCount: operator.retryCount,
+      retryInterval: operator.retryInterval,
+      definition: { ...operator.definition },
+      dependencies: [],
+      testStatus: operator.testStatus,
+      testedAt: operator.testedAt,
+      compositeConfig: params.compositeConfig,
+    };
+  }
+
+  /**
+   * @description 保存函数编排（COMPOSITE）；无 editingOperator 走创建 POST，有则走修改 PUT。创建与编辑成功后均保留弹框并刷新编辑态。
    * @param params COMPOSITE 创建/修改请求参数。
    */
   async function saveCompositeOperator(params: CreateOntologyFunctionParams): Promise<void> {
@@ -624,9 +692,8 @@ export function useFunctionOperatorWorkspace() {
         }
         ElMessage.success("函数编排草稿已保存");
       }
-      formVisible.value = false;
-      formDraft.value = null;
-      editingOperator.value = null;
+      editingOperator.value = buildCompositeOperatorFromSaveParams(params);
+      formDraft.value = buildCompositeDraftFromSaveParams(params);
       await loadOperators();
     } catch (error) {
       ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "函数编排保存失败");

@@ -719,7 +719,7 @@ export function useCompositeWorkflowCanvas(options: {
       subtitle: payload.nodeKind === "start" || payload.nodeKind === "end" ? "起止节点" : "逻辑节点",
     };
     if (payload.nodeKind === "start") {
-      properties.outputParameters = [{ id: "output", name: "output", type: "object" }];
+      properties.outputParameters = [{ id: "output", name: "output", type: "string" }];
     }
     if (payload.nodeKind === "end") {
       properties.inputParameters = [{ id: "input", name: "input", type: "object" }];
@@ -988,6 +988,21 @@ export function useCompositeWorkflowCanvas(options: {
   }
 
   /**
+   * @description 读取首个开始节点的入参定义（outputParameters），供测试参数表单同步。
+   * @returns 参数名与类型列表；无开始节点时为空数组。
+   */
+  function readStartNodeOutputParameters(): Array<{ name: string; type: string }> {
+    const startNode = readGraphNodes().find((node) => node.kind === "start");
+    if (!startNode?.outputParameters?.length) {
+      return [];
+    }
+    return startNode.outputParameters.map((param) => ({
+      name: typeof param.name === "string" ? param.name : "",
+      type: typeof param.type === "string" ? param.type : "",
+    }));
+  }
+
+  /**
    * @description 起止节点参数配置确认后写回画布。
    * @param nodeId 节点 id。
    * @param payload 确认载荷。
@@ -1058,6 +1073,7 @@ export function useCompositeWorkflowCanvas(options: {
     applyLogicNodeEdit,
     applyTransformNodeEdit,
     applyEndpointNodeEdit,
+    readStartNodeOutputParameters,
     clearNodeEditState,
     repairCompositeWorkflowInputBindings,
     resolveUpstreamOutputs,

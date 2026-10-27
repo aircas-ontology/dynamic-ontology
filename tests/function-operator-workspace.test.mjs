@@ -208,6 +208,22 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(compositeWorkflowSource, /runTest/);
   assert.match(compositeWorkflowSource, /testOntologyFunctionInterface/);
   assert.match(compositeWorkflowSource, /FunctionOperatorCompositeEndpointNodeDialog/);
+  assert.match(compositeWorkflowSource, /FunctionOperatorScriptTestParamTree/);
+  assert.match(compositeWorkflowSource, /syncCompositeWorkflowTestInputRows/);
+  assert.match(compositeWorkflowSource, /readStartNodeOutputParameters/);
+  assert.match(compositeWorkflowSource, /buildOntologyFunctionScriptTestRequest/);
+  assert.match(compositeWorkflowSource, /请先在开始节点配置入参/);
+  assert.doesNotMatch(compositeWorkflowSource, /testParamsText/);
+  assert.doesNotMatch(compositeWorkflowSource, /输入 JSON 对象/);
+  const endpointDialogSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeEndpointNodeDialog.vue");
+  assert.match(endpointDialogSource, /START_PARAM_TYPE_OPTIONS/);
+  assert.match(endpointDialogSource, /normalizeStartParamType/);
+  const startTypeOptionsBlock = endpointDialogSource.match(/const START_PARAM_TYPE_OPTIONS = \[[\s\S]*?\] as const;/)?.[0] ?? "";
+  assert.match(startTypeOptionsBlock, /value:\s*["']string["']/);
+  assert.doesNotMatch(startTypeOptionsBlock, /object|array/);
+  const endTypeOptionsBlock = endpointDialogSource.match(/const END_PARAM_TYPE_OPTIONS = \[[\s\S]*?\] as const;/)?.[0] ?? "";
+  assert.match(endTypeOptionsBlock, /value:\s*["']object["']/);
+  assert.match(endTypeOptionsBlock, /value:\s*["']array["']/);
   assert.match(compositeWorkflowSource, /getOntologyFunctionListInterface/);
   assert.match(compositeWorkflowSource, /excludeTypes:\s*["']BASIC_QUERY["']/);
   assert.doesNotMatch(compositeWorkflowSource, /type:\s*["']CUSTOMIZE["']/);
@@ -231,6 +247,8 @@ test("function operator panel wires workspace composable and basic form", () => 
   const canvasComposable = readSource("../src/views/FunctionOperatorPanel/composables/useCompositeWorkflowCanvas.ts");
   assert.match(canvasComposable, /new LogicFlow/);
   assert.match(canvasComposable, /buildCompositeWorkflowCreateParams/);
+  assert.match(canvasComposable, /readStartNodeOutputParameters/);
+  assert.match(canvasComposable, /outputParameters\s*=\s*\[\s*\{\s*id:\s*["']output["'],\s*name:\s*["']output["'],\s*type:\s*["']string["']/);
   assert.match(canvasComposable, /type:\s*["']COMPOSITE["']/);
   assert.match(canvasComposable, /compositeConfig/);
   assert.match(canvasComposable, /initialCompositeConfig/);
@@ -254,7 +272,13 @@ test("function operator panel wires workspace composable and basic form", () => 
     assert.match(saveCompositeBlock, /createOntologyFunctionInterface\(params\)/);
     assert.match(saveCompositeBlock, /函数编排已更新/);
     assert.match(saveCompositeBlock, /函数编排草稿已保存/);
+    assert.match(saveCompositeBlock, /editingOperator\.value\s*=\s*buildCompositeOperatorFromSaveParams/);
+    assert.match(saveCompositeBlock, /formDraft\.value\s*=\s*buildCompositeDraftFromSaveParams/);
+    assert.doesNotMatch(saveCompositeBlock, /formVisible\.value\s*=\s*false/);
   }
+  assert.match(workspaceSource, /function buildCompositeOperatorFromSaveParams/);
+  assert.match(workspaceSource, /function buildCompositeDraftFromSaveParams/);
+  assert.match(workspaceSource, /compositeConfig:\s*params\.compositeConfig/);
   assert.match(formSource, /save-composite/);
   assert.match(formSource, /:description="form\.description"/);
   assert.match(typeSource, /FunctionOperatorScriptLanguage/);
