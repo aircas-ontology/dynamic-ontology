@@ -25,6 +25,7 @@ test("get ontology function list types expose documented request and page fields
   assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /displayName\?: string/);
   assert.match(source, /type\?: string/);
+  assert.match(source, /excludeTypes\?: string/);
   assert.match(source, /publishStatus\?: number/);
   assert.match(source, /startDate\?: string/);
   assert.match(source, /endDate\?: string/);
@@ -52,6 +53,7 @@ test("get ontology function list api gets the prefixed list endpoint", () => {
   assert.match(source, /method: "get"/);
   assert.match(source, /params/);
   assert.match(source, /params\.displayName/);
+  assert.match(source, /params\.excludeTypes/);
   assert.match(source, /params\.publishStatus/);
   assert.match(source, /params\.startDate/);
   assert.match(source, /params\.endDate/);

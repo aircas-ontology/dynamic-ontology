@@ -1,5 +1,5 @@
-import type { CompositeWorkflowSavePayload } from "../pages/ontologyCompositeWorkflowType";
 import type { CreateOntologyFunctionApiConfig, CreateOntologyFunctionQueryConfig } from "./createOntologyFunctionType";
+import type { OntologyCompositeConfig } from "./ontologyCompositeConfigType";
 
 /** 根据函数 API 查询详情的请求参数。 */
 export interface GetOntologyFunctionDetailParams {
@@ -48,8 +48,8 @@ export interface GetOntologyFunctionDetailData {
   queryConfig?: CreateOntologyFunctionQueryConfig;
   /** 外部 API 配置；与新建保存的 apiConfig 同结构。 */
   apiConfig?: CreateOntologyFunctionApiConfig;
-  /** 函数编排配置；与新建保存的 compositeConfig 同结构。 */
-  compositeConfig?: CompositeWorkflowSavePayload;
+  /** 函数编排配置；与新建保存的 compositeConfig 同结构（后端契约）。 */
+  compositeConfig?: OntologyCompositeConfig;
   /** 限流配置模板 ID；创建后不可修改，编辑回显用。 */
   rateLimitTemplateId?: number;
 }

@@ -39,14 +39,15 @@ test("get ontology function detail types expose documented fields", () => {
   assert.match(source, /description\?: string/);
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
   assert.match(source, /apiConfig\?: CreateOntologyFunctionApiConfig/);
-  assert.match(source, /compositeConfig\?: CompositeWorkflowSavePayload/);
+  assert.match(source, /compositeConfig\?: OntologyCompositeConfig/);
   assert.match(source, /rateLimitTemplateId\?: number/);
   const barrel = readSource("../src/types/index.ts");
   assert.match(barrel, /GetOntologyFunctionDetailData/);
   assert.match(barrel, /getOntologyFunctionDetailType/);
   assert.match(barrel, /FunctionOperatorCodeDefinition/);
+  assert.match(barrel, /OntologyCompositeConfig/);
   const draftType = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
-  assert.match(draftType, /compositeConfig\?: CompositeWorkflowSavePayload/);
+  assert.match(draftType, /compositeConfig\?: OntologyCompositeConfig/);
   assert.match(draftType, /rateLimitTemplateId\?: number/);
 });
 
@@ -98,6 +99,44 @@ test("mapOntologyFunctionQueryConfigToBasicFilter maps dataType to valueType", (
   assert.equal(doc.children[1]?.filter?.valueType, "number");
   assert.equal(doc.children[1]?.filter?.value, 100);
   assert.match(stringifyBasicFilterConfig(doc), /"propertyApiName": "age"/);
+});
+
+test("mapOntologyFunctionQueryConfigToBasicFilter keeps empty children when filters missing", () => {
+  const doc = mapOntologyFunctionQueryConfigToBasicFilter({
+    aggFunc: "SUM",
+    targetProperty: "oooo",
+  });
+  assert.equal(doc.logic, "AND");
+  assert.equal(doc.children.length, 0);
+  assert.doesNotMatch(stringifyBasicFilterConfig(doc), /"type": "FILTER"/);
+});
+
+test("mapOntologyFunctionDetailToDraft omits empty filter row when queryConfig has no filters", () => {
+  const draft = mapOntologyFunctionDetailToDraft(
+    {
+      functionApi: "s",
+      displayName: "s",
+      description: "s",
+      model: "BASIC",
+      type: "BASIC_QUERY",
+      ontologySpaceId: 46,
+      version: "1.0.0",
+      params: [],
+      code: "{}",
+      queryConfig: {
+        aggFunc: "SUM",
+        targetProperty: "oooo",
+      },
+    },
+    46,
+  );
+  assert.equal(draft.definition.kind, "basic");
+  if (draft.definition.kind === "basic") {
+    assert.equal(draft.definition.aggFunc, "SUM");
+    assert.equal(draft.definition.targetProperty, "oooo");
+    assert.doesNotMatch(draft.definition.parameterConfig, /"type": "FILTER"/);
+    assert.match(draft.definition.parameterConfig, /"children": \[\]/);
+  }
 });
 
 test("mapOntologyFunctionDetailToDraft fills basic form fields from detail", () => {
@@ -525,17 +564,14 @@ test("function operator openDetail fetches detail for drawer", () => {
 
 test("mapOntologyFunctionDetailToDraft keeps compositeConfig for workflow echo", () => {
   const compositeConfig = {
-    schemaVersion: 1,
-    meta: {
-      displayName: "编排A",
-      functionApi: "comp.a",
-      version: "1.0.0",
-      ontologySpaceId: 7,
-      savedAt: "2026-10-23T00:00:00.000Z",
-    },
-    graph: { logicFlow: { nodes: [{ id: "n1" }], edges: [] } },
-    nodes: [],
+    kind: "COMPOSITE",
+    nodes: [{ id: "n1", kind: "function", functionId: "fn.a", functionVersion: "1.0.0", label: "编排A" }],
     edges: [],
+    inputMappings: [],
+    outputMappings: [],
+    inputParameters: [],
+    outputParameters: [],
+    graph: { nodes: [{ id: "n1" }], edges: [] },
   };
   const draft = mapOntologyFunctionDetailToDraft(
     {

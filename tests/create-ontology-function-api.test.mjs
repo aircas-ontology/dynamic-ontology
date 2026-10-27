@@ -24,7 +24,7 @@ test("create ontology function types expose the documented request fields", () =
   assert.match(source, /description: string/);
   assert.match(source, /type CreateOntologyFunctionType = "BASIC_QUERY" \| "CUSTOMIZE" \| "EXTERNAL" \| "COMPOSITE"/);
   assert.match(source, /apiConfig\?: CreateOntologyFunctionApiConfig/);
-  assert.match(source, /compositeConfig\?: CompositeWorkflowSavePayload/);
+  assert.match(source, /compositeConfig\?: OntologyCompositeConfig/);
   assert.match(source, /apiKeyHeader\?: string/);
   assert.match(source, /apiKey\?: string/);
   assert.match(source, /type: CreateOntologyFunctionType/);

@@ -1,6 +1,7 @@
 import type {
   CompositeWorkflowBranchConfig,
   CompositeWorkflowEdgePayload,
+  CompositeWorkflowEndpointNodePayload,
   CompositeWorkflowFunctionNodePayload,
   CompositeWorkflowInputBinding,
   CompositeWorkflowLogicNodePayload,
@@ -42,6 +43,10 @@ export interface CompositeWorkflowGraphNodeSummary {
   branchConfig?: CompositeWorkflowBranchConfig;
   transformConfig?: CompositeWorkflowTransformConfig;
   switchConfig?: CompositeWorkflowSwitchConfig;
+  /** 开始节点的输出参数（即编排入参）。 */
+  outputParameters?: Array<{ id: string; name: string; type: string }>;
+  /** 结束节点的输入参数（即编排出参）。 */
+  inputParameters?: Array<{ id: string; name: string; type: string }>;
 }
 
 /**
@@ -107,7 +112,8 @@ export function resolveCompositeWorkflowParamsFromSnapshotAndDetail(
 }
 
 /**
- * @description 解析目标节点直接前驱可供下游选择的输出树；条件分支透传其自身上游输出，不另造输出。
+ * @description 解析目标节点所有前驱可供下游选择的输出树；支持多入边（分支汇聚）。
+ * 条件分支透传其自身上游输出，不另造输出。多入边时每个输出带 sourceNodeId。
  * @param nodes 图节点摘要。
  * @param edges 图边。
  * @param nodeId 目标节点 id。
@@ -119,51 +125,112 @@ export function resolveCompositeWorkflowNodeUpstreamOutputs(
   nodeId: string,
 ): { hasUpstream: boolean; upstreamOutputs: CompositeWorkflowParamBrief[] } {
   const visited = new Set<string>();
+  const incoming = edges.filter((edge) => edge.targetNodeId === nodeId);
 
-  /**
-   * @description 沿入边递归解析输出树；遇分支则继续追其前驱。
-   * @param currentNodeId 当前目标节点。
-   * @returns 解析结果。
-   */
-  function resolveForNode(currentNodeId: string): { hasUpstream: boolean; upstreamOutputs: CompositeWorkflowParamBrief[] } {
-    if (visited.has(currentNodeId)) {
-      return { hasUpstream: true, upstreamOutputs: [] };
-    }
-    visited.add(currentNodeId);
-    const incoming = edges.filter((edge) => edge.targetNodeId === currentNodeId);
-    if (incoming.length === 0) {
-      return { hasUpstream: false, upstreamOutputs: [] };
-    }
-    const source = nodes.find((node) => node.id === incoming[0]?.sourceNodeId);
-    if (!source) {
-      return { hasUpstream: true, upstreamOutputs: [] };
-    }
-    if (source.kind === "function") {
-      return { hasUpstream: true, upstreamOutputs: source.paramsSnapshot?.outputs ?? [] };
-    }
-    if (source.kind === "transform") {
-      return { hasUpstream: true, upstreamOutputs: resolveCompositeWorkflowTransformOutputs(source.transformConfig) };
-    }
-    if (source.kind === "loop") {
-      const incomingEdge = incoming[0];
-      if (incomingEdge?.loopOutlet === "body") {
-        const itemName = source.loopConfig?.itemParamName?.trim() || "item";
-        const upstreamOutputs: CompositeWorkflowParamBrief[] = [{ paramName: itemName, paramType: "object" }];
-        const indexName = source.loopConfig?.indexParamName?.trim();
-        if (indexName) {
-          upstreamOutputs.push({ paramName: indexName, paramType: "number" });
-        }
-        return { hasUpstream: true, upstreamOutputs };
-      }
-      return resolveForNode(source.id);
-    }
-    if (source.kind === "branch" || source.kind === "switch") {
-      return resolveForNode(source.id);
-    }
-    return { hasUpstream: true, upstreamOutputs: [] };
+  if (incoming.length === 0) {
+    return { hasUpstream: false, upstreamOutputs: [] };
   }
 
-  return resolveForNode(nodeId);
+  if (incoming.length === 1) {
+    const firstEdge = incoming[0];
+    if (!firstEdge) {
+      return { hasUpstream: false, upstreamOutputs: [] };
+    }
+    return resolveSingleIncoming(nodes, edges, firstEdge, visited);
+  }
+
+  const allOutputs: CompositeWorkflowParamBrief[] = [];
+  for (const edge of incoming) {
+    const singleResult = resolveSingleIncoming(nodes, edges, edge, new Set(visited));
+    for (const output of singleResult.upstreamOutputs) {
+      allOutputs.push({ ...output, sourceNodeId: edge.sourceNodeId });
+    }
+  }
+  return { hasUpstream: allOutputs.length > 0, upstreamOutputs: allOutputs };
+}
+
+/**
+ * @description 解析单条入边的上游输出。
+ */
+function resolveSingleIncoming(
+  nodes: CompositeWorkflowGraphNodeSummary[],
+  edges: CompositeWorkflowGraphEdge[],
+  edge: CompositeWorkflowGraphEdge,
+  visited: Set<string>,
+): { hasUpstream: boolean; upstreamOutputs: CompositeWorkflowParamBrief[] } {
+  if (visited.has(edge.sourceNodeId)) {
+    return { hasUpstream: true, upstreamOutputs: [] };
+  }
+  const source = nodes.find((node) => node.id === edge.sourceNodeId);
+  if (!source) {
+    return { hasUpstream: true, upstreamOutputs: [] };
+  }
+  // 分支 / Switch / 循环 done 出口透传上游：不先占用 visited，避免递归入口立即短路。
+  if (source.kind === "branch" || source.kind === "switch") {
+    return resolveForNodeRecursive(source.id, nodes, edges, visited);
+  }
+  if (source.kind === "loop") {
+    if (edge.loopOutlet === "body") {
+      visited.add(edge.sourceNodeId);
+      const itemName = source.loopConfig?.itemParamName?.trim() || "item";
+      const upstreamOutputs: CompositeWorkflowParamBrief[] = [{ paramName: itemName, paramType: "object" }];
+      const indexName = source.loopConfig?.indexParamName?.trim();
+      if (indexName) {
+        upstreamOutputs.push({ paramName: indexName, paramType: "number" });
+      }
+      return { hasUpstream: true, upstreamOutputs };
+    }
+    return resolveForNodeRecursive(source.id, nodes, edges, visited);
+  }
+  visited.add(edge.sourceNodeId);
+  if (source.kind === "function") {
+    return { hasUpstream: true, upstreamOutputs: source.paramsSnapshot?.outputs ?? [] };
+  }
+  if (source.kind === "start") {
+    const startOutputs: CompositeWorkflowParamBrief[] = (source.outputParameters ?? []).map((param) => ({
+      paramName: param.name,
+      paramType: param.type === "number" ? "double" : param.type,
+    }));
+    return { hasUpstream: true, upstreamOutputs: startOutputs };
+  }
+  if (source.kind === "transform") {
+    return { hasUpstream: true, upstreamOutputs: resolveCompositeWorkflowTransformOutputs(source.transformConfig) };
+  }
+  return { hasUpstream: true, upstreamOutputs: [] };
+}
+
+/**
+ * @description 递归沿入边向上解析（用于分支/循环节点透传）。
+ */
+function resolveForNodeRecursive(
+  currentNodeId: string,
+  nodes: CompositeWorkflowGraphNodeSummary[],
+  edges: CompositeWorkflowGraphEdge[],
+  visited: Set<string>,
+): { hasUpstream: boolean; upstreamOutputs: CompositeWorkflowParamBrief[] } {
+  if (visited.has(currentNodeId)) {
+    return { hasUpstream: true, upstreamOutputs: [] };
+  }
+  visited.add(currentNodeId);
+  const incoming = edges.filter((edge) => edge.targetNodeId === currentNodeId);
+  if (incoming.length === 0) {
+    return { hasUpstream: false, upstreamOutputs: [] };
+  }
+  if (incoming.length === 1) {
+    const firstEdge = incoming[0];
+    if (!firstEdge) {
+      return { hasUpstream: false, upstreamOutputs: [] };
+    }
+    return resolveSingleIncoming(nodes, edges, firstEdge, visited);
+  }
+  const allOutputs: CompositeWorkflowParamBrief[] = [];
+  for (const edge of incoming) {
+    const singleResult = resolveSingleIncoming(nodes, edges, edge, new Set(visited));
+    for (const output of singleResult.upstreamOutputs) {
+      allOutputs.push({ ...output, sourceNodeId: edge.sourceNodeId });
+    }
+  }
+  return { hasUpstream: allOutputs.length > 0, upstreamOutputs: allOutputs };
 }
 
 /**
@@ -347,6 +414,62 @@ export function buildDefaultCompositeWorkflowInputBindings(
 }
 
 /**
+ * @description 自动配置绑定：按参数名匹配上游输出到下游输入，类型兼容时设为 fromUpstream，否则 manual。
+ * @param inputs 下游 INPUT。
+ * @param upstreamOutputs 上游 OUTPUT。
+ * @param hasUpstream 是否有前驱。
+ * @returns 自动匹配后的绑定列表。
+ */
+export function buildAutoConfiguredCompositeWorkflowInputBindings(
+  inputs: CompositeWorkflowParamBrief[],
+  upstreamOutputs: CompositeWorkflowParamBrief[],
+  hasUpstream: boolean,
+): CompositeWorkflowInputBinding[] {
+  const inputLeaves = listCompositeWorkflowParamLeaves(inputs);
+  const outputNodes = listCompositeWorkflowParamNodes(upstreamOutputs);
+
+  return inputLeaves.map(({ brief, paramPath }) => {
+    if (!hasUpstream || outputNodes.length === 0) {
+      return {
+        mode: "manual" as const,
+        paramName: brief.paramName,
+        paramPath,
+        value: "",
+      };
+    }
+
+    const matchedOutput = outputNodes.find((node) => node.brief.paramName === brief.paramName);
+    if (!matchedOutput) {
+      return {
+        mode: "manual" as const,
+        paramName: brief.paramName,
+        paramPath,
+        value: "",
+      };
+    }
+
+    const compared = compareCompositeWorkflowParamTypes(matchedOutput.brief.paramType, brief.paramType);
+    if (!compared.compatible) {
+      return {
+        mode: "manual" as const,
+        paramName: brief.paramName,
+        paramPath,
+        value: "",
+      };
+    }
+
+    return {
+      mode: "fromUpstream" as const,
+      paramName: brief.paramName,
+      paramPath,
+      upstreamParamName: matchedOutput.brief.paramName,
+      upstreamParamPath: matchedOutput.paramPath,
+      sourceNodeId: matchedOutput.brief.sourceNodeId,
+    };
+  });
+}
+
+/**
  * @description 前驱变更后修复绑定：无效 fromUpstream 降为 manual，并补齐 paramPath / upstreamParamPath。
  * @param bindings 原绑定。
  * @param upstreamOutputs 新前驱 OUTPUT；无前驱传空。
@@ -469,45 +592,64 @@ export function buildCompositeWorkflowSavePayload(options: {
   edges: CompositeWorkflowGraphEdge[];
   savedAt?: string;
 }): CompositeWorkflowSavePayload {
-  const nodes: Array<CompositeWorkflowFunctionNodePayload | CompositeWorkflowLogicNodePayload> = options.nodes.map((node) => {
-    if (node.kind === "function") {
+  const nodes: Array<CompositeWorkflowFunctionNodePayload | CompositeWorkflowLogicNodePayload | CompositeWorkflowEndpointNodePayload> = options.nodes.map(
+    (node) => {
+      if (node.kind === "function") {
+        return {
+          id: node.id,
+          kind: "function",
+          functionId: node.functionApi ?? "",
+          version: node.version ?? "",
+          displayName: node.displayName ?? "",
+          inputBindings: node.inputBindings ?? [],
+          paramsSnapshot: node.paramsSnapshot,
+        };
+      }
+      if (node.kind === "loop") {
+        return {
+          id: node.id,
+          kind: "loop",
+          config: normalizeCompositeWorkflowLoopConfig(node.loopConfig ?? createDefaultCompositeWorkflowLoopConfig()),
+        };
+      }
+      if (node.kind === "branch") {
+        return {
+          id: node.id,
+          kind: "branch",
+          config: normalizeCompositeWorkflowBranchConfig(node.branchConfig ?? createDefaultCompositeWorkflowBranchConfig()),
+        };
+      }
+      if (node.kind === "switch") {
+        return {
+          id: node.id,
+          kind: "switch",
+          config: normalizeCompositeWorkflowSwitchConfig(node.switchConfig ?? createDefaultCompositeWorkflowSwitchConfig()),
+        };
+      }
+      if (node.kind === "start") {
+        return {
+          id: node.id,
+          kind: "start" as const,
+          label: "开始",
+          outputParameters: node.outputParameters ?? [],
+        };
+      }
+      if (node.kind === "end") {
+        return {
+          id: node.id,
+          kind: "end" as const,
+          label: "结束",
+          inputParameters: node.inputParameters ?? [],
+          inputBindings: node.inputBindings ?? [],
+        };
+      }
       return {
         id: node.id,
-        kind: "function",
-        functionApi: node.functionApi ?? "",
-        version: node.version ?? "",
-        displayName: node.displayName ?? "",
-        inputBindings: node.inputBindings ?? [],
-        paramsSnapshot: node.paramsSnapshot,
+        kind: "transform",
+        config: node.transformConfig ?? createDefaultCompositeWorkflowTransformConfig(),
       };
-    }
-    if (node.kind === "loop") {
-      return {
-        id: node.id,
-        kind: "loop",
-        config: normalizeCompositeWorkflowLoopConfig(node.loopConfig ?? createDefaultCompositeWorkflowLoopConfig()),
-      };
-    }
-    if (node.kind === "branch") {
-      return {
-        id: node.id,
-        kind: "branch",
-        config: normalizeCompositeWorkflowBranchConfig(node.branchConfig ?? createDefaultCompositeWorkflowBranchConfig()),
-      };
-    }
-    if (node.kind === "switch") {
-      return {
-        id: node.id,
-        kind: "switch",
-        config: normalizeCompositeWorkflowSwitchConfig(node.switchConfig ?? createDefaultCompositeWorkflowSwitchConfig()),
-      };
-    }
-    return {
-      id: node.id,
-      kind: "transform",
-      config: node.transformConfig ?? createDefaultCompositeWorkflowTransformConfig(),
-    };
-  });
+    },
+  );
   const edges: CompositeWorkflowEdgePayload[] = options.edges.map((edge) => ({
     id: edge.id,
     sourceNodeId: edge.sourceNodeId,

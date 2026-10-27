@@ -26,6 +26,7 @@ test("update ontology function types expose the documented request fields", () =
   assert.match(source, /parameters\?: CreateOntologyFunctionParameter\[\]/);
   assert.match(source, /basedOnOldVersion\?: boolean/);
   assert.match(source, /apiConfig\?: CreateOntologyFunctionApiConfig/);
+  assert.match(source, /compositeConfig\?: OntologyCompositeConfig/);
   assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
   assert.match(source, /export type UpdateOntologyFunctionData = null/);

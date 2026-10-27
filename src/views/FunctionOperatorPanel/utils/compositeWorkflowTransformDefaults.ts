@@ -23,6 +23,7 @@ export function handle(input: Input): Output {
 export function createDefaultCompositeWorkflowTransformConfig(): CompositeWorkflowTransformConfig {
   return {
     kind: "transform",
+    mappingMode: "script",
     language: "typescript",
     code: COMPOSITE_WORKFLOW_TRANSFORM_DEFAULT_CODE,
     paramsSnapshot: { inputs: [], outputs: [] },
@@ -62,13 +63,24 @@ export function mapParsedScriptParametersToCompositeBriefs(parameters: ParseOnto
 }
 
 /**
- * @description 读取转换节点可供下游选择的输出树；优先解析快照，兼容旧 outputKeys。
+ * @description 读取转换节点可供下游选择的输出树；优先解析快照，其次 JSON mappings，兼容旧 outputKeys。
  * @param config 转换配置。
  * @returns 输出参数摘要。
  */
 export function resolveCompositeWorkflowTransformOutputs(config?: CompositeWorkflowTransformConfig): CompositeWorkflowParamBrief[] {
   if (config?.paramsSnapshot?.outputs && config.paramsSnapshot.outputs.length > 0) {
     return config.paramsSnapshot.outputs;
+  }
+  if (config?.mappingMode === "json" && Array.isArray(config.mappings) && config.mappings.length > 0) {
+    return config.mappings
+      .map((rule) => {
+        const paramName = typeof rule.outputField === "string" ? rule.outputField.trim() : "";
+        if (!paramName) {
+          return null;
+        }
+        return { paramName, paramType: "object" } satisfies CompositeWorkflowParamBrief;
+      })
+      .filter((item): item is CompositeWorkflowParamBrief => item !== null);
   }
   return (config?.outputKeys ?? []).map((paramName) => ({
     paramName,

@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 import { buildCompositeWorkflowLiteFlowEl } from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowLiteFlowEl.ts";
 import {
+  buildAutoConfiguredCompositeWorkflowInputBindings,
   buildCompositeWorkflowSavePayload,
   buildDefaultCompositeWorkflowInputBindings,
   hasCompositeWorkflowIncomingEdge,
@@ -126,6 +127,42 @@ test("buildDefaultCompositeWorkflowInputBindings never auto-matches upstream", (
     { mode: "manual", paramName: "name", paramPath: ["name"], value: "" },
     { mode: "manual", paramName: "age", paramPath: ["age"], value: "" },
   ]);
+});
+
+test("buildAutoConfiguredCompositeWorkflowInputBindings matches same name and compatible type", () => {
+  const bindings = buildAutoConfiguredCompositeWorkflowInputBindings(
+    [
+      { paramName: "name", paramType: "string" },
+      { paramName: "age", paramType: "number" },
+      { paramName: "flag", paramType: "boolean" },
+    ],
+    [
+      { paramName: "name", paramType: "STRING", sourceNodeId: "up1" },
+      { paramName: "age", paramType: "string" },
+    ],
+    true,
+  );
+  assert.deepEqual(bindings, [
+    {
+      mode: "fromUpstream",
+      paramName: "name",
+      paramPath: ["name"],
+      upstreamParamName: "name",
+      upstreamParamPath: ["name"],
+      sourceNodeId: "up1",
+    },
+    { mode: "manual", paramName: "age", paramPath: ["age"], value: "" },
+    { mode: "manual", paramName: "flag", paramPath: ["flag"], value: "" },
+  ]);
+});
+
+test("buildAutoConfiguredCompositeWorkflowInputBindings stays manual without upstream", () => {
+  const bindings = buildAutoConfiguredCompositeWorkflowInputBindings(
+    [{ paramName: "name", paramType: "string" }],
+    [{ paramName: "name", paramType: "string" }],
+    false,
+  );
+  assert.deepEqual(bindings, [{ mode: "manual", paramName: "name", paramPath: ["name"], value: "" }]);
 });
 
 test("buildDefaultCompositeWorkflowInputBindings binds only nested input leaves as manual", () => {
@@ -630,6 +667,7 @@ test("resolveCompositeWorkflowNodeUpstreamOutputs covers transform loop and miss
         kind: "transform",
         transformConfig: {
           kind: "transform",
+          mappingMode: "script",
           language: "typescript",
           code: "",
           paramsSnapshot: { inputs: [], outputs: [{ paramName: "out", paramType: "string" }] },

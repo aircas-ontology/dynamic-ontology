@@ -4,12 +4,14 @@ export interface CompositeWorkflowParamBrief {
   paramType: string;
   /** 对象或列表的下级属性；无下级时省略。 */
   fields?: CompositeWorkflowParamBrief[];
+  /** 多路径汇聚时，标识该输出来自哪个上游节点。 */
+  sourceNodeId?: string;
 }
 
 /** 函数节点入参绑定：手填或取自唯一前驱输出叶子。paramPath / upstreamParamPath 为从根到叶子的参数名。 */
 export type CompositeWorkflowInputBinding =
   | { mode: "manual"; paramName: string; paramPath: string[]; value: string }
-  | { mode: "fromUpstream"; paramName: string; paramPath: string[]; upstreamParamName: string; upstreamParamPath: string[] };
+  | { mode: "fromUpstream"; paramName: string; paramPath: string[]; upstreamParamName: string; upstreamParamPath: string[]; sourceNodeId?: string };
 
 /** 循环节点配置（foreach：集合取自上游路径，body/done 双出口）。 */
 export interface CompositeWorkflowLoopConfig {
@@ -30,13 +32,35 @@ export interface CompositeWorkflowBranchConfig {
   left: { mode: "fromUpstream"; upstreamParamName: string; upstreamParamPath: string[] };
   operator: CompositeWorkflowBranchOperator;
   right: { mode: "manual"; value: string };
+  /** 后端回显保留的原表达式；有值时编译优先使用，避免 operator/right 翻译不可逆丢失。 */
+  rawExpression?: string;
 }
 
-/** 数据格式转换节点配置（仅 TypeScript；参数由解析接口写入）。 */
+/** JSON 映射规则。 */
+export interface CompositeWorkflowJsonMappingRule {
+  /** 输出字段名。 */
+  outputField: string;
+  /** 映射类型：direct=直接取值, transform=简单转换, constant=常量。 */
+  mappingType: "direct" | "transform" | "constant";
+  /** 输入字段路径（direct/transform 时使用，支持点分路径如 "user.name"）。 */
+  inputPath?: string;
+  /** 常量值（constant 时使用）。 */
+  constantValue?: string | number | boolean | null;
+  /** 转换表达式（transform 时使用，如 "toUpperCase()", "parseInt()"）。 */
+  transformExpression?: string;
+}
+
+/** 数据格式转换节点配置（JSON 结构映射或脚本；弹框当前仍以脚本为主）。 */
 export interface CompositeWorkflowTransformConfig {
   kind: "transform";
-  language: "typescript";
-  code: string;
+  /** 映射模式：json=JSON 结构映射, script=脚本。 */
+  mappingMode: "json" | "script";
+  /** JSON 映射规则列表。 */
+  mappings?: CompositeWorkflowJsonMappingRule[];
+  /** 脚本模式时的语言。 */
+  language?: "typescript" | "groovy" | "javascript";
+  /** 脚本模式时的代码。 */
+  code?: string;
   /** 解析得到的 INPUT / OUTPUT 树；确定解析成功后写入。 */
   paramsSnapshot?: { inputs: CompositeWorkflowParamBrief[]; outputs: CompositeWorkflowParamBrief[] };
   /** 下游入参叶子绑定；无前驱时多为 manual。 */
@@ -62,13 +86,13 @@ export interface CompositeWorkflowSwitchConfig {
 }
 
 /** 画布节点业务 kind。 */
-export type CompositeWorkflowNodeKind = "function" | "loop" | "branch" | "transform" | "switch";
+export type CompositeWorkflowNodeKind = "function" | "loop" | "branch" | "transform" | "switch" | "start" | "end";
 
 /** 保存载荷中的函数节点。 */
 export interface CompositeWorkflowFunctionNodePayload {
   id: string;
   kind: "function";
-  functionApi: string;
+  functionId: string;
   version: string;
   displayName: string;
   inputBindings: CompositeWorkflowInputBinding[];
@@ -81,6 +105,17 @@ export type CompositeWorkflowLogicNodePayload =
   | { id: string; kind: "branch"; config: CompositeWorkflowBranchConfig }
   | { id: string; kind: "transform"; config: CompositeWorkflowTransformConfig }
   | { id: string; kind: "switch"; config: CompositeWorkflowSwitchConfig };
+
+/** 保存载荷中的起止节点。 */
+export type CompositeWorkflowEndpointNodePayload =
+  | { id: string; kind: "start"; label: string; outputParameters: Array<{ id: string; name: string; type: string }> }
+  | {
+      id: string;
+      kind: "end";
+      label: string;
+      inputParameters: Array<{ id: string; name: string; type: string }>;
+      inputBindings: CompositeWorkflowInputBinding[];
+    };
 
 /** 循环出口：循环体或结束后。 */
 export type CompositeWorkflowLoopOutlet = "body" | "done";
@@ -110,13 +145,14 @@ export interface CompositeWorkflowSavePayload {
   graph: {
     logicFlow: unknown;
   };
-  nodes: Array<CompositeWorkflowFunctionNodePayload | CompositeWorkflowLogicNodePayload>;
+  nodes: Array<CompositeWorkflowFunctionNodePayload | CompositeWorkflowLogicNodePayload | CompositeWorkflowEndpointNodePayload>;
   edges: CompositeWorkflowEdgePayload[];
 }
 
 /** 侧栏拖入画布的数据载荷。 */
 export type CompositeWorkflowDndPayload =
-  { nodeKind: "loop" | "branch" | "transform" | "switch" } | { nodeKind: "function"; functionApi: string; version: string; displayName: string };
+  | { nodeKind: "loop" | "branch" | "transform" | "switch" | "start" | "end" }
+  | { nodeKind: "function"; functionApi: string; version: string; displayName: string };
 
 /** 拖拽 MIME。 */
 export const COMPOSITE_WORKFLOW_DND_MIME = "application/x-composite-workflow-node";

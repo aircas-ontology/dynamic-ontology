@@ -314,6 +314,7 @@ async function emitConfirm(): Promise<void> {
   }
   const transformConfig: CompositeWorkflowTransformConfig = {
     kind: "transform",
+    mappingMode: "script",
     language: "typescript",
     code: transformCode.value,
     paramsSnapshot: { inputs: inputs.value, outputs: outputs.value },

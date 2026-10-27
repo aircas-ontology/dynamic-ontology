@@ -1,7 +1,7 @@
 /** 空间函数算子页面类型（本阶段以基础函数为主） */
 
 import type { CreateOntologyFunctionAggFunc, CreateOntologyFunctionApiConfig } from "../apis/createOntologyFunctionType";
-import type { CompositeWorkflowSavePayload } from "./ontologyCompositeWorkflowType";
+import type { OntologyCompositeConfig } from "../apis/ontologyCompositeConfigType";
 
 export type FunctionOperatorType = "code" | "api" | "docker" | "composite" | "basic";
 export type FunctionOperatorBasicAction = "create" | "update" | "delete";
@@ -110,7 +110,7 @@ export type FunctionOperatorDraft = Omit<FunctionOperator, "id" | "updatedAt" | 
   /** 外部 API 详情中的 apiConfig，用于编辑回显。 */
   externalApiConfig?: CreateOntologyFunctionApiConfig;
   /** 函数编排详情中的 compositeConfig，用于画布回显。 */
-  compositeConfig?: CompositeWorkflowSavePayload;
+  compositeConfig?: OntologyCompositeConfig;
   /** 新建时所选源版本；非空则创建请求 basedOnOldVersion 为 true。 */
   sourceVersion?: string;
   /** 限流配置模板 ID；仅创建提交，编辑只读回显。 */

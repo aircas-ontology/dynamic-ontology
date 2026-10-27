@@ -10,7 +10,7 @@ import type {
   GetOntologyFunctionDetailData,
   GetOntologyFunctionDetailParamItem,
 } from "@/types";
-import { createEmptyBasicFilterDocument, mapOntologyFunctionQueryConfigToBasicFilter, stringifyBasicFilterConfig } from "./functionOperatorBasicFilter.ts";
+import { createBlankBasicFilterDocument, mapOntologyFunctionQueryConfigToBasicFilter, stringifyBasicFilterConfig } from "./functionOperatorBasicFilter.ts";
 import { mapScriptLanguageFromApi } from "./mapFunctionOperatorScriptLanguage.ts";
 import { mapFunctionOperatorTypeFromApi } from "./mapFunctionOperatorTypeToApi.ts";
 import { mapOntologyFunctionPublishStatus } from "./mapOntologyFunctionPublishStatus.ts";
@@ -432,7 +432,7 @@ function resolveDetailVersion(detailVersion: unknown, fallbackVersion?: string):
  */
 function mapDetailToDraftDefinition(detail: GetOntologyFunctionDetailData, type: FunctionOperatorDraft["type"]): FunctionOperatorDefinition {
   if (type === "basic") {
-    const filtersDoc = detail.queryConfig ? mapOntologyFunctionQueryConfigToBasicFilter(detail.queryConfig) : createEmptyBasicFilterDocument();
+    const filtersDoc = detail.queryConfig ? mapOntologyFunctionQueryConfigToBasicFilter(detail.queryConfig) : createBlankBasicFilterDocument();
     return {
       kind: "basic",
       parameterConfig: stringifyBasicFilterConfig(filtersDoc),
