@@ -104,6 +104,7 @@ export function updateOntologyFunctionInterface(params: UpdateOntologyFunctionPa
  * @param params.pageSize 可选每页条数，默认 10。
  * @param params.displayName 可选函数名称（模糊搜索）。
  * @param params.type 可选函数类型（CUSTOMIZE / EXTERNAL / BASIC_QUERY / COMPOSITE）。
+ * @param params.excludeTypes 可选排除类型（如 BASIC_QUERY）；编排侧栏等场景用于排除基础函数。
  * @param params.publishStatus 可选发布状态（0 未发布，1 已发布）。
  * @param params.startDate 可选创建开始日期（yyyy-MM-dd）。
  * @param params.endDate 可选创建结束日期（yyyy-MM-dd）。

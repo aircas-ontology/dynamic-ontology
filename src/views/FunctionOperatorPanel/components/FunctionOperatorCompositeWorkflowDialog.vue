@@ -23,7 +23,7 @@
 
     <div class="function-operator-composite-workflow__body">
       <aside class="function-operator-composite-workflow__side function-operator-composite-workflow__side--left" aria-label="逻辑与空间函数">
-        <section class="function-operator-composite-workflow__section">
+        <section class="function-operator-composite-workflow__section function-operator-composite-workflow__section--half">
           <div class="function-operator-composite-workflow__section-head">
             <h3 class="function-operator-composite-workflow__section-title">逻辑</h3>
           </div>
@@ -42,7 +42,7 @@
           </ul>
         </section>
 
-        <section class="function-operator-composite-workflow__section function-operator-composite-workflow__section--grow">
+        <section class="function-operator-composite-workflow__section function-operator-composite-workflow__section--half">
           <div class="function-operator-composite-workflow__section-head">
             <h3 class="function-operator-composite-workflow__section-title">当前空间函数</h3>
             <span class="function-operator-composite-workflow__section-meta">{{ spaceFunctionAvailableCount }}可用</span>
@@ -342,7 +342,7 @@ function resetSpaceFunctionListState(): void {
 }
 
 /**
- * @description 拉取当前空间 CUSTOMIZE 脚本函数列表（pageSize=1000）。
+ * @description 拉取当前空间可编排函数列表（排除 BASIC_QUERY，pageSize=1000）。
  */
 async function loadSpaceFunctionList(): Promise<void> {
   const spaceId = props.spaceId;
@@ -359,7 +359,7 @@ async function loadSpaceFunctionList(): Promise<void> {
       pageNum: 1,
       pageSize: 1000,
       ontologySpaceId: spaceId,
-      type: "CUSTOMIZE",
+      excludeTypes: "BASIC_QUERY",
     });
     if (disposed || requestId !== spaceFunctionGeneration) {
       return;
@@ -661,7 +661,7 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 12px;
   padding: 12px;
-  overflow: auto;
+  overflow: hidden;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   background: var(--aircas-color-panel-background);
@@ -678,8 +678,8 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.function-operator-composite-workflow__section--grow {
-  flex: 1 1 auto;
+.function-operator-composite-workflow__section--half {
+  flex: 1 1 0;
   min-height: 0;
 }
 
@@ -707,15 +707,12 @@ onUnmounted(() => {
   display: flex;
   margin: 0;
   padding: 0;
-  flex-direction: column;
-  gap: 8px;
-  list-style: none;
-}
-
-.function-operator-composite-workflow__function-list {
   flex: 1 1 auto;
   min-height: 0;
+  flex-direction: column;
+  gap: 8px;
   overflow: auto;
+  list-style: none;
 }
 
 .function-operator-composite-workflow__logic-button,

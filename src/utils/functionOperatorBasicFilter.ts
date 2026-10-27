@@ -526,13 +526,24 @@ export function buildOntologyFunctionQueryConfig(
 }
 
 /**
+ * @description 创建无过滤条件的基础过滤文档（编辑回显无 filters 时使用，不垫空行）。
+ * @returns 空 children 的根组。
+ */
+export function createBlankBasicFilterDocument(): BasicFilterDocument {
+  return {
+    logic: "AND",
+    children: [],
+  };
+}
+
+/**
  * @description 将详情接口 queryConfig 转为表单基础过滤文档。
  * @param queryConfig 详情或创建用的 queryConfig。
- * @returns 表单过滤文档。
+ * @returns 表单过滤文档；无 filters 时返回空 children，不垫默认空条件行。
  */
 export function mapOntologyFunctionQueryConfigToBasicFilter(queryConfig: CreateOntologyFunctionQueryConfig): BasicFilterDocument {
   if (!queryConfig?.filters) {
-    return createEmptyBasicFilterDocument();
+    return createBlankBasicFilterDocument();
   }
   return mapApiFiltersToGroup(queryConfig.filters);
 }

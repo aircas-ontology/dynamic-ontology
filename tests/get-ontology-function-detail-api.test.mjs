@@ -101,6 +101,44 @@ test("mapOntologyFunctionQueryConfigToBasicFilter maps dataType to valueType", (
   assert.match(stringifyBasicFilterConfig(doc), /"propertyApiName": "age"/);
 });
 
+test("mapOntologyFunctionQueryConfigToBasicFilter keeps empty children when filters missing", () => {
+  const doc = mapOntologyFunctionQueryConfigToBasicFilter({
+    aggFunc: "SUM",
+    targetProperty: "oooo",
+  });
+  assert.equal(doc.logic, "AND");
+  assert.equal(doc.children.length, 0);
+  assert.doesNotMatch(stringifyBasicFilterConfig(doc), /"type": "FILTER"/);
+});
+
+test("mapOntologyFunctionDetailToDraft omits empty filter row when queryConfig has no filters", () => {
+  const draft = mapOntologyFunctionDetailToDraft(
+    {
+      functionApi: "s",
+      displayName: "s",
+      description: "s",
+      model: "BASIC",
+      type: "BASIC_QUERY",
+      ontologySpaceId: 46,
+      version: "1.0.0",
+      params: [],
+      code: "{}",
+      queryConfig: {
+        aggFunc: "SUM",
+        targetProperty: "oooo",
+      },
+    },
+    46,
+  );
+  assert.equal(draft.definition.kind, "basic");
+  if (draft.definition.kind === "basic") {
+    assert.equal(draft.definition.aggFunc, "SUM");
+    assert.equal(draft.definition.targetProperty, "oooo");
+    assert.doesNotMatch(draft.definition.parameterConfig, /"type": "FILTER"/);
+    assert.match(draft.definition.parameterConfig, /"children": \[\]/);
+  }
+});
+
 test("mapOntologyFunctionDetailToDraft fills basic form fields from detail", () => {
   const draft = mapOntologyFunctionDetailToDraft(
     {

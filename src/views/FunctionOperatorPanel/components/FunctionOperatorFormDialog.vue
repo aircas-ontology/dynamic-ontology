@@ -1015,12 +1015,21 @@ async function loadSourceFunctionOptions(): Promise<void> {
     return;
   }
   try {
-    const response = await getOntologyFunctionListInterface({
-      ontologySpaceId: props.spaceId,
-      type: apiType,
-      pageNum: 1,
-      pageSize: 1000,
-    });
+    const listParams =
+      form.type === "composite"
+        ? {
+            ontologySpaceId: props.spaceId,
+            excludeTypes: "BASIC_QUERY",
+            pageNum: 1,
+            pageSize: 1000,
+          }
+        : {
+            ontologySpaceId: props.spaceId,
+            type: apiType,
+            pageNum: 1,
+            pageSize: 1000,
+          };
+    const response = await getOntologyFunctionListInterface(listParams);
     if (requestId !== sourceFunctionListGeneration) {
       return;
     }

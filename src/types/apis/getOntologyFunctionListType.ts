@@ -10,6 +10,8 @@ export interface GetOntologyFunctionListParams {
   displayName?: string;
   /** 函数类型：CUSTOMIZE / EXTERNAL / BASIC_QUERY / COMPOSITE。 */
   type?: string;
+  /** 排除的函数类型（如 BASIC_QUERY）；与 type 互斥使用场景由调用方约定。 */
+  excludeTypes?: string;
   /** 发布状态：0 未发布，1 已发布。 */
   publishStatus?: number;
   /** 创建开始日期，格式 yyyy-MM-dd。 */

@@ -209,9 +209,13 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(compositeWorkflowSource, /testOntologyFunctionInterface/);
   assert.match(compositeWorkflowSource, /FunctionOperatorCompositeEndpointNodeDialog/);
   assert.match(compositeWorkflowSource, /getOntologyFunctionListInterface/);
-  assert.match(compositeWorkflowSource, /type:\s*["']CUSTOMIZE["']/);
+  assert.match(compositeWorkflowSource, /excludeTypes:\s*["']BASIC_QUERY["']/);
+  assert.doesNotMatch(compositeWorkflowSource, /type:\s*["']CUSTOMIZE["']/);
+  assert.doesNotMatch(compositeWorkflowSource, /type:\s*["']COMPOSITE["']/);
   assert.match(compositeWorkflowSource, /pageSize:\s*1000/);
   assert.match(compositeWorkflowSource, /loadSpaceFunctionList/);
+  assert.match(formSource, /form\.type === ["']composite["']/);
+  assert.match(formSource, /excludeTypes:\s*["']BASIC_QUERY["']/);
   assert.match(compositeWorkflowSource, /filteredSpaceFunctionItems/);
   assert.match(compositeWorkflowSource, /useCompositeWorkflowCanvas/);
   assert.match(compositeWorkflowSource, /@logicflow\/core/);
