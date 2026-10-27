@@ -17,6 +17,8 @@ export const COMPOSITE_WORKFLOW_LF_NODE_TYPES = {
   branch: "composite-branch",
   transform: "composite-transform",
   switch: "composite-switch",
+  start: "composite-start",
+  end: "composite-end",
 } as const;
 
 /** Switch 节点出口垂直间距。 */
@@ -60,6 +62,12 @@ export function resolveCompositeWorkflowLfNodeType(kind: CompositeWorkflowNodeKi
  * @returns stroke 颜色。
  */
 function resolveCompositeWorkflowNodeStroke(kind: unknown): string {
+  if (kind === "start") {
+    return "#52c41a";
+  }
+  if (kind === "end") {
+    return "#f5222d";
+  }
   if (kind === "function") {
     return "#409eff";
   }
@@ -71,6 +79,9 @@ function resolveCompositeWorkflowNodeStroke(kind: unknown): string {
   }
   if (kind === "loop") {
     return "#909399";
+  }
+  if (kind === "transform") {
+    return "#b37feb";
   }
   return "#6b7a99";
 }
@@ -676,10 +687,59 @@ export function registerCompositeWorkflowNodes(lf: LogicFlow): void {
     });
   }
 
+  /**
+   * @description 注册控制流边（composite-flow）：灰色虚线。
+   */
+  function registerCompositeWorkflowFlowEdge(): void {
+    lf.register("composite-flow", () => {
+      class CompositeFlowEdgeModel extends PolylineEdgeModel {
+        getEdgeStyle() {
+          const style = super.getEdgeStyle();
+          return {
+            ...style,
+            stroke: "#6b7a99",
+            strokeWidth: 2,
+            strokeDasharray: "5,5",
+          };
+        }
+      }
+      return {
+        view: PolylineEdge,
+        model: CompositeFlowEdgeModel,
+      };
+    });
+  }
+
+  /**
+   * @description 注册数据流边（composite-data）：蓝色实线。
+   */
+  function registerCompositeWorkflowDataEdge(): void {
+    lf.register("composite-data", () => {
+      class CompositeDataEdgeModel extends PolylineEdgeModel {
+        getEdgeStyle() {
+          const style = super.getEdgeStyle();
+          return {
+            ...style,
+            stroke: "#409eff",
+            strokeWidth: 2,
+          };
+        }
+      }
+      return {
+        view: PolylineEdge,
+        model: CompositeDataEdgeModel,
+      };
+    });
+  }
+
   registerRectNodeType(COMPOSITE_WORKFLOW_LF_NODE_TYPES.function);
   registerRectNodeType(COMPOSITE_WORKFLOW_LF_NODE_TYPES.transform);
+  registerRectNodeType(COMPOSITE_WORKFLOW_LF_NODE_TYPES.start);
+  registerRectNodeType(COMPOSITE_WORKFLOW_LF_NODE_TYPES.end);
   registerLoopRectNodeType();
   registerBranchDiamondNodeType();
   registerSwitchRectNodeType();
   registerCompositeWorkflowPolylineEdge();
+  registerCompositeWorkflowFlowEdge();
+  registerCompositeWorkflowDataEdge();
 }

@@ -205,7 +205,9 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(compositeWorkflowSource, /测试参数/);
   assert.match(compositeWorkflowSource, /运行结果/);
   assert.match(compositeWorkflowSource, /goBackPreviousStep/);
-  assert.match(compositeWorkflowSource, /notifyFeatureUnavailable/);
+  assert.match(compositeWorkflowSource, /runTest/);
+  assert.match(compositeWorkflowSource, /testOntologyFunctionInterface/);
+  assert.match(compositeWorkflowSource, /FunctionOperatorCompositeEndpointNodeDialog/);
   assert.match(compositeWorkflowSource, /getOntologyFunctionListInterface/);
   assert.match(compositeWorkflowSource, /type:\s*["']CUSTOMIZE["']/);
   assert.match(compositeWorkflowSource, /pageSize:\s*1000/);
@@ -228,13 +230,27 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(canvasComposable, /type:\s*["']COMPOSITE["']/);
   assert.match(canvasComposable, /compositeConfig/);
   assert.match(canvasComposable, /initialCompositeConfig/);
-  assert.match(canvasComposable, /resolveCompositeWorkflowLogicFlowForRender/);
+  assert.match(canvasComposable, /compileCompositeWorkflowToBackendConfig/);
+  assert.match(canvasComposable, /buildCompositeWorkflowRestoreGraphData/);
   assert.match(canvasComposable, /lf\.render\(/);
   assert.doesNotMatch(canvasComposable, /console\.log\("\[composite-workflow\]"/);
   assert.match(canvasComposable, /wouldCompositeWorkflowEdgeCreateCycle/);
   assert.match(workspaceSource, /async function saveCompositeOperator/);
   assert.match(workspaceSource, /函数编排草稿已保存/);
   assert.match(panelSource, /@save-composite="saveCompositeOperator"/);
+  {
+    const saveCompositeBlock = workspaceSource.slice(
+      workspaceSource.indexOf("async function saveCompositeOperator"),
+      workspaceSource.indexOf("async function saveOperator"),
+    );
+    assert.match(saveCompositeBlock, /if \(editingOperator\.value\)/);
+    assert.match(saveCompositeBlock, /basedOnOldVersion:\s*_basedOnOldVersion/);
+    assert.match(saveCompositeBlock, /rateLimitTemplateId:\s*_rateLimitTemplateId/);
+    assert.match(saveCompositeBlock, /updateOntologyFunctionInterface\(updateParams\)/);
+    assert.match(saveCompositeBlock, /createOntologyFunctionInterface\(params\)/);
+    assert.match(saveCompositeBlock, /函数编排已更新/);
+    assert.match(saveCompositeBlock, /函数编排草稿已保存/);
+  }
   assert.match(formSource, /save-composite/);
   assert.match(formSource, /:description="form\.description"/);
   assert.match(typeSource, /FunctionOperatorScriptLanguage/);

@@ -597,8 +597,8 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 新建函数编排（COMPOSITE）：调用创建接口，成功后关闭表单并刷新列表。
-   * @param params COMPOSITE 创建请求参数。
+   * @description 保存函数编排（COMPOSITE）；无 editingOperator 走创建 POST，有则走修改 PUT。
+   * @param params COMPOSITE 创建/修改请求参数。
    */
   async function saveCompositeOperator(params: CreateOntologyFunctionParams): Promise<void> {
     if (actionLoading.value) {
@@ -610,11 +610,20 @@ export function useFunctionOperatorWorkspace() {
     }
     actionLoading.value = true;
     try {
-      const response = await createOntologyFunctionInterface(params);
-      if (response.code !== 200) {
-        throw new Error(response.message || "函数编排创建失败");
+      if (editingOperator.value) {
+        const { basedOnOldVersion: _basedOnOldVersion, rateLimitTemplateId: _rateLimitTemplateId, ...updateParams } = params;
+        const response = await updateOntologyFunctionInterface(updateParams);
+        if (response.code !== 200) {
+          throw new Error(response.message || "函数编排保存失败");
+        }
+        ElMessage.success("函数编排已更新");
+      } else {
+        const response = await createOntologyFunctionInterface(params);
+        if (response.code !== 200) {
+          throw new Error(response.message || "函数编排创建失败");
+        }
+        ElMessage.success("函数编排草稿已保存");
       }
-      ElMessage.success("函数编排草稿已保存");
       formVisible.value = false;
       formDraft.value = null;
       editingOperator.value = null;

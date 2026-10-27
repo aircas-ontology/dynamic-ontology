@@ -15,7 +15,7 @@
         </div>
         <div class="function-operator-composite-workflow__actions">
           <el-button @click="goBackPreviousStep">返回上一步</el-button>
-          <el-button @click="notifyFeatureUnavailable('测试')">测试</el-button>
+          <el-button @click="runTest">测试</el-button>
           <el-button type="primary" :loading="saving" :disabled="saving" @click="saveCompositeWorkflow">保存</el-button>
         </div>
       </div>
@@ -96,13 +96,45 @@
 
       <aside class="function-operator-composite-workflow__side function-operator-composite-workflow__side--right" aria-label="测试与结果">
         <div class="function-operator-composite-workflow__field function-operator-composite-workflow__field--grow">
-          <div class="function-operator-composite-workflow__label">测试参数</div>
-          <el-input v-model="testParamsText" type="textarea" :rows="8" class="function-operator-composite-workflow__test-input" resize="none" />
+          <div class="function-operator-composite-workflow__label">
+            测试参数
+            <el-tooltip placement="top" effect="light">
+              <template #content>
+                <div>输入 JSON 对象，键为参数名，值支持任意类型（数字、字符串、对象、数组等）</div>
+                <div style="margin-top: 8px; font-family: monospace; font-size: 12px">
+                  示例：<br />
+                  {<br />
+                  &nbsp;&nbsp;"simpleParam": 123,<br />
+                  &nbsp;&nbsp;"objectParam": { "key": "value" },<br />
+                  &nbsp;&nbsp;"arrayParam": [1, 2, 3]<br />
+                  }
+                </div>
+              </template>
+              <el-icon style="margin-left: 4px; cursor: help; vertical-align: middle"><QuestionFilled /></el-icon>
+            </el-tooltip>
+          </div>
+          <el-input
+            v-model="testParamsText"
+            type="textarea"
+            :rows="8"
+            class="function-operator-composite-workflow__test-input"
+            :class="{ 'is-error': testParamsJsonError }"
+            resize="none"
+            placeholder='输入 JSON 对象，支持复杂嵌套结构&#10;示例：&#10;{&#10;  "numberParam": 42,&#10;  "objectParam": { "nested": "value" },&#10;  "arrayParam": [1, 2, 3]&#10;}'
+          />
+          <p v-if="testParamsJsonError" class="function-operator-composite-workflow__json-error">{{ testParamsJsonError }}</p>
           <p class="function-operator-composite-workflow__status">尚未测试</p>
         </div>
         <div class="function-operator-composite-workflow__field function-operator-composite-workflow__field--grow">
           <div class="function-operator-composite-workflow__label">运行结果</div>
-          <div class="function-operator-composite-workflow__result" aria-live="polite">测试结果将在这里显示</div>
+          <el-input
+            v-model="testOutputText"
+            type="textarea"
+            :rows="10"
+            class="function-operator-composite-workflow__test-output"
+            readonly
+            placeholder="测试结果将在这里显示"
+          />
         </div>
       </aside>
     </div>
@@ -110,32 +142,36 @@
     <FunctionOperatorCompositeFunctionNodeDialog v-model="functionNodeDialogVisible" :context="functionNodeEdit" @confirm="onFunctionNodeConfirm" />
     <FunctionOperatorCompositeLogicNodeDialog v-model="logicNodeDialogVisible" :context="logicNodeEdit" @confirm="applyLogicNodeEdit" />
     <FunctionOperatorCompositeTransformNodeDialog v-model="transformNodeDialogVisible" :context="transformNodeEdit" @confirm="applyTransformNodeEdit" />
+    <FunctionOperatorCompositeEndpointNodeDialog v-model="endpointNodeDialogVisible" :context="endpointNodeEdit" @confirm="onEndpointNodeConfirm" />
   </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, toRef, watch } from "vue";
 import { ElMessage } from "element-plus";
+import { QuestionFilled } from "@element-plus/icons-vue";
 import "@logicflow/core/dist/index.css";
 
-import { getOntologyFunctionListInterface } from "@/apis";
+import { getOntologyFunctionListInterface, testOntologyFunctionInterface } from "@/apis";
 import {
   FUNCTION_OPERATOR_TYPE_LABELS,
   type CompositeWorkflowDndPayload,
-  type CompositeWorkflowSavePayload,
+  type CompositeWorkflowInputBinding,
   type CreateOntologyFunctionParams,
   type GetOntologyFunctionListItem,
+  type OntologyCompositeConfig,
 } from "@/types";
 import { mapFunctionOperatorTypeFromApi } from "@/utils/mapFunctionOperatorTypeToApi";
 
 import { useCompositeWorkflowCanvas } from "../composables/useCompositeWorkflowCanvas";
+import FunctionOperatorCompositeEndpointNodeDialog from "./FunctionOperatorCompositeEndpointNodeDialog.vue";
 import FunctionOperatorCompositeFunctionNodeDialog from "./FunctionOperatorCompositeFunctionNodeDialog.vue";
 import FunctionOperatorCompositeLogicNodeDialog from "./FunctionOperatorCompositeLogicNodeDialog.vue";
 import FunctionOperatorCompositeTransformNodeDialog from "./FunctionOperatorCompositeTransformNodeDialog.vue";
 
 /** 左侧逻辑节点展示项。 */
 interface CompositeWorkflowLogicItem {
-  nodeKind: "loop" | "branch" | "transform" | "switch";
+  nodeKind: "loop" | "branch" | "transform" | "switch" | "start" | "end";
   title: string;
   description: string;
 }
@@ -162,7 +198,7 @@ const props = defineProps<{
   /** 函数说明。 */
   description: string;
   /** 编辑回显用的编排配置；新建为空。 */
-  compositeConfig?: CompositeWorkflowSavePayload | null;
+  compositeConfig?: OntologyCompositeConfig | null;
   /** 外层保存请求进行中。 */
   saving?: boolean;
 }>();
@@ -174,6 +210,26 @@ const emit = defineEmits<{
 
 const functionSearchKeyword = ref("");
 const testParamsText = ref("{\n  \n}");
+const testOutputText = ref("");
+const testing = ref(false);
+const testParamsJsonError = computed<string>(() => {
+  const text = testParamsText.value.trim();
+  if (!text) {
+    return "";
+  }
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed !== null && typeof parsed !== "object") {
+      return "测试参数必须是 JSON 对象";
+    }
+    if (Array.isArray(parsed)) {
+      return "测试参数不能是数组，请使用对象格式";
+    }
+    return "";
+  } catch (error) {
+    return "JSON 格式错误，请检查语法";
+  }
+});
 const spaceFunctionItems = ref<CompositeWorkflowSpaceFunctionItem[]>([]);
 const spaceFunctionTotal = ref(0);
 const spaceFunctionLoading = ref(false);
@@ -181,10 +237,13 @@ const spaceFunctionError = ref("");
 const functionNodeDialogVisible = ref(false);
 const logicNodeDialogVisible = ref(false);
 const transformNodeDialogVisible = ref(false);
+const endpointNodeDialogVisible = ref(false);
 let spaceFunctionGeneration = 0;
 let disposed = false;
 
 const logicNodeItems: ReadonlyArray<CompositeWorkflowLogicItem> = [
+  { nodeKind: "start", title: "开始", description: "编排起始节点，定义输入参数" },
+  { nodeKind: "end", title: "结束", description: "编排终止节点，定义输出参数" },
   { nodeKind: "loop", title: "循环", description: "对上游集合逐项执行循环体" },
   { nodeKind: "branch", title: "条件分支", description: "按条件走 true / false 分支" },
   { nodeKind: "switch", title: "Switch Case", description: "按上游值匹配多个 case 与 default" },
@@ -197,6 +256,7 @@ const {
   functionNodeEdit,
   logicNodeEdit,
   transformNodeEdit,
+  endpointNodeEdit,
   initCompositeWorkflowCanvas,
   destroyCompositeWorkflowCanvas,
   startCompositeWorkflowNodeDrag,
@@ -210,6 +270,7 @@ const {
   applyFunctionNodeEdit,
   applyLogicNodeEdit,
   applyTransformNodeEdit,
+  applyEndpointNodeEdit,
   clearNodeEditState,
 } = useCompositeWorkflowCanvas({
   displayName: toRef(props, "displayName"),
@@ -330,7 +391,7 @@ async function loadSpaceFunctionList(): Promise<void> {
  * @param event 指针事件。
  * @param nodeKind 逻辑 kind。
  */
-function onLogicPointerDown(event: PointerEvent, nodeKind: "loop" | "branch" | "transform" | "switch"): void {
+function onLogicPointerDown(event: PointerEvent, nodeKind: "loop" | "branch" | "transform" | "switch" | "start" | "end"): void {
   if (event.button !== 0) {
     return;
   }
@@ -341,7 +402,7 @@ function onLogicPointerDown(event: PointerEvent, nodeKind: "loop" | "branch" | "
  * @description 点击逻辑节点：未拖入画布时在中心添加。
  * @param nodeKind 逻辑 kind。
  */
-function onLogicClick(nodeKind: "loop" | "branch" | "transform" | "switch"): void {
+function onLogicClick(nodeKind: "loop" | "branch" | "transform" | "switch" | "start" | "end"): void {
   if (consumeSidebarDndAddedFlag()) {
     return;
   }
@@ -389,11 +450,54 @@ function goBackPreviousStep(): void {
 }
 
 /**
- * @description P0 测试仍提示暂未开放。
- * @param featureName 功能名称。
+ * @description 运行函数编排测试。
  */
-function notifyFeatureUnavailable(featureName: string): void {
-  ElMessage.info(`${featureName}功能暂未开放`);
+async function runTest(): Promise<void> {
+  const functionApi = props.functionApi.trim();
+  const version = props.version.trim();
+  if (!functionApi) {
+    ElMessage.error("缺少函数 API 名称，无法测试");
+    return;
+  }
+  if (!version) {
+    ElMessage.error("缺少函数版本，无法测试");
+    return;
+  }
+  let parameters: Array<{ paramName: string; paramValue: string }> = [];
+  try {
+    const parsed = testParamsText.value.trim() ? JSON.parse(testParamsText.value) : {};
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      parameters = Object.entries(parsed as Record<string, unknown>).map(([key, value]) => ({
+        paramName: key,
+        paramValue: value === undefined || value === null ? "" : typeof value === "string" ? value : JSON.stringify(value),
+      }));
+    }
+  } catch {
+    ElMessage.error("测试参数 JSON 格式错误");
+    return;
+  }
+  testing.value = true;
+  testOutputText.value = "";
+  try {
+    const response = await testOntologyFunctionInterface({
+      functionApi,
+      version,
+      parameters,
+    });
+    testOutputText.value = JSON.stringify(response, null, 2);
+    if (response.code !== 200) {
+      throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数编排测试失败");
+    }
+    ElMessage.success("测试成功");
+  } catch (error) {
+    const message = error instanceof Error && error.message.trim() ? error.message : "函数编排测试失败";
+    if (!testOutputText.value.trim()) {
+      testOutputText.value = JSON.stringify({ code: null, message, success: false, data: null }, null, 2);
+    }
+    ElMessage.error(message);
+  } finally {
+    testing.value = false;
+  }
 }
 
 /**
@@ -411,6 +515,23 @@ function onFunctionNodeConfirm(payload: {
   });
 }
 
+/**
+ * @description 起止节点参数配置确认写回画布。
+ * @param payload 确认载荷。
+ */
+function onEndpointNodeConfirm(payload: {
+  nodeId: string;
+  kind: "start" | "end";
+  params: Array<{ id: string; name: string; type: string }>;
+  inputBindings?: CompositeWorkflowInputBinding[];
+}): void {
+  applyEndpointNodeEdit(payload.nodeId, {
+    kind: payload.kind,
+    params: payload.params,
+    inputBindings: payload.inputBindings,
+  });
+}
+
 watch(functionNodeEdit, (value) => {
   functionNodeDialogVisible.value = Boolean(value);
 });
@@ -421,6 +542,10 @@ watch(logicNodeEdit, (value) => {
 
 watch(transformNodeEdit, (value) => {
   transformNodeDialogVisible.value = Boolean(value);
+});
+
+watch(endpointNodeEdit, (value) => {
+  endpointNodeDialogVisible.value = Boolean(value);
 });
 
 watch(functionNodeDialogVisible, (visible) => {
@@ -436,6 +561,12 @@ watch(logicNodeDialogVisible, (visible) => {
 });
 
 watch(transformNodeDialogVisible, (visible) => {
+  if (!visible) {
+    clearNodeEditState();
+  }
+});
+
+watch(endpointNodeDialogVisible, (visible) => {
   if (!visible) {
     clearNodeEditState();
   }
@@ -749,6 +880,17 @@ onUnmounted(() => {
   flex: 1 1 auto;
   height: 100%;
   min-height: 0;
+}
+
+:deep(.function-operator-composite-workflow__test-input.is-error .el-textarea__inner) {
+  border-color: var(--el-color-danger);
+}
+
+.function-operator-composite-workflow__json-error {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--el-color-danger);
+  line-height: 1.4;
 }
 </style>
 

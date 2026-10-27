@@ -149,6 +149,13 @@ export type {
   OntologyCategoryTreeParams,
   UpdateOntologyCategoryNameParams,
 } from "./apis/ontologyCategoryTreeType";
+export type {
+  OntologyCompositeConfig,
+  OntologyCompositeEdge,
+  OntologyCompositeNode,
+  OntologyCompositeParameter,
+  OntologyCompositePortMapping,
+} from "./apis/ontologyCompositeConfigType";
 export type { OntologyGlobalSearchData, OntologyGlobalSearchItem, OntologyGlobalSearchParams, OntologySpaceType } from "./apis/ontologyGlobalSearchType";
 export type { OntologySpaceListData, OntologySpaceListItem } from "./apis/ontologyManageType";
 export type {
@@ -221,8 +228,10 @@ export type {
   CompositeWorkflowBranchOperator,
   CompositeWorkflowDndPayload,
   CompositeWorkflowEdgePayload,
+  CompositeWorkflowEndpointNodePayload,
   CompositeWorkflowFunctionNodePayload,
   CompositeWorkflowInputBinding,
+  CompositeWorkflowJsonMappingRule,
   CompositeWorkflowLogicNodePayload,
   CompositeWorkflowLoopConfig,
   CompositeWorkflowLoopOutlet,

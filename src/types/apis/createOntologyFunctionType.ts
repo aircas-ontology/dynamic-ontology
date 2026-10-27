@@ -1,4 +1,4 @@
-import type { CompositeWorkflowSavePayload } from "../pages/ontologyCompositeWorkflowType";
+import type { OntologyCompositeConfig } from "./ontologyCompositeConfigType";
 
 /** 基础查询算子聚合类型。 */
 export type CreateOntologyFunctionAggFunc = "SUM" | "COUNT" | "AVG" | "MAX" | "MIN" | "DISTINCT";
@@ -114,8 +114,8 @@ export interface CreateOntologyFunctionParams {
   queryConfig?: CreateOntologyFunctionQueryConfig;
   /** 外部 API 配置（仅 EXTERNAL 有效）。 */
   apiConfig?: CreateOntologyFunctionApiConfig;
-  /** 函数编排配置（仅 COMPOSITE 有效）。 */
-  compositeConfig?: CompositeWorkflowSavePayload;
+  /** 函数编排配置（仅 COMPOSITE 有效；后端 compositeConfig 契约）。 */
+  compositeConfig?: OntologyCompositeConfig;
   /** 限流配置模板 ID；不传则使用默认模板，创建后不可修改。 */
   rateLimitTemplateId?: number;
 }

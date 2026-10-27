@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 node_modules*
 html
+dynamic-ontology-hsbp
+dynamic-ontology-hsbp2
 html*
 .DS_Store
 dist

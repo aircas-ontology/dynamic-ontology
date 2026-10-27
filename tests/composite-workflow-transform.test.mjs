@@ -20,9 +20,10 @@ function readSource(relativePath) {
 
 test("transform default config is typescript with user script template", () => {
   const config = createDefaultCompositeWorkflowTransformConfig();
+  assert.equal(config.mappingMode, "script");
   assert.equal(config.language, "typescript");
   assert.equal(config.code, COMPOSITE_WORKFLOW_TRANSFORM_DEFAULT_CODE);
-  assert.match(config.code, /export function handle\(input: User\): Output/);
+  assert.match(config.code, /export function handle\(input: Input\): Output/);
   assert.deepEqual(config.paramsSnapshot, { inputs: [], outputs: [] });
   assert.deepEqual(config.inputBindings, []);
 });
@@ -30,6 +31,7 @@ test("transform default config is typescript with user script template", () => {
 test("resolveCompositeWorkflowTransformOutputs prefers paramsSnapshot tree", () => {
   const outputs = resolveCompositeWorkflowTransformOutputs({
     kind: "transform",
+    mappingMode: "script",
     language: "typescript",
     code: "",
     paramsSnapshot: {
@@ -39,6 +41,22 @@ test("resolveCompositeWorkflowTransformOutputs prefers paramsSnapshot tree", () 
     outputKeys: ["legacy"],
   });
   assert.deepEqual(outputs, [{ paramName: "Output", paramType: "object", fields: [{ paramName: "name", paramType: "string" }] }]);
+});
+
+test("resolveCompositeWorkflowTransformOutputs falls back to json mappings", () => {
+  const outputs = resolveCompositeWorkflowTransformOutputs({
+    kind: "transform",
+    mappingMode: "json",
+    mappings: [
+      { outputField: "name", mappingType: "direct", inputPath: "user.name" },
+      { outputField: "  ", mappingType: "constant", constantValue: 1 },
+      { outputField: "flag", mappingType: "constant", constantValue: true },
+    ],
+  });
+  assert.deepEqual(outputs, [
+    { paramName: "name", paramType: "object" },
+    { paramName: "flag", paramType: "object" },
+  ]);
 });
 
 test("mapParsedScriptParametersToCompositeBriefs keeps nested fields", () => {
@@ -61,6 +79,7 @@ test("transform dialog parses on confirm and uses script code editor", () => {
   assert.match(dialog, /FunctionOperatorScriptCodeEditor/);
   assert.match(dialog, /language="typescript"/);
   assert.match(dialog, /mapScriptLanguageToApi\("typescript"\)/);
+  assert.match(dialog, /mappingMode:\s*"script"/);
   assert.doesNotMatch(dialog, /javascript/);
   assert.doesNotMatch(dialog, /outputKeys/);
 });
@@ -80,6 +99,7 @@ test("canvas opens dedicated transform edit context", () => {
   assert.match(canvas, /openTransformNodeEdit/);
   assert.match(canvas, /transformNodeEdit/);
   assert.match(canvas, /createDefaultCompositeWorkflowTransformConfig/);
+  assert.match(canvas, /buildAutoConfiguredCompositeWorkflowInputBindings/);
   assert.match(canvas, /resolveCompositeWorkflowNodeUpstreamOutputs/);
   assert.doesNotMatch(canvas, /language: "javascript"/);
   const graph = readSource("../src/views/FunctionOperatorPanel/utils/compositeWorkflowGraph.ts");

@@ -4,8 +4,9 @@ import type {
   CreateOntologyFunctionQueryConfig,
   CreateOntologyFunctionType,
 } from "./createOntologyFunctionType";
+import type { OntologyCompositeConfig } from "./ontologyCompositeConfigType";
 
-/** 修改函数算子请求参数（与 putFunApi 契约对齐，并允许与新建一致的 EXTERNAL 字段）。 */
+/** 修改函数算子请求参数（与 putFunApi 契约对齐，并允许与新建一致的 EXTERNAL / COMPOSITE 字段）。 */
 export interface UpdateOntologyFunctionParams {
   functionApi: string;
   /** 版本号，格式 x.y.z。 */
@@ -25,6 +26,8 @@ export interface UpdateOntologyFunctionParams {
   queryConfig?: CreateOntologyFunctionQueryConfig;
   /** 外部 API 配置（仅 EXTERNAL 有效）。 */
   apiConfig?: CreateOntologyFunctionApiConfig;
+  /** 函数编排配置（仅 COMPOSITE 有效）。 */
+  compositeConfig?: OntologyCompositeConfig;
 }
 
 /** 修改函数算子响应 data（契约样例无业务载荷）。 */

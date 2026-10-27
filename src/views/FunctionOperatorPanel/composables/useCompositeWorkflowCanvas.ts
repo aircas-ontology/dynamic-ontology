@@ -10,24 +10,23 @@ import type {
   CompositeWorkflowLoopConfig,
   CompositeWorkflowNodeKind,
   CompositeWorkflowParamBrief,
-  CompositeWorkflowSavePayload,
   CompositeWorkflowSwitchConfig,
   CompositeWorkflowTransformConfig,
   CreateOntologyFunctionParams,
+  OntologyCompositeConfig,
 } from "@/types";
 import {
-  buildCompositeWorkflowSavePayload,
-  buildDefaultCompositeWorkflowInputBindings,
+  buildAutoConfiguredCompositeWorkflowInputBindings,
   hasCompositeWorkflowIncomingEdge,
   mapCompositeWorkflowDetailParamBriefs,
   repairCompositeWorkflowInputBindings,
-  resolveCompositeWorkflowLogicFlowForRender,
   resolveCompositeWorkflowNodeUpstreamOutputs,
   validateCompositeWorkflowForSave,
   wouldCompositeWorkflowEdgeCreateCycle,
   type CompositeWorkflowGraphEdge,
   type CompositeWorkflowGraphNodeSummary,
 } from "../utils/compositeWorkflowGraph.ts";
+import { compileCompositeWorkflowToBackendConfig, buildCompositeWorkflowRestoreGraphData } from "../utils/compositeWorkflowBackendConfig.ts";
 import {
   COMPOSITE_WORKFLOW_ANCHOR_SNAP_DISTANCE,
   isCompositeWorkflowInputAnchorId,
@@ -35,6 +34,7 @@ import {
   parseCompositeWorkflowLoopOutletFromAnchorId,
   parseCompositeWorkflowSwitchOutletFromAnchorId,
   pickClosestAllowedCompositeWorkflowAnchor,
+  type CompositeWorkflowAnchorPoint,
 } from "../utils/compositeWorkflowAnchors.ts";
 import { createDefaultCompositeWorkflowBranchConfig, normalizeCompositeWorkflowBranchConfig } from "../utils/compositeWorkflowBranchDefaults.ts";
 import { layoutCompositeWorkflowNodesWithDagre } from "../utils/compositeWorkflowDagreLayout.ts";
@@ -74,6 +74,18 @@ export interface CompositeWorkflowTransformNodeEditContext {
   upstreamOutputs: CompositeWorkflowParamBrief[];
 }
 
+/** 画布打开起止节点参数配置时的上下文。 */
+export interface CompositeWorkflowEndpointNodeEditContext {
+  nodeId: string;
+  kind: "start" | "end";
+  params: Array<{ id?: string; name: string; type: string }>;
+  /** 结束节点：上游输出（含 sourceNodeId 标签）。 */
+  hasUpstream?: boolean;
+  upstreamOutputs?: CompositeWorkflowParamBrief[];
+  /** 结束节点：已有绑定。 */
+  inputBindings?: CompositeWorkflowInputBinding[];
+}
+
 /**
  * @description 编排画布 LogicFlow 实例生命周期、DnD、连线约束与保存。
  * @param options 画布选项。
@@ -86,7 +98,7 @@ export function useCompositeWorkflowCanvas(options: {
   description: Ref<string>;
   spaceId: Ref<number>;
   /** 编辑回显用的编排配置；新建为空。 */
-  initialCompositeConfig?: Ref<CompositeWorkflowSavePayload | null | undefined>;
+  initialCompositeConfig?: Ref<OntologyCompositeConfig | null | undefined>;
 }) {
   const canvasHostRef = ref<HTMLElement | null>(null);
   const lfRef: ShallowRef<LogicFlow | null> = shallowRef(null);
@@ -94,6 +106,7 @@ export function useCompositeWorkflowCanvas(options: {
   const functionNodeEdit = ref<CompositeWorkflowFunctionNodeEditContext | null>(null);
   const logicNodeEdit = ref<CompositeWorkflowLogicNodeEditContext | null>(null);
   const transformNodeEdit = ref<CompositeWorkflowTransformNodeEditContext | null>(null);
+  const endpointNodeEdit = ref<CompositeWorkflowEndpointNodeEditContext | null>(null);
   /** 侧栏 DnD 刚落点添加节点时为 true，供 click 防重复消费。 */
   const sidebarDndAddedNode = ref(false);
   let disposed = false;
@@ -160,6 +173,14 @@ export function useCompositeWorkflowCanvas(options: {
           kind === "switch"
             ? normalizeCompositeWorkflowSwitchConfig(properties.switchConfig)
             : (properties.switchConfig as CompositeWorkflowSwitchConfig | undefined),
+        outputParameters:
+          kind === "start" && Array.isArray(properties.outputParameters)
+            ? (properties.outputParameters as Array<{ id: string; name: string; type: string }>)
+            : undefined,
+        inputParameters:
+          kind === "end" && Array.isArray(properties.inputParameters)
+            ? (properties.inputParameters as Array<{ id: string; name: string; type: string }>)
+            : undefined,
       };
     });
   }
@@ -277,7 +298,7 @@ export function useCompositeWorkflowCanvas(options: {
         return;
       }
       const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(targetNodeId);
-      const nextBindings = buildDefaultCompositeWorkflowInputBindings(snapshot.inputs, upstreamOutputs, hasUpstream);
+      const nextBindings = buildAutoConfiguredCompositeWorkflowInputBindings(snapshot.inputs, upstreamOutputs, hasUpstream);
       model.setProperties({ ...properties, inputBindings: nextBindings });
       return;
     }
@@ -290,7 +311,7 @@ export function useCompositeWorkflowCanvas(options: {
       return;
     }
     const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(targetNodeId);
-    const nextBindings = buildDefaultCompositeWorkflowInputBindings(inputs, upstreamOutputs, hasUpstream);
+    const nextBindings = buildAutoConfiguredCompositeWorkflowInputBindings(inputs, upstreamOutputs, hasUpstream);
     model.setProperties({
       ...properties,
       transformConfig: {
@@ -450,12 +471,13 @@ export function useCompositeWorkflowCanvas(options: {
         stopZoomGraph: false,
         // 落点仅吸附左侧入口锚点：入口只能接另一节点的出口。
         customTargetAnchor: (nodeModel, position) => {
-          return pickClosestAllowedCompositeWorkflowAnchor(
-            nodeModel.anchors,
+          const snapped = pickClosestAllowedCompositeWorkflowAnchor(
+            nodeModel.anchors as CompositeWorkflowAnchorPoint[],
             position,
             COMPOSITE_WORKFLOW_ANCHOR_SNAP_DISTANCE,
             isCompositeWorkflowInputAnchorId,
           );
+          return snapped as { index: number; anchor: (typeof nodeModel.anchors)[number] } | undefined;
         },
       }),
     );
@@ -504,7 +526,7 @@ export function useCompositeWorkflowCanvas(options: {
       },
     });
     // LogicFlow 必须先 render 才会挂载 Preact Graph；否则 addNode 只改 model、画布无视图。
-    const echoGraph = resolveCompositeWorkflowLogicFlowForRender(options.initialCompositeConfig?.value);
+    const echoGraph = buildCompositeWorkflowRestoreGraphData(options.initialCompositeConfig?.value);
     // 详情回传的 logicFlow 与 getGraphRawData 同形，运行时按 GraphConfigData 渲染。
     lf.render((echoGraph ?? {}) as LogicFlow.GraphConfigData);
     const lfContainer = lf.container;
@@ -520,19 +542,46 @@ export function useCompositeWorkflowCanvas(options: {
       if (kind === "function") {
         logicNodeEdit.value = null;
         transformNodeEdit.value = null;
+        endpointNodeEdit.value = null;
         void openFunctionNodeEdit(data.id, properties);
         return;
       }
       if (kind === "transform") {
         functionNodeEdit.value = null;
         logicNodeEdit.value = null;
+        endpointNodeEdit.value = null;
         void openTransformNodeEdit(data.id, properties);
         return;
       }
       if (kind === "loop" || kind === "branch" || kind === "switch") {
         functionNodeEdit.value = null;
         transformNodeEdit.value = null;
+        endpointNodeEdit.value = null;
         void openLogicNodeEdit(data.id, kind, properties);
+        return;
+      }
+      if (kind === "start" || kind === "end") {
+        functionNodeEdit.value = null;
+        logicNodeEdit.value = null;
+        transformNodeEdit.value = null;
+        const existingParams = Array.isArray(properties.outputParameters)
+          ? (properties.outputParameters as Array<{ id?: string; name: string; type: string }>)
+          : Array.isArray(properties.inputParameters)
+            ? (properties.inputParameters as Array<{ id?: string; name: string; type: string }>)
+            : [];
+        const context: CompositeWorkflowEndpointNodeEditContext = {
+          nodeId: data.id,
+          kind: kind as "start" | "end",
+          params: existingParams.map((item) => ({ id: item.id, name: item.name, type: item.type })),
+        };
+        if (kind === "end") {
+          const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(data.id);
+          context.hasUpstream = hasUpstream;
+          context.upstreamOutputs = upstreamOutputs;
+          context.inputBindings = Array.isArray(properties.inputBindings) ? (properties.inputBindings as CompositeWorkflowInputBinding[]) : [];
+        }
+        endpointNodeEdit.value = context;
+        return;
       }
     });
     lf.on("blank:click", () => {
@@ -600,6 +649,10 @@ export function useCompositeWorkflowCanvas(options: {
       sidebarDndAddedNode.value = true;
       if (data?.id) {
         lf.focusOn({ id: data.id });
+        const properties = (data.properties ?? {}) as Record<string, unknown>;
+        if (properties.kind === "function") {
+          void ensureUpstreamFunctionOutputs(data.id);
+        }
       }
     });
     lfRef.value = lf;
@@ -650,7 +703,9 @@ export function useCompositeWorkflowCanvas(options: {
         },
       };
     }
-    const titles: Record<"loop" | "branch" | "transform" | "switch", string> = {
+    const titles: Record<"loop" | "branch" | "transform" | "switch" | "start" | "end", string> = {
+      start: "开始",
+      end: "结束",
       loop: "循环",
       branch: "条件分支",
       transform: "数据格式转换",
@@ -659,9 +714,16 @@ export function useCompositeWorkflowCanvas(options: {
     const title = titles[payload.nodeKind];
     const properties: Record<string, unknown> = {
       kind: payload.nodeKind,
+      label: title,
       title,
-      subtitle: "逻辑节点",
+      subtitle: payload.nodeKind === "start" || payload.nodeKind === "end" ? "起止节点" : "逻辑节点",
     };
+    if (payload.nodeKind === "start") {
+      properties.outputParameters = [{ id: "output", name: "output", type: "object" }];
+    }
+    if (payload.nodeKind === "end") {
+      properties.inputParameters = [{ id: "input", name: "input", type: "object" }];
+    }
     if (payload.nodeKind === "loop") {
       properties.loopConfig = createDefaultCompositeWorkflowLoopConfig();
     } else if (payload.nodeKind === "branch") {
@@ -909,14 +971,10 @@ export function useCompositeWorkflowCanvas(options: {
       ElMessage.error("缺少函数名称，无法保存");
       return null;
     }
-    const compositeConfig = buildCompositeWorkflowSavePayload({
-      displayName,
-      functionApi,
-      version,
-      ontologySpaceId: options.spaceId.value,
-      logicFlowGraph: lf.getGraphRawData(),
+    const compositeConfig = compileCompositeWorkflowToBackendConfig({
       nodes,
       edges,
+      logicFlowGraph: lf.getGraphRawData(),
     });
     return {
       functionApi,
@@ -930,6 +988,40 @@ export function useCompositeWorkflowCanvas(options: {
   }
 
   /**
+   * @description 起止节点参数配置确认后写回画布。
+   * @param nodeId 节点 id。
+   * @param payload 确认载荷。
+   */
+  function applyEndpointNodeEdit(
+    nodeId: string,
+    payload: {
+      kind: "start" | "end";
+      params: Array<{ id: string; name: string; type: string }>;
+      inputBindings?: CompositeWorkflowInputBinding[];
+    },
+  ): void {
+    const lf = lfRef.value;
+    if (!lf) return;
+    const model = lf.getNodeModelById(nodeId);
+    if (!model) return;
+    const paramEntries = payload.params.map((item) => ({ id: item.id, name: item.name, type: item.type }));
+    if (payload.kind === "start") {
+      model.setProperty("outputParameters", paramEntries);
+      model.setProperty("label", "开始");
+    } else {
+      model.setProperty("inputParameters", paramEntries);
+      model.setProperty("label", "结束");
+      if (payload.inputBindings) {
+        model.setProperty("inputBindings", payload.inputBindings);
+      }
+    }
+    const textLabel = payload.kind === "start" ? "开始" : "结束";
+    const paramNames = paramEntries.map((item) => item.name).join(", ");
+    const textValue = paramNames ? `${textLabel}\n${paramNames}` : textLabel;
+    model.text = { x: model.x, y: model.y, value: textValue };
+  }
+
+  /**
    * @description 关闭配置弹框时清空编辑态。
    */
   function clearNodeEditState(): void {
@@ -937,6 +1029,7 @@ export function useCompositeWorkflowCanvas(options: {
     functionNodeEdit.value = null;
     logicNodeEdit.value = null;
     transformNodeEdit.value = null;
+    endpointNodeEdit.value = null;
   }
 
   onUnmounted(() => {
@@ -950,6 +1043,7 @@ export function useCompositeWorkflowCanvas(options: {
     functionNodeEdit,
     logicNodeEdit,
     transformNodeEdit,
+    endpointNodeEdit,
     initCompositeWorkflowCanvas,
     destroyCompositeWorkflowCanvas,
     startCompositeWorkflowNodeDrag,
@@ -963,6 +1057,7 @@ export function useCompositeWorkflowCanvas(options: {
     applyFunctionNodeEdit,
     applyLogicNodeEdit,
     applyTransformNodeEdit,
+    applyEndpointNodeEdit,
     clearNodeEditState,
     repairCompositeWorkflowInputBindings,
     resolveUpstreamOutputs,

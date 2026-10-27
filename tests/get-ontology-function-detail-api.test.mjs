@@ -39,14 +39,15 @@ test("get ontology function detail types expose documented fields", () => {
   assert.match(source, /description\?: string/);
   assert.match(source, /queryConfig\?: CreateOntologyFunctionQueryConfig/);
   assert.match(source, /apiConfig\?: CreateOntologyFunctionApiConfig/);
-  assert.match(source, /compositeConfig\?: CompositeWorkflowSavePayload/);
+  assert.match(source, /compositeConfig\?: OntologyCompositeConfig/);
   assert.match(source, /rateLimitTemplateId\?: number/);
   const barrel = readSource("../src/types/index.ts");
   assert.match(barrel, /GetOntologyFunctionDetailData/);
   assert.match(barrel, /getOntologyFunctionDetailType/);
   assert.match(barrel, /FunctionOperatorCodeDefinition/);
+  assert.match(barrel, /OntologyCompositeConfig/);
   const draftType = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
-  assert.match(draftType, /compositeConfig\?: CompositeWorkflowSavePayload/);
+  assert.match(draftType, /compositeConfig\?: OntologyCompositeConfig/);
   assert.match(draftType, /rateLimitTemplateId\?: number/);
 });
 
@@ -525,17 +526,14 @@ test("function operator openDetail fetches detail for drawer", () => {
 
 test("mapOntologyFunctionDetailToDraft keeps compositeConfig for workflow echo", () => {
   const compositeConfig = {
-    schemaVersion: 1,
-    meta: {
-      displayName: "编排A",
-      functionApi: "comp.a",
-      version: "1.0.0",
-      ontologySpaceId: 7,
-      savedAt: "2026-10-23T00:00:00.000Z",
-    },
-    graph: { logicFlow: { nodes: [{ id: "n1" }], edges: [] } },
-    nodes: [],
+    kind: "COMPOSITE",
+    nodes: [{ id: "n1", kind: "function", functionId: "fn.a", functionVersion: "1.0.0", label: "编排A" }],
     edges: [],
+    inputMappings: [],
+    outputMappings: [],
+    inputParameters: [],
+    outputParameters: [],
+    graph: { nodes: [{ id: "n1" }], edges: [] },
   };
   const draft = mapOntologyFunctionDetailToDraft(
     {
