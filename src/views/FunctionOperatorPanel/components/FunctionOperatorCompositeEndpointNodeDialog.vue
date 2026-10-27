@@ -9,6 +9,23 @@
     @update:model-value="emit('update:modelValue', $event)"
   >
     <el-form label-position="top">
+      <template v-if="localKind === 'end'">
+        <h4 class="composite-endpoint-node-drawer__section-title">出参绑定</h4>
+        <p v-if="!hasUpstream" class="composite-endpoint-node-drawer__hint">当前无前驱节点，出参仅支持手动输入</p>
+        <FunctionOperatorCompositeInputBindingTree
+          v-if="bindingNodes.length"
+          :nodes="bindingNodes"
+          :bindings="bindings"
+          :has-upstream="hasUpstream"
+          :upstream-options="upstreamOptions"
+          ariaLabel="出参绑定"
+          @update-mode="onBindingModeChange"
+          @update-value="onManualValueChange"
+          @update-upstream="onUpstreamParamChange"
+        />
+        <p v-else-if="hasUpstream" class="composite-endpoint-node-drawer__hint">请先添加出参</p>
+      </template>
+
       <el-form-item v-if="localKind === 'start'" label="编排入参">
         <p class="composite-endpoint-node-drawer__hint">定义编排的输入参数，外部调用或测试时通过这些参数传入数据。</p>
       </el-form-item>
@@ -26,23 +43,6 @@
         </div>
         <el-button type="primary" plain @click="addParam">添加参数</el-button>
       </div>
-
-      <template v-if="localKind === 'end'">
-        <h4 class="composite-endpoint-node-drawer__section-title">出参绑定</h4>
-        <p v-if="!hasUpstream" class="composite-endpoint-node-drawer__hint">当前无前驱节点，出参仅支持手动输入</p>
-        <FunctionOperatorCompositeInputBindingTree
-          v-if="bindingNodes.length"
-          :nodes="bindingNodes"
-          :bindings="bindings"
-          :has-upstream="hasUpstream"
-          :upstream-options="upstreamOptions"
-          ariaLabel="出参绑定"
-          @update-mode="onBindingModeChange"
-          @update-value="onManualValueChange"
-          @update-upstream="onUpstreamParamChange"
-        />
-        <p v-else-if="hasUpstream" class="composite-endpoint-node-drawer__hint">请先添加出参</p>
-      </template>
     </el-form>
 
     <template #footer>
@@ -104,13 +104,11 @@ const START_PARAM_TYPE_OPTIONS = [
   { label: "布尔", value: "boolean" },
 ] as const;
 
-/** 结束节点保留五类基础类型。 */
+/** 结束节点仅允许标量类型。 */
 const END_PARAM_TYPE_OPTIONS = [
   { label: "数字", value: "number" },
   { label: "字符串", value: "string" },
   { label: "布尔", value: "boolean" },
-  { label: "对象", value: "object" },
-  { label: "数组", value: "array" },
 ] as const;
 
 const localKind = ref<"start" | "end">("start");
@@ -128,11 +126,11 @@ const dialogTitle = computed(() => (localKind.value === "start" ? "开始节点 
 const paramTypeOptions = computed(() => (localKind.value === "start" ? START_PARAM_TYPE_OPTIONS : END_PARAM_TYPE_OPTIONS));
 
 /**
- * @description 规范化开始节点参数类型：object/array 回落为 string。
+ * @description 规范化起止节点参数类型：object/array 等非标量回落为 string。
  * @param type 原始类型。
  * @returns 允许的类型。
  */
-function normalizeStartParamType(type: string): string {
+function normalizeEndpointParamType(type: string): string {
   if (type === "number" || type === "string" || type === "boolean") {
     return type;
   }
@@ -186,7 +184,7 @@ watch(
     params.value = ctx.params.map((item, index) => ({
       id: item.id || `p_${Date.now()}_${index}`,
       name: item.name,
-      type: ctx.kind === "start" ? normalizeStartParamType(item.type) : item.type,
+      type: normalizeEndpointParamType(item.type),
     }));
     if (ctx.kind === "end") {
       hasUpstream.value = ctx.hasUpstream ?? false;
@@ -311,7 +309,7 @@ function emitConfirm(): void {
     params: validParams.map((item) => ({
       id: item.id,
       name: item.name.trim(),
-      type: localKind.value === "start" ? normalizeStartParamType(item.type) : item.type,
+      type: normalizeEndpointParamType(item.type),
     })),
   };
   if (localKind.value === "end") {

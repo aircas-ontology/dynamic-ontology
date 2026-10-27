@@ -190,6 +190,7 @@ function resolveSingleIncoming(
     const startOutputs: CompositeWorkflowParamBrief[] = (source.outputParameters ?? []).map((param) => ({
       paramName: param.name,
       paramType: param.type === "number" ? "double" : param.type,
+      sourceNodeId: source.id,
     }));
     return { hasUpstream: true, upstreamOutputs: startOutputs };
   }

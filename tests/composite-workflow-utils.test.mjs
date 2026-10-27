@@ -729,6 +729,29 @@ test("resolveCompositeWorkflowNodeUpstreamOutputs covers transform loop and miss
   });
 });
 
+test("resolveCompositeWorkflowNodeUpstreamOutputs maps start params with sourceNodeId", () => {
+  const resolved = resolveCompositeWorkflowNodeUpstreamOutputs(
+    [
+      {
+        id: "start_1",
+        kind: "start",
+        outputParameters: [
+          { id: "p1", name: "n", type: "number" },
+          { id: "p2", name: "flag", type: "boolean" },
+        ],
+      },
+      { id: "down", kind: "function" },
+    ],
+    [{ id: "e1", sourceNodeId: "start_1", targetNodeId: "down" }],
+    "down",
+  );
+  assert.equal(resolved.hasUpstream, true);
+  assert.deepEqual(resolved.upstreamOutputs, [
+    { paramName: "n", paramType: "double", sourceNodeId: "start_1" },
+    { paramName: "flag", paramType: "boolean", sourceNodeId: "start_1" },
+  ]);
+});
+
 test("resolveCompositeWorkflowNodeUpstreamOutputs passes through branch predecessors", () => {
   const outputs = [{ paramName: "result", paramType: "object", fields: [{ paramName: "id", paramType: "string" }] }];
   const nodes = [

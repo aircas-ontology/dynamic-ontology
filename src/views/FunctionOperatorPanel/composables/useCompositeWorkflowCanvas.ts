@@ -246,11 +246,27 @@ export function useCompositeWorkflowCanvas(options: {
   }
 
   /**
+   * @description 从 LogicFlow 节点 model 读取最新 properties，避免 dbclick 事件快照过期。
+   * @param nodeId 节点 id。
+   * @returns 属性；节点不存在时返回 null。
+   */
+  function readLiveNodeProperties(nodeId: string): Record<string, unknown> | null {
+    const lf = lfRef.value;
+    if (!lf) {
+      return null;
+    }
+    const model = lf.getNodeModelById(nodeId);
+    if (!model) {
+      return null;
+    }
+    return model.getProperties() as Record<string, unknown>;
+  }
+
+  /**
    * @description 打开函数节点配置。先按连线加载上游输出，再展示下游入参可选列表。
    * @param nodeId 节点 id。
-   * @param properties 节点属性。
    */
-  async function openFunctionNodeEdit(nodeId: string, properties: Record<string, unknown>): Promise<void> {
+  async function openFunctionNodeEdit(nodeId: string): Promise<void> {
     const requestId = functionNodeOpenGeneration + 1;
     functionNodeOpenGeneration = requestId;
     const edges = readGraphEdges().filter((edge) => edge.targetNodeId === nodeId);
@@ -263,6 +279,10 @@ export function useCompositeWorkflowCanvas(options: {
       }
     }
     if (disposed || functionNodeOpenGeneration !== requestId) {
+      return;
+    }
+    const properties = readLiveNodeProperties(nodeId);
+    if (!properties) {
       return;
     }
     const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(nodeId);
@@ -363,9 +383,8 @@ export function useCompositeWorkflowCanvas(options: {
    * @description 打开循环 / 条件分支 / Switch 配置；加载上游输出树供路径选择。
    * @param nodeId 节点 id。
    * @param kind 逻辑节点 kind。
-   * @param properties 节点属性。
    */
-  async function openLogicNodeEdit(nodeId: string, kind: "loop" | "branch" | "switch", properties: Record<string, unknown>): Promise<void> {
+  async function openLogicNodeEdit(nodeId: string, kind: "loop" | "branch" | "switch"): Promise<void> {
     const requestId = functionNodeOpenGeneration + 1;
     functionNodeOpenGeneration = requestId;
     try {
@@ -374,6 +393,10 @@ export function useCompositeWorkflowCanvas(options: {
       ElMessage.error(error instanceof Error && error.message.trim() ? error.message : "上游输出加载失败");
     }
     if (disposed || functionNodeOpenGeneration !== requestId) {
+      return;
+    }
+    const properties = readLiveNodeProperties(nodeId);
+    if (!properties) {
       return;
     }
     const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(nodeId);
@@ -391,9 +414,8 @@ export function useCompositeWorkflowCanvas(options: {
   /**
    * @description 打开数据格式转换节点配置，并解析上游输出树。
    * @param nodeId 节点 id。
-   * @param properties 节点属性。
    */
-  async function openTransformNodeEdit(nodeId: string, properties: Record<string, unknown>): Promise<void> {
+  async function openTransformNodeEdit(nodeId: string): Promise<void> {
     const requestId = functionNodeOpenGeneration + 1;
     functionNodeOpenGeneration = requestId;
     const edges = readGraphEdges().filter((edge) => edge.targetNodeId === nodeId);
@@ -408,6 +430,10 @@ export function useCompositeWorkflowCanvas(options: {
     if (disposed || functionNodeOpenGeneration !== requestId) {
       return;
     }
+    const properties = readLiveNodeProperties(nodeId);
+    if (!properties) {
+      return;
+    }
     const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(nodeId);
     const existing = properties.transformConfig as CompositeWorkflowTransformConfig | undefined;
     transformNodeEdit.value = {
@@ -416,6 +442,35 @@ export function useCompositeWorkflowCanvas(options: {
       hasUpstream,
       upstreamOutputs,
     };
+  }
+
+  /**
+   * @description 打开起止节点参数配置；从 model 读取最新参数与结束节点绑定。
+   * @param nodeId 节点 id。
+   * @param kind 起止 kind。
+   */
+  function openEndpointNodeEdit(nodeId: string, kind: "start" | "end"): void {
+    const properties = readLiveNodeProperties(nodeId);
+    if (!properties) {
+      return;
+    }
+    const existingParams = Array.isArray(properties.outputParameters)
+      ? (properties.outputParameters as Array<{ id?: string; name: string; type: string }>)
+      : Array.isArray(properties.inputParameters)
+        ? (properties.inputParameters as Array<{ id?: string; name: string; type: string }>)
+        : [];
+    const context: CompositeWorkflowEndpointNodeEditContext = {
+      nodeId,
+      kind,
+      params: existingParams.map((item) => ({ id: item.id, name: item.name, type: item.type })),
+    };
+    if (kind === "end") {
+      const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(nodeId);
+      context.hasUpstream = hasUpstream;
+      context.upstreamOutputs = upstreamOutputs;
+      context.inputBindings = Array.isArray(properties.inputBindings) ? (properties.inputBindings as CompositeWorkflowInputBinding[]) : [];
+    }
+    endpointNodeEdit.value = context;
   }
 
   /**
@@ -537,50 +592,34 @@ export function useCompositeWorkflowCanvas(options: {
       lf.fitView(40, 40);
     }
     lf.on("node:dbclick", ({ data }) => {
-      const properties = (data.properties ?? {}) as Record<string, unknown>;
+      const properties = readLiveNodeProperties(data.id) ?? ((data.properties ?? {}) as Record<string, unknown>);
       const kind = properties.kind;
       if (kind === "function") {
         logicNodeEdit.value = null;
         transformNodeEdit.value = null;
         endpointNodeEdit.value = null;
-        void openFunctionNodeEdit(data.id, properties);
+        void openFunctionNodeEdit(data.id);
         return;
       }
       if (kind === "transform") {
         functionNodeEdit.value = null;
         logicNodeEdit.value = null;
         endpointNodeEdit.value = null;
-        void openTransformNodeEdit(data.id, properties);
+        void openTransformNodeEdit(data.id);
         return;
       }
       if (kind === "loop" || kind === "branch" || kind === "switch") {
         functionNodeEdit.value = null;
         transformNodeEdit.value = null;
         endpointNodeEdit.value = null;
-        void openLogicNodeEdit(data.id, kind, properties);
+        void openLogicNodeEdit(data.id, kind);
         return;
       }
       if (kind === "start" || kind === "end") {
         functionNodeEdit.value = null;
         logicNodeEdit.value = null;
         transformNodeEdit.value = null;
-        const existingParams = Array.isArray(properties.outputParameters)
-          ? (properties.outputParameters as Array<{ id?: string; name: string; type: string }>)
-          : Array.isArray(properties.inputParameters)
-            ? (properties.inputParameters as Array<{ id?: string; name: string; type: string }>)
-            : [];
-        const context: CompositeWorkflowEndpointNodeEditContext = {
-          nodeId: data.id,
-          kind: kind as "start" | "end",
-          params: existingParams.map((item) => ({ id: item.id, name: item.name, type: item.type })),
-        };
-        if (kind === "end") {
-          const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(data.id);
-          context.hasUpstream = hasUpstream;
-          context.upstreamOutputs = upstreamOutputs;
-          context.inputBindings = Array.isArray(properties.inputBindings) ? (properties.inputBindings as CompositeWorkflowInputBinding[]) : [];
-        }
-        endpointNodeEdit.value = context;
+        openEndpointNodeEdit(data.id, kind);
         return;
       }
     });
@@ -719,10 +758,10 @@ export function useCompositeWorkflowCanvas(options: {
       subtitle: payload.nodeKind === "start" || payload.nodeKind === "end" ? "起止节点" : "逻辑节点",
     };
     if (payload.nodeKind === "start") {
-      properties.outputParameters = [{ id: "output", name: "output", type: "string" }];
+      properties.outputParameters = [{ id: "input", name: "input", type: "string" }];
     }
     if (payload.nodeKind === "end") {
-      properties.inputParameters = [{ id: "input", name: "input", type: "object" }];
+      properties.inputParameters = [{ id: "input", name: "input", type: "string" }];
     }
     if (payload.nodeKind === "loop") {
       properties.loopConfig = createDefaultCompositeWorkflowLoopConfig();
@@ -1003,6 +1042,62 @@ export function useCompositeWorkflowCanvas(options: {
   }
 
   /**
+   * @description 列出从源节点出发沿出边可达的全部下游节点 id（不含自身）。
+   * @param sourceNodeId 源节点 id。
+   * @returns 可达下游 id 列表。
+   */
+  function listReachableDownstreamNodeIds(sourceNodeId: string): string[] {
+    const edges = readGraphEdges();
+    const result: string[] = [];
+    const queue = [sourceNodeId];
+    const visited = new Set<string>([sourceNodeId]);
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current) {
+        continue;
+      }
+      for (const edge of edges) {
+        if (edge.sourceNodeId !== current || visited.has(edge.targetNodeId)) {
+          continue;
+        }
+        visited.add(edge.targetNodeId);
+        result.push(edge.targetNodeId);
+        queue.push(edge.targetNodeId);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * @description 开始节点参数变更后，刷新可达下游 function/transform 绑定，并修复 end 出参绑定。
+   * @param startNodeId 开始节点 id。
+   */
+  function refreshDownstreamBindingsAfterStartEdit(startNodeId: string): void {
+    const lf = lfRef.value;
+    if (!lf) {
+      return;
+    }
+    for (const targetId of listReachableDownstreamNodeIds(startNodeId)) {
+      const model = lf.getNodeModelById(targetId);
+      if (!model) {
+        continue;
+      }
+      const properties = model.getProperties() as Record<string, unknown>;
+      const kind = properties.kind;
+      if (kind === "function" || kind === "transform") {
+        refreshTargetBindingsAfterConnect(targetId);
+        continue;
+      }
+      if (kind !== "end") {
+        continue;
+      }
+      const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(targetId);
+      const existing = Array.isArray(properties.inputBindings) ? (properties.inputBindings as CompositeWorkflowInputBinding[]) : [];
+      model.setProperty("inputBindings", repairCompositeWorkflowInputBindings(existing, upstreamOutputs, hasUpstream));
+    }
+  }
+
+  /**
    * @description 起止节点参数配置确认后写回画布。
    * @param nodeId 节点 id。
    * @param payload 确认载荷。
@@ -1034,6 +1129,9 @@ export function useCompositeWorkflowCanvas(options: {
     const paramNames = paramEntries.map((item) => item.name).join(", ");
     const textValue = paramNames ? `${textLabel}\n${paramNames}` : textLabel;
     model.text = { x: model.x, y: model.y, value: textValue };
+    if (payload.kind === "start") {
+      refreshDownstreamBindingsAfterStartEdit(nodeId);
+    }
   }
 
   /**
