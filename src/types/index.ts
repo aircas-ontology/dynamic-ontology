@@ -20,6 +20,7 @@ export type {
   BatchUpdateOntologyPropertyItem,
 } from "./apis/batchUpdateOntologyPropertiesType";
 export type { ActionCategoryNode, CreateActionCategoryParams } from "./apis/createActionCategoryType";
+export type { CreateFunctionOperatorTemplateData, CreateFunctionOperatorTemplateParams } from "./apis/createFunctionOperatorTemplateType";
 export type { CreateFunctionRateLimitTemplateData, CreateFunctionRateLimitTemplateParams } from "./apis/createFunctionRateLimitTemplateType";
 export type {
   CreateOntologyFunctionContainerConfig,
@@ -74,6 +75,7 @@ export type {
   OntologySubspacePropertySelection,
 } from "./apis/createOntologySubspaceType";
 export type { DeleteActionCategoryParams } from "./apis/deleteActionCategoryType";
+export type { DeleteFunctionOperatorTemplateParams } from "./apis/deleteFunctionOperatorTemplateType";
 export type { DeleteFunctionRateLimitTemplateParams } from "./apis/deleteFunctionRateLimitTemplateType";
 export type { DeleteOntologyFunctionData, DeleteOntologyFunctionParams } from "./apis/deleteOntologyFunctionType";
 export type { DeleteOntologyLinkParams } from "./apis/deleteOntologyLinkType";
@@ -86,6 +88,7 @@ export type { EnableFunctionRateLimitTemplateParams } from "./apis/enableFunctio
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
 export type { ExportOntologySpaceFile, ExportOntologySpaceParams, OntologySpaceExportType } from "./apis/exportOntologySpaceType";
 export type { ExportOntologyFile, ExportOntologyParams, OntologyExportType } from "./apis/exportOntologyType";
+export type { FunctionOperatorTemplateLanguage, FunctionOperatorTemplateParams, FunctionOperatorTemplate } from "./apis/functionOperatorTemplateType";
 export type { FunctionPublishData, FunctionPublishParams } from "./apis/functionPublishType";
 export type { FunctionUnpublishData, FunctionUnpublishParams } from "./apis/functionUnpublishType";
 export type { ActionCategoryVO, GetActionCategoryTreeParams } from "./apis/getActionCategoryTreeType";
@@ -126,6 +129,7 @@ export type {
 export type { GetOntologySpaceStatisticData, GetOntologySpaceStatisticParams, OntologySpaceStatisticVO } from "./apis/getOntologySpaceStatisticType";
 export type { ImportOntologiesData, ImportOntologiesParams } from "./apis/importOntologiesType";
 export type { ImportOntologySpaceData, ImportOntologySpaceParams } from "./apis/importOntologySpaceType";
+export type { ListFunctionOperatorTemplateData, ListFunctionOperatorTemplateParams } from "./apis/listFunctionOperatorTemplateType";
 export type {
   ListFunctionRateLimitTemplateData,
   ListFunctionRateLimitTemplateItem,
@@ -193,6 +197,7 @@ export type {
 } from "./apis/streamAgentChatType";
 export type { TestOntologyFunctionData, TestOntologyFunctionParameterItem, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
 export type { UpdateActionCategoryParams } from "./apis/updateActionCategoryType";
+export type { UpdateFunctionOperatorTemplateData, UpdateFunctionOperatorTemplateParams } from "./apis/updateFunctionOperatorTemplateType";
 export type { UpdateFunctionRateLimitTemplateData, UpdateFunctionRateLimitTemplateParams } from "./apis/updateFunctionRateLimitTemplateType";
 export type { UpdateOntologyFunctionData, UpdateOntologyFunctionParams } from "./apis/updateOntologyFunctionType";
 export type { UpdateOntologyLinkParams } from "./apis/updateOntologyLinkType";

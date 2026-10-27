@@ -4,4 +4,9 @@ export interface AutoBindOntologyPropertyDatasourceParams {
 }
 
 /** 自动关联对象属性数据源接口返回的业务数据。 */
-export type AutoBindOntologyPropertyDatasourceData = unknown;
+export interface AutoBindOntologyPropertyDatasourceData {
+  boundCount: number;
+  totalBoundCount: number;
+  blockedItems: unknown[];
+  message: string;
+}

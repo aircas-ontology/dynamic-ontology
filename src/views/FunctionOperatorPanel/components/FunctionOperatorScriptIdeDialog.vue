@@ -45,6 +45,7 @@
           v-model="selectedTemplate"
           class="function-operator-script-ide__template-select"
           clearable
+          :loading="templateLoading"
           placeholder="选择模板"
           @change="applySelectedTemplate"
         >
@@ -69,15 +70,23 @@
       </aside>
     </div>
   </el-dialog>
-  <FunctionOperatorTemplateDrawer v-model="templateDrawerVisible" :current-language="language" :current-code="code" @use="applyTemplate" />
+  <FunctionOperatorTemplateDrawer
+    v-model="templateDrawerVisible"
+    :current-language="language"
+    :current-code="code"
+    @use="applyTemplate"
+    @changed="loadLanguageTemplates"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { postParseOntologyFunctionParamsInterface, testOntologyFunctionInterface } from "@/apis";
+import { getListFunctionOperatorTemplateInterface, postParseOntologyFunctionParamsInterface, testOntologyFunctionInterface } from "@/apis";
 import {
   FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS,
+  type FunctionOperatorTemplate,
+  type FunctionOperatorTemplateLanguage,
   type CreateOntologyFunctionParams,
   type FunctionOperatorScriptLanguage,
   type ParseOntologyFunctionParamItem,
@@ -141,6 +150,14 @@ const outputParameters = ref<ParseOntologyFunctionParamItem[]>([]);
 const parsing = ref(false);
 const templateDrawerVisible = ref(false);
 const selectedTemplate = ref<string>();
+const templates = ref<FunctionOperatorTemplate[]>([]);
+const templateLoading = ref(false);
+const templateApiLanguageMap: Record<FunctionOperatorScriptLanguage, FunctionOperatorTemplateLanguage> = {
+  typescript: "TYPESCRIPT",
+  groovy: "GROOVY",
+  python: "PYTHON",
+  java: "JAVA",
+};
 const parseLocked = ref(false);
 const testing = ref(false);
 const ideTestStatus = ref<IdeTestStatus>("idle");
@@ -151,22 +168,35 @@ let parsedLanguageSnapshot: FunctionOperatorScriptLanguage | "" = "";
 let parseGeneration = 0;
 let ideTestGeneration = 0;
 
-const templateOptions = computed(() => [{ label: `${languageLabel(props.language)} 默认模板`, value: props.language }]);
-
-function languageLabel(value: FunctionOperatorScriptLanguage): string {
-  return FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS.find((item) => item.value === value)?.label ?? value;
-}
+const templateOptions = computed(() => templates.value.map((item) => ({ label: item.name, value: String(item.id), code: item.code })));
 
 /**
  * @description 选择模板后将对应代码写入当前编辑器。
  * @param value 模板语言标识。
  */
 function applySelectedTemplate(value: string | undefined): void {
-  if (!value || !(value in SCRIPT_FUNCTION_STARTERS)) return;
-  const templateLanguage = value as FunctionOperatorScriptLanguage;
-  if (templateLanguage !== props.language) emit("update:language", templateLanguage);
-  emit("update:code", SCRIPT_FUNCTION_STARTERS[templateLanguage]);
+  const template = templateOptions.value.find((item) => item.value === value);
+  if (!template) return;
+  emit("update:code", template.code);
   clearParsedScriptParameters();
+}
+
+/**
+ * @description 根据当前脚本语言查询对应的代码模板。
+ * @returns 查询模板列表的 Promise。
+ */
+async function loadLanguageTemplates(): Promise<void> {
+  templateLoading.value = true;
+  try {
+    const response = await getListFunctionOperatorTemplateInterface({ language: templateApiLanguageMap[props.language] });
+    if (response.code !== 0 && response.code !== 200) throw new Error(response.message || "模板加载失败");
+    templates.value = response.data ?? [];
+  } catch (error) {
+    templates.value = [];
+    ElMessage.error(error instanceof Error ? error.message : "模板加载失败");
+  } finally {
+    templateLoading.value = false;
+  }
 }
 
 /**
@@ -447,6 +477,17 @@ watch(
       return;
     }
     applyIncomingParsedParameters();
+    selectedTemplate.value = undefined;
+    void loadLanguageTemplates();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.language,
+  () => {
+    selectedTemplate.value = undefined;
+    if (props.modelValue) void loadLanguageTemplates();
   },
 );
 </script>

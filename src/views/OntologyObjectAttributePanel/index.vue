@@ -492,7 +492,7 @@ async function handleAutoDataSourceAssociate() {
     await loadAssociatedDataSourceColumns();
     await nextTick();
     dataSourceDialogRef.value?.syncServerMappings();
-    ElMessage.success("自动关联数据源成功");
+    ElMessage.success(response.data?.message || "自动关联数据源成功");
   } catch (cause) {
     const message = cause instanceof Error && cause.message.trim() ? cause.message : "自动关联数据源失败，请重试。";
     ElMessage.error(autoAssociationCompleted ? `自动关联数据源已完成，但结果刷新失败：${message}` : message);

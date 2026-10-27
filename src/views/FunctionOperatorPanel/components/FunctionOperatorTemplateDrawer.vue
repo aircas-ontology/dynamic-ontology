@@ -5,7 +5,9 @@
         ><el-option v-for="item in FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select
       ><el-button type="primary" @click="openCreate">新增模板</el-button>
     </div>
-    <el-empty v-if="filteredTemplates.length === 0" description="暂无模板" />
+    <el-alert v-if="loadError" :title="loadError" type="error" show-icon :closable="false" />
+    <el-empty v-if="!loading && filteredTemplates.length === 0" description="暂无模板" />
+    <div v-else-if="loading" class="template-drawer__loading">正在加载模板…</div>
     <div v-else class="template-drawer__list">
       <div
         v-for="item in filteredTemplates"
@@ -44,29 +46,46 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import {
+  deleteFunctionOperatorTemplateInterface,
+  getListFunctionOperatorTemplateInterface,
+  postCreateFunctionOperatorTemplateInterface,
+  putUpdateFunctionOperatorTemplateInterface,
+} from "@/apis";
+import type { FunctionOperatorTemplate, FunctionOperatorTemplateLanguage } from "@/types";
 import { FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS, type FunctionOperatorScriptLanguage } from "@/types";
 import { SCRIPT_FUNCTION_STARTERS } from "../utils/scriptFunctionStarters";
 import FunctionOperatorTemplateFormDialog, { type FunctionOperatorTemplateDraft } from "./FunctionOperatorTemplateFormDialog.vue";
 
 const props = defineProps<{ modelValue: boolean; currentLanguage: FunctionOperatorScriptLanguage; currentCode: string }>();
-const emit = defineEmits<{ "update:modelValue": [value: boolean]; use: [value: { language: FunctionOperatorScriptLanguage; code: string }] }>();
-const templates = ref<FunctionOperatorTemplateDraft[]>([
-  {
-    id: 1,
-    name: "TypeScript 基础函数",
-    language: "typescript",
-    description: "默认 TypeScript 函数模板",
-    code: SCRIPT_FUNCTION_STARTERS.typescript,
-    updatedAt: "",
-  },
-]);
+const emit = defineEmits<{
+  "update:modelValue": [value: boolean];
+  changed: [];
+  use: [value: { language: FunctionOperatorScriptLanguage; code: string }];
+}>();
+const templates = ref<FunctionOperatorTemplateDraft[]>([]);
 const keyword = ref("");
 const languageFilter = ref<FunctionOperatorScriptLanguage>();
 const formVisible = ref(false);
 const activeTemplate = ref<FunctionOperatorTemplateDraft | null>(null);
 const formMode = ref<"create" | "edit" | "view">("create");
 const saving = ref(false);
+const loading = ref(false);
+const loadError = ref("");
+const apiLanguageByPageLanguage: Record<FunctionOperatorScriptLanguage, FunctionOperatorTemplateLanguage> = {
+  typescript: "TYPESCRIPT",
+  groovy: "GROOVY",
+  python: "PYTHON",
+  java: "JAVA",
+};
+const pageLanguageByApiLanguage: Record<FunctionOperatorTemplateLanguage, FunctionOperatorScriptLanguage> = {
+  TYPESCRIPT: "typescript",
+  GROOVY: "groovy",
+  PYTHON: "python",
+  JAVA: "java",
+};
 const filteredTemplates = computed(() =>
   templates.value.filter(
     (item) => (!keyword.value.trim() || item.name.includes(keyword.value.trim())) && (!languageFilter.value || item.language === languageFilter.value),
@@ -74,6 +93,47 @@ const filteredTemplates = computed(() =>
 );
 function languageLabel(language: FunctionOperatorScriptLanguage): string {
   return FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS.find((item) => item.value === language)?.label ?? language;
+}
+
+/** @description 将页面语言转换为服务端语言。 */
+function toApiLanguage(language: FunctionOperatorScriptLanguage): FunctionOperatorTemplateLanguage {
+  return apiLanguageByPageLanguage[language];
+}
+
+/** @description 将服务端语言转换为页面语言。 */
+function toPageLanguage(language: FunctionOperatorTemplateLanguage): FunctionOperatorScriptLanguage {
+  return pageLanguageByApiLanguage[language];
+}
+
+/** @description 将服务端模板映射为页面草稿。 */
+function mapTemplate(template: FunctionOperatorTemplate): FunctionOperatorTemplateDraft {
+  return {
+    id: template.id,
+    name: template.name,
+    language: toPageLanguage(template.language),
+    description: template.description ?? "",
+    code: template.code,
+    updatedAt: template.updateTime,
+  };
+}
+
+/**
+ * @description 查询模板列表并更新抽屉数据。
+ * @returns 查询完成后的 Promise。
+ */
+async function loadTemplates(): Promise<void> {
+  loading.value = true;
+  loadError.value = "";
+  try {
+    const response = await getListFunctionOperatorTemplateInterface();
+    if (response.code !== 0 && response.code !== 200) throw new Error(response.message || "模板列表加载失败");
+    templates.value = (response.data ?? []).map(mapTemplate);
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : "模板列表加载失败";
+    ElMessage.error(loadError.value);
+  } finally {
+    loading.value = false;
+  }
 }
 /** @description 打开新增模板表单。 */
 function openCreate(): void {
@@ -99,24 +159,51 @@ function openEdit(item: FunctionOperatorTemplateDraft): void {
   formVisible.value = true;
 }
 /** @description 保存新增或编辑后的模板。 */
-function saveTemplate(value: FunctionOperatorTemplateDraft): void {
+async function saveTemplate(value: FunctionOperatorTemplateDraft): Promise<void> {
   saving.value = true;
-  const next = { ...value, id: value.id ?? Date.now(), updatedAt: new Date().toISOString() };
-  templates.value = value.id ? templates.value.map((item) => (item.id === value.id ? next : item)) : [next, ...templates.value];
-  saving.value = false;
-  formVisible.value = false;
-  ElMessage.success("模板已保存");
+  try {
+    const data = {
+      name: value.name.trim(),
+      language: toApiLanguage(value.language),
+      description: value.description.trim(),
+      code: value.code,
+    };
+    const response = value.id
+      ? await putUpdateFunctionOperatorTemplateInterface({ id: value.id, data })
+      : await postCreateFunctionOperatorTemplateInterface(data);
+    if (response.code !== 0 && response.code !== 200) throw new Error(response.message || "模板保存失败");
+    await loadTemplates();
+    formVisible.value = false;
+    emit("changed");
+    ElMessage.success(value.id ? "模板已更新" : "模板已创建");
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "模板保存失败");
+  } finally {
+    saving.value = false;
+  }
 }
 /** @description 删除指定模板并反馈结果。 */
 async function deleteTemplate(item: FunctionOperatorTemplateDraft): Promise<void> {
   try {
     await ElMessageBox.confirm(`确定删除模板“${item.name}”吗？`, "删除模板", { type: "warning" });
-    templates.value = templates.value.filter((template) => template.id !== item.id);
+    if (!item.id) return;
+    const response = await deleteFunctionOperatorTemplateInterface({ id: item.id });
+    if (response.code !== 0 && response.code !== 200) throw new Error(response.message || "模板删除失败");
+    await loadTemplates();
+    emit("changed");
     ElMessage.success("模板已删除");
-  } catch {
-    /* 用户取消 */
+  } catch (error) {
+    if (error === "cancel" || error === "close") return;
+    ElMessage.error(error instanceof Error ? error.message : "模板删除失败");
   }
 }
+
+watch(
+  () => props.modelValue,
+  (visible) => {
+    if (visible) void loadTemplates();
+  },
+);
 </script>
 
 <style scoped lang="scss">
@@ -130,6 +217,11 @@ async function deleteTemplate(item: FunctionOperatorTemplateDraft): Promise<void
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.template-drawer__loading {
+  padding: 32px 0;
+  color: var(--aircas-color-text-secondary);
+  text-align: center;
 }
 .template-drawer__item {
   display: flex;

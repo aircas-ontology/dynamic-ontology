@@ -15,6 +15,12 @@ import {
   putUpdateFunctionRateLimitTemplateInterface,
 } from "./functionRateLimitTemplateApi";
 import {
+  deleteFunctionOperatorTemplateInterface,
+  getListFunctionOperatorTemplateInterface,
+  postCreateFunctionOperatorTemplateInterface,
+  putUpdateFunctionOperatorTemplateInterface,
+} from "./functionOperatorTemplateApi";
+import {
   createOntologyFunctionInterface,
   deleteOntologyFunctionInterface,
   getOntologyFunctionContainerRuntimeListInterface,
@@ -97,6 +103,10 @@ export {
   putDisableFunctionRateLimitTemplateInterface,
   putEnableFunctionRateLimitTemplateInterface,
   putUpdateFunctionRateLimitTemplateInterface,
+  deleteFunctionOperatorTemplateInterface,
+  getListFunctionOperatorTemplateInterface,
+  postCreateFunctionOperatorTemplateInterface,
+  putUpdateFunctionOperatorTemplateInterface,
   autoBindOntologyPropertyDatasourceInterface,
   createActionCategoryInterface,
   deleteActionCategoryInterface,
