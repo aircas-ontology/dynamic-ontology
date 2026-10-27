@@ -1,4 +1,4 @@
-import { abortAgentChatInterface, postAgentChatStreamInterface } from "./agentChatApi";
+import { abortAgentChatInterface, postAgentChatStreamInterface, uploadAgentDocumentInterface } from "./agentChatApi";
 import {
   createActionCategoryInterface,
   deleteActionCategoryInterface,
@@ -150,6 +150,7 @@ export {
   getOntologySpaceListInterface,
   getOntologySpaceStatisticInterface,
   postAgentChatStreamInterface,
+  uploadAgentDocumentInterface,
   abortAgentChatInterface,
   postCreateOntologyCategoryTreeInterface,
   postCreateOntologyLinkInterface,

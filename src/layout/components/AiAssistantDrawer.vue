@@ -24,8 +24,12 @@
             <button v-for="prompt in prompts" :key="prompt" type="button" @click="applyAssistantPrompt(prompt)">{{ prompt }}</button>
           </div>
         </div>
-        <p v-if="errorMessage && !messages.length" class="ai-assistant-drawer__banner">{{ errorMessage }}</p>
-        <div class="ai-assistant-drawer__composer">
+        <p v-if="errorMessage" class="ai-assistant-drawer__banner" role="alert">{{ errorMessage }}</p>
+        <div class="ai-assistant-drawer__composer" @dragover.prevent @drop.prevent="handleAssistantFileDrop">
+          <div v-if="attachment" class="ai-assistant-drawer__attachment-card">
+            <span>{{ attachment.fileName }}</span>
+            <button type="button" aria-label="移除附件" @click="removeAssistantAttachment">×</button>
+          </div>
           <el-input
             v-model="draft"
             type="textarea"
@@ -39,25 +43,21 @@
           />
           <div class="ai-assistant-drawer__composer-bar">
             <div class="ai-assistant-drawer__composer-actions">
-              <el-dropdown trigger="click">
-                <button class="ai-assistant-drawer__mode" type="button">
-                  <span aria-hidden="true">✦</span>
-                  智能管理助手
-                  <span aria-hidden="true">⌄</span>
-                </button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item>智能管理助手</el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+              <input
+                ref="fileInputRef"
+                class="ai-assistant-drawer__file-input"
+                type="file"
+                accept=".txt,.md,text/plain,text/markdown"
+                @change="handleAssistantFileChange"
+              />
+              <button class="ai-assistant-drawer__mode" type="button" @click="fileInputRef?.click()">＋ 附件</button>
               <button class="ai-assistant-drawer__mode" type="button" @click="startNewAssistantConversation">新对话</button>
             </div>
             <button
               class="ai-assistant-drawer__send"
               type="button"
               :aria-label="status === 'submitting' ? '停止生成' : '发送问题'"
-              :disabled="status !== 'submitting' && !draft.trim()"
+              :disabled="status !== 'submitting' && !draft.trim() && attachment?.status !== 'ready'"
               @click="status === 'submitting' ? stopAssistantChat() : submitAssistantQuestion()"
             >
               <svg v-if="status !== 'submitting'" viewBox="0 0 24 24" aria-hidden="true">
@@ -83,8 +83,20 @@ import AiAssistantConversation from "./AiAssistantConversation.vue";
 const prompts = ["新建福特级航空母舰", "创建一个名称属性", "创建舰艇编制关系", "创建一个巡航行为", "编辑函数算子运行配置", "导出行为调度和规则库"];
 const visible = defineModel<boolean>({ default: false });
 const stageRef = ref<HTMLElement | null>(null);
-const { draft, messages, status, errorMessage, sendAssistantMessage, startNewAssistantConversation, selectAssistantOption, stopAssistantChat } =
-  useAiAssistantChat();
+const {
+  draft,
+  messages,
+  status,
+  errorMessage,
+  attachment,
+  uploadAssistantDocument,
+  removeAssistantAttachment,
+  sendAssistantMessage,
+  startNewAssistantConversation,
+  selectAssistantOption,
+  stopAssistantChat,
+} = useAiAssistantChat();
+const fileInputRef = ref<HTMLInputElement | null>(null);
 
 /**
  * @description 把示例问题写入输入框，便于继续编辑后发送。
@@ -98,7 +110,21 @@ function applyAssistantPrompt(prompt: string) {
  * @description 提交当前输入框中的问题。
  */
 function submitAssistantQuestion() {
+  if (attachment.value?.status === "uploading" || attachment.value?.status === "error") return;
   void sendAssistantMessage();
+}
+
+/** @description 处理文件选择并上传到当前会话。 */
+function handleAssistantFileChange(event: Event): void {
+  const file = event.target instanceof HTMLInputElement ? event.target.files?.[0] : undefined;
+  if (file) void uploadAssistantDocument(file);
+  if (event.target instanceof HTMLInputElement) event.target.value = "";
+}
+
+/** @description 处理拖入文件并上传到当前会话。 */
+function handleAssistantFileDrop(event: DragEvent): void {
+  const file = event.dataTransfer?.files?.[0];
+  if (file) void uploadAssistantDocument(file);
 }
 
 /**
@@ -330,6 +356,10 @@ watch(messages, () => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.ai-assistant-drawer__file-input {
+  display: none;
 }
 
 .ai-assistant-drawer__mode {

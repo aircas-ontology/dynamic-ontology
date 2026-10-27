@@ -1,9 +1,27 @@
 import { EventStreamContentType, fetchEventSource } from "@microsoft/fetch-event-source";
 
-import type { StreamAgentChatEvent, StreamAgentChatParams, StreamAgentChatSelectionOption } from "@/types";
+import type { AgentDocumentUploadData, ApiResponse, StreamAgentChatEvent, StreamAgentChatParams, StreamAgentChatSelectionOption } from "@/types";
 import { getAccessTokenHeader } from "@/utils/authToken";
 import { isAgentChatStreamClosedError } from "@/utils/resolveAgentChatStreamFailure";
 import { request } from "@/utils/request";
+
+/**
+ * @description 上传会话参考文档。
+ * @param sessionId 当前会话标识。
+ * @param file 待上传的 txt 或 md 文件。
+ * @returns 文档解析结果。
+ */
+export function uploadAgentDocumentInterface(sessionId: string, file: File): Promise<ApiResponse<AgentDocumentUploadData>> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return request<AgentDocumentUploadData>({
+    url: `${DOMAIN_CONFIG.AGENT_URL.replace(/\/$/, "")}/chat/upload_document`,
+    method: "post",
+    params: { sessionId },
+    data: formData,
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+}
 
 /** @description 请求 Agent 服务中断指定会话。 @param sessionId 当前会话 id。 */
 export function abortAgentChatInterface(sessionId: string): Promise<{ code: number; message?: string; data?: boolean }> {

@@ -11,6 +11,7 @@ export type {
   AiAssistantSelectionCard,
   AiAssistantUserMessage,
 } from "./agent/aiAssistantChatType";
+export type { AgentDocumentUploadData } from "./apis/agentDocumentUploadType";
 export type { ApiResponse } from "./apis/apiResponseType";
 export type { AutoBindOntologyPropertyDatasourceData, AutoBindOntologyPropertyDatasourceParams } from "./apis/autoBindOntologyPropertyDatasourceType";
 export type {

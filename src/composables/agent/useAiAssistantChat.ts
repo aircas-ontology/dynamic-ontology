@@ -1,7 +1,7 @@
 import { onScopeDispose, readonly, ref } from "vue";
 import { useRoute } from "vue-router";
 
-import { abortAgentChatInterface, postAgentChatStreamInterface } from "@/apis";
+import { abortAgentChatInterface, postAgentChatStreamInterface, uploadAgentDocumentInterface } from "@/apis";
 import type { AiAssistantCommandStatus, AiAssistantMessage } from "@/types";
 import { applyAssistantChatEventToMessages, hasAssistantChatOutput, stampAssistantChatError } from "@/utils/applyAssistantChatEvent";
 import { buildStreamAgentChatParams } from "@/utils/buildStreamAgentChatParams";
@@ -42,6 +42,7 @@ export function useAiAssistantChat() {
   const messages = ref<AiAssistantMessage[]>([]);
   const status = ref<AiAssistantCommandStatus>("idle");
   const errorMessage = ref("");
+  const attachment = ref<{ fileName: string; charCount: number; truncated: boolean; status: "uploading" | "ready" | "error"; error?: string } | null>(null);
   let requestSerial = 0;
   let abortController: AbortController | null = null;
 
@@ -76,11 +77,17 @@ export function useAiAssistantChat() {
     }
 
     const message = (text ?? draft.value).trim();
-    if (!message) {
+    if (!message && !attachment.value) {
       return;
     }
 
-    const visibleContent = displayContent?.trim() || message;
+    const attachmentName = attachment.value?.fileName;
+    const requestMessage = message || (attachmentName ? `附件：${attachmentName}` : "");
+    if (!requestMessage) {
+      return;
+    }
+    const visibleContent =
+      displayContent?.trim() || (attachmentName ? (message ? `${message}\n附件：${attachmentName}` : `附件：${attachmentName}`) : requestMessage);
     const serial = ++requestSerial;
     abortAssistantChatStream();
     abortController = new AbortController();
@@ -92,6 +99,8 @@ export function useAiAssistantChat() {
       { id: assistantMessageId, role: "assistant", content: "", processItems: [] },
     ];
     draft.value = "";
+    attachment.value = null;
+    errorMessage.value = "";
     status.value = "submitting";
     errorMessage.value = "";
     let alreadyTerminal = false;
@@ -99,7 +108,7 @@ export function useAiAssistantChat() {
     try {
       await postAgentChatStreamInterface(
         buildStreamAgentChatParams({
-          message,
+          message: requestMessage,
           sessionId: sessionId.value,
           spaceId: readRouteSpaceId(route.params.spaceId ?? route.query.spaceId),
         }),
@@ -159,6 +168,40 @@ export function useAiAssistantChat() {
     draft.value = "";
     status.value = "idle";
     errorMessage.value = "";
+    attachment.value = null;
+  }
+
+  /**
+   * @description 校验并上传当前会话参考文档。
+   * @param file 待上传的 txt 或 md 文件。
+   */
+  async function uploadAssistantDocument(file: File): Promise<void> {
+    const extension = file.name.toLowerCase().split(".").pop();
+    if (extension !== "txt" && extension !== "md") {
+      attachment.value = null;
+      errorMessage.value = "文件格式错误，仅支持上传 txt 或 md 文件。";
+      return;
+    }
+    attachment.value = { fileName: file.name, charCount: 0, truncated: false, status: "uploading" };
+    try {
+      const response = await uploadAgentDocumentInterface(sessionId.value, file);
+      if (response.code !== 200 || !response.data) throw new Error(response.message || "文档上传失败");
+      attachment.value = { ...response.data, status: "ready" };
+      if (response.data.truncated) errorMessage.value = `文档已截断，保留 ${response.data.charCount} 个字符`;
+    } catch (error) {
+      attachment.value = {
+        fileName: file.name,
+        charCount: 0,
+        truncated: false,
+        status: "error",
+        error: error instanceof Error ? error.message : "文档上传失败",
+      };
+    }
+  }
+
+  /** @description 移除当前待发送文档。 */
+  function removeAssistantAttachment(): void {
+    attachment.value = null;
   }
 
   /**
@@ -181,6 +224,9 @@ export function useAiAssistantChat() {
     messages: readonly(messages),
     status: readonly(status),
     errorMessage: readonly(errorMessage),
+    attachment: readonly(attachment),
+    uploadAssistantDocument,
+    removeAssistantAttachment,
     sendAssistantMessage,
     startNewAssistantConversation,
     selectAssistantOption,
