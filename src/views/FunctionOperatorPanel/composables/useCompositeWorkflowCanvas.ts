@@ -17,9 +17,12 @@ import type {
 } from "@/types";
 import {
   buildAutoConfiguredCompositeWorkflowInputBindings,
+  COMPOSITE_WORKFLOW_KIND_LABELS,
   hasCompositeWorkflowIncomingEdge,
+  hasEmptyCompositeWorkflowUpstreamRef,
   mapCompositeWorkflowDetailParamBriefs,
   repairCompositeWorkflowInputBindings,
+  repairCompositeWorkflowUpstreamRef,
   resolveCompositeWorkflowNodeUpstreamOutputs,
   validateCompositeWorkflowForSave,
   wouldCompositeWorkflowEdgeCreateCycle,
@@ -109,6 +112,8 @@ export function useCompositeWorkflowCanvas(options: {
   const endpointNodeEdit = ref<CompositeWorkflowEndpointNodeEditContext | null>(null);
   /** 侧栏 DnD 刚落点添加节点时为 true，供 click 防重复消费。 */
   const sidebarDndAddedNode = ref(false);
+  /** 上游变更已清空过引用的节点；重新选择前禁止保存，避免循环被静默编译成固定次数。 */
+  const invalidatedUpstreamRefNodeIds = new Set<string>();
   let disposed = false;
   let canvasResizeObserver: ResizeObserver | null = null;
 
@@ -400,12 +405,24 @@ export function useCompositeWorkflowCanvas(options: {
       return;
     }
     const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(nodeId);
+    const loopConfig = kind === "loop" ? normalizeCompositeWorkflowLoopConfig(properties.loopConfig) : undefined;
+    const branchConfig = kind === "branch" ? normalizeCompositeWorkflowBranchConfig(properties.branchConfig) : undefined;
+    const switchConfig = kind === "switch" ? normalizeCompositeWorkflowSwitchConfig(properties.switchConfig) : undefined;
+    if (loopConfig) {
+      loopConfig.collection = repairCompositeWorkflowUpstreamRef(loopConfig.collection, upstreamOutputs, hasUpstream);
+    }
+    if (branchConfig) {
+      branchConfig.left = repairCompositeWorkflowUpstreamRef(branchConfig.left, upstreamOutputs, hasUpstream);
+    }
+    if (switchConfig) {
+      switchConfig.switchOn = repairCompositeWorkflowUpstreamRef(switchConfig.switchOn, upstreamOutputs, hasUpstream);
+    }
     logicNodeEdit.value = {
       nodeId,
       kind,
-      loopConfig: kind === "loop" ? normalizeCompositeWorkflowLoopConfig(properties.loopConfig) : undefined,
-      branchConfig: kind === "branch" ? normalizeCompositeWorkflowBranchConfig(properties.branchConfig) : undefined,
-      switchConfig: kind === "switch" ? normalizeCompositeWorkflowSwitchConfig(properties.switchConfig) : undefined,
+      loopConfig,
+      branchConfig,
+      switchConfig,
       hasUpstream,
       upstreamOutputs,
     };
@@ -498,6 +515,7 @@ export function useCompositeWorkflowCanvas(options: {
    */
   function initCompositeWorkflowCanvas(): void {
     destroyCompositeWorkflowCanvas();
+    invalidatedUpstreamRefNodeIds.clear();
     const host = canvasHostRef.value;
     if (!host || disposed) {
       return;
@@ -1010,6 +1028,11 @@ export function useCompositeWorkflowCanvas(options: {
       ElMessage.error("缺少函数名称，无法保存");
       return null;
     }
+    const pendingRefNode = nodes.find((node) => invalidatedUpstreamRefNodeIds.has(node.id) && hasEmptyCompositeWorkflowUpstreamRef(node));
+    if (pendingRefNode) {
+      ElMessage.error(`${COMPOSITE_WORKFLOW_KIND_LABELS[pendingRefNode.kind] ?? pendingRefNode.displayName ?? pendingRefNode.id}的上游引用已失效，请选择新的上游输出后再保存`);
+      return null;
+    }
     const compositeConfig = compileCompositeWorkflowToBackendConfig({
       nodes,
       edges,
@@ -1069,14 +1092,15 @@ export function useCompositeWorkflowCanvas(options: {
   }
 
   /**
-   * @description 开始节点参数变更后，刷新可达下游 function/transform 绑定，并修复 end 出参绑定。
-   * @param startNodeId 开始节点 id。
+   * @description 上游出参变更后，刷新可达下游绑定并清理指向已不存在端口的引用。
+   * @param startNodeId 上游节点 id。
    */
   function refreshDownstreamBindingsAfterStartEdit(startNodeId: string): void {
     const lf = lfRef.value;
     if (!lf) {
       return;
     }
+    const clearedLabels: string[] = [];
     for (const targetId of listReachableDownstreamNodeIds(startNodeId)) {
       const model = lf.getNodeModelById(targetId);
       if (!model) {
@@ -1088,12 +1112,49 @@ export function useCompositeWorkflowCanvas(options: {
         refreshTargetBindingsAfterConnect(targetId);
         continue;
       }
-      if (kind !== "end") {
+      if (kind !== "loop" && kind !== "branch" && kind !== "switch" && kind !== "end") {
         continue;
       }
       const { hasUpstream, upstreamOutputs } = resolveUpstreamOutputs(targetId);
-      const existing = Array.isArray(properties.inputBindings) ? (properties.inputBindings as CompositeWorkflowInputBinding[]) : [];
-      model.setProperty("inputBindings", repairCompositeWorkflowInputBindings(existing, upstreamOutputs, hasUpstream));
+      if (kind === "end") {
+        const existing = Array.isArray(properties.inputBindings) ? (properties.inputBindings as CompositeWorkflowInputBinding[]) : [];
+        model.setProperty("inputBindings", repairCompositeWorkflowInputBindings(existing, upstreamOutputs, hasUpstream));
+        continue;
+      }
+      const label = String(properties.label ?? properties.title ?? kind);
+      if (kind === "loop") {
+        const raw = properties.loopConfig;
+        const config = raw && typeof raw === "object" ? (raw as CompositeWorkflowLoopConfig) : createDefaultCompositeWorkflowLoopConfig();
+        const collection = repairCompositeWorkflowUpstreamRef(config.collection, upstreamOutputs, hasUpstream);
+        if (config.collection?.upstreamParamName && !collection.upstreamParamName) {
+          clearedLabels.push(`「${label}」的循环集合`);
+          invalidatedUpstreamRefNodeIds.add(targetId);
+        }
+        model.setProperty("loopConfig", { ...config, collection });
+        continue;
+      }
+      if (kind === "branch") {
+        const raw = properties.branchConfig;
+        const config = raw && typeof raw === "object" ? (raw as CompositeWorkflowBranchConfig) : createDefaultCompositeWorkflowBranchConfig();
+        const left = repairCompositeWorkflowUpstreamRef(config.left, upstreamOutputs, hasUpstream);
+        if (config.left?.upstreamParamName && !left.upstreamParamName) {
+          clearedLabels.push(`「${label}」的比较左值`);
+          invalidatedUpstreamRefNodeIds.add(targetId);
+        }
+        model.setProperty("branchConfig", { ...config, left });
+        continue;
+      }
+      const raw = properties.switchConfig;
+      const config = raw && typeof raw === "object" ? (raw as CompositeWorkflowSwitchConfig) : createDefaultCompositeWorkflowSwitchConfig();
+      const switchOn = repairCompositeWorkflowUpstreamRef(config.switchOn, upstreamOutputs, hasUpstream);
+      if (config.switchOn?.upstreamParamName && !switchOn.upstreamParamName) {
+        clearedLabels.push(`「${label}」的判断值`);
+        invalidatedUpstreamRefNodeIds.add(targetId);
+      }
+      model.setProperty("switchConfig", { ...config, switchOn });
+    }
+    if (clearedLabels.length > 0) {
+      ElMessage.warning(`上游出参已变更，${clearedLabels.join("、")}引用的端口不存在，已清空，请重新选择`);
     }
   }
 

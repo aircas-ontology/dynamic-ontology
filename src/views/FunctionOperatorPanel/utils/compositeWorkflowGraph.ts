@@ -573,6 +573,75 @@ export function repairCompositeWorkflowInputBindings(
   });
 }
 
+/** 节点 kind 中文名，用于提示文案。 */
+export const COMPOSITE_WORKFLOW_KIND_LABELS: Record<CompositeWorkflowNodeKind, string> = {
+  function: "函数节点",
+  loop: "循环节点",
+  branch: "条件分支",
+  transform: "数据格式转换",
+  switch: "Switch Case",
+  start: "开始节点",
+  end: "结束节点",
+};
+
+/**
+ * @description 判断逻辑节点是否未选择上游输出（引用为空）。
+ * @param node 节点摘要。
+ * @returns 未选择时 true。
+ */
+export function hasEmptyCompositeWorkflowUpstreamRef(node: CompositeWorkflowGraphNodeSummary): boolean {
+  if (node.kind === "loop") {
+    return !node.loopConfig?.collection?.upstreamParamName?.trim();
+  }
+  if (node.kind === "branch") {
+    return !node.branchConfig?.left?.upstreamParamPath?.[0]?.trim();
+  }
+  if (node.kind === "switch") {
+    const switchOn = node.switchConfig?.switchOn;
+    return !(switchOn?.upstreamParamPath?.[0] ?? switchOn?.upstreamParamName ?? "").trim();
+  }
+  return false;
+}
+
+/**
+ * @description 前驱变更后修复逻辑节点的上游路径引用（循环 collection / 分支 left / Switch switchOn）。
+ * 无法解析时清空引用而非保留陈旧端口名，否则保存会编译出指向不存在输出端口的数据边。
+ * @param ref 原引用。
+ * @param upstreamOutputs 新前驱 OUTPUT；无前驱传空。
+ * @param hasUpstream 是否有前驱。
+ * @returns 修复后的引用；无引用或已失效时为空引用。
+ */
+export function repairCompositeWorkflowUpstreamRef(
+  ref: { upstreamParamName: string; upstreamParamPath: string[] } | undefined,
+  upstreamOutputs: CompositeWorkflowParamBrief[],
+  hasUpstream: boolean,
+): { mode: "fromUpstream"; upstreamParamName: string; upstreamParamPath: string[] } {
+  const keep = (): { mode: "fromUpstream"; upstreamParamName: string; upstreamParamPath: string[] } => ({
+    mode: "fromUpstream" as const,
+    upstreamParamName: ref?.upstreamParamName ?? "",
+    upstreamParamPath: ref?.upstreamParamPath ?? [],
+  });
+  if (!ref || !hasUpstream) {
+    return keep();
+  }
+  const path = Array.isArray(ref.upstreamParamPath) && ref.upstreamParamPath.length > 0 ? ref.upstreamParamPath : ref.upstreamParamName ? [ref.upstreamParamName] : [];
+  if (path.length === 0) {
+    return keep();
+  }
+  // 上游出参未知（如函数节点尚未加载出参）时无法判定，保持原引用避免误删有效配置。
+  if (upstreamOutputs.length === 0) {
+    return keep();
+  }
+  const outputNodes = listCompositeWorkflowParamNodes(upstreamOutputs);
+  const resolved =
+    findCompositeWorkflowParamLeaf(outputNodes, path) ??
+    outputNodes.find((item) => item.paramPath.length === 1 && item.paramPath[0] === ref.upstreamParamName);
+  if (!resolved) {
+    return { mode: "fromUpstream", upstreamParamName: "", upstreamParamPath: [] };
+  }
+  return { mode: "fromUpstream", upstreamParamName: resolved.brief.paramName, upstreamParamPath: resolved.paramPath };
+}
+
 /**
  * @description 按当前入参叶子对齐绑定：叶子沿用同路径旧值，对象级旧绑定改为叶子默认绑定。
  * @param inputs 下游 INPUT。
