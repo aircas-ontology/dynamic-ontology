@@ -56,15 +56,6 @@ test("test ontology function api posts to ontology function test endpoint", () =
   assert.match(barrel, /testOntologyFunctionInterface/);
 });
 
-test("test ontology function mock mirrors 查询成功 envelope with null data", () => {
-  const source = readSource("../src/mocks/testOntologyFunctionMock/testOntologyFunctionMock.ts");
-  assert.match(source, /export const testOntologyFunctionMock/);
-  assert.match(source, /code: 200/);
-  assert.match(source, /message: "查询成功"/);
-  assert.match(source, /success: true/);
-  assert.match(source, /data: null/);
-});
-
 test("buildOntologyFunctionTestBindingKeys puts AGGREGATION first then FILTER names", () => {
   const keys = buildOntologyFunctionTestBindingKeys([
     { paramId: 25, paramName: "xingbie", paramType: "STRING", category: "INPUT", paramOrder: 1, description: "", paramRole: "FILTER" },

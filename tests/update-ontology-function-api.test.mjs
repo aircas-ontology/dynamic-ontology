@@ -47,15 +47,6 @@ test("update ontology function api puts to ontology function endpoint", () => {
   assert.match(barrel, /from "\.\/functionApi"/);
 });
 
-test("update ontology function mock mirrors SUCCESS envelope with null data", () => {
-  const source = readSource("../src/mocks/updateOntologyFunctionMock/updateOntologyFunctionMock.ts");
-  assert.match(source, /export const updateOntologyFunctionMock: ApiResponse<UpdateOntologyFunctionData>/);
-  assert.match(source, /code: 200/);
-  assert.match(source, /message: "SUCCESS"/);
-  assert.match(source, /success: true/);
-  assert.match(source, /data: null/);
-});
-
 test("function operator workspace edit save calls update api", () => {
   const workspaceSource = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
   assert.match(workspaceSource, /updateOntologyFunctionInterface/);

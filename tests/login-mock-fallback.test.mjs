@@ -5,16 +5,9 @@ import vm from "node:vm";
 
 const readSource = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-const mockSource = readSource("../src/mocks/loginMock/loginMock.ts");
 const apiSource = readSource("../src/apis/loginApi.ts");
 const commandSource = readSource("../src/views/LoginPage/composables/useLoginCommand.ts");
 const pageSource = readSource("../src/views/LoginPage/index.vue");
-
-test("login mock provides a bearer mock token alongside the success envelope", () => {
-  assert.match(mockSource, /export const LOGIN_MOCK_TOKEN = "Bearer mock-login-token";/);
-  assert.match(mockSource, /export const loginMock: ApiResponse<LoginData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-});
 
 test("login request uses the shared ten second timeout without a dedicated fallback path", () => {
   const constantsSource = readSource("../src/utils/constants.ts");

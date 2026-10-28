@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-import { apiDocsOntologyMock } from "../src/mocks/apiDocsOntologyMock/apiDocsOntologyMock.ts";
+import { apiDocsOntologyMock } from "./fixtures/apiDocsOntologyMock.ts";
 import {
   filterApiDocsEndpointGroups,
   filterApiDocsEndpointGroupsByPath,

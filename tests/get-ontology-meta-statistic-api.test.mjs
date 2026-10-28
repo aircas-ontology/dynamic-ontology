@@ -28,19 +28,6 @@ test("ontology meta statistic api gets the prefixed ontology meta statistic endp
   assert.match(barrel, /getOntologyMetaStatisticInterface/);
 });
 
-test("ontology meta statistic mock mirrors the documented success sample", () => {
-  const source = readSource("../src/mocks/getOntologyMetaStatisticMock/getOntologyMetaStatisticMock.ts");
-  assert.match(source, /export const getOntologyMetaStatisticMock: ApiResponse<GetOntologyMetaStatisticData>/);
-  assert.match(source, /code: 200/);
-  assert.match(source, /message: "SUCCESS"/);
-  assert.match(source, /success: true/);
-  assert.match(source, /uniqueIdentifier: "d3e1b0c27f29452eb7cadd1f51eac535"/);
-  assert.match(source, /entityCount: 16/);
-  assert.match(source, /propertyCount: 9/);
-  assert.match(source, /relationCount: 4/);
-  assert.match(source, /actionCount: 2/);
-});
-
 test("object detail statistic replaces the hardcoded counts with the meta statistic api", () => {
   const pageSource = readSource("../src/views/OntologyObjectDetail/index.vue");
   const composableSource = readSource("../src/views/OntologyObjectDetail/composables/useObjectResourceStatistic.ts");

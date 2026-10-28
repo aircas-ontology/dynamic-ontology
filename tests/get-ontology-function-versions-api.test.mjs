@@ -38,15 +38,6 @@ test("function versions api gets functionApi as query params", () => {
   assert.match(barrel, /from "\.\/functionApi"/);
 });
 
-test("function versions mock mirrors SUCCESS envelope with version array", () => {
-  const source = readSource("../src/mocks/getOntologyFunctionVersionsMock/getOntologyFunctionVersionsMock.ts");
-  assert.match(source, /export const getOntologyFunctionVersionsMock: ApiResponse<GetOntologyFunctionVersionsData>/);
-  assert.match(source, /code: 200/);
-  assert.match(source, /message: "SUCCESS"/);
-  assert.match(source, /success: true/);
-  assert.match(source, /data: \["1\.0\.0"\]/);
-});
-
 test("mockData routes cover function versions contract", () => {
   const routes = JSON.parse(readSource("../src/mockData/routes.json"));
   const versions = routes.find((item) => item.method === "GET" && item.path === "/ontology/function/versions");

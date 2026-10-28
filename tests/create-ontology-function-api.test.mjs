@@ -54,15 +54,6 @@ test("create ontology function api posts to ontology function endpoint", () => {
   assert.match(barrel, /from "\.\/functionApi"/);
 });
 
-test("create ontology function mock mirrors SUCCESS envelope with null data", () => {
-  const source = readSource("../src/mocks/createOntologyFunctionMock/createOntologyFunctionMock.ts");
-  assert.match(source, /export const createOntologyFunctionMock: ApiResponse<CreateOntologyFunctionData>/);
-  assert.match(source, /code: 200/);
-  assert.match(source, /message: "SUCCESS"/);
-  assert.match(source, /success: true/);
-  assert.match(source, /data: null/);
-});
-
 test("buildOntologyFunctionQueryConfig maps filters dataType and omits empty aggFunc", () => {
   const doc = parseBasicFilterConfig(
     JSON.stringify({

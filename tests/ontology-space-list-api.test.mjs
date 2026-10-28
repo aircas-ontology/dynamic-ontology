@@ -55,31 +55,6 @@ test("runtime domain config declares the ontology manage domain", () => {
   assert.match(runtimeConfigSource, /readonly ONTOLOGYMANAGE_URL: string;/);
 });
 
-test("page sample mock stays as OntologySpaceItem list for detail fallback", () => {
-  const pageMockSource = readSource("../src/mocks/ontologySpaceListMock/ontologySpaceListMock.ts");
-  assert.match(pageMockSource, /import type \{ ApiResponse, OntologySpaceItem \} from "@\/types";/);
-  assert.match(pageMockSource, /export const ontologySpaceListMock: ApiResponse<OntologySpaceItem\[\]> = \{/);
-  assert.match(pageMockSource, /success: true,/);
-  assert.equal((pageMockSource.match(/displayName: ".*对象空间"/g) || []).length, 6);
-  assert.doesNotMatch(pageMockSource, /OntologySpaceListData/);
-});
-
-test("api contract mock lives beside the page sample and mirrors the response sample", () => {
-  const apiMockSource = readSource("../src/mocks/ontologySpaceListMock/ontologySpaceListApiMock.ts");
-  assert.match(apiMockSource, /import type \{ ApiResponse, OntologySpaceListData \} from "@\/types";/);
-  assert.match(apiMockSource, /export const ontologySpaceListApiMock: ApiResponse<OntologySpaceListData> = \{/);
-  assert.match(apiMockSource, /code: 200,/);
-  assert.match(apiMockSource, /message: "SUCCESS",/);
-  assert.match(apiMockSource, /success: true,/);
-  assert.match(apiMockSource, /spaceId:\s*1/);
-  assert.match(apiMockSource, /ontologyCount:\s*2/);
-  assert.match(apiMockSource, /actionCount:\s*0/);
-  assert.match(apiMockSource, /propertyCount:\s*7/);
-  assert.match(apiMockSource, /linkCount:\s*0/);
-  assert.match(apiMockSource, /createTime:\s*"2026-09-21 10:47:32"/);
-  assert.match(apiMockSource, /updateTime:\s*"2026-09-21 10:47:32"/);
-});
-
 test("mapper converts contract list items into page ontology space items", async () => {
   const mapperUrl = new URL("../src/utils/mapOntologySpaceList.ts", import.meta.url);
   assert.equal(existsSync(mapperUrl), true, "missing mapper file");

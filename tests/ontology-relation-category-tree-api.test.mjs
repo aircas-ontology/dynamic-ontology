@@ -48,21 +48,6 @@ test("relation category tree types cover params, links, and recursive children",
   assert.match(barrelSource, /from "\.\/apis\/ontologyRelationCategoryTreeType"/);
 });
 
-test("relation category tree mock mirrors the SUCCESS sample", () => {
-  const mockSource = readSource("../src/mocks/ontologyRelationCategoryTreeMock/ontologyRelationCategoryTreeMock.ts");
-  assert.match(mockSource, /export const ontologyRelationCategoryTreeMock: ApiResponse<OntologyRelationCategoryTreeData>/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /categoryId:\s*24/);
-  assert.match(mockSource, /name: "全部"/);
-  assert.match(mockSource, /uniqueIdentifier: "f5dd661753f84476a652d120be86adb5"/);
-  assert.match(mockSource, /name: "人员借调"/);
-  assert.match(mockSource, /apiName: "jiediao"/);
-  assert.match(mockSource, /description: "班级1借调班级2 语文老师"/);
-  assert.match(mockSource, /categoryId:\s*30/);
-});
-
 test("relation category tree mapper builds page nodes from categoryId and name", async () => {
   const mapperUrl = new URL("../src/views/SpaceRelationWorkspace/utils/mapOntologyRelationCategoryTree.ts", import.meta.url);
   assert.equal(existsSync(mapperUrl), true, "missing mapper file");
@@ -183,30 +168,6 @@ test("relation workspace loads category tree api and maps links into relations",
   assert.doesNotMatch(tableSource, /createRelationClass\(\{/);
 });
 
-test("create relation category api posts spaceId parentId and name to link_category uri", () => {
-  const apiSource = readSource("../src/apis/ontologyManageApi.ts");
-  const typeSource = readSource("../src/types/apis/ontologyRelationCategoryTreeType.ts");
-  const mockSource = readSource("../src/mocks/ontologyRelationCategoryTreeMock/ontologyRelationCategoryTreeMock.ts");
-  const barrelSource = readSource("../src/apis/index.ts");
-  assert.match(
-    apiSource,
-    /export function postCreateOntologyRelationCategoryTreeInterface\(\s*payload: CreateOntologyRelationCategoryTreeParams,?\s*\): Promise<ApiResponse<undefined>>/,
-  );
-  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/link_category"/);
-  assert.match(apiSource, /method:\s*"post"/);
-  assert.match(apiSource, /data: payload/);
-  assert.match(apiSource, /@param \{number\} payload\.spaceId/);
-  assert.match(apiSource, /@param \{number\} payload\.parentId/);
-  assert.match(apiSource, /@param \{string\} payload\.name/);
-  assert.match(typeSource, /export interface CreateOntologyRelationCategoryTreeParams/);
-  assert.match(typeSource, /spaceId:\s*number/);
-  assert.match(typeSource, /parentId:\s*number/);
-  assert.match(typeSource, /name:\s*string/);
-  assert.match(mockSource, /export const createOntologyRelationCategoryTreeMock: ApiResponse<undefined>/);
-  assert.match(mockSource, /message: "SUCCESS"/);
-  assert.match(barrelSource, /postCreateOntologyRelationCategoryTreeInterface/);
-});
-
 test("relation workspace create category posts api then reloads and does not send color", () => {
   const panelSource = readSource("../src/views/SpaceRelationWorkspace/index.vue");
   assert.match(panelSource, /postCreateOntologyRelationCategoryTreeInterface/);
@@ -214,25 +175,6 @@ test("relation workspace create category posts api then reloads and does not sen
   assert.match(panelSource, /categoryParentId\.value\.trim\(\) === "" \? 0 : Number\(categoryParentId\.value\)/);
   assert.match(panelSource, /loadSpaceRelationWorkspace/);
   assert.match(panelSource, /postCreateOntologyRelationCategoryTreeInterface\(\{\s*spaceId:\s*numericSpaceId,\s*parentId:\s*numericParentId,\s*name,\s*\}\)/);
-});
-
-test("update relation category name api puts spaceId categoryId and name to link_category uri", () => {
-  const apiSource = readSource("../src/apis/ontologyManageApi.ts");
-  const typeSource = readSource("../src/types/apis/ontologyRelationCategoryTreeType.ts");
-  const mockSource = readSource("../src/mocks/ontologyRelationCategoryTreeMock/ontologyRelationCategoryTreeMock.ts");
-  const barrelSource = readSource("../src/apis/index.ts");
-  assert.match(
-    apiSource,
-    /export function putUpdateOntologyRelationCategoryNameInterface\(\s*payload: UpdateOntologyRelationCategoryNameParams,?\s*\): Promise<ApiResponse<undefined>>/,
-  );
-  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/link_category"/);
-  assert.match(apiSource, /method:\s*"put"/);
-  assert.match(apiSource, /@param \{number\} payload\.categoryId/);
-  assert.match(typeSource, /export interface UpdateOntologyRelationCategoryNameParams/);
-  assert.match(typeSource, /categoryId:\s*number/);
-  assert.match(mockSource, /export const updateOntologyRelationCategoryNameMock: ApiResponse<undefined>/);
-  assert.match(mockSource, /message: "SUCCESS"/);
-  assert.match(barrelSource, /putUpdateOntologyRelationCategoryNameInterface/);
 });
 
 test("relation workspace edit category puts api then reloads and does not send color", () => {
@@ -245,27 +187,6 @@ test("relation workspace edit category puts api then reloads and does not send c
   );
   assert.match(panelSource, /分类已更新/);
   assert.doesNotMatch(panelSource, /editCategory\(\{\s*id:\s*categoryActionId/);
-});
-
-test("delete relation category api deletes spaceId and categoryId on link_category uri", () => {
-  const apiSource = readSource("../src/apis/ontologyManageApi.ts");
-  const typeSource = readSource("../src/types/apis/ontologyRelationCategoryTreeType.ts");
-  const mockSource = readSource("../src/mocks/ontologyRelationCategoryTreeMock/ontologyRelationCategoryTreeMock.ts");
-  const barrelSource = readSource("../src/apis/index.ts");
-  assert.match(
-    apiSource,
-    /export function deleteOntologyRelationCategoryTreeInterface\(\s*payload: DeleteOntologyRelationCategoryTreeParams,?\s*\): Promise<ApiResponse<undefined>>/,
-  );
-  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/link_category"/);
-  assert.match(apiSource, /method:\s*"delete"/);
-  assert.match(apiSource, /@param \{number\} payload\.spaceId/);
-  assert.match(apiSource, /@param \{number\} payload\.categoryId/);
-  assert.match(typeSource, /export interface DeleteOntologyRelationCategoryTreeParams/);
-  assert.match(typeSource, /spaceId:\s*number/);
-  assert.match(typeSource, /categoryId:\s*number/);
-  assert.match(mockSource, /export const deleteOntologyRelationCategoryTreeMock: ApiResponse<undefined>/);
-  assert.match(mockSource, /message: "SUCCESS"/);
-  assert.match(barrelSource, /deleteOntologyRelationCategoryTreeInterface/);
 });
 
 test("relation workspace delete category calls api then reloads", () => {

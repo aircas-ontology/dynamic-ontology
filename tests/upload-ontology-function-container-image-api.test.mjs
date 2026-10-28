@@ -46,17 +46,6 @@ test("apis barrel exports the container image upload interface", () => {
   assert.match(barrel, /postUploadOntologyFunctionContainerImageInterface/);
 });
 
-test("upload ontology function container image mock mirrors SUCCESS sample with image data", () => {
-  const mockSource = readSource("../src/mocks/uploadOntologyFunctionContainerImageMock/uploadOntologyFunctionContainerImageMock.ts");
-  assert.match(mockSource, /export const uploadOntologyFunctionContainerImageMock: ApiResponse<UploadOntologyFunctionContainerImageData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /fileName:\s*["']go-httpbin\.tar["']/);
-  assert.match(mockSource, /path:\s*["']\/app\/container-images\//);
-  assert.match(mockSource, /repoTags:/);
-});
-
 test("mockData registers container image upload route with image data", () => {
   const routes = readSource("../src/mockData/routes.json");
   assert.match(routes, /\/ontology\/function\/container\/upload_image/);

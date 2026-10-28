@@ -76,27 +76,6 @@ test("apis barrel exports the container runtime list interface", () => {
   assert.match(barrel, /getOntologyFunctionContainerRuntimeListInterface/);
 });
 
-test("container runtime list mock mirrors SUCCESS sample item", () => {
-  const mockSource = readSource("../src/mocks/getOntologyFunctionContainerRuntimeListMock/getOntologyFunctionContainerRuntimeListMock.ts");
-  assert.match(mockSource, /export const getOntologyFunctionContainerRuntimeListMock: ApiResponse<GetOntologyFunctionContainerRuntimeListData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /containerKey:\s*["']e7b65c92b0a24e17bf42c7f0b8c5ed5b["']/);
-  assert.match(mockSource, /displayName:\s*["']rongqi["']/);
-  assert.match(mockSource, /phase:\s*["']CREATED["']/);
-  assert.match(mockSource, /phaseLabel:\s*["']已创建["']/);
-  assert.match(mockSource, /hostPort:\s*18080/);
-  assert.match(mockSource, /containerPort:\s*8080/);
-  assert.match(mockSource, /nodeIp:/);
-  assert.match(mockSource, /nodePort:/);
-  assert.match(mockSource, /imageAddress:\s*["']mccutchen\/go-httpbin:latest["']/);
-  assert.match(mockSource, /containerSource:\s*["']USER["']/);
-  assert.match(mockSource, /containerSource:\s*["']SYSTEM["']/);
-  assert.match(mockSource, /heartbeatStatus:\s*["']HEALTHY["']/);
-  assert.match(mockSource, /heartbeatLabel:\s*["']健康["']/);
-});
-
 test("function operator panel wires runtime config button and secondary panel", () => {
   const panelSource = readSource("../src/views/FunctionOperatorPanel/index.vue");
   const runtimePanelSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorContainerRuntimePanel.vue");

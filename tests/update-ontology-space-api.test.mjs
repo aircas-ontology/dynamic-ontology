@@ -44,13 +44,3 @@ test("apis barrel exports the update interface in dictionary order", () => {
     /export \{[\s\S]*?createOntologySpaceInterface,[\s\S]*?deleteOntologySpaceInterface,[\s\S]*?getExampleInterface,[\s\S]*?getOntologyCategoryTreeInterface,[\s\S]*?getOntologySpaceListInterface,[\s\S]*?postLoginInterface,[\s\S]*?updateOntologySpaceInterface[\s\S]*?\};/,
   );
 });
-
-test("update ontology space mock mirrors the response sample with success flag", () => {
-  const mockSource = readSource("../src/mocks/updateOntologySpaceMock/updateOntologySpaceMock.ts");
-  assert.match(mockSource, /import type \{ ApiResponse, UpdateOntologySpaceData \} from "@\/types";/);
-  assert.match(mockSource, /export const updateOntologySpaceMock: ApiResponse<UpdateOntologySpaceData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /data: \{\},/);
-});

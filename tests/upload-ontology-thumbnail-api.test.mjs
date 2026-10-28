@@ -35,12 +35,3 @@ test("apis barrel exports the thumbnail upload interface", () => {
   const barrel = readSource("../src/apis/index.ts");
   assert.match(barrel, /postUploadOntologyThumbnailInterface/);
 });
-
-test("upload ontology thumbnail mock mirrors the SUCCESS sample payload", () => {
-  const mockSource = readSource("../src/mocks/uploadOntologyThumbnailMock/uploadOntologyThumbnailMock.ts");
-  assert.match(mockSource, /export const uploadOntologyThumbnailMock: ApiResponse<UploadOntologyThumbnailData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /data: "http:\/\/172\.16\.18\.58:9000\/ptr\/1789961861795_img\.png"/);
-});

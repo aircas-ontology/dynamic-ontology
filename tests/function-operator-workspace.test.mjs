@@ -2,11 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-import {
-  createDefaultBasicParameterConfig,
-  createFunctionOperatorMock,
-  queryFunctionOperatorsMock,
-} from "../src/mocks/functionOperatorMock/functionOperatorMock.ts";
+import { createDefaultBasicParameterConfig, createFunctionOperatorMock, queryFunctionOperatorsMock } from "./fixtures/functionOperatorMock.ts";
 import { parseBasicFilterConfig, stringifyBasicFilterConfig } from "../src/utils/functionOperatorBasicFilter.ts";
 
 /**

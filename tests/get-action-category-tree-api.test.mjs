@@ -25,11 +25,3 @@ test("action category tree types and exports use the documented sample fields", 
   );
   assert.match(barrelSource, /ActionCategoryVO, GetActionCategoryTreeParams[\s\S]*getActionCategoryTreeType/);
 });
-
-test("action category tree mock follows the documented success response", () => {
-  const source = readSource("../src/mocks/getActionCategoryTreeMock/getActionCategoryTreeMock.ts");
-  assert.match(source, /getActionCategoryTreeMock: ApiResponse<ActionCategoryVO>/);
-  assert.match(source, /code: 200/);
-  assert.match(source, /name: "行为分类"/);
-  assert.match(source, /children: \[\]/);
-});
