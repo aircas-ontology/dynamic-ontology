@@ -273,7 +273,7 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(canvasComposable, /listReachableDownstreamNodeIds/);
   assert.match(canvasComposable, /openEndpointNodeEdit/);
   assert.match(canvasComposable, /outputParameters\s*=\s*\[\s*\{\s*id:\s*["']input["'],\s*name:\s*["']input["'],\s*type:\s*["']string["']/);
-  assert.match(canvasComposable, /inputParameters\s*=\s*\[\s*\{\s*id:\s*["']input["'],\s*name:\s*["']input["'],\s*type:\s*["']string["']/);
+  assert.match(canvasComposable, /inputParameters\s*=\s*\[\s*\{\s*id:\s*["']output["'],\s*name:\s*["']output["'],\s*type:\s*["']string["']/);
   assert.match(canvasComposable, /type:\s*["']COMPOSITE["']/);
   assert.match(canvasComposable, /compositeConfig/);
   assert.match(canvasComposable, /initialCompositeConfig/);

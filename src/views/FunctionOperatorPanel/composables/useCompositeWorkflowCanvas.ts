@@ -779,7 +779,7 @@ export function useCompositeWorkflowCanvas(options: {
       properties.outputParameters = [{ id: "input", name: "input", type: "string" }];
     }
     if (payload.nodeKind === "end") {
-      properties.inputParameters = [{ id: "input", name: "input", type: "string" }];
+      properties.inputParameters = [{ id: "output", name: "output", type: "string" }];
     }
     if (payload.nodeKind === "loop") {
       properties.loopConfig = createDefaultCompositeWorkflowLoopConfig();
@@ -1030,7 +1030,9 @@ export function useCompositeWorkflowCanvas(options: {
     }
     const pendingRefNode = nodes.find((node) => invalidatedUpstreamRefNodeIds.has(node.id) && hasEmptyCompositeWorkflowUpstreamRef(node));
     if (pendingRefNode) {
-      ElMessage.error(`${COMPOSITE_WORKFLOW_KIND_LABELS[pendingRefNode.kind] ?? pendingRefNode.displayName ?? pendingRefNode.id}的上游引用已失效，请选择新的上游输出后再保存`);
+      ElMessage.error(
+        `${COMPOSITE_WORKFLOW_KIND_LABELS[pendingRefNode.kind] ?? pendingRefNode.displayName ?? pendingRefNode.id}的上游引用已失效，请选择新的上游输出后再保存`,
+      );
       return null;
     }
     const compositeConfig = compileCompositeWorkflowToBackendConfig({

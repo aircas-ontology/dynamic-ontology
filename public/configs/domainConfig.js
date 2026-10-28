@@ -13,14 +13,14 @@ const DOMAIN_CONFIG = {
   //接口地址
   // LOGIN_URL: "http://172.16.29.255:37002", //登录
   // LOGIN_URL: "http://172.16.28.61:37002", //对象管理
-  LOGIN_URL: "http://localhost:37002", //对象管理（本地联调）
-  // LOGIN_URL: "http://172.16.18.58:37002", //对象管理
+  // LOGIN_URL: "http://localhost:37002", //对象管理（本地联调）
+  LOGIN_URL: "http://172.16.18.58:37002", //对象管理
   // LOGIN_URL: "http://172.16.36.247:37002", //登录
   // ONTOLOGYMANAGE_URL:"http://172.16.29.255:37002",//对象管理
   // ONTOLOGYMANAGE_URL: "http://172.16.29.255:37002", //对象管理
   // ONTOLOGYMANAGE_URL: "http://172.16.28.61:37002", //对象管理
-  ONTOLOGYMANAGE_URL: "http://localhost:37002", //对象管理（本地联调）
-  // ONTOLOGYMANAGE_URL: "http://172.16.18.58:37002", //对象管理
+  // ONTOLOGYMANAGE_URL: "http://localhost:37002", //对象管理（本地联调）
+  ONTOLOGYMANAGE_URL: "http://172.16.18.58:37002", //对象管理
   // ONTOLOGYMANAGE_URL: "http://172.16.36.247:37002", //对象管理
 
   AGENT_URL: "http://localhost:37003/agent", //Agent对话（本地联调）
