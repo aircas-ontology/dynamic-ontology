@@ -12,6 +12,7 @@ export const getOntologyFunctionDetailMock: ApiResponse<GetOntologyFunctionDetai
     model: "BASIC",
     type: "BASIC_QUERY",
     ontologySpaceId: 46,
+    version: "1.0.0",
     params: [
       {
         paramId: 25,
@@ -60,5 +61,64 @@ export const getOntologyFunctionDetailMock: ApiResponse<GetOntologyFunctionDetai
         ],
       },
     },
+  },
+};
+
+/** 脚本函数详情成功样例（与 getFunInfo 脚本示例一致）。 */
+export const getOntologyScriptFunctionDetailMock: ApiResponse<GetOntologyFunctionDetailData> = {
+  code: 200,
+  message: "SUCCESS",
+  success: true,
+  data: {
+    functionApi: "jbtest",
+    version: "1.0.1",
+    publishStatus: 0,
+    displayName: "脚本函数cesi",
+    description: "jbtest 1.0.1",
+    model: "OTHER",
+    type: "CUSTOMIZE",
+    language: "TYPESCRIPT",
+    ontologySpaceId: 1,
+    params: [
+      {
+        paramId: 1122,
+        paramName: "input",
+        paramType: "OBJECT",
+        category: "INPUT",
+        paramOrder: 1,
+        fields: [
+          {
+            paramName: "a",
+            paramType: "OBJECT",
+            category: "INPUT",
+            paramOrder: 1,
+            fields: [
+              { paramName: "aa", paramType: "OBJECT", category: "INPUT", paramOrder: 1 },
+              { paramName: "data", paramType: "STRING", category: "INPUT", paramOrder: 2 },
+            ],
+          },
+          { paramName: "b", paramType: "LIST", category: "INPUT", paramOrder: 2 },
+        ],
+      },
+      {
+        paramId: 1123,
+        paramName: "age",
+        paramType: "DOUBLE",
+        category: "INPUT",
+        paramOrder: 2,
+      },
+      {
+        paramId: 1124,
+        paramName: "Output",
+        paramType: "OBJECT",
+        category: "OUTPUT",
+        paramOrder: 1,
+        fields: [
+          { paramName: "id", paramType: "DOUBLE", category: "OUTPUT", paramOrder: 1 },
+          { paramName: "name", paramType: "STRING", category: "OUTPUT", paramOrder: 2 },
+        ],
+      },
+    ],
+    code: "interface User {\n  id: number;\n  name: string;\n}\n\ninterface Output {\n  id: number;\n  name1: string;\n}\n\nexport function handle(input: User): Output {\n    return {\n        id:input.id+1,\n        name1:input.name+'a',\n    }\n}\n",
   },
 };

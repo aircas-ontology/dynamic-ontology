@@ -9,6 +9,7 @@ import {
   opNeedsValue,
   parseBasicFilterConfig,
   stringifyBasicFilterConfig,
+  validateBasicFilterDocument,
 } from "../src/utils/functionOperatorBasicFilter.ts";
 import { BASIC_FILTER_OP_OPTIONS } from "../src/types/pages/ontologyFunctionOperatorBasicFilterType.ts";
 
@@ -79,9 +80,9 @@ test("buildOntologyFunctionQueryConfig maps IN and NOT_BETWEEN to values", () =>
     }),
   );
   const queryConfig = buildOntologyFunctionQueryConfig(doc, "");
-  assert.deepEqual(queryConfig.filters.children[0]?.filter?.values, ["1", "2"]);
-  assert.equal("value" in (queryConfig.filters.children[0]?.filter ?? {}), false);
-  assert.deepEqual(queryConfig.filters.children[1]?.filter?.values, [0, 100]);
+  assert.deepEqual(queryConfig.filters?.children[0]?.filter?.values, ["1", "2"]);
+  assert.equal("value" in (queryConfig.filters?.children[0]?.filter ?? {}), false);
+  assert.deepEqual(queryConfig.filters?.children[1]?.filter?.values, [0, 100]);
 });
 
 test("basic filter editor wires list and range helpers", () => {
@@ -90,4 +91,51 @@ test("basic filter editor wires list and range helpers", () => {
   assert.match(source, /opNeedsRange/);
   assert.match(source, /updateFilterList/);
   assert.match(source, /逗号分隔/);
+  assert.doesNotMatch(source, /group\.children\.length <= 1/);
+  assert.doesNotMatch(source, /if \(props\.group\.children\.length <= 1\)/);
+});
+
+test("parseBasicFilterConfig keeps empty children without padding a default filter", () => {
+  const doc = parseBasicFilterConfig(JSON.stringify({ logic: "AND", children: [] }));
+  assert.equal(doc.logic, "AND");
+  assert.equal(doc.children.length, 0);
+  assert.equal(validateBasicFilterDocument(doc), null);
+});
+
+test("validateBasicFilterDocument requires propertyApiName and values when filters exist", () => {
+  assert.match(
+    validateBasicFilterDocument({
+      logic: "AND",
+      children: [{ type: "FILTER", filter: { op: "EQ", propertyApiName: "", valueType: "string", value: "x" } }],
+    }),
+    /变量名/,
+  );
+  assert.match(
+    validateBasicFilterDocument({
+      logic: "AND",
+      children: [{ type: "FILTER", filter: { op: "EQ", propertyApiName: "name", valueType: "string", value: "  " } }],
+    }),
+    /值/,
+  );
+  assert.equal(
+    validateBasicFilterDocument({
+      logic: "AND",
+      children: [{ type: "FILTER", filter: { op: "IS_NULL", propertyApiName: "name", valueType: "string" } }],
+    }),
+    null,
+  );
+  assert.equal(
+    validateBasicFilterDocument({
+      logic: "AND",
+      children: [{ type: "FILTER", filter: { op: "EQ", propertyApiName: "name", valueType: "string", value: "ok" } }],
+    }),
+    null,
+  );
+  assert.match(
+    validateBasicFilterDocument({
+      logic: "AND",
+      children: [{ type: "GROUP", group: { logic: "OR", children: [] } }],
+    }),
+    /分组/,
+  );
 });

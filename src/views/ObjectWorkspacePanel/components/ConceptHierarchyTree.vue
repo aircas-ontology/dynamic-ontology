@@ -9,7 +9,7 @@
       ></template>
     </el-input>
     <div v-if="tree.length === 0" class="concept-hierarchy__empty">
-      <el-button type="primary" @click="emit('create')">添加分类树</el-button>
+      <el-button type="primary" data-onboarding="object-tree-create" @click="emit('create')">添加分类树</el-button>
     </div>
     <el-tree
       v-else
@@ -43,7 +43,13 @@
             </span>
             <span class="concept-hierarchy__create-child-wrap" @click.stop>
               <el-tooltip content="新建子分类" placement="top" :show-after="200">
-                <button type="button" class="concept-hierarchy__create-child" aria-label="新建子分类" @click="openChildCategoryDialog(data)">
+                <button
+                  type="button"
+                  class="concept-hierarchy__create-child"
+                  data-onboarding="object-tree-create"
+                  aria-label="新建子分类"
+                  @click="openChildCategoryDialog(data)"
+                >
                   <el-icon><Plus /></el-icon>
                 </button>
               </el-tooltip>
@@ -169,17 +175,21 @@ const treeNodes = computed<ConceptTreeNode[]>(() => {
   return keywordValue ? filterMixedTree(raw, keywordValue) : raw;
 });
 
-/** 分类节点默认展开；对象节点不需要展开。 */
+/** 仅展开存在子分类的分类节点；分类下只有对象内容时保持收起。 */
 const defaultExpandedKeys = computed<string[]>(() => collectCategoryIds(treeNodes.value));
 
-/** @description 递归收集所有分类节点的 id，供 el-tree 默认展开使用。 */
+/**
+ * @description 递归收集存在子分类的分类节点 id，供 el-tree 默认展开使用。
+ * @param nodes 混合树节点。
+ * @returns 需要默认展开的分类 id 列表。
+ */
 function collectCategoryIds(nodes: ConceptTreeNode[]): string[] {
   const ids: string[] = [];
   for (const node of nodes) {
-    if (node.kind === "category") {
-      ids.push(node.id);
-      ids.push(...collectCategoryIds(node.children));
-    }
+    if (node.kind !== "category") continue;
+    const hasChildCategory = node.children.some((child) => child.kind === "category");
+    if (hasChildCategory) ids.push(node.id);
+    ids.push(...collectCategoryIds(node.children));
   }
   return ids;
 }
@@ -401,7 +411,8 @@ function openDeleteCategoryDialog(value: unknown) {
 }
 
 .concept-hierarchy__tree :deep(.el-tree-node__content:hover) .concept-hierarchy__create-child-wrap,
-.concept-hierarchy__tree :deep(.el-tree-node__content:focus-within) .concept-hierarchy__create-child-wrap {
+.concept-hierarchy__tree :deep(.el-tree-node__content:focus-within) .concept-hierarchy__create-child-wrap,
+.concept-hierarchy__create-child-wrap:has(.onboarding-guide__target-revealed) {
   opacity: 1;
   pointer-events: auto;
 }

@@ -1,6 +1,7 @@
 import { computed, reactive, ref, type Ref } from "vue";
 import { ElMessage, ElMessageBox, type FormRules } from "element-plus";
 import { useRoute } from "vue-router";
+import { validateAttributeDefaultValue } from "../utils/validateAttributeDefaultValue";
 import { createOntologyPropertyInterface, deleteOntologyPropertyInterface, updateOntologyPropertyInterface } from "@/apis";
 import type {
   CreateOntologyPropertyParams,
@@ -38,29 +39,7 @@ export function useAttributePropertyList(options: {
 }) {
   const { selectedCategoryId, getCategories, onPropertyChanged } = options;
   const route = useRoute();
-  const dataTypes = [
-    "Boolean",
-    "Int",
-    "Long",
-    "Float",
-    "Short",
-    "Byte",
-    "Double",
-    "Decimal",
-    "String",
-    "Date",
-    "Array",
-    "Map",
-    "Vector",
-    "Timestamp",
-    "MediaReference",
-    "TimeSeries",
-    "Attachment",
-    "Geohash",
-    "Geoshape",
-    "Cipher",
-    "Ontology",
-  ];
+  const dataTypes = ["Boolean", "Int", "Long", "Float", "Short", "Byte", "Double", "Decimal", "String", "Date", "Array", "Timestamp"];
   const storageGroupPattern = /^[A-Za-z0-9_]+$/;
   const attributes = ref<OntologyAttributeItem[]>([]);
   const attributeLoading = ref(false);
@@ -70,6 +49,8 @@ export function useAttributePropertyList(options: {
   const attributeDialogVisible = ref(false);
   const savingAttribute = ref(false);
   const editingAttributeId = ref<string | null>(null);
+  const datasourceLocked = ref(false);
+  let originalEditParams: UpdateOntologyPropertyParams | null = null;
   const draft = reactive<OntologyAttributeDraft>({
     displayName: "",
     apiName: "",
@@ -82,8 +63,17 @@ export function useAttributePropertyList(options: {
     isNameKey: false,
   });
   const attributeRules: FormRules<OntologyAttributeDraft> = {
-    displayName: [{ required: true, message: "请输入属性名称", trigger: "blur" }],
-    apiName: [{ required: true, message: "请输入 API 名称", trigger: "blur" }],
+    displayName: [{ required: true, whitespace: true, message: "请输入属性名称", trigger: "blur" }],
+    apiName: [{ required: true, whitespace: true, message: "请输入 API 名称", trigger: "blur" }],
+    defaultValue: [
+      {
+        validator: (_rule, value: string, callback) => {
+          const error = datasourceLocked.value ? "" : validateAttributeDefaultValue(draft.dataType, value);
+          callback(error ? new Error(error) : undefined);
+        },
+        trigger: "blur",
+      },
+    ],
     dataType: [{ required: true, message: "请选择数据类型", trigger: "change" }],
     categoryId: [{ required: true, message: "请选择属性分类", trigger: "change" }],
     storageGroup: [
@@ -98,7 +88,7 @@ export function useAttributePropertyList(options: {
   const categoryOptions = computed(() => flattenCategoryOptions(getCategories()));
 
   /**
-   * @description 从当前本体对象的全部属性中提取非空存储分组并去重，同时保留新增属性默认使用的 main 选项。
+   * @description 从当前对象的全部属性中提取非空存储分组并去重，同时保留新增属性默认使用的 main 选项。
    * @returns 存储分组下拉选项
    */
   function getStorageGroupOptions(): OntologyAttributeStorageGroupOption[] {
@@ -118,7 +108,7 @@ export function useAttributePropertyList(options: {
   async function loadAttributesForSelection() {
     const ontologyUniqueIdentifier = String(route.params.objectId || "").trim();
     if (!ontologyUniqueIdentifier) {
-      attributeError.value = "缺少本体对象标识，无法加载属性。";
+      attributeError.value = "缺少对象标识，无法加载属性。";
       return;
     }
     attributeLoading.value = true;
@@ -150,10 +140,10 @@ export function useAttributePropertyList(options: {
       schemaName: "",
       datasourceId: "",
       datasourceColumnName: "",
-      dataType: draft.dataType,
+      dataType: draft.isPrimary ? "Int" : draft.dataType,
       description: draft.description,
       displayName: draft.displayName,
-      apiName: draft.apiName,
+      apiName: draft.isPrimary ? "id" : draft.apiName,
       isPrimaryKey: draft.isPrimary,
       isTitleKey: draft.isNameKey,
       defaultValue: draft.defaultValue,
@@ -164,12 +154,15 @@ export function useAttributePropertyList(options: {
 
   /** @description 组装编辑属性接口请求参数，仅提交页面字段和唯一标识。 */
   function buildUpdatePropertyParams(uniqueIdentifier: string): UpdateOntologyPropertyParams {
+    if (datasourceLocked.value && originalEditParams) {
+      return { ...originalEditParams, displayName: draft.displayName.trim(), description: draft.description };
+    }
     const categoryId = getDraftCategoryId();
     return {
       uniqueIdentifier,
       displayName: draft.displayName,
-      apiName: draft.apiName,
-      dataType: draft.dataType,
+      apiName: draft.isPrimary ? "id" : draft.apiName,
+      dataType: draft.isPrimary ? "Int" : draft.dataType,
       description: draft.description,
       isTitleKey: draft.isNameKey,
       isPrimaryKey: draft.isPrimary,
@@ -197,14 +190,21 @@ export function useAttributePropertyList(options: {
 
   /** @description 打开新增属性表单。 */
   function openCreateAttribute() {
+    originalEditParams = null;
     editingAttributeId.value = null;
+    datasourceLocked.value = false;
     resetDraft();
     attributeDialogVisible.value = true;
   }
 
-  /** @description 打开属性编辑表单并回显当前数据。 */
-  function openEditAttribute(value: unknown) {
+  /**
+   * @description 打开属性编辑表单并回显当前数据；已绑定数据源时锁定属性名称和描述以外的字段。
+   * @param value 待编辑的属性列表项。
+   * @param datasourceLockedOverride 数据源绑定锁定状态，默认按列表项的绑定字段判断。
+   */
+  function openEditAttribute(value: unknown, datasourceLockedOverride = false) {
     if (!isAttributeItem(value)) return;
+    datasourceLocked.value = Boolean(datasourceLockedOverride || (value.datasourceId.trim() && value.datasourceColumnName.trim()));
     editingAttributeId.value = value.uniqueIdentifier;
     Object.assign(draft, {
       displayName: value.displayName,
@@ -218,15 +218,29 @@ export function useAttributePropertyList(options: {
       isNameKey: value.isNameKey,
     });
     attributeCommandError.value = "";
+    originalEditParams = null;
+    originalEditParams = buildUpdatePropertyParams(value.uniqueIdentifier);
     attributeDialogVisible.value = true;
   }
 
   /** @description 保存新增或编辑后的属性草稿。 */
   async function saveAttributeDraft() {
     if (savingAttribute.value) return;
+    const validationError =
+      !draft.displayName.trim() || !draft.apiName.trim()
+        ? "属性名称和 API 不能为空白"
+        : datasourceLocked.value
+          ? ""
+          : validateAttributeDefaultValue(draft.dataType, draft.defaultValue);
+    if (validationError) {
+      attributeCommandError.value = validationError;
+      return;
+    }
+    draft.displayName = draft.displayName.trim();
+    draft.apiName = draft.apiName.trim();
     const ontologyIdentifier = String(route.params.objectId || "").trim();
     if (!ontologyIdentifier) {
-      attributeCommandError.value = "缺少本体对象标识，无法保存属性。";
+      attributeCommandError.value = "缺少对象标识，无法保存属性。";
       return;
     }
     if (draft.isPrimary && rejectDuplicateAttributeKey("primary")) return;
@@ -295,6 +309,8 @@ export function useAttributePropertyList(options: {
     }
     if (rejectDuplicateAttributeKey("primary")) return;
     draft.isPrimary = true;
+    draft.apiName = "id";
+    draft.dataType = "Int";
   }
 
   /**
@@ -321,6 +337,7 @@ export function useAttributePropertyList(options: {
     attributeDialogVisible,
     savingAttribute,
     editingAttributeId,
+    datasourceLocked,
     draft,
     attributeRules,
     visibleAttributes,

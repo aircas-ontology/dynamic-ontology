@@ -1,7 +1,7 @@
 /** 查询空间关系分类体系树请求参数。 */
 export interface OntologyRelationCategoryTreeParams {
   spaceId: string;
-  /** 本体对象唯一标识；对象详情关系页传入时仅返回该本体关联的关系。 */
+  /** 按源对象唯一标识过滤，可选；子空间创建页按选中对象查询父空间关系时使用。 */
   ontologyUniqueIdentifierFrom?: string;
 }
 

@@ -10,7 +10,7 @@ const readSource = (relativePath) => {
 
 test("ontology space list api issues a GET to the manage domain space uri with the typed response contract", () => {
   const apiSource = readSource("../src/apis/ontologyManageApi.ts");
-  assert.match(apiSource, /export function getOntologySpaceListInterface\(\): Promise<ApiResponse<OntologySpaceListData>>/);
+  assert.match(apiSource, /export function getOntologySpaceListInterface\(params: \{ type: number \}\): Promise<ApiResponse<OntologySpaceListData>>/);
   assert.match(apiSource, /request<OntologySpaceListData>\(\{/);
   assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/space"/);
   assert.match(apiSource, /method:\s*"get"/);
@@ -60,7 +60,7 @@ test("page sample mock stays as OntologySpaceItem list for detail fallback", () 
   assert.match(pageMockSource, /import type \{ ApiResponse, OntologySpaceItem \} from "@\/types";/);
   assert.match(pageMockSource, /export const ontologySpaceListMock: ApiResponse<OntologySpaceItem\[\]> = \{/);
   assert.match(pageMockSource, /success: true,/);
-  assert.equal((pageMockSource.match(/displayName: ".*本体空间"/g) || []).length, 6);
+  assert.equal((pageMockSource.match(/displayName: ".*对象空间"/g) || []).length, 6);
   assert.doesNotMatch(pageMockSource, /OntologySpaceListData/);
 });
 
@@ -114,12 +114,12 @@ test("space management page maps successful list responses and surfaces errors w
   const managementSource = readSource("../src/views/OntologySpaceManagement/composables/useSpaceManagement.ts");
   assert.match(managementSource, /import \{ getOntologyOverviewCountInterface, getOntologySpaceListInterface \} from "@\/apis";/);
   assert.match(managementSource, /mapOntologySpaceList/);
-  assert.match(managementSource, /getOntologySpaceListInterface\(\)/);
+  assert.match(managementSource, /getOntologySpaceListInterface\(\{ type: 0 \}\)/);
   assert.match(managementSource, /response\.code === 200/);
   assert.doesNotMatch(managementSource, /ontologySpaceListMock/);
   assert.doesNotMatch(managementSource, /ontologySpaceManagementMock/);
   assert.match(managementSource, /status\.value = "error"/);
-  assert.match(managementSource, /本体空间加载失败/);
+  assert.match(managementSource, /对象空间加载失败/);
 });
 
 test("space workspace detail resolves the current space from the list api", () => {
@@ -127,7 +127,7 @@ test("space workspace detail resolves the current space from the list api", () =
   assert.match(workspaceSource, /import \{ getOntologySpaceListInterface \} from "@\/apis";/);
   assert.match(workspaceSource, /import \{ mapOntologySpaceList \} from "@\/utils\/mapOntologySpaceList";/);
   assert.match(workspaceSource, /findSpaceById/);
-  assert.match(workspaceSource, /getOntologySpaceListInterface\(\)/);
+  assert.match(workspaceSource, /getOntologySpaceListInterface\(\{ type: 0 \}\)/);
   assert.match(workspaceSource, /response\.code === 200/);
   assert.doesNotMatch(workspaceSource, /ontologySpaceListMock/);
   assert.doesNotMatch(workspaceSource, /ontologySpaceManagementMock/);

@@ -62,8 +62,8 @@ test("section toolbar uses name sort select and card-then-table view toggle", ()
   assert.match(source, /h2[\s\S]*font-weight: 700/);
   assert.match(source, /h2[\s\S]*color: var\(--aircas-color-text-primary\)/);
   assert.match(source, /p[\s\S]*color: var\(--aircas-color-text-secondary\)/);
-  assert.match(source, /以表格视图管理全部本体空间/);
-  assert.match(source, /以卡片视图管理全部本体空间/);
+  assert.match(source, /以表格视图管理全部对象空间/);
+  assert.match(source, /以卡片视图管理全部对象空间/);
   assert.match(source, /section-toolbar__view-icon/);
   assert.match(source, /fill: none/);
   assert.match(source, /stroke: currentColor/);
@@ -113,6 +113,6 @@ test("space row actions share outlined primary buttons", () => {
   assert.equal((source.match(/type="primary" plain/g) || []).length, 3);
   assert.match(source, /:icon="Right"/);
   assert.match(source, /:icon="Edit"/);
-  assert.match(source, />\s*更多\s*</);
+  assert.match(source, />更多/);
   assert.doesNotMatch(source, /aircas-button--edit/);
 });

@@ -1,6 +1,7 @@
 /** 空间函数算子页面类型（本阶段以基础函数为主） */
 
-import type { CreateOntologyFunctionAggFunc } from "../apis/createOntologyFunctionType";
+import type { CreateOntologyFunctionAggFunc, CreateOntologyFunctionApiConfig } from "../apis/createOntologyFunctionType";
+import type { OntologyCompositeConfig } from "../apis/ontologyCompositeConfigType";
 
 export type FunctionOperatorType = "code" | "api" | "docker" | "composite" | "basic";
 export type FunctionOperatorBasicAction = "create" | "update" | "delete";
@@ -12,6 +13,8 @@ export type FunctionOperatorSortOrder = "asc" | "desc";
 export type FunctionOperatorTestStatus = "untested" | "passed" | "failed";
 export type FunctionOperatorViewMode = "card" | "table";
 export type FunctionOperatorAggFunc = CreateOntologyFunctionAggFunc;
+/** 脚本函数 Web-IDE 可选语言。 */
+export type FunctionOperatorScriptLanguage = "typescript" | "groovy" | "python" | "java";
 
 export interface FunctionOperatorParameterField {
   id: string;
@@ -19,6 +22,8 @@ export interface FunctionOperatorParameterField {
   type: FunctionOperatorParameterType;
   required: boolean;
   description: string;
+  /** 接口原始 paramType，用于参数树展示。 */
+  apiParamType?: string;
   itemFields?: FunctionOperatorParameterField[];
 }
 
@@ -28,6 +33,8 @@ export interface FunctionOperatorParameter {
   type: FunctionOperatorParameterType;
   required: boolean;
   description: string;
+  /** 接口原始 paramType，用于参数树展示。 */
+  apiParamType?: string;
   itemFields?: FunctionOperatorParameterField[];
 }
 
@@ -52,12 +59,21 @@ export interface FunctionOperatorBasicDefinition {
   objectName?: string;
 }
 
-/** 非基础函数占位定义（本阶段不实现配置 UI）。 */
-export interface FunctionOperatorPlaceholderDefinition {
-  kind: Exclude<FunctionOperatorType, "basic">;
+/** 脚本函数定义（编辑 / 基于已有创建回显与 IDE 草稿）。 */
+export interface FunctionOperatorCodeDefinition {
+  kind: "code";
+  /** 脚本语言。 */
+  language: FunctionOperatorScriptLanguage;
+  /** 脚本源码，对应详情 data.code。 */
+  code: string;
 }
 
-export type FunctionOperatorDefinition = FunctionOperatorBasicDefinition | FunctionOperatorPlaceholderDefinition;
+/** 非基础、非脚本函数占位定义（本阶段不实现配置 UI）。 */
+export interface FunctionOperatorPlaceholderDefinition {
+  kind: Exclude<FunctionOperatorType, "basic" | "code">;
+}
+
+export type FunctionOperatorDefinition = FunctionOperatorBasicDefinition | FunctionOperatorCodeDefinition | FunctionOperatorPlaceholderDefinition;
 
 export interface FunctionOperator {
   id: string;
@@ -72,6 +88,8 @@ export interface FunctionOperator {
   version: string;
   description: string;
   createdBy: string;
+  /** 创建时间（列表 createTime 格式化后）。 */
+  createdAt: string;
   updatedAt: string;
   status: FunctionOperatorStatus;
   category: string;
@@ -89,6 +107,14 @@ export interface FunctionOperator {
 
 export type FunctionOperatorDraft = Omit<FunctionOperator, "id" | "updatedAt" | "versions"> & {
   id?: string;
+  /** 外部 API 详情中的 apiConfig，用于编辑回显。 */
+  externalApiConfig?: CreateOntologyFunctionApiConfig;
+  /** 函数编排详情中的 compositeConfig，用于画布回显。 */
+  compositeConfig?: OntologyCompositeConfig;
+  /** 新建时所选源版本；非空则创建请求 basedOnOldVersion 为 true。 */
+  sourceVersion?: string;
+  /** 限流配置模板 ID；仅创建提交，编辑只读回显。 */
+  rateLimitTemplateId?: number;
 };
 
 export interface FunctionOperatorQuery {
@@ -123,9 +149,19 @@ export interface FunctionOperatorTestResult {
 export const FUNCTION_OPERATOR_TYPE_OPTIONS: ReadonlyArray<{ value: FunctionOperatorType; label: string; description: string }> = [
   { value: "basic", label: "基础函数", description: "配置基础参数的轻量函数" },
   { value: "code", label: "脚本函数", description: "通过脚本编写自定义函数逻辑" },
-  { value: "api", label: "外部 API 函数", description: "本阶段暂未开放" },
-  { value: "docker", label: "容器算子函数", description: "本阶段暂未开放" },
+  { value: "api", label: "外部 API 函数", description: "调用外部 HTTP 接口" },
+  { value: "docker", label: "容器算子函数", description: "部署容器镜像并绑定接口" },
   { value: "composite", label: "函数编排", description: "通过编排多个函数构建复杂流程" },
+];
+
+export const FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS: ReadonlyArray<{
+  value: FunctionOperatorScriptLanguage;
+  label: string;
+}> = [
+  { value: "typescript", label: "TypeScript" },
+  { value: "groovy", label: "Groovy" },
+  { value: "python", label: "Python" },
+  { value: "java", label: "Java" },
 ];
 
 export const FUNCTION_OPERATOR_AGG_FUNC_OPTIONS: ReadonlyArray<{ value: FunctionOperatorAggFunc; label: string }> = [

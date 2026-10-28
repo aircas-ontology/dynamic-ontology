@@ -1,0 +1,10 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": {
+    "fileName": "httpbin.json",
+    "path": "/app/interface-docs/2beea9a6-4fc6-496e-a005-e8b9697b68c1-httpbin.json",
+    "format": "openapi3"
+  }
+}

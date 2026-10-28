@@ -1,7 +1,17 @@
 <template>
   <div class="ontology-object-detail">
+    <button
+      :class="{ 'is-embedded': isEmbedded }"
+      class="ontology-object-detail__help"
+      type="button"
+      aria-label="打开新手引导"
+      title="新手引导"
+      @click="openOnboardingGuide()"
+    >
+      <el-icon><QuestionFilled /></el-icon>
+    </button>
     <div class="ontology-object-detail__layout">
-      <ObjectDetailTabs :active-tab="activeTab" :available-tabs="availableTabs" :object-name="objectName" :counts="tabCounts" @update:active-tab="openTab" />
+      <ObjectDetailTabs :active-tab="activeTab" :available-tabs="availableTabs" :counts="tabCounts" @update:active-tab="openTab" />
       <div class="ontology-object-detail__content">
         <router-view v-slot="{ Component, route: childRoute }">
           <component
@@ -9,38 +19,48 @@
             :is="Component as any"
             :key="`${String(childRoute.params.objectId)}-${String(childRoute.name)}`"
             v-bind="detailChildProps"
-            v-on="overviewListeners"
           />
         </router-view>
       </div>
     </div>
+    <OnboardingGuideOverlay v-model="guideVisible" :steps="onboardingGuideSteps" :start-id="guideStartId" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import { QuestionFilled } from "@element-plus/icons-vue";
+import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
+import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
 import type { OntologyObjectDetailTab } from "@/types";
+import { ONBOARDING_GUIDE_ENTRY_IDS, ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
 import ObjectDetailTabs from "./components/ObjectDetailTabs.vue";
 import { useObjectDetailWorkspace } from "./composables/useObjectDetailWorkspace";
 import { useObjectResourceStatistic } from "./composables/useObjectResourceStatistic";
 import { routeNameForObjectDetailTab } from "./utils/objectDetailTabs";
 
 const router = useRouter();
-const { activeTab, availableTabs, objectName, objectId, spaceId, spaceName } = useObjectDetailWorkspace();
-const { counts: objectCounts, loading: statisticLoading, error: statisticError, loadObjectResourceStatistic } = useObjectResourceStatistic(objectId);
-
-/** @description 向当前子页面传递统计计数；对象概览同时传递加载和错误状态。 */
-const detailChildProps = computed(() => {
-  if (activeTab.value !== "object") return { counts: objectCounts.value };
-  return { counts: objectCounts.value, loading: statisticLoading.value, error: statisticError.value };
+const route = useRoute();
+const isEmbedded = computed(() => typeof route.query.userName === "string" && route.query.userName.trim().length > 0);
+const { activeTab, availableTabs, objectName, objectId, spaceId, spaceName, spaceType } = useObjectDetailWorkspace();
+const { counts: objectCounts } = useObjectResourceStatistic(objectId);
+const onboardingGuideSteps = ONBOARDING_GUIDE_STEPS;
+const {
+  visible: guideVisible,
+  startId: guideStartId,
+  openOnboardingGuide,
+} = useOnboardingGuide({
+  steps: onboardingGuideSteps,
+  page: "object-detail",
+  entryStepId: ONBOARDING_GUIDE_ENTRY_IDS["object-detail"],
 });
 
-/** @description 仅在对象概览页把重试交给统计加载。 */
-const overviewListeners = computed(() => (activeTab.value === "object" ? { retry: loadObjectResourceStatistic } : {}));
+/** @description 向当前子页面传递统计计数。 */
+const detailChildProps = computed(() => ({ counts: objectCounts.value }));
 
-/** Tab 徽标计数：属性/关系/行为，对象 Tab 不显示计数。 */
-const tabCounts = computed<Partial<Record<Exclude<OntologyObjectDetailTab, "object">, number>>>(() => ({
+/** Tab 徽标计数：属性/关系/行为。 */
+const tabCounts = computed<Partial<Record<OntologyObjectDetailTab, number>>>(() => ({
   attribute: objectCounts.value.property,
   relation: objectCounts.value.relation,
   behavior: objectCounts.value.behavior,
@@ -55,6 +75,8 @@ function openTab(tab: OntologyObjectDetailTab) {
   const query: Record<string, string> = {};
   if (spaceId.value) query.spaceId = spaceId.value;
   if (spaceName.value) query.spaceName = spaceName.value;
+  query.spaceType = spaceType.value;
+  if (route.query.from === "theme-space-management") query.from = "theme-space-management";
   if (objectName.value && !objectName.value.startsWith("对象 ")) query.objectName = objectName.value;
   void router.push({
     name: routeNameForObjectDetailTab(tab),
@@ -88,6 +110,31 @@ function openTab(tab: OntologyObjectDetailTab) {
     auto,
     auto,
     auto;
+}
+
+.ontology-object-detail__help {
+  position: fixed;
+  top: 58px;
+  right: 18px;
+  z-index: 4;
+  display: inline-flex;
+  padding: 6px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 6px;
+  color: var(--aircas-color-text-secondary);
+  background: var(--aircas-color-panel-background);
+  cursor: pointer;
+}
+
+.ontology-object-detail__help.is-embedded {
+  top: 8px;
+}
+.ontology-object-detail__help:hover {
+  color: var(--aircas-color-primary);
+}
+.ontology-object-detail__help:focus-visible {
+  outline: 2px solid var(--aircas-color-primary);
+  outline-offset: 2px;
 }
 
 .ontology-object-detail__layout {

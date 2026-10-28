@@ -50,11 +50,11 @@ test("generateUuidV4 fails when getRandomValues is unavailable", () => {
 test("buildStreamAgentChatParams omits missing datasource and space", () => {
   assert.deepEqual(
     buildStreamAgentChatParams({
-      message: "  平台上有哪些本体？  ",
+      message: "  平台上有哪些对象？  ",
       sessionId: "550e8400-e29b-41d4-a716-446655440000",
     }),
     {
-      message: "平台上有哪些本体？",
+      message: "平台上有哪些对象？",
       sessionId: "550e8400-e29b-41d4-a716-446655440000",
     },
   );
@@ -89,18 +89,18 @@ test("buildStreamAgentChatParams omits missing datasource and space", () => {
 test("applyAssistantChatEventToMessages folds process events and appends content", () => {
   const assistantId = "assistant-1";
   const start = [
-    { id: "user-1", role: "user", content: "平台上有哪些本体？" },
+    { id: "user-1", role: "user", content: "平台上有哪些对象？" },
     { id: assistantId, role: "assistant", content: "", processItems: [] },
   ];
 
   const afterThinking = applyAssistantChatEventToMessages(start, assistantId, {
     type: "thinking",
-    content: "正在检索平台本体列表",
+    content: "正在检索平台对象列表",
   });
   const afterTool = applyAssistantChatEventToMessages(afterThinking, assistantId, {
     type: "tool_call",
     tool: "searchDatasources",
-    args: '{"keyword":"本体"}',
+    args: '{"keyword":"对象"}',
   });
   const afterResult = applyAssistantChatEventToMessages(afterTool, assistantId, {
     type: "tool_result",
@@ -109,27 +109,27 @@ test("applyAssistantChatEventToMessages folds process events and appends content
   });
   const afterContent = applyAssistantChatEventToMessages(afterResult, assistantId, {
     type: "content",
-    content: "平台当前有以下本体：",
+    content: "平台当前有以下对象：",
   });
   const afterSelection = applyAssistantChatEventToMessages(afterContent, assistantId, {
     type: "selection_request",
     scenario: "space_select",
-    title: "请选择目标本体空间",
+    title: "请选择目标对象空间",
     multiSelect: false,
     options: [{ id: "3", label: "PG 主库" }],
   });
 
   const assistant = afterSelection[1];
   assert.equal(assistant.role, "assistant");
-  assert.equal(assistant.content, "平台当前有以下本体：");
+  assert.equal(assistant.content, "平台当前有以下对象：");
   assert.deepEqual(assistant.processItems, [
-    { kind: "thinking", text: "正在检索平台本体列表" },
-    { kind: "tool_call", text: 'searchDatasources {"keyword":"本体"}' },
+    { kind: "thinking", text: "正在检索平台对象列表" },
+    { kind: "tool_call", text: 'searchDatasources {"keyword":"对象"}' },
     { kind: "tool_result", text: "searchDatasources 找到 2 个数据源" },
   ]);
   assert.deepEqual(assistant.selection, {
     scenario: "space_select",
-    title: "请选择目标本体空间",
+    title: "请选择目标对象空间",
     multiSelect: false,
     options: [{ id: "3", label: "PG 主库" }],
   });
@@ -213,7 +213,7 @@ test("mock agent stream returns typed SSE events", async () => {
   const response = await fetch(`http://127.0.0.1:${address.port}/agent/chat/stream`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ message: "平台上有哪些本体？", sessionId: "session-1" }),
+    body: JSON.stringify({ message: "平台上有哪些对象？", sessionId: "session-1" }),
   });
   const body = await response.text();
   assert.equal(response.status, 200);
@@ -250,18 +250,18 @@ test("toggleAssistantSelectionIds supports single and multi checkbox selection",
   assert.deepEqual(toggleAssistantSelectionIds(["2"], "2", false, false), []);
   assert.deepEqual(toggleAssistantSelectionIds(["1"], "2", true, true), ["1", "2"]);
   assert.deepEqual(toggleAssistantSelectionIds(["1", "2"], "1", true, false), ["2"]);
-  assert.equal(resolveAssistantSelectionConfirmMessage(["3"]), "3");
-  assert.equal(resolveAssistantSelectionConfirmMessage(["3", "5"]), "3,5");
+  assert.equal(resolveAssistantSelectionConfirmMessage(["3"]), "已选择：3（id=3）");
+  assert.equal(resolveAssistantSelectionConfirmMessage(["3", "5"]), "已选择：3（id=3）、5（id=5）");
   assert.equal(resolveAssistantSelectionConfirmMessage([]), "");
   assert.equal(
     resolveAssistantSelectionConfirmDisplay(
       ["13"],
       [
-        { id: "13", label: "海军本体空间" },
+        { id: "13", label: "海军对象空间" },
         { id: "1", label: "xxx战场1" },
       ],
     ),
-    "海军本体空间",
+    "已选择：海军对象空间（id=13）",
   );
   assert.equal(
     resolveAssistantSelectionConfirmDisplay(
@@ -271,10 +271,10 @@ test("toggleAssistantSelectionIds supports single and multi checkbox selection",
         { id: "target_name", label: "目标名称" },
       ],
     ),
-    "主键ID、目标名称",
+    "已选择：主键ID（id=id）、目标名称（id=target_name）",
   );
-  assert.equal(resolveAssistantSelectionConfirmDisplay(["missing"], [{ id: "13", label: "海军本体空间" }]), "missing");
-  assert.equal(resolveAssistantSelectionConfirmDisplay([], [{ id: "13", label: "海军本体空间" }]), "");
+  assert.equal(resolveAssistantSelectionConfirmDisplay(["missing"], [{ id: "13", label: "海军对象空间" }]), "已选择：missing（id=missing）");
+  assert.equal(resolveAssistantSelectionConfirmDisplay([], [{ id: "13", label: "海军对象空间" }]), "");
 });
 
 test("ai assistant drawer uses the project composable and drops local replies", () => {
@@ -295,6 +295,9 @@ test("ai assistant drawer uses the project composable and drops local replies", 
   assert.match(conversation, /splitAssistantChatContentBlocks/);
   assert.match(conversation, /ai-assistant-drawer__content-item/);
   assert.match(conversation, /AiAssistantPropertySelectionTable/);
+  assert.match(conversation, /ai-assistant-drawer__option-list/);
+  assert.match(conversation, /max-height: 360px/);
+  assert.match(conversation, /overflow-y: auto/);
   assert.match(conversation, /isAssistantPropertySelectionCard/);
   assert.doesNotMatch(conversation, /@click="emit\('select-option', option.id\)"/);
   const propertyTable = readSource("../src/layout/components/AiAssistantPropertySelectionTable.vue");
@@ -302,9 +305,34 @@ test("ai assistant drawer uses the project composable and drops local replies", 
   assert.match(propertyTable, /aircas-table--flat/);
   assert.match(propertyTable, /el-table-column/);
   assert.match(propertyTable, /属性名称/);
-  assert.match(conversation, /本体构建步骤/);
+  assert.match(conversation, /对象构建步骤/);
   assert.match(conversation, /ai-assistant-drawer__build-steps/);
   assert.match(conversation, /\.ai-assistant-drawer__message--assistant \.ai-assistant-drawer__bubble \{[\s\S]*max-width: 95%/);
+  assert.match(conversation, /ai-assistant-drawer__build-step-header/);
+  assert.match(conversation, /ai-assistant-drawer__build-step-body/);
+  assert.match(conversation, /ai-assistant-drawer__build-step-meta/);
+  assert.match(conversation, /collapsedBuildStepsByMessage/);
+  assert.match(conversation, /isBuildStepBodyVisible/);
+  assert.match(conversation, /toggleBuildStepExpanded/);
+  assert.match(conversation, /第\{\{ group\.progress\.current \}\}步\/共\{\{ group\.progress\.total \}\}步/);
+  assert.match(conversation, /conversationGroups/);
+  assert.match(conversation, /resolveAssistantMessageStepIndex\(message, currentStepIndex\)/);
+  assert.match(conversation, /resolveBuildStepItems\(group, step\.index\)/);
+  assert.match(conversation, /buildProgressMarkerSearchPattern/);
+  assert.match(conversation, /resolveAssistantMessageStepIndex/);
+  assert.match(conversation, /step\?\.status === "active"/);
+  assert.match(conversation, /expandedCompletedBuildStepsByMessage/);
+  assert.match(conversation, /const isVisible = isBuildStepBodyVisible\(group, stepIndex\)/);
+  assert.match(conversation, /collapsedCompleted\.filter\(\(index\) => index !== stepIndex\)/);
+  assert.match(conversation, /isBuildStepInteractive\(group, step\.index\)/);
+  assert.match(conversation, /resolveDefaultExpandedStepIndex/);
+  assert.match(conversation, /v-if="isBuildStepInteractive\(group, step\.index\)" class="ai-assistant-drawer__build-step-arrow"/);
+  assert.match(conversation, /message\.role === "assistant" && \(message\.buildProgress \|\| buildItems !== null\)/);
+  assert.match(conversation, /next\.role === "assistant"/);
+  assert.match(conversation, /lastProgressItem = \[\.\.\.buildItems\]\.reverse\(\)\.find/);
+  assert.match(conversation, /li\.is-complete[\s\S]*var\(--aircas-color-success\)/);
+  assert.match(conversation, /ai-assistant-drawer__bubble--user-inline/);
+  assert.doesNotMatch(conversation, /bubble--layout/);
   assert.match(drawer, /size="620px"/);
   assert.match(drawer, /@keydown="handleAssistantInputKeydown"/);
   assert.match(drawer, /event\.key !== "Enter"/);
@@ -337,7 +365,7 @@ test("mapAssistantPropertySelectionRows builds table rows and detects property c
   ];
   assert.equal(isAssistantPropertySelectionCard(undefined), false);
   assert.equal(isAssistantPropertySelectionCard({ scenario: "properties_select", options }), true);
-  assert.equal(isAssistantPropertySelectionCard({ scenario: "space_select", options: [{ id: "13", label: "海军本体空间" }] }), false);
+  assert.equal(isAssistantPropertySelectionCard({ scenario: "space_select", options: [{ id: "13", label: "海军对象空间" }] }), false);
   assert.deepEqual(mapAssistantPropertySelectionRows(options), [
     { id: "id", name: "主键ID", field: "id", dataType: "bigserial", sourceTable: "hms_target", primaryKey: true, description: "主键ID" },
     { id: "target_name", name: "目标名称", field: "target_name", dataType: "varchar", sourceTable: "hms_target", primaryKey: false, description: "" },
@@ -354,7 +382,7 @@ test("splitAssistantChatContentBlocks turns semantic analysis into separate rows
       [
         "【第1步/共11步】  ",
         "您描述的对象为：**一种用于远程精确打击的轮式火箭炮系统**。",
-        "据此，我为您拟定本体对象草案如下：",
+        "据此，我为您拟定对象草案如下：",
         "- **对象名称**：海马斯火箭炮系统",
         "- **对象标识**：himarsRocketSystem（英文驼峰命名）",
         "- **一句话定义**：HIMARS 远程精确打击武器系统",
@@ -366,7 +394,7 @@ test("splitAssistantChatContentBlocks turns semantic analysis into separate rows
     [
       { kind: "text", text: "【第1步/共11步】" },
       { kind: "text", text: "您描述的对象为：一种用于远程精确打击的轮式火箭炮系统。" },
-      { kind: "text", text: "据此，我为您拟定本体对象草案如下：" },
+      { kind: "text", text: "据此，我为您拟定对象草案如下：" },
       { kind: "item", label: "对象名称", text: "海马斯火箭炮系统" },
       { kind: "item", label: "对象标识", text: "himarsRocketSystem（英文驼峰命名）" },
       { kind: "item", label: "一句话定义", text: "HIMARS 远程精确打击武器系统" },
@@ -381,9 +409,9 @@ test("splitAssistantChatContentBlocks turns semantic analysis into separate rows
     { kind: "code", text: '{"a":1}' },
   ]);
   assert.deepEqual(splitAssistantChatContentBlocks("请在上方卡片中勾选需要的关系。"), []);
-  assert.deepEqual(splitAssistantChatContentBlocks("已推导出关系候选。\n请在上方卡片中勾选需要的关系。\n请勾选需要纳入本体的关系"), [
+  assert.deepEqual(splitAssistantChatContentBlocks("已推导出关系候选。\n请在上方卡片中勾选需要的关系。\n请勾选需要纳入对象的关系"), [
     { kind: "text", text: "已推导出关系候选。" },
-    { kind: "text", text: "请勾选需要纳入本体的关系" },
+    { kind: "text", text: "请勾选需要纳入对象的关系" },
   ]);
   assert.deepEqual(splitAssistantChatContentBlocks("请在上方卡片中选择目标空间"), []);
 });
@@ -395,6 +423,16 @@ test("ai assistant selection confirm shows labels in the user bubble and still s
   assert.match(source, /message,/);
   assert.match(source, /function selectAssistantOption\(optionId: string, displayContent\?: string\)/);
   assert.match(source, /sendAssistantMessage\(optionId, displayContent\)/);
+});
+
+test("ai assistant selection confirmation uses the same labeled id template for display and model payload", () => {
+  const utilitySource = readSource("../src/utils/toggleAssistantSelectionIds.ts");
+  const conversationSource = readSource("../src/layout/components/AiAssistantConversation.vue");
+  assert.match(utilitySource, /已选择：/);
+  assert.match(utilitySource, /\$\{label\}（id=\$\{item\}）/);
+  assert.match(utilitySource, /selections\.join\("、"\)/);
+  assert.match(conversationSource, /resolveAssistantSelectionConfirmMessage\(selectedIds, options\)/);
+  assert.match(conversationSource, /emit\("select-option", payload, payload\)/);
 });
 
 test("llm builder assistant entry stays a local message", () => {

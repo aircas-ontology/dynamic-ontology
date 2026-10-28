@@ -10,7 +10,7 @@
     </el-input>
     <div class="relation-category-panel__content">
       <div v-if="!displayTreeData.length" class="relation-category-panel__empty">
-        <el-button @click="emit('create', '')">添加关系分类</el-button>
+        <el-button data-onboarding="relation-tree-create" @click="emit('create', '')">添加关系分类</el-button>
       </div>
       <el-tree
         v-else-if="displayTreeData.length"
@@ -42,6 +42,7 @@
                   <button
                     type="button"
                     class="relation-category-panel__action relation-category-panel__action--add"
+                    data-onboarding="relation-tree-create"
                     aria-label="添加子分类"
                     @click="emit('create', data.id)"
                   >
@@ -208,12 +209,17 @@ function hasMatchingNode(nodes: DisplayTreeNode[], searchValue: string): boolean
 const displayTreeData = computed(() => enrich(Array.isArray(props.treeData) ? props.treeData : []));
 
 /**
- * @description 收集分类节点 id，供 el-tree 默认展开；关系叶子不展开。
+ * @description 收集存在子分类的分类节点 id，供 el-tree 默认展开；分类下只有关系内容时不展开。
  * @param nodes 混合树节点。
- * @returns 分类节点 id 列表。
+ * @returns 需要默认展开的分类 id 列表。
  */
 function collectDisplayCategoryIds(nodes: DisplayTreeNode[]): string[] {
-  return nodes.flatMap((node) => (isCategoryNode(node) ? [node.id, ...collectDisplayCategoryIds(node.children ?? [])] : []));
+  return nodes.flatMap((node) => {
+    if (!isCategoryNode(node)) return [];
+    const children = node.children ?? [];
+    const hasChildCategory = children.some((child) => isCategoryNode(child));
+    return [...(hasChildCategory ? [node.id] : []), ...collectDisplayCategoryIds(children)];
+  });
 }
 
 const defaultExpandedKeys = computed(() => collectDisplayCategoryIds(displayTreeData.value));
@@ -377,7 +383,8 @@ watch(
   transition: opacity 0.15s ease;
 }
 .relation-category-panel :deep(.el-tree-node__content:hover) .relation-category-panel__actions,
-.relation-category-panel :deep(.el-tree-node__content:focus-within) .relation-category-panel__actions {
+.relation-category-panel :deep(.el-tree-node__content:focus-within) .relation-category-panel__actions,
+.relation-category-panel__actions:has(.onboarding-guide__target-revealed) {
   opacity: 1;
   pointer-events: auto;
 }

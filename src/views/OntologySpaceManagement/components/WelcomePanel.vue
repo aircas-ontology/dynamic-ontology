@@ -1,12 +1,13 @@
 <template>
   <el-card class="welcome-panel" shadow="never" body-class="welcome-panel__body">
     <h1>欢迎回来，<span>访客</span></h1>
-    <p>在这里统一管理本体空间，支持创建、编辑、导入导出与空间运维。</p>
-    <el-button class="welcome-panel__create" type="primary" :icon="Plus" @click="$emit('create')">新建本体空间</el-button>
+    <p>在这里统一管理{{ spaceLabel }}，支持创建、编辑、导入导出与空间运维。</p>
+    <el-button v-if="showCreate" class="welcome-panel__create" type="primary" :icon="Plus" @click="$emit('create')">新建{{ spaceLabel }}</el-button>
   </el-card>
 </template>
 <script setup lang="ts">
 import { Plus } from "@element-plus/icons-vue";
+withDefaults(defineProps<{ showCreate?: boolean; spaceLabel?: string }>(), { showCreate: true, spaceLabel: "对象空间" });
 defineEmits<{ create: [] }>();
 </script>
 <style scoped lang="scss">

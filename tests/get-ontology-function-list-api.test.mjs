@@ -25,6 +25,7 @@ test("get ontology function list types expose documented request and page fields
   assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /displayName\?: string/);
   assert.match(source, /type\?: string/);
+  assert.match(source, /excludeTypes\?: string/);
   assert.match(source, /publishStatus\?: number/);
   assert.match(source, /startDate\?: string/);
   assert.match(source, /endDate\?: string/);
@@ -33,6 +34,7 @@ test("get ontology function list types expose documented request and page fields
   assert.match(source, /displayName: string/);
   assert.match(source, /description: string/);
   assert.match(source, /type: string/);
+  assert.match(source, /createTime: string/);
   assert.match(source, /updateTime: string/);
   assert.match(source, /publishStatus: number/);
   assert.match(source, /version: string/);
@@ -51,6 +53,7 @@ test("get ontology function list api gets the prefixed list endpoint", () => {
   assert.match(source, /method: "get"/);
   assert.match(source, /params/);
   assert.match(source, /params\.displayName/);
+  assert.match(source, /params\.excludeTypes/);
   assert.match(source, /params\.publishStatus/);
   assert.match(source, /params\.startDate/);
   assert.match(source, /params\.endDate/);
@@ -66,6 +69,7 @@ test("get ontology function list mock mirrors the documented sample", () => {
   assert.match(source, /functionApi: "test"/);
   assert.match(source, /displayName: "测试函数"/);
   assert.match(source, /type: "BASIC_QUERY"/);
+  assert.match(source, /createTime: "2026-10-12T17:56:02\.614\+00:00"/);
   assert.match(source, /updateTime: "2026-09-24T03:35:18\.692\+00:00"/);
   assert.match(source, /publishStatus: 1/);
   assert.match(source, /version: "1\.0\.0"/);
@@ -84,6 +88,7 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
       displayName: "测试函数",
       description: "测试函数说明",
       type: "BASIC_QUERY",
+      createTime: "2026-10-12T17:56:02.614+00:00",
       updateTime: "2026-09-24T03:35:18.692+00:00",
       publishStatus: 1,
       version: "1.0.0",
@@ -101,6 +106,7 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
   assert.equal(basic.version, "1.0.0");
   assert.equal(basic.protocol, "");
   assert.equal(basic.createdBy, "");
+  assert.equal(basic.createdAt, dayjs("2026-10-12T17:56:02.614+00:00").format("YYYY-MM-DD HH:mm:ss"));
   assert.equal(basic.updatedAt, dayjs("2026-09-24T03:35:18.692+00:00").format("YYYY-MM-DD HH:mm:ss"));
   assert.deepEqual(basic.inputParameters, []);
   assert.deepEqual(basic.outputParameters, []);
@@ -111,6 +117,7 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
       displayName: "两数相加",
       description: "测试用：返回 a+b",
       type: "CUSTOMIZE",
+      createTime: "",
       updateTime: "",
       publishStatus: 0,
       version: "0.1.0",
@@ -118,10 +125,29 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
     11,
   );
   assert.equal(custom.apiModelType, "CUSTOMIZE");
-  assert.equal(custom.type, "basic");
+  assert.equal(custom.type, "code");
+  assert.equal(custom.definition.kind, "code");
+  assert.equal(custom.createdAt, "");
   assert.equal(custom.updatedAt, "");
   assert.equal(custom.status, "draft");
   assert.equal(custom.version, "0.1.0");
+
+  const composite = mapOntologyFunctionListItem(
+    {
+      functionApi: "flowA",
+      displayName: "编排A",
+      description: "编排说明",
+      type: "COMPOSITE",
+      createTime: "",
+      updateTime: "",
+      publishStatus: 0,
+      version: "1.0.0",
+    },
+    11,
+  );
+  assert.equal(composite.apiModelType, "COMPOSITE");
+  assert.equal(composite.type, "composite");
+  assert.equal(composite.definition.kind, "composite");
 
   const unknownStatus = mapOntologyFunctionListItem(
     {
@@ -129,6 +155,7 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
       displayName: "x",
       description: "",
       type: "BASIC_QUERY",
+      createTime: "",
       updateTime: "",
       publishStatus: 9,
       version: "",
@@ -139,10 +166,16 @@ test("mapOntologyFunctionListItem fills known fields and leaves others empty", (
   assert.equal(unknownStatus.version, "");
 });
 
-test("function operator panel displays updatedAt from list mapping", () => {
+test("function operator panel displays createdAt and updatedAt from list mapping", () => {
   const panel = readSource("../src/views/FunctionOperatorPanel/index.vue");
-  assert.match(panel, /\{\{\s*operator\.updatedAt\s*\}\}/);
+  assert.match(panel, /创建时间<br\s*\/?>\s*\{\{\s*operator\.createdAt/);
+  assert.match(panel, /更新时间<br\s*\/?>\s*\{\{\s*operator\.updatedAt/);
+  assert.match(panel, /prop="createdAt"/);
   assert.match(panel, /prop="updatedAt"/);
+  assert.match(panel, /label="创建时间"/);
+  const listMap = readSource("../src/utils/mapOntologyFunctionList.ts");
+  assert.match(listMap, /createdAt:\s*formatOntologyFunctionListTime\(item\.createTime\)/);
+  assert.match(listMap, /updatedAt:\s*formatOntologyFunctionListTime\(item\.updateTime\)/);
 });
 
 test("function operator workspace loads list from getOntologyFunctionListInterface", () => {
@@ -153,16 +186,23 @@ test("function operator workspace loads list from getOntologyFunctionListInterfa
   assert.match(workspace, /pageNum/);
   assert.match(workspace, /ontologySpaceId:\s*spaceId\.value/);
   assert.match(workspace, /buildOntologyFunctionListQueryParams|displayName:/);
-  assert.match(workspace, /BASIC_QUERY/);
-  assert.match(workspace, /CUSTOMIZE/);
-  assert.match(workspace, /EXTERNAL/);
-  assert.match(workspace, /COMPOSITE/);
+  assert.match(workspace, /mapFunctionOperatorTypeToApi/);
   assert.match(workspace, /startDate/);
   assert.match(workspace, /endDate/);
   assert.match(workspace, /publishStatus/);
+  const typeMap = readSource("../src/utils/mapFunctionOperatorTypeToApi.ts");
+  assert.match(typeMap, /BASIC_QUERY/);
+  assert.match(typeMap, /CUSTOMIZE/);
+  assert.match(typeMap, /COMPOSITE/);
+  assert.match(typeMap, /docker:\s*"CONTAINER"/);
+  assert.match(typeMap, /CONTAINER:\s*"docker"/);
+  assert.match(typeMap, /mapFunctionOperatorTypeFromApi/);
   assert.doesNotMatch(workspace, /records\.filter/);
   assert.doesNotMatch(workspace, /queryFunctionOperatorsMock\(buildQuery\(\)\)/);
   assert.doesNotMatch(workspace, /createFunctionOperatorMock\(draft\)/);
-  assert.match(panel, /apiModelType/);
+  assert.match(panel, /FUNCTION_OPERATOR_TYPE_LABELS\[operator\.type\]/);
   assert.match(panel, /filters\.creator/);
+  const listMap = readSource("../src/utils/mapOntologyFunctionList.ts");
+  assert.match(listMap, /apiModelType/);
+  assert.match(listMap, /mapFunctionOperatorTypeFromApi/);
 });

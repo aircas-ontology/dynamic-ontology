@@ -1,6 +1,6 @@
 <template>
-  <section class="object-workspace-panel" aria-label="本体对象工作区">
-    <div v-if="status === 'loading'" class="object-workspace-panel__state" role="status"><AircasLoading>正在加载本体对象…</AircasLoading></div>
+  <section class="object-workspace-panel" aria-label="对象工作区">
+    <div v-if="status === 'loading'" class="object-workspace-panel__state" role="status"><AircasLoading>正在加载对象…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="object-workspace-panel__state" role="alert">
       <span>{{ error }}</span>
       <el-button type="primary" @click="load">重试</el-button>
@@ -10,7 +10,7 @@
         :tree="workspaceTree"
         :selected-node-id="selectedNodeId"
         @select="selectNode"
-        @select-object="openObjectDetailFromTree"
+        @select-object="locateObjectFromTree"
         @create="openCategoryTreeCreateDialog"
         @create-child="openCategoryChildDialog"
         @rename="openCategoryRenameDialog"
@@ -100,7 +100,7 @@ import { useObjectWorkspaceCategoryActions } from "./composables/useObjectWorksp
 import { useObjectWorkspaceObjectActions } from "./composables/useObjectWorkspaceObjectActions";
 import { useOntologyObjectWorkspace } from "./composables/useOntologyObjectWorkspace";
 import { useOntologySpaceDetailStore } from "@/stores/useOntologySpaceDetailStore";
-import { makeCategoryLocationTarget } from "./utils/objectWorkspace";
+import { makeCategoryLocationTarget, makeObjectLocationTarget } from "./utils/objectWorkspace";
 
 const route = useRoute();
 const router = useRouter();
@@ -184,8 +184,8 @@ function selectNode(node: OntologyConceptNode) {
 }
 
 /**
- * @description 将对象卡片的父本体定位到其所属分类分区。
- * @param item 需要定位的本体对象。
+ * @description 将对象卡片的父对象定位到其所属分类分区。
+ * @param item 需要定位的对象。
  */
 function locateParent(item: OntologyObjectItem) {
   selectedNodeId.value = item.categoryId;
@@ -200,20 +200,22 @@ function openOntologyLlmBuilderPage() {
 }
 
 /**
- * @description 从概念层级树点击对象节点跳转到对象详情页。
+ * @description 从概念层级树点击对象节点时，在右侧列表定位并高亮该对象，不进入详情。
  * @param object 被点击的对象引用，含对象唯一标识与显示名称。
  */
-function openObjectDetailFromTree(object: OntologyConceptObjectRef) {
+function locateObjectFromTree(object: OntologyConceptObjectRef) {
   const objectId = object.uniqueIdentifier.trim();
   if (!objectId) {
-    ElMessage.error("缺少对象唯一标识，无法进入对象详情。");
+    ElMessage.error("缺少对象唯一标识，无法定位对象。");
     return;
   }
-  const query: Record<string, string> = {};
-  if (spaceId.value) query.spaceId = spaceId.value;
-  if (spaceDisplayName.value.trim()) query.spaceName = spaceDisplayName.value.trim();
-  if (object.displayName.trim()) query.objectName = object.displayName.trim();
-  void router.push({ name: "OntologyObjectDetail", params: { objectId }, query });
+  const item = workspaceSections.value.flatMap((section) => section.items).find((candidate) => candidate.id === objectId);
+  if (!item) {
+    ElMessage.warning(`未在对象列表中找到“${object.displayName}”，无法定位。`);
+    return;
+  }
+  selectedNodeId.value = item.categoryId;
+  locationTarget.value = makeObjectLocationTarget(item.categoryId, item.id, ++locationRequestId);
 }
 
 /**
@@ -242,11 +244,12 @@ function handleAction(action: string, item?: OntologyObjectItem) {
     const query: Record<string, string> = {};
     if (spaceId.value) query.spaceId = spaceId.value;
     if (spaceDisplayName.value.trim()) query.spaceName = spaceDisplayName.value.trim();
+    if (route.query.from === "theme-space-management") query.from = "theme-space-management";
     if (item.displayName.trim()) query.objectName = item.displayName.trim();
     void router.push({ name: "OntologyObjectDetail", params: { objectId: item.id }, query });
     return;
   }
-  const subject = item ? `“${item.displayName}”` : "本体";
+  const subject = item ? `“${item.displayName}”` : "对象";
   const labels: Record<string, string> = { create: "新建", edit: "编辑", export: "导出", delete: "删除" };
   ElMessage.info(`${subject}${labels[action] ?? "操作"}功能尚未接入。`);
 }

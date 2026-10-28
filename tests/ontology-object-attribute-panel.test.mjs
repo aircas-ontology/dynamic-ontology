@@ -70,50 +70,34 @@ test("object attribute panel exposes category tree, property columns, and local 
   assert.match(helperSource, /const propertyChildren = \(node\.propertyInfos \?\? \[\]\)\.map\(mapPropertyTreeNode\)/);
 });
 
-test("clicking a property node in the category tree opens the attribute editor", () => {
+test("clicking a property node in the category tree opens the read-only attribute detail dialog", () => {
   const treeSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeCategoryTree.vue");
   const panelSource = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
+  const detailSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyDetailDialog.vue");
 
   assert.match(treeSource, /@node-click="handleCategoryTreeNodeClick"/);
-  assert.match(treeSource, /"edit-attribute": \[data: OntologyAttributePropertyTreeNode\]/);
+  assert.match(treeSource, /"view-attribute": \[data: OntologyAttributePropertyTreeNode\]/);
   assert.match(treeSource, /function handleCategoryTreeNodeClick/);
   assert.match(treeSource, /data\.nodeType === "property"/);
-  assert.match(treeSource, /emit\("edit-attribute", data\)/);
+  assert.match(treeSource, /emit\("view-attribute", data\)/);
   assert.match(treeSource, /emit\("select-category", data\)/);
-  assert.match(panelSource, /@edit-attribute="openAttributeFromTree"/);
-  assert.match(panelSource, /function openAttributeFromTree/);
+  assert.match(panelSource, /@view-attribute="openAttributeDetailFromTree"/);
+  assert.match(panelSource, /function openAttributeDetailFromTree/);
   assert.match(panelSource, /mapOntologyPropertyItem\(data\.source/);
-  assert.match(panelSource, /openEditAttribute\(/);
+  assert.match(panelSource, /attributeDetailDialogVisible/);
+  assert.match(panelSource, /<AttributePropertyDetailDialog/);
+  assert.match(detailSource, /title="属性详情"/);
+  assert.match(detailSource, /<el-descriptions/);
+  assert.doesNotMatch(detailSource, /保存/);
 });
 
-test("attribute data type options use the complete backend enum values", () => {
+test("attribute data type options use the supported enum values", () => {
   const source = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
-  const expectedDataTypes = [
-    "Boolean",
-    "Int",
-    "Long",
-    "Float",
-    "Short",
-    "Byte",
-    "Double",
-    "Decimal",
-    "String",
-    "Date",
-    "Array",
-    "Map",
-    "Vector",
-    "Timestamp",
-    "MediaReference",
-    "TimeSeries",
-    "Attachment",
-    "Geohash",
-    "Geoshape",
-    "Cipher",
-    "Ontology",
-  ];
+  const expectedDataTypes = ["Boolean", "Int", "Long", "Float", "Short", "Byte", "Double", "Decimal", "String", "Date", "Array", "Timestamp"];
   const dataTypesSource = source.match(/const dataTypes = \[([\s\S]*?)\];/)?.[1] ?? "";
   const actualDataTypes = [...dataTypesSource.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual(actualDataTypes, expectedDataTypes);
+  assert.doesNotMatch(dataTypesSource, /Map|TimeSeries|Vector|MediaReference|Attachment|Geohash|Geoshape|Cipher|Ontology/);
 });
 
 test("attribute form defaults category to the root and the root category cannot be deleted", async () => {
@@ -183,6 +167,17 @@ test("attribute form rejects a second primary key or name key on the same object
   assert.match(panelSource, /@update-name-key="updateDraftNameKey"/);
 });
 
+test("primary attribute forces id API and Int data type", () => {
+  const listSource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
+  const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
+  assert.match(listSource, /draft\.apiName = "id"/);
+  assert.match(listSource, /draft\.dataType = "Int"/);
+  assert.match(listSource, /apiName: draft\.isPrimary \? "id" : draft\.apiName/);
+  assert.match(listSource, /dataType: draft\.isPrimary \? "Int" : draft\.dataType/);
+  assert.match(formSource, /:disabled="editingAttributeId !== null \|\| draft\.isPrimary"/);
+  assert.match(formSource, /:disabled="datasourceLocked \|\| draft\.isPrimary"/);
+});
+
 test("attribute category is required when creating or editing a property", () => {
   const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
   const listSource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
@@ -193,7 +188,42 @@ test("attribute category is required when creating or editing a property", () =>
 
 test("attribute API name is disabled only while editing", () => {
   const source = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
-  assert.match(source, /v-model="draft\.apiName"[\s\S]*?:disabled="editingAttributeId !== null"/);
+  assert.match(source, /v-model="draft\.apiName"[\s\S]*?:disabled="editingAttributeId !== null \|\| draft\.isPrimary"/);
+});
+
+test("bound datasource attributes open the edit dialog locked to name and description", () => {
+  const helperSource = readSource("../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts");
+  const propertySource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
+  const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
+  assert.match(helperSource, /datasourceId: item\.datasourceId \?\? ""/);
+  assert.match(helperSource, /datasourceColumnName: item\.datasourceColumnName \?\? ""/);
+  assert.doesNotMatch(propertySource, /该属性已绑定数据源，不可编辑/);
+  assert.match(propertySource, /const datasourceLocked = ref\(false\)/);
+  assert.match(propertySource, /function openEditAttribute\(value: unknown, datasourceLockedOverride = false\)/);
+  assert.match(
+    propertySource,
+    /datasourceLocked\.value = Boolean\(datasourceLockedOverride \|\| \(value\.datasourceId\.trim\(\) && value\.datasourceColumnName\.trim\(\)\)\)/,
+  );
+  assert.match(propertySource, /datasourceLocked,/);
+  assert.match(formSource, /datasourceLocked: boolean/);
+  assert.match(formSource, /该属性已绑定数据源，仅支持修改属性名称和描述/);
+  assert.match(formSource, /v-model="draft\.categoryId"[\s\S]*?:disabled="datasourceLocked"/);
+  assert.match(formSource, /:disabled="datasourceLocked \|\| draft\.isPrimary"/);
+  assert.match(formSource, /v-model="draft\.storageGroup"[\s\S]*?:disabled="datasourceLocked"/);
+  assert.match(formSource, /v-model="draft\.defaultValue"[\s\S]*?:disabled="datasourceLocked"/);
+  assert.match(formSource, /:model-value="draft\.isPrimary"[\s\S]*?:disabled="datasourceLocked"/);
+  assert.match(formSource, /:model-value="draft\.isNameKey"[\s\S]*?:disabled="datasourceLocked"/);
+});
+
+test("table editing checks datasource detail then opens the form with lock state", () => {
+  const panelSource = readSource("../src/views/OntologyObjectAttributePanel/index.vue");
+  assert.match(panelSource, /@edit-attribute="handleEditAttribute"/);
+  assert.match(panelSource, /async function handleEditAttribute/);
+  assert.match(panelSource, /loadPropertyDataSourceDetails\(ontologyUniqueIdentifier\)/);
+  assert.match(panelSource, /detail\?\.datasourceId\?\.trim\(\) && detail\.datasourceColumnName\?\.trim\(\)/);
+  assert.doesNotMatch(panelSource, /该属性已绑定数据源，不可编辑/);
+  assert.match(panelSource, /:datasource-locked="datasourceLocked"/);
+  assert.match(panelSource, /openEditAttribute\(value, Boolean\(detail\?\.datasourceId\?\.trim\(\) && detail\.datasourceColumnName\?\.trim\(\)\)\)/);
 });
 
 test("attribute storage group accepts custom input and deduplicates values from all properties", () => {
@@ -243,7 +273,7 @@ test("attribute layout uses a 360px tree, zebra rows, and prototype detail tabs"
   assert.match(panelSource, /grid-template-columns: 360px minmax\(0, 1fr\)/);
   assert.match(tableSource, /stripe/);
   assert.match(tableSource, /<el-table/);
-  assert.match(tabsSource, /object-detail-tabs__separator/);
+  assert.doesNotMatch(tabsSource, /object-detail-tabs__separator/);
   assert.match(tabsSource, /linear-gradient\(135deg, var\(--aircas-color-panel-background\), var\(--aircas-color-panel-background-deep\)\)/);
   assert.match(tabsSource, /box-shadow: inset 0 0 20px var\(--aircas-color-effect-page-glow\)/);
 });

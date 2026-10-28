@@ -12,76 +12,86 @@
     <div class="property-datasource-mapping-dialog__body">
       <header class="mapping-toolbar">
         <div class="mapping-toolbar__inputs">
-          <label>
-            选择数据源
-            <el-select
-              v-model="selectedTableKeys"
-              multiple
-              collapse-tags
-              collapse-tags-tooltip
-              filterable
-              placeholder="选择数据表（多选）"
-              :loading="tableLoading"
-            >
-              <el-option
-                v-for="table in flatTables"
-                :key="manualTableKey(table.databaseId, table.table.id)"
-                :label="`${table.databaseName}.${table.table.name}`"
-                :value="manualTableKey(table.databaseId, table.table.id)"
-              />
-            </el-select>
-          </label>
-          <label>
-            关联数据源
-            <el-select
-              :model-value="manualSelectedTable"
-              filterable
-              clearable
-              placeholder="选择数据表"
-              :loading="tableLoading"
-              @update:model-value="handleManualTableChange"
-            >
-              <el-option
-                v-for="table in selectedTables"
-                :key="manualTableKey(table.databaseId, table.table.id)"
-                :label="`${table.databaseName}.${table.table.name}`"
-                :value="manualTableKey(table.databaseId, table.table.id)"
-              />
-            </el-select>
-          </label>
-          <label>
-            关联数据源字段
-            <el-select v-model="manualSelectedField" filterable :disabled="!manualSelectedTable" placeholder="选择字段" :loading="fieldLoading">
-              <el-option
-                v-for="field in manualFieldOptions"
-                :key="field.id"
-                :label="`${field.name}${formatDatasourceKeyMarks({ isPrimary: field.isPrimary })}`"
-                :value="field.id"
-              />
-            </el-select>
-          </label>
-          <el-icon class="mapping-toolbar__connection"><Connection /></el-icon>
-          <label>
-            关联本体字段
-            <el-select v-model="manualSelectedProperty" filterable placeholder="选择本体属性">
-              <el-option
-                v-for="property in availableManualProperties"
-                :key="property.id"
-                :label="`${property.displayName}${formatDatasourceKeyMarks(property)} (${property.apiName})`"
-                :value="property.id"
-              />
-            </el-select>
-          </label>
-          <el-button type="primary" :disabled="!canAddManualBind || loading" @click="addManualBind">关联</el-button>
+          <div class="mapping-toolbar__source-group" data-onboarding="associate-select-datasource">
+            <label>
+              选择数据源
+              <el-select
+                v-model="selectedTableKeys"
+                multiple
+                collapse-tags
+                collapse-tags-tooltip
+                filterable
+                placeholder="选择数据表（多选）"
+                :loading="tableLoading"
+              >
+                <el-option
+                  v-for="table in flatTables"
+                  :key="manualTableKey(table.databaseId, table.table.id)"
+                  :label="`${table.databaseName}.${table.table.name}`"
+                  :value="manualTableKey(table.databaseId, table.table.id)"
+                />
+              </el-select>
+            </label>
+          </div>
+          <div class="mapping-toolbar__mapping-group" data-onboarding="associate-fields">
+            <label data-onboarding="associate-map-datasource">
+              关联数据源
+              <el-select
+                :model-value="manualSelectedTable"
+                filterable
+                clearable
+                placeholder="选择数据表"
+                :loading="tableLoading"
+                @update:model-value="handleManualTableChange"
+              >
+                <el-option
+                  v-for="table in selectedTables"
+                  :key="manualTableKey(table.databaseId, table.table.id)"
+                  :label="`${table.databaseName}.${table.table.name}`"
+                  :value="manualTableKey(table.databaseId, table.table.id)"
+                />
+              </el-select>
+            </label>
+            <label>
+              关联数据源字段
+              <el-select v-model="manualSelectedField" filterable :disabled="!manualSelectedTable" placeholder="选择字段" :loading="fieldLoading">
+                <el-option
+                  v-for="field in manualFieldOptions"
+                  :key="field.id"
+                  :label="`${field.name}${formatDatasourceKeyMarks({ isPrimary: field.isPrimary })}`"
+                  :value="field.id"
+                />
+              </el-select>
+            </label>
+            <el-icon class="mapping-toolbar__connection"><Connection /></el-icon>
+            <label>
+              关联对象字段
+              <el-select v-model="manualSelectedProperty" filterable placeholder="选择对象属性">
+                <el-option
+                  v-for="property in availableManualProperties"
+                  :key="property.id"
+                  :label="`${property.displayName}${formatDatasourceKeyMarks(property)} (${property.apiName})`"
+                  :value="property.id"
+                />
+              </el-select>
+            </label>
+            <el-button type="primary" data-onboarding="associate-link" :disabled="!canAddManualBind || loading" @click="addManualBind">关联</el-button>
+          </div>
         </div>
         <p v-if="tableError || fieldError" class="mapping-toolbar__error" role="alert">{{ tableError || fieldError }}</p>
         <div class="mapping-toolbar__actions">
-          <el-button :loading="autoAssociateLoading" :disabled="loading || autoAssociateLoading" @click="emit('auto-associate')">自动关联数据源</el-button>
+          <el-button
+            data-onboarding="associate-auto"
+            :loading="autoAssociateLoading"
+            :disabled="loading || autoAssociateLoading"
+            @click="emit('auto-associate')"
+            >自动关联数据源</el-button
+          >
           <span title="暂未开放"><el-button disabled>跳转到数据管道</el-button></span>
         </div>
       </header>
       <div class="mapping-layout" :class="{ 'mapping-layout--saving': loading }">
-        <div ref="workspaceRef" class="property-datasource-mapping-dialog__workspace" @scroll="scheduleLineRefresh">
+        <div ref="workspaceRef" class="property-datasource-mapping-dialog__workspace" data-onboarding="associate-drag" @scroll="scheduleLineRefresh">
           <div class="property-datasource-mapping-dialog__panels">
             <aside class="property-datasource-mapping-dialog__source">
               <template v-for="table in displayTables" :key="manualTableKey(table.databaseId, table.table.id)">
@@ -224,7 +234,9 @@
           </div>
           <div class="mapping-pending__footer">
             <span>已关联 {{ mappedCount }} / {{ properties.length }}</span>
-            <el-button type="primary" :loading="loading" :disabled="!pendingOperations.length" @click="handleConfirm"> 提交 </el-button>
+            <el-button type="primary" data-onboarding="associate-submit" :loading="loading" :disabled="!pendingOperations.length" @click="handleConfirm">
+              提交
+            </el-button>
           </div>
         </aside>
       </div>
@@ -867,7 +879,37 @@ onBeforeUnmount(() => {
   flex: 1;
   gap: 10px;
 }
-.mapping-toolbar__inputs label {
+.mapping-toolbar__source-group,
+.mapping-toolbar__mapping-group {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-left: 2px;
+  padding: 8px;
+  border-radius: 6px;
+}
+.mapping-toolbar__source-group {
+  background: var(--aircas-color-section-header);
+}
+.mapping-toolbar__mapping-group {
+  background: var(--aircas-color-section-header);
+}
+.mapping-toolbar__source-group label,
+.mapping-toolbar__mapping-group label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+}
+.mapping-toolbar__source-group label {
+  width: 210px;
+}
+.mapping-toolbar__mapping-group label {
+  width: 170px;
+}
+.mapping-toolbar__inputs > label {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -879,7 +921,7 @@ onBeforeUnmount(() => {
 .mapping-toolbar__inputs label :deep(.el-select) {
   width: 100%;
 }
-.mapping-toolbar__inputs label:first-child {
+.mapping-toolbar__inputs > label:first-child {
   width: 210px;
 }
 .mapping-toolbar__connection {

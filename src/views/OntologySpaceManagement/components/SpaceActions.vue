@@ -1,6 +1,14 @@
 <template>
   <div class="space-actions">
-    <el-button :class="{ 'aircas-button--gradient': gradient }" type="primary" plain size="small" :icon="Right" @click="$emit('action', 'enter', space)">
+    <el-button
+      data-onboarding="space-enter"
+      :class="{ 'aircas-button--gradient': gradient }"
+      type="primary"
+      plain
+      size="small"
+      :icon="Right"
+      @click="$emit('action', 'enter', space)"
+    >
       进入
     </el-button>
     <el-button type="primary" plain size="small" :icon="Edit" @click="$emit('action', 'edit', space)"> 编辑 </el-button>
@@ -13,7 +21,6 @@
       </el-button>
       <template #dropdown>
         <el-dropdown-menu>
-          <el-dropdown-item command="subspace">子空间</el-dropdown-item>
           <el-dropdown-item v-if="canBuildConceptualModel" command="conceptual-model">概念构建</el-dropdown-item>
           <el-dropdown-item command="export">导出</el-dropdown-item>
           <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
@@ -39,7 +46,7 @@ function command(value: unknown) {
     emit("action", value, props.space);
     return;
   }
-  if (value === "subspace" || value === "export" || value === "delete") emit("action", value, props.space);
+  if (value === "export" || value === "delete") emit("action", value, props.space);
 }
 </script>
 <style scoped lang="scss">

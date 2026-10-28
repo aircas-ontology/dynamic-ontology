@@ -1,7 +1,6 @@
 import type { ManagementWorkspaceTab, OntologySpaceDetailRouteName } from "@/types";
 
 const TAB_ROUTE_NAMES: Record<ManagementWorkspaceTab, OntologySpaceDetailRouteName> = {
-  overview: "OntologySpaceManagementDetailOverview",
   object: "OntologySpaceManagementDetailObject",
   relation: "OntologySpaceManagementDetailRelation",
   "function-operator": "OntologySpaceManagementDetailFunctionOperator",
@@ -9,18 +8,12 @@ const TAB_ROUTE_NAMES: Record<ManagementWorkspaceTab, OntologySpaceDetailRouteNa
   "behavior-schedule": "OntologySpaceManagementDetailBehaviorSchedule",
 };
 
-const ROUTE_TAB_IDS = Object.fromEntries(
-  Object.entries(TAB_ROUTE_NAMES).map(([tab, routeName]) => [routeName, tab]),
-) as Record<OntologySpaceDetailRouteName, ManagementWorkspaceTab>;
+const ROUTE_TAB_IDS = Object.fromEntries(Object.entries(TAB_ROUTE_NAMES).map(([tab, routeName]) => [routeName, tab])) as Record<
+  OntologySpaceDetailRouteName,
+  ManagementWorkspaceTab
+>;
 
-export const AVAILABLE_WORKSPACE_TABS: readonly ManagementWorkspaceTab[] = [
-  "overview",
-  "object",
-  "relation",
-  "function-operator",
-  "behavior",
-  "behavior-schedule",
-];
+export const AVAILABLE_WORKSPACE_TABS: readonly ManagementWorkspaceTab[] = ["object", "relation", "function-operator", "behavior", "behavior-schedule"];
 
 export function routeNameForTab(tab: ManagementWorkspaceTab): OntologySpaceDetailRouteName {
   return TAB_ROUTE_NAMES[tab];
