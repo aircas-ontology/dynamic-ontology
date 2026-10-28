@@ -223,7 +223,11 @@ export function useCompositeWorkflowCanvas(options: {
     }
     const requestId = (upstreamOutputLoadGeneration.get(sourceNodeId) ?? 0) + 1;
     upstreamOutputLoadGeneration.set(sourceNodeId, requestId);
-    const response = await getOntologyFunctionDetailInterface({ functionApi, version });
+    const response = await getOntologyFunctionDetailInterface({
+      functionApi,
+      version,
+      spaceId: options.spaceId.value,
+    });
     if (disposed || upstreamOutputLoadGeneration.get(sourceNodeId) !== requestId) {
       return;
     }

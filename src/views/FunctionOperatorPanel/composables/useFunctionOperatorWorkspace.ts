@@ -286,8 +286,8 @@ export function useFunctionOperatorWorkspace() {
     detailVersionsLoading.value = true;
     try {
       const [versionsResult, detailResult] = await Promise.allSettled([
-        getOntologyFunctionVersionsInterface({ functionApi }),
-        getOntologyFunctionDetailInterface({ functionApi, version }),
+        getOntologyFunctionVersionsInterface({ functionApi, spaceId: operator.spaceId }),
+        getOntologyFunctionDetailInterface({ functionApi, version, spaceId: operator.spaceId }),
       ]);
       if (requestId !== detailGeneration) {
         return;
@@ -350,7 +350,11 @@ export function useFunctionOperatorWorkspace() {
     detailVersion.value = nextVersion;
     detailLoading.value = true;
     try {
-      const response = await getOntologyFunctionDetailInterface({ functionApi, version: nextVersion });
+      const response = await getOntologyFunctionDetailInterface({
+        functionApi,
+        version: nextVersion,
+        spaceId: listOperator?.spaceId ?? selectedOperator.value?.spaceId,
+      });
       if (requestId !== detailGeneration) {
         return;
       }
@@ -801,7 +805,7 @@ export function useFunctionOperatorWorkspace() {
     deleteSubmitting.value = true;
     deleteError.value = "";
     try {
-      const response = await deleteOntologyFunctionInterface({ functionApi, version });
+      const response = await deleteOntologyFunctionInterface({ functionApi, version, spaceId: operator.spaceId });
       if (response.code !== 200) {
         throw new Error(response.message.trim() || "函数删除失败");
       }
@@ -839,8 +843,8 @@ export function useFunctionOperatorWorkspace() {
 
     try {
       const response = isUnpublish
-        ? await postOntologyFunctionUnpublishInterface({ functionApi, version })
-        : await postOntologyFunctionPublishInterface({ functionApi, version });
+        ? await postOntologyFunctionUnpublishInterface({ functionApi, version, spaceId: operator.spaceId })
+        : await postOntologyFunctionPublishInterface({ functionApi, version, spaceId: operator.spaceId });
       if (response.code !== 200) {
         throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : `${actionLabel}失败`);
       }

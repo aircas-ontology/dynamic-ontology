@@ -944,7 +944,7 @@ async function loadSourceVersionOptions(): Promise<void> {
     return;
   }
   try {
-    const response = await getOntologyFunctionVersionsInterface({ functionApi });
+    const response = await getOntologyFunctionVersionsInterface({ functionApi, spaceId: props.spaceId });
     if (requestId !== sourceVersionListGeneration) {
       return;
     }
@@ -999,7 +999,7 @@ async function loadSourceTemplateDetail(): Promise<void> {
     return;
   }
   try {
-    const response = await getOntologyFunctionDetailInterface({ functionApi, version });
+    const response = await getOntologyFunctionDetailInterface({ functionApi, version, spaceId: props.spaceId });
     if (requestId !== sourceDetailGeneration) {
       return;
     }

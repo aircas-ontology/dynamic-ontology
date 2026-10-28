@@ -7,6 +7,8 @@ export interface GetOntologyFunctionDetailParams {
   functionApi: string;
   /** 版本号。 */
   version: string;
+  /** 本体空间 id：跨空间允许同名 api，带上可精确定位。 */
+  spaceId?: number;
 }
 
 /** 函数详情参数项。 */
