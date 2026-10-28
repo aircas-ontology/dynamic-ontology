@@ -9,28 +9,6 @@
     @update:model-value="emit('update:modelValue', $event)"
   >
     <el-form label-position="top">
-      <el-form-item v-if="localKind === 'start'" label="编排入参">
-        <p class="composite-endpoint-node-drawer__hint">定义编排的输入参数，外部调用或测试时通过这些参数传入数据。</p>
-      </el-form-item>
-      <el-form-item v-else label="编排出参">
-        <p class="composite-endpoint-node-drawer__hint">定义编排的输出参数，绑定上游节点的输出作为最终结果。</p>
-      </el-form-item>
-
-      <div class="composite-endpoint-node-drawer__param-list">
-        <div v-for="(param, index) in params" :key="param.id" class="composite-endpoint-node-drawer__param-row">
-          <el-input v-model="param.name" placeholder="参数名" class="composite-endpoint-node-drawer__param-name" />
-          <el-select v-model="param.type" class="composite-endpoint-node-drawer__param-type">
-            <el-option label="数字" value="number" />
-            <el-option label="字符串" value="string" />
-            <el-option label="布尔" value="boolean" />
-            <el-option label="对象" value="object" />
-            <el-option label="数组" value="array" />
-          </el-select>
-          <el-button @click="removeParam(index)">删除</el-button>
-        </div>
-        <el-button type="primary" plain @click="addParam">添加参数</el-button>
-      </div>
-
       <template v-if="localKind === 'end'">
         <h4 class="composite-endpoint-node-drawer__section-title">出参绑定</h4>
         <p v-if="!hasUpstream" class="composite-endpoint-node-drawer__hint">当前无前驱节点，出参仅支持手动输入</p>
@@ -47,6 +25,24 @@
         />
         <p v-else-if="hasUpstream" class="composite-endpoint-node-drawer__hint">请先添加出参</p>
       </template>
+
+      <el-form-item v-if="localKind === 'start'" label="编排入参">
+        <p class="composite-endpoint-node-drawer__hint">定义编排的输入参数，外部调用或测试时通过这些参数传入数据。</p>
+      </el-form-item>
+      <el-form-item v-else label="编排出参">
+        <p class="composite-endpoint-node-drawer__hint">定义编排的输出参数，绑定上游节点的输出作为最终结果。</p>
+      </el-form-item>
+
+      <div class="composite-endpoint-node-drawer__param-list">
+        <div v-for="(param, index) in params" :key="param.id" class="composite-endpoint-node-drawer__param-row">
+          <el-input v-model="param.name" placeholder="参数名" class="composite-endpoint-node-drawer__param-name" />
+          <el-select v-model="param.type" class="composite-endpoint-node-drawer__param-type">
+            <el-option v-for="item in paramTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+          <el-button @click="removeParam(index)">删除</el-button>
+        </div>
+        <el-button type="primary" plain @click="addParam">添加参数</el-button>
+      </div>
     </el-form>
 
     <template #footer>
@@ -64,13 +60,7 @@ import { computed, ref, watch } from "vue";
 import type { CompositeWorkflowInputBinding, CompositeWorkflowParamBrief } from "@/types";
 
 import type { CompositeWorkflowEndpointNodeEditContext } from "../composables/useCompositeWorkflowCanvas";
-import {
-  alignCompositeWorkflowEndBindings,
-  compositeWorkflowParamPathKey,
-  listCompositeWorkflowParamNodes,
-  parseCompositeWorkflowParamPathKey,
-} from "../utils/compositeWorkflowGraph.ts";
-import { compareCompositeWorkflowParamTypes } from "../utils/compositeWorkflowParamType.ts";
+import { alignCompositeWorkflowInputBindings, compositeWorkflowParamPathKey, listCompositeWorkflowParamNodes } from "../utils/compositeWorkflowGraph.ts";
 import FunctionOperatorCompositeInputBindingTree from "./FunctionOperatorCompositeInputBindingTree.vue";
 
 /** 参数行。 */
@@ -107,6 +97,20 @@ const emit = defineEmits<{
   ];
 }>();
 
+/** 开始节点仅允许标量类型。 */
+const START_PARAM_TYPE_OPTIONS = [
+  { label: "数字", value: "number" },
+  { label: "字符串", value: "string" },
+  { label: "布尔", value: "boolean" },
+] as const;
+
+/** 结束节点仅允许标量类型。 */
+const END_PARAM_TYPE_OPTIONS = [
+  { label: "数字", value: "number" },
+  { label: "字符串", value: "string" },
+  { label: "布尔", value: "boolean" },
+] as const;
+
 const localKind = ref<"start" | "end">("start");
 const localNodeId = ref("");
 const params = ref<EndpointParamRow[]>([]);
@@ -115,6 +119,23 @@ const upstreamOutputs = ref<CompositeWorkflowParamBrief[]>([]);
 const bindings = ref<CompositeWorkflowInputBinding[]>([]);
 
 const dialogTitle = computed(() => (localKind.value === "start" ? "开始节点 — 配置入参" : "结束节点 — 配置出参"));
+
+/**
+ * @description 按节点 kind 返回可选参数类型。
+ */
+const paramTypeOptions = computed(() => (localKind.value === "start" ? START_PARAM_TYPE_OPTIONS : END_PARAM_TYPE_OPTIONS));
+
+/**
+ * @description 规范化起止节点参数类型：object/array 等非标量回落为 string。
+ * @param type 原始类型。
+ * @returns 允许的类型。
+ */
+function normalizeEndpointParamType(type: string): string {
+  if (type === "number" || type === "string" || type === "boolean") {
+    return type;
+  }
+  return "string";
+}
 
 /**
  * @description 将出参列表转为绑定树节点。
@@ -163,7 +184,7 @@ watch(
     params.value = ctx.params.map((item, index) => ({
       id: item.id || `p_${Date.now()}_${index}`,
       name: item.name,
-      type: item.type,
+      type: normalizeEndpointParamType(item.type),
     }));
     if (ctx.kind === "end") {
       hasUpstream.value = ctx.hasUpstream ?? false;
@@ -174,7 +195,7 @@ watch(
           paramName: item.name.trim(),
           paramType: item.type === "number" ? "double" : item.type,
         }));
-      bindings.value = alignCompositeWorkflowEndBindings(paramBriefs, ctx.inputBindings ?? [], ctx.upstreamOutputs ?? [], ctx.hasUpstream ?? false);
+      bindings.value = alignCompositeWorkflowInputBindings(paramBriefs, ctx.inputBindings ?? [], ctx.upstreamOutputs ?? [], ctx.hasUpstream ?? false);
     } else {
       hasUpstream.value = false;
       upstreamOutputs.value = [];
@@ -285,7 +306,11 @@ function emitConfirm(): void {
   } = {
     nodeId: localNodeId.value,
     kind: localKind.value,
-    params: validParams.map((item) => ({ id: item.id, name: item.name.trim(), type: item.type })),
+    params: validParams.map((item) => ({
+      id: item.id,
+      name: item.name.trim(),
+      type: normalizeEndpointParamType(item.type),
+    })),
   };
   if (localKind.value === "end") {
     payload.inputBindings = bindings.value;

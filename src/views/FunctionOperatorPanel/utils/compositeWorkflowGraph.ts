@@ -149,72 +149,6 @@ export function resolveCompositeWorkflowNodeUpstreamOutputs(
   return { hasUpstream: allOutputs.length > 0, upstreamOutputs: allOutputs };
 }
 
-/** 
- * @description 收集循环体内节点的输出端口。
- * <p>循环结束后，体内节点产出留在上下文里的是最后一轮的值，所以「结束后」出口的下游可以绑这些出参；
- * 沿着体内节点的控制流连线继续走，嵌套循环按其循环体递归收集。</p>
- * @param nodes 画布节点摘要。
- * @param edges 画布节点级连线。
- * @param loopNodeId 循环节点 id。
- * @returns 产出节点 id + 出参名 + 类型，同名的只留第一个。
- */
-export function collectCompositeWorkflowLoopBodyOutputs(
-  nodes: CompositeWorkflowGraphNodeSummary[],
-  edges: CompositeWorkflowGraphEdge[],
-  loopNodeId: string,
-): Array<{ nodeId: string; paramName: string; paramType: string }> {
-  const owners: Array<{ nodeId: string; paramName: string; paramType: string }> = [];
-  const seen = new Set<string>();
-  const visited = new Set<string>([loopNodeId]);
-  const queue = edges
-    .filter((edge) => edge.sourceNodeId === loopNodeId && edge.loopOutlet === "body")
-    .map((edge) => edge.targetNodeId);
-  while (queue.length > 0) {
-    const nodeId = queue.shift();
-    if (!nodeId || visited.has(nodeId)) {
-      continue;
-    }
-    visited.add(nodeId);
-    const node = nodes.find((item) => item.id === nodeId);
-    if (!node) {
-      continue;
-    }
-    if (node.kind === "loop") {
-      const nested = collectCompositeWorkflowLoopBodyOutputs(nodes, edges, node.id);
-      for (const owner of nested) {
-        if (seen.has(owner.paramName)) {
-          continue;
-        }
-        seen.add(owner.paramName);
-        owners.push(owner);
-      }
-    } else {
-      const outputs: CompositeWorkflowParamBrief[] =
-        node.kind === "transform"
-          ? resolveCompositeWorkflowTransformOutputs(node.transformConfig)
-          : node.kind === "start"
-            ? (node.outputParameters ?? []).map((param) => ({ paramName: param.name, paramType: param.type }))
-            : node.kind === "function"
-              ? (node.paramsSnapshot?.outputs ?? []).map((output) => ({ ...output }))
-              : [];
-      for (const output of outputs) {
-        if (!output.paramName || seen.has(output.paramName)) {
-          continue;
-        }
-        seen.add(output.paramName);
-        owners.push({ nodeId: node.id, paramName: output.paramName, paramType: output.paramType });
-      }
-    }
-    for (const edge of edges) {
-      if (edge.sourceNodeId !== nodeId) {
-        continue;
-      }
-      queue.push(edge.targetNodeId);
-    }
-  }
-  return owners;
-}
-
 /**
  * @description 解析单条入边的上游输出。
  */
@@ -266,6 +200,7 @@ function resolveSingleIncoming(
     const startOutputs: CompositeWorkflowParamBrief[] = (source.outputParameters ?? []).map((param) => ({
       paramName: param.name,
       paramType: param.type === "number" ? "double" : param.type,
+      sourceNodeId: source.id,
     }));
     return { hasUpstream: true, upstreamOutputs: startOutputs };
   }
@@ -273,6 +208,63 @@ function resolveSingleIncoming(
     return { hasUpstream: true, upstreamOutputs: resolveCompositeWorkflowTransformOutputs(source.transformConfig) };
   }
   return { hasUpstream: true, upstreamOutputs: [] };
+}
+
+/**
+ * @description 收集循环体内部节点的产出，供「结束后」出口绑定（运行期取最后一轮的值）。
+ */
+export function collectCompositeWorkflowLoopBodyOutputs(
+  nodes: CompositeWorkflowGraphNodeSummary[],
+  edges: CompositeWorkflowGraphEdge[],
+  loopNodeId: string,
+): Array<{ nodeId: string; paramName: string; paramType: string }> {
+  const owners: Array<{ nodeId: string; paramName: string; paramType: string }> = [];
+  const seen = new Set<string>();
+  const visited = new Set<string>([loopNodeId]);
+  const queue = edges.filter((edge) => edge.sourceNodeId === loopNodeId && edge.loopOutlet === "body").map((edge) => edge.targetNodeId);
+  while (queue.length > 0) {
+    const nodeId = queue.shift();
+    if (!nodeId || visited.has(nodeId)) {
+      continue;
+    }
+    visited.add(nodeId);
+    const node = nodes.find((item) => item.id === nodeId);
+    if (!node) {
+      continue;
+    }
+    if (node.kind === "loop") {
+      for (const owner of collectCompositeWorkflowLoopBodyOutputs(nodes, edges, node.id)) {
+        if (seen.has(owner.paramName)) {
+          continue;
+        }
+        seen.add(owner.paramName);
+        owners.push(owner);
+      }
+    } else {
+      const outputs: CompositeWorkflowParamBrief[] =
+        node.kind === "transform"
+          ? resolveCompositeWorkflowTransformOutputs(node.transformConfig)
+          : node.kind === "start"
+            ? (node.outputParameters ?? []).map((param) => ({ paramName: param.name, paramType: param.type }))
+            : node.kind === "function"
+              ? (node.paramsSnapshot?.outputs ?? []).map((output) => ({ ...output }))
+              : [];
+      for (const output of outputs) {
+        if (!output.paramName || seen.has(output.paramName)) {
+          continue;
+        }
+        seen.add(output.paramName);
+        owners.push({ nodeId: node.id, paramName: output.paramName, paramType: output.paramType });
+      }
+    }
+    for (const edge of edges) {
+      if (edge.sourceNodeId !== nodeId) {
+        continue;
+      }
+      queue.push(edge.targetNodeId);
+    }
+  }
+  return owners;
 }
 
 /**
@@ -490,38 +482,6 @@ export function buildDefaultCompositeWorkflowInputBindings(
 }
 
 /**
- * @description 为结束节点出参生成默认绑定：有上游时默认取自上游输出。
- * 结束节点的出参就是编排出参，默认 manual 空值会让编排永远不出结果，因此默认绑上游。
- * @param inputs 结束节点声明的出参。
- * @param upstreamOutputs 上游 OUTPUT。
- * @param hasUpstream 是否存在前驱。
- * @returns 出参绑定列表。
- */
-export function buildDefaultCompositeWorkflowEndBindings(
-  inputs: CompositeWorkflowParamBrief[],
-  upstreamOutputs: CompositeWorkflowParamBrief[],
-  hasUpstream: boolean,
-): CompositeWorkflowInputBinding[] {
-  const firstUpstream = hasUpstream ? (listCompositeWorkflowParamNodes(upstreamOutputs)[0] ?? undefined) : undefined;
-  return listCompositeWorkflowParamLeaves(inputs).map(({ brief, paramPath }) =>
-    firstUpstream
-      ? {
-          mode: "fromUpstream" as const,
-          paramName: brief.paramName,
-          paramPath,
-          upstreamParamName: firstUpstream.brief.paramName,
-          upstreamParamPath: firstUpstream.paramPath,
-        }
-      : {
-          mode: "manual" as const,
-          paramName: brief.paramName,
-          paramPath,
-          value: "",
-        },
-  );
-}
-
-/**
  * @description 自动配置绑定：按参数名匹配上游输出到下游输入，类型兼容时设为 fromUpstream，否则 manual。
  * @param inputs 下游 INPUT。
  * @param upstreamOutputs 上游 OUTPUT。
@@ -628,41 +588,6 @@ export function alignCompositeWorkflowInputBindings(
   hasUpstream: boolean,
 ): CompositeWorkflowInputBinding[] {
   const defaults = buildDefaultCompositeWorkflowInputBindings(inputs, upstreamOutputs, hasUpstream);
-  return alignCompositeWorkflowBindings(defaults, bindings, upstreamOutputs, hasUpstream);
-}
-
-/**
- * @description 按当前出参叶子对齐结束节点绑定：无绑定时默认绑上游输出。
- * @param inputs 结束节点声明的出参。
- * @param bindings 已保存绑定。
- * @param upstreamOutputs 上游 OUTPUT。
- * @param hasUpstream 是否存在前驱。
- * @returns 与叶子一一对应的绑定。
- */
-export function alignCompositeWorkflowEndBindings(
-  inputs: CompositeWorkflowParamBrief[],
-  bindings: CompositeWorkflowInputBinding[],
-  upstreamOutputs: CompositeWorkflowParamBrief[],
-  hasUpstream: boolean,
-): CompositeWorkflowInputBinding[] {
-  const defaults = buildDefaultCompositeWorkflowEndBindings(inputs, upstreamOutputs, hasUpstream);
-  return alignCompositeWorkflowBindings(defaults, bindings, upstreamOutputs, hasUpstream);
-}
-
-/**
- * @description 按默认绑定对齐已有绑定：叶子沿用同路径旧值，缺失时用默认值补齐。
- * @param defaults 默认绑定。
- * @param bindings 已保存绑定。
- * @param upstreamOutputs 上游 OUTPUT。
- * @param hasUpstream 是否存在前驱。
- * @returns 与叶子一一对应的绑定。
- */
-function alignCompositeWorkflowBindings(
-  defaults: CompositeWorkflowInputBinding[],
-  bindings: CompositeWorkflowInputBinding[],
-  upstreamOutputs: CompositeWorkflowParamBrief[],
-  hasUpstream: boolean,
-): CompositeWorkflowInputBinding[] {
   return defaults.map((fallback) => {
     const existing = bindings.find((item) => isSameCompositeWorkflowParamPath(compositeWorkflowBindingPath(item), fallback.paramPath));
     if (!existing) {

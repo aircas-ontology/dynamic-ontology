@@ -27,12 +27,10 @@ export function normalizeCompositeWorkflowParamType(rawType: string): string {
 }
 
 /**
- * @description 判断两个参数类型在规范化后是否兼容。
- * <p>与后端 {@code CompositeValidator.typeEquals} 对齐：任一侧为 object 表示"不限定具体类型"，
- * 按通配处理，否则 item/done 这类默认 object 的出口会被判成不兼容、绑定静默降级成空手填值。</p>
+ * @description 判断两个参数类型在规范化后是否兼容（P0：全等；任一方未知则视为可警告通过）。
  * @param upstreamType 上游输出类型。
  * @param downstreamType 下游入参类型。
- * @returns compatible 是否通过；unknown 是否因未知或通配类型仅警告。
+ * @returns compatible 是否通过；unknown 是否因未知类型仅警告。
  */
 export function compareCompositeWorkflowParamTypes(upstreamType: string, downstreamType: string): { compatible: boolean; unknown: boolean } {
   const left = normalizeCompositeWorkflowParamType(upstreamType);

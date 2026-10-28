@@ -43,6 +43,7 @@ import {
   compareCompositeWorkflowParamTypes,
   normalizeCompositeWorkflowParamType,
 } from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowParamType.ts";
+import { syncCompositeWorkflowTestInputRows } from "../src/views/FunctionOperatorPanel/utils/compositeWorkflowTestParams.ts";
 
 test("normalizeCompositeWorkflowParamType maps aliases", () => {
   assert.equal(normalizeCompositeWorkflowParamType("STRING"), "string");
@@ -719,13 +720,36 @@ test("resolveCompositeWorkflowNodeUpstreamOutputs covers transform loop and miss
     ],
     "after",
   );
-  assert.deepEqual(loopDoneOutputs.upstreamOutputs, upstreamOutputs);
+  assert.deepEqual(loopDoneOutputs.upstreamOutputs, [...upstreamOutputs, { paramName: "done", paramType: "object" }]);
 
   assert.deepEqual(resolveCompositeWorkflowNodeUpstreamOutputs([], [], "x"), { hasUpstream: false, upstreamOutputs: [] });
   assert.deepEqual(resolveCompositeWorkflowNodeUpstreamOutputs([], [{ id: "e1", sourceNodeId: "gone", targetNodeId: "x" }], "x"), {
     hasUpstream: true,
     upstreamOutputs: [],
   });
+});
+
+test("resolveCompositeWorkflowNodeUpstreamOutputs maps start params with sourceNodeId", () => {
+  const resolved = resolveCompositeWorkflowNodeUpstreamOutputs(
+    [
+      {
+        id: "start_1",
+        kind: "start",
+        outputParameters: [
+          { id: "p1", name: "n", type: "number" },
+          { id: "p2", name: "flag", type: "boolean" },
+        ],
+      },
+      { id: "down", kind: "function" },
+    ],
+    [{ id: "e1", sourceNodeId: "start_1", targetNodeId: "down" }],
+    "down",
+  );
+  assert.equal(resolved.hasUpstream, true);
+  assert.deepEqual(resolved.upstreamOutputs, [
+    { paramName: "n", paramType: "double", sourceNodeId: "start_1" },
+    { paramName: "flag", paramType: "boolean", sourceNodeId: "start_1" },
+  ]);
 });
 
 test("resolveCompositeWorkflowNodeUpstreamOutputs passes through branch predecessors", () => {
@@ -903,4 +927,20 @@ test("switch logic dialog configures switchOn and editable cases", () => {
   assert.match(dialog, /switchOn|switchPathKey|localKind === ["']switch["']/);
   assert.match(dialog, /cases/);
   assert.match(dialog, /添加.*case|addSwitchCase|增/);
+});
+
+test("syncCompositeWorkflowTestInputRows aligns rows to start params and keeps same-name values", () => {
+  const previous = [
+    { paramName: "n", paramType: "number", paramValue: "2" },
+    { paramName: "gone", paramType: "string", paramValue: "x" },
+  ];
+  const next = syncCompositeWorkflowTestInputRows(previous, [
+    { name: "n", type: "number" },
+    { name: "  ", type: "string" },
+    { name: "flag", type: "boolean" },
+  ]);
+  assert.deepEqual(next, [
+    { paramName: "n", paramType: "number", paramValue: "2" },
+    { paramName: "flag", paramType: "boolean", paramValue: "" },
+  ]);
 });

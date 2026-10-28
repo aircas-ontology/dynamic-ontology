@@ -8,9 +8,7 @@ import type {
 } from "@/types";
 
 import type { CompositeWorkflowGraphEdge, CompositeWorkflowGraphNodeSummary } from "./compositeWorkflowGraph.ts";
-import { collectCompositeWorkflowLoopBodyOutputs } from "./compositeWorkflowGraph.ts";
 import { normalizeCompositeWorkflowLoopConfig } from "./compositeWorkflowLoopDefaults.ts";
-import { resolveCompositeWorkflowTransformOutputs } from "./compositeWorkflowTransformDefaults.ts";
 
 /** LogicFlow 节点 type 常量；与 registerCompositeWorkflowNodes 保持一致，独立定义避免测试引入 LogicFlow。 */
 const LF_NODE_TYPES: Record<CompositeWorkflowNodeKind, string> = {
@@ -31,16 +29,6 @@ const BRANCH_OPERATORS: Record<CompositeWorkflowBranchOperator, string> = {
   gte: ">=",
   lt: "<",
   lte: "<=",
-};
-
-/** Groovy 运算符到分支比较运算符的反查表，用于回显时还原手填右值。 */
-const BRANCH_OPERATOR_SYMBOLS: Record<string, CompositeWorkflowBranchOperator> = {
-  "==": "eq",
-  "!=": "ne",
-  ">": "gt",
-  ">=": "gte",
-  "<": "lt",
-  "<=": "lte",
 };
 
 /** 详情参数类型到后端画布类型的映射（与 refs 解析端口类型的口径一致）。 */
@@ -79,12 +67,6 @@ function resolveCompositeWorkflowResultCanvasType(node: CompositeWorkflowGraphNo
 /** 后端控制流端口名。 */
 const FLOW_OUT = "__flow_out__";
 const FLOW_IN = "__flow_in__";
-
-/** 循环节点"结束后"出口产出的结果端口名，与运行期 loop 节点的 done 出参一致。 */
-const DONE_PORT = "done";
-
-/** 函数节点固定的输出端口名；未加载详情时出参未知，按此端口取函数结果。 */
-const FUNCTION_RESULT_PORT = "result";
 
 /**
  * @description 将画布边的分支 / Switch / 循环出口映射为后端控制边 sourceParameterId。
@@ -154,7 +136,6 @@ export function compileCompositeWorkflowToBackendConfig(options: {
         kind: "end",
         label: "结束",
         inputParameters: node.inputParameters ?? [],
-        inputDefaults: buildCompositeWorkflowInputDefaults(node.inputBindings),
       };
     }
     if (node.kind === "loop") {
@@ -211,7 +192,6 @@ export function compileCompositeWorkflowToBackendConfig(options: {
           language: mappingMode === "script" ? config?.language || "typescript" : undefined,
           script: mappingMode === "script" ? (config?.code ?? "") : undefined,
         },
-        inputDefaults: buildCompositeWorkflowInputDefaults(config?.inputBindings),
       };
     }
     if (node.kind === "switch") {
@@ -236,7 +216,6 @@ export function compileCompositeWorkflowToBackendConfig(options: {
   });
 
   const backendEdges: OntologyCompositeEdge[] = [];
-  const boundTargetNodeIds = new Set<string>();
   for (const edge of edges) {
     backendEdges.push({
       id: edge.id,
@@ -245,50 +224,26 @@ export function compileCompositeWorkflowToBackendConfig(options: {
       targetNodeId: edge.targetNodeId,
       targetParameterId: FLOW_IN,
     });
-    // 同一目标节点的多条入边只解一次数据绑定，避免重复生成数据边。
-    if (boundTargetNodeIds.has(edge.targetNodeId)) {
-      continue;
-    }
-    boundTargetNodeIds.add(edge.targetNodeId);
     appendUpstreamDataEdges(backendEdges, nodes, edges, edge.targetNodeId);
   }
 
   // 优先从结束节点生成 outputMappings；没有结束节点时从尾部函数节点生成
-  // 允许多个结束节点，各结束节点的入参按出现顺序合并为编排出参（同名/同 id 只保留一次）
-  const endNodes = nodes.filter((node) => node.kind === "end");
-  const endNodesWithParams = endNodes.filter((node) => (node.inputParameters ?? []).length > 0);
+  const endNode = nodes.find((node) => node.kind === "end");
   let outputMappings: Array<{ externalParameterId: string; nodeId: string; nodeParameterId: string }>;
   let outputParameters: Array<{ id: string; name: string; type: string }>;
 
-  if (endNodesWithParams.length > 0) {
-    outputMappings = [];
-    const declared: Array<{ id: string; name: string; type: string }> = [];
-    const seenIds = new Set<string>();
-    const seenNames = new Set<string>();
-    let paramCount = 0;
-    for (const currentEnd of endNodesWithParams) {
-      for (const param of currentEnd.inputParameters ?? []) {
-        const fallback = paramCount === 0 ? "result" : `result_${paramCount}`;
-        const externalParameterId = param.id || fallback;
-        const name = param.name || param.id || fallback;
-        const type = param.type || "object";
-        paramCount += 1;
-        outputMappings.push({ externalParameterId, nodeId: currentEnd.id, nodeParameterId: param.id || param.name || fallback });
-        if (seenIds.has(externalParameterId) || seenNames.has(name)) {
-          // 同名出参被多个结束节点复用：类型不一致时按不限定类型声明（后端把 object 当通配），
-          // 否则多支路结束节点会因为出参类型冲突而无法保存。
-          const existing = declared.find((item) => item.id === externalParameterId);
-          if (existing && existing.type !== type) {
-            existing.type = "object";
-          }
-          continue;
-        }
-        seenIds.add(externalParameterId);
-        seenNames.add(name);
-        declared.push({ id: externalParameterId, name, type });
-      }
-    }
-    outputParameters = declared;
+  if (endNode && endNode.inputParameters && endNode.inputParameters.length > 0) {
+    // 从结束节点的 inputParameters 生成 outputMappings
+    outputMappings = endNode.inputParameters.map((param, index) => ({
+      externalParameterId: param.id || (index === 0 ? "result" : `result_${index}`),
+      nodeId: endNode.id,
+      nodeParameterId: param.id || param.name,
+    }));
+    outputParameters = endNode.inputParameters.map((param, index) => ({
+      id: param.id || (index === 0 ? "result" : `result_${index}`),
+      name: param.name || param.id || (index === 0 ? "result" : `result_${index}`),
+      type: param.type || "object",
+    }));
   } else {
     // 兼容旧逻辑：从尾部函数节点生成
     const tailFunctionNodes = nodes.filter((node) => node.kind === "function" && !nodesWithOutgoing.has(node.id));
@@ -368,12 +323,10 @@ function appendUpstreamDataEdges(
   if (!target) {
     return;
   }
-  const incoming = edges.filter((edge) => edge.targetNodeId === targetNodeId);
-  if (incoming.length === 0) {
+  const incoming = edges.find((edge) => edge.targetNodeId === targetNodeId);
+  if (!incoming) {
     return;
   }
-  const feederOf = (upstreamRoot: string): string =>
-    resolveCompositeWorkflowDataFeeder({ targetNodeId, upstreamRoot, nodes, edges });
   const appendBindingEdges = (bindings: CompositeWorkflowInputBinding[] | undefined, portPrefix: string | undefined): void => {
     for (const binding of bindings ?? []) {
       if (binding.mode !== "fromUpstream") {
@@ -383,13 +336,8 @@ function appendUpstreamDataEdges(
       if (!upstreamRoot) {
         continue;
       }
-      // 找不到产出该出参的数据源时不连线：绑到分支 / 循环这类控制节点上会让后端校验失败。
-      const sourceNodeId = feederOf(upstreamRoot);
-      if (!sourceNodeId) {
-        continue;
-      }
       backendEdges.push({
-        sourceNodeId,
+        sourceNodeId: incoming.sourceNodeId,
         sourceParameterId: upstreamRoot,
         targetNodeId,
         targetParameterId: portPrefix ?? binding.paramName,
@@ -406,12 +354,10 @@ function appendUpstreamDataEdges(
   }
   if (target.kind === "loop") {
     const collection = target.loopConfig?.collection;
-    const collectionRoot = collection?.mode === "fromUpstream" ? collection.upstreamParamName?.trim() : "";
-    const collectionFeeder = collectionRoot ? feederOf(collectionRoot) : "";
-    if (collectionRoot && collectionFeeder) {
+    if (collection?.mode === "fromUpstream" && collection.upstreamParamName) {
       backendEdges.push({
-        sourceNodeId: collectionFeeder,
-        sourceParameterId: collectionRoot,
+        sourceNodeId: incoming.sourceNodeId,
+        sourceParameterId: collection.upstreamParamName,
         targetNodeId,
         targetParameterId: "collection",
       });
@@ -420,11 +366,10 @@ function appendUpstreamDataEdges(
   }
   if (target.kind === "branch") {
     const left = target.branchConfig?.left;
-    const leftRoot = left?.mode === "fromUpstream" ? left.upstreamParamPath[0]?.trim() : "";
-    const leftFeeder = leftRoot ? feederOf(leftRoot) : "";
-    if (leftRoot && leftFeeder) {
+    const leftRoot = left?.mode === "fromUpstream" ? left.upstreamParamPath[0] : undefined;
+    if (left?.mode === "fromUpstream" && leftRoot) {
       backendEdges.push({
-        sourceNodeId: leftFeeder,
+        sourceNodeId: incoming.sourceNodeId,
         sourceParameterId: leftRoot,
         targetNodeId,
         targetParameterId: "value",
@@ -435,10 +380,9 @@ function appendUpstreamDataEdges(
   if (target.kind === "switch") {
     const switchOn = target.switchConfig?.switchOn;
     const switchRoot = switchOn?.mode === "fromUpstream" ? switchOn.upstreamParamPath[0] || switchOn.upstreamParamName : undefined;
-    const switchFeeder = switchRoot?.trim() ? feederOf(switchRoot.trim()) : "";
-    if (switchRoot?.trim() && switchFeeder) {
+    if (switchOn?.mode === "fromUpstream" && switchRoot?.trim()) {
       backendEdges.push({
-        sourceNodeId: switchFeeder,
+        sourceNodeId: incoming.sourceNodeId,
         sourceParameterId: switchRoot.trim(),
         targetNodeId,
         targetParameterId: switchRoot.trim(),
@@ -447,211 +391,8 @@ function appendUpstreamDataEdges(
     return;
   }
   if (target.kind === "end") {
-    appendBindingEdges(resolveCompositeWorkflowEndBindings(target, nodes, edges, feederOf), undefined);
+    appendBindingEdges(target.inputBindings, undefined);
   }
-}
-
-/**
- * @description 结束节点未配置出参绑定时兜底绑最近上游出参。
- * 新建的结束节点默认没有绑定，而结束节点的入参就是编排出参，不兜底会让编排永远吐不出结果。
- * @param node 结束节点摘要。
- * @param nodes 画布节点摘要。
- * @param edges 画布节点级连线。
- * @param feederOf 出参名到产出节点的解析函数。
- * @returns 结束节点出参绑定。
- */
-function resolveCompositeWorkflowEndBindings(
-  node: CompositeWorkflowGraphNodeSummary,
-  nodes: CompositeWorkflowGraphNodeSummary[],
-  edges: CompositeWorkflowGraphEdge[],
-  feederOf: (upstreamRoot: string) => string,
-): CompositeWorkflowInputBinding[] {
-  const bindings = node.inputBindings ?? [];
-  if (bindings.length > 0 || (node.inputParameters ?? []).length === 0) {
-    return bindings;
-  }
-  return (node.inputParameters ?? []).map((param): CompositeWorkflowInputBinding => {
-    const paramName = param.name?.trim() || param.id;
-    const upstreamParamName = resolveNearestCompositeWorkflowUpstreamOutputName({
-      targetNodeId: node.id,
-      preferredName: paramName,
-      nodes,
-      edges,
-    });
-    if (!upstreamParamName || !feederOf(upstreamParamName)) {
-      return { mode: "manual", paramName, paramPath: [paramName], value: "" };
-    }
-    return {
-      mode: "fromUpstream",
-      paramName,
-      paramPath: [paramName],
-      upstreamParamName,
-      upstreamParamPath: [upstreamParamName],
-    };
-  });
-}
-
-/**
- * 上游出参的产出节点。paramName 为 null 表示节点未声明出参（详情快照缺失），按"可能产出任意出参"处理；
- * hops 为回溯途中跨越的数据产出节点层数，越小越靠近目标。
- */
-interface CompositeWorkflowOutputOwner {
-  nodeId: string;
-  paramName: string | null;
-  hops: number;
-}
-
-/**
- * @description 沿入边向上收集真实的出参产出节点：分支 / Switch / 循环 done 出口只做控制流继续上溯，
- * 产出数据的节点既登记出参、也继续上溯（画布可能把更上游的出参直接绑到下游）。
- * @param nodes 画布节点摘要。
- * @param edges 画布节点级连线。
- * @param nodeId 当前回溯节点 id。
- * @param hops 已跨越的数据产出节点层数。
- * @param visited 已回溯节点，防止成环。
- * @param owners 输出集合（就地追加）。
- */
-function collectCompositeWorkflowUpstreamOutputOwners(
-  nodes: CompositeWorkflowGraphNodeSummary[],
-  edges: CompositeWorkflowGraphEdge[],
-  nodeId: string,
-  hops: number,
-  visited: Set<string>,
-  owners: CompositeWorkflowOutputOwner[],
-): void {
-  if (visited.has(nodeId)) {
-    return;
-  }
-  visited.add(nodeId);
-  for (const edge of edges) {
-    if (edge.targetNodeId !== nodeId) {
-      continue;
-    }
-    const source = nodes.find((node) => node.id === edge.sourceNodeId);
-    if (!source) {
-      continue;
-    }
-    if (source.kind === "branch" || source.kind === "switch") {
-      collectCompositeWorkflowUpstreamOutputOwners(nodes, edges, source.id, hops, visited, owners);
-      continue;
-    }
-    if (source.kind === "loop") {
-      if (edge.loopOutlet === "body") {
-        // 循环体优先取当前元素；同时也上溯循环外的出参，画布上允许把循环外的输出直接绑给体内节点。
-        owners.push({ nodeId: source.id, paramName: source.loopConfig?.itemParamName?.trim() || "item", hops });
-      } else if (edge.loopOutlet === DONE_PORT) {
-        // 循环结束出口产出本次循环的结果（done）。
-        owners.push({ nodeId: source.id, paramName: DONE_PORT, hops });
-        // 结束后还能取循环体内部节点的产出：留在上下文里的是最后一轮的值
-        for (const bodyOutput of collectCompositeWorkflowLoopBodyOutputs(nodes, edges, source.id)) {
-          owners.push({ nodeId: bodyOutput.nodeId, paramName: bodyOutput.paramName, hops: hops + 1 });
-        }
-      }
-      collectCompositeWorkflowUpstreamOutputOwners(nodes, edges, source.id, hops, visited, owners);
-      continue;
-    }
-    const outputs: Array<{ paramName: string }> =
-      source.kind === "start"
-        ? (source.outputParameters ?? []).map((param) => ({ paramName: param.name }))
-        : source.kind === "transform"
-          ? resolveCompositeWorkflowTransformOutputs(source.transformConfig)
-          : (source.paramsSnapshot?.outputs ?? []);
-    if (outputs.length > 0) {
-      for (const output of outputs) {
-        owners.push({ nodeId: source.id, paramName: output.paramName, hops });
-      }
-    } else {
-      // 回显打开旧编排时函数节点可能还没拉取详情：此时出参未知，登记为通配源而不是让下游绑定到控制节点上。
-      owners.push({ nodeId: source.id, paramName: null, hops });
-    }
-    collectCompositeWorkflowUpstreamOutputOwners(nodes, edges, source.id, hops + 1, visited, owners);
-  }
-}
-
-/**
- * @description 定位真正产出某出参的上游节点；同名出参取离目标最近的一个，找不到时回落到直接前驱。
- * @param options.targetNodeId 目标节点 id。
- * @param options.upstreamRoot 上游出参名。
- * @param options.nodes 画布节点摘要。
- * @param options.edges 画布节点级连线。
- * @returns 数据边源节点 id；找不到产出该出参的数据源时返回空串。
- */
-function resolveCompositeWorkflowDataFeeder(options: {
-  targetNodeId: string;
-  upstreamRoot: string;
-  nodes: CompositeWorkflowGraphNodeSummary[];
-  edges: CompositeWorkflowGraphEdge[];
-}): string {
-  const owners: CompositeWorkflowOutputOwner[] = [];
-  collectCompositeWorkflowUpstreamOutputOwners(options.nodes, options.edges, options.targetNodeId, 0, new Set<string>(), owners);
-  // 先取同名出参里最近的一个；都没有时退到最近"出参未知"的节点，避免把控制节点当成数据源。
-  let exact: CompositeWorkflowOutputOwner | undefined;
-  let wildcard: CompositeWorkflowOutputOwner | undefined;
-  for (const owner of owners) {
-    if (owner.paramName === options.upstreamRoot) {
-      if (!exact || owner.hops < exact.hops) {
-        exact = owner;
-      }
-    } else if (owner.paramName === null && (!wildcard || owner.hops < wildcard.hops)) {
-      wildcard = owner;
-    }
-  }
-  return (exact ?? wildcard)?.nodeId ?? "";
-}
-
-/**
- * @description 取离目标最近的上游出参名，优先与期望参数名同名。
- * 未加载详情的函数节点出参未知，此时按其固定的 result 出参兜底。
- * @param options.targetNodeId 目标节点 id。
- * @param options.preferredName 期望的出参名。
- * @param options.nodes 画布节点摘要。
- * @param options.edges 画布节点级连线。
- * @returns 上游出参名；无可用上游出参时返回空串。
- */
-function resolveNearestCompositeWorkflowUpstreamOutputName(options: {
-  targetNodeId: string;
-  preferredName: string;
-  nodes: CompositeWorkflowGraphNodeSummary[];
-  edges: CompositeWorkflowGraphEdge[];
-}): string {
-  const owners: CompositeWorkflowOutputOwner[] = [];
-  collectCompositeWorkflowUpstreamOutputOwners(options.nodes, options.edges, options.targetNodeId, 0, new Set<string>(), owners);
-  const named = owners.filter((owner): owner is CompositeWorkflowOutputOwner & { paramName: string } => owner.paramName !== null);
-  const preferred = named.find((owner) => owner.paramName === options.preferredName);
-  if (preferred) {
-    return preferred.paramName;
-  }
-  if (named.length > 0) {
-    return named.reduce((best, owner) => (owner.hops < best.hops ? owner : best)).paramName;
-  }
-  const wildcard = owners.find((owner) => owner.paramName === null);
-  const wildcardNode = wildcard ? options.nodes.find((node) => node.id === wildcard.nodeId) : undefined;
-  return wildcardNode?.kind === "function" ? FUNCTION_RESULT_PORT : "";
-}
-
-/**
- * @description 从后端分支表达式反解运算符与手填右值；无法识别时退到大于 + 空右值。
- * @param expression 后端 Groovy 判断表达式。
- * @returns 运算符与右值。
- */
-function parseCompositeWorkflowBranchExpression(expression: string | undefined): { operator: CompositeWorkflowBranchOperator; rightValue: string } {
-  const matched = /^value\s*(==|!=|>=|<=|>|<)\s*(.*)$/.exec((expression ?? "").trim());
-  if (!matched) {
-    return { operator: "gt", rightValue: "" };
-  }
-  const operator = BRANCH_OPERATOR_SYMBOLS[matched[1] ?? ""] ?? "gt";
-  const rawRight = (matched[2] ?? "").trim();
-  if (!rawRight || rawRight === "null") {
-    return { operator, rightValue: "" };
-  }
-  if (rawRight.startsWith('"')) {
-    try {
-      return { operator, rightValue: String(JSON.parse(rawRight)) };
-    } catch {
-      return { operator, rightValue: rawRight.replace(/^"|"$/g, "") };
-    }
-  }
-  return { operator, rightValue: rawRight };
 }
 
 /**
@@ -714,7 +455,7 @@ export function buildCompositeWorkflowRestoreGraphData(config: OntologyComposite
   const graphNodes = graph && typeof graph === "object" ? (graph as { nodes?: unknown[] }).nodes : undefined;
   // graph 需为含非空 nodes 的结构才直接使用；残缺或空 graph（旧保存残留）回落到 nodes/edges 兜底重建。
   if (Array.isArray(graphNodes) && graphNodes.length > 0) {
-    return mergeCompositeWorkflowBackendNodeProperties(graph as CompositeWorkflowRestoreGraphData, normalized?.nodes ?? [], normalized?.edges ?? []);
+    return graph as CompositeWorkflowRestoreGraphData;
   }
   const nodes = (normalized?.nodes ?? []).map((node, index) => {
     const kind = (node.kind ?? "function") as CompositeWorkflowNodeKind;
@@ -747,13 +488,11 @@ export function buildCompositeWorkflowRestoreGraphData(config: OntologyComposite
   const pairKey = (sourceNodeId: string, targetNodeId: string): string => `${sourceNodeId}\u0001${targetNodeId}`;
   const restoredEdges: CompositeWorkflowRestoreGraphData["edges"] = [];
   const coveredPairs = new Set<string>();
-  const controlTargets = new Set<string>();
   for (const edge of normalized?.edges ?? []) {
     if (edge.targetParameterId !== FLOW_IN) {
       continue;
     }
     coveredPairs.add(pairKey(edge.sourceNodeId, edge.targetNodeId));
-    controlTargets.add(edge.targetNodeId);
     restoredEdges.push({
       id: edge.id ?? `restore_edge_${restoredEdges.length}`,
       type: "polyline",
@@ -762,10 +501,9 @@ export function buildCompositeWorkflowRestoreGraphData(config: OntologyComposite
       properties: restoreControlFlowEdgeProperties(edge.sourceParameterId),
     });
   }
-  // 旧数据可能只存数据边（无 __flow_in__ 控制边）：对完全没有控制入边的节点，用数据边补一条节点级连线，同一节点对去重。
-  // 已有控制入边的节点不再补线，否则数据边的源节点（可能跨过控制节点）会被误当成另一条控制前驱。
+  // 旧数据可能只存数据边（无 __flow_in__ 控制边）：对未被控制边覆盖的节点对，用数据边补一条节点级连线，同一节点对去重。
   for (const edge of normalized?.edges ?? []) {
-    if (edge.targetParameterId === FLOW_IN || controlTargets.has(edge.targetNodeId)) {
+    if (edge.targetParameterId === FLOW_IN) {
       continue;
     }
     const key = pairKey(edge.sourceNodeId, edge.targetNodeId);
@@ -782,42 +520,6 @@ export function buildCompositeWorkflowRestoreGraphData(config: OntologyComposite
     });
   }
   return { nodes, edges: restoredEdges };
-}
-
-/**
- * @description 用后端节点配置补齐画布原始图缺失的 properties（画布图本身的值优先保留）。
- * 画布图可能由接口/旧版本保存下来缺少 switchConfig 等配置，直接渲染会让用户以为配置丢失、
- * 再次保存又把空配置写回后端。
- * @param graphData 画布原始图。
- * @param backendNodes 后端编排节点。
- * @param backendEdges 后端编排连线。
- * @returns 补齐后的画布图。
- */
-function mergeCompositeWorkflowBackendNodeProperties(
-  graphData: CompositeWorkflowRestoreGraphData,
-  backendNodes: OntologyCompositeNode[],
-  backendEdges: OntologyCompositeEdge[],
-): CompositeWorkflowRestoreGraphData {
-  if (backendNodes.length === 0) {
-    return graphData;
-  }
-  return {
-    nodes: graphData.nodes.map((node) => {
-      const backendNode = backendNodes.find((item) => item.id === node.id);
-      if (!backendNode) {
-        return node;
-      }
-      const backendProperties = buildCompositeWorkflowRestoreNodeProperties(backendNode, backendEdges);
-      const properties: Record<string, unknown> = { ...backendProperties };
-      for (const [key, value] of Object.entries(node.properties ?? {})) {
-        if (value !== undefined) {
-          properties[key] = value;
-        }
-      }
-      return { ...node, properties };
-    }),
-    edges: graphData.edges,
-  };
 }
 
 /**
@@ -871,9 +573,8 @@ function buildCompositeWorkflowRestoreNodeProperties(node: OntologyCompositeNode
     };
   }
   if (node.kind === "branch") {
-    // 左值从 value 数据边还原真实上游出参名；运算符与右值从后端表达式反解，避免回显后保存丢失判断条件。
+    // 左值从 value 数据边还原真实上游出参名；运算符/右值不可从表达式反推，保留原表达式供保存时原样回传。
     const valueEdge = dataEdgeTo("value");
-    const parsed = parseCompositeWorkflowBranchExpression(node.branchConfig?.expression);
     return {
       kind: "branch",
       branchConfig: {
@@ -881,8 +582,8 @@ function buildCompositeWorkflowRestoreNodeProperties(node: OntologyCompositeNode
         left: valueEdge
           ? { mode: "fromUpstream", upstreamParamName: valueEdge.sourceParameterId, upstreamParamPath: [valueEdge.sourceParameterId] }
           : { mode: "fromUpstream", upstreamParamName: "value", upstreamParamPath: ["value"] },
-        operator: parsed.operator,
-        right: { mode: "manual", value: parsed.rightValue },
+        operator: "gt",
+        right: { mode: "manual", value: "" },
         rawExpression: node.branchConfig?.expression ?? "",
       },
     };

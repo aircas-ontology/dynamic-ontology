@@ -52,32 +52,6 @@ test("compileCompositeWorkflowToBackendConfig maps function chain with bindings 
   assert.deepEqual(config.graph, { nodes: [{ id: "n_input" }], edges: [] });
 });
 
-test("compileCompositeWorkflowToBackendConfig merges every end node into composite outputs", () => {
-  const config = compileCompositeWorkflowToBackendConfig({
-    nodes: [
-      { id: "start", kind: "start", outputParameters: [{ id: "level", name: "level", type: "number" }] },
-      { id: "fn", kind: "function", functionApi: "op.pick", version: "1.0.0", inputBindings: [] },
-      { id: "br", kind: "branch", branchConfig: { operator: "gt", right: { mode: "manual", value: "5" } } },
-      { id: "end_a", kind: "end", inputParameters: [{ id: "result", name: "result", type: "string" }] },
-      { id: "end_b", kind: "end", inputParameters: [{ id: "reason", name: "reason", type: "string" }] },
-    ],
-    edges: [
-      { id: "e1", sourceNodeId: "start", targetNodeId: "fn" },
-      { id: "e2", sourceNodeId: "fn", targetNodeId: "br" },
-      { id: "e3", sourceNodeId: "br", targetNodeId: "end_a", branch: "true" },
-      { id: "e4", sourceNodeId: "br", targetNodeId: "end_b", branch: "false" },
-    ],
-    logicFlowGraph: undefined,
-  });
-
-  assert.deepEqual(
-    config.outputParameters.map((param) => param.id),
-    ["result", "reason"],
-  );
-  assert.equal(config.outputMappings.find((mapping) => mapping.nodeId === "end_a").externalParameterId, "result");
-  assert.equal(config.outputMappings.find((mapping) => mapping.nodeId === "end_b").externalParameterId, "reason");
-});
-
 test("compileCompositeWorkflowToBackendConfig maps tail function node to external output", () => {
   const config = compileCompositeWorkflowToBackendConfig({
     nodes: [
@@ -110,137 +84,6 @@ test("compileCompositeWorkflowToBackendConfig keeps object type when params snap
     logicFlowGraph: null,
   });
   assert.equal(config.outputParameters[0].type, "object");
-});
-
-test("compileCompositeWorkflowToBackendConfig resolves data source across control-only nodes", () => {
-  const config = compileCompositeWorkflowToBackendConfig({
-    nodes: [
-      { id: "start", kind: "start", outputParameters: [{ id: "level", name: "level", type: "number" }] },
-      {
-        id: "fn",
-        kind: "function",
-        functionApi: "op.level",
-        version: "1.0.0",
-        displayName: "取等级",
-        paramsSnapshot: { inputs: [], outputs: [{ paramName: "result", paramType: "STRING" }] },
-        inputBindings: [{ mode: "fromUpstream", paramName: "level", paramPath: ["level"], upstreamParamName: "level", upstreamParamPath: ["level"] }],
-      },
-      {
-        id: "br",
-        kind: "branch",
-        branchConfig: {
-          operator: "gt",
-          right: { mode: "manual", value: "5" },
-          left: { mode: "fromUpstream", upstreamParamName: "result", upstreamParamPath: ["result"] },
-        },
-      },
-      {
-        id: "end_t",
-        kind: "end",
-        inputParameters: [{ id: "result", name: "result", type: "string" }],
-        inputBindings: [{ mode: "fromUpstream", paramName: "result", paramPath: ["result"], upstreamParamName: "result", upstreamParamPath: ["result"] }],
-      },
-      {
-        id: "end_f",
-        kind: "end",
-        inputParameters: [{ id: "reason", name: "reason", type: "number" }],
-        inputBindings: [{ mode: "fromUpstream", paramName: "reason", paramPath: ["reason"], upstreamParamName: "result", upstreamParamPath: ["result"] }],
-      },
-    ],
-    edges: [
-      { id: "e1", sourceNodeId: "start", targetNodeId: "fn" },
-      { id: "e2", sourceNodeId: "fn", targetNodeId: "br" },
-      { id: "e3", sourceNodeId: "br", targetNodeId: "end_t", branch: "true" },
-      { id: "e4", sourceNodeId: "br", targetNodeId: "end_f", branch: "false" },
-    ],
-    logicFlowGraph: null,
-  });
-
-  // 分支节点只做控制流：下游绑定要回溯到真正产出该出参的节点，而不是分支节点本身。
-  const endTrueDataEdge = config.edges.find((edge) => edge.targetNodeId === "end_t" && edge.targetParameterId === "result");
-  assert.ok(endTrueDataEdge);
-  assert.equal(endTrueDataEdge.sourceNodeId, "fn");
-  assert.equal(endTrueDataEdge.sourceParameterId, "result");
-
-  const endFalseDataEdge = config.edges.find((edge) => edge.targetNodeId === "end_f" && edge.targetParameterId === "reason");
-  assert.ok(endFalseDataEdge);
-  assert.equal(endFalseDataEdge.sourceNodeId, "fn");
-  assert.equal(endFalseDataEdge.sourceParameterId, "result");
-
-  const branchValueEdge = config.edges.find((edge) => edge.targetNodeId === "br" && edge.targetParameterId === "value");
-  assert.ok(branchValueEdge);
-  assert.equal(branchValueEdge.sourceNodeId, "fn");
-
-  // 上游隔了多级控制节点时同样回溯到开始节点。
-  const deepConfig = compileCompositeWorkflowToBackendConfig({
-    nodes: [
-      { id: "start", kind: "start", outputParameters: [{ id: "level", name: "level", type: "number" }] },
-      {
-        id: "br",
-        kind: "branch",
-        branchConfig: {
-          operator: "gt",
-          right: { mode: "manual", value: "5" },
-          left: { mode: "fromUpstream", upstreamParamName: "level", upstreamParamPath: ["level"] },
-        },
-      },
-      {
-        id: "end_level",
-        kind: "end",
-        inputParameters: [{ id: "result", name: "result", type: "number" }],
-        inputBindings: [{ mode: "fromUpstream", paramName: "result", paramPath: ["result"], upstreamParamName: "level", upstreamParamPath: ["level"] }],
-      },
-    ],
-    edges: [
-      { id: "e1", sourceNodeId: "start", targetNodeId: "br" },
-      { id: "e2", sourceNodeId: "br", targetNodeId: "end_level", branch: "true" },
-    ],
-    logicFlowGraph: null,
-  });
-  const levelEdge = deepConfig.edges.find((edge) => edge.targetNodeId === "end_level" && edge.targetParameterId === "result");
-  assert.ok(levelEdge);
-  assert.equal(levelEdge.sourceNodeId, "start");
-  assert.equal(levelEdge.sourceParameterId, "level");
-});
-
-test("compileCompositeWorkflowToBackendConfig falls back to upstream node with unknown outputs", () => {
-  // 回显旧编排后函数节点尚未拉取详情（无 paramsSnapshot），仍要把数据边指向该函数节点而不是控制节点。
-  const config = compileCompositeWorkflowToBackendConfig({
-    nodes: [
-      { id: "start", kind: "start", outputParameters: [{ id: "level", name: "level", type: "number" }] },
-      { id: "fn", kind: "function", functionApi: "op.level", version: "1.0.0", displayName: "取等级", inputBindings: [] },
-      {
-        id: "sw",
-        kind: "switch",
-        switchConfig: {
-          kind: "switch",
-          switchOn: { mode: "fromUpstream", upstreamParamName: "result", upstreamParamPath: ["result"] },
-          cases: [{ id: "case_a", value: "A" }],
-        },
-      },
-      {
-        id: "end_a",
-        kind: "end",
-        inputParameters: [{ id: "result", name: "result", type: "string" }],
-        inputBindings: [{ mode: "fromUpstream", paramName: "result", paramPath: ["result"], upstreamParamName: "result", upstreamParamPath: ["result"] }],
-      },
-    ],
-    edges: [
-      { id: "e1", sourceNodeId: "start", targetNodeId: "fn" },
-      { id: "e2", sourceNodeId: "fn", targetNodeId: "sw" },
-      { id: "e3", sourceNodeId: "sw", targetNodeId: "end_a", switchOutlet: "case_a" },
-    ],
-    logicFlowGraph: null,
-  });
-
-  const endDataEdge = config.edges.find((edge) => edge.targetNodeId === "end_a" && edge.targetParameterId === "result");
-  assert.ok(endDataEdge);
-  assert.equal(endDataEdge.sourceNodeId, "fn");
-  assert.equal(endDataEdge.sourceParameterId, "result");
-
-  const switchValueEdge = config.edges.find((edge) => edge.targetNodeId === "sw" && edge.targetParameterId === "result");
-  assert.ok(switchValueEdge);
-  assert.equal(switchValueEdge.sourceNodeId, "fn");
 });
 
 test("compileCompositeWorkflowToBackendConfig maps branch node and branch ports", () => {
@@ -448,33 +291,6 @@ test("buildCompositeWorkflowRestoreGraphData restores logic node configs from da
   assert.equal(transformProps.transformConfig.code, "// @in payload:object");
   assert.equal(transformProps.transformConfig.inputBindings.length, 1);
   assert.equal(transformProps.transformConfig.inputBindings[0].upstreamParamName, "true");
-});
-
-test("buildCompositeWorkflowRestoreGraphData recovers branch operator and right value", () => {
-  const restored = buildCompositeWorkflowRestoreGraphData({
-    nodes: [{ id: "br", kind: "branch", branchConfig: { expression: 'value > 5' } }],
-    edges: [],
-    inputMappings: [],
-    outputMappings: [],
-    inputParameters: [],
-    outputParameters: [],
-  });
-  const props = restored.nodes[0].properties;
-  assert.equal(props.branchConfig.operator, "gt");
-  assert.equal(props.branchConfig.right.value, "5");
-  assert.equal(props.branchConfig.rawExpression, "value > 5");
-
-  const stringRestored = buildCompositeWorkflowRestoreGraphData({
-    nodes: [{ id: "br", kind: "branch", branchConfig: { expression: 'value == "abc"' } }],
-    edges: [],
-    inputMappings: [],
-    outputMappings: [],
-    inputParameters: [],
-    outputParameters: [],
-  });
-  const stringProps = stringRestored.nodes[0].properties;
-  assert.equal(stringProps.branchConfig.operator, "eq");
-  assert.equal(stringProps.branchConfig.right.value, "abc");
 });
 
 test("buildCompositeWorkflowRestoreGraphData returns raw graph when present", () => {

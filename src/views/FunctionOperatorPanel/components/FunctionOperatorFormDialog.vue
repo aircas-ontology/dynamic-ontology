@@ -768,7 +768,7 @@ function emitSaveScript(params: CreateOntologyFunctionParams): void {
 }
 
 /**
- * @description 将编排画布组装的创建请求转发给工作区保存，并附带表单所选限流模版。
+ * @description 将编排画布组装的创建请求转发给工作区保存，并附带限流模版与 basedOnOldVersion。
  * @param params COMPOSITE 创建参数。
  */
 function emitSaveComposite(params: CreateOntologyFunctionParams): void {
@@ -777,6 +777,11 @@ function emitSaveComposite(params: CreateOntologyFunctionParams): void {
     next.rateLimitTemplateId = form.rateLimitTemplateId;
   } else {
     delete next.rateLimitTemplateId;
+  }
+  if (!props.operator && sourceVersion.value.trim()) {
+    next.basedOnOldVersion = true;
+  } else {
+    delete next.basedOnOldVersion;
   }
   emit("save-composite", next);
 }
@@ -890,6 +895,9 @@ const isSourceTemplateLocked = computed(() => Boolean(sourceVersion.value.trim()
 function clearSourceTemplateIdentityFields(): void {
   form.name = "";
   form.functionApi = "";
+  if (form.type === "composite") {
+    delete form.compositeConfig;
+  }
 }
 
 /**
@@ -923,6 +931,9 @@ function resetSourceTemplateSelection(): void {
   sourceVersionListGeneration += 1;
   sourceDetailGeneration += 1;
   sourceVersionOptions.value = [];
+  if (form.type === "composite") {
+    delete form.compositeConfig;
+  }
 }
 
 /**
@@ -967,6 +978,13 @@ function applySourceTemplateDraft(draft: FunctionOperatorDraft): void {
   if (form.type === "code" && draft.definition.kind === "code") {
     form.definition = structuredClone(toRaw(draft.definition));
     applyScriptDraftFromDefinition(draft);
+  }
+  if (form.type === "composite") {
+    if (draft.compositeConfig) {
+      form.compositeConfig = structuredClone(toRaw(draft.compositeConfig));
+    } else {
+      delete form.compositeConfig;
+    }
   }
   void nextTick(() => {
     formRef.value?.clearValidate(["name", "functionApi"]);
@@ -1015,21 +1033,12 @@ async function loadSourceFunctionOptions(): Promise<void> {
     return;
   }
   try {
-    const listParams =
-      form.type === "composite"
-        ? {
-            ontologySpaceId: props.spaceId,
-            excludeTypes: "BASIC_QUERY",
-            pageNum: 1,
-            pageSize: 1000,
-          }
-        : {
-            ontologySpaceId: props.spaceId,
-            type: apiType,
-            pageNum: 1,
-            pageSize: 1000,
-          };
-    const response = await getOntologyFunctionListInterface(listParams);
+    const response = await getOntologyFunctionListInterface({
+      ontologySpaceId: props.spaceId,
+      type: apiType,
+      pageNum: 1,
+      pageSize: 1000,
+    });
     if (requestId !== sourceFunctionListGeneration) {
       return;
     }
