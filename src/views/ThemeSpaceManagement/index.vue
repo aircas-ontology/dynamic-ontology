@@ -52,7 +52,7 @@
             </div>
             <div>
               <dt>
-                <el-icon><Tickets /></el-icon>规则
+                <el-icon><Tickets /></el-icon>属性
               </dt>
               <dd>{{ space.metrics.rule }}</dd>
             </div>
@@ -103,7 +103,7 @@
         <el-table-column label="关系" width="90" align="center"
           ><template #default="{ row }">{{ row.metrics.relation }}</template></el-table-column
         >
-        <el-table-column label="规则" width="90" align="center"
+        <el-table-column label="属性" width="90" align="center"
           ><template #default="{ row }">{{ row.metrics.rule }}</template></el-table-column
         >
         <el-table-column prop="createdTime" label="创建时间" width="180" />
