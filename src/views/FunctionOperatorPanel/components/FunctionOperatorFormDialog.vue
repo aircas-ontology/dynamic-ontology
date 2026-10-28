@@ -931,9 +931,6 @@ function resetSourceTemplateSelection(): void {
   sourceVersionListGeneration += 1;
   sourceDetailGeneration += 1;
   sourceVersionOptions.value = [];
-  if (form.type === "composite") {
-    delete form.compositeConfig;
-  }
 }
 
 /**
