@@ -77,6 +77,51 @@ test("object attribute panel exposes category tree, property columns, and local 
   assert.match(helperSource, /const propertyChildren = \(node\.propertyInfos \?\? \[\]\)\.map\(mapPropertyTreeNode\)/);
 });
 
+test("attribute category tree propertyCount includes own and descendant properties", async () => {
+  const helperUrl = new URL("../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts", import.meta.url);
+  const { mapCategoryTreeNode } = await import(helperUrl.href);
+  const tree = mapCategoryTreeNode({
+    categoryId: 0,
+    name: "全部",
+    propertyInfos: [{ displayName: "载荷状态", apiName: "payloadStatus", uniqueIdentifier: "p-root" }],
+    children: [
+      {
+        categoryId: 1,
+        name: "载荷",
+        propertyInfos: [
+          { displayName: "a", uniqueIdentifier: "p1" },
+          { displayName: "b", uniqueIdentifier: "p2" },
+          { displayName: "c", uniqueIdentifier: "p3" },
+          { displayName: "d", uniqueIdentifier: "p4" },
+        ],
+      },
+      {
+        categoryId: 2,
+        name: "电源系统",
+        propertyInfos: [
+          { displayName: "e", uniqueIdentifier: "p5" },
+          { displayName: "f", uniqueIdentifier: "p6" },
+          { displayName: "g", uniqueIdentifier: "p7" },
+        ],
+      },
+      {
+        categoryId: 3,
+        name: "基本信息",
+        propertyInfos: [
+          { displayName: "h", uniqueIdentifier: "p8" },
+          { displayName: "i", uniqueIdentifier: "p9" },
+          { displayName: "j", uniqueIdentifier: "p10" },
+          { displayName: "k", uniqueIdentifier: "p11" },
+        ],
+      },
+    ],
+  });
+  assert.equal(tree.propertyCount, 12);
+  assert.equal(tree.children?.find((node) => node.nodeType === "category" && node.id === "1")?.propertyCount, 4);
+  assert.equal(tree.children?.find((node) => node.nodeType === "category" && node.id === "2")?.propertyCount, 3);
+  assert.equal(tree.children?.find((node) => node.nodeType === "category" && node.id === "3")?.propertyCount, 4);
+});
+
 test("clicking a property node in the category tree opens the read-only attribute detail dialog", () => {
   const treeSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeCategoryTree.vue");
   const panelSource = readSource("../src/views/OntologyObjectAttributePanel/index.vue");

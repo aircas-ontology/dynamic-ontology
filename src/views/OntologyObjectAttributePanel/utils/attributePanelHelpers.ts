@@ -15,12 +15,14 @@ import type {
 export function mapCategoryTreeNode(node: GetOntologyObjectArrTypeTreeData): OntologyAttributeCategoryNode {
   const categoryChildren = node.children?.map((child) => mapCategoryTreeNode(child)) ?? [];
   const propertyChildren = (node.propertyInfos ?? []).map(mapPropertyTreeNode);
+  const ownPropertyCount = propertyChildren.length;
+  const descendantPropertyCount = categoryChildren.reduce((sum, child) => sum + child.propertyCount, 0);
   const children: OntologyAttributeTreeNode[] = [...categoryChildren, ...propertyChildren];
   return {
     nodeType: "category",
     id: String(node.categoryId),
     label: node.name || "未命名分类",
-    propertyCount: propertyChildren.length,
+    propertyCount: ownPropertyCount + descendantPropertyCount,
     isRoot: node.categoryId === 0,
     children: children.length ? children : undefined,
   };
