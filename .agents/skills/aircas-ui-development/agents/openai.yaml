@@ -1,0 +1,6 @@
+interface:
+  display_name: "Aircas UI 开发"
+  short_description: "按照现有主题、组件样式和交互规范实现一致且可访问的 Vue 界面"
+  default_prompt: "Use $aircas-ui-development to implement this UI change with the Aircas visual system."
+policy:
+  allow_implicit_invocation: true
