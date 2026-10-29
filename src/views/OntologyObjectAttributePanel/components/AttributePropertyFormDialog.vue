@@ -7,7 +7,7 @@
     :model-value="visible"
     @update:model-value="$emit('update:visible', $event)"
   >
-    <el-alert v-if="datasourceLocked" title="该属性已绑定数据源，仅支持修改属性名称和描述" type="info" show-icon :closable="false" />
+    <el-alert v-if="datasourceLocked" title="该属性已绑定数据源，仅支持修改属性名称、属性分类和描述" type="info" show-icon :closable="false" />
     <el-form ref="formRef" :model="draft" :rules="rules" label-position="top" data-onboarding="attribute-create-required">
       <div class="ontology-object-attribute-panel__form-grid">
         <el-form-item label="属性名称" prop="displayName">
@@ -17,9 +17,17 @@
           <el-input v-model="draft.apiName" placeholder="例如：priority" :disabled="editingAttributeId !== null || draft.isPrimary" />
         </el-form-item>
         <el-form-item label="属性分类" prop="categoryId" class="ontology-object-attribute-panel__form-full">
-          <el-select v-model="draft.categoryId" placeholder="请选择属性分类" :disabled="datasourceLocked">
-            <el-option v-for="category in categoryOptions" :key="category.id" :label="category.label" :value="category.id" />
-          </el-select>
+          <el-tree-select
+            v-model="draft.categoryId"
+            :data="categoryOptions"
+            check-strictly
+            default-expand-all
+            :render-after-expand="false"
+            node-key="id"
+            :props="{ label: 'label', children: 'children' }"
+            placeholder="请选择属性分类"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="数据类型" prop="dataType">
           <el-select v-model="draft.dataType" placeholder="请选择数据类型" :disabled="datasourceLocked || draft.isPrimary">
@@ -79,7 +87,7 @@ import type { OntologyAttributeCategoryNode, OntologyAttributeDraft, OntologyAtt
 defineProps<{
   visible: boolean;
   editingAttributeId: string | null;
-  /** 属性是否已绑定数据源；绑定时仅属性名称和描述可修改。 */
+  /** 属性是否已绑定数据源；绑定时仅属性名称、属性分类和描述可修改。 */
   datasourceLocked: boolean;
   draft: OntologyAttributeDraft;
   rules: FormRules<OntologyAttributeDraft>;

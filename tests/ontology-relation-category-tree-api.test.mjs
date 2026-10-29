@@ -146,7 +146,11 @@ test("relation workspace loads category tree api and maps links into relations",
   assert.doesNotMatch(workspaceSource, /params\.ontologyUniqueIdentifierFrom/);
   assert.match(panelSource, /添加关系分类/);
   assert.match(panelSource, /kind:\s*"relation"/);
+  assert.match(panelSource, /formatRelationLeafLabel/);
+  assert.match(panelSource, /item\.sourceName/);
   assert.match(panelSource, /item\.displayName/);
+  assert.match(panelSource, /item\.targetName/);
+  assert.match(panelSource, /label:\s*formatRelationLeafLabel\(item\)/);
   assert.match(panelSource, /<FolderOpened \/>/);
   assert.doesNotMatch(panelSource, /CollectionTag/);
   assert.match(panelSource, /relation-category-panel__relation-row/);
@@ -158,11 +162,14 @@ test("relation workspace loads category tree api and maps links into relations",
   assert.match(panelSource, /\.relation-category-panel__tree-node \{[\s\S]*?flex: 1;/);
   assert.match(panelSource, /<el-tree/);
   assert.doesNotMatch(workspaceSource, /createOntologySpaceRelationWorkspaceData\(\)/);
-  assert.match(tableSource, /label="源对象"/);
-  assert.match(tableSource, /label="目标对象"/);
+  assert.match(
+    tableSource,
+    /label="源对象"[\s\S]*label="目标对象"[\s\S]*label="关系名称"[\s\S]*label="类型"[\s\S]*label="描述"[\s\S]*label="API 名称"[\s\S]*label="操作"/,
+  );
   assert.match(tableSource, /prop="apiName"/);
   assert.match(tableSource, /prop="categoryName"/);
   assert.match(tableSource, /prop="description"/);
+  assert.doesNotMatch(tableSource, /label="分类"/);
   assert.match(tableSource, /postCreateOntologyLinkInterface/);
   assert.match(tableSource, /loadSpaceRelationWorkspace\(\)/);
   assert.doesNotMatch(tableSource, /createRelationClass\(\{/);

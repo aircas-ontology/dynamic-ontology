@@ -95,7 +95,7 @@ interface DisplayCategoryNode {
   children?: DisplayTreeNode[];
 }
 
-/** 关系分类树渲染用关系叶子节点，文案取关系名称。 */
+/** 关系分类树渲染用关系叶子节点，文案为「主体 关系名 客体」。 */
 interface DisplayRelationNode {
   kind: "relation";
   id: string;
@@ -146,7 +146,19 @@ function collectCategoryIds(node: OntologyRelationCategoryNode): string[] {
 }
 
 /**
- * @description 将分类树与关系列表组装为混合树：分类下挂载直属关系叶子（展示关系名称）。
+ * @description 组装关系叶子展示文案：主体、关系名称、客体，对应接口 ontologyNameFrom / name / ontologyNameTo。
+ * @param item 页面关系类。
+ * @returns 以空格拼接的展示文案；缺省段跳过。
+ */
+function formatRelationLeafLabel(item: OntologyRelationClass): string {
+  return [item.sourceName, item.displayName, item.targetName]
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .join(" ");
+}
+
+/**
+ * @description 将分类树与关系列表组装为混合树：分类下挂载直属关系叶子（展示主体、关系名、客体）。
  * @param nodes 页面关系分类树。
  * @returns 可渲染的混合树节点。
  */
@@ -158,7 +170,7 @@ function enrich(nodes: OntologyRelationCategoryNode[]): DisplayCategoryNode[] {
       .map((item) => ({
         kind: "relation",
         id: `rel-${item.id}`,
-        label: item.displayName,
+        label: formatRelationLeafLabel(item),
         categoryId: item.categoryId,
         relationId: item.id,
       }));

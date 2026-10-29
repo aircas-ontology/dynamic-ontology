@@ -139,6 +139,25 @@ export function flattenCategoryOptions(nodes: OntologyAttributeCategoryNode[]): 
   });
 }
 
+/**
+ * @description 将属性分类树映射为 tree-select 数据：只保留分类目录，去掉属性叶子。
+ * @param nodes 含属性叶子的分类树。
+ * @returns 仅含分类子节点的树，供 el-tree-select 使用。
+ */
+export function mapAttributeCategoryTreeSelectData(nodes: OntologyAttributeCategoryNode[]): OntologyAttributeCategoryNode[] {
+  return nodes.map((node) => {
+    const categoryChildren = mapAttributeCategoryTreeSelectData(node.children?.filter(isCategoryNode) ?? []);
+    return {
+      nodeType: "category",
+      id: node.id,
+      label: node.label,
+      propertyCount: node.propertyCount,
+      ...(node.isRoot ? { isRoot: true } : {}),
+      ...(categoryChildren.length ? { children: categoryChildren } : {}),
+    };
+  });
+}
+
 /** @description 查找分类节点的父分类。 */
 export function findCategoryParent(
   nodes: OntologyAttributeTreeNode[],

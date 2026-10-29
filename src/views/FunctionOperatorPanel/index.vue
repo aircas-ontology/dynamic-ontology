@@ -6,7 +6,7 @@
         <div class="function-operator-panel__filter-fields">
           <el-input v-model="filters.keyword" class="function-operator-panel__keyword" clearable placeholder="按函数名称搜索" />
           <el-select v-model="filters.type" class="function-operator-panel__filter" clearable placeholder="函数类型">
-            <el-option v-for="item in FUNCTION_OPERATOR_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+            <el-option v-for="item in FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
           <el-select v-model="filters.creator" class="function-operator-panel__filter" clearable placeholder="创建人">
             <el-option v-for="item in creatorOptions" :key="item" :label="item" :value="item" />
@@ -246,10 +246,10 @@ import type { TagProps } from "element-plus";
 
 import type { FunctionOperator, FunctionOperatorStatus } from "@/types";
 import {
+  FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS,
   FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS,
   FUNCTION_OPERATOR_STATUS_LABELS,
   FUNCTION_OPERATOR_TYPE_LABELS,
-  FUNCTION_OPERATOR_TYPE_OPTIONS,
 } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 

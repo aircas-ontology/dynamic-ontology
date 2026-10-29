@@ -154,6 +154,16 @@ export const FUNCTION_OPERATOR_TYPE_OPTIONS: ReadonlyArray<{ value: FunctionOper
   { value: "composite", label: "函数编排", description: "通过编排多个函数构建复杂流程" },
 ];
 
+/** 为 false 时不对用户开放函数编排入口；业务实现保留。 */
+export const FUNCTION_OPERATOR_COMPOSITE_PUBLIC = false;
+
+/** 对用户开放的函数类型选项（新建卡片与列表筛选）。 */
+export const FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS: ReadonlyArray<{
+  value: FunctionOperatorType;
+  label: string;
+  description: string;
+}> = FUNCTION_OPERATOR_TYPE_OPTIONS.filter((item) => FUNCTION_OPERATOR_COMPOSITE_PUBLIC || item.value !== "composite");
+
 export const FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS: ReadonlyArray<{
   value: FunctionOperatorScriptLanguage;
   label: string;

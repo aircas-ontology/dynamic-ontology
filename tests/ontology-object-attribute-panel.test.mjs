@@ -56,7 +56,14 @@ test("object attribute panel exposes category tree, property columns, and local 
   assert.match(formSource, /prop="displayName"/);
   assert.match(formSource, /placeholder="例如：任务优先级"/);
   assert.match(formSource, /请选择属性分类/);
-  assert.match(formSource, /<el-select\b/);
+  assert.match(formSource, /<el-tree-select\b/);
+  assert.match(formSource, /check-strictly/);
+  assert.match(formSource, /default-expand-all/);
+  assert.match(formSource, /:data="categoryOptions"/);
+  assert.doesNotMatch(formSource, /v-for="category in categoryOptions"/);
+  assert.match(helperSource, /function mapAttributeCategoryTreeSelectData/);
+  assert.match(helperSource, /node\.children\?\.filter\(isCategoryNode\)/);
+  assert.match(propertyApiSource, /mapAttributeCategoryTreeSelectData\(getCategories\(\)\)/);
   assert.match(formSource, /<el-switch\b/);
   assert.match(categoryApiSource, /function openCategoryCreate/);
   assert.match(categoryApiSource, /function openCategoryEdit/);
@@ -206,8 +213,13 @@ test("bound datasource attributes open the edit dialog locked to name and descri
   );
   assert.match(propertySource, /datasourceLocked,/);
   assert.match(formSource, /datasourceLocked: boolean/);
-  assert.match(formSource, /该属性已绑定数据源，仅支持修改属性名称和描述/);
-  assert.match(formSource, /v-model="draft\.categoryId"[\s\S]*?:disabled="datasourceLocked"/);
+  assert.match(formSource, /该属性已绑定数据源，仅支持修改属性名称、属性分类和描述/);
+  {
+    const treeSelectBlock = formSource.match(/<el-tree-select[\s\S]*?\/>/);
+    assert.ok(treeSelectBlock, "missing el-tree-select");
+    assert.doesNotMatch(treeSelectBlock[0], /:disabled=/);
+  }
+  assert.match(propertySource, /datasourceLocked\.value && originalEditParams[\s\S]*?categoryId/);
   assert.match(formSource, /:disabled="datasourceLocked \|\| draft\.isPrimary"/);
   assert.match(formSource, /v-model="draft\.storageGroup"[\s\S]*?:disabled="datasourceLocked"/);
   assert.match(formSource, /v-model="draft\.defaultValue"[\s\S]*?:disabled="datasourceLocked"/);

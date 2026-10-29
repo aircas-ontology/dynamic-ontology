@@ -96,16 +96,16 @@
         <template v-else>
           <div v-if="visibleSpaceRelations.length" class="space-relation-workspace__table-wrap">
             <el-table :data="visibleSpaceRelations" stripe height="100%" class="aircas-table--accent-header space-relation-workspace__table">
+              <el-table-column prop="sourceName" label="源对象" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="targetName" label="目标对象" min-width="120" show-overflow-tooltip />
               <el-table-column label="关系名称" min-width="140" show-overflow-tooltip>
                 <template #default="{ row }"
                   ><span class="space-relation-workspace__name">{{ row.displayName }}</span></template
                 >
               </el-table-column>
-              <el-table-column prop="apiName" label="API 名称" min-width="140" show-overflow-tooltip />
-              <el-table-column prop="categoryName" label="分类" min-width="110" show-overflow-tooltip />
-              <el-table-column prop="sourceName" label="源对象" min-width="140" show-overflow-tooltip />
-              <el-table-column prop="targetName" label="目标对象" min-width="120" show-overflow-tooltip />
+              <el-table-column prop="categoryName" label="类型" min-width="110" show-overflow-tooltip />
               <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+              <el-table-column prop="apiName" label="API 名称" min-width="140" show-overflow-tooltip />
               <el-table-column label="操作" width="180" fixed="right">
                 <template #default="scope">
                   <div class="space-relation-workspace__row-actions">

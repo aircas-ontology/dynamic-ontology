@@ -14,7 +14,7 @@
         <div class="function-operator-form__section-title">函数类型</div>
         <div class="function-operator-form__type-grid">
           <button
-            v-for="item in FUNCTION_OPERATOR_TYPE_OPTIONS"
+            v-for="item in FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS"
             :key="item.value"
             type="button"
             class="function-operator-form__type-card"
@@ -616,7 +616,7 @@ import {
 } from "@/apis";
 import {
   FUNCTION_OPERATOR_AGG_FUNC_OPTIONS,
-  FUNCTION_OPERATOR_TYPE_OPTIONS,
+  FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS,
   type CreateOntologyFunctionContainerParams,
   type CreateOntologyFunctionParams,
   type FunctionOperator,
