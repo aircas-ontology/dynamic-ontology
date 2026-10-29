@@ -14,15 +14,18 @@ import type {
  */
 function mapOntologyCategoryTreeNode(node: OntologyCategoryTreeNode): OntologyConceptNode {
   const id = String(node.categoryId);
+  const children = (node.children ?? []).map(mapOntologyCategoryTreeNode);
+  const ownObjectCount = node.ontologyMetaInfos?.length ?? 0;
+  const descendantObjectCount = children.reduce((sum, child) => sum + child.count, 0);
   return {
     id,
     label: node.name ?? "",
-    count: node.ontologyMetaInfos?.length ?? 0,
+    count: ownObjectCount + descendantObjectCount,
     objects: (node.ontologyMetaInfos ?? [])
       .map((meta) => ({ uniqueIdentifier: meta.uniqueIdentifier ?? "", displayName: meta.displayName ?? "" }))
       .filter((item) => Boolean(item.displayName.trim()) && Boolean(item.uniqueIdentifier.trim())),
     targetCategoryId: id,
-    children: (node.children ?? []).map(mapOntologyCategoryTreeNode),
+    children,
   };
 }
 
