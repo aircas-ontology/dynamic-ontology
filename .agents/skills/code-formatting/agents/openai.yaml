@@ -1,0 +1,6 @@
+interface:
+  display_name: "项目代码格式化"
+  short_description: "按仓库配置格式化并检查当前任务涉及的文件"
+  default_prompt: "Use $code-formatting to format and verify only the files changed by this task."
+policy:
+  allow_implicit_invocation: true
