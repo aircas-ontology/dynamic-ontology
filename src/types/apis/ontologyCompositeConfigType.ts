@@ -18,6 +18,10 @@ export interface OntologyCompositeNode {
     collectionPath?: string;
     times?: number;
     itemName?: string;
+    /** 迭代项端口类型；缺省 object。 */
+    itemType?: string;
+    /** 「结束后」出口端口类型；缺省 object。 */
+    doneType?: string;
   };
   /** 分支节点配置。 */
   branchConfig?: { expression?: string };

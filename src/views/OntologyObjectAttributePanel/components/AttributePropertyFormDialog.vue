@@ -17,9 +17,23 @@
           <el-input v-model="draft.apiName" placeholder="例如：priority" :disabled="editingAttributeId !== null || draft.isPrimary" />
         </el-form-item>
         <el-form-item label="属性分类" prop="categoryId" class="ontology-object-attribute-panel__form-full">
+<<<<<<< HEAD
           <el-select v-model="draft.categoryId" placeholder="请选择属性分类">
             <el-option v-for="category in categoryOptions" :key="category.id" :label="category.label" :value="category.id" />
           </el-select>
+=======
+          <el-tree-select
+            v-model="draft.categoryId"
+            :data="categoryOptions"
+            check-strictly
+            default-expand-all
+            :render-after-expand="false"
+            node-key="id"
+            :props="{ label: 'label', children: 'children' }"
+            placeholder="请选择属性分类"
+            style="width: 100%"
+          />
+>>>>>>> 0a66214d1bb184d5e5bc29c6e430e7cc907cec5f
         </el-form-item>
         <el-form-item label="数据类型" prop="dataType">
           <el-select v-model="draft.dataType" placeholder="请选择数据类型" :disabled="datasourceLocked || draft.isPrimary">

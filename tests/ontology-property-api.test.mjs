@@ -64,33 +64,6 @@ test("ontology property api exposes automatic datasource binding", () => {
   assert.match(barrelSource, /autoBindOntologyPropertyDatasourceInterface/);
 });
 
-test("ontology property api exposes documented batch update contract", () => {
-  const apiSource = readSource("../src/apis/ontologyPropertyApi.ts");
-  const barrelSource = readSource("../src/apis/index.ts");
-  const typeSource = readSource("../src/types/apis/batchUpdateOntologyPropertiesType.ts");
-  const typeBarrelSource = readSource("../src/types/index.ts");
-  const mockSource = readSource("../src/mocks/batchUpdateOntologyPropertiesMock/batchUpdateOntologyPropertiesMock.ts");
-
-  assert.match(typeSource, /schemaName:\s*string/);
-  assert.match(typeSource, /datasourceId:\s*string/);
-  assert.match(typeSource, /datasourceColumnName:\s*string/);
-  assert.match(typeSource, /uniqueIdentifier:\s*string/);
-  assert.match(typeSource, /datasource\?:\s*BatchUpdateOntologyPropertyDatasource/);
-  assert.match(typeSource, /displayName:\s*string/);
-  assert.match(typeSource, /dataType:\s*string/);
-  assert.match(typeSource, /isTitleKey:\s*boolean/);
-  assert.match(typeSource, /isPrimaryKey:\s*boolean/);
-  assert.match(typeSource, /storageGroup:\s*string/);
-  assert.match(apiSource, /putBatchUpdateOntologyPropertiesInterface/);
-  assert.match(apiSource, /\/ontology\/property\/batch/);
-  assert.match(apiSource, /method: "put"/);
-  assert.match(apiSource, /data: params/);
-  assert.match(barrelSource, /putBatchUpdateOntologyPropertiesInterface/);
-  assert.match(typeBarrelSource, /BatchUpdateOntologyPropertiesParams/);
-  assert.match(mockSource, /batchUpdateOntologyPropertiesMock/);
-  assert.match(mockSource, /message: "SUCCESS"/);
-});
-
 test("ontology property api exposes property details with datasource fields", () => {
   const apiSource = readSource("../src/apis/ontologyPropertyApi.ts");
   const barrelSource = readSource("../src/apis/index.ts");

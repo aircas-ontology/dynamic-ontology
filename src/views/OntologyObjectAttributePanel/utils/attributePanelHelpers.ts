@@ -15,12 +15,14 @@ import type {
 export function mapCategoryTreeNode(node: GetOntologyObjectArrTypeTreeData): OntologyAttributeCategoryNode {
   const categoryChildren = node.children?.map((child) => mapCategoryTreeNode(child)) ?? [];
   const propertyChildren = (node.propertyInfos ?? []).map(mapPropertyTreeNode);
+  const ownPropertyCount = propertyChildren.length;
+  const descendantPropertyCount = categoryChildren.reduce((sum, child) => sum + child.propertyCount, 0);
   const children: OntologyAttributeTreeNode[] = [...categoryChildren, ...propertyChildren];
   return {
     nodeType: "category",
     id: String(node.categoryId),
     label: node.name || "未命名分类",
-    propertyCount: propertyChildren.length,
+    propertyCount: ownPropertyCount + descendantPropertyCount,
     isRoot: node.categoryId === 0,
     children: children.length ? children : undefined,
   };
@@ -136,6 +138,25 @@ export function flattenCategoryOptions(nodes: OntologyAttributeCategoryNode[]): 
   return nodes.flatMap((node) => {
     const categoryChildren = node.children?.filter(isCategoryNode) ?? [];
     return [node, ...flattenCategoryOptions(categoryChildren)];
+  });
+}
+
+/**
+ * @description 将属性分类树映射为 tree-select 数据：只保留分类目录，去掉属性叶子。
+ * @param nodes 含属性叶子的分类树。
+ * @returns 仅含分类子节点的树，供 el-tree-select 使用。
+ */
+export function mapAttributeCategoryTreeSelectData(nodes: OntologyAttributeCategoryNode[]): OntologyAttributeCategoryNode[] {
+  return nodes.map((node) => {
+    const categoryChildren = mapAttributeCategoryTreeSelectData(node.children?.filter(isCategoryNode) ?? []);
+    return {
+      nodeType: "category",
+      id: node.id,
+      label: node.label,
+      propertyCount: node.propertyCount,
+      ...(node.isRoot ? { isRoot: true } : {}),
+      ...(categoryChildren.length ? { children: categoryChildren } : {}),
+    };
   });
 }
 

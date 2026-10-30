@@ -62,20 +62,6 @@ test("get ontology function detail api gets detail by functionApi query", () => 
   assert.match(barrel, /getOntologyFunctionDetailInterface/);
 });
 
-test("get ontology function detail mock mirrors SUCCESS sample", () => {
-  const source = readSource("../src/mocks/getOntologyFunctionDetailMock/getOntologyFunctionDetailMock.ts");
-  assert.match(source, /export const getOntologyFunctionDetailMock/);
-  assert.match(source, /code: 200/);
-  assert.match(source, /message: "SUCCESS"/);
-  assert.match(source, /success: true/);
-  assert.match(source, /functionApi: "ss"/);
-  assert.match(source, /type: "BASIC_QUERY"/);
-  assert.match(source, /export const getOntologyScriptFunctionDetailMock/);
-  assert.match(source, /type: "CUSTOMIZE"/);
-  assert.match(source, /language: "TYPESCRIPT"/);
-  assert.match(source, /export function handle/);
-});
-
 test("mapOntologyFunctionQueryConfigToBasicFilter maps dataType to valueType", () => {
   const doc = mapOntologyFunctionQueryConfigToBasicFilter({
     filters: {

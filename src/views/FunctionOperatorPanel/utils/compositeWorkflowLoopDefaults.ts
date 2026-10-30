@@ -1,4 +1,20 @@
-import type { CompositeWorkflowLoopConfig } from "@/types";
+import type { CompositeWorkflowLoopConfig, CompositeWorkflowPortTypeName } from "@/types";
+
+/** 端口类型白名单；未登记的类型回落为 object，避免写进配置的类型后端无法识别。 */
+const PORT_TYPE_NAMES: CompositeWorkflowPortTypeName[] = ["number", "string", "boolean", "object", "array"];
+
+/**
+ * @description 归一端口类型取值。
+ * @param raw 原始类型字符串；可为空。
+ * @returns 白名单内的类型；无法识别时返回空。
+ */
+function normalizePortType(raw: unknown): CompositeWorkflowPortTypeName | undefined {
+  if (typeof raw !== "string") {
+    return undefined;
+  }
+  const key = raw.trim().toLowerCase() as CompositeWorkflowPortTypeName;
+  return PORT_TYPE_NAMES.includes(key) ? key : undefined;
+}
 
 /**
  * @description 创建循环节点的默认配置（集合取自上游路径）。
@@ -9,6 +25,8 @@ export function createDefaultCompositeWorkflowLoopConfig(): CompositeWorkflowLoo
     kind: "loop",
     collection: { mode: "fromUpstream", upstreamParamName: "", upstreamParamPath: [] },
     itemParamName: "item",
+    itemType: "object",
+    doneType: "object",
     maxIterations: 100,
   };
 }
@@ -55,6 +73,8 @@ export function normalizeCompositeWorkflowLoopConfig(raw: unknown): CompositeWor
     collection,
     itemParamName,
     ...(indexParamName ? { indexParamName } : {}),
+    itemType: normalizePortType(record.itemType) ?? "object",
+    doneType: normalizePortType(record.doneType) ?? "object",
     maxIterations,
   };
 }

@@ -2,11 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-import {
-  createDefaultBasicParameterConfig,
-  createFunctionOperatorMock,
-  queryFunctionOperatorsMock,
-} from "../src/mocks/functionOperatorMock/functionOperatorMock.ts";
+import { createDefaultBasicParameterConfig, createFunctionOperatorMock, queryFunctionOperatorsMock } from "./fixtures/functionOperatorMock.ts";
 import { parseBasicFilterConfig, stringifyBasicFilterConfig } from "../src/utils/functionOperatorBasicFilter.ts";
 
 /**
@@ -107,6 +103,17 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(panelSource, /function-operator-card__description[\s\S]*min-height:\s*calc\(1\.6em \* 2\)/);
   assert.match(panelSource, /function-operator-card__description[\s\S]*height:\s*calc\(1\.6em \* 2\)/);
   assert.match(panelSource, /function-operator-card__actions[\s\S]*justify-content:\s*flex-end/);
+  assert.match(panelSource, /FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS/);
+  assert.doesNotMatch(panelSource, /v-for="item in FUNCTION_OPERATOR_TYPE_OPTIONS"/);
+  assert.match(formSource, /FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS/);
+  assert.doesNotMatch(formSource, /v-for="item in FUNCTION_OPERATOR_TYPE_OPTIONS"/);
+  {
+    const typeSource = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
+    assert.match(typeSource, /FUNCTION_OPERATOR_COMPOSITE_PUBLIC\s*=\s*false/);
+    assert.match(typeSource, /FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS/);
+    assert.match(typeSource, /item\.value !== ["']composite["']/);
+    assert.match(typeSource, /value:\s*["']composite["']\s*,\s*label:\s*["']函数编排["']/);
+  }
   assert.match(panelSource, /FunctionOperatorFormDialog/);
   assert.match(panelSource, /FunctionOperatorDetailDrawer/);
   assert.match(panelSource, /v-if="operator\.status !== ['"]published['"]"[\s\S]*openEdit\(operator\)/);
@@ -273,7 +280,7 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(canvasComposable, /listReachableDownstreamNodeIds/);
   assert.match(canvasComposable, /openEndpointNodeEdit/);
   assert.match(canvasComposable, /outputParameters\s*=\s*\[\s*\{\s*id:\s*["']input["'],\s*name:\s*["']input["'],\s*type:\s*["']string["']/);
-  assert.match(canvasComposable, /inputParameters\s*=\s*\[\s*\{\s*id:\s*["']input["'],\s*name:\s*["']input["'],\s*type:\s*["']string["']/);
+  assert.match(canvasComposable, /inputParameters\s*=\s*\[\s*\{\s*id:\s*["']output["'],\s*name:\s*["']output["'],\s*type:\s*["']string["']/);
   assert.match(canvasComposable, /type:\s*["']COMPOSITE["']/);
   assert.match(canvasComposable, /compositeConfig/);
   assert.match(canvasComposable, /initialCompositeConfig/);

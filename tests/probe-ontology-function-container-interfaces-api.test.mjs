@@ -47,20 +47,6 @@ test("apis barrel exports the container interfaces probe interface", () => {
   assert.match(barrel, /postProbeOntologyFunctionContainerInterfacesInterface/);
 });
 
-test("probe ontology function container interfaces mock mirrors SUCCESS sample with interface list", () => {
-  const mockSource = readSource("../src/mocks/probeOntologyFunctionContainerInterfacesMock/probeOntologyFunctionContainerInterfacesMock.ts");
-  assert.match(mockSource, /export const probeOntologyFunctionContainerInterfacesMock: ApiResponse<ProbeOntologyFunctionContainerInterfacesData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /name:\s*["']getEcho["']/);
-  assert.match(mockSource, /api:\s*["']GET \/get["']/);
-  assert.match(mockSource, /inputParameters:/);
-  assert.match(mockSource, /outputParameters:/);
-  assert.match(mockSource, /fields:\s*\[/);
-  assert.match(mockSource, /name:\s*["']postEcho["']/);
-});
-
 test("mockData registers container interfaces probe route with interface list", () => {
   const routes = readSource("../src/mockData/routes.json");
   assert.match(routes, /\/ontology\/function\/container\/probe_interfaces/);

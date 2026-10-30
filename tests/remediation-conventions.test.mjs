@@ -13,10 +13,9 @@ async function pathExists(filePath) {
 }
 
 test("all src directory guides have no remediation chapter", async () => {
-  const guidePaths = [
-    "apis", "assets", "components", "layout", "mocks", "models",
-    "router", "stores", "styles", "types", "utils", "views",
-  ].map((directory) => path.join("src", directory, "readme.md"));
+  const guidePaths = ["apis", "assets", "components", "layout", "mocks", "models", "router", "stores", "styles", "types", "utils", "views"].map((directory) =>
+    path.join("src", directory, "readme.md"),
+  );
 
   for (const guidePath of guidePaths) {
     assert.doesNotMatch(await readFile(guidePath, "utf8"), /现状差异与后续整改/, guidePath);
@@ -41,10 +40,7 @@ test("obsolete placeholders and resource layouts are removed", async () => {
 
 test("login and common components contain no placeholder credentials or hardcoded colors", async () => {
   const loginSource = await readFile("src/views/LoginPage/index.vue", "utf8");
-  const componentSources = await Promise.all([
-    readFile("src/components/AircasPanel.vue", "utf8"),
-    readFile("src/components/AircasTimeline.vue", "utf8"),
-  ]);
+  const componentSources = await Promise.all([readFile("src/components/AircasPanel.vue", "utf8"), readFile("src/components/AircasTimeline.vue", "utf8")]);
 
   assert.doesNotMatch(loginSource, /admin|123456|setStorage|password\"\)|OntologyDomain/);
   assert.doesNotMatch(componentSources.join("\n"), /#[0-9a-f]{3,8}\b|rgba?\(|\b(?:white|black|red)\b/i);

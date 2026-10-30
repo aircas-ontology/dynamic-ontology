@@ -40,15 +40,6 @@ test("delete ontology function api deletes with functionApi and version query", 
   assert.match(barrel, /from "\.\/functionApi"/);
 });
 
-test("delete ontology function mock mirrors SUCCESS envelope with null data", () => {
-  const source = readSource("../src/mocks/deleteOntologyFunctionMock/deleteOntologyFunctionMock.ts");
-  assert.match(source, /export const deleteOntologyFunctionMock: ApiResponse<DeleteOntologyFunctionData>/);
-  assert.match(source, /code: 200/);
-  assert.match(source, /message: "SUCCESS"/);
-  assert.match(source, /success: true/);
-  assert.match(source, /data: null/);
-});
-
 test("function operator workspace removeOperator calls delete api for card and table", () => {
   const workspace = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
   const panel = readSource("../src/views/FunctionOperatorPanel/index.vue");

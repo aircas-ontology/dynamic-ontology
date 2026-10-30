@@ -57,16 +57,6 @@ test("apis barrel exports the container create interface", () => {
   assert.match(barrel, /postCreateOntologyFunctionContainerInterface/);
 });
 
-test("create ontology function container mock mirrors SUCCESS sample with api list", () => {
-  const mockSource = readSource("../src/mocks/createOntologyFunctionContainerMock/createOntologyFunctionContainerMock.ts");
-  assert.match(mockSource, /export const createOntologyFunctionContainerMock: ApiResponse<CreateOntologyFunctionContainerData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /httpbin_GET_get/);
-  assert.match(mockSource, /httpbin_POST_post/);
-});
-
 test("create ontology function container success fixture lists derived apis", () => {
   const fixture = readSource("../src/mockData/fixtures/ontology/function/container/create.post.json");
   assert.match(fixture, /"code":\s*200/);

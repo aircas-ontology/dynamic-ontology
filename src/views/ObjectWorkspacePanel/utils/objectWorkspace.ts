@@ -77,7 +77,7 @@ export function collectCategoryOptions(nodes: readonly OntologyConceptNode[]): A
 }
 
 /**
- * @description 递归增加分类节点中的对象数量。
+ * @description 递归增加分类节点中的对象数量；命中节点及其祖先均 +1，与子树合计统计一致。
  * @param nodes 当前分类树节点
  * @param categoryId 目标分类 id
  * @returns 是否找到目标分类
@@ -88,7 +88,10 @@ export function incrementCategoryCount(nodes: OntologyConceptNode[], categoryId:
       node.count += 1;
       return true;
     }
-    if (incrementCategoryCount(node.children, categoryId)) return true;
+    if (incrementCategoryCount(node.children, categoryId)) {
+      node.count += 1;
+      return true;
+    }
   }
   return false;
 }

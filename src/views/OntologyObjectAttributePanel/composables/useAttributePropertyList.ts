@@ -14,10 +14,10 @@ import type {
 import {
   collectPropertyItemsFromTree,
   findConflictingAttributeKey,
-  flattenCategoryOptions,
   findCategory,
   formatAttributeKeyConflictMessage,
   isAttributeItem,
+  mapAttributeCategoryTreeSelectData,
   mapOntologyPropertyItem,
   normalizeStorageGroupValue,
   parseAttributeCategoryId,
@@ -85,7 +85,7 @@ export function useAttributePropertyList(options: {
     const keyword = attributeSearch.value.trim().toLowerCase();
     return attributes.value.filter((item) => !keyword || `${item.displayName} ${item.apiName} ${item.description}`.toLowerCase().includes(keyword));
   });
-  const categoryOptions = computed(() => flattenCategoryOptions(getCategories()));
+  const categoryOptions = computed(() => mapAttributeCategoryTreeSelectData(getCategories()));
 
   /**
    * @description 从当前对象的全部属性中提取非空存储分组并去重，同时保留新增属性默认使用的 main 选项。
@@ -158,6 +158,18 @@ export function useAttributePropertyList(options: {
    * @returns 属性更新接口参数。
    */
   function buildUpdatePropertyParams(uniqueIdentifier: string): UpdateOntologyPropertyParams {
+<<<<<<< HEAD
+=======
+    if (datasourceLocked.value && originalEditParams) {
+      const categoryId = getDraftCategoryId();
+      return {
+        ...originalEditParams,
+        displayName: draft.displayName.trim(),
+        description: draft.description,
+        ...(categoryId === undefined ? {} : { categoryId }),
+      };
+    }
+>>>>>>> 0a66214d1bb184d5e5bc29c6e430e7cc907cec5f
     const categoryId = getDraftCategoryId();
     if (datasourceLocked.value && originalEditParams) {
       return {

@@ -21,7 +21,14 @@ export interface CompositeWorkflowLoopConfig {
   /** 可选索引变量名；未配置时不向循环体暴露 index。 */
   indexParamName?: string;
   maxIterations?: number;
+  /** 迭代项 item 的端口类型；缺省 object（匹配任意下游入参）。 */
+  itemType?: CompositeWorkflowPortTypeName;
+  /** 「结束后」done 出口的端口类型。 */
+  doneType?: CompositeWorkflowPortTypeName;
 }
+
+/** 端口类型取值，与结束节点/开始节点的参数类型选项保持一致。 */
+export type CompositeWorkflowPortTypeName = "number" | "string" | "boolean" | "object" | "array";
 
 /** 条件分支比较运算符。 */
 export type CompositeWorkflowBranchOperator = "eq" | "ne" | "gt" | "gte" | "lt" | "lte";

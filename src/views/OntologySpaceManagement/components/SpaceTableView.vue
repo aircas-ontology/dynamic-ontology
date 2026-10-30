@@ -26,7 +26,7 @@
     <el-table-column label="关系" width="90" align="center">
       <template #default="{ row }">{{ spaceRow(row).metrics.relation }}</template>
     </el-table-column>
-    <el-table-column label="规则" width="90" align="center">
+    <el-table-column label="属性" width="90" align="center">
       <template #default="{ row }">{{ spaceRow(row).metrics.rule }}</template>
     </el-table-column>
     <el-table-column prop="createdTime" label="创建时间" width="180" />

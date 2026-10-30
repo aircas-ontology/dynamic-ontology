@@ -11,7 +11,7 @@ export function normalizeCompositeWorkflowParamType(rawType: string): string {
   if (key === "string" || key === "str") {
     return "string";
   }
-  if (key === "number" || key === "int" || key === "float" || key === "double" || key === "long") {
+  if (key === "number" || key === "int" || key === "integer" || key === "float" || key === "double" || key === "long") {
     return "number";
   }
   if (key === "boolean" || key === "bool") {
@@ -36,6 +36,9 @@ export function compareCompositeWorkflowParamTypes(upstreamType: string, downstr
   const left = normalizeCompositeWorkflowParamType(upstreamType);
   const right = normalizeCompositeWorkflowParamType(downstreamType);
   if (!left || !right) {
+    return { compatible: true, unknown: true };
+  }
+  if (left === "object" || right === "object") {
     return { compatible: true, unknown: true };
   }
   return { compatible: left === right, unknown: false };

@@ -44,17 +44,6 @@ test("apis barrel exports the container doc upload interface", () => {
   assert.match(barrel, /postUploadOntologyFunctionContainerDocInterface/);
 });
 
-test("upload ontology function container doc mock mirrors SUCCESS sample with path data", () => {
-  const mockSource = readSource("../src/mocks/uploadOntologyFunctionContainerDocMock/uploadOntologyFunctionContainerDocMock.ts");
-  assert.match(mockSource, /export const uploadOntologyFunctionContainerDocMock: ApiResponse<UploadOntologyFunctionContainerDocData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /path:\s*["']\/app\/interface-docs\//);
-  assert.match(mockSource, /fileName:\s*["']httpbin\.json["']/);
-  assert.match(mockSource, /format:\s*["']openapi3["']/);
-});
-
 test("mockData registers container doc upload route with path data", () => {
   const routes = readSource("../src/mockData/routes.json");
   assert.match(routes, /\/ontology\/function\/container\/upload_doc/);

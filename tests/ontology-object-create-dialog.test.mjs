@@ -53,6 +53,9 @@ test("category tree mapping includes ontology metadata in object sections", () =
   assert.match(source, /meta\.uniqueIdentifier/);
   assert.match(source, /meta\.displayName/);
   assert.match(source, /propertyCount/);
+  assert.match(source, /ownObjectCount/);
+  assert.match(source, /descendantObjectCount/);
+  assert.match(source, /count:\s*ownObjectCount\s*\+\s*descendantObjectCount/);
 });
 
 test("concept hierarchy tree renders object names below each category node", () => {

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { ontologySpaceManagementDetailMock } from "../src/mocks/ontologySpaceManagementDetailMock/ontologySpaceManagementDetailMock.ts";
+import { ontologySpaceManagementDetailMock } from "./fixtures/ontologySpaceManagementDetailMock.ts";
 import { formatOverviewStat } from "../src/views/OntologySpaceManagementDetail/utils/overviewStats.ts";
 test("navy overview counts match existing space totals", () => {
   const data = ontologySpaceManagementDetailMock.find((item) => item.spaceId === "navy");

@@ -173,14 +173,24 @@ function resolveSingleIncoming(
     if (edge.loopOutlet === "body") {
       visited.add(edge.sourceNodeId);
       const itemName = source.loopConfig?.itemParamName?.trim() || "item";
-      const upstreamOutputs: CompositeWorkflowParamBrief[] = [{ paramName: itemName, paramType: "object" }];
+      const upstreamOutputs: CompositeWorkflowParamBrief[] = [{ paramName: itemName, paramType: source.loopConfig?.itemType ?? "object" }];
       const indexName = source.loopConfig?.indexParamName?.trim();
       if (indexName) {
         upstreamOutputs.push({ paramName: indexName, paramType: "number" });
       }
       return { hasUpstream: true, upstreamOutputs };
     }
-    return resolveForNodeRecursive(source.id, nodes, edges, visited);
+    // 非循环体出口（结束后 / 未标注）：透传循环体外的上游出参、产出 done，
+    // 还可以取循环体内部节点的产出——循环结束后那里留下的就是最后一轮的值。
+    const passThrough = resolveForNodeRecursive(source.id, nodes, edges, visited);
+    const bodyOutputs = collectCompositeWorkflowLoopBodyOutputs(nodes, edges, source.id).map((owner) => ({
+      paramName: owner.paramName,
+      paramType: owner.paramType,
+    }));
+    return {
+      hasUpstream: true,
+      upstreamOutputs: [...passThrough.upstreamOutputs, ...bodyOutputs, { paramName: "done", paramType: source.loopConfig?.doneType ?? "object" }],
+    };
   }
   visited.add(edge.sourceNodeId);
   if (source.kind === "function") {
@@ -198,6 +208,63 @@ function resolveSingleIncoming(
     return { hasUpstream: true, upstreamOutputs: resolveCompositeWorkflowTransformOutputs(source.transformConfig) };
   }
   return { hasUpstream: true, upstreamOutputs: [] };
+}
+
+/**
+ * @description 收集循环体内部节点的产出，供「结束后」出口绑定（运行期取最后一轮的值）。
+ */
+export function collectCompositeWorkflowLoopBodyOutputs(
+  nodes: CompositeWorkflowGraphNodeSummary[],
+  edges: CompositeWorkflowGraphEdge[],
+  loopNodeId: string,
+): Array<{ nodeId: string; paramName: string; paramType: string }> {
+  const owners: Array<{ nodeId: string; paramName: string; paramType: string }> = [];
+  const seen = new Set<string>();
+  const visited = new Set<string>([loopNodeId]);
+  const queue = edges.filter((edge) => edge.sourceNodeId === loopNodeId && edge.loopOutlet === "body").map((edge) => edge.targetNodeId);
+  while (queue.length > 0) {
+    const nodeId = queue.shift();
+    if (!nodeId || visited.has(nodeId)) {
+      continue;
+    }
+    visited.add(nodeId);
+    const node = nodes.find((item) => item.id === nodeId);
+    if (!node) {
+      continue;
+    }
+    if (node.kind === "loop") {
+      for (const owner of collectCompositeWorkflowLoopBodyOutputs(nodes, edges, node.id)) {
+        if (seen.has(owner.paramName)) {
+          continue;
+        }
+        seen.add(owner.paramName);
+        owners.push(owner);
+      }
+    } else {
+      const outputs: CompositeWorkflowParamBrief[] =
+        node.kind === "transform"
+          ? resolveCompositeWorkflowTransformOutputs(node.transformConfig)
+          : node.kind === "start"
+            ? (node.outputParameters ?? []).map((param) => ({ paramName: param.name, paramType: param.type }))
+            : node.kind === "function"
+              ? (node.paramsSnapshot?.outputs ?? []).map((output) => ({ ...output }))
+              : [];
+      for (const output of outputs) {
+        if (!output.paramName || seen.has(output.paramName)) {
+          continue;
+        }
+        seen.add(output.paramName);
+        owners.push({ nodeId: node.id, paramName: output.paramName, paramType: output.paramType });
+      }
+    }
+    for (const edge of edges) {
+      if (edge.sourceNodeId !== nodeId) {
+        continue;
+      }
+      queue.push(edge.targetNodeId);
+    }
+  }
+  return owners;
 }
 
 /**
@@ -504,6 +571,75 @@ export function repairCompositeWorkflowInputBindings(
       upstreamParamPath: node.paramPath,
     };
   });
+}
+
+/** 节点 kind 中文名，用于提示文案。 */
+export const COMPOSITE_WORKFLOW_KIND_LABELS: Record<CompositeWorkflowNodeKind, string> = {
+  function: "函数节点",
+  loop: "循环节点",
+  branch: "条件分支",
+  transform: "数据格式转换",
+  switch: "Switch Case",
+  start: "开始节点",
+  end: "结束节点",
+};
+
+/**
+ * @description 判断逻辑节点是否未选择上游输出（引用为空）。
+ * @param node 节点摘要。
+ * @returns 未选择时 true。
+ */
+export function hasEmptyCompositeWorkflowUpstreamRef(node: CompositeWorkflowGraphNodeSummary): boolean {
+  if (node.kind === "loop") {
+    return !node.loopConfig?.collection?.upstreamParamName?.trim();
+  }
+  if (node.kind === "branch") {
+    return !node.branchConfig?.left?.upstreamParamPath?.[0]?.trim();
+  }
+  if (node.kind === "switch") {
+    const switchOn = node.switchConfig?.switchOn;
+    return !(switchOn?.upstreamParamPath?.[0] ?? switchOn?.upstreamParamName ?? "").trim();
+  }
+  return false;
+}
+
+/**
+ * @description 前驱变更后修复逻辑节点的上游路径引用（循环 collection / 分支 left / Switch switchOn）。
+ * 无法解析时清空引用而非保留陈旧端口名，否则保存会编译出指向不存在输出端口的数据边。
+ * @param ref 原引用。
+ * @param upstreamOutputs 新前驱 OUTPUT；无前驱传空。
+ * @param hasUpstream 是否有前驱。
+ * @returns 修复后的引用；无引用或已失效时为空引用。
+ */
+export function repairCompositeWorkflowUpstreamRef(
+  ref: { upstreamParamName: string; upstreamParamPath: string[] } | undefined,
+  upstreamOutputs: CompositeWorkflowParamBrief[],
+  hasUpstream: boolean,
+): { mode: "fromUpstream"; upstreamParamName: string; upstreamParamPath: string[] } {
+  const keep = (): { mode: "fromUpstream"; upstreamParamName: string; upstreamParamPath: string[] } => ({
+    mode: "fromUpstream" as const,
+    upstreamParamName: ref?.upstreamParamName ?? "",
+    upstreamParamPath: ref?.upstreamParamPath ?? [],
+  });
+  if (!ref || !hasUpstream) {
+    return keep();
+  }
+  const path = Array.isArray(ref.upstreamParamPath) && ref.upstreamParamPath.length > 0 ? ref.upstreamParamPath : ref.upstreamParamName ? [ref.upstreamParamName] : [];
+  if (path.length === 0) {
+    return keep();
+  }
+  // 上游出参未知（如函数节点尚未加载出参）时无法判定，保持原引用避免误删有效配置。
+  if (upstreamOutputs.length === 0) {
+    return keep();
+  }
+  const outputNodes = listCompositeWorkflowParamNodes(upstreamOutputs);
+  const resolved =
+    findCompositeWorkflowParamLeaf(outputNodes, path) ??
+    outputNodes.find((item) => item.paramPath.length === 1 && item.paramPath[0] === ref.upstreamParamName);
+  if (!resolved) {
+    return { mode: "fromUpstream", upstreamParamName: "", upstreamParamPath: [] };
+  }
+  return { mode: "fromUpstream", upstreamParamName: resolved.brief.paramName, upstreamParamPath: resolved.paramPath };
 }
 
 /**

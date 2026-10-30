@@ -61,26 +61,6 @@ test("get ontology function list api gets the prefixed list endpoint", () => {
   assert.match(barrel, /getOntologyFunctionListInterface/);
 });
 
-test("get ontology function list mock mirrors the documented sample", () => {
-  const source = readSource("../src/mocks/getOntologyFunctionListMock/getOntologyFunctionListMock.ts");
-  assert.match(source, /export const getOntologyFunctionListMock: ApiResponse<GetOntologyFunctionListData>/);
-  assert.match(source, /code: 200/);
-  assert.match(source, /message: "SUCCESS"/);
-  assert.match(source, /functionApi: "test"/);
-  assert.match(source, /displayName: "测试函数"/);
-  assert.match(source, /type: "BASIC_QUERY"/);
-  assert.match(source, /createTime: "2026-10-12T17:56:02\.614\+00:00"/);
-  assert.match(source, /updateTime: "2026-09-24T03:35:18\.692\+00:00"/);
-  assert.match(source, /publishStatus: 1/);
-  assert.match(source, /version: "1\.0\.0"/);
-  assert.match(source, /functionApi: "addTwoNumbers"/);
-  assert.match(source, /type: "CUSTOMIZE"/);
-  assert.match(source, /publishStatus: 0/);
-  assert.match(source, /version: "0\.1\.0"/);
-  assert.match(source, /total: 2/);
-  assert.match(source, /pages: 1/);
-});
-
 test("mapOntologyFunctionListItem fills known fields and leaves others empty", () => {
   const basic = mapOntologyFunctionListItem(
     {

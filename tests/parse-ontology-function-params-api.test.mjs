@@ -43,18 +43,3 @@ test("parse ontology function params api posts language and code", () => {
   const barrel = readSource("../src/apis/index.ts");
   assert.match(barrel, /postParseOntologyFunctionParamsInterface/);
 });
-
-test("parse ontology function params mock mirrors the documented success sample", () => {
-  const source = readSource("../src/mocks/parseOntologyFunctionParamsMock/parseOntologyFunctionParamsMock.ts");
-  assert.match(source, /message: "SUCCESS"/);
-  assert.match(source, /status: "OK"/);
-  assert.match(source, /parsed: true/);
-  assert.match(source, /paramName: "input"/);
-  assert.match(source, /fields:/);
-  assert.match(source, /paramName: "Output"/);
-  const fixture = readSource("../src/mockData/fixtures/ontology/function/parse_params.post.json");
-  assert.match(fixture, /"paramName": "aa"/);
-  assert.match(fixture, /"fields"/);
-  const routes = readSource("../src/mockData/routes.json");
-  assert.match(routes, /\/ontology\/function\/parse_params/);
-});

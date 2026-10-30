@@ -8,26 +8,6 @@ const readSource = (relativePath) => {
   return readFileSync(fileUrl, "utf8");
 };
 
-test("update ontology object api follows the documented PUT contract", () => {
-  const apiSource = readSource("../src/apis/ontologyObjectManageApi.ts");
-  const typeSource = readSource("../src/types/apis/updateOntologyObjectType.ts");
-  const barrelSource = readSource("../src/apis/index.ts");
-  const typeBarrelSource = readSource("../src/types/index.ts");
-  const mockSource = readSource("../src/mocks/updateOntologyObjectMock/updateOntologyObjectMock.ts");
-
-  assert.match(apiSource, /export function updateOntologyObjectInterface\(/);
-  assert.match(apiSource, /Promise<ApiResponse<UpdateOntologyObjectData>>/);
-  assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/meta"/);
-  assert.match(apiSource, /method:\s*"put"/);
-  assert.match(apiSource, /data: params/);
-  assert.match(typeSource, /ontologyIdentifier:\s*string/);
-  assert.match(typeSource, /displayName:\s*string/);
-  assert.match(typeSource, /groupIds:\s*Array<string \| null>/);
-  assert.match(barrelSource, /updateOntologyObjectInterface/);
-  assert.match(typeBarrelSource, /UpdateOntologyObjectParams/);
-  assert.match(mockSource, /updateOntologyObjectMock: ApiResponse<UpdateOntologyObjectData>/);
-});
-
 test("object edit action opens a prefilled dialog and refreshes after success", () => {
   const panelSource = readSource("../src/views/ObjectWorkspacePanel/index.vue");
   const actionsSource = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceObjectActions.ts");

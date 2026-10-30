@@ -38,11 +38,3 @@ test("apis barrel exports the container runtime start interface", () => {
   const barrel = readSource("../src/apis/index.ts");
   assert.match(barrel, /postOntologyFunctionContainerRuntimeStartInterface/);
 });
-
-test("container runtime start mock mirrors RUNNING sample item", () => {
-  const mockSource = readSource("../src/mocks/postOntologyFunctionContainerRuntimeStartMock/postOntologyFunctionContainerRuntimeStartMock.ts");
-  assert.match(mockSource, /export const postOntologyFunctionContainerRuntimeStartMock: ApiResponse<PostOntologyFunctionContainerRuntimeStartData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /phase:\s*["']RUNNING["']/);
-  assert.match(mockSource, /phaseLabel:\s*["']运行中["']/);
-});

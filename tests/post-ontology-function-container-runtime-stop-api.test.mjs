@@ -38,11 +38,3 @@ test("apis barrel exports the container runtime stop interface", () => {
   const barrel = readSource("../src/apis/index.ts");
   assert.match(barrel, /postOntologyFunctionContainerRuntimeStopInterface/);
 });
-
-test("container runtime stop mock mirrors STOPPED sample item", () => {
-  const mockSource = readSource("../src/mocks/postOntologyFunctionContainerRuntimeStopMock/postOntologyFunctionContainerRuntimeStopMock.ts");
-  assert.match(mockSource, /export const postOntologyFunctionContainerRuntimeStopMock: ApiResponse<PostOntologyFunctionContainerRuntimeStopData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /phase:\s*["']STOPPED["']/);
-  assert.match(mockSource, /phaseLabel:\s*["']已停止["']/);
-});

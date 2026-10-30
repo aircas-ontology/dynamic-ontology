@@ -243,6 +243,7 @@ export type {
   CompositeWorkflowLoopOutlet,
   CompositeWorkflowNodeKind,
   CompositeWorkflowParamBrief,
+  CompositeWorkflowPortTypeName,
   CompositeWorkflowSavePayload,
   CompositeWorkflowSwitchCaseItem,
   CompositeWorkflowSwitchConfig,
@@ -271,6 +272,8 @@ export type {
 } from "./pages/ontologyFunctionOperatorBasicFilterType";
 export {
   FUNCTION_OPERATOR_AGG_FUNC_OPTIONS,
+  FUNCTION_OPERATOR_COMPOSITE_PUBLIC,
+  FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS,
   FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS,
   FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS,
   FUNCTION_OPERATOR_STATUS_LABELS,

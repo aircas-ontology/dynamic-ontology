@@ -720,7 +720,7 @@ test("resolveCompositeWorkflowNodeUpstreamOutputs covers transform loop and miss
     ],
     "after",
   );
-  assert.deepEqual(loopDoneOutputs.upstreamOutputs, upstreamOutputs);
+  assert.deepEqual(loopDoneOutputs.upstreamOutputs, [...upstreamOutputs, { paramName: "done", paramType: "object" }]);
 
   assert.deepEqual(resolveCompositeWorkflowNodeUpstreamOutputs([], [], "x"), { hasUpstream: false, upstreamOutputs: [] });
   assert.deepEqual(resolveCompositeWorkflowNodeUpstreamOutputs([], [{ id: "e1", sourceNodeId: "gone", targetNodeId: "x" }], "x"), {

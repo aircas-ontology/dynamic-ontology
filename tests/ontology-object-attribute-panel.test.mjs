@@ -60,7 +60,14 @@ test("object attribute panel exposes category tree, property columns, and local 
   assert.match(formSource, /prop="displayName"/);
   assert.match(formSource, /placeholder="例如：任务优先级"/);
   assert.match(formSource, /请选择属性分类/);
-  assert.match(formSource, /<el-select\b/);
+  assert.match(formSource, /<el-tree-select\b/);
+  assert.match(formSource, /check-strictly/);
+  assert.match(formSource, /default-expand-all/);
+  assert.match(formSource, /:data="categoryOptions"/);
+  assert.doesNotMatch(formSource, /v-for="category in categoryOptions"/);
+  assert.match(helperSource, /function mapAttributeCategoryTreeSelectData/);
+  assert.match(helperSource, /node\.children\?\.filter\(isCategoryNode\)/);
+  assert.match(propertyApiSource, /mapAttributeCategoryTreeSelectData\(getCategories\(\)\)/);
   assert.match(formSource, /<el-switch\b/);
   assert.match(categoryApiSource, /function openCategoryCreate/);
   assert.match(categoryApiSource, /function openCategoryEdit/);
@@ -72,6 +79,51 @@ test("object attribute panel exposes category tree, property columns, and local 
   assert.match(helperSource, /function collectPropertyItemsFromTree/);
   assert.match(helperSource, /propertyType/);
   assert.match(helperSource, /const propertyChildren = \(node\.propertyInfos \?\? \[\]\)\.map\(mapPropertyTreeNode\)/);
+});
+
+test("attribute category tree propertyCount includes own and descendant properties", async () => {
+  const helperUrl = new URL("../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts", import.meta.url);
+  const { mapCategoryTreeNode } = await import(helperUrl.href);
+  const tree = mapCategoryTreeNode({
+    categoryId: 0,
+    name: "全部",
+    propertyInfos: [{ displayName: "载荷状态", apiName: "payloadStatus", uniqueIdentifier: "p-root" }],
+    children: [
+      {
+        categoryId: 1,
+        name: "载荷",
+        propertyInfos: [
+          { displayName: "a", uniqueIdentifier: "p1" },
+          { displayName: "b", uniqueIdentifier: "p2" },
+          { displayName: "c", uniqueIdentifier: "p3" },
+          { displayName: "d", uniqueIdentifier: "p4" },
+        ],
+      },
+      {
+        categoryId: 2,
+        name: "电源系统",
+        propertyInfos: [
+          { displayName: "e", uniqueIdentifier: "p5" },
+          { displayName: "f", uniqueIdentifier: "p6" },
+          { displayName: "g", uniqueIdentifier: "p7" },
+        ],
+      },
+      {
+        categoryId: 3,
+        name: "基本信息",
+        propertyInfos: [
+          { displayName: "h", uniqueIdentifier: "p8" },
+          { displayName: "i", uniqueIdentifier: "p9" },
+          { displayName: "j", uniqueIdentifier: "p10" },
+          { displayName: "k", uniqueIdentifier: "p11" },
+        ],
+      },
+    ],
+  });
+  assert.equal(tree.propertyCount, 12);
+  assert.equal(tree.children?.find((node) => node.nodeType === "category" && node.id === "1")?.propertyCount, 4);
+  assert.equal(tree.children?.find((node) => node.nodeType === "category" && node.id === "2")?.propertyCount, 3);
+  assert.equal(tree.children?.find((node) => node.nodeType === "category" && node.id === "3")?.propertyCount, 4);
 });
 
 test("clicking a property node in the category tree opens the read-only attribute detail dialog", () => {
@@ -211,7 +263,16 @@ test("bound datasource attributes allow name, category and description edits", (
   assert.match(propertySource, /datasourceLocked,/);
   assert.match(formSource, /datasourceLocked: boolean/);
   assert.match(formSource, /该属性已绑定数据源，仅支持修改属性名称、属性分类和描述/);
+<<<<<<< HEAD
   assert.doesNotMatch(formSource.match(/<el-select v-model="draft\.categoryId"[^>]*>/)?.[0] ?? "", /disabled/);
+=======
+  {
+    const treeSelectBlock = formSource.match(/<el-tree-select[\s\S]*?\/>/);
+    assert.ok(treeSelectBlock, "missing el-tree-select");
+    assert.doesNotMatch(treeSelectBlock[0], /:disabled=/);
+  }
+  assert.match(propertySource, /datasourceLocked\.value && originalEditParams[\s\S]*?categoryId/);
+>>>>>>> 0a66214d1bb184d5e5bc29c6e430e7cc907cec5f
   assert.match(formSource, /:disabled="datasourceLocked \|\| draft\.isPrimary"/);
   assert.match(formSource, /v-model="draft\.storageGroup"[\s\S]*?:disabled="datasourceLocked"/);
   assert.match(formSource, /v-model="draft\.defaultValue"[\s\S]*?:disabled="datasourceLocked"/);

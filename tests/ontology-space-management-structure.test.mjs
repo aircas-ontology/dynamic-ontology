@@ -102,7 +102,7 @@ test("space cards follow the prototype frame, metrics, and footer", () => {
   assert.match(source, />对象/);
   assert.match(source, />行为/);
   assert.match(source, />关系/);
-  assert.match(source, />规则/);
+  assert.match(source, />属性/);
   assert.match(source, /--aircas-color-category-blue/);
   assert.match(source, /--aircas-color-category-purple/);
   assert.match(source, /<SpaceActions :gradient="true"/);

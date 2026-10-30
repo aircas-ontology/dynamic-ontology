@@ -24,7 +24,17 @@
       <el-form-item label="最大迭代次数">
         <el-input-number :model-value="loopMaxIterations" :min="1" :max="10000" @update:model-value="onLoopMaxIterationsChange" />
       </el-form-item>
-      <p class="composite-logic-node-drawer__hint">右侧「循环体」出口进入循环体；下侧「结束后」出口在循环完成后继续。</p>
+      <el-form-item label="迭代项 item 类型">
+        <el-select v-model="loopItemType" style="width: 100%">
+          <el-option v-for="item in portTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="结束后 done 类型">
+        <el-select v-model="loopDoneType" style="width: 100%">
+          <el-option v-for="item in portTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
+      </el-form-item>
+      <p class="composite-logic-node-drawer__hint">右侧「循环体」出口进入循环体；下侧「结束后」出口在循环完成后继续。类型决定下游节点能否绑定该端口，选「对象」表示不限定类型。结束后接的下游节点除上游参数与 done 外，还能绑循环体内节点的产出（取到的是最后一轮的值）。</p>
     </el-form>
 
     <el-form v-else-if="localKind === 'branch'" label-position="top">
@@ -88,7 +98,7 @@
 import { computed, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 
-import type { CompositeWorkflowBranchOperator, CompositeWorkflowSwitchCaseItem } from "@/types";
+import type { CompositeWorkflowBranchOperator, CompositeWorkflowPortTypeName, CompositeWorkflowSwitchCaseItem } from "@/types";
 
 import type { CompositeWorkflowLogicNodeEditContext } from "../composables/useCompositeWorkflowCanvas";
 import { compositeWorkflowParamPathKey, listCompositeWorkflowParamNodes, parseCompositeWorkflowParamPathKey } from "../utils/compositeWorkflowGraph.ts";
@@ -108,12 +118,22 @@ const emit = defineEmits<{
 const localKind = ref<"loop" | "branch" | "switch">("loop");
 const loopCollectionPathKey = ref("");
 const loopMaxIterations = ref(100);
+const loopItemType = ref<CompositeWorkflowPortTypeName>("object");
+const loopDoneType = ref<CompositeWorkflowPortTypeName>("object");
 const branchLeftPathKey = ref("");
 const branchOperator = ref<CompositeWorkflowBranchOperator>("eq");
 const branchRightManual = ref("");
 const switchPathKey = ref("");
 const switchCases = ref<CompositeWorkflowSwitchCaseItem[]>([createCompositeWorkflowSwitchCaseItem()]);
 const hasUpstream = ref(false);
+
+const portTypeOptions: { value: CompositeWorkflowPortTypeName; label: string }[] = [
+  { value: "object", label: "对象（不限定）" },
+  { value: "number", label: "数字" },
+  { value: "string", label: "字符串" },
+  { value: "boolean", label: "布尔" },
+  { value: "array", label: "数组" },
+];
 
 const branchOperatorOptions: { value: CompositeWorkflowBranchOperator; label: string }[] = [
   { value: "eq", label: "==" },
@@ -181,6 +201,8 @@ function hydrateFromContext(): void {
   if (context.kind === "loop") {
     const config = normalizeCompositeWorkflowLoopConfig(context.loopConfig ?? createDefaultCompositeWorkflowLoopConfig());
     loopMaxIterations.value = config.maxIterations ?? 100;
+    loopItemType.value = config.itemType ?? "object";
+    loopDoneType.value = config.doneType ?? "object";
     const path = config.collection.upstreamParamPath;
     loopCollectionPathKey.value = path.length > 0 ? compositeWorkflowParamPathKey(path) : "";
     return;
@@ -225,6 +247,8 @@ function emitConfirm(): void {
           upstreamParamPath,
         },
         itemParamName: "item",
+        itemType: loopItemType.value,
+        doneType: loopDoneType.value,
         maxIterations: loopMaxIterations.value,
       },
       hasUpstream: context.hasUpstream,

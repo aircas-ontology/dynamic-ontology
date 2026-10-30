@@ -8,6 +8,7 @@ import type {
 } from "@/types";
 
 import type { CompositeWorkflowGraphEdge, CompositeWorkflowGraphNodeSummary } from "./compositeWorkflowGraph.ts";
+import { normalizeCompositeWorkflowLoopConfig } from "./compositeWorkflowLoopDefaults.ts";
 
 /** LogicFlow 节点 type 常量；与 registerCompositeWorkflowNodes 保持一致，独立定义避免测试引入 LogicFlow。 */
 const LF_NODE_TYPES: Record<CompositeWorkflowNodeKind, string> = {
@@ -142,6 +143,9 @@ export function compileCompositeWorkflowToBackendConfig(options: {
       // collection 取自上游时按 foreach 编译（collectionPath 记上游出参名）；手填集合时按固定次数 times。
       const collection = config?.collection;
       const isForeach = collection?.mode === "fromUpstream" && collection.upstreamParamName?.trim();
+      const itemName = config?.itemParamName?.trim() || "item";
+      const itemType = config?.itemType;
+      const doneType = config?.doneType;
       return {
         id: node.id,
         kind: "loop",
@@ -149,12 +153,16 @@ export function compileCompositeWorkflowToBackendConfig(options: {
           ? {
               mode: "foreach" as const,
               collectionPath: collection?.upstreamParamName?.trim(),
-              itemName: config?.itemParamName?.trim() || "item",
+              itemName,
+              ...(itemType ? { itemType } : {}),
+              ...(doneType ? { doneType } : {}),
             }
           : {
               mode: "times" as const,
               times: typeof config?.maxIterations === "number" && config.maxIterations > 0 ? config.maxIterations : 1,
-              itemName: config?.itemParamName?.trim() || "item",
+              itemName,
+              ...(itemType ? { itemType } : {}),
+              ...(doneType ? { doneType } : {}),
             },
       };
     }
@@ -299,6 +307,56 @@ function buildCompositeWorkflowInputDefaults(bindings: CompositeWorkflowInputBin
 }
 
 /**
+ * @description 判断节点自身是否声明了该输出端口；分支 / Switch 仅透传上游出参，不声明数据端口。
+ * @param node 节点摘要。
+ * @param portName 端口/参数名。
+ * @returns 自身是否声明该端口。
+ */
+function nodeDeclaresOutputPort(node: CompositeWorkflowGraphNodeSummary, portName: string): boolean {
+  if (node.kind === "start" || node.kind === "function") {
+    const outputs: Array<{ name?: string; paramName?: string }> =
+      node.kind === "start" ? (node.outputParameters ?? []).map((item) => ({ name: item.name })) : (node.paramsSnapshot?.outputs ?? []).map((item) => ({ paramName: item.paramName }));
+    return outputs.some((item) => (item.name ?? item.paramName) === portName);
+  }
+  if (node.kind === "branch" || node.kind === "switch") {
+    return false;
+  }
+  // 循环会产出 item / done 并透传循环体产出，转换节点出参由脚本推导，均按自身声明处理。
+  return true;
+}
+
+/**
+ * @description 解析数据边的真实产出节点：绑定透传参数时，分支 / Switch 不是产出方，应回退到上游真实声明该端口的节点，否则后端会以“源节点不存在输出端口”拒收。
+ * @param nodes 画布节点摘要。
+ * @param edges 画布节点级连线。
+ * @param incomingSourceNodeId 目标节点入边起点。
+ * @param portName 上游参数名。
+ * @returns 数据边起点节点 id。
+ */
+function resolveDataEdgeSourceNodeId(
+  nodes: CompositeWorkflowGraphNodeSummary[],
+  edges: CompositeWorkflowGraphEdge[],
+  incomingSourceNodeId: string,
+  portName: string,
+): string {
+  let current = incomingSourceNodeId;
+  const visited = new Set<string>([current]);
+  for (let depth = 0; depth < 20; depth += 1) {
+    const node = nodes.find((item) => item.id === current);
+    if (!node || nodeDeclaresOutputPort(node, portName)) {
+      return current;
+    }
+    const incoming = edges.find((edge) => edge.targetNodeId === current);
+    if (!incoming || visited.has(incoming.sourceNodeId)) {
+      return current;
+    }
+    visited.add(incoming.sourceNodeId);
+    current = incoming.sourceNodeId;
+  }
+  return current;
+}
+
+/**
  * @description 按目标节点把 fromUpstream 绑定编译为数据边；前驱从画布连线第一条入边取。
  * @param backendEdges 输出边集合（就地追加）。
  * @param nodes 画布节点摘要。
@@ -329,7 +387,7 @@ function appendUpstreamDataEdges(
         continue;
       }
       backendEdges.push({
-        sourceNodeId: incoming.sourceNodeId,
+        sourceNodeId: resolveDataEdgeSourceNodeId(nodes, edges, incoming.sourceNodeId, upstreamRoot),
         sourceParameterId: upstreamRoot,
         targetNodeId,
         targetParameterId: portPrefix ?? binding.paramName,
@@ -348,7 +406,7 @@ function appendUpstreamDataEdges(
     const collection = target.loopConfig?.collection;
     if (collection?.mode === "fromUpstream" && collection.upstreamParamName) {
       backendEdges.push({
-        sourceNodeId: incoming.sourceNodeId,
+        sourceNodeId: resolveDataEdgeSourceNodeId(nodes, edges, incoming.sourceNodeId, collection.upstreamParamName),
         sourceParameterId: collection.upstreamParamName,
         targetNodeId,
         targetParameterId: "collection",
@@ -361,7 +419,7 @@ function appendUpstreamDataEdges(
     const leftRoot = left?.mode === "fromUpstream" ? left.upstreamParamPath[0] : undefined;
     if (left?.mode === "fromUpstream" && leftRoot) {
       backendEdges.push({
-        sourceNodeId: incoming.sourceNodeId,
+        sourceNodeId: resolveDataEdgeSourceNodeId(nodes, edges, incoming.sourceNodeId, leftRoot),
         sourceParameterId: leftRoot,
         targetNodeId,
         targetParameterId: "value",
@@ -374,7 +432,7 @@ function appendUpstreamDataEdges(
     const switchRoot = switchOn?.mode === "fromUpstream" ? switchOn.upstreamParamPath[0] || switchOn.upstreamParamName : undefined;
     if (switchOn?.mode === "fromUpstream" && switchRoot?.trim()) {
       backendEdges.push({
-        sourceNodeId: incoming.sourceNodeId,
+        sourceNodeId: resolveDataEdgeSourceNodeId(nodes, edges, incoming.sourceNodeId, switchRoot.trim()),
         sourceParameterId: switchRoot.trim(),
         targetNodeId,
         targetParameterId: switchRoot.trim(),
@@ -554,12 +612,14 @@ function buildCompositeWorkflowRestoreNodeProperties(node: OntologyCompositeNode
     const collectionEdge = dataEdgeTo("collection");
     return {
       kind: "loop",
-      loopConfig: {
+      loopConfig: normalizeCompositeWorkflowLoopConfig({
         kind: "loop",
         collection: collectionEdge ? { mode: "fromUpstream", upstreamParamName: collectionEdge.sourceParameterId } : { mode: "manual", jsonText: "[]" },
         itemParamName: node.loopConfig?.itemName ?? "item",
+        itemType: node.loopConfig?.itemType,
+        doneType: node.loopConfig?.doneType,
         maxIterations: node.loopConfig?.times ?? 1,
-      },
+      }),
     };
   }
   if (node.kind === "branch") {
