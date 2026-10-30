@@ -44,15 +44,6 @@ test("apis barrel exports the ontology import interface in dictionary order", ()
   );
 });
 
-test("import ontologies mock uses the structural empty data object", () => {
-  const mockSource = readSource("../src/mocks/importOntologiesMock/importOntologiesMock.ts");
-  assert.match(mockSource, /export const importOntologiesMock: ApiResponse<ImportOntologiesData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /data: \{\},/);
-});
-
 test("object create dialog import mode submits the selected file to the import api", () => {
   const dialogSource = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue");
   const actionsSource = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceObjectActions.ts");

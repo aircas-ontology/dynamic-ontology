@@ -1,88 +1,102 @@
 <template>
-  <el-button class="ai-assistant-launcher" :aria-label="visible ? '关闭 AI 助手' : '打开 AI 助手'" :aria-expanded="visible" @click="visible = !visible">
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 6.5h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" />
-    </svg>
-  </el-button>
-  <el-drawer v-model="visible" class="aircas-drawer ai-assistant-drawer" direction="rtl" size="620px" :modal="false" modal-penetrable append-to-body>
-    <template #header>
-      <span class="ai-assistant-drawer__header-title">AI 助手</span>
-    </template>
-    <div class="ai-assistant-drawer__panel">
-      <div ref="stageRef" class="ai-assistant-drawer__stage">
-        <AiAssistantConversation v-if="messages.length" :messages="messages" @select-option="selectAssistantOption" />
-        <div v-else class="ai-assistant-drawer__prompts">
-          <div class="ai-assistant-drawer__intro">
-            <span class="ai-assistant-drawer__mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M12 2.5 13.6 8 19 9.5 13.6 11 12 16.5 10.4 11 5 9.5 10.4 8Z" />
-                <path d="M18 14.5 18.7 16.8 19.8 17.5 18.7 18.2 18 20.5 17.3 18.2 16.2 17.5 17.3 16.8Z" />
-              </svg>
-            </span>
-            <strong>智能管理助手</strong>
-            <p>提供对象、属性、关系、行为、函数算子和行为调度的构建管理问答</p>
+  <aside class="ai-assistant-drawer" :class="{ 'is-open': visible }" aria-label="AI 助手" :aria-hidden="!visible">
+    <div class="ai-assistant-drawer__inner">
+      <header class="ai-assistant-drawer__header">
+        <span class="ai-assistant-drawer__header-title">AI 助手</span>
+        <button class="ai-assistant-drawer__close" type="button" aria-label="关闭 AI 助手" :tabindex="visible ? 0 : -1" @click="visible = false">
+          <el-icon :size="16"><Close /></el-icon>
+        </button>
+      </header>
+      <div class="ai-assistant-drawer__panel">
+        <div ref="stageRef" class="ai-assistant-drawer__stage">
+          <AiAssistantConversation v-if="messages.length" :messages="messages" @select-option="selectAssistantOption" />
+          <div v-else class="ai-assistant-drawer__prompts">
+            <div class="ai-assistant-drawer__intro">
+              <span class="ai-assistant-drawer__mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 2.5 13.6 8 19 9.5 13.6 11 12 16.5 10.4 11 5 9.5 10.4 8Z" />
+                  <path d="M18 14.5 18.7 16.8 19.8 17.5 18.7 18.2 18 20.5 17.3 18.2 16.2 17.5 17.3 16.8Z" />
+                </svg>
+              </span>
+              <strong>智能管理助手</strong>
+              <p>提供对象、属性、关系、行为、函数算子和行为调度的构建管理问答</p>
+            </div>
+            <button v-for="prompt in prompts" :key="prompt" type="button" @click="applyAssistantPrompt(prompt)">{{ prompt }}</button>
           </div>
-          <button v-for="prompt in prompts" :key="prompt" type="button" @click="applyAssistantPrompt(prompt)">{{ prompt }}</button>
         </div>
-      </div>
-      <p v-if="errorMessage && !messages.length" class="ai-assistant-drawer__banner">{{ errorMessage }}</p>
-      <div class="ai-assistant-drawer__composer">
-        <el-input
-          v-model="draft"
-          type="textarea"
-          :rows="4"
-          maxlength="1000"
-          show-word-limit
-          resize="none"
-          :disabled="status === 'submitting'"
-          placeholder="请输入问题，Enter 发送，Shift + Enter 换行"
-          @keydown="handleAssistantInputKeydown"
-        />
-        <div class="ai-assistant-drawer__composer-bar">
-          <div class="ai-assistant-drawer__composer-actions">
-            <el-dropdown trigger="click">
-              <button class="ai-assistant-drawer__mode" type="button">
-                <span aria-hidden="true">✦</span>
-                智能管理助手
-                <span aria-hidden="true">⌄</span>
-              </button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item>智能管理助手</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-            <button class="ai-assistant-drawer__mode" type="button" @click="startNewAssistantConversation">新对话</button>
+        <p v-if="errorMessage" class="ai-assistant-drawer__banner" role="alert">{{ errorMessage }}</p>
+        <div class="ai-assistant-drawer__composer" @dragover.prevent @drop.prevent="handleAssistantFileDrop">
+          <div v-if="attachment" class="ai-assistant-drawer__attachment-card">
+            <span>{{ attachment.fileName }}</span>
+            <button type="button" aria-label="移除附件" @click="removeAssistantAttachment">×</button>
           </div>
-          <button
-            class="ai-assistant-drawer__send"
-            type="button"
-            aria-label="发送问题"
-            :disabled="status === 'submitting' || !draft.trim()"
-            @click="submitAssistantQuestion"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M21 3 3 10.5l6.8 2.7L12.5 20 21 3Z" />
-              <path d="M21 3 9.8 13.2" />
-            </svg>
-          </button>
+          <el-input
+            v-model="draft"
+            type="textarea"
+            :rows="4"
+            maxlength="1000"
+            show-word-limit
+            resize="none"
+            :disabled="status === 'submitting'"
+            placeholder="请输入问题，Enter 发送，Shift + Enter 换行"
+            @keydown="handleAssistantInputKeydown"
+          />
+          <div class="ai-assistant-drawer__composer-bar">
+            <div class="ai-assistant-drawer__composer-actions">
+              <input
+                ref="fileInputRef"
+                class="ai-assistant-drawer__file-input"
+                type="file"
+                accept=".txt,.md,text/plain,text/markdown"
+                @change="handleAssistantFileChange"
+              />
+              <button class="ai-assistant-drawer__mode" type="button" @click="fileInputRef?.click()">＋ 附件</button>
+              <button class="ai-assistant-drawer__mode" type="button" @click="startNewAssistantConversation">新对话</button>
+            </div>
+            <button
+              class="ai-assistant-drawer__send"
+              type="button"
+              :aria-label="status === 'submitting' ? '停止生成' : '发送问题'"
+              :disabled="status !== 'submitting' && !draft.trim() && attachment?.status !== 'ready'"
+              @click="status === 'submitting' ? stopAssistantChat() : submitAssistantQuestion()"
+            >
+              <svg v-if="status !== 'submitting'" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 3 3 10.5l6.8 2.7L12.5 20 21 3Z" />
+                <path d="M21 3 9.8 13.2" /></svg
+              ><span v-else class="ai-assistant-drawer__stop-icon" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </el-drawer>
+  </aside>
 </template>
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from "vue";
+import { Close } from "@element-plus/icons-vue";
 
 import { useAiAssistantChat } from "@/composables/agent/useAiAssistantChat";
 
 import AiAssistantConversation from "./AiAssistantConversation.vue";
 
 const prompts = ["新建福特级航空母舰", "创建一个名称属性", "创建舰艇编制关系", "创建一个巡航行为", "编辑函数算子运行配置", "导出行为调度和规则库"];
-const visible = ref(false);
+const visible = defineModel<boolean>({ default: false });
 const stageRef = ref<HTMLElement | null>(null);
-const { draft, messages, status, errorMessage, sendAssistantMessage, startNewAssistantConversation, selectAssistantOption } = useAiAssistantChat();
+const {
+  draft,
+  messages,
+  status,
+  errorMessage,
+  attachment,
+  uploadAssistantDocument,
+  removeAssistantAttachment,
+  sendAssistantMessage,
+  startNewAssistantConversation,
+  selectAssistantOption,
+  stopAssistantChat,
+} = useAiAssistantChat();
+const fileInputRef = ref<HTMLInputElement | null>(null);
 
 /**
  * @description 把示例问题写入输入框，便于继续编辑后发送。
@@ -96,7 +110,21 @@ function applyAssistantPrompt(prompt: string) {
  * @description 提交当前输入框中的问题。
  */
 function submitAssistantQuestion() {
+  if (attachment.value?.status === "uploading" || attachment.value?.status === "error") return;
   void sendAssistantMessage();
+}
+
+/** @description 处理文件选择并上传到当前会话。 */
+function handleAssistantFileChange(event: Event): void {
+  const file = event.target instanceof HTMLInputElement ? event.target.files?.[0] : undefined;
+  if (file) void uploadAssistantDocument(file);
+  if (event.target instanceof HTMLInputElement) event.target.value = "";
+}
+
+/** @description 处理拖入文件并上传到当前会话。 */
+function handleAssistantFileDrop(event: DragEvent): void {
+  const file = event.dataTransfer?.files?.[0];
+  if (file) void uploadAssistantDocument(file);
 }
 
 /**
@@ -129,39 +157,65 @@ watch(messages, () => {
 </script>
 
 <style scoped lang="scss">
-.ai-assistant-launcher {
-  position: absolute;
-  left: 50%;
-  bottom: 24px;
-  z-index: 20;
+.ai-assistant-drawer {
+  width: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: width 0.25s ease;
+  background-color: var(--aircas-color-background);
+}
+
+.ai-assistant-drawer.is-open {
+  width: 620px;
+  pointer-events: auto;
+}
+
+.ai-assistant-drawer__inner {
+  display: flex;
+  width: 620px;
+  min-width: 620px;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid var(--aircas-color-border-light);
+  background-color: var(--aircas-color-background);
+}
+
+.ai-assistant-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  min-height: 48px;
+  padding: 12px 16px;
+}
+
+.ai-assistant-drawer__header-title {
+  color: var(--aircas-color-primary);
+  font-size: 16px;
+}
+
+.ai-assistant-drawer__close {
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   place-items: center;
-  transform: translateX(-50%);
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 50%;
-  color: var(--aircas-color-text-primary);
-  background: color-mix(in srgb, var(--aircas-color-primary) 60%, transparent);
-  box-shadow: 0 8px 20px var(--aircas-color-border-light);
+  border: 0;
+  border-radius: 4px;
+  color: var(--aircas-color-text-secondary);
+  background: transparent;
   cursor: pointer;
 }
 
-.ai-assistant-launcher svg {
-  width: 25px;
-  height: 25px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-
-.ai-assistant-launcher:hover,
-.ai-assistant-launcher:focus-visible {
-  border-color: var(--aircas-color-primary);
-  color: var(--aircas-color-primary);
+.ai-assistant-drawer__close:hover,
+.ai-assistant-drawer__close:focus-visible {
+  color: var(--aircas-color-text-primary);
+  background: var(--aircas-color-hover);
   outline: none;
 }
 
@@ -176,20 +230,6 @@ watch(messages, () => {
   stroke-linecap: round;
 }
 
-.ai-assistant-drawer:deep(.el-drawer__body) {
-  display: flex;
-  height: 100%;
-  min-height: 0;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 0 16px 16px;
-}
-
-.ai-assistant-drawer__header-title {
-  color: var(--aircas-color-primary);
-  font-size: 16px;
-}
-
 .ai-assistant-drawer__panel {
   display: flex;
   height: 100%;
@@ -197,6 +237,8 @@ watch(messages, () => {
   flex: 1;
   flex-direction: column;
   gap: 12px;
+  padding: 0 16px 16px;
+  overflow: hidden;
 }
 
 .ai-assistant-drawer__stage {
@@ -316,6 +358,10 @@ watch(messages, () => {
   gap: 8px;
 }
 
+.ai-assistant-drawer__file-input {
+  display: none;
+}
+
 .ai-assistant-drawer__mode {
   display: inline-flex;
   align-items: center;
@@ -363,5 +409,12 @@ watch(messages, () => {
 .ai-assistant-drawer__send svg {
   width: 16px;
   height: 16px;
+}
+.ai-assistant-drawer__stop-icon {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: currentColor;
 }
 </style>

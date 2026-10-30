@@ -1,8 +1,8 @@
-# 本体对象工作区实施方案（已确认）
+# 对象工作区实施方案（已确认）
 
 ## 需求理解
 
-在 `/workspace/ontology-space-management/:spaceId/object` 新增本体对象页面。页面采用左右布局，左侧展示概念层级树，右侧按分类展示对象并支持卡片、列表切换；点击树节点后通过锚点定位右侧分类。
+在 `/workspace/ontology-space-management/:spaceId/object` 新增对象页面。页面采用左右布局，左侧展示概念层级树，右侧按分类展示对象并支持卡片、列表切换；点击树节点后通过锚点定位右侧分类。
 
 ## 修改范围
 

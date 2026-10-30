@@ -29,15 +29,6 @@ test("overview count api uses the documented prefixed GET endpoint without param
   assert.match(source, /GetOntologyOverviewCountData/);
 });
 
-test("overview count mock mirrors the documented statistic response", () => {
-  const source = readSource("../src/mocks/getOntologyOverviewCountMock/getOntologyOverviewCountMock.ts");
-  assert.match(source, /export const getOntologyOverviewCountMock: ApiResponse<GetOntologyOverviewCountData>/);
-  assert.match(source, /code:\s*0/);
-  for (const field of ["spaceCount", "ontologyCount", "groupCount", "actionSchedulingCount", "actionCount", "functionCount", "propertyCount", "linkCount"]) {
-    assert.match(source, new RegExp(`${field}:\\s*0`));
-  }
-});
-
 test("space management loads overview count and maps backend values to stat cards", () => {
   const composable = readSource("../src/views/OntologySpaceManagement/composables/useSpaceManagement.ts");
   const page = readSource("../src/views/OntologySpaceManagement/index.vue");

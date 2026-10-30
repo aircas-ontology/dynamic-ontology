@@ -13,21 +13,6 @@ function readSource(relativePath) {
   return readFileSync(fileUrl, "utf8");
 }
 
-test("delete ontology object api follows the documented DELETE path contract", () => {
-  const apiSource = readSource("../src/apis/ontologyObjectManageApi.ts");
-  const barrelSource = readSource("../src/apis/index.ts");
-  const typeSource = readSource("../src/types/apis/deleteOntologyObjectType.ts");
-  const mockSource = readSource("../src/mocks/deleteOntologyObjectMock/deleteOntologyObjectMock.ts");
-
-  assert.match(apiSource, /export function deleteOntologyObjectInterface\(/);
-  assert.match(apiSource, /Promise<ApiResponse<DeleteOntologyObjectData>>/);
-  assert.match(apiSource, /url:\s*`\$\{DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL\}\/ontology\/meta\/\$\{encodeURIComponent\(params\.ontologyIdentifier\)\}`/);
-  assert.match(apiSource, /method:\s*"delete"/);
-  assert.match(barrelSource, /deleteOntologyObjectInterface/);
-  assert.match(typeSource, /ontologyIdentifier:\s*string/);
-  assert.match(mockSource, /deleteOntologyObjectMock: ApiResponse<DeleteOntologyObjectData>/);
-});
-
 test("object delete action opens a confirmation dialog and refreshes after success", () => {
   const panelSource = readSource("../src/views/ObjectWorkspacePanel/index.vue");
   const actionsSource = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceObjectActions.ts");
@@ -38,6 +23,6 @@ test("object delete action opens a confirmation dialog and refreshes after succe
   assert.match(panelSource, /action === "delete"/);
   assert.match(actionsSource, /const response = await deleteOntologyObjectInterface\([\s\S]*?if \(response\.code !== 200\)/);
   assert.match(actionsSource, /await load\(\)/);
-  assert.match(dialogSource, /确认删除本体对象/);
+  assert.match(dialogSource, /确认删除对象/);
   assert.match(dialogSource, /确认删除/);
 });

@@ -4,7 +4,7 @@
 
 ## 需求理解
 
-本体空间布局中面包屑在深色背景（`--aircas-color-panel-background-deep`）下文字不清；在 `element-plus` 新增可复用 `.aircas-breadcrumb` 覆盖，并接到 `BreadcrumbBar.vue`。
+对象空间布局中面包屑在深色背景（`--aircas-color-panel-background-deep`）下文字不清；在 `element-plus` 新增可复用 `.aircas-breadcrumb` 覆盖，并接到 `BreadcrumbBar.vue`。
 
 ## 修改范围
 
@@ -25,6 +25,6 @@
 
 ## 验证方式
 
-- 浏览器：本体空间管理 / 进入空间后面包屑可读
+- 浏览器：对象空间管理 / 进入空间后面包屑可读
 - `npm run check:project-conventions`
 - 任务文件 `format:check`

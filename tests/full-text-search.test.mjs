@@ -32,10 +32,10 @@ test("full text search route accepts and preserves the embedded userName paramet
 test("full text search result navigation carries userName into workspace detail routes", () => {
   const redirect = resolveEmbeddedPropagation(
     {
-      path: "/workspace/ontology-object/object-1/object",
+      path: "/workspace/ontology-object/object-1/attribute",
       query: { objectName: "飞机" },
       hash: "",
-      matched: [{ name: "Workspace" }, { name: "OntologyObjectDetailObject" }],
+      matched: [{ name: "Workspace" }, { name: "OntologyObjectDetailAttribute" }],
     },
     {
       path: "/workspace/full-text-search",
@@ -46,7 +46,7 @@ test("full text search result navigation carries userName into workspace detail 
   );
 
   assert.deepEqual(redirect, {
-    path: "/workspace/ontology-object/object-1/object",
+    path: "/workspace/ontology-object/object-1/attribute",
     query: { objectName: "飞机", [EMBEDDED_MODE_QUERY_KEY]: "u1" },
     hash: "",
   });

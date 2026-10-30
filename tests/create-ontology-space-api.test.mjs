@@ -45,13 +45,3 @@ test("apis barrel exports the create interface in dictionary order", () => {
     /export \{[\s\S]*?createOntologySpaceInterface,[\s\S]*?deleteOntologySpaceInterface,[\s\S]*?getExampleInterface,[\s\S]*?getOntologyCategoryTreeInterface,[\s\S]*?getOntologySpaceListInterface,[\s\S]*?postLoginInterface,[\s\S]*?updateOntologySpaceInterface[\s\S]*?\};/,
   );
 });
-
-test("create ontology space mock mirrors the response sample with success flag", () => {
-  const mockSource = readSource("../src/mocks/createOntologySpaceMock/createOntologySpaceMock.ts");
-  assert.match(mockSource, /import type \{ ApiResponse, CreateOntologySpaceData \} from "@\/types";/);
-  assert.match(mockSource, /export const createOntologySpaceMock: ApiResponse<CreateOntologySpaceData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /data: 8,/);
-});

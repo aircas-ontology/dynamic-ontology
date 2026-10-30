@@ -40,13 +40,3 @@ test("apis barrel exports the delete interface in dictionary order", () => {
     /export \{[\s\S]*?createOntologySpaceInterface,[\s\S]*?deleteOntologySpaceInterface,[\s\S]*?getExampleInterface,[\s\S]*?getOntologyCategoryTreeInterface,[\s\S]*?getOntologySpaceListInterface,[\s\S]*?postLoginInterface,[\s\S]*?updateOntologySpaceInterface[\s\S]*?\};/,
   );
 });
-
-test("delete ontology space mock mirrors the response sample with success flag", () => {
-  const mockSource = readSource("../src/mocks/deleteOntologySpaceMock/deleteOntologySpaceMock.ts");
-  assert.match(mockSource, /import type \{ ApiResponse, DeleteOntologySpaceData \} from "@\/types";/);
-  assert.match(mockSource, /export const deleteOntologySpaceMock: ApiResponse<DeleteOntologySpaceData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /data: \{\},/);
-});

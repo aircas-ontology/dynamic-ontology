@@ -1,9 +1,9 @@
 <template>
   <div class="space-relation-workspace">
     <RelationCategoryPanel
-      :tree-data="relationCategoryTree"
+      :tree-data="categoryPanelTreeData"
       :selected-node-id="selectedRelationCategoryId"
-      :relations="relations"
+      :relations="categoryPanelRelations"
       :can-create="true"
       :can-update="true"
       :can-delete="true"
@@ -20,7 +20,7 @@
           <h2>{{ selectedRelationCategoryLabel }}</h2>
           <span>
             空间内多对象关系 · {{ visibleSpaceRelations.length }} 条
-            <template v-if="relationFilter.applied"> （源对象：{{ graphSeedNames[0] }}） </template>
+            <template v-if="relationFilter.applied"> （中心对象：{{ graphSeedNames[0] }}） </template>
           </span>
         </div>
         <div class="space-relation-workspace__actions">
@@ -37,7 +37,17 @@
             </el-select>
             <el-button @click="resetFilter">重置</el-button>
           </div>
-          <el-button :icon="Plus" @click="openRelationCreate">添加</el-button>
+          <el-radio-group
+            v-if="relationFilter.applied"
+            :model-value="relationFilter.maxHop"
+            class="space-relation-workspace__hop-switch"
+            ariaLabel="关系跳数"
+            @update:model-value="handleMaxHopChange"
+          >
+            <el-radio-button :value="1">1跳</el-radio-button>
+            <el-radio-button :value="2">2跳</el-radio-button>
+          </el-radio-group>
+          <el-button :icon="Plus" data-onboarding="relation-create-open" @click="openRelationCreate">添加</el-button>
           <el-radio-group
             :model-value="relationViewMode"
             class="space-relation-workspace__view-switch"
@@ -86,16 +96,16 @@
         <template v-else>
           <div v-if="visibleSpaceRelations.length" class="space-relation-workspace__table-wrap">
             <el-table :data="visibleSpaceRelations" stripe height="100%" class="aircas-table--accent-header space-relation-workspace__table">
+              <el-table-column prop="sourceName" label="源对象" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="targetName" label="目标对象" min-width="120" show-overflow-tooltip />
               <el-table-column label="关系名称" min-width="140" show-overflow-tooltip>
                 <template #default="{ row }"
                   ><span class="space-relation-workspace__name">{{ row.displayName }}</span></template
                 >
               </el-table-column>
-              <el-table-column prop="apiName" label="API 名称" min-width="140" show-overflow-tooltip />
-              <el-table-column prop="categoryName" label="分类" min-width="110" show-overflow-tooltip />
-              <el-table-column prop="sourceName" label="源对象" min-width="140" show-overflow-tooltip />
-              <el-table-column prop="targetName" label="目标对象" min-width="120" show-overflow-tooltip />
+              <el-table-column prop="categoryName" label="类型" min-width="110" show-overflow-tooltip />
               <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+              <el-table-column prop="apiName" label="API 名称" min-width="140" show-overflow-tooltip />
               <el-table-column label="操作" width="180" fixed="right">
                 <template #default="scope">
                   <div class="space-relation-workspace__row-actions">
@@ -136,6 +146,7 @@
       :relation="activeRelation"
       @submit="handleRelationSubmit"
     />
+    <RelationDetailDialog v-model="relationDetailVisible" :relation="activeRelation" />
     <RelationDeleteDialog
       v-model="relationDeleteVisible"
       :display-name="activeRelation?.displayName || ''"
@@ -168,6 +179,7 @@ import RelationCategoryFormDialog from "./components/RelationCategoryFormDialog.
 import RelationCategoryDeleteDialog from "./components/RelationCategoryDeleteDialog.vue";
 import RelationDeleteDialog from "./components/RelationDeleteDialog.vue";
 import SpaceRelationFormDialog from "./components/SpaceRelationFormDialog.vue";
+import RelationDetailDialog from "./components/RelationDetailDialog.vue";
 
 const {
   status,
@@ -181,6 +193,8 @@ const {
   selectedRelationCategoryLabel,
   relationCategoryOptions,
   visibleSpaceRelations,
+  categoryPanelRelations,
+  categoryPanelTreeData,
   relationViewMode,
   relationFilter,
   graphSeedNames,
@@ -188,6 +202,7 @@ const {
   loadSpaceRelationWorkspace,
   selectRelationCategory,
   setRelationViewMode,
+  setRelationFilterMaxHop,
   applyRelationFilter,
   findRelationCategoryLabel,
 } = useSpaceRelationWorkspace();
@@ -204,6 +219,7 @@ const categoryActionName = ref("");
 const relationFormVisible = ref(false);
 const relationFormMode = ref<"create" | "edit">("create");
 const relationDeleteVisible = ref(false);
+const relationDetailVisible = ref(false);
 const activeRelation = ref<OntologyRelationClass | null>(null);
 const actionLoading = ref(false);
 const draftSeedName = ref("");
@@ -242,8 +258,17 @@ function handleSeedChange(value: string | number | boolean | undefined) {
   applyRelationFilter(seed ? [seed] : []);
 }
 
+/**
+ * @description 处理关系跳数切换，仅接受 1 跳与 2 跳。
+ * @param value 单选按钮组抛出的原始值。
+ */
+function handleMaxHopChange(value: unknown) {
+  if (value === 1 || value === 2) setRelationFilterMaxHop(value);
+}
+
 function resetFilter() {
   applyRelationFilter([]);
+  setRelationFilterMaxHop(1);
   draftSeedName.value = "";
 }
 
@@ -379,13 +404,14 @@ function openRelationEdit(item: OntologyRelationClass) {
 }
 
 /**
- * @description 将分类树关系叶子转为列表项并打开与表格编辑按钮相同的关系编辑弹窗。
+ * @description 将分类树关系叶子转为列表项并打开只读关系详情弹窗；编辑入口仅保留表格"编辑"按钮。
  * @param relationId 关系 id。
  */
 function openRelationFromTree(relationId: string) {
   const item = relations.value.find((relation) => relation.id === relationId);
   if (!item) return;
-  openRelationEdit(item);
+  activeRelation.value = item;
+  relationDetailVisible.value = true;
 }
 
 function openRelationDelete(item: OntologyRelationClass) {
@@ -419,7 +445,7 @@ function resolveUpdateLinkCategoryId(categoryId: string | undefined): number | u
 
 /**
  * @description 提交关系表单：创建走 POST `/ontology/link`；编辑走 PUT `/ontology/link`；成功后刷新关系树。
- * @param payload 关系写载荷；create 时 sourceName/targetName 为本体 uniqueIdentifier。
+ * @param payload 关系写载荷；create 时 sourceName/targetName 为对象 uniqueIdentifier。
  */
 async function handleRelationSubmit(payload: RelationClassWritePayload) {
   if (relationFormMode.value === "edit") {

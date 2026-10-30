@@ -1,6 +1,8 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import { createActionCategoryInterface, deleteActionCategoryInterface, getActionCategoryTreeInterface, updateActionCategoryInterface } from "@/apis";
 import type {
+  ActionCategoryVO,
   SpaceBehaviorCategoryNode,
   SpaceBehaviorDraft,
   SpaceBehaviorItem,
@@ -11,12 +13,9 @@ import type {
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
 import {
   applySpaceBehaviorStatusChangeMock,
-  createSpaceBehaviorCategoryMock,
   createSpaceBehaviorMock,
-  deleteSpaceBehaviorCategoryMock,
   deleteSpaceBehaviorMock,
   querySpaceBehaviorWorkspaceMock,
-  updateSpaceBehaviorCategoryMock,
   updateSpaceBehaviorMock,
 } from "@/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock";
 import { filterSpaceBehaviorsByCategory, findSpaceBehaviorCategoryNode } from "../utils/spaceBehaviorOperations";
@@ -52,9 +51,40 @@ export function useSpaceBehaviorWorkspace() {
   let loadToken = 0;
 
   /**
+   * @description 将行为分类树接口响应映射为工作区使用的节点结构。
+   * @param node 接口返回的行为分类节点。
+   * @returns 工作区分类节点。
+   */
+  function mapActionCategoryNode(node: ActionCategoryVO): SpaceBehaviorCategoryNode {
+    const itemChildren = Array.isArray(node.items) ? node.items : node.items ? [node.items] : [];
+    const nodeId = node.id ?? node.categoryId;
+    const nodeName = node.name ?? node.categoryName;
+    if (nodeId === undefined || !nodeName) throw new Error("行为分类树返回数据缺少节点 id 或名称");
+    return {
+      id: String(nodeId),
+      label: nodeName,
+      count: 0,
+      children: [...(node.children ?? []), ...itemChildren].map(mapActionCategoryNode),
+    };
+  }
+
+  /**
+   * @description 将接口返回的单节点或节点数组统一映射为工作区分类树。
+   * @param data 接口返回的分类数据。
+   * @returns 工作区分类树。
+   */
+  function mapActionCategoryTree(data: ActionCategoryVO | ActionCategoryVO[]): SpaceBehaviorCategoryNode[] {
+    const nodes = Array.isArray(data) ? data : [data];
+    const firstNode = nodes[0];
+    const container = firstNode && nodes.length === 1 && firstNode.id === undefined && firstNode.categoryId === undefined ? firstNode : undefined;
+    const children = container?.items ?? container?.children ?? nodes;
+    return (Array.isArray(children) ? children : [children]).map(mapActionCategoryNode);
+  }
+
+  /**
    * @description 从本地 Mock 拉取当前空间的分类树与行为列表。
    */
-  function loadSpaceBehaviorWorkspace(): void {
+  async function loadSpaceBehaviorWorkspace(): Promise<void> {
     const token = ++loadToken;
     const currentSpaceId = spaceId.value.trim();
     status.value = "loading";
@@ -67,13 +97,15 @@ export function useSpaceBehaviorWorkspace() {
     }
     try {
       const data = querySpaceBehaviorWorkspaceMock(currentSpaceId);
+      const response = await getActionCategoryTreeInterface({ spaceId: Number(currentSpaceId) });
+      if ((response.code !== 0 && response.code !== 200) || !response.data) throw new Error(response.message || "行为分类树加载失败");
       if (token !== loadToken) return;
-      categoryTree.value = data.categoryTree;
+      categoryTree.value = mapActionCategoryTree(response.data);
       behaviors.value = data.behaviors;
-      if (!findSpaceBehaviorCategoryNode(data.categoryTree, selectedCategoryId.value)) {
-        selectedCategoryId.value = data.categoryTree[0]?.id ?? ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
+      if (!findSpaceBehaviorCategoryNode(categoryTree.value, selectedCategoryId.value)) {
+        selectedCategoryId.value = categoryTree.value[0]?.id ?? ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
       }
-      status.value = data.categoryTree.length === 0 && data.behaviors.length === 0 ? "empty" : "ready";
+      status.value = categoryTree.value.length === 0 && data.behaviors.length === 0 ? "empty" : "ready";
     } catch (error) {
       if (token !== loadToken) return;
       categoryTree.value = [];
@@ -157,13 +189,22 @@ export function useSpaceBehaviorWorkspace() {
    * @param label 分类名称。
    * @returns 是否成功。
    */
-  function createBehaviorCategory(parentId: string, label: string): boolean {
+  async function createBehaviorCategory(parentId: string | number, label: string): Promise<boolean> {
+    if (actionLoading.value) return false;
     actionLoading.value = true;
     try {
-      const created = createSpaceBehaviorCategoryMock(spaceId.value, parentId, label);
-      if (!created) return false;
-      loadSpaceBehaviorWorkspace();
+      const numericSpaceId = Number(spaceId.value);
+      const parentIdText = String(parentId ?? "").trim();
+      const numericParentId = parentIdText === ROOT_SPACE_BEHAVIOR_CATEGORY_ID || !parentIdText ? 0 : Number(parentIdText);
+      const name = label.trim();
+      if (!Number.isInteger(numericSpaceId) || !Number.isInteger(numericParentId) || !name) return false;
+      const response = await createActionCategoryInterface({ spaceId: numericSpaceId, parentId: numericParentId, name });
+      if (response.code !== 0 && response.code !== 200) return false;
+      await loadSpaceBehaviorWorkspace();
       return true;
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : "分类创建失败";
+      return false;
     } finally {
       actionLoading.value = false;
     }
@@ -175,13 +216,21 @@ export function useSpaceBehaviorWorkspace() {
    * @param label 新名称。
    * @returns 是否成功。
    */
-  function renameBehaviorCategory(categoryId: string, label: string): boolean {
+  async function renameBehaviorCategory(categoryId: string, label: string): Promise<boolean> {
+    if (actionLoading.value) return false;
     actionLoading.value = true;
     try {
-      const ok = updateSpaceBehaviorCategoryMock(spaceId.value, categoryId, label);
-      if (!ok) return false;
-      loadSpaceBehaviorWorkspace();
+      const numericSpaceId = Number(spaceId.value);
+      const numericCategoryId = Number(categoryId);
+      const name = label.trim();
+      if (!Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId) || !name) return false;
+      const response = await updateActionCategoryInterface({ spaceId: numericSpaceId, categoryId: numericCategoryId, name });
+      if (response.code !== 0 && response.code !== 200) return false;
+      await loadSpaceBehaviorWorkspace();
       return true;
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : "分类修改失败";
+      return false;
     } finally {
       actionLoading.value = false;
     }
@@ -192,15 +241,26 @@ export function useSpaceBehaviorWorkspace() {
    * @param categoryId 分类 id。
    * @returns 删除结果。
    */
-  function deleteBehaviorCategory(categoryId: string): { ok: boolean; reason: "not-found" | "root" | "has-children" | "has-behaviors" | "" } {
+  async function deleteBehaviorCategory(categoryId: string): Promise<{ ok: boolean; reason: "not-found" | "root" | "has-children" | "has-behaviors" | "" }> {
+    if (actionLoading.value) return { ok: false, reason: "" };
     actionLoading.value = true;
     try {
-      const result = deleteSpaceBehaviorCategoryMock(spaceId.value, categoryId);
-      if (result.ok) {
-        if (selectedCategoryId.value === categoryId) selectedCategoryId.value = ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
-        loadSpaceBehaviorWorkspace();
-      }
-      return result;
+      const node = findSpaceBehaviorCategoryNode(categoryTree.value, categoryId);
+      if (!node) return { ok: false, reason: "not-found" };
+      if (categoryId === ROOT_SPACE_BEHAVIOR_CATEGORY_ID || categoryId === categoryTree.value[0]?.id) return { ok: false, reason: "root" };
+      if (node.children.length > 0) return { ok: false, reason: "has-children" };
+      if (node.count > 0) return { ok: false, reason: "has-behaviors" };
+      const numericSpaceId = Number(spaceId.value);
+      const numericCategoryId = Number(categoryId);
+      if (!Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId)) return { ok: false, reason: "not-found" };
+      const response = await deleteActionCategoryInterface({ spaceId: numericSpaceId, categoryId: numericCategoryId });
+      if (response.code !== 0 && response.code !== 200) return { ok: false, reason: "not-found" };
+      if (selectedCategoryId.value === categoryId) selectedCategoryId.value = ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
+      await loadSpaceBehaviorWorkspace();
+      return { ok: true, reason: "" };
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : "分类删除失败";
+      return { ok: false, reason: "not-found" };
     } finally {
       actionLoading.value = false;
     }

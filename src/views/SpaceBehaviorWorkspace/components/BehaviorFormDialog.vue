@@ -47,7 +47,17 @@
             </el-select>
           </el-form-item>
           <el-form-item label="关联基础函数算子" required>
-            <el-select :model-value="functionOperatorId" filterable placeholder="选择基础函数算子" style="width: 100%" @change="handleOperatorChange">
+            <el-select
+              :model-value="functionOperatorId"
+              filterable
+              :loading="operatorLoading"
+              :disabled="operatorLoading || operatorError !== ''"
+              :placeholder="
+                operatorLoading ? '正在加载基础函数算子' : operatorError || (operatorCatalog.length ? '选择基础函数算子' : '当前空间暂无基础函数算子')
+              "
+              style="width: 100%"
+              @change="handleOperatorChange"
+            >
               <el-option v-for="item in filteredOperatorOptions" :key="item.id" :label="`${item.name} · ${item.version}`" :value="item.id" />
             </el-select>
           </el-form-item>
@@ -108,7 +118,11 @@
             </tbody>
           </table>
         </div>
-        <el-empty v-else :description="functionOperatorId ? '该算子无参数' : '请选择函数算子以加载参数'" :image-size="48" />
+        <el-empty
+          v-else
+          :description="operatorParameterLoading ? '正在加载算子参数' : functionOperatorId ? '该算子无参数' : '请选择函数算子以加载参数'"
+          :image-size="48"
+        />
       </section>
 
       <section class="behavior-form-dialog__section">
@@ -133,9 +147,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import type { SpaceBehaviorBasicAction, SpaceBehaviorDraft, SpaceBehaviorItem, SpaceBehaviorParameter, SpaceBehaviorStatus } from "@/types";
+import { getOntologyFunctionDetailInterface, getOntologyFunctionListInterface } from "@/apis";
+import type {
+  GetOntologyFunctionDetailParamItem,
+  GetOntologyFunctionListItem,
+  SpaceBehaviorBasicAction,
+  SpaceBehaviorDraft,
+  SpaceBehaviorItem,
+  SpaceBehaviorOperatorOption,
+  SpaceBehaviorParameter,
+  SpaceBehaviorStatus,
+} from "@/types";
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID, SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS } from "@/types";
-import { listSpaceBehaviorOperatorOptionsMock } from "@/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock";
 import { cloneSpaceBehaviorParameters, flattenSpaceBehaviorParameterRows } from "../utils/spaceBehaviorOperations";
 
 const parameterDirections = ["input", "output"] as const;
@@ -143,6 +166,7 @@ const parameterDirections = ["input", "output"] as const;
 const props = defineProps<{
   modelValue: boolean;
   mode: "create" | "edit";
+  spaceId: string;
   categoryOptions: Array<{ id: string; label: string }>;
   defaultCategoryId: string;
   behavior: SpaceBehaviorItem | null;
@@ -153,7 +177,12 @@ const emit = defineEmits<{
   "save-copy": [draft: SpaceBehaviorDraft];
 }>();
 
-const operatorCatalog = listSpaceBehaviorOperatorOptionsMock();
+const operatorCatalog = ref<SpaceBehaviorOperatorOption[]>([]);
+const operatorLoading = ref(false);
+const operatorError = ref("");
+const operatorParameterLoading = ref(false);
+let operatorLoadToken = 0;
+let operatorParameterLoadToken = 0;
 const displayName = ref("");
 const functionOperatorId = ref("");
 const functionOperatorName = ref("");
@@ -169,7 +198,7 @@ const dialogTitle = computed(() => (props.mode === "edit" ? "编辑行为" : "�
 const saveAsCopy = computed(() => props.mode === "edit" && props.behavior?.status === "published");
 const readonly = computed(() => props.mode === "edit" && props.behavior?.status === "disabled");
 const configTag = computed(() => (readonly.value ? "已停用" : "草稿配置"));
-const filteredOperatorOptions = computed(() => operatorCatalog.filter((item) => item.basicAction === basicAction.value));
+const filteredOperatorOptions = computed(() => operatorCatalog.value);
 
 /**
  * @description 读取指定方向的参数列表。
@@ -193,6 +222,8 @@ function parameterRows(direction: (typeof parameterDirections)[number]) {
  * @description 清空当前关联的函数算子与参数。
  */
 function clearSelectedOperator(): void {
+  operatorParameterLoadToken += 1;
+  operatorParameterLoading.value = false;
   functionOperatorId.value = "";
   functionOperatorName.value = "";
   inputParameters.value = [];
@@ -204,7 +235,7 @@ function clearSelectedOperator(): void {
  * @param operatorId 函数算子 id。
  */
 function applySelectedOperator(operatorId: string): void {
-  const operator = operatorCatalog.find((item) => item.id === operatorId);
+  const operator = operatorCatalog.value.find((item) => item.id === operatorId);
   if (!operator) {
     clearSelectedOperator();
     return;
@@ -212,8 +243,8 @@ function applySelectedOperator(operatorId: string): void {
   functionOperatorId.value = operator.id;
   functionOperatorName.value = operator.name;
   basicAction.value = operator.basicAction;
-  inputParameters.value = structuredClone(operator.inputParameters);
-  outputParameters.value = structuredClone(operator.outputParameters);
+  inputParameters.value = cloneSpaceBehaviorParameters(operator.inputParameters);
+  outputParameters.value = cloneSpaceBehaviorParameters(operator.outputParameters);
 }
 
 /**
@@ -223,7 +254,7 @@ function applySelectedOperator(operatorId: string): void {
 function handleBasicActionChange(value: string | number | boolean | undefined): void {
   if (value !== "create" && value !== "update" && value !== "delete" && value !== "query") return;
   basicAction.value = value;
-  const current = operatorCatalog.find((item) => item.id === functionOperatorId.value);
+  const current = operatorCatalog.value.find((item) => item.id === functionOperatorId.value);
   if (!current || current.basicAction !== value) clearSelectedOperator();
 }
 
@@ -231,12 +262,54 @@ function handleBasicActionChange(value: string | number | boolean | undefined): 
  * @description 选择关联基础函数算子。
  * @param value 函数算子 id。
  */
-function handleOperatorChange(value: string | number | boolean | undefined): void {
+async function handleOperatorChange(value: string | number | boolean | undefined): Promise<void> {
   if (typeof value !== "string") {
     clearSelectedOperator();
     return;
   }
+  const operator = operatorCatalog.value.find((item) => item.id === value);
+  if (!operator) {
+    clearSelectedOperator();
+    return;
+  }
   applySelectedOperator(value);
+  const requestToken = ++operatorParameterLoadToken;
+  operatorParameterLoading.value = true;
+  try {
+    const response = await getOntologyFunctionDetailInterface({ functionApi: operator.id, version: operator.version });
+    if (requestToken !== operatorParameterLoadToken) return;
+    if (response.code !== 0 && response.code !== 200) throw new Error(response.message || "算子参数加载失败");
+    const params = response.data?.params ?? [];
+    inputParameters.value = params.filter((item) => item.category === "INPUT").map(mapFunctionParameter);
+    outputParameters.value = params.filter((item) => item.category === "OUTPUT").map(mapFunctionParameter);
+  } catch (error) {
+    if (requestToken !== operatorParameterLoadToken) return;
+    inputParameters.value = [];
+    outputParameters.value = [];
+    ElMessage.error(error instanceof Error ? error.message : "算子参数加载失败");
+  } finally {
+    if (requestToken === operatorParameterLoadToken) operatorParameterLoading.value = false;
+  }
+}
+
+/**
+ * @description 将函数详情参数映射为行为表单参数行。
+ * @param item 函数详情参数。
+ * @returns 行为表单参数。
+ */
+function mapFunctionParameter(item: GetOntologyFunctionDetailParamItem): SpaceBehaviorParameter {
+  return {
+    id: String(item.paramId),
+    name: item.paramName,
+    path: item.paramName,
+    type: item.paramType,
+    required: item.paramRole !== "OPTIONAL",
+    description: item.description ?? "",
+    sourceLabel: "函数算子",
+    bindLabel: "",
+    configured: false,
+    children: [],
+  };
 }
 
 /**
@@ -277,10 +350,57 @@ function submitBehaviorForm(action: "save" | "copy"): void {
   emit("submit", draft);
 }
 
+/**
+ * @description 查询当前对象空间已发布的基础函数算子。
+ */
+async function loadOperatorCatalog(): Promise<void> {
+  const requestToken = ++operatorLoadToken;
+  operatorLoading.value = true;
+  operatorError.value = "";
+  try {
+    const numericSpaceId = Number(props.spaceId);
+    if (!Number.isInteger(numericSpaceId)) throw new Error("当前对象空间无效");
+    const response = await getOntologyFunctionListInterface({
+      ontologySpaceId: numericSpaceId,
+      type: "BASIC_QUERY",
+      publishStatus: 1,
+      pageNum: 1,
+      pageSize: 100,
+    });
+    if (requestToken !== operatorLoadToken) return;
+    if (response.code !== 0 && response.code !== 200) throw new Error(response.message || "基础函数算子加载失败");
+    operatorCatalog.value = (response.data?.records ?? []).map((item: GetOntologyFunctionListItem) => mapFunctionOperator(item));
+  } catch (error) {
+    if (requestToken !== operatorLoadToken) return;
+    operatorCatalog.value = [];
+    operatorError.value = error instanceof Error ? error.message : "基础函数算子加载失败";
+  } finally {
+    if (requestToken === operatorLoadToken) operatorLoading.value = false;
+  }
+}
+
+/**
+ * @description 将函数列表记录映射为行为弹框使用的算子选项。
+ * @param item 函数列表记录。
+ * @returns 算子选项。
+ */
+function mapFunctionOperator(item: GetOntologyFunctionListItem): SpaceBehaviorOperatorOption {
+  return {
+    id: item.functionApi,
+    name: item.displayName,
+    version: item.version,
+    basicAction: basicAction.value,
+    objectName: item.displayName,
+    inputParameters: [],
+    outputParameters: [],
+  };
+}
+
 watch(
   () => props.modelValue,
   (visible) => {
     if (!visible) return;
+    void loadOperatorCatalog();
     loading.value = false;
     if (props.behavior) {
       displayName.value = props.behavior.displayName;

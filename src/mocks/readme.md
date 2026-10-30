@@ -2,12 +2,13 @@
 
 ## 1. 目录职责与边界
 
-`src/mocks` 存放开发、演示和测试使用的业务样例数据，由页面或 composable 直接 import，不作为正式数据源。
+`src/mocks` 仅存放页面运行时直接 import 的演示/本地样例数据，不作为正式数据源。HTTP 接口级 Mock 一律放在 `src/mockData`，由 `scripts/mock-server.mjs` 读取。测试专用样例放在 `tests/fixtures/`。
 
 - 【必须】Mock 按页面或业务域分类，并与正式接口契约保持一致。
-- 【必须】HTTP 接口级 Mock 放在 `src/mockData`，由 `scripts/mock-server.mjs` 读取；本目录不承担本地 HTTP 服务。
+- 【必须】HTTP 接口级 Mock 放在 `src/mockData`；本目录不承担本地 HTTP 服务。
 - 【禁止】正式业务代码直接依赖仅在 Mock 中存在的结构或字段。
 - 【禁止】包含真实账号、令牌、个人信息或生产数据。
+- 【禁止】在本目录新增仅供测试或 HTTP 回落使用的样例；测试样例放入 `tests/fixtures/`。
 
 ## 2. 结构与命名
 

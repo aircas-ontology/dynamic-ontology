@@ -11,6 +11,7 @@ export type {
   AiAssistantSelectionCard,
   AiAssistantUserMessage,
 } from "./agent/aiAssistantChatType";
+export type { AgentDocumentUploadData } from "./apis/agentDocumentUploadType";
 export type { ApiResponse } from "./apis/apiResponseType";
 export type { AutoBindOntologyPropertyDatasourceData, AutoBindOntologyPropertyDatasourceParams } from "./apis/autoBindOntologyPropertyDatasourceType";
 export type {
@@ -19,15 +20,32 @@ export type {
   BatchUpdateOntologyPropertyDatasource,
   BatchUpdateOntologyPropertyItem,
 } from "./apis/batchUpdateOntologyPropertiesType";
+export type { ActionCategoryNode, CreateActionCategoryParams } from "./apis/createActionCategoryType";
+export type { CreateFunctionOperatorTemplateData, CreateFunctionOperatorTemplateParams } from "./apis/createFunctionOperatorTemplateType";
+export type { CreateFunctionRateLimitTemplateData, CreateFunctionRateLimitTemplateParams } from "./apis/createFunctionRateLimitTemplateType";
+export type {
+  CreateOntologyFunctionContainerConfig,
+  CreateOntologyFunctionContainerData,
+  CreateOntologyFunctionContainerParams,
+  CreateOntologyFunctionContainerType,
+} from "./apis/createOntologyFunctionContainerType";
 export type {
   CreateOntologyFunctionAggFunc,
+  CreateOntologyFunctionApiConfig,
+  CreateOntologyFunctionApiField,
+  CreateOntologyFunctionApiInput,
+  CreateOntologyFunctionApiOutput,
   CreateOntologyFunctionData,
   CreateOntologyFunctionFilterCondition,
   CreateOntologyFunctionFilterDataType,
   CreateOntologyFunctionFilterNode,
   CreateOntologyFunctionFilters,
+  CreateOntologyFunctionParameter,
+  CreateOntologyFunctionParameterCategory,
+  CreateOntologyFunctionParameterType,
   CreateOntologyFunctionParams,
   CreateOntologyFunctionQueryConfig,
+  CreateOntologyFunctionType,
 } from "./apis/createOntologyFunctionType";
 export type { CreateOntologyLinkParams } from "./apis/createOntologyLinkType";
 export type { CreateOntologyObjectArrTypeTreeParams } from "./apis/createOntologyObjectArrTypeTreeType";
@@ -57,17 +75,24 @@ export type {
   OntologySubspacePropertyFilterValue,
   OntologySubspacePropertySelection,
 } from "./apis/createOntologySubspaceType";
+export type { DeleteActionCategoryParams } from "./apis/deleteActionCategoryType";
+export type { DeleteFunctionOperatorTemplateParams } from "./apis/deleteFunctionOperatorTemplateType";
+export type { DeleteFunctionRateLimitTemplateParams } from "./apis/deleteFunctionRateLimitTemplateType";
 export type { DeleteOntologyFunctionData, DeleteOntologyFunctionParams } from "./apis/deleteOntologyFunctionType";
 export type { DeleteOntologyLinkParams } from "./apis/deleteOntologyLinkType";
 export type { DeleteOntologyObjectArrTypeTreeParams } from "./apis/deleteOntologyObjectArrTypeTreeType";
 export type { DeleteOntologyObjectData, DeleteOntologyObjectParams } from "./apis/deleteOntologyObjectType";
 export type { DeleteOntologyPropertyData, DeleteOntologyPropertyParams } from "./apis/deleteOntologyPropertyType";
 export type { DeleteOntologySpaceData, DeleteOntologySpaceParams } from "./apis/deleteOntologySpaceType";
+export type { DisableFunctionRateLimitTemplateParams } from "./apis/disableFunctionRateLimitTemplateType";
+export type { EnableFunctionRateLimitTemplateParams } from "./apis/enableFunctionRateLimitTemplateType";
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
 export type { ExportOntologySpaceFile, ExportOntologySpaceParams, OntologySpaceExportType } from "./apis/exportOntologySpaceType";
 export type { ExportOntologyFile, ExportOntologyParams, OntologyExportType } from "./apis/exportOntologyType";
+export type { FunctionOperatorTemplateLanguage, FunctionOperatorTemplateParams, FunctionOperatorTemplate } from "./apis/functionOperatorTemplateType";
 export type { FunctionPublishData, FunctionPublishParams } from "./apis/functionPublishType";
 export type { FunctionUnpublishData, FunctionUnpublishParams } from "./apis/functionUnpublishType";
+export type { ActionCategoryVO, GetActionCategoryTreeParams } from "./apis/getActionCategoryTreeType";
 export type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceColumnsParams,
@@ -75,8 +100,17 @@ export type {
 } from "./apis/getOntologyDatasourceColumnsType";
 export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
 export type { GetOntologyEntitiesData, GetOntologyEntitiesParams, OntologyEntityInfo } from "./apis/getOntologyEntitiesType";
+export type {
+  GetOntologyFunctionContainerRuntimeListData,
+  GetOntologyFunctionContainerRuntimeListParams,
+  OntologyFunctionContainerRuntimeHeartbeatStatus,
+  OntologyFunctionContainerRuntimeItem,
+  OntologyFunctionContainerRuntimePhase,
+  OntologyFunctionContainerRuntimeSource,
+} from "./apis/getOntologyFunctionContainerRuntimeListType";
 export type { GetOntologyFunctionDetailData, GetOntologyFunctionDetailParamItem, GetOntologyFunctionDetailParams } from "./apis/getOntologyFunctionDetailType";
 export type { GetOntologyFunctionListData, GetOntologyFunctionListItem, GetOntologyFunctionListParams } from "./apis/getOntologyFunctionListType";
+export type { GetOntologyFunctionVersionsData, GetOntologyFunctionVersionsParams } from "./apis/getOntologyFunctionVersionsType";
 export type { GetOntologyMetaByObjectIdData, GetOntologyMetaByObjectIdParams } from "./apis/getOntologyMetaByObjectIdType";
 export type { GetOntologyMetaStatisticData, GetOntologyMetaStatisticParams, OntologyMetaStatisticVO } from "./apis/getOntologyMetaStatisticType";
 export type { GetOntologyObjectArrTypeTreeData, GetOntologyObjectArrTypeTreeParams } from "./apis/getOntologyObjectArrTypeTreeType";
@@ -96,6 +130,12 @@ export type {
 export type { GetOntologySpaceStatisticData, GetOntologySpaceStatisticParams, OntologySpaceStatisticVO } from "./apis/getOntologySpaceStatisticType";
 export type { ImportOntologiesData, ImportOntologiesParams } from "./apis/importOntologiesType";
 export type { ImportOntologySpaceData, ImportOntologySpaceParams } from "./apis/importOntologySpaceType";
+export type { ListFunctionOperatorTemplateData, ListFunctionOperatorTemplateParams } from "./apis/listFunctionOperatorTemplateType";
+export type {
+  ListFunctionRateLimitTemplateData,
+  ListFunctionRateLimitTemplateItem,
+  ListFunctionRateLimitTemplateParams,
+} from "./apis/listFunctionRateLimitTemplateType";
 export type { LoginData, LoginParams } from "./apis/loginType";
 export type {
   OntologyApiDocsComponents,
@@ -114,7 +154,14 @@ export type {
   OntologyCategoryTreeParams,
   UpdateOntologyCategoryNameParams,
 } from "./apis/ontologyCategoryTreeType";
-export type { OntologyGlobalSearchData, OntologyGlobalSearchItem, OntologyGlobalSearchParams } from "./apis/ontologyGlobalSearchType";
+export type {
+  OntologyCompositeConfig,
+  OntologyCompositeEdge,
+  OntologyCompositeNode,
+  OntologyCompositeParameter,
+  OntologyCompositePortMapping,
+} from "./apis/ontologyCompositeConfigType";
+export type { OntologyGlobalSearchData, OntologyGlobalSearchItem, OntologyGlobalSearchParams, OntologySpaceType } from "./apis/ontologyGlobalSearchType";
 export type { OntologySpaceListData, OntologySpaceListItem } from "./apis/ontologyManageType";
 export type {
   CreateOntologyRelationCategoryTreeParams,
@@ -126,6 +173,29 @@ export type {
   UpdateOntologyRelationCategoryNameParams,
 } from "./apis/ontologyRelationCategoryTreeType";
 export type {
+  ParseOntologyFunctionParamItem,
+  ParseOntologyFunctionParamsData,
+  ParseOntologyFunctionParamsParams,
+} from "./apis/parseOntologyFunctionParamsType";
+export type {
+  PostOntologyFunctionContainerRuntimeRestartData,
+  PostOntologyFunctionContainerRuntimeRestartParams,
+} from "./apis/postOntologyFunctionContainerRuntimeRestartType";
+export type {
+  PostOntologyFunctionContainerRuntimeStartData,
+  PostOntologyFunctionContainerRuntimeStartParams,
+} from "./apis/postOntologyFunctionContainerRuntimeStartType";
+export type {
+  PostOntologyFunctionContainerRuntimeStopData,
+  PostOntologyFunctionContainerRuntimeStopParams,
+} from "./apis/postOntologyFunctionContainerRuntimeStopType";
+export type {
+  ProbeOntologyFunctionContainerInterfaceItem,
+  ProbeOntologyFunctionContainerInterfaceParameter,
+  ProbeOntologyFunctionContainerInterfacesData,
+  ProbeOntologyFunctionContainerInterfacesParams,
+} from "./apis/probeOntologyFunctionContainerInterfacesType";
+export type {
   StreamAgentChatData,
   StreamAgentChatEvent,
   StreamAgentChatEventType,
@@ -133,13 +203,18 @@ export type {
   StreamAgentChatSelectionOption,
   StreamAgentChatSelectionScenario,
 } from "./apis/streamAgentChatType";
-export type { TestOntologyFunctionData, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
+export type { TestOntologyFunctionData, TestOntologyFunctionParameterItem, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
+export type { UpdateActionCategoryParams } from "./apis/updateActionCategoryType";
+export type { UpdateFunctionOperatorTemplateData, UpdateFunctionOperatorTemplateParams } from "./apis/updateFunctionOperatorTemplateType";
+export type { UpdateFunctionRateLimitTemplateData, UpdateFunctionRateLimitTemplateParams } from "./apis/updateFunctionRateLimitTemplateType";
 export type { UpdateOntologyFunctionData, UpdateOntologyFunctionParams } from "./apis/updateOntologyFunctionType";
 export type { UpdateOntologyLinkParams } from "./apis/updateOntologyLinkType";
 export type { UpdateOntologyObjectArrTypeTreeParams } from "./apis/updateOntologyObjectArrTypeTreeType";
 export type { UpdateOntologyObjectData, UpdateOntologyObjectParams } from "./apis/updateOntologyObjectType";
 export type { UpdateOntologyPropertyData, UpdateOntologyPropertyParams } from "./apis/updateOntologyPropertyType";
 export type { UpdateOntologySpaceData, UpdateOntologySpaceParams } from "./apis/updateOntologySpaceType";
+export type { UploadOntologyFunctionContainerDocData, UploadOntologyFunctionContainerDocParams } from "./apis/uploadOntologyFunctionContainerDocType";
+export type { UploadOntologyFunctionContainerImageData, UploadOntologyFunctionContainerImageParams } from "./apis/uploadOntologyFunctionContainerImageType";
 export type { UploadOntologyThumbnailData, UploadOntologyThumbnailParams } from "./apis/uploadOntologyThumbnailType";
 export type { LoginCredentials } from "./auth/credentialsType";
 export type { MapConfig } from "./map/configType";
@@ -153,6 +228,27 @@ export type {
   ApiDocsSchemaFieldRow,
   ApiDocsServiceInfo,
 } from "./pages/applicationManagementType";
+export { COMPOSITE_WORKFLOW_DND_MIME } from "./pages/ontologyCompositeWorkflowType";
+export type {
+  CompositeWorkflowBranchConfig,
+  CompositeWorkflowBranchOperator,
+  CompositeWorkflowDndPayload,
+  CompositeWorkflowEdgePayload,
+  CompositeWorkflowEndpointNodePayload,
+  CompositeWorkflowFunctionNodePayload,
+  CompositeWorkflowInputBinding,
+  CompositeWorkflowJsonMappingRule,
+  CompositeWorkflowLogicNodePayload,
+  CompositeWorkflowLoopConfig,
+  CompositeWorkflowLoopOutlet,
+  CompositeWorkflowNodeKind,
+  CompositeWorkflowParamBrief,
+  CompositeWorkflowPortTypeName,
+  CompositeWorkflowSavePayload,
+  CompositeWorkflowSwitchCaseItem,
+  CompositeWorkflowSwitchConfig,
+  CompositeWorkflowTransformConfig,
+} from "./pages/ontologyCompositeWorkflowType";
 export type {
   ConceptualModelAttribute,
   ConceptualModelObject,
@@ -176,7 +272,10 @@ export type {
 } from "./pages/ontologyFunctionOperatorBasicFilterType";
 export {
   FUNCTION_OPERATOR_AGG_FUNC_OPTIONS,
+  FUNCTION_OPERATOR_COMPOSITE_PUBLIC,
+  FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS,
   FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS,
+  FUNCTION_OPERATOR_SCRIPT_LANGUAGE_OPTIONS,
   FUNCTION_OPERATOR_STATUS_LABELS,
   FUNCTION_OPERATOR_STATUS_OPTIONS,
   FUNCTION_OPERATOR_TYPE_LABELS,
@@ -187,6 +286,7 @@ export type {
   FunctionOperatorAggFunc,
   FunctionOperatorBasicAction,
   FunctionOperatorBasicDefinition,
+  FunctionOperatorCodeDefinition,
   FunctionOperatorDefinition,
   FunctionOperatorDraft,
   FunctionOperatorPage,
@@ -196,6 +296,7 @@ export type {
   FunctionOperatorPlaceholderDefinition,
   FunctionOperatorProtocol,
   FunctionOperatorQuery,
+  FunctionOperatorScriptLanguage,
   FunctionOperatorSortBy,
   FunctionOperatorSortOrder,
   FunctionOperatorStatus,

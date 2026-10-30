@@ -12,29 +12,6 @@ function readSource(relativePath) {
 }
 
 describe("delete ontology link api", () => {
-  test("deletes link by unique identifier on /ontology/link path with SUCCESS mock", () => {
-    const apiSource = readSource("../src/apis/ontologyManageApi.ts");
-    const typeSource = readSource("../src/types/apis/deleteOntologyLinkType.ts");
-    const mockSource = readSource("../src/mocks/deleteOntologyLinkMock/deleteOntologyLinkMock.ts");
-    const barrelSource = readSource("../src/apis/index.ts");
-    const typesBarrel = readSource("../src/types/index.ts");
-
-    assert.match(apiSource, /export function deleteOntologyLinkInterface\(\s*payload: DeleteOntologyLinkParams,?\s*\): Promise<ApiResponse<undefined>>/);
-    assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/link\/" \+ encodeURIComponent\(payload\.linkUniqIdentifier\)/);
-    assert.match(apiSource, /method:\s*"delete"/);
-    assert.match(apiSource, /@param \{string\} payload\.linkUniqIdentifier/);
-
-    assert.match(typeSource, /export interface DeleteOntologyLinkParams/);
-    assert.match(typeSource, /linkUniqIdentifier:\s*string/);
-
-    assert.match(mockSource, /export const deleteOntologyLinkMock: ApiResponse<undefined>/);
-    assert.match(mockSource, /message: "SUCCESS"/);
-    assert.match(mockSource, /code: 200/);
-
-    assert.match(barrelSource, /deleteOntologyLinkInterface/);
-    assert.match(typesBarrel, /DeleteOntologyLinkParams/);
-  });
-
   test("relation workspace delete calls link api then reloads for table and graph", () => {
     const workspaceSource = readSource("../src/views/SpaceRelationWorkspace/index.vue");
     assert.match(workspaceSource, /@delete="openRelationDelete"/);

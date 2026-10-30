@@ -41,3 +41,17 @@ test("ontology object create dialog uploads icon via thumbnail api like space fo
   assert.match(dialog, /iconUploading/);
   assert.match(dialog, /code !== 200/);
 });
+
+test("ontology object manual form validates required fields and limits icon upload", () => {
+  const dialog = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue");
+  assert.match(dialog, /:error="apiNameError"/);
+  assert.match(dialog, /:error="displayNameError"/);
+  assert.match(dialog, /:error="categoryError"/);
+  assert.match(dialog, /请输入 API 名称/);
+  assert.match(dialog, /请输入显示名称/);
+  assert.match(dialog, /请选择分类/);
+  assert.match(dialog, /v-if="!draft\.iconUrl"/);
+  assert.match(dialog, /:limit="1"/);
+  assert.match(dialog, /:on-exceed="handleIconExceed"/);
+  assert.match(dialog, /picture-card/);
+});

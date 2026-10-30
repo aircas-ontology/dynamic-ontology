@@ -35,6 +35,9 @@
 
 当type值为"关系分组"时，返回字段中肯定有spaceId，spaceName对应跳转的路由为 /workspace/ontology-space-management/{spaceId}/relation，要在查询列表中展示出空间名称字段spaceName
 
+当type值为"实例"时，要在查询列表中展示出空间名称字段spaceName和对象名称字段ontologyName
+
+
 目前先实现这四个类型的跳转
 
 ## 3 新建函数算子功能开发

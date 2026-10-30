@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-import { ontologyGlobalSearchMock } from "../src/mocks/ontologyGlobalSearchMock/ontologyGlobalSearchMock.ts";
+import { ontologyGlobalSearchMock } from "./fixtures/ontologyGlobalSearchMock.ts";
 import {
   resolveOntologyGlobalSearchObjectRoute,
   resolveOntologyGlobalSearchPropertyRoute,
@@ -57,12 +57,13 @@ test("global search mock mirrors the documented success sample", () => {
       (item) => item.type === "属性" && item.spaceId === 46 && item.spaceName && item.ontologyName && item.ontologyUniqueIdentifier,
     ),
   );
+  assert.ok(ontologyGlobalSearchMock.data.some((item) => item.type === "实例" && item.spaceName && item.ontologyName));
   assert.ok(ontologyGlobalSearchMock.data.some((item) => item.type === "关系分组" && item.spaceId === 11 && item.spaceName));
 });
 
 test("resolveOntologyGlobalSearchRoute maps space and relation-group types", () => {
   assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "sj测试", type: "空间", spaceId: 37 }), {
-    name: "OntologySpaceManagementDetailOverview",
+    name: "OntologySpaceManagementDetailObject",
     params: { spaceId: "37" },
   });
   assert.equal(resolveOntologyGlobalSearchRoute({ name: "对象A", type: "对象", spaceId: 11, objectId: 9 }), null);
@@ -73,22 +74,50 @@ test("resolveOntologyGlobalSearchRoute maps space and relation-group types", () 
   assert.equal(resolveOntologyGlobalSearchRoute({ name: "飞机id", type: "属性", spaceId: 46, objectId: 106 }), null);
 });
 
+test("resolveOntologyGlobalSearchRoute adds theme-space context for space and relation results", () => {
+  assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "主题空间", type: "空间", spaceId: 122, spaceName: "环境本体空间主题空间1", spaceType: 1 }), {
+    name: "OntologySpaceManagementDetailObject",
+    params: { spaceId: "122" },
+    query: { spaceName: "环境本体空间主题空间1", from: "theme-space-management", spaceType: "1" },
+  });
+  assert.deepEqual(resolveOntologyGlobalSearchRoute({ name: "关系", type: "关系分组", spaceId: 122, spaceName: "环境本体空间主题空间1", spaceType: 1 }), {
+    name: "OntologySpaceManagementDetailRelation",
+    params: { spaceId: "122" },
+    query: { spaceName: "环境本体空间主题空间1", from: "theme-space-management", spaceType: "1" },
+  });
+});
+
 test("resolveOntologyGlobalSearchObjectRoute uses item uniqueIdentifier spaceName and name", () => {
   assert.deepEqual(
     resolveOntologyGlobalSearchObjectRoute({
-      name: "测试本体对象-修改",
+      name: "测试对象-修改",
       type: "对象",
       spaceId: 11,
       spaceName: "测试空间",
       uniqueIdentifier: "ae6cca59ced9432189da4af315554957",
     }),
     {
-      name: "OntologyObjectDetailObject",
+      name: "OntologyObjectDetailAttribute",
       params: { objectId: "ae6cca59ced9432189da4af315554957" },
-      query: { spaceId: "11", spaceName: "测试空间", objectName: "测试本体对象-修改" },
+      query: { spaceId: "11", spaceName: "测试空间", objectName: "测试对象-修改" },
     },
   );
   assert.equal(resolveOntologyGlobalSearchObjectRoute({ name: "缺字段", type: "对象", spaceId: 11 }), null);
+  assert.deepEqual(
+    resolveOntologyGlobalSearchObjectRoute({
+      name: "aaa",
+      type: "对象",
+      spaceId: 122,
+      spaceName: "环境本体空间主题空间1",
+      uniqueIdentifier: "35f6b1662164495ea462afea4ed6f52e",
+      spaceType: 1,
+    }),
+    {
+      name: "OntologyObjectDetailAttribute",
+      params: { objectId: "35f6b1662164495ea462afea4ed6f52e" },
+      query: { spaceId: "122", spaceName: "环境本体空间主题空间1", objectName: "aaa", from: "theme-space-management", spaceType: "1" },
+    },
+  );
 });
 
 test("resolveOntologyGlobalSearchPropertyRoute uses item ontologyUniqueIdentifier spaceName and ontologyName", () => {
@@ -137,5 +166,6 @@ test("full text search page and header wire OntologyGlobalSearchField", () => {
   assert.match(resultList, /<el-tag\b/);
   assert.match(resultList, /item\.spaceName/);
   assert.match(resultList, /item\.ontologyName/);
+  assert.match(resultList, /item\.type === '实例'/);
   assert.match(resultList, /关系分组/);
 });

@@ -1,7 +1,7 @@
 <template>
-  <el-dialog v-model="visible" class="ontology-object-create-dialog" title="新建本体" width="min(720px, 94vw)" append-to-body destroy-on-close>
+  <el-dialog v-model="visible" class="ontology-object-create-dialog" title="新建对象" width="min(720px, 94vw)" append-to-body destroy-on-close>
     <template #header>
-      <span>{{ editingItem ? "编辑本体" : "新建本体" }}</span>
+      <span>{{ editingItem ? "编辑对象" : "新建对象" }}</span>
     </template>
     <div v-if="!editingItem" class="ontology-object-create-dialog__modes" role="tablist" aria-label="创建方式">
       <button
@@ -10,6 +10,7 @@
         type="button"
         class="ontology-object-create-dialog__mode"
         :class="{ 'is-active': createMode === mode.value }"
+        :data-onboarding="`object-create-mode-${mode.value}`"
         role="tab"
         :aria-selected="createMode === mode.value"
         @click="selectCreateMode(mode.value)"
@@ -20,47 +21,51 @@
       </button>
     </div>
 
-    <div v-if="createMode === 'manual'" class="ontology-object-create-dialog__panel">
+    <div v-if="createMode === 'manual'" class="ontology-object-create-dialog__panel" data-onboarding="object-create-required">
       <el-form label-position="top">
         <div class="ontology-object-create-dialog__grid">
-          <el-form-item label="API 名称" required>
+          <el-form-item label="API 名称" required :error="apiNameError">
             <el-input v-model="draft.apiName" maxlength="64" ariaLabel="API 名称" placeholder="如 airplane" :disabled="submitting || Boolean(editingItem)" />
           </el-form-item>
-          <el-form-item label="显示名称" required>
-            <el-input v-model="draft.displayName" maxlength="64" ariaLabel="显示名称" placeholder="请输入本体显示名称" :disabled="submitting" />
+          <el-form-item label="显示名称" required :error="displayNameError">
+            <el-input v-model="draft.displayName" maxlength="64" ariaLabel="显示名称" placeholder="请输入对象显示名称" :disabled="submitting" />
           </el-form-item>
         </div>
         <el-form-item label="描述">
           <el-input v-model="draft.description" type="textarea" :rows="2" maxlength="300" ariaLabel="描述" :disabled="submitting" />
         </el-form-item>
-        <el-form-item label="本体图标">
+        <el-form-item label="对象图标">
           <div class="ontology-object-create-dialog__icon-field">
             <div v-if="draft.iconUrl" class="ontology-object-create-dialog__icon-preview">
-              <img :src="draft.iconUrl" alt="本体图标预览" />
+              <img :src="draft.iconUrl" alt="对象图标预览" />
               <el-button :disabled="submitting || iconUploading" @click="clearIcon">清除</el-button>
             </div>
             <el-upload
+              v-if="!draft.iconUrl"
+              class="ontology-object-create-dialog__picture-upload"
+              action="#"
+              list-type="picture-card"
               :auto-upload="false"
               :show-file-list="false"
+              :limit="1"
               accept="image/png,image/jpeg,.png,.jpg,.jpeg"
               :disabled="submitting || iconUploading"
               :on-change="handleIconChange"
+              :on-exceed="handleIconExceed"
             >
-              <el-button :loading="iconUploading" :disabled="submitting || iconUploading">
-                {{ draft.iconUrl ? "重新选择" : "选择本地图片" }}
-              </el-button>
+              <el-icon><Plus /></el-icon>
             </el-upload>
             <span class="ontology-object-create-dialog__hint">可选，PNG / JPG，不超过 2MB</span>
             <p v-if="iconError" class="ontology-object-create-dialog__error" role="alert">{{ iconError }}</p>
           </div>
         </el-form-item>
         <div class="ontology-object-create-dialog__grid">
-          <el-form-item v-if="!editingItem" label="继承本体">
+          <el-form-item v-if="!editingItem" label="继承对象">
             <el-select v-model="draft.parentId" clearable filterable placeholder="可选" :disabled="submitting">
               <el-option v-for="item in parentOptions" :key="item.id" :label="`${item.displayName} (${item.apiName})`" :value="item.id" />
             </el-select>
           </el-form-item>
-          <el-form-item label="分类" required>
+          <el-form-item label="分类" required :error="categoryError">
             <el-tree-select
               v-model="draft.categoryId"
               :data="categoryTreeOptions"
@@ -70,7 +75,7 @@
               node-key="id"
               :props="{ label: 'label', children: 'children' }"
               placeholder="请选择分类"
-              :disabled="submitting"
+              :disabled="submitting || Boolean(draft.parentId)"
               style="width: 100%"
             />
           </el-form-item>
@@ -78,7 +83,7 @@
       </el-form>
     </div>
 
-    <div v-else-if="createMode === 'import'" class="ontology-object-create-dialog__panel">
+    <div v-else-if="createMode === 'import'" class="ontology-object-create-dialog__panel" data-onboarding="object-create-import-file">
       <div class="ontology-object-create-dialog__import-head">
         <p>上传符合字段结构的 JSON 文件，支持批量导入当前分类。</p>
         <el-button :disabled="submitting" @click="downloadTemplate">下载模板</el-button>
@@ -110,9 +115,11 @@
     <p v-if="validationError" class="ontology-object-create-dialog__error" role="alert">{{ validationError }}</p>
     <p v-if="error" class="ontology-object-create-dialog__error" role="alert">{{ error }}</p>
     <template #footer>
-      <el-button :disabled="submitting" @click="visible = false">取消</el-button>
+      <el-button :disabled="submitting" data-onboarding="object-create-cancel" @click="visible = false">取消</el-button>
       <el-button v-if="createMode === 'llm'" type="primary" :disabled="submitting" @click="emit('open-llm')">进入大模型构建</el-button>
-      <el-button v-else type="primary" :loading="submitting" @click="submitCreate">{{ editingItem ? "保存修改" : "确认创建" }}</el-button>
+      <el-button v-else type="primary" data-onboarding="object-create-confirm" :loading="submitting" @click="submitCreate">{{
+        editingItem ? "保存修改" : "确认创建"
+      }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -123,6 +130,7 @@ import { MagicStick, UploadFilled, Plus, Upload } from "@element-plus/icons-vue"
 import type { UploadFile } from "element-plus";
 
 import { postUploadOntologyThumbnailInterface } from "@/apis";
+import ontologyImportTemplate from "@/assets/pages/ontologyObjectCreate/ontologyImportTemplate.json";
 import type { OntologyConceptNode, OntologyObjectCreateDraft, OntologyObjectItem } from "@/types";
 
 interface CategoryTreeOption {
@@ -134,6 +142,7 @@ interface ParentOption {
   id: string;
   displayName: string;
   apiName: string;
+  categoryId: string;
 }
 type CreateMode = "manual" | "import" | "llm";
 
@@ -163,8 +172,11 @@ const importError = ref("");
 const validationError = ref("");
 const iconError = ref("");
 const iconUploading = ref(false);
+const apiNameError = ref("");
+const displayNameError = ref("");
+const categoryError = ref("");
 let iconUploadSerial = 0;
-const templateJson = JSON.stringify([{ apiName: "airplane", displayName: "飞机", description: "", iconUrl: "", categoryId: "1" }], null, 2);
+const templateJson = JSON.stringify(ontologyImportTemplate, null, 2);
 
 /**
  * @description 将概念层级树映射为分类树选择数据，节点 id 使用分类提交 id。
@@ -181,6 +193,15 @@ function mapCategoryTreeOptions(nodes: OntologyConceptNode[]): CategoryTreeOptio
 
 const categoryTreeOptions = computed(() => mapCategoryTreeOptions(props.categoryTree));
 
+watch(
+  () => draft.parentId,
+  (parentId) => {
+    if (!parentId) return;
+    const parentOption = props.parentOptions.find((item) => item.id === parentId);
+    if (parentOption) draft.categoryId = parentOption.categoryId;
+  },
+);
+
 watch([visible, () => props.editingItem], ([opened, editingItem]) => {
   if (!opened) return;
   createMode.value = "manual";
@@ -194,6 +215,9 @@ watch([visible, () => props.editingItem], ([opened, editingItem]) => {
   importError.value = "";
   validationError.value = "";
   iconError.value = "";
+  apiNameError.value = "";
+  displayNameError.value = "";
+  categoryError.value = "";
   iconUploading.value = false;
   iconUploadSerial += 1;
 });
@@ -210,7 +234,7 @@ function selectCreateMode(mode: CreateMode) {
 }
 
 /**
- * @description 校验并上传本体图标，写入缩略图 URL（与空间图标上传一致）。
+ * @description 校验并上传对象图标，写入缩略图 URL（与空间图标上传一致）。
  * @param file Element Plus 上传文件。
  */
 async function handleIconChange(file: UploadFile): Promise<void> {
@@ -249,7 +273,12 @@ async function handleIconChange(file: UploadFile): Promise<void> {
   }
 }
 
-/** @description 清除当前本体图标预览。 */
+/** @description 提示对象图标仅允许选择一张图片。 */
+function handleIconExceed(): void {
+  iconError.value = "对象图标仅支持上传一张图片，请先清除当前图片。";
+}
+
+/** @description 清除当前对象图标预览。 */
 function clearIcon() {
   iconUploadSerial += 1;
   iconUploading.value = false;
@@ -266,7 +295,7 @@ function handleImportChange(file: UploadFile) {
   importFile.value = file.raw ?? null;
 }
 
-/** @description 下载当前项目可直接导入的本体 JSON 模板。 */
+/** @description 下载当前项目可直接导入的对象 JSON 模板。 */
 function downloadTemplate() {
   const url = URL.createObjectURL(new Blob([templateJson], { type: "application/json" }));
   const anchor = document.createElement("a");
@@ -276,7 +305,7 @@ function downloadTemplate() {
   URL.revokeObjectURL(url);
 }
 
-/** @description 校验当前创建模式并向父组件提交一个或多个本体草稿。 */
+/** @description 校验当前创建模式并向父组件提交一个或多个对象草稿。 */
 function submitCreate() {
   if (props.submitting || iconError.value || iconUploading.value) return;
   if (createMode.value === "import") {
@@ -287,10 +316,11 @@ function submitCreate() {
     emit("submit-import", importFile.value);
     return;
   }
-  if (!draft.apiName.trim() || !draft.displayName.trim() || !draft.categoryId) {
-    validationError.value = "请填写 API 名称、显示名称并选择分类";
-    return;
-  }
+  validationError.value = "";
+  apiNameError.value = draft.apiName.trim() ? "" : "请输入 API 名称。";
+  displayNameError.value = draft.displayName.trim() ? "" : "请输入显示名称。";
+  categoryError.value = draft.categoryId ? "" : "请选择分类。";
+  if (apiNameError.value || displayNameError.value || categoryError.value) return;
   const payload: OntologyObjectCreateDraft = { ...draft };
   if (props.editingItem) emit("submit-edit", payload);
   else emit("submit-manual", payload);
@@ -366,6 +396,17 @@ function submitCreate() {
   object-fit: contain;
   border: 1px solid var(--aircas-color-border-light);
   border-radius: 8px;
+}
+.ontology-object-create-dialog__picture-upload :deep(.el-upload--picture-card) {
+  width: 64px;
+  height: 64px;
+  margin: 0;
+  border-color: var(--aircas-color-border-light);
+  background: var(--aircas-color-input-background);
+}
+.ontology-object-create-dialog__picture-upload :deep(.el-upload--picture-card:hover) {
+  border-color: var(--aircas-color-primary);
+  color: var(--aircas-color-primary);
 }
 .ontology-object-create-dialog__import-head {
   display: flex;

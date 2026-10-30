@@ -2,7 +2,7 @@ import type { ApiResponse, OntologyGlobalSearchData, OntologyGlobalSearchParams 
 import { request } from "@/utils/request";
 
 /**
- * @description 跨本体索引全局检索，按相关性返回名称、类型、描述及业务 id。
+ * @description 跨对象索引全局检索，按相关性返回名称、类型、描述及业务 id。
  *
  * 请求方式：POST `/ontology/search/global`
  *

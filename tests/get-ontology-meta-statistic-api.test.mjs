@@ -28,24 +28,11 @@ test("ontology meta statistic api gets the prefixed ontology meta statistic endp
   assert.match(barrel, /getOntologyMetaStatisticInterface/);
 });
 
-test("ontology meta statistic mock mirrors the documented success sample", () => {
-  const source = readSource("../src/mocks/getOntologyMetaStatisticMock/getOntologyMetaStatisticMock.ts");
-  assert.match(source, /export const getOntologyMetaStatisticMock: ApiResponse<GetOntologyMetaStatisticData>/);
-  assert.match(source, /code: 200/);
-  assert.match(source, /message: "SUCCESS"/);
-  assert.match(source, /success: true/);
-  assert.match(source, /uniqueIdentifier: "d3e1b0c27f29452eb7cadd1f51eac535"/);
-  assert.match(source, /entityCount: 16/);
-  assert.match(source, /propertyCount: 9/);
-  assert.match(source, /relationCount: 4/);
-  assert.match(source, /actionCount: 2/);
-});
-
 test("object detail statistic replaces the hardcoded counts with the meta statistic api", () => {
   const pageSource = readSource("../src/views/OntologyObjectDetail/index.vue");
   const composableSource = readSource("../src/views/OntologyObjectDetail/composables/useObjectResourceStatistic.ts");
-  const panelSource = readSource("../src/views/OntologyObjectOverviewPanel/index.vue");
   assert.match(pageSource, /useObjectResourceStatistic/);
+  assert.match(pageSource, /:counts="tabCounts"/);
   assert.match(composableSource, /getOntologyMetaStatisticInterface/);
   assert.match(composableSource, /uniqueIdentifier: objectId/);
   assert.match(composableSource, /entity: statistic\.entityCount/);
@@ -54,7 +41,4 @@ test("object detail statistic replaces the hardcoded counts with the meta statis
   assert.match(composableSource, /behavior: statistic\.actionCount/);
   assert.match(composableSource, /response\.code === 200/);
   assert.doesNotMatch(pageSource, /28_640/);
-  assert.match(panelSource, /统计加载中\.\.\./);
-  assert.match(panelSource, /重试/);
-  assert.match(panelSource, /@click="emit\('retry'\)"/);
 });

@@ -12,10 +12,10 @@ const workspaceMatch = { name: WORKSPACE_LAYOUT_ROUTE_NAME };
 
 function createToRoute(overrides = {}) {
   return {
-    path: "/workspace/ontology-space-management/space-1/overview",
+    path: "/workspace/ontology-space-management/space-1/object",
     query: {},
     hash: "",
-    matched: [workspaceMatch, { name: "OntologySpaceManagementDetailOverview" }],
+    matched: [workspaceMatch, { name: "OntologySpaceManagementDetailObject" }],
     ...overrides,
   };
 }

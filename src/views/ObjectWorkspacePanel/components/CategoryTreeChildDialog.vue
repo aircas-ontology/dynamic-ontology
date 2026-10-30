@@ -7,8 +7,8 @@
     </el-form>
     <p v-if="error" class="category-tree-child-dialog__error" role="alert">{{ error }}</p>
     <template #footer>
-      <el-button :disabled="submitting" @click="visible = false">取消</el-button>
-      <el-button type="primary" :loading="submitting" @click="confirmCategoryChildName">确认</el-button>
+      <el-button :disabled="submitting" data-onboarding="object-tree-child-cancel" @click="visible = false">取消</el-button>
+      <el-button type="primary" data-onboarding="object-tree-child-confirm" :loading="submitting" @click="confirmCategoryChildName">确认</el-button>
     </template>
   </el-dialog>
 </template>

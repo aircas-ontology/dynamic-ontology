@@ -1,4 +1,4 @@
-import type { OntologyRelationClass, SpaceRelationHopLevel, SpaceRelationObjectOption } from "@/types";
+import type { OntologyRelationClass, SpaceRelationHopLevel } from "@/types";
 
 function buildAdjacency(relations: OntologyRelationClass[]): Map<string, Set<string>> {
   const adj = new Map<string, Set<string>>();
@@ -61,23 +61,4 @@ export function filterRelationsByHop(relations: OntologyRelationClass[], seedNam
     if (sourceHop > maxHop || targetHop > maxHop) return false;
     return Math.abs(sourceHop - targetHop) === 1;
   });
-}
-
-/**
- * @description 按源本体筛选关系：保留源名称等于选中对象 value 或其展示 label 的关系。
- * @param relations 当前关系列表。
- * @param selectedValue 下拉选中的对象 value（通常为 uniqueIdentifier）。
- * @param objectOptions 对象下拉选项，用于把 value 解析为 label。
- * @returns 源本体匹配选中对象的关系子集；未选中时返回原列表。
- */
-export function filterRelationsBySourceObject(
-  relations: OntologyRelationClass[],
-  selectedValue: string,
-  objectOptions: SpaceRelationObjectOption[] = [],
-): OntologyRelationClass[] {
-  const trimmed = selectedValue.trim();
-  if (!trimmed) return relations;
-  const matchedLabel = objectOptions.find((item) => item.value === trimmed)?.label.trim() ?? "";
-  const sourceKeys = new Set([trimmed, matchedLabel].filter(Boolean));
-  return relations.filter((item) => sourceKeys.has(item.sourceName.trim()));
 }

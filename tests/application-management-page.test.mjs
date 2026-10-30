@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-import { apiDocsOntologyMock } from "../src/mocks/apiDocsOntologyMock/apiDocsOntologyMock.ts";
+import { apiDocsOntologyMock } from "./fixtures/apiDocsOntologyMock.ts";
 import {
   filterApiDocsEndpointGroups,
   filterApiDocsEndpointGroupsByPath,
@@ -34,13 +34,13 @@ test("application management route and menu are registered beside full-text sear
 
 test("parseOpenApiDocument maps mock document into groups and lemma detail", () => {
   const serviceInfo = mapApiDocsServiceInfo(apiDocsOntologyMock);
-  assert.equal(serviceInfo.title, "本体服务");
+  assert.equal(serviceInfo.title, "对象服务");
   assert.equal(serviceInfo.openapi, "3.1.0");
   assert.match(serviceInfo.serverUrl, /\/ontology$/);
 
   const groups = mapApiDocsEndpointGroups(apiDocsOntologyMock);
   assert.ok(groups.length > 0);
-  const lemmaGroup = groups.find((group) => group.tag === "本体百科词条");
+  const lemmaGroup = groups.find((group) => group.tag === "对象百科词条");
   assert.ok(lemmaGroup);
   assert.ok(lemmaGroup.endpoints.some((item) => item.method === "get" && item.path === "/lemma"));
 
@@ -58,13 +58,13 @@ test("parseOpenApiDocument maps mock document into groups and lemma detail", () 
 test("parseOpenApiDocument maps requestBody schema properties into parameter rows", () => {
   const detail = mapApiDocsEndpointDetail(apiDocsOntologyMock, "post", "/link");
   assert.ok(detail);
-  assert.equal(detail.summary, "创建本体之间的关系");
+  assert.equal(detail.summary, "创建对象之间的关系");
   assert.ok(detail.parameters.length >= 6);
   const nameRow = detail.parameters.find((row) => row.name === "name");
   assert.ok(nameRow);
   assert.equal(nameRow.location, "body");
   assert.equal(nameRow.required, true);
-  assert.match(nameRow.description, /本体关系名称/);
+  assert.match(nameRow.description, /对象关系名称/);
   const spaceIdRow = detail.parameters.find((row) => row.name === "spaceId");
   assert.ok(spaceIdRow);
   assert.equal(spaceIdRow.typeLabel, "integer(int32)");
@@ -105,11 +105,11 @@ test("filterApiDocsEndpointGroupsByPath fuzzy-matches endpoint paths", () => {
 test("filterApiDocsEndpointGroups supports menu tag dropdown filter", () => {
   const groups = mapApiDocsEndpointGroups(apiDocsOntologyMock);
   const menus = mapApiDocsEndpointMenuOptions(groups);
-  assert.ok(menus.includes("本体关系管理"));
-  const byMenu = filterApiDocsEndpointGroups(groups, "本体关系管理", "");
+  assert.ok(menus.includes("对象关系管理"));
+  const byMenu = filterApiDocsEndpointGroups(groups, "对象关系管理", "");
   assert.equal(byMenu.length, 1);
-  assert.equal(byMenu[0]?.tag, "本体关系管理");
-  const byMenuAndPath = filterApiDocsEndpointGroups(groups, "本体关系管理", "/link");
+  assert.equal(byMenu[0]?.tag, "对象关系管理");
+  const byMenuAndPath = filterApiDocsEndpointGroups(groups, "对象关系管理", "/link");
   assert.ok(byMenuAndPath.length === 1);
   assert.ok(byMenuAndPath[0]?.endpoints.every((item) => matchApiDocsEndpointPath(item.path, "/link")));
   assert.equal(filterApiDocsEndpointGroups(groups, null, "").length, groups.length);

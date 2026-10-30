@@ -27,18 +27,28 @@ mocks与types文件名自行语义化命名
 - ```JSON
   {
     "functionApi": "a",
+    "version": "",
     "ontologyIdentifier": "",
+    "type":"",
+    "code":"",
+    "language":"",
     "variableBindings": {
 
     },
+    "parameters": [],
     "pageNum": 1,
     "pageSize": 10,
   }
   ```
 
 - `functionApi`：【string，必填】 函数api
+- `version`：【string，必填】 版本号（必填，格式 x.y.z）
 - `ontologyIdentifier`：【string，必填】 本体唯一值
-- `variableBindings`：【object，必填】 查询参数对象
+- `type`：【string，非必填】 未创建函数时的草稿测试必填
+- `code`：【string，非必填】 脚本源码（CUSTOMIZE 草稿测试必填）
+- `language`：【string，非必填】 脚本语言（CUSTOMIZE 草稿测试必填，不传默认 GROOVY）
+- `variableBindings`：【object，非必填】 BASIC_QUERY 类型需要传该参数
+- `parameters`：【array，非必填】 CUSTOMIZE/EXTERNAL 类型需要传该参数
 - `pageNum`：【number，非必填】 分页，默认1
 - `pageSize`：【number，非必填】 每页条数，默认10
 
@@ -96,15 +106,15 @@ import type { ApiResponse, OntologySearchData, OntologySearchParams } from "@/ty
 import { request } from "@/utils/request";
 
 /**
- * 根据关键词分页查询本体数据。
+ * 根据关键词分页查询对象数据。
  *
  * 请求方式：GET `/ontology/search`
  *
  * @param params 查询参数。
- * @param params.keyword 可选的本体名称或描述关键词。
+ * @param params.keyword 可选的对象名称或描述关键词。
  * @param params.page 当前页码，从 1 开始。
  * @param params.pageSize 每页返回的数据条数。
- * @returns 标准 API 响应，包含当前页本体列表和数据总数。
+ * @returns 标准 API 响应，包含当前页对象列表和数据总数。
  */
 export function getOntologySearchInterface(params: OntologySearchParams): Promise<ApiResponse<OntologySearchData>> {
   return request<OntologySearchData>({
@@ -139,7 +149,7 @@ export const ontologySearchMock: ApiResponse<OntologySearchData> = {
       {
         id: "ontology-001",
         name: "Satellite Ontology",
-        description: "用于描述卫星及其关联资源的本体。",
+        description: "用于描述卫星及其关联资源的对象。",
       },
     ],
     total: 1,

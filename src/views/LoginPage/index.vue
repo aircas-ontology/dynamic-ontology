@@ -6,7 +6,7 @@
       <section class="left-panel">
         <header class="brand">
           <div class="brand-logo">
-            <img :src="logoImage" alt="动态本体平台图标" />
+            <img :src="logoImage" alt="动态对象平台图标" />
           </div>
           <div>
             <h1>空天 · 灵枢</h1>
@@ -21,7 +21,7 @@
         </div>
 
         <div class="visual-area">
-          <div class="stack-visual" aria-label="本体分层示意图">
+          <div class="stack-visual" aria-label="对象分层示意图">
             <img :src="layer4" alt="" class="stack-layer layer-4" />
             <img :src="layer3" alt="" class="stack-layer layer-3" />
             <img :src="layer2" alt="" class="stack-layer layer-2" />
@@ -30,8 +30,8 @@
             <img :src="layer02" alt="" class="stack-layer layer-02" />
           </div>
           <!-- <ul class="stack-notes left-notes">
-            <li class="n-top">本体语言 &amp; 工具链</li>
-            <li class="n-mid">本体引擎</li>
+            <li class="n-top">对象语言 &amp; 工具链</li>
+            <li class="n-mid">对象引擎</li>
             <li class="n-mid2">安全与治理</li>
             <li class="n-bottom">数据、逻辑 &amp; 行为服务</li>
           </ul> -->
@@ -40,7 +40,7 @@
 
       <aside class="login-card">
         <h3>欢迎登录</h3>
-        <!-- <p class="sub-title">动态本体平台</p> -->
+        <!-- <p class="sub-title">动态对象平台</p> -->
 
         <form class="login-form" novalidate @submit.prevent="onSubmit">
           <label class="field">
@@ -148,7 +148,7 @@
       </aside>
     </main>
 
-    <footer class="copyright">© 2026 动态本体平台 · 中国科学院空天信息创新研究院</footer>
+    <footer class="copyright">© 2026 动态对象平台 · 中国科学院空天信息创新研究院</footer>
   </section>
 </template>
 

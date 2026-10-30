@@ -1,6 +1,6 @@
 # 接口名称
 
-- 修改本体对象
+- 修改对象
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 修改本体对象元数据。
+- 修改对象元数据。
 - 在线接口文档：[OntologyMetaController_updateMeta](http://172.16.18.58:37002/ontology/doc.html#/ontology/%E6%9C%AC%E4%BD%93%E5%AF%B9%E8%B1%A1%E7%AE%A1%E7%90%86/OntologyMetaController_updateMeta/doc)。
 
 ## 接口domain
@@ -34,17 +34,17 @@
 {
   "ontologyIdentifier": "ae6cca59ced9432189da4af315554957",
   "icon": "",
-  "displayName": "测试本体对象-修改",
-  "description": "这是修改后的本体描述",
+  "displayName": "测试对象-修改",
+  "description": "这是修改后的对象描述",
   "groupIds": [null],
   "categoryId": 29
 }
 ```
 
-- `ontologyIdentifier`：【string，必填】本体 id。
-- `icon`：【string，可选】本体图标。
-- `displayName`：【string，必填】本体名称。
-- `description`：【string，可选】本体描述。
+- `ontologyIdentifier`：【string，必填】对象 id。
+- `icon`：【string，可选】对象图标。
+- `displayName`：【string，必填】对象名称。
+- `description`：【string，可选】对象描述。
 - `groupIds`：【(string|null)[]，必填】分组 ids，当前编辑场景固定传 `[null]`。
 - `categoryId`：【number，可选】分类 id。
 
@@ -108,17 +108,17 @@ import type { ApiResponse, UpdateOntologyObjectData, UpdateOntologyObjectParams 
 import { request } from "@/utils/request";
 
 /**
- * 修改本体对象。
+ * 修改对象。
  *
  * 请求方式：PUT `/ontology/meta`
  *
- * @param params 修改本体对象参数。
- * @param params.ontologyIdentifier 本体 id。
- * @param params.displayName 本体名称。
- * @param params.groupIds 本体分组 ids。
- * @param params.icon 本体图标。
- * @param params.description 本体描述。
- * @param params.categoryId 本体分类 id。
+ * @param params 修改对象参数。
+ * @param params.ontologyIdentifier 对象 id。
+ * @param params.displayName 对象名称。
+ * @param params.groupIds 对象分组 ids。
+ * @param params.icon 对象图标。
+ * @param params.description 对象描述。
+ * @param params.categoryId 对象分类 id。
  * @returns 标准 API 响应。
  */
 export function updateOntologyObjectInterface(params: UpdateOntologyObjectParams): Promise<ApiResponse<UpdateOntologyObjectData>> {

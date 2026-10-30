@@ -1,9 +1,9 @@
 <template>
-  <section class="ontology-llm-builder" aria-label="大模型构建本体流程">
+  <section class="ontology-llm-builder" aria-label="大模型构建对象流程">
     <div class="ontology-llm-builder__heading">
       <div>
         <p class="ontology-llm-builder__eyebrow">ONTOLOGY COPILOT</p>
-        <h1>大模型构建本体流程 <span>OntoPilot</span></h1>
+        <h1>大模型构建对象流程 <span>OntoPilot</span></h1>
       </div>
       <el-button @click="goBack">返回空间</el-button>
     </div>
@@ -32,7 +32,7 @@
           <header class="ontology-llm-builder__content-header">
             <div>
               <p class="ontology-llm-builder__eyebrow">STEP 01</p>
-              <h2>定义本体对象</h2>
+              <h2>定义对象</h2>
               <p>用自然语言明确对象目标与边界</p>
             </div>
             <el-button @click="goBack">返回空间</el-button>
@@ -119,14 +119,14 @@ interface LlmDraft {
 const router = useRouter();
 const currentStep = ref(0);
 const draft = reactive<LlmDraft>({
-  description: "构建阿利·伯克级驱逐舰本体，覆盖船体结构、武器、传感器、动力与指控子系统，输出概念模型、属性模板、关系约束与能力规则。",
+  description: "构建阿利·伯克级驱逐舰对象，覆盖船体结构、武器、传感器、动力与指控子系统，输出概念模型、属性模板、关系约束与能力规则。",
   scope: ["军事装备", "海军装备", "驱逐舰"],
   targets: ["概念模型", "属性模板", "关系约束", "能力函数", "规则"],
   granularity: "class",
   language: "中文",
 });
 const steps: LlmStep[] = [
-  { title: "定义本体对象", description: "用自然语言明确对象目标与边界" },
+  { title: "定义对象", description: "用自然语言明确对象目标与边界" },
   { title: "导入资料", description: "上传或关联领域资料" },
   { title: "构建对象", description: "生成对象基本信息" },
   { title: "构建属性", description: "配置对象属性与字段，可跳过" },
@@ -173,7 +173,7 @@ function goNext() {
     currentStep.value += 1;
     return;
   }
-  ElMessage.success("本体大模型构建流程已完成");
+  ElMessage.success("对象大模型构建流程已完成");
 }
 
 /** @description 返回上一个构建步骤。 */

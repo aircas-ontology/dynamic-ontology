@@ -43,6 +43,17 @@ export function makeCategoryLocationTarget(categoryId: string, requestId: number
 }
 
 /**
+ * @description 构造携带对象 id 的定位目标，供列表滚动并高亮具体对象。
+ * @param categoryId 对象所属分类 id
+ * @param objectId 对象唯一标识
+ * @param requestId 定位请求序号，用于重复定位同一对象
+ * @returns 定位目标
+ */
+export function makeObjectLocationTarget(categoryId: string, objectId: string, requestId: number): OntologyObjectLocationTarget {
+  return { categoryId, objectId, requestId };
+}
+
+/**
  * @description 递归收集分类树下拉选项。
  * @param nodes 分类树
  * @returns 分类选项列表

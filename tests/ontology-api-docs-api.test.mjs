@@ -41,11 +41,10 @@ test("ontology api docs types and page types are exported from types barrel", ()
   assert.match(typeBarrelSource, /export type \{[\s\S]*ApiDocsEndpointDetail[\s\S]*\} from "\.\/pages\/applicationManagementType";/);
 });
 
-test("api docs ontology mock exports typed OpenAPI document sample", () => {
-  const mockSource = readSource("../src/mocks/apiDocsOntologyMock/apiDocsOntologyMock.ts");
+test("api docs ontology fixture exports typed OpenAPI document sample", () => {
+  const mockSource = readSource("./fixtures/apiDocsOntologyMock.ts");
   assert.match(mockSource, /import type \{ OntologyApiDocsData \} from "@\/types";/);
   assert.match(mockSource, /export const apiDocsOntologyMock: OntologyApiDocsData =/);
   assert.match(mockSource, /\\"openapi\\":\\"3\.1\.0\\"/);
-  assert.match(mockSource, /\\"title\\":\\"本体服务\\"/);
-  assert.equal(existsSync(new URL("../src/mocks/apiDocsOntologyMock/mock.ts", import.meta.url)), false);
+  assert.match(mockSource, /\\"title\\":\\"对象服务\\"/);
 });
