@@ -152,12 +152,21 @@ export function useAttributePropertyList(options: {
     };
   }
 
-  /** @description 组装编辑属性接口请求参数，仅提交页面字段和唯一标识。 */
+  /**
+   * @description 组装编辑参数；已绑定数据源时仅更新名称、分类和描述，其他字段保留原值。
+   * @param uniqueIdentifier 属性唯一标识。
+   * @returns 属性更新接口参数。
+   */
   function buildUpdatePropertyParams(uniqueIdentifier: string): UpdateOntologyPropertyParams {
-    if (datasourceLocked.value && originalEditParams) {
-      return { ...originalEditParams, displayName: draft.displayName.trim(), description: draft.description };
-    }
     const categoryId = getDraftCategoryId();
+    if (datasourceLocked.value && originalEditParams) {
+      return {
+        ...originalEditParams,
+        displayName: draft.displayName.trim(),
+        description: draft.description,
+        ...(categoryId === undefined ? {} : { categoryId }),
+      };
+    }
     return {
       uniqueIdentifier,
       displayName: draft.displayName,
@@ -198,7 +207,7 @@ export function useAttributePropertyList(options: {
   }
 
   /**
-   * @description 打开属性编辑表单并回显当前数据；已绑定数据源时锁定属性名称和描述以外的字段。
+   * @description 打开属性编辑表单并回显当前数据；已绑定数据源时锁定属性名称、分类和描述以外的字段。
    * @param value 待编辑的属性列表项。
    * @param datasourceLockedOverride 数据源绑定锁定状态，默认按列表项的绑定字段判断。
    */

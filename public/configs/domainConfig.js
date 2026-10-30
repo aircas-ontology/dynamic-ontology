@@ -15,7 +15,6 @@ const DOMAIN_CONFIG = {
   // LOGIN_URL: "http://172.16.28.61:37002", //对象管理
   LOGIN_URL: "http://172.16.18.58:37002", //对象管理
   // LOGIN_URL: "http://172.16.36.247:37002", //登录
-  // ONTOLOGYMANAGE_URL:"http://172.16.29.255:37002",//对象管理
   // ONTOLOGYMANAGE_URL: "http://172.16.29.255:37002", //对象管理
   // ONTOLOGYMANAGE_URL: "http://172.16.28.61:37002", //对象管理
   ONTOLOGYMANAGE_URL: "http://172.16.18.58:37002", //对象管理
