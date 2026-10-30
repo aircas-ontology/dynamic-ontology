@@ -116,6 +116,11 @@ test("function operator panel wires runtime config button and secondary panel", 
   assert.match(runtimePanelSource, /postOntologyFunctionContainerRuntimeStartInterface/);
   assert.match(runtimePanelSource, /postOntologyFunctionContainerRuntimeStopInterface/);
   assert.match(runtimePanelSource, /postOntologyFunctionContainerRuntimeRestartInterface/);
+  assert.match(runtimePanelSource, /createContainerRuntimeActionSequences/);
+  assert.match(runtimePanelSource, /nextActionSequence\(row\.containerKey\)/);
+  assert.match(runtimePanelSource, /isCurrentAction\(row\.containerKey,\s*currentAction\)/);
+  assert.match(runtimePanelSource, /invalidateAllActionSequences\(\)/);
+  assert.doesNotMatch(runtimePanelSource, /let actionSequence\s*=\s*0/);
   assert.match(runtimePanelSource, /canStartRuntime/);
   assert.match(runtimePanelSource, /canStopRuntime/);
   assert.match(runtimePanelSource, /canRestartRuntime/);
