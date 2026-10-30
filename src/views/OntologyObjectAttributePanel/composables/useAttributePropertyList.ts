@@ -158,18 +158,6 @@ export function useAttributePropertyList(options: {
    * @returns 属性更新接口参数。
    */
   function buildUpdatePropertyParams(uniqueIdentifier: string): UpdateOntologyPropertyParams {
-<<<<<<< HEAD
-=======
-    if (datasourceLocked.value && originalEditParams) {
-      const categoryId = getDraftCategoryId();
-      return {
-        ...originalEditParams,
-        displayName: draft.displayName.trim(),
-        description: draft.description,
-        ...(categoryId === undefined ? {} : { categoryId }),
-      };
-    }
->>>>>>> 0a66214d1bb184d5e5bc29c6e430e7cc907cec5f
     const categoryId = getDraftCategoryId();
     if (datasourceLocked.value && originalEditParams) {
       return {
