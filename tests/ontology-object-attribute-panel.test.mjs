@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
+import * as vue from "vue";
+import { transpileModule, ModuleKind } from "typescript";
+import * as attributeHelpers from "../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts";
+import * as attributeValidation from "../src/views/OntologyObjectAttributePanel/utils/validateAttributeDefaultValue.ts";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { workspaceRoutes } from "../src/router/modules/workspaceRoutes.ts";
 
@@ -243,7 +247,7 @@ test("attribute API name is disabled only while editing", () => {
   assert.match(source, /v-model="draft\.apiName"[\s\S]*?:disabled="editingAttributeId !== null \|\| draft\.isPrimary"/);
 });
 
-test("bound datasource attributes open the edit dialog locked to name and description", () => {
+test("bound datasource attributes allow name, category and description edits", () => {
   const helperSource = readSource("../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts");
   const propertySource = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
   const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
@@ -259,17 +263,131 @@ test("bound datasource attributes open the edit dialog locked to name and descri
   assert.match(propertySource, /datasourceLocked,/);
   assert.match(formSource, /datasourceLocked: boolean/);
   assert.match(formSource, /该属性已绑定数据源，仅支持修改属性名称、属性分类和描述/);
+<<<<<<< HEAD
+  assert.doesNotMatch(formSource.match(/<el-select v-model="draft\.categoryId"[^>]*>/)?.[0] ?? "", /disabled/);
+=======
   {
     const treeSelectBlock = formSource.match(/<el-tree-select[\s\S]*?\/>/);
     assert.ok(treeSelectBlock, "missing el-tree-select");
     assert.doesNotMatch(treeSelectBlock[0], /:disabled=/);
   }
   assert.match(propertySource, /datasourceLocked\.value && originalEditParams[\s\S]*?categoryId/);
+>>>>>>> 0a66214d1bb184d5e5bc29c6e430e7cc907cec5f
   assert.match(formSource, /:disabled="datasourceLocked \|\| draft\.isPrimary"/);
   assert.match(formSource, /v-model="draft\.storageGroup"[\s\S]*?:disabled="datasourceLocked"/);
   assert.match(formSource, /v-model="draft\.defaultValue"[\s\S]*?:disabled="datasourceLocked"/);
   assert.match(formSource, /:model-value="draft\.isPrimary"[\s\S]*?:disabled="datasourceLocked"/);
   assert.match(formSource, /:model-value="draft\.isNameKey"[\s\S]*?:disabled="datasourceLocked"/);
+});
+
+/**
+ * @description 执行真实属性编辑 composable，仅替换路由、提示和接口边界。
+ * @param {Function} updateProperty 编辑接口替身。
+ * @returns {object} 属性编辑状态与刷新记录。
+ */
+function createAttributeEditor(updateProperty) {
+  const source = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
+  const { outputText } = transpileModule(source, { compilerOptions: { module: ModuleKind.CommonJS } });
+  const dependencies = {
+    vue,
+    "vue-router": { useRoute: () => ({ params: { objectId: "object-1" } }) },
+    "element-plus": { ElMessage: { success() {}, error() {}, warning() {} }, ElMessageBox: {} },
+    "@/apis": { updateOntologyPropertyInterface: updateProperty },
+    "../utils/attributePanelHelpers": attributeHelpers,
+    "../utils/validateAttributeDefaultValue": attributeValidation,
+  };
+  const exports = {};
+  new Function("require", "exports", outputText)((name) => {
+    assert.ok(name in dependencies, `unexpected dependency: ${name}`);
+    return dependencies[name];
+  }, exports);
+  let refreshCount = 0;
+  const editor = exports.useAttributePropertyList({
+    selectedCategoryId: vue.ref("all"),
+    getCategories: () => [0, 1, 2].map((id) => ({ nodeType: "category", id: String(id), label: String(id), propertyCount: 0 })),
+    onPropertyChanged: () => {
+      refreshCount += 1;
+    },
+  });
+  editor.openEditAttribute({
+    uniqueIdentifier: "property-1",
+    displayName: "原名称",
+    apiName: "originalApi",
+    categoryId: "1",
+    dataType: "String",
+    storageGroup: "main",
+    defaultValue: "original",
+    description: "原描述",
+    isPrimary: false,
+    isNameKey: false,
+    datasourceId: "source-1",
+    datasourceColumnName: "column-1",
+  });
+  return { editor, getRefreshCount: () => refreshCount };
+}
+
+for (const categoryId of ["2", "0"]) {
+  test(`bound attribute saves category ${categoryId} while preserving locked fields`, async () => {
+    const requests = [];
+    const { editor, getRefreshCount } = createAttributeEditor(async (params) => {
+      requests.push(params);
+      return { code: 200 };
+    });
+    Object.assign(editor.draft, {
+      categoryId,
+      displayName: " 新名称 ",
+      description: "新描述",
+      apiName: "changedApi",
+      dataType: "Int",
+      storageGroup: "changed",
+      defaultValue: "123",
+    });
+    await editor.saveAttributeDraft();
+    assert.deepEqual(requests, [
+      {
+        uniqueIdentifier: "property-1",
+        displayName: "新名称",
+        apiName: "originalApi",
+        categoryId: Number(categoryId),
+        dataType: "String",
+        storageGroup: "main",
+        defaultValue: "original",
+        description: "新描述",
+        isPrimaryKey: false,
+        isTitleKey: false,
+      },
+    ]);
+    assert.equal(editor.attributeDialogVisible.value, false);
+    assert.equal(getRefreshCount(), 1);
+  });
+}
+
+test("bound attribute prevents duplicate saves and keeps changed category on failure for retry", async () => {
+  let resolveRequest;
+  let calls = 0;
+  const { editor, getRefreshCount } = createAttributeEditor(() => {
+    calls += 1;
+    return new Promise((resolve) => {
+      resolveRequest = resolve;
+    });
+  });
+  editor.draft.categoryId = "2";
+  const pending = editor.saveAttributeDraft();
+  await editor.saveAttributeDraft();
+  assert.equal(calls, 1);
+  assert.equal(editor.savingAttribute.value, true);
+  resolveRequest({ code: 500, message: "分类更新失败" });
+  await pending;
+  assert.equal(editor.attributeCommandError.value, "分类更新失败");
+  assert.equal(editor.attributeDialogVisible.value, true);
+  assert.equal(editor.draft.categoryId, "2");
+  assert.equal(editor.savingAttribute.value, false);
+  assert.equal(getRefreshCount(), 0);
+  const retry = editor.saveAttributeDraft();
+  assert.equal(calls, 2);
+  resolveRequest({ code: 200 });
+  await retry;
+  assert.equal(getRefreshCount(), 1);
 });
 
 test("table editing checks datasource detail then opens the form with lock state", () => {
