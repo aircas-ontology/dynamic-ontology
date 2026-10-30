@@ -1,6 +1,11 @@
 <template>
   <div class="ontology-global-search" :class="`ontology-global-search--${placement}`" ref="rootRef">
     <div class="ontology-global-search__bar">
+      <div class="ontology-global-search__type-wrap" role="group" aria-label="检索类型">
+        <el-select v-model="searchType" class="ontology-global-search__type" placeholder="全部" @change="handleSearchTypeChange">
+          <el-option v-for="option in ONTOLOGY_GLOBAL_SEARCH_TYPE_OPTIONS" :key="option.label" :label="option.label" :value="option.value" />
+        </el-select>
+      </div>
       <el-input
         v-model="keyword"
         class="ontology-global-search__input"
@@ -30,7 +35,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { Search } from "@element-plus/icons-vue";
 
 import { useOntologyGlobalSearch } from "@/composables/ontology/useOntologyGlobalSearch";
-import type { OntologyGlobalSearchItem } from "@/types";
+import { ONTOLOGY_GLOBAL_SEARCH_TYPE_OPTIONS, type OntologyGlobalSearchItem } from "@/types";
 
 import OntologyGlobalSearchResultList from "./OntologyGlobalSearchResultList.vue";
 
@@ -47,20 +52,31 @@ const props = withDefaults(
   },
 );
 
-const { keyword, results, status, errorMessage, searchOntologyGlobal, clearOntologyGlobalSearch, openOntologyGlobalSearchItem } = useOntologyGlobalSearch();
+const { keyword, searchType, results, status, errorMessage, searchOntologyGlobal, clearOntologyGlobalSearch, openOntologyGlobalSearchItem } =
+  useOntologyGlobalSearch();
 
 const rootRef = ref<HTMLElement | null>(null);
 const overlayVisible = ref(false);
 const hasResultPanel = computed(() => status.value !== "idle");
 
 /**
- * @description 提交当前关键词检索；浮层模式下打开结果面板。
+ * @description 提交当前关键词与类型筛选；浮层模式下打开结果面板。
  */
 async function submitSearch(): Promise<void> {
   await searchOntologyGlobal();
   if (props.placement === "overlay") {
     overlayVisible.value = keyword.value.trim().length > 0;
   }
+}
+
+/**
+ * @description 切换检索类型；已有关键词时自动重新检索。
+ */
+async function handleSearchTypeChange(): Promise<void> {
+  if (!keyword.value.trim()) {
+    return;
+  }
+  await submitSearch();
 }
 
 /**
@@ -150,6 +166,15 @@ onUnmounted(() => {
   width: min(720px, 100%);
 }
 
+.ontology-global-search__type-wrap {
+  flex-shrink: 0;
+  width: 112px;
+}
+
+.ontology-global-search__type {
+  width: 100%;
+}
+
 .ontology-global-search--page .ontology-global-search__input {
   flex: 1;
   min-width: 0;
@@ -160,7 +185,8 @@ onUnmounted(() => {
 }
 
 .ontology-global-search--overlay .ontology-global-search__input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .ontology-global-search__dropdown {

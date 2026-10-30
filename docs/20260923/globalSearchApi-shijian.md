@@ -27,11 +27,13 @@ mocks与types文件名自行语义化命名
 - ```JSON
   {
     "keyword": "",
+    "searchType": "",
     "sizs": 20
   }
   ```
 
 - `keyword`：【string，必填】 查询内容
+- `searchType`：【number，非必填】 检索类型：1=空间（含主题） 2=本体对象 3=关系 4=属性 5=实例；不传则五类全查
 - `sizs`：【number，非必填】 返回条数上限，缺省 100
 
 ## 输出参数

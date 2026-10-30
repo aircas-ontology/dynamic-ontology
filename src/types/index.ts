@@ -161,7 +161,15 @@ export type {
   OntologyCompositeParameter,
   OntologyCompositePortMapping,
 } from "./apis/ontologyCompositeConfigType";
-export type { OntologyGlobalSearchData, OntologyGlobalSearchItem, OntologyGlobalSearchParams, OntologySpaceType } from "./apis/ontologyGlobalSearchType";
+export { ONTOLOGY_GLOBAL_SEARCH_TYPE_OPTIONS } from "./apis/ontologyGlobalSearchType";
+export type {
+  OntologyGlobalSearchData,
+  OntologyGlobalSearchItem,
+  OntologyGlobalSearchParams,
+  OntologyGlobalSearchTypeCode,
+  OntologyGlobalSearchTypeOption,
+  OntologySpaceType,
+} from "./apis/ontologyGlobalSearchType";
 export type { OntologySpaceListData, OntologySpaceListItem } from "./apis/ontologyManageType";
 export type {
   CreateOntologyRelationCategoryTreeParams,

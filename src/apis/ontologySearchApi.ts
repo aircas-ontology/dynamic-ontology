@@ -8,6 +8,7 @@ import { request } from "@/utils/request";
  *
  * @param params 检索参数。
  * @param params.keyword 查询内容（必填）。
+ * @param params.searchType 检索类型（可选：1 空间 2 对象 3 关系 4 属性 5 实例；不传则五类全查）。
  * @param params.sizs 返回条数上限（可选，字段名与契约一致）。
  * @returns 标准 API 响应，data 为检索结果数组。
  */
