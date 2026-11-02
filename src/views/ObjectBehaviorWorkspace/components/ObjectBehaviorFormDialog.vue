@@ -52,6 +52,8 @@ const props = defineProps<{
 const emit = defineEmits<{ "update:modelValue": [value: boolean]; submit: [draft: SpaceBehaviorDraft]; "save-copy": [draft: SpaceBehaviorDraft] }>();
 const draft = reactive<SpaceBehaviorDraft>({
   displayName: "",
+  kind: "basic",
+  valueType: "attributeValue",
   functionOperatorId: "",
   functionOperatorName: "",
   description: "",
@@ -70,6 +72,8 @@ function initializeBehaviorDraft(): void {
     item
       ? {
           displayName: item.displayName,
+          kind: item.kind,
+          valueType: item.valueType,
           functionOperatorId: item.functionOperatorId,
           functionOperatorName: item.functionOperatorName,
           description: item.description,
@@ -80,6 +84,8 @@ function initializeBehaviorDraft(): void {
         }
       : {
           displayName: "",
+          kind: "basic",
+          valueType: "attributeValue",
           functionOperatorId: "",
           functionOperatorName: "",
           description: "",
