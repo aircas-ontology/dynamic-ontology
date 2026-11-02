@@ -127,6 +127,7 @@ import {
 } from "@/apis";
 import AircasLoading from "@/components/AircasLoading.vue";
 import type { OntologyFunctionContainerRuntimeItem, OntologyFunctionContainerRuntimePhase } from "@/types";
+import { createContainerRuntimeActionSequences } from "../utils/containerRuntimeActionSequence";
 
 const props = defineProps<{
   active: boolean;
@@ -142,7 +143,7 @@ const errorMessage = ref("");
 const rows = ref<OntologyFunctionContainerRuntimeItem[]>([]);
 const submittingKeys = ref<string[]>([]);
 let requestSequence = 0;
-let actionSequence = 0;
+const { nextActionSequence, isCurrentAction, invalidateAllActionSequences } = createContainerRuntimeActionSequences();
 
 /**
  * @description 将表格行断言为容器运行实例（规避 el-table DefaultRow）。
@@ -344,11 +345,11 @@ async function startContainerRuntime(row: OntologyFunctionContainerRuntimeItem):
   if (!canStartRuntime(row) || isRuntimeActionSubmitting(row.containerKey)) {
     return;
   }
-  const currentAction = ++actionSequence;
+  const currentAction = nextActionSequence(row.containerKey);
   setRuntimeActionSubmitting(row.containerKey, true);
   try {
     const response = await postOntologyFunctionContainerRuntimeStartInterface({ containerKey: row.containerKey });
-    if (currentAction !== actionSequence || !props.active) {
+    if (!isCurrentAction(row.containerKey, currentAction) || !props.active) {
       return;
     }
     if (response.code !== 200) {
@@ -358,11 +359,11 @@ async function startContainerRuntime(row: OntologyFunctionContainerRuntimeItem):
     applyRuntimeItemOrReload(response.data);
     ElMessage.success(response.message?.trim() || "启动成功");
   } catch (cause) {
-    if (currentAction === actionSequence && props.active) {
+    if (isCurrentAction(row.containerKey, currentAction) && props.active) {
       ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "启动失败");
     }
   } finally {
-    if (currentAction === actionSequence) {
+    if (isCurrentAction(row.containerKey, currentAction)) {
       setRuntimeActionSubmitting(row.containerKey, false);
     }
   }
@@ -376,11 +377,11 @@ async function stopContainerRuntime(row: OntologyFunctionContainerRuntimeItem): 
   if (!canStopRuntime(row) || isRuntimeActionSubmitting(row.containerKey)) {
     return;
   }
-  const currentAction = ++actionSequence;
+  const currentAction = nextActionSequence(row.containerKey);
   setRuntimeActionSubmitting(row.containerKey, true);
   try {
     const response = await postOntologyFunctionContainerRuntimeStopInterface({ containerKey: row.containerKey });
-    if (currentAction !== actionSequence || !props.active) {
+    if (!isCurrentAction(row.containerKey, currentAction) || !props.active) {
       return;
     }
     if (response.code !== 200) {
@@ -390,11 +391,11 @@ async function stopContainerRuntime(row: OntologyFunctionContainerRuntimeItem): 
     applyRuntimeItemOrReload(response.data);
     ElMessage.success(response.message?.trim() || "停止成功");
   } catch (cause) {
-    if (currentAction === actionSequence && props.active) {
+    if (isCurrentAction(row.containerKey, currentAction) && props.active) {
       ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "停止失败");
     }
   } finally {
-    if (currentAction === actionSequence) {
+    if (isCurrentAction(row.containerKey, currentAction)) {
       setRuntimeActionSubmitting(row.containerKey, false);
     }
   }
@@ -408,11 +409,11 @@ async function restartContainerRuntime(row: OntologyFunctionContainerRuntimeItem
   if (!canRestartRuntime(row) || isRuntimeActionSubmitting(row.containerKey)) {
     return;
   }
-  const currentAction = ++actionSequence;
+  const currentAction = nextActionSequence(row.containerKey);
   setRuntimeActionSubmitting(row.containerKey, true);
   try {
     const response = await postOntologyFunctionContainerRuntimeRestartInterface({ containerKey: row.containerKey });
-    if (currentAction !== actionSequence || !props.active) {
+    if (!isCurrentAction(row.containerKey, currentAction) || !props.active) {
       return;
     }
     if (response.code !== 200) {
@@ -422,11 +423,11 @@ async function restartContainerRuntime(row: OntologyFunctionContainerRuntimeItem
     applyRuntimeItemOrReload(response.data);
     ElMessage.success(response.message?.trim() || "重启成功");
   } catch (cause) {
-    if (currentAction === actionSequence && props.active) {
+    if (isCurrentAction(row.containerKey, currentAction) && props.active) {
       ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "重启失败");
     }
   } finally {
-    if (currentAction === actionSequence) {
+    if (isCurrentAction(row.containerKey, currentAction)) {
       setRuntimeActionSubmitting(row.containerKey, false);
     }
   }
@@ -437,7 +438,7 @@ watch(
   (active) => {
     if (!active) {
       requestSequence += 1;
-      actionSequence += 1;
+      invalidateAllActionSequences();
       loadStatus.value = "idle";
       errorMessage.value = "";
       rows.value = [];
