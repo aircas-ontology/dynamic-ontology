@@ -1,4 +1,4 @@
-# 创建本体空间参数 icon → iconUrl
+# 创建对象空间参数 icon → iconUrl
 
 ## 需求理解
 

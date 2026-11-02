@@ -1,10 +1,10 @@
 # 接口名称
 
-- 本体对象属性修改
+- 对象属性修改
 
 ## 接口描述
 
-- 修改本体对象属性。
+- 修改对象属性。
 
 ## 接口 domain
 
@@ -98,11 +98,11 @@ import type { ApiResponse, UpdateOntologyPropertyData, UpdateOntologyPropertyPar
 import { request } from "@/utils/request";
 
 /**
- * 修改本体对象属性。
+ * 修改对象属性。
  *
  * 请求方式：PUT `/ontology/property`
  *
- * @param params 修改本体对象属性参数。
+ * @param params 修改对象属性参数。
  * @returns 标准 API 响应。
  */
 export function updateOntologyPropertyInterface(params: UpdateOntologyPropertyParams): Promise<ApiResponse<UpdateOntologyPropertyData>> {

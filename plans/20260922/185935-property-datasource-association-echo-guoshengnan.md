@@ -1,7 +1,7 @@
 # 需求理解
 
-- 点击属性列表页“关联数据源”时，先调用 `GET /ontology/property/info`，以当前本体对象标识查询全部属性信息。
-- 直接使用 `/info` 返回属性记录中的 `datasourceId` 和 `datasourceColumnName`，结合本体空间数据源表和字段接口还原已有连接。
+- 点击属性列表页“关联数据源”时，先调用 `GET /ontology/property/info`，以当前对象标识查询全部属性信息。
+- 直接使用 `/info` 返回属性记录中的 `datasourceId` 和 `datasourceColumnName`，结合对象空间数据源表和字段接口还原已有连接。
 - 完成回显数据准备后再打开关联弹窗，避免弹窗先按空关联初始化。
 
 # 修改范围

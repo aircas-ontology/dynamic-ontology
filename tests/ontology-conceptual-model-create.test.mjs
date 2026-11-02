@@ -93,32 +93,11 @@ test("conceptual model route resolves under the workspace layout", () => {
 
 test("conceptual model attribute data types match the object attribute form", () => {
   const source = readSource("../src/views/OntologyConceptualModelCreate/index.vue");
-  const expectedDataTypes = [
-    "Boolean",
-    "Int",
-    "Long",
-    "Float",
-    "Short",
-    "Byte",
-    "Double",
-    "Decimal",
-    "String",
-    "Date",
-    "Array",
-    "Map",
-    "Vector",
-    "Timestamp",
-    "MediaReference",
-    "TimeSeries",
-    "Attachment",
-    "Geohash",
-    "Geoshape",
-    "Cipher",
-    "Ontology",
-  ];
+  const expectedDataTypes = ["Boolean", "Int", "Long", "Float", "Short", "Byte", "Double", "Decimal", "String", "Date", "Array", "Timestamp"];
   const dataTypesSource = source.match(/const dataTypes = \[([\s\S]*?)\];/)?.[1] ?? "";
   const actualDataTypes = [...dataTypesSource.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual(actualDataTypes, expectedDataTypes);
+  assert.doesNotMatch(dataTypesSource, /Map|TimeSeries|Vector|MediaReference|Attachment|Geohash|Geoshape|Cipher|Ontology/);
   assert.match(source, /dataType: "String"/);
 });
 

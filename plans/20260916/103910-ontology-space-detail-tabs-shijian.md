@@ -2,7 +2,7 @@
 
 ## 需求理解
 
-从本体空间管理表格/卡片的「进入」跳入空间展示页；只迁移顶部 Tab 栏（对齐原型 `WorkspaceTypeTabs`）；各 Tab 内容先空；用子路由承载概览 / 对象 / 关系 / 函数算子 / 行为 / 行为调度；Mock 解析空间；面包屑展示已进入空间的名称。不迁对象树等业务面板，不接后端。
+从对象空间管理表格/卡片的「进入」跳入空间展示页；只迁移顶部 Tab 栏（对齐原型 `WorkspaceTypeTabs`）；各 Tab 内容先空；用子路由承载概览 / 对象 / 关系 / 函数算子 / 行为 / 行为调度；Mock 解析空间；面包屑展示已进入空间的名称。不迁对象树等业务面板，不接后端。
 
 ## 修改范围
 
@@ -28,7 +28,7 @@
 - 子路由：overview / object / relation / function-operator / behavior / behavior-schedule
 - Tab 点击通过命名路由切换；激活态由当前子路由决定
 - 「进入」跳转 `OntologySpaceManagementDetailOverview`
-- 面包屑：`首页 > 本体空间管理 > {displayName}`，空间名由 Store 提供
+- 面包屑：`首页 > 对象空间管理 > {displayName}`，空间名由 Store 提供
 - Mock：复用 `ontologySpaceManagementMock`
 
 ## 新增依赖

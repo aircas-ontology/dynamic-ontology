@@ -96,15 +96,15 @@ import type { ApiResponse, OntologySearchData, OntologySearchParams } from "@/ty
 import { request } from "@/utils/request";
 
 /**
- * 根据关键词分页查询本体数据。
+ * 根据关键词分页查询对象数据。
  *
  * 请求方式：GET `/ontology/search`
  *
  * @param params 查询参数。
- * @param params.keyword 可选的本体名称或描述关键词。
+ * @param params.keyword 可选的对象名称或描述关键词。
  * @param params.page 当前页码，从 1 开始。
  * @param params.pageSize 每页返回的数据条数。
- * @returns 标准 API 响应，包含当前页本体列表和数据总数。
+ * @returns 标准 API 响应，包含当前页对象列表和数据总数。
  */
 export function getOntologySearchInterface(params: OntologySearchParams): Promise<ApiResponse<OntologySearchData>> {
   return request<OntologySearchData>({
@@ -139,7 +139,7 @@ export const ontologySearchMock: ApiResponse<OntologySearchData> = {
       {
         id: "ontology-001",
         name: "Satellite Ontology",
-        description: "用于描述卫星及其关联资源的本体。",
+        description: "用于描述卫星及其关联资源的对象。",
       },
     ],
     total: 1,

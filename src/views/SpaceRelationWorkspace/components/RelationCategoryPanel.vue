@@ -10,7 +10,7 @@
     </el-input>
     <div class="relation-category-panel__content">
       <div v-if="!displayTreeData.length" class="relation-category-panel__empty">
-        <el-button @click="emit('create', '')">添加关系分类</el-button>
+        <el-button data-onboarding="relation-tree-create" @click="emit('create', '')">添加关系分类</el-button>
       </div>
       <el-tree
         v-else-if="displayTreeData.length"
@@ -42,6 +42,7 @@
                   <button
                     type="button"
                     class="relation-category-panel__action relation-category-panel__action--add"
+                    data-onboarding="relation-tree-create"
                     aria-label="添加子分类"
                     @click="emit('create', data.id)"
                   >
@@ -94,7 +95,7 @@ interface DisplayCategoryNode {
   children?: DisplayTreeNode[];
 }
 
-/** 关系分类树渲染用关系叶子节点，文案取关系名称。 */
+/** 关系分类树渲染用关系叶子节点，文案为「主体 关系名 客体」。 */
 interface DisplayRelationNode {
   kind: "relation";
   id: string;
@@ -145,7 +146,19 @@ function collectCategoryIds(node: OntologyRelationCategoryNode): string[] {
 }
 
 /**
- * @description 将分类树与关系列表组装为混合树：分类下挂载直属关系叶子（展示关系名称）。
+ * @description 组装关系叶子展示文案：主体、关系名称、客体，对应接口 ontologyNameFrom / name / ontologyNameTo。
+ * @param item 页面关系类。
+ * @returns 以空格拼接的展示文案；缺省段跳过。
+ */
+function formatRelationLeafLabel(item: OntologyRelationClass): string {
+  return [item.sourceName, item.displayName, item.targetName]
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .join(" ");
+}
+
+/**
+ * @description 将分类树与关系列表组装为混合树：分类下挂载直属关系叶子（展示主体、关系名、客体）。
  * @param nodes 页面关系分类树。
  * @returns 可渲染的混合树节点。
  */
@@ -157,7 +170,7 @@ function enrich(nodes: OntologyRelationCategoryNode[]): DisplayCategoryNode[] {
       .map((item) => ({
         kind: "relation",
         id: `rel-${item.id}`,
-        label: item.displayName,
+        label: formatRelationLeafLabel(item),
         categoryId: item.categoryId,
         relationId: item.id,
       }));
@@ -208,12 +221,17 @@ function hasMatchingNode(nodes: DisplayTreeNode[], searchValue: string): boolean
 const displayTreeData = computed(() => enrich(Array.isArray(props.treeData) ? props.treeData : []));
 
 /**
- * @description 收集分类节点 id，供 el-tree 默认展开；关系叶子不展开。
+ * @description 收集存在子分类的分类节点 id，供 el-tree 默认展开；分类下只有关系内容时不展开。
  * @param nodes 混合树节点。
- * @returns 分类节点 id 列表。
+ * @returns 需要默认展开的分类 id 列表。
  */
 function collectDisplayCategoryIds(nodes: DisplayTreeNode[]): string[] {
-  return nodes.flatMap((node) => (isCategoryNode(node) ? [node.id, ...collectDisplayCategoryIds(node.children ?? [])] : []));
+  return nodes.flatMap((node) => {
+    if (!isCategoryNode(node)) return [];
+    const children = node.children ?? [];
+    const hasChildCategory = children.some((child) => isCategoryNode(child));
+    return [...(hasChildCategory ? [node.id] : []), ...collectDisplayCategoryIds(children)];
+  });
 }
 
 const defaultExpandedKeys = computed(() => collectDisplayCategoryIds(displayTreeData.value));
@@ -377,7 +395,8 @@ watch(
   transition: opacity 0.15s ease;
 }
 .relation-category-panel :deep(.el-tree-node__content:hover) .relation-category-panel__actions,
-.relation-category-panel :deep(.el-tree-node__content:focus-within) .relation-category-panel__actions {
+.relation-category-panel :deep(.el-tree-node__content:focus-within) .relation-category-panel__actions,
+.relation-category-panel__actions:has(.onboarding-guide__target-revealed) {
   opacity: 1;
   pointer-events: auto;
 }

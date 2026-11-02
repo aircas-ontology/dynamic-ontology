@@ -11,8 +11,8 @@
       <el-form-item v-if="mode === 'create'" label="父分类">
         <el-input :model-value="parentLabel" disabled />
       </el-form-item>
-      <el-form-item label="分类名称" required>
-        <el-input v-model="name" maxlength="64" placeholder="请输入分类名称" />
+      <el-form-item label="分类名称" required :error="nameError">
+        <el-input v-model="name" maxlength="64" placeholder="请输入分类名称" @input="clearNameError" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -33,6 +33,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ "update:modelValue": [value: boolean]; submit: [name: string] }>();
 const name = ref("");
+const nameError = ref("");
 const loading = ref(false);
 
 watch(
@@ -40,6 +41,7 @@ watch(
   (visible) => {
     if (!visible) return;
     name.value = props.initialName;
+    nameError.value = "";
     loading.value = false;
   },
 );
@@ -49,9 +51,20 @@ watch(
  */
 function submitCategoryForm(): void {
   const trimmed = name.value.trim();
-  if (!trimmed) return;
+  if (!trimmed) {
+    nameError.value = "请输入分类名称";
+    return;
+  }
+  nameError.value = "";
   loading.value = true;
   emit("submit", trimmed);
+}
+
+/**
+ * @description 清除分类名称校验提示。
+ */
+function clearNameError(): void {
+  if (name.value.trim()) nameError.value = "";
 }
 
 defineExpose({

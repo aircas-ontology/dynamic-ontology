@@ -1,7 +1,7 @@
 <template>
   <section class="section-toolbar" aria-label="空间筛选">
     <div class="section-toolbar__heading">
-      <h2>本体空间管理</h2>
+      <h2>{{ title }}</h2>
       <p>{{ resolveToolbarDescription(viewMode) }}</p>
     </div>
     <div class="section-toolbar__actions">
@@ -37,6 +37,7 @@ import type { OntologySpaceSortOrder, OntologyViewMode } from "@/types";
 const keyword = defineModel<string>("keyword", { required: true });
 const order = defineModel<OntologySpaceSortOrder>("order", { required: true });
 const viewMode = defineModel<OntologyViewMode>("viewMode", { required: true });
+const props = withDefaults(defineProps<{ title?: string; spaceLabel?: string }>(), { title: "对象空间管理", spaceLabel: "对象空间" });
 
 /**
  * @description 按当前视图模式生成工具栏说明，区分表格与卡片管理语义。
@@ -45,9 +46,9 @@ const viewMode = defineModel<OntologyViewMode>("viewMode", { required: true });
  */
 function resolveToolbarDescription(mode: OntologyViewMode): string {
   if (mode === "card") {
-    return "以卡片视图管理全部本体空间，支持搜索、排序与运维操作";
+    return `以卡片视图管理全部${props.spaceLabel}，支持搜索、排序与运维操作`;
   }
-  return "以表格视图管理全部本体空间，支持搜索、排序与运维操作";
+  return `以表格视图管理全部${props.spaceLabel}，支持搜索、排序与运维操作`;
 }
 
 /**

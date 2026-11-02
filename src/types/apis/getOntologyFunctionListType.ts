@@ -4,12 +4,14 @@ export interface GetOntologyFunctionListParams {
   pageNum?: number;
   /** 每页条数，默认 10。 */
   pageSize?: number;
-  /** 本体空间 id（必填）。 */
+  /** 对象空间 id（必填）。 */
   ontologySpaceId: number;
   /** 函数名称（模糊搜索）。 */
   displayName?: string;
   /** 函数类型：CUSTOMIZE / EXTERNAL / BASIC_QUERY / COMPOSITE。 */
   type?: string;
+  /** 排除的函数类型（如 BASIC_QUERY）；与 type 互斥使用场景由调用方约定。 */
+  excludeTypes?: string;
   /** 发布状态：0 未发布，1 已发布。 */
   publishStatus?: number;
   /** 创建开始日期，格式 yyyy-MM-dd。 */
@@ -24,6 +26,8 @@ export interface GetOntologyFunctionListItem {
   displayName: string;
   description: string;
   type: string;
+  /** 创建时间（ISO 字符串）。 */
+  createTime: string;
   /** 更新时间（ISO 字符串）。 */
   updateTime: string;
   /** 发布状态：0 未发布，1 已发布。 */

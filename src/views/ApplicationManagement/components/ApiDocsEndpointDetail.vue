@@ -104,7 +104,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import type { TabPaneName } from "element-plus";
 
 import type { ApiDocsEndpointDetail, ApiDocsResponseRow, ApiDocsServiceInfo } from "@/types";
 
@@ -113,7 +112,7 @@ const props = defineProps<{
   serviceInfo: ApiDocsServiceInfo | null;
 }>();
 
-const activeTab = ref<TabPaneName>("parameters");
+const activeTab = ref("parameters");
 
 const responseSchema200 = computed<ApiDocsResponseRow | null>(() => {
   if (!props.detail) {

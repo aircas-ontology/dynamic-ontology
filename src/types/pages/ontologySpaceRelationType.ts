@@ -1,4 +1,4 @@
-/** 本体空间关系工作台业务契约。 */
+/** 对象空间关系工作台业务契约。 */
 
 export const ROOT_RELATION_CATEGORY_ID = "relation-all";
 

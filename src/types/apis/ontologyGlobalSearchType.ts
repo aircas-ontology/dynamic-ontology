@@ -11,12 +11,17 @@ export interface OntologyGlobalSearchParams {
   sizs?: number;
 }
 
+/** 检索结果所属空间类型：对象空间或主题空间。 */
+export type OntologySpaceType = 0 | 1;
+
 /** 全局检索单条结果。 */
 export interface OntologyGlobalSearchItem {
   /** 名称（必返回）。 */
   name: string;
   /** 类型（必返回），如「空间」「对象」。 */
   type: string;
+  /** 所属空间类型：0 对象空间，1 主题空间。 */
+  spaceType?: OntologySpaceType;
   /** 描述（可选）。 */
   desc?: string;
   /** 空间 id；空间/对象等类型时返回。 */

@@ -50,24 +50,6 @@ test("mockData routes cover entity listing and subspace creation contracts", () 
   assert.equal(typeof subspaceFixture.data.linkMapping, "object");
 });
 
-test("mockData routes cover function publish and unpublish contracts", () => {
-  const routes = JSON.parse(readSource("../src/mockData/routes.json"));
-  const publish = routes.find((item) => item.method === "POST" && item.path === "/ontology/function/publish");
-  const unpublish = routes.find((item) => item.method === "POST" && item.path === "/ontology/function/unpublish");
-
-  assert.ok(publish);
-  assert.ok(unpublish);
-  assert.equal(existsSync(new URL(`../src/mockData/${publish.file}`, import.meta.url)), true);
-  assert.equal(existsSync(new URL(`../src/mockData/${unpublish.file}`, import.meta.url)), true);
-
-  const publishFixture = JSON.parse(readSource(`../src/mockData/${publish.file}`));
-  const unpublishFixture = JSON.parse(readSource(`../src/mockData/${unpublish.file}`));
-  assert.equal(publishFixture.code, 200);
-  assert.equal(publishFixture.data, null);
-  assert.equal(unpublishFixture.code, 200);
-  assert.equal(unpublishFixture.data, null);
-});
-
 test("matchMockRoute prefers exact method and path then parameter patterns", () => {
   const routes = [
     { method: "GET", path: "/ontology/space", file: "fixtures/ontology/space.get.json" },

@@ -11,25 +11,28 @@ export function resolveOntologyGlobalSearchRoute(item: OntologyGlobalSearchItem)
     return null;
   }
   const spaceId = String(item.spaceId);
+  const themeQuery = item.spaceType === 1 ? { spaceName: item.spaceName, from: "theme-space-management", spaceType: "1" } : undefined;
   if (item.type === "空间") {
     return {
-      name: "OntologySpaceManagementDetailOverview",
+      name: "OntologySpaceManagementDetailObject",
       params: { spaceId },
+      ...(themeQuery ? { query: themeQuery } : {}),
     };
   }
   if (item.type === "关系分组") {
     return {
       name: "OntologySpaceManagementDetailRelation",
       params: { spaceId },
+      ...(themeQuery ? { query: themeQuery } : {}),
     };
   }
   return null;
 }
 
 /**
- * @description 将对象检索结果拼成对象详情「对象」Tab 路由（不再依赖 meta 接口）。
+ * @description 将对象检索结果拼成对象详情「属性」Tab 路由（不再依赖 meta 接口）。
  * @param item 检索结果条目，需含 spaceId、spaceName、uniqueIdentifier、name。
- * @returns 对象详情对象 Tab 路由；缺少必要字段时返回 null。
+ * @returns 对象详情属性 Tab 路由；缺少必要字段时返回 null。
  */
 export function resolveOntologyGlobalSearchObjectRoute(item: OntologyGlobalSearchItem): RouteLocationRaw | null {
   if (item.type !== "对象") {
@@ -44,14 +47,16 @@ export function resolveOntologyGlobalSearchObjectRoute(item: OntologyGlobalSearc
   if (!uniqueIdentifier || !spaceName || !objectName) {
     return null;
   }
+  const query = {
+    spaceId: String(item.spaceId),
+    spaceName,
+    objectName,
+    ...(item.spaceType === 1 ? { from: "theme-space-management", spaceType: "1" } : {}),
+  };
   return {
-    name: "OntologyObjectDetailObject",
+    name: "OntologyObjectDetailAttribute",
     params: { objectId: uniqueIdentifier },
-    query: {
-      spaceId: String(item.spaceId),
-      spaceName,
-      objectName,
-    },
+    query,
   };
 }
 
@@ -73,13 +78,15 @@ export function resolveOntologyGlobalSearchPropertyRoute(item: OntologyGlobalSea
   if (!ontologyUniqueIdentifier || !spaceName || !objectName) {
     return null;
   }
+  const query = {
+    spaceId: String(item.spaceId),
+    spaceName,
+    objectName,
+    ...(item.spaceType === 1 ? { from: "theme-space-management", spaceType: "1" } : {}),
+  };
   return {
     name: "OntologyObjectDetailAttribute",
     params: { objectId: ontologyUniqueIdentifier },
-    query: {
-      spaceId: String(item.spaceId),
-      spaceName,
-      objectName,
-    },
+    query,
   };
 }

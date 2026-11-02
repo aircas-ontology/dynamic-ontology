@@ -1,12 +1,12 @@
-# 本体对象详情页面 —— 实施 Plan
+# 对象详情页面 —— 实施 Plan
 
 ## 1. 需求理解
 
-参考原型项目本体详情管理页面，在当前项目中新增"本体对象详情"页面。该页面在本体空间内管理之下，以对象为粒度，展示一个本体对象的四个菜单：
+参考原型项目对象详情管理页面，在当前项目中新增"对象详情"页面。该页面在对象空间内管理之下，以对象为粒度，展示一个对象的四个菜单：
 
 | Tab | 路由 path | 路由 name | 说明 |
 |-----|-----------|-----------|------|
-| 本体名称（xxx舰船） | object | OntologyObjectDetailObject | 对象资源统计页（占位） |
+| 对象名称（xxx舰船） | object | OntologyObjectDetailObject | 对象资源统计页（占位） |
 | 属性 | attribute | OntologyObjectDetailAttribute | 对象属性（占位） |
 | 关系 | relation | OntologyObjectDetailRelation | 对象关系（占位） |
 | 行为 | behavior | OntologyObjectDetailBehavior | 对象行为（占位） |
@@ -19,7 +19,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `src/types/pages/ontologyObjectDetailType.ts` | 本体对象详情页相关类型（Tab 标识、路由名联合类型） |
+| `src/types/pages/ontologyObjectDetailType.ts` | 对象详情页相关类型（Tab 标识、路由名联合类型） |
 | `src/views/OntologyObjectDetail/index.vue` | 容器页（tabs + router-view + 加载/空态） |
 | `src/views/OntologyObjectDetail/components/ObjectDetailTabs.vue` | 四个菜单 tabs 组件（仿 WorkspaceTypeTabs） |
 | `src/views/OntologyObjectDetail/composables/useObjectDetailWorkspace.ts` | 解析路由参数、推导 active tab |
@@ -31,7 +31,7 @@
 |------|------|
 | `src/router/modules/workspaceRoutes.ts` | 注册 OntologyObjectDetail 父路由 + 四个 children |
 | `src/types/index.ts` | 导出新增类型 |
-| `src/layout/components/BreadcrumbBar.vue` | 扩展面包屑：对象详情路径显示「本体空间管理 → 空间内管理 → 本体详情」 |
+| `src/layout/components/BreadcrumbBar.vue` | 扩展面包屑：对象详情路径显示「对象空间管理 → 空间内管理 → 对象详情」 |
 
 ## 3. 路由设计
 
@@ -97,7 +97,7 @@ const TAB_ROUTE_NAMES: Record<OntologyObjectDetailTab, OntologyObjectDetailRoute
 
 在现有 `isSpaceDetail` 分支之后新增 `isObjectDetail` 判断：
 - `route.matched.some(record => record.name === "OntologyObjectDetail")`
-- 面包屑：首页 → 本体对象详情（使用 `route.meta.title` 或固定文本）
+- 面包屑：首页 → 对象详情（使用 `route.meta.title` 或固定文本）
 
 ## 5. 新增依赖
 

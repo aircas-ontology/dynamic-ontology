@@ -9,6 +9,7 @@
         "displayName": "测试函数",
         "description": "测试函数说明",
         "type": "BASIC_QUERY",
+        "createTime": "2026-10-12T17:56:02.614+00:00",
         "updateTime": "2026-09-24T03:35:18.692+00:00",
         "publishStatus": 1,
         "version": "1.0.0"
@@ -18,6 +19,7 @@
         "displayName": "两数相加",
         "description": "测试用：返回 a+b",
         "type": "BASIC_QUERY",
+        "createTime": "2026-10-12T17:56:02.614+00:00",
         "updateTime": "2026-09-24T03:35:18.692+00:00",
         "publishStatus": 0,
         "version": "1.0.0"

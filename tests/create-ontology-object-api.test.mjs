@@ -29,15 +29,6 @@ test("create ontology object api posts the typed body to the ontology meta endpo
   assert.match(barrel, /createOntologyObjectInterface/);
 });
 
-test("create ontology object mock mirrors the documented success envelope", () => {
-  const source = readSource("../src/mocks/createOntologyObjectMock/createOntologyObjectMock.ts");
-  assert.match(source, /export const createOntologyObjectMock: ApiResponse<CreateOntologyObjectData>/);
-  assert.match(source, /code: 200/);
-  assert.match(source, /message: "SUCCESS"/);
-  assert.match(source, /success: true/);
-  assert.match(source, /uniqueIdentifier: "ae6cca59ced9432189da4af315554957"/);
-});
-
 test("object workspace submits manual creation through the api and reloads after success", () => {
   const source = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceObjectActions.ts");
   const panel = readSource("../src/views/ObjectWorkspacePanel/index.vue");

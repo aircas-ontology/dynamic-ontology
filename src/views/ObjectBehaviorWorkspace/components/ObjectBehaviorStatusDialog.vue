@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    title="本体行为状态管理"
+    title="对象行为状态管理"
     width="520px"
     :close-on-click-modal="false"
     @update:model-value="emit('update:modelValue', $event)"

@@ -32,7 +32,7 @@ export function useConceptualModelCanvas() {
   let sequence = 1;
   let dragState: DragState | null = null;
   const palette: ConceptualModelPaletteItem[] = [
-    { type: "object", label: "本体对象", hint: "UML Class · 可编辑名称与描述", glyph: "<<object>>" },
+    { type: "object", label: "对象", hint: "UML Class · 可编辑名称与描述", glyph: "<<object>>" },
     { type: "attribute", label: "对象属性", hint: "拖到对象上，或选中对象后点击", glyph: "+ attr: String" },
     { type: "relation", label: "对象关系", hint: "实线单向箭头：连接两个对象", glyph: "→" },
   ];
@@ -94,7 +94,7 @@ export function useConceptualModelCanvas() {
   function addAttribute(objectId?: number) {
     const object = objects.value.find((item) => item.id === objectId) ?? selectedObject.value;
     if (!object) {
-      ElMessage.info("请先选择一个本体对象");
+      ElMessage.info("请先选择一个对象");
       return;
     }
     const id = ++sequence;

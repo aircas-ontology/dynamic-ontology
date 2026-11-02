@@ -1,6 +1,6 @@
 # 接口名称
 
-- 查询本体空间列表
+- 查询对象空间列表
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 查询本体空间列表。
+- 查询对象空间列表。
 
 ## 接口domain
 
@@ -97,7 +97,7 @@ import type { ApiResponse, OntologySpaceListData } from "@/types";
 import { request } from "@/utils/request";
 
 /**
- * 查询本体空间列表。
+ * 查询对象空间列表。
  *
  * 请求方式：get `/ontology/space`
  *

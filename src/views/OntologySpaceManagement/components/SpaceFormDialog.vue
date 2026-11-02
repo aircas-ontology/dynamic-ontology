@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="space ? '编辑本体空间' : '新建本体空间'"
+    :title="space ? '编辑对象空间' : '新建对象空间'"
     width="min(640px, 94vw)"
     :close-on-click-modal="!busy"
     :close-on-press-escape="!busy"
@@ -10,25 +10,44 @@
   >
     <el-radio-group v-if="!space" :model-value="mode" @update:model-value="setMode" :disabled="busy">
       <el-radio-button value="manual">手动创建</el-radio-button>
-      <el-radio-button value="import">导入创建</el-radio-button>
+      <el-radio-button value="import" data-onboarding="space-create-import-mode">导入创建</el-radio-button>
     </el-radio-group>
-    <el-form v-if="mode === 'manual'" class="space-form" label-position="top" :disabled="busy">
-      <el-form-item label="API 名称（必填）"
+    <el-form v-if="mode === 'manual'" class="space-form" data-onboarding="space-create-manual-form" label-position="top" :disabled="busy">
+      <el-form-item label="API 名称（必填）" :error="apiNameError"
         ><el-input v-model="draft.apiName" ariaLabel="API 名称" :disabled="!!space" maxlength="63" placeholder="例如 example_space"
       /></el-form-item>
-      <el-form-item label="空间名称（必填）"><el-input v-model="draft.displayName" ariaLabel="空间名称" maxlength="64" /></el-form-item>
+      <el-form-item label="空间名称（必填）" :error="displayNameError"
+        ><el-input v-model="draft.displayName" ariaLabel="空间名称" maxlength="64"
+      /></el-form-item>
       <el-form-item label="空间描述"
         ><el-input v-model="draft.description" ariaLabel="空间描述" type="textarea" :rows="3" maxlength="256" show-word-limit
       /></el-form-item>
       <el-form-item label="空间图标">
-        <img v-if="draft.iconUrl" :src="draft.iconUrl" class="space-form__preview" alt="空间图标预览" />
-        <label class="space-form__file"
-          >选择图片（PNG/JPEG，最大 2MB）<input type="file" accept="image/png,image/jpeg" :disabled="busy" @change="readIcon"
-        /></label>
-        <el-button v-if="draft.iconUrl" link @click="draft.iconUrl = ''">清除</el-button>
+        <div class="space-form__upload">
+          <div v-if="draft.iconUrl" class="space-form__preview">
+            <img :src="draft.iconUrl" alt="空间图标预览" />
+            <el-button link :disabled="busy" @click="draft.iconUrl = ''">清除图片</el-button>
+          </div>
+          <el-upload
+            v-if="!draft.iconUrl"
+            class="space-form__picture-upload"
+            action="#"
+            list-type="picture-card"
+            :auto-upload="false"
+            :show-file-list="false"
+            :limit="1"
+            accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+            :disabled="busy"
+            :on-change="readIcon"
+            :on-exceed="handleIconExceed"
+          >
+            <el-icon><Plus /></el-icon>
+          </el-upload>
+          <span class="space-form__upload-hint">PNG/JPEG，最大 2MB</span>
+        </div>
       </el-form-item>
     </el-form>
-    <div v-else-if="mode === 'import'" class="space-form">
+    <div v-else-if="mode === 'import'" class="space-form" data-onboarding="space-create-import-file">
       <p>选择导入文件后点击确定。</p>
       <el-button link type="primary" :disabled="busy" @click="template">下载模板</el-button>
       <label class="space-form__file">选择文件<input type="file" :disabled="busy" @change="selectImportFile" /></label>
@@ -36,16 +55,18 @@
     </div>
     <p v-if="error || externalError" class="space-form__error" role="alert">{{ error || externalError }}</p>
     <template #footer>
-      <el-button :disabled="busy" @click="visible = false">取消</el-button>
-      <el-button type="primary" :loading="busy" @click="submit">确定</el-button>
+      <el-button :disabled="busy" data-onboarding="space-create-cancel" @click="visible = false">取消</el-button>
+      <el-button type="primary" data-onboarding="space-create-confirm" :loading="busy" @click="submit">确定</el-button>
     </template>
   </el-dialog>
 </template>
 <script setup lang="ts">
+import { Plus } from "@element-plus/icons-vue";
+import type { UploadFile } from "element-plus";
 import { onScopeDispose, reactive, ref, watch } from "vue";
 import type { OntologySpaceDraft, OntologySpaceItem } from "@/types";
 import { postImportOntologySpaceInterface, postUploadOntologyThumbnailInterface } from "@/apis";
-import { serializeSpace } from "../utils/spaceOperations";
+import spaceImportTemplate from "@/assets/pages/ontologySpaceManagement/spaceImportTemplate.json";
 import { downloadSpaceJson } from "../utils/downloadSpaceJson";
 const props = defineProps<{ space: OntologySpaceItem | null; externalError: string }>();
 const visible = defineModel<boolean>({ required: true });
@@ -55,6 +76,8 @@ const draft = reactive<OntologySpaceDraft>({ apiName: "", displayName: "", descr
 const importFile = ref<File | null>(null);
 const busy = ref(false);
 const error = ref("");
+const apiNameError = ref("");
+const displayNameError = ref("");
 let generation = 0;
 onScopeDispose(() => {
   generation++;
@@ -92,16 +115,20 @@ function selectImportFile(event: Event) {
   if (file) error.value = "";
 }
 /**
+ * @description 提示空间图标仅允许选择一张图片。
+ */
+function handleIconExceed() {
+  error.value = "空间图标仅支持上传一张图片，请先清除当前图片。";
+}
+/**
  * @description 上传空间图标并写入返回的缩略图 URL；创建与编辑共用此流程。
  * @param event 文件选择事件。
  */
-async function readIcon(event: Event) {
-  const input = event.target instanceof HTMLInputElement ? event.target : null;
-  const file = selectedFile(event);
+async function readIcon(upload: UploadFile) {
+  const file = upload.raw;
   if (!file || busy.value) return;
   if (!["image/png", "image/jpeg"].includes(file.type) || file.size > 2 * 1024 * 1024) {
     error.value = "请选择不超过 2MB 的 PNG 或 JPEG 图片。";
-    if (input) input.value = "";
     return;
   }
   busy.value = true;
@@ -118,7 +145,6 @@ async function readIcon(event: Event) {
   } catch (cause) {
     if (current === generation) error.value = cause instanceof Error ? cause.message : "图标上传失败。";
   } finally {
-    if (input) input.value = "";
     if (current === generation) busy.value = false;
   }
 }
@@ -126,7 +152,7 @@ async function readIcon(event: Event) {
  * @description 下载空间导入 JSON 模板。
  */
 function template() {
-  downloadSpaceJson("ontologySpaceTemplate.json", serializeSpace({ apiName: "example_space", displayName: "示例空间", description: "", iconUrl: "" }));
+  downloadSpaceJson("ontologySpaceTemplate.json", JSON.stringify(spaceImportTemplate, null, 2));
 }
 /**
  * @description 校验并提交当前模式：手动创建提交草稿，导入创建提交所选文件。
@@ -156,6 +182,17 @@ async function submit() {
     }
     return;
   }
+  apiNameError.value = "";
+  displayNameError.value = "";
+  const apiName = draft.apiName.trim();
+  const displayName = draft.displayName.trim();
+  if (!apiName) {
+    apiNameError.value = "请输入 API 名称。";
+  } else if (!/^[a-z][a-z0-9_]*$/.test(apiName)) {
+    apiNameError.value = "API 名称格式不正确。";
+  }
+  if (!displayName) displayNameError.value = "请输入空间名称。";
+  if (apiNameError.value || displayNameError.value) return;
   busy.value = true;
   const current = generation;
   await Promise.resolve();
@@ -218,11 +255,52 @@ function setMode(value: unknown) {
   cursor: not-allowed;
 }
 
+.space-form__upload {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .space-form__preview {
-  width: 48px;
-  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.space-form__preview img {
+  width: 88px;
+  height: 88px;
   object-fit: cover;
-  margin-right: 12px;
+  border: 1px solid var(--aircas-color-border-light);
+  border-radius: 6px;
+}
+
+.space-form__preview .el-button {
+  align-self: flex-end;
+}
+
+.space-form__picture-upload {
+  line-height: 1;
+}
+
+.space-form__picture-upload :deep(.el-upload--picture-card) {
+  width: 88px;
+  height: 88px;
+  margin: 0;
+  border-color: var(--aircas-color-border-light);
+  background-color: var(--aircas-color-input-background);
+}
+
+.space-form__picture-upload :deep(.el-upload--picture-card:hover) {
+  border-color: var(--aircas-color-primary);
+  color: var(--aircas-color-primary);
+}
+
+.space-form__upload-hint {
+  align-self: center;
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
 }
 
 .space-form__error {

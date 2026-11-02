@@ -1,8 +1,8 @@
-# 本体空间导出类型
+# 对象空间导出类型
 
 ## 需求理解
 
-本体空间导出弹窗增加导出类型选择。接口查询字段为 `exportType`，枚举为 `SCHEMA`（仅结构）和 `INSTANCE`（含实例数据，默认）。导出说明写明这两个枚举的含义。对象导出不在本次范围。
+对象空间导出弹窗增加导出类型选择。接口查询字段为 `exportType`，枚举为 `SCHEMA`（仅结构）和 `INSTANCE`（含实例数据，默认）。导出说明写明这两个枚举的含义。对象导出不在本次范围。
 
 ## 修改范围
 
@@ -37,4 +37,4 @@
 
 ## 验证方式
 
-先更新 `tests/export-ontology-space-api.test.mjs` 并确认失败，再实现后确认通过。对本次文件执行格式检查。类型目录变更后执行 `npm run check:types-conventions`、`npm run type-check` 和 `npm run build:verify`。在浏览器打开本体空间导出弹窗，核对默认选项、说明文案和切换。
+先更新 `tests/export-ontology-space-api.test.mjs` 并确认失败，再实现后确认通过。对本次文件执行格式检查。类型目录变更后执行 `npm run check:types-conventions`、`npm run type-check` 和 `npm run build:verify`。在浏览器打开对象空间导出弹窗，核对默认选项、说明文案和切换。

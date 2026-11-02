@@ -13,7 +13,7 @@ function readPayloadString(payload: { readonly [key: string]: unknown } | undefi
 }
 
 /**
- * @description 判断选择卡片是否为本体属性选择。
+ * @description 判断选择卡片是否为对象属性选择。
  * @param selection 选择卡片；不存在时为 false。
  * @returns 属性选择时为 true。
  */

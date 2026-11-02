@@ -173,7 +173,7 @@ function normalizeGroup(raw: unknown): BasicFilterDocument {
   const children = childrenRaw.map((item) => normalizeNode(item)).filter((item): item is BasicFilterNode => item !== null);
   return {
     logic: isLogic(record.logic) ? record.logic : "AND",
-    children: children.length ? children : [createEmptyBasicFilterNode()],
+    children,
   };
 }
 
@@ -250,6 +250,92 @@ function serializeGroup(group: BasicFilterDocument): BasicFilterDocument {
  */
 export function stringifyBasicFilterConfig(doc: BasicFilterDocument): string {
   return `${JSON.stringify(serializeGroup(doc), null, 2)}\n`;
+}
+
+/**
+ * @description 判断字符串取值是否视为未填写。
+ * @param value 原始值。
+ * @returns 为空或仅空白时返回 true。
+ */
+function isBlankFilterStringValue(value: unknown): boolean {
+  return value === undefined || value === null || (typeof value === "string" && value.trim() === "");
+}
+
+/**
+ * @description 校验单条过滤条件的变量名与取值。
+ * @param condition 过滤条件。
+ * @returns 首条错误文案；通过时为 null。
+ */
+function validateBasicFilterCondition(condition: BasicFilterCondition): string | null {
+  if (!condition.propertyApiName.trim()) {
+    return "请填写过滤条件的变量名";
+  }
+  if (opNeedsValue(condition.op)) {
+    if (condition.valueType === "string" && isBlankFilterStringValue(condition.value)) {
+      return "请填写过滤条件的值";
+    }
+    return null;
+  }
+  if (opNeedsList(condition.op)) {
+    const values = (condition.values ?? []).filter((item) => !isBlankFilterStringValue(item));
+    if (values.length === 0) {
+      return "请填写过滤条件的值";
+    }
+    return null;
+  }
+  if (opNeedsRange(condition.op)) {
+    const left = condition.values?.[0];
+    const right = condition.values?.[1];
+    if (condition.valueType === "string" && (isBlankFilterStringValue(left) || isBlankFilterStringValue(right))) {
+      return "请填写过滤条件的值";
+    }
+    if (left === undefined || right === undefined) {
+      return "请填写过滤条件的值";
+    }
+    return null;
+  }
+  return null;
+}
+
+/**
+ * @description 递归校验过滤节点树。
+ * @param nodes 子节点列表。
+ * @returns 首条错误文案；通过时为 null。
+ */
+function validateBasicFilterNodes(nodes: BasicFilterNode[]): string | null {
+  for (const node of nodes) {
+    if (node.type === "GROUP") {
+      const group = node.group;
+      if (!group || group.children.length === 0) {
+        return "请补全或删除空的过滤分组";
+      }
+      const nestedError = validateBasicFilterNodes(group.children);
+      if (nestedError) {
+        return nestedError;
+      }
+      continue;
+    }
+    if (!node.filter) {
+      return "请填写过滤条件的变量名";
+    }
+    const filterError = validateBasicFilterCondition(node.filter);
+    if (filterError) {
+      return filterError;
+    }
+  }
+  return null;
+}
+
+/**
+ * @description 校验基础过滤文档：无条件时通过；有条件时校验变量名与取值。
+ * @param doc 过滤文档。
+ * @returns 首条错误文案；通过时为 null。
+ */
+export function validateBasicFilterDocument(doc: BasicFilterDocument): string | null {
+  if (!doc.children.length) {
+    return null;
+  }
+  return validateBasicFilterNodes(doc.children);
 }
 
 /**
@@ -409,7 +495,7 @@ function mapGroupToApiFilters(group: BasicFilterDocument): CreateOntologyFunctio
 function mapApiFiltersToGroup(group: CreateOntologyFunctionFilters): BasicFilterDocument {
   return {
     logic: group.logic === "OR" ? "OR" : "AND",
-    children: Array.isArray(group.children) && group.children.length ? group.children.map(mapApiFilterToNode) : createEmptyBasicFilterDocument().children,
+    children: Array.isArray(group.children) ? group.children.map(mapApiFilterToNode) : [],
   };
 }
 
@@ -425,9 +511,10 @@ export function buildOntologyFunctionQueryConfig(
   aggFunc: CreateOntologyFunctionAggFunc | "",
   targetProperty: string = "",
 ): CreateOntologyFunctionQueryConfig {
-  const queryConfig: CreateOntologyFunctionQueryConfig = {
-    filters: mapGroupToApiFilters(doc),
-  };
+  const queryConfig: CreateOntologyFunctionQueryConfig = {};
+  if (doc.children.length > 0) {
+    queryConfig.filters = mapGroupToApiFilters(doc);
+  }
   if (aggFunc) {
     queryConfig.aggFunc = aggFunc;
     const trimmedTarget = targetProperty.trim();
@@ -439,13 +526,24 @@ export function buildOntologyFunctionQueryConfig(
 }
 
 /**
+ * @description 创建无过滤条件的基础过滤文档（编辑回显无 filters 时使用，不垫空行）。
+ * @returns 空 children 的根组。
+ */
+export function createBlankBasicFilterDocument(): BasicFilterDocument {
+  return {
+    logic: "AND",
+    children: [],
+  };
+}
+
+/**
  * @description 将详情接口 queryConfig 转为表单基础过滤文档。
  * @param queryConfig 详情或创建用的 queryConfig。
- * @returns 表单过滤文档。
+ * @returns 表单过滤文档；无 filters 时返回空 children，不垫默认空条件行。
  */
 export function mapOntologyFunctionQueryConfigToBasicFilter(queryConfig: CreateOntologyFunctionQueryConfig): BasicFilterDocument {
   if (!queryConfig?.filters) {
-    return createEmptyBasicFilterDocument();
+    return createBlankBasicFilterDocument();
   }
   return mapApiFiltersToGroup(queryConfig.filters);
 }

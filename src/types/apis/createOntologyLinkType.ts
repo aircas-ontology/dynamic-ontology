@@ -1,4 +1,4 @@
-/** 创建本体之间关系请求体。 */
+/** 创建对象之间关系请求体。 */
 export interface CreateOntologyLinkParams {
   name: string;
   ontologyUniqueIdentifierFrom: string;

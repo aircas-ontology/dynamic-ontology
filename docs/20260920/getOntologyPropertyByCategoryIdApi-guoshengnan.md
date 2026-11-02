@@ -1,10 +1,10 @@
 # 接口名称
 
-- 根据分类查询本体对象属性列表
+- 根据分类查询对象属性列表
 
 ## 接口描述
 
-- 根据属性分类 id 查询本体对象属性列表；不传 `categoryId` 时查询全部属性。
+- 根据属性分类 id 查询对象属性列表；不传 `categoryId` 时查询全部属性。
 
 ## 接口 domain
 
@@ -53,13 +53,13 @@
 | ------------------------------- | --------------- | --------------------- |
 | code                            | integer / int32 | 响应码                |
 | message                         | string          | 消息描述              |
-| data                            | array           | 本体属性信息列表      |
+| data                            | array           | 对象属性信息列表      |
 | data[].displayName              | string          | 属性名称              |
 | data[].description              | string          | 属性描述              |
 | data[].isPrimaryKey             | boolean         | 是否为主键            |
 | data[].isTitleKey               | boolean         | 是否为名称键          |
 | data[].uniqueIdentifier         | string          | 属性唯一标识          |
-| data[].ontologyUniqueIdentifier | string          | 本体唯一标识          |
+| data[].ontologyUniqueIdentifier | string          | 对象唯一标识          |
 | data[].defaultValue             | string          | 属性默认值            |
 | data[].storageGroup             | string          | 属性存储分组          |
 | data[].categoryId               | integer / int32 | 属性分类 id           |
@@ -106,7 +106,7 @@ import type { ApiResponse, GetOntologyPropertyByCategoryIdData, GetOntologyPrope
 import { request } from "@/utils/request";
 
 /**
- * 根据分类查询本体对象属性列表。
+ * 根据分类查询对象属性列表。
  *
  * 请求方式：GET `/ontology/property/by_category`
  *

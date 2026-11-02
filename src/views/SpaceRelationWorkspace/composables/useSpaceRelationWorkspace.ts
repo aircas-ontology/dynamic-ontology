@@ -11,12 +11,13 @@ import type {
   RelationClassWritePayload,
   RelationViewMode,
   SpaceRelationFilterState,
+  SpaceRelationHopLevel,
   SpaceRelationObjectOption,
   SpaceRelationWorkspaceData,
 } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
 import { getOntologyCategoryTreeInterface, getOntologyRelationCategoryTreeInterface } from "@/apis";
-import { filterRelationsBySourceObject } from "../utils/spaceRelationGraph";
+import { filterRelationsByHop } from "../utils/spaceRelationGraph";
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
 import { mapOntologyRelationCategoryTree, mapOntologyRelationLinks } from "../utils/mapOntologyRelationCategoryTree";
 import { resolveObjectRelationFilterSeed, resolveRelationOntologyUniqueIdentifierFrom, resolveRelationSpaceId } from "../utils/resolveRelationRouteContext";
@@ -25,6 +26,7 @@ import {
   addRelationCategory,
   filterRelationsByCategory,
   findRelationCategoryNode,
+  pruneRelationCategoryTree,
   removeRelation,
   removeRelationCategory,
   updateRelation,
@@ -49,9 +51,9 @@ function createEmptySpaceRelationWorkspaceData(): SpaceRelationWorkspaceData {
 }
 
 /**
- * @description 按空间 id 查询对象分类树，提取本体对象作为关系源/目标可选列表；失败时返回空列表。
+ * @description 按空间 id 查询对象分类树，提取对象作为关系源/目标可选列表；失败时返回空列表。
  * @param spaceId 路由空间 id。
- * @returns 去重后的本体对象选项。
+ * @returns 去重后的对象选项。
  */
 async function loadRelationObjectOptionsFromObjectTree(spaceId: string): Promise<SpaceRelationObjectOption[]> {
   try {
@@ -64,19 +66,14 @@ async function loadRelationObjectOptionsFromObjectTree(spaceId: string): Promise
 }
 
 /**
- * @description 按空间 id 查询关系分类树，并并行加载对象树上的本体对象选项；对象页可附带 ontologyUniqueIdentifierFrom。
+ * @description 按空间 id 查询关系分类树，并并行加载对象树上的对象选项；统一拉取空间全量关系，中心对象与跳数过滤由前端完成。
  * @param spaceId 路由空间 id。
- * @param ontologyUniqueIdentifierFrom 对象详情页的本体唯一标识；空串表示空间页不传该参数。
  * @returns 关系工作区数据。
  */
-async function loadSpaceRelationWorkspaceFromApi(spaceId: string, ontologyUniqueIdentifierFrom = ""): Promise<SpaceRelationWorkspaceData> {
+async function loadSpaceRelationWorkspaceFromApi(spaceId: string): Promise<SpaceRelationWorkspaceData> {
   const id = spaceId.trim();
   if (!id) return createEmptySpaceRelationWorkspaceData();
   const params: OntologyRelationCategoryTreeParams = { spaceId: id };
-  const from = ontologyUniqueIdentifierFrom.trim();
-  if (from) {
-    params.ontologyUniqueIdentifierFrom = from;
-  }
   const [relationResponse, objectOptions] = await Promise.all([getOntologyRelationCategoryTreeInterface(params), loadRelationObjectOptionsFromObjectTree(id)]);
   if (relationResponse.code !== 200) throw new Error(relationResponse.message || "关系分类体系树查询失败");
   if (isMissingOntologyRelationCategoryTreeData(relationResponse.data)) {
@@ -112,19 +109,37 @@ export function useSpaceRelationWorkspace() {
     () => findRelationCategoryNode(relationCategoryTree.value, selectedRelationCategoryId.value)?.label || "全部关系",
   );
   const relationCategoryOptions = computed(() => relationCategoryTree.value);
-  const visibleSpaceRelations = computed(() => {
-    const byCategory = filterRelationsByCategory(relations.value, relationCategoryTree.value, selectedRelationCategoryId.value);
-    if (!relationFilter.value.applied) return byCategory;
-    const selectedValue = relationFilter.value.seedNames[0] ?? "";
-    return filterRelationsBySourceObject(byCategory, selectedValue, relationObjectOptions.value);
-  });
   const graphSeedNames = computed(() => {
     const selectedValue = relationFilter.value.seedNames[0]?.trim() ?? "";
     if (!selectedValue) return [];
     const matchedLabel = relationObjectOptions.value.find((item) => item.value === selectedValue)?.label.trim() ?? "";
     return [matchedLabel || selectedValue];
   });
+
+  /**
+   * @description 当前可见关系：先按分类过滤；已应用中心对象筛选时按无向跳数（1跳/2跳）裁剪。
+   */
+  const visibleSpaceRelations = computed(() => {
+    const byCategory = filterRelationsByCategory(relations.value, relationCategoryTree.value, selectedRelationCategoryId.value);
+    if (!relationFilter.value.applied) return byCategory;
+    return filterRelationsByHop(byCategory, graphSeedNames.value, relationFilter.value.maxHop);
+  });
   const graphMaxHop = computed(() => relationFilter.value.maxHop);
+  const isObjectRelationFilterActive = computed(() => isObjectRelationPage.value && relationFilter.value.applied);
+
+  /**
+   * @description 关系分类树面板展示的关系：对象详情页仅展示与当前对象在跳数内相关的关系（1跳为源或目标是当前对象的关系，2跳扩展一层）；空间关系页保持全量。
+   */
+  const categoryPanelRelations = computed(() =>
+    isObjectRelationFilterActive.value ? filterRelationsByHop(relations.value, graphSeedNames.value, relationFilter.value.maxHop) : relations.value,
+  );
+
+  /**
+   * @description 关系分类树面板展示的分类树：对象详情页裁剪掉未包含相关关系的分类分支；空间关系页保持全量。
+   */
+  const categoryPanelTreeData = computed(() =>
+    isObjectRelationFilterActive.value ? pruneRelationCategoryTree(relationCategoryTree.value, categoryPanelRelations.value) : relationCategoryTree.value,
+  );
 
   /**
    * @description 对象详情关系 Tab 进入时，按当前对象默认应用源筛选；空间关系页不处理。
@@ -149,7 +164,7 @@ export function useSpaceRelationWorkspace() {
         status.value = "empty";
         return;
       }
-      const next = await loadSpaceRelationWorkspaceFromApi(spaceId.value, resolveRelationOntologyUniqueIdentifierFrom(route));
+      const next = await loadSpaceRelationWorkspaceFromApi(spaceId.value);
       if (request !== generation) return;
       workspace.value = next;
       selectedRelationCategoryId.value = next.categoryTree[0]?.id || ROOT_RELATION_CATEGORY_ID;
@@ -171,13 +186,25 @@ export function useSpaceRelationWorkspace() {
     relationViewMode.value = mode;
   }
 
+  /**
+   * @description 应用中心对象筛选；保留当前跳数选择，避免数据刷新后重置用户设置。
+   * @param seedNames 中心对象候选值（取第一个有效值）。
+   */
   function applyRelationFilter(seedNames: string[]) {
     const primary = seedNames.map((name) => name.trim()).find(Boolean);
     relationFilter.value = {
       seedNames: primary ? [primary] : [],
-      maxHop: 1,
+      maxHop: relationFilter.value.maxHop,
       applied: Boolean(primary),
     };
+  }
+
+  /**
+   * @description 设置关系跳数（1跳/2跳），不影响已应用的中心对象筛选。
+   * @param hop 目标跳数。
+   */
+  function setRelationFilterMaxHop(hop: SpaceRelationHopLevel) {
+    relationFilter.value = { ...relationFilter.value, maxHop: hop };
   }
 
   function findRelationCategoryLabel(categoryId: string): string {
@@ -251,6 +278,8 @@ export function useSpaceRelationWorkspace() {
     selectedRelationCategoryLabel,
     relationCategoryOptions,
     visibleSpaceRelations,
+    categoryPanelRelations,
+    categoryPanelTreeData,
     relationViewMode,
     relationFilter,
     graphSeedNames,
@@ -258,6 +287,7 @@ export function useSpaceRelationWorkspace() {
     loadSpaceRelationWorkspace,
     selectRelationCategory,
     setRelationViewMode,
+    setRelationFilterMaxHop,
     applyRelationFilter,
     findRelationCategoryLabel,
     createCategory,

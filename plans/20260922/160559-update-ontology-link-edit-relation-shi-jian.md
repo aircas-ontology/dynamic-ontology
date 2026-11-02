@@ -15,7 +15,7 @@
 
 1. PUT `/ontology/link`，请求体 `uniqueIdentifier`、`name`、`categoryId`、`description`。
 2. 编辑提交调 `putUpdateOntologyLinkInterface`，成功后刷新工作区。
-3. 编辑态禁用 apiName、源本体、目标本体；分类不可清空；描述必填。
+3. 编辑态禁用 apiName、源对象、目标对象；分类不可清空；描述必填。
 
 ## 新增依赖及必要性
 

@@ -1,4 +1,4 @@
-# 本体空间列表接口对接（远程不可达期间 Mock 兜底）
+# 对象空间列表接口对接（远程不可达期间 Mock 兜底）
 
 - 日期：2026-09-16
 - 契约文档：`docs/20260916/ontologyListApi-guoshengnan.md`
@@ -6,14 +6,14 @@
 
 ## 1. 需求理解
 
-1. 对接「查询本体空间列表」接口：进入本体空间管理页（`OntologySpaceManagement`）即发起查询。
+1. 对接「查询对象空间列表」接口：进入对象空间管理页（`OntologySpaceManagement`）即发起查询。
 2. 契约：GET `DOMAIN_CONFIG.ONTOLOGYMANAGE_URL` + `/ontology/space`，无入参，标准 `ApiResponse<T>` 包裹。
 3. 远程服务当前无法保证可用，真实请求失败时暂时以项目已有 Mock 数据兜底渲染；后端恢复后无需改代码即自动走真实数据。
 4. 并行开发已做部分工作（函数改名、Mock 目录搬迁、页面 `onMounted(load)` 接线、loader 注入式 composable），相同部分沿用，断裂/不符契约部分按文档修正。
 
 ### 已确认决策（用户确认）
 
-- **响应 data 结构**：`data` 直接为本体空间数组 `OntologySpaceItem[]`（文档 types 示例 `{ data: object }` 双层结构与 mock 示例 `data: {}` 自相矛盾，且页面渲染需要列表，采用单层数组）。
+- **响应 data 结构**：`data` 直接为对象空间数组 `OntologySpaceItem[]`（文档 types 示例 `{ data: object }` 双层结构与 mock 示例 `data: {}` 自相矛盾，且页面渲染需要列表，采用单层数组）。
 - **Mock 兜底方式**：页面进入即发真实 GET 请求；网络失败 / HTTP 错误 / `code !== 200` 时在 composable 层回退 Mock；apis 层不吞异常。
 
 ### 文档矛盾点的处理（以正文契约为准）
@@ -37,7 +37,7 @@
 
 3. **`src/apis/ontologyManageApi.ts`**
    - URL 改为 `DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space"`，方法保持 `get`，无参数。
-   - 补齐符合 apis readme 的 JSDoc（用途、GET `/ontology/space`、无参、`@returns` 说明 data 为本体空间数组）。
+   - 补齐符合 apis readme 的 JSDoc（用途、GET `/ontology/space`、无参、`@returns` 说明 data 为对象空间数组）。
    - 函数签名保持 `getOntologySpaceListInterface(): Promise<ApiResponse<OntologySpaceListData>>`。
    - **实施增补（浏览器实测发现）**：请求层全局超时为 10 分钟，远程 TCP 半开/HTTP 挂起时 mock 回退要 10 分钟才生效。为列表接口单独设置 `timeout: 10000`（常量 `ONTOLOGY_SPACE_LIST_TIMEOUT`），保证不可达场景 10 秒内快速失败并回退；已在契约测试中锁定。
 
@@ -96,4 +96,4 @@
 5. `npm run type-check`、`npm run build:verify`（临时目录，禁止 `npm run build`）。
 6. `npm run format:check -- <任务文件>`，不通过则仅对同一文件列表 `npm run format`。
 7. `git diff --check` 与任务 diff、`git status --short` 核对。
-8. 浏览器实测：登录后进入本体空间管理页，核对 GET `/ontology/space` 请求头携带 `Authorization`；当前远程不可用时页面以 Mock 6 条空间卡片正常渲染。
+8. 浏览器实测：登录后进入对象空间管理页，核对 GET `/ontology/space` 请求头携带 `Authorization`；当前远程不可用时页面以 Mock 6 条空间卡片正常渲染。

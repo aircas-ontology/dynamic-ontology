@@ -36,6 +36,8 @@ mocks与types文件名自行语义化命名
 
 ## 输出参数
 
+基础函数示例
+
 ```JSON
 {
   "code": 200,
@@ -47,35 +49,28 @@ mocks与types文件名自行语义化命名
     "model": "BASIC",
     "type": "BASIC_QUERY",
     "ontologySpaceId": 46,
-    "params": [
-      {
-        "paramId": 25,
-        "paramName": "xingbie",
-        "paramType": "STRING",
-        "category": "INPUT",
-        "paramOrder": 1,
-        "description": "过滤条件",
-        "paramRole": "FILTER"
-      },
-      {
-        "paramId": 26,
-        "paramName": "age",
-        "paramType": "STRING",
-        "category": "INPUT",
-        "paramOrder": 2,
-        "description": "过滤条件",
-        "paramRole": "FILTER"
-      },
-      {
-        "paramId": 27,
-        "paramName": "target",
-        "paramType": "STRING",
-        "category": "INPUT",
-        "paramOrder": 3,
-        "description": "聚合目标",
-        "paramRole": "AGGREGATION"
-      }
-    ],
+    "params":
+    [
+  {
+    "paramId": 1412,
+    "paramName": "arg0",
+    "paramType": "STRING",
+    "category": "INPUT",
+    "paramOrder": 1,
+    "paramSchema": "{\"type\":\"string\"}",
+    "description": ""
+  },
+  {
+    "paramId": 1413,
+    "paramName": "result",
+    "paramType": "OBJECT",
+    "category": "OUTPUT",
+    "paramOrder": 1,
+    "paramSchema": "{\"type\":\"object\",\"id\":\"urn:jsonschema:com:aircas:ptr:foundry:ontology:model:vo:FunctionResultVO\",\"properties\":{\"startTime\":{\"type\":\"integer\",\"format\":\"utc-millisec\"},\"endTime\":{\"type\":\"integer\",\"format\":\"utc-millisec\"},\"data\":{\"type\":\"object\",\"id\":\"urn:jsonschema:java:lang:Object\"},\"description\":{\"type\":\"string\"},\"taskId\":{\"type\":\"string\"},\"timeWindows\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"id\":\"urn:jsonschema:com:aircas:ptr:foundry:ontology:model:common:VisibilityWindow\",\"properties\":{\"startTime\":{\"type\":\"integer\",\"format\":\"utc-millisec\"},\"endTime\":{\"type\":\"integer\",\"format\":\"utc-millisec\"}}}},\"extraFields\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"object\",\"$ref\":\"urn:jsonschema:java:lang:Object\"}}}}",
+    "description": ""
+  }
+]
+    ,
     "code": "{\"aggFunc\":null,\"targetProperty\":null,\"filters\":{\"logic\":\"AND\",\"children\":[{\"type\":\"FILTER\",\"filter\":{\"propertyApiName\":\"age\",\"op\":\"EQ\",\"value\":\"10\",\"values\":null,\"dataType\":\"STRING\"},\"group\":null}]}}",
     "queryConfig": {
       "aggFunc":"",
@@ -95,6 +90,57 @@ mocks与types文件名自行语义化命名
         ]
       }
     }
+  }
+}
+```
+
+脚本函数示例
+
+```JSON
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": {
+      "functionApi": "jbtest",
+      "version": "1.0.1",
+      "publishStatus": 0,
+      "displayName": "脚本函数cesi",
+      "description": "jbtest 1.0.1",
+      "model": "OTHER",
+      "type": "CUSTOMIZE",
+      "language": "TYPESCRIPT",
+      "ontologySpaceId": 1,
+      "params": [
+          {
+              "paramId": 1122,
+              "paramName": "id",
+              "paramType": "DOUBLE",
+              "category": "INPUT",
+              "paramOrder": 1
+          },
+          {
+              "paramId": 1123,
+              "paramName": "name",
+              "paramType": "STRING",
+              "category": "INPUT",
+              "paramOrder": 2
+          },
+          {
+              "paramId": 1124,
+              "paramName": "id",
+              "paramType": "DOUBLE",
+              "category": "OUTPUT",
+              "paramOrder": 1
+          },
+          {
+              "paramId": 1125,
+              "paramName": "name1",
+              "paramType": "STRING",
+              "category": "OUTPUT",
+              "paramOrder": 2
+          }
+      ],
+      "code": "interface User {\n  id: number;\n  name: string;\n}\n\ninterface Output {\n  id: number;\n  name1: string;\n}\n\nexport function handle(input: User): Output {\n    return {\n        id:input.id+1,\n        name1:input.name+'a',\n    }\n}\n"
   }
 }
 ```
@@ -152,15 +198,15 @@ import type { ApiResponse, OntologySearchData, OntologySearchParams } from "@/ty
 import { request } from "@/utils/request";
 
 /**
- * 根据关键词分页查询本体数据。
+ * 根据关键词分页查询对象数据。
  *
  * 请求方式：GET `/ontology/search`
  *
  * @param params 查询参数。
- * @param params.keyword 可选的本体名称或描述关键词。
+ * @param params.keyword 可选的对象名称或描述关键词。
  * @param params.page 当前页码，从 1 开始。
  * @param params.pageSize 每页返回的数据条数。
- * @returns 标准 API 响应，包含当前页本体列表和数据总数。
+ * @returns 标准 API 响应，包含当前页对象列表和数据总数。
  */
 export function getOntologySearchInterface(params: OntologySearchParams): Promise<ApiResponse<OntologySearchData>> {
   return request<OntologySearchData>({
@@ -195,7 +241,7 @@ export const ontologySearchMock: ApiResponse<OntologySearchData> = {
       {
         id: "ontology-001",
         name: "Satellite Ontology",
-        description: "用于描述卫星及其关联资源的本体。",
+        description: "用于描述卫星及其关联资源的对象。",
       },
     ],
     total: 1,

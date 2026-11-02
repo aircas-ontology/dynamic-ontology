@@ -1,0 +1,331 @@
+{
+  "ontologySpace": {
+    "apiName": "demo_space",
+    "displayName": "示例本体空间",
+    "description": "空间级导入模板（完整，含实例数据）。提交到 POST /space/import，导入时会创建空间、分类树、本体并回写实例"
+  },
+  "ontologyCategory": {
+    "parentId": 0,
+    "name": "平台",
+    "children": [
+      {
+        "name": "舰船",
+        "children": [
+          {
+            "name": "护卫舰",
+            "children": []
+          },
+          {
+            "name": "驱逐舰",
+            "children": []
+          },
+          {
+            "name": "航空母舰",
+            "children": []
+          }
+        ]
+      },
+      {
+        "name": "飞行器",
+        "children": [
+          {
+            "name": "战斗机",
+            "children": []
+          },
+          {
+            "name": "运输机",
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "ontologies": [
+    {
+      "metadata": {
+        "apiName": "demo_frigate",
+        "ontologySpaceName": "示例本体空间",
+        "description": "护卫舰本体，注意 ontologySpaceName 必须与上面 ontologySpace.displayName 完全一致",
+        "displayName": "护卫舰",
+        "groupNames": [],
+        "categoryPath": "平台/舰船/护卫舰"
+      },
+      "propertyCategory": {
+        "parentId": 0,
+        "name": "全部属性",
+        "children": [
+          {
+            "name": "标识信息",
+            "children": [
+              {
+                "name": "编号",
+                "children": []
+              }
+            ]
+          },
+          {
+            "name": "物理特征",
+            "children": [
+              {
+                "name": "尺度",
+                "children": []
+              },
+              {
+                "name": "重量排水",
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      "properties": [
+        {
+          "dataType": "Long",
+          "description": "主键ID",
+          "displayName": "id",
+          "apiName": "id",
+          "isPrimaryKey": true,
+          "isTitleKey": false,
+          "storageGroup": "main",
+          "categoryPath": "全部属性/标识信息/编号"
+        },
+        {
+          "dataType": "String",
+          "description": "舰船名称",
+          "displayName": "舰船名称",
+          "apiName": "shipname",
+          "isPrimaryKey": false,
+          "isTitleKey": true,
+          "defaultValue": "",
+          "storageGroup": "main",
+          "categoryPath": "全部属性/标识信息/编号"
+        },
+        {
+          "dataType": "Double",
+          "description": "排水量（吨）",
+          "displayName": "排水量",
+          "apiName": "displacement",
+          "isPrimaryKey": false,
+          "isTitleKey": false,
+          "storageGroup": "main",
+          "categoryPath": "全部属性/物理特征/重量排水"
+        },
+        {
+          "dataType": "Double",
+          "description": "舰体长度（米）",
+          "displayName": "舰长",
+          "apiName": "length",
+          "isPrimaryKey": false,
+          "isTitleKey": false,
+          "storageGroup": "main",
+          "categoryPath": "全部属性/物理特征/尺度"
+        }
+      ],
+      "instances": {
+        "nodes": [
+          {
+            "primaryKey": 1,
+            "displayName": "星座号",
+            "properties": {
+              "id": 1,
+              "shipname": "星座号",
+              "displacement": 3000.5,
+              "length": 151.2
+            }
+          },
+          {
+            "primaryKey": 2,
+            "displayName": "国会号",
+            "properties": {
+              "id": 2,
+              "shipname": "国会号",
+              "displacement": 3100.0,
+              "length": 152.4
+            }
+          },
+          {
+            "primaryKey": 3,
+            "displayName": "约翰·巴斯隆号",
+            "properties": {
+              "id": 3,
+              "shipname": "约翰·巴斯隆号",
+              "displacement": 3200.8,
+              "length": 153.0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "metadata": {
+        "apiName": "demo_destroyer",
+        "ontologySpaceName": "示例本体空间",
+        "description": "驱逐舰本体",
+        "displayName": "驱逐舰",
+        "groupNames": [],
+        "categoryPath": "平台/舰船/驱逐舰"
+      },
+      "propertyCategory": {
+        "parentId": 0,
+        "name": "全部属性",
+        "children": [
+          {
+            "name": "标识信息",
+            "children": [
+              {
+                "name": "编号",
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      "properties": [
+        {
+          "dataType": "Long",
+          "description": "主键ID",
+          "displayName": "id",
+          "apiName": "id",
+          "isPrimaryKey": true,
+          "isTitleKey": false,
+          "storageGroup": "main",
+          "categoryPath": "全部属性/标识信息/编号"
+        },
+        {
+          "dataType": "String",
+          "description": "舰船名称",
+          "displayName": "舰船名称",
+          "apiName": "shipname",
+          "isPrimaryKey": false,
+          "isTitleKey": true,
+          "storageGroup": "main",
+          "categoryPath": "全部属性/标识信息/编号"
+        },
+        {
+          "dataType": "Double",
+          "description": "排水量（吨）",
+          "displayName": "排水量",
+          "apiName": "displacement",
+          "isPrimaryKey": false,
+          "isTitleKey": false,
+          "storageGroup": "main",
+          "categoryPath": "全部属性/标识信息/编号"
+        }
+      ],
+      "instances": {
+        "nodes": [
+          {
+            "primaryKey": 1,
+            "displayName": "朱姆沃尔特号",
+            "properties": {
+              "id": 1,
+              "shipname": "朱姆沃尔特号",
+              "displacement": 15000.0
+            }
+          },
+          {
+            "primaryKey": 2,
+            "displayName": "迈克尔·蒙苏尔号",
+            "properties": {
+              "id": 2,
+              "shipname": "迈克尔·蒙苏尔号",
+              "displacement": 14500.0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "metadata": {
+        "apiName": "demo_fighter",
+        "ontologySpaceName": "示例本体空间",
+        "description": "战斗机本体",
+        "displayName": "战斗机",
+        "groupNames": [],
+        "categoryPath": "平台/飞行器/战斗机"
+      },
+      "propertyCategory": {
+        "parentId": 0,
+        "name": "全部属性",
+        "children": [
+          {
+            "name": "标识信息",
+            "children": []
+          },
+          {
+            "name": "性能参数",
+            "children": [
+              {
+                "name": "速度",
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      "properties": [
+        {
+          "dataType": "String",
+          "description": "主键id",
+          "displayName": "id",
+          "apiName": "id",
+          "isPrimaryKey": true,
+          "isTitleKey": false,
+          "storageGroup": "main",
+          "categoryPath": "全部属性/标识信息"
+        },
+        {
+          "dataType": "String",
+          "description": "飞机名称",
+          "displayName": "飞机名称",
+          "apiName": "name",
+          "isPrimaryKey": false,
+          "isTitleKey": true,
+          "storageGroup": "main",
+          "categoryPath": "全部属性/标识信息"
+        },
+        {
+          "dataType": "Double",
+          "description": "最大飞行速度（马赫）",
+          "displayName": "最大速度",
+          "apiName": "max_mach",
+          "isPrimaryKey": false,
+          "isTitleKey": false,
+          "storageGroup": "main",
+          "categoryPath": "全部属性/性能参数/速度"
+        }
+      ],
+      "instances": {
+        "nodes": [
+          {
+            "primaryKey": 1,
+            "displayName": "F-22",
+            "properties": {
+              "id": 1,
+              "name": "F-22",
+              "max_mach": 2.25
+            }
+          },
+          {
+            "primaryKey": 2,
+            "displayName": "F-35",
+            "properties": {
+              "id": 2,
+              "name": "F-35",
+              "max_mach": 1.6
+            }
+          },
+          {
+            "primaryKey": 3,
+            "displayName": "苏-57",
+            "properties": {
+              "id": 3,
+              "name": "苏-57",
+              "max_mach": 2.0
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

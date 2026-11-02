@@ -4,7 +4,7 @@
 
 ## 需求理解
 
-完善本体空间添加关系中的 `el-tree-select` 深色风格，规范与其他 Element Plus 覆盖文件一致。
+完善对象空间添加关系中的 `el-tree-select` 深色风格，规范与其他 Element Plus 覆盖文件一致。
 
 ## 修改范围
 

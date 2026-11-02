@@ -1,7 +1,7 @@
 <template>
-  <section class="ontology-object-list" aria-label="本体对象列表">
+  <section class="ontology-object-list" aria-label="对象列表">
     <header class="ontology-object-list__toolbar">
-      <h1>本体空间总览</h1>
+      <h1>对象空间总览</h1>
       <div class="ontology-object-list__toolbar-actions">
         <el-radio-group :model-value="viewMode" class="ontology-object-list__view-switch" ariaLabel="展示方式" @update:model-value="setObjectListViewMode">
           <el-radio-button value="card">
@@ -21,8 +21,8 @@
             <span class="ontology-object-list__visually-hidden">列表视图</span>
           </el-radio-button>
         </el-radio-group>
-        <el-button type="primary" @click="emit('action', 'create')"
-          ><el-icon><Plus /></el-icon>新建本体</el-button
+        <el-button type="primary" data-onboarding="object-create-open" @click="emit('action', 'create')"
+          ><el-icon><Plus /></el-icon>新建对象</el-button
         >
       </div>
     </header>
@@ -38,11 +38,17 @@
         <header class="ontology-object-section__header">
           <i aria-hidden="true"></i>
           <h2>{{ section.name }}</h2>
-          <span>{{ section.items.length }} 个本体</span>
+          <span>{{ section.items.length }} 个对象</span>
         </header>
 
         <div v-if="viewMode === 'card'" class="ontology-object-section__cards">
-          <article v-for="item in section.items" :key="item.id" class="ontology-object-card">
+          <article
+            v-for="item in section.items"
+            :key="item.id"
+            class="ontology-object-card"
+            :class="{ 'is-located': activeObjectId === item.id }"
+            :data-object-id="item.id"
+          >
             <div class="ontology-object-card__visual">
               <img v-if="item.iconUrl" :src="item.iconUrl" alt="" />
               <el-icon v-else><Ship /></el-icon>
@@ -58,7 +64,7 @@
                 type="button"
                 @click="emit('locateParent', item)"
               >
-                父本体：{{ item.parentDisplayName }}
+                父对象：{{ item.parentDisplayName }}
               </button>
               <p>创建时间 {{ item.createdAt }}</p>
               <dl>
@@ -84,6 +90,7 @@
               <footer class="ontology-object-card__actions">
                 <el-button
                   class="ontology-object-action ontology-object-action--view aircas-button--gradient"
+                  data-onboarding="object-detail-open"
                   size="small"
                   @click="emit('action', 'view', item)"
                 >
@@ -120,15 +127,14 @@
         </div>
 
         <div v-else class="ontology-object-section__table">
-          <el-table class="aircas-table--accent-header" :data="section.items" row-key="id" height="100%" stripe>
-            <el-table-column label="本体名称" min-width="220">
+          <el-table class="aircas-table--accent-header" :data="section.items" row-key="id" height="100%" stripe :row-class-name="objectRowClassName">
+            <el-table-column label="对象名称" min-width="220">
               <template #default="{ row }"
                 ><strong>{{ objectRow(row).displayName }}</strong
                 ><small class="ontology-object-table__api">{{ objectRow(row).apiName }}</small></template
               >
             </el-table-column>
-            <el-table-column prop="parentDisplayName" label="父本体" min-width="120" />
-            <el-table-column prop="createdAt" label="创建时间" width="170" />
+            <el-table-column prop="parentDisplayName" label="父对象" min-width="120" />
             <el-table-column label="属性" width="80"
               ><template #default="{ row }">{{ objectRow(row).metrics.attribute }}</template></el-table-column
             >
@@ -138,6 +144,7 @@
             <el-table-column label="行为" width="80"
               ><template #default="{ row }">{{ objectRow(row).metrics.behavior }}</template></el-table-column
             >
+            <el-table-column prop="createdAt" label="创建时间" width="170" />
             <el-table-column label="操作" width="300" fixed="right">
               <template #default="{ row }">
                 <el-button class="ontology-object-action ontology-object-action--view" size="small" @click="emit('action', 'view', objectRow(row))"
@@ -184,6 +191,7 @@ const emit = defineEmits<{
 
 const scrollContainer = ref<HTMLElement | null>(null);
 const activeCategoryId = ref("");
+const activeObjectId = ref("");
 let highlightTimer: number | undefined;
 
 function objectRow(row: unknown): OntologyObjectItem {
@@ -193,7 +201,17 @@ function objectRow(row: unknown): OntologyObjectItem {
       if (item) return item;
     }
   }
-  throw new Error("无效的本体对象数据行。");
+  throw new Error("无效的对象数据行。");
+}
+
+/**
+ * @description 为表格行追加定位高亮类。
+ * @param row 当前行数据。
+ * @returns 需要高亮的行返回 is-located，否则返回空字符串。
+ */
+function objectRowClassName({ row }: { row: unknown }): string {
+  const item = row as { id?: unknown };
+  return typeof item?.id === "string" && item.id === activeObjectId.value ? "is-located" : "";
 }
 
 function categoryAnchorId(categoryId: string) {
@@ -217,10 +235,24 @@ async function locateCategory(target: OntologyObjectLocationTarget | null) {
   if (!section) return;
   section.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
   activeCategoryId.value = target.categoryId;
+  if (target.objectId) await locateObjectElement(section, target.objectId);
   if (highlightTimer) window.clearTimeout(highlightTimer);
   highlightTimer = window.setTimeout(() => {
     activeCategoryId.value = "";
+    activeObjectId.value = "";
   }, 1600);
+}
+
+/**
+ * @description 在分区元素内滚动到目标对象（卡片或表格行）并标记高亮。
+ * @param section 对象所属分区根元素。
+ * @param objectId 对象唯一标识。
+ */
+async function locateObjectElement(section: HTMLElement, objectId: string) {
+  activeObjectId.value = objectId;
+  await nextTick();
+  const objectElement = section.querySelector<HTMLElement>(`[data-object-id="${objectId}"]`) ?? section.querySelector<HTMLElement>("tr.is-located");
+  objectElement?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
 }
 
 watch(
@@ -323,7 +355,9 @@ onBeforeUnmount(() => {
 }
 .ontology-object-section.is-active {
   border-color: var(--aircas-color-primary);
-  box-shadow: 0 0 12px var(--aircas-color-effect-primary-fill);
+  box-shadow:
+    0 0 0 1px var(--aircas-color-primary),
+    0 0 18px var(--aircas-color-effect-primary-shadow);
 }
 .ontology-object-section__header {
   display: flex;
@@ -395,6 +429,25 @@ onBeforeUnmount(() => {
   box-shadow:
     0 0 18px var(--aircas-color-effect-primary-shadow),
     inset 0 0 20px var(--aircas-color-effect-page-glow);
+}
+
+/* 树节点定位高亮：卡片，最细白边 + 白色光晕投影 */
+.ontology-object-card.is-located,
+.ontology-object-card.is-located:hover {
+  border-color: var(--aircas-color-white);
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--aircas-color-white) 40%, transparent),
+    0 0 30px color-mix(in srgb, var(--aircas-color-white) 22%, transparent),
+    0 8px 20px color-mix(in srgb, var(--aircas-color-black) 50%, transparent);
+}
+
+/* 亮色主题下白色描边需要深色晕圈衬托 */
+:root:not(.dark) .ontology-object-card.is-located,
+:root:not(.dark) .ontology-object-card.is-located:hover {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--aircas-color-black) 22%, transparent),
+    0 0 12px color-mix(in srgb, var(--aircas-color-white) 60%, transparent),
+    0 6px 16px color-mix(in srgb, var(--aircas-color-black) 20%, transparent);
 }
 
 .ontology-object-card__visual {
@@ -557,6 +610,17 @@ onBeforeUnmount(() => {
 }
 .ontology-object-section__table .el-button {
   white-space: nowrap;
+}
+/* 树节点定位高亮：表格行，细白边 + 柔和投影 */
+.ontology-object-section__table :deep(tr.is-located td.el-table__cell) {
+  background-color: color-mix(in srgb, var(--aircas-color-white) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aircas-color-white) 35%, transparent);
+}
+
+/* 亮色主题下白色底色不可见，改用中性底色与描边 */
+:root:not(.dark) .ontology-object-section__table :deep(tr.is-located td.el-table__cell) {
+  background-color: color-mix(in srgb, var(--aircas-color-black) 6%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aircas-color-black) 30%, transparent);
 }
 .ontology-object-table__api {
   display: block;

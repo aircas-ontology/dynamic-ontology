@@ -13,15 +13,15 @@ import { mapOntologySpaceList } from "@/utils/mapOntologySpaceList";
 import { filterSpaces, removeSpace, saveSpace } from "../utils/spaceOperations";
 
 /**
- * @description 查询本体空间列表并映射为页面模型；失败时抛出错误，由调用方提示，不回退 Mock。
- * @returns 本体空间数组的深拷贝。
+ * @description 查询对象空间列表并映射为页面模型；失败时抛出错误，由调用方提示，不回退 Mock。
+ * @returns 对象空间数组的深拷贝。
  */
 async function fetchOntologySpaces(): Promise<OntologySpaceItem[]> {
-  const response = await getOntologySpaceListInterface();
+  const response = await getOntologySpaceListInterface({ type: 0 });
   if (response.code === 200) {
     return structuredClone(mapOntologySpaceList(response.data));
   }
-  throw new Error(`本体空间列表查询失败：${response.message}`);
+  throw new Error(`对象空间列表查询失败：${response.message}`);
 }
 
 /** 本页独占的演示状态，离开页面后释放，数据不写入浏览器存储。 */
@@ -58,8 +58,8 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
     },
   );
   const summaryStats = computed<OntologySpaceSummary[]>(() => [
-    { id: "space", label: "本体空间", value: overviewCount.value.spaceCount ?? 0, icon: "Box" },
-    { id: "object", label: "本体对象", value: overviewCount.value.ontologyCount ?? 0, icon: "Connection" },
+    { id: "space", label: "对象空间", value: overviewCount.value.spaceCount ?? 0, icon: "Box" },
+    { id: "object", label: "对象", value: overviewCount.value.ontologyCount ?? 0, icon: "Connection" },
     { id: "behavior", label: "行为数量", value: overviewCount.value.actionCount ?? 0, icon: "Share" },
     { id: "relation", label: "关系", value: overviewCount.value.linkCount ?? 0, icon: "Link" },
   ]);
@@ -74,7 +74,7 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
   }
 
   /**
-   * @description 查询本体服务概览统计数据；防止重复请求与卸载后回写。
+   * @description 查询对象服务概览统计数据；防止重复请求与卸载后回写。
    */
   async function loadOntologyOverviewCount() {
     if (overviewPending || disposed) return;
@@ -82,7 +82,7 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
     overviewStatus.value = "loading";
     overviewError.value = "";
     try {
-      const response = await getOntologyOverviewCountInterface();
+      const response = await getOntologyOverviewCountInterface({ type: 0 });
       if (disposed) return;
       if (!isOverviewCountSuccess(response.code)) {
         overviewCount.value = {};
@@ -104,7 +104,7 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
   }
 
   /**
-   * @description 加载本体空间列表并更新页面状态；防止重复请求与卸载后回写。
+   * @description 加载对象空间列表并更新页面状态；防止重复请求与卸载后回写。
    */
   async function loadOntologySpaces() {
     if (pending || disposed) return;
@@ -119,7 +119,7 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
     } catch (cause) {
       if (!disposed) {
         status.value = "error";
-        error.value = cause instanceof Error && cause.message.trim() ? cause.message : "本体空间加载失败，请重试。";
+        error.value = cause instanceof Error && cause.message.trim() ? cause.message : "对象空间加载失败，请重试。";
       }
     } finally {
       pending = false;
@@ -127,7 +127,7 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
   }
 
   /**
-   * @description 创建或更新内存中的本体空间项。
+   * @description 创建或更新内存中的对象空间项。
    * @param draft 表单草稿。
    * @param id 编辑时的空间 id；缺省为新建。
    */
@@ -137,7 +137,7 @@ export function useSpaceManagement(loader: () => Promise<OntologySpaceItem[]> = 
   }
 
   /**
-   * @description 按 id 从内存列表移除本体空间。
+   * @description 按 id 从内存列表移除对象空间。
    * @param id 空间 id。
    */
   function removeOntologySpace(id: string) {

@@ -1,13 +1,13 @@
 <template>
   <el-dialog
     v-model="deleteVisible"
-    title="删除本体空间"
+    title="删除对象空间"
     width="min(460px, 94vw)"
     :close-on-click-modal="false"
     :close-on-press-escape="!busy"
     :show-close="!busy"
   >
-    <p>确认删除「{{ space?.displayName }}」本体空间数据？</p>
+    <p>确认删除「{{ space?.displayName }}」对象空间数据？</p>
     <p v-if="error" class="space-command-dialogs__error" role="alert">{{ error }}</p>
     <template #footer>
       <el-button :disabled="busy" @click="deleteVisible = false">取消</el-button>
@@ -17,7 +17,7 @@
 
   <el-dialog
     v-model="exportVisible"
-    title="导出本体空间"
+    title="导出对象空间"
     width="min(460px, 94vw)"
     :close-on-click-modal="!busy"
     :close-on-press-escape="!busy"
@@ -61,7 +61,7 @@ const exportType = ref<OntologySpaceExportType>("INSTANCE");
 const emit = defineEmits<{ confirmDelete: []; confirmExport: [exportType: OntologySpaceExportType] }>();
 
 /**
- * @description 切换本体空间导出类型。只接受 SCHEMA 与 INSTANCE。
+ * @description 切换对象空间导出类型。只接受 SCHEMA 与 INSTANCE。
  * @param value 单选组当前值。
  */
 function setOntologySpaceExportType(value: string | number | boolean | undefined) {

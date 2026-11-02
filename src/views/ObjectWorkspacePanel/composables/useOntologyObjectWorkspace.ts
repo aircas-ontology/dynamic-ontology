@@ -24,7 +24,7 @@ function createEmptyObjectWorkspace(spaceId: string): OntologyObjectWorkspace {
 }
 
 /**
- * @description 请求分类树并使用响应内嵌的本体元信息构建左右工作区。
+ * @description 请求分类树并使用响应内嵌的对象元信息构建左右工作区。
  * @param spaceId 路由空间 id。
  * @returns 分类树和对象列表工作区。
  */
@@ -32,7 +32,7 @@ async function loadObjectWorkspaceFromCategoryTree(spaceId: string): Promise<Ont
   const id = spaceId.trim();
   if (!id) return createEmptyObjectWorkspace(spaceId);
   const response = await getOntologyCategoryTreeInterface({ spaceId: id });
-  if (response.code !== 200) throw new Error(response.message || "本体分类体系树查询失败");
+  if (response.code !== 200) throw new Error(response.message || "对象分类体系树查询失败");
   if (isMissingOntologyCategoryTreeData(response.data)) return createEmptyObjectWorkspace(id);
   return {
     spaceId: id,
@@ -59,7 +59,7 @@ export function useOntologyObjectWorkspace(
   let pendingSpaceId = "";
 
   /**
-   * @description 加载当前空间分类树及其内嵌本体对象数据。
+   * @description 加载当前空间分类树及其内嵌对象数据。
    */
   async function load() {
     const id = spaceId.value;
@@ -77,7 +77,7 @@ export function useOntologyObjectWorkspace(
     } catch (cause) {
       if (disposed || request !== generation) return;
       status.value = "error";
-      error.value = cause instanceof Error && cause.message.trim() ? cause.message : "本体对象加载失败，请重试。";
+      error.value = cause instanceof Error && cause.message.trim() ? cause.message : "对象加载失败，请重试。";
     }
   }
 

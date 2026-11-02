@@ -1,8 +1,8 @@
-# 查询本体对象接口说明文档计划
+# 查询对象接口说明文档计划
 
 ## 需求理解
 
-根据在线 Knife4j 文档 `OntologyMetaController_getByCategoryId` 和现有创建接口说明，在 `docs/20260919/` 新增本体对象查询接口说明 Markdown。当前任务只生成接口契约文档，不修改业务源码。
+根据在线 Knife4j 文档 `OntologyMetaController_getByCategoryId` 和现有创建接口说明，在 `docs/20260919/` 新增对象查询接口说明 Markdown。当前任务只生成接口契约文档，不修改业务源码。
 
 ## 修改范围
 

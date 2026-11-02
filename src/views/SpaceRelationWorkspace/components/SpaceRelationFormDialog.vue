@@ -7,7 +7,7 @@
     destroy-on-close
     @close="emit('update:modelValue', false)"
   >
-    <el-form label-position="top">
+    <el-form label-position="top" data-onboarding="relation-create-required">
       <el-form-item label="关系名称" required>
         <el-input v-model="displayName" maxlength="64" placeholder="请输入关系名称" />
       </el-form-item>
@@ -41,8 +41,8 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button :loading="loading" @click="submitRelationForm">确认</el-button>
+      <el-button data-onboarding="relation-create-cancel" @click="emit('update:modelValue', false)">取消</el-button>
+      <el-button :loading="loading" data-onboarding="relation-create-confirm" @click="submitRelationForm">确认</el-button>
     </template>
   </el-dialog>
 </template>

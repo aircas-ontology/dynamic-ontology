@@ -27,23 +27,34 @@ mocks与types文件名自行语义化命名
 - ```JSON
   {
     "functionApi": "",
+    "version": "",
     "displayName": "",
     "description": "",
     "type": "",
+    "language": "",
+    "code": "",
     "ontologySpaceId": "",
     "queryConfig":{
       "aggFunc":"",
+      "targetProperty":"",
       "filters":{}
-    }
+    },
+    "parameters":[],
   }
   ```
 
 - `functionApi`：【string，必填】 函数api
+- `version`：【string，必填】 版本号，格式 x.y.z（如 1.0.0），同一 api 下不可重复且必须大于已有最大版本号
 - `displayName`：【string，必填】 函数名称
 - `description`：【string，必填】 描述
-- `type`：【string，必填】 函数模型,目前只有一个值BASIC_QUERY
+- `type`：【string，必填】 函数模型
+- `language`：【string，必填】 脚本语言（仅 CUSTOMIZE 脚本算子有效，不传默认 GROOVY；其他算子类型忽略此字段存 NULL；创建后不可修改）
+- `code`：【string，必填】 自定义函数：函数代码
 - `ontologySpaceId`：【number，必填】 所属本体空间 id
 - `queryConfig`：【object，非必填】 基础查询算子配置对象
+- `queryConfig.aggFunc`：【string，非必填】 聚合类型：SUM/COUNT/AVG/MAX/MIN，不传则为 query 模式（无聚合）
+- `queryConfig.targetProperty`：【string，非必填】 目标占位符名（创建时不选实际字段，前端未传时后端自动生成为 target；执行时通过 variableBindings 映射到实际属性 apiName）
+- `parameters`：【array，非必填】 参数定义列表（CUSTOMIZE 类型函数传入）
 
 ## 输出参数
 
@@ -107,15 +118,15 @@ import type { ApiResponse, OntologySearchData, OntologySearchParams } from "@/ty
 import { request } from "@/utils/request";
 
 /**
- * 根据关键词分页查询本体数据。
+ * 根据关键词分页查询对象数据。
  *
  * 请求方式：GET `/ontology/search`
  *
  * @param params 查询参数。
- * @param params.keyword 可选的本体名称或描述关键词。
+ * @param params.keyword 可选的对象名称或描述关键词。
  * @param params.page 当前页码，从 1 开始。
  * @param params.pageSize 每页返回的数据条数。
- * @returns 标准 API 响应，包含当前页本体列表和数据总数。
+ * @returns 标准 API 响应，包含当前页对象列表和数据总数。
  */
 export function getOntologySearchInterface(params: OntologySearchParams): Promise<ApiResponse<OntologySearchData>> {
   return request<OntologySearchData>({
@@ -150,7 +161,7 @@ export const ontologySearchMock: ApiResponse<OntologySearchData> = {
       {
         id: "ontology-001",
         name: "Satellite Ontology",
-        description: "用于描述卫星及其关联资源的本体。",
+        description: "用于描述卫星及其关联资源的对象。",
       },
     ],
     total: 1,

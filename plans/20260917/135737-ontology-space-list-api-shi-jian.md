@@ -1,4 +1,4 @@
-# Plan：对接本体空间列表接口（表/卡视图）
+# Plan：对接对象空间列表接口（表/卡视图）
 
 确认范围（用户 2026-09-17）：
 1. 字段映射同意：`spaceId→id`，`ontologyCount→metrics.ontology`，`actionCount→metrics.behavior`，`linkCount→metrics.relation`，`propertyCount→metrics.rule`，`source=0`；时间/分类等接口无字段置空。

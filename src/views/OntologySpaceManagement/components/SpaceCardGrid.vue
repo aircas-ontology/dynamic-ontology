@@ -35,7 +35,7 @@
         </div>
         <div>
           <dt>
-            <el-icon> <Tickets /> </el-icon>规则
+            <el-icon> <Tickets /> </el-icon>属性
           </dt>
           <dd>{{ space.metrics.rule }}</dd>
         </div>

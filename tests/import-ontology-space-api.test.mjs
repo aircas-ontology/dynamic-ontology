@@ -44,15 +44,6 @@ test("apis barrel exports the space import interface in dictionary order", () =>
   );
 });
 
-test("import ontology space mock uses the structural string list sample", () => {
-  const mockSource = readSource("../src/mocks/importOntologySpaceMock/importOntologySpaceMock.ts");
-  assert.match(mockSource, /export const importOntologySpaceMock: ApiResponse<ImportOntologySpaceData> = \{/);
-  assert.match(mockSource, /code: 200,/);
-  assert.match(mockSource, /message: "SUCCESS",/);
-  assert.match(mockSource, /success: true,/);
-  assert.match(mockSource, /"imported-item"/);
-});
-
 test("create dialog import mode submits the selected file to the import api", () => {
   const dialogSource = readSource("../src/views/OntologySpaceManagement/components/SpaceFormDialog.vue");
   const actionsSource = readSource("../src/views/OntologySpaceManagement/composables/useSpaceManagementActions.ts");

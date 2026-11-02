@@ -1,9 +1,9 @@
-/** 本体空间导出类型。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。 */
+/** 对象空间导出类型。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。 */
 export type OntologySpaceExportType = "SCHEMA" | "INSTANCE";
 
-/** 导出本体空间的查询参数。 */
+/** 导出对象空间的查询参数。 */
 export interface ExportOntologySpaceParams {
-  /** 本体空间 id，必填。 */
+  /** 对象空间 id，必填。 */
   spaceId: number;
   /** 导出类型，必填。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。 */
   exportType: OntologySpaceExportType;

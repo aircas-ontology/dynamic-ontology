@@ -1,12 +1,12 @@
 /** 服务请求 URL 改写所读取的运行时开关。 */
 export interface ServiceRequestUrlConfig {
-  /** 为 true 时将登录与本体管理请求改写到 Mock 主机。 */
+  /** 为 true 时将登录与对象管理请求改写到 Mock 主机。 */
   USE_MOCK?: boolean;
   /** Mock HTTP 服务地址。 */
   MOCK_SERVER_URL?: string;
   /** 真实登录服务 origin 或完整基址。 */
   LOGIN_URL?: string;
-  /** 真实本体管理服务 origin 或完整基址。 */
+  /** 真实对象管理服务 origin 或完整基址。 */
   ONTOLOGYMANAGE_URL?: string;
 }
 
@@ -28,7 +28,7 @@ function readHttpOrigin(value: string | undefined): string {
 }
 
 /**
- * @description 在 USE_MOCK 打开且 Mock 地址完整时，把登录与本体管理请求改写到 Mock 主机，保留 path、query 和 hash。
+ * @description 在 USE_MOCK 打开且 Mock 地址完整时，把登录与对象管理请求改写到 Mock 主机，保留 path、query 和 hash。
  * @param url 原始请求地址。
  * @param config 运行时开关与真实服务基址。
  * @returns 改写后的地址；开关关闭、配置不完整或非目标主机时返回原地址。

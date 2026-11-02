@@ -62,7 +62,7 @@ const subspaceCreateRelationCatalog = [
 
 /**
  * @description 按已选对象两两生成可纳入子空间的关系行。
- * @param objects 第一步勾选的本体对象。
+ * @param objects 第一步勾选的对象。
  * @returns 关系表格行。
  */
 export function mapSubspaceCreateSelectedRelations(objects: SubspaceCreateSelectedObject[]): SubspaceCreateSelectedRelation[] {

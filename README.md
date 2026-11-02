@@ -1,4 +1,4 @@
-# 空天 · 灵枢--动态本体（前端）
+# 空天 · 灵枢--动态空间（前端）
 
 ## 1、基本介绍
 
@@ -24,7 +24,7 @@ npm run build
 
 单独启动 Mock：`npm run mock`。从真实环境覆盖 GET fixture：`npm run mock:record`。
 
-本地要把登录和本体管理请求切到 Mock，请在 `public/configs/domainConfig.js` 中于 `ONTOLOGYMANAGE_URL` 后增加：
+本地要把登录和对象管理请求切到 Mock，请在 `public/configs/domainConfig.js` 中于 `ONTOLOGYMANAGE_URL` 后增加：
 
 ```js
   MOCK_SERVER_URL: "http://127.0.0.1:37003",

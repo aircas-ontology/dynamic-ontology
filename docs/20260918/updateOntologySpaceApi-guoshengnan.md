@@ -1,6 +1,6 @@
 # 接口名称
 
-- 本体空间编辑
+- 对象空间编辑
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 输入参数修改本体空间。
+- 输入参数修改对象空间。
 
 ## 接口domain
 
@@ -97,7 +97,7 @@ import type { ApiResponse, UpdateOntologySpaceData, UpdateOntologySpaceParams } 
 import { request } from "@/utils/request";
 
 /**
- * 编辑本体空间。
+ * 编辑对象空间。
  *
  * 请求方式：PUT `/ontology/space`
  *

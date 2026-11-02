@@ -10,15 +10,12 @@ import { useOntologySpaceDetailStore } from "../src/stores/useOntologySpaceDetai
 
 test("space detail parent and child routes resolve under the workspace layout", () => {
   const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
-  const overview = router.resolve({ name: "OntologySpaceManagementDetailOverview", params: { spaceId: "army" } });
-  assert.equal(overview.path, "/workspace/ontology-space-management/army/overview");
-  assert.deepEqual(
-    overview.matched.map((record) => record.name),
-    ["Workspace", "OntologySpaceManagementDetail", "OntologySpaceManagementDetailOverview"],
-  );
-
   const objectRoute = router.resolve({ name: "OntologySpaceManagementDetailObject", params: { spaceId: "army" } });
   assert.equal(objectRoute.path, "/workspace/ontology-space-management/army/object");
+  assert.deepEqual(
+    objectRoute.matched.map((record) => record.name),
+    ["Workspace", "OntologySpaceManagementDetail", "OntologySpaceManagementDetailObject"],
+  );
 
   const functionRoute = router.resolve({
     name: "OntologySpaceManagementDetailFunctionOperator",
@@ -37,18 +34,35 @@ test("space detail parent and child routes resolve under the workspace layout", 
 test("subspace create page composes left tree and right workspace panels", () => {
   const source = readFileSync(new URL("../src/views/OntologySubspaceCreate/index.vue", import.meta.url), "utf8");
   assert.match(source, /class="ontology-subspace-create"/);
-  assert.match(source, /aria-label="创建子空间"/);
+  assert.match(source, /aria-label="创建主题"/);
   assert.match(source, /SubspaceCreateTreePanel/);
   assert.match(source, /SubspaceCreateWorkspacePanel/);
   assert.doesNotMatch(source, /<el-tree/);
   assert.doesNotMatch(source, /AI 助手/);
 });
 
-test("space detail parent redirects to overview for a space id", () => {
+test("theme space create back button follows the route history", () => {
+  const source = readFileSync(new URL("../src/views/OntologySubspaceCreate/index.vue", import.meta.url), "utf8");
+  assert.match(source, /function goBackToSpaceList\(\)[\s\S]*router\.back\(\)/);
+  assert.doesNotMatch(source, /function goBackToSpaceList\(\)[\s\S]*router\.push\(\{ name: "OntologySpaceManagement" \}/);
+});
+
+test("space detail parent redirects to the object tab for a space id", () => {
   const detailRoute = workspaceRoutes[0]?.children?.find((route) => route.name === "OntologySpaceManagementDetail");
   assert.ok(detailRoute);
-  assert.deepEqual(detailRoute.redirect, { name: "OntologySpaceManagementDetailOverview" });
-  assert.equal(detailRoute.children?.length, 8);
+  assert.deepEqual(detailRoute.redirect, { name: "OntologySpaceManagementDetailObject" });
+  assert.equal(detailRoute.children?.length, 7);
+  assert.equal(
+    detailRoute.children?.some((route) => route.name === "OntologySpaceManagementDetailOverview"),
+    false,
+  );
+});
+
+test("theme space creation resolves its selected parent from object spaces", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/composables/useSpaceWorkspace.ts", import.meta.url), "utf8");
+  assert.match(source, /route\.query\.from === "theme-space-management"/);
+  assert.match(source, /route\.name !== "OntologySubspaceCreate"/);
+  assert.match(source, /getOntologySpaceListInterface\(\{ type: isThemeSpaceDetail \? 1 : 0 \}\)/);
 });
 
 test("space lookup returns mock space or null", () => {
@@ -56,7 +70,7 @@ test("space lookup returns mock space or null", () => {
     {
       id: "army",
       apiName: "army_space",
-      displayName: "陆军本体空间",
+      displayName: "陆军对象空间",
       description: "",
       iconUrl: "",
       category: "陆军",
@@ -68,7 +82,7 @@ test("space lookup returns mock space or null", () => {
       parentSpaceDisplayName: "",
     },
   ];
-  assert.equal(findSpaceById(spaces, "army")?.displayName, "陆军本体空间");
+  assert.equal(findSpaceById(spaces, "army")?.displayName, "陆军对象空间");
   assert.equal(findSpaceById(spaces, "missing"), null);
 });
 
@@ -81,18 +95,18 @@ test("workspace tab helpers map route names and tab ids", () => {
 test("ontology space detail store keeps and clears the breadcrumb space name", () => {
   setActivePinia(createPinia());
   const store = useOntologySpaceDetailStore();
-  store.setCurrentSpace("army", "陆军本体空间");
+  store.setCurrentSpace("army", "陆军对象空间");
   assert.equal(store.spaceId, "army");
-  assert.equal(store.displayName, "陆军本体空间");
+  assert.equal(store.displayName, "陆军对象空间");
   store.clearCurrentSpace();
   assert.equal(store.spaceId, "");
   assert.equal(store.displayName, "");
 });
 
-test("space management enter action navigates to the overview route", () => {
+test("space management enter action navigates to the object tab route", () => {
   const source = readFileSync(new URL("../src/views/OntologySpaceManagement/composables/useSpaceManagementActions.ts", import.meta.url), "utf8");
   assert.match(source, /action === ["']enter["']/);
-  assert.match(source, /OntologySpaceManagementDetailOverview/);
+  assert.match(source, /OntologySpaceManagementDetailObject/);
 });
 
 test("breadcrumb includes the current space name while inside a space", () => {
@@ -113,4 +127,22 @@ test("workspace type tabs keep prototype labels including function operator", ()
     /:root:not\(\.dark\) \.workspace-type-tabs[\s\S]*linear-gradient\(135deg, var\(--aircas-color-card-background\), var\(--aircas-color-panel-background-deep\)\)/,
   );
   assert.match(source, /box-shadow: inset 0 0 20px var\(--aircas-color-effect-page-glow\)/);
+});
+
+test("workspace type tabs show resource counts as text suffix", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/components/WorkspaceTypeTabs.vue", import.meta.url), "utf8");
+  assert.match(source, /counts\?: Partial<Record<ManagementWorkspaceTab, number>>/);
+  assert.match(source, /countsLoading\?: boolean/);
+  assert.match(source, /formatOverviewStat/);
+  assert.match(source, /workspace-type-tabs__count/);
+  assert.match(source, /workspace-type-tabs__item-active \.workspace-type-tabs__count/);
+});
+
+test("space detail layout loads overview statistics once and passes counts to tabs", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/index.vue", import.meta.url), "utf8");
+  assert.match(source, /useSpaceOverview\(spaceId\)/);
+  assert.match(source, /:counts="spaceOverviewCounts"/);
+  assert.match(source, /:counts-loading="spaceOverviewCountsLoading"/);
+  assert.doesNotMatch(source, /:space-name=/);
+  assert.doesNotMatch(source, /SPACE_OVERVIEW_KEY/);
 });

@@ -11,6 +11,12 @@ test("default pagination displays ten spaces and keeps the remainder on page two
   assert.equal(filterSpaces(spaces, "", "asc", 1).items.length, 10);
   assert.equal(filterSpaces(spaces, "", "asc", 2).items.length, 2);
 });
+test("create theme dialog defaults to the first object space entry", () => {
+  const pageSource = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(pageSource, /打开新建主题弹窗并默认选中第一条已加载的对象空间/);
+  assert.match(pageSource, /selectedObjectSpace\.value = objectSpaces\.value\[0\]\?\.id \?\? "";/);
+  assert.match(pageSource, /selectedObjectSpace\.value \|\|= objectSpaces\.value\[0\]\?\.id \?\? "";/);
+});
 test("create, update, duplicate API validation and deletion preserve input", () => {
   const spaces = saveSpace([], draft);
   assert.equal(spaces.length, 1);
@@ -50,7 +56,104 @@ test("workspace child route resolves to the space management page under the layo
     route.matched.map((record) => record.name),
     ["Workspace", "OntologySpaceManagement"],
   );
-  assert.equal(route.meta.title, "本体空间管理");
+  assert.equal(route.meta.title, "对象空间管理");
+});
+
+test("theme space management route and navigation item are registered below object spaces", () => {
+  const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
+  const route = router.resolve({ name: "ThemeSpaceManagement" });
+  assert.equal(route.path, "/workspace/theme-space-management");
+  assert.equal(route.meta.title, "主题管理");
+  const navigationSource = readFileSync(new URL("../src/layout/components/NavigationMenu.vue", import.meta.url), "utf8");
+  assert.match(navigationSource, /对象空间管理[\s\S]*主题管理/);
+  assert.match(navigationSource, /name: 'ThemeSpaceManagement'/);
+});
+
+test("theme space create dialog confirms into the subspace create flow with route context", () => {
+  const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
+  const route = router.resolve({ name: "OntologySubspaceCreate", params: { spaceId: "object-default" } });
+  assert.equal(route.path, "/workspace/ontology-space-management/object-default/subspace-create");
+  assert.equal(route.meta.title, "创建主题");
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /useRouter/);
+  assert.match(source, /请选择对象空间/);
+  assert.match(source, /name: "OntologySubspaceCreate"/);
+  assert.match(source, /params:\s*\{\s*spaceId:\s*selectedSpace\.id\s*\}/);
+  assert.match(source, /spaceName: selectedSpace\.displayName/);
+  assert.match(source, /from: "theme-space-management"/);
+  assert.match(source, /getOntologySpaceListInterface\(\{ type: 1 \}\)/);
+  assert.match(source, /loadThemeSpaces/);
+  assert.doesNotMatch(source, /theme_finance/);
+  assert.doesNotMatch(source, /新建主题功能暂未接入/);
+});
+
+test("theme space cards and table rows enter the space management detail with route context", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /function enterThemeSpace/);
+  assert.match(source, /name: "OntologySpaceManagementDetailObject"/);
+  assert.match(source, /from: "theme-space-management"/);
+  assert.doesNotMatch(source, /notifyUnavailable\('进入主题'\)/);
+  assert.doesNotMatch(source, /进入主题功能暂未接入/);
+});
+
+test("theme space cards keep a single-line description and equal row height", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /\.theme-space-management__grid\s*\{[\s\S]*align-items:\s*stretch/);
+  assert.match(source, /\.theme-space-management__grid\s*\{[\s\S]*align-content:\s*start/);
+  assert.doesNotMatch(source, /\.theme-space-card\s*\{[\s\S]*height:\s*100%/);
+  assert.match(source, /\.theme-space-card p\s*\{[\s\S]*text-overflow:\s*ellipsis[\s\S]*white-space:\s*nowrap/);
+});
+
+test("theme space editing uses the shared ontology space update interface", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /updateOntologySpaceInterface/);
+  assert.match(source, /spaceId,\s*displayName,\s*iconUrl: editDraft\.value\.iconUrl,\s*description/);
+  assert.match(source, /await loadThemeSpaces\(\)/);
+  assert.doesNotMatch(source, /编辑主题功能暂未接入/);
+});
+
+test("theme space cards, tables and editing dialog support image placeholders and uploads", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /<Box \/>/);
+  assert.match(source, /postUploadOntologyThumbnailInterface/);
+  assert.match(source, /function readThemeIcon/);
+  assert.match(source, /accept="image\/png,image\/jpeg"/);
+  assert.match(source, /theme-edit-preview/);
+});
+
+test("theme space editing validates required fields and uses a single picture upload", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /:error="editApiNameError"/);
+  assert.match(source, /:error="editDisplayNameError"/);
+  assert.match(source, /请输入 API 名称/);
+  assert.match(source, /请输入空间名称/);
+  assert.match(source, /v-if="!editDraft\.iconUrl"/);
+  assert.match(source, /:limit="1"/);
+  assert.match(source, /:on-exceed="handleThemeIconExceed"/);
+  assert.match(source, /el-upload--picture-card/);
+});
+
+test("theme space toolbar uses theme space description", () => {
+  const pageSource = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  const toolbarSource = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SectionToolbar.vue", import.meta.url), "utf8");
+  assert.match(pageSource, /space-label="主题"/);
+  assert.match(toolbarSource, /spaceLabel\?: string/);
+  assert.match(toolbarSource, /全部\$\{props\.spaceLabel\}/);
+});
+
+test("theme space object statistic reuses the object card color", () => {
+  const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(source, /\{ id: "object", label: "对象", value: overviewCount\.value\.ontologyCount/);
+});
+
+test("theme space light theme uses light backgrounds for list and creation panels", () => {
+  const themeSource = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  const treeSource = readFileSync(new URL("../src/views/OntologySubspaceCreate/components/SubspaceCreateTreePanel.vue", import.meta.url), "utf8");
+  const workspaceSource = readFileSync(new URL("../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", import.meta.url), "utf8");
+  assert.match(themeSource, /:root:not\(\.dark\) \.theme-space-management__grid/);
+  assert.match(themeSource, /:root:not\(\.dark\) \.theme-space-card/);
+  assert.match(treeSource, /:root:not\(\.dark\) \.subspace-create-tree-panel/);
+  assert.match(workspaceSource, /:root:not\(\.dark\) \.subspace-create-workspace__panel/);
 });
 
 test("space actions expose conceptual model build with current space context", () => {
@@ -74,4 +177,41 @@ test("conceptual model canvas displays route space context as readonly fields", 
   assert.match(source, /route\.query\.spaceApiName/);
   assert.match(source, /:readonly="hasRouteSpaceContext"/);
   assert.match(source, /hasRouteSpaceContext = computed/);
+});
+
+test("embedded object space management hides the create space button", () => {
+  const pageSource = readFileSync(new URL("../src/views/OntologySpaceManagement/index.vue", import.meta.url), "utf8");
+  const welcomeSource = readFileSync(new URL("../src/views/OntologySpaceManagement/components/WelcomePanel.vue", import.meta.url), "utf8");
+  assert.match(pageSource, /useRoute/);
+  assert.match(pageSource, /route\.query\.userName/);
+  assert.match(pageSource, /:show-create="!isEmbedded"/);
+  assert.match(welcomeSource, /v-if="showCreate"/);
+  assert.match(welcomeSource, /withDefaults\(defineProps/);
+});
+
+test("theme space management keeps the create space button in embedded mode", () => {
+  const pageSource = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(pageSource, /<WelcomePanel space-label="主题" @create="openCreateThemeSpaceDialog\(\)" \/>/);
+  assert.doesNotMatch(pageSource, /isEmbedded/);
+});
+
+test("space form validates required fields before emitting save", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SpaceFormDialog.vue", import.meta.url), "utf8");
+  assert.match(source, /:error="apiNameError"/);
+  assert.match(source, /:error="displayNameError"/);
+  assert.match(source, /const apiNameError = ref\(\"\"\)/);
+  assert.match(source, /const displayNameError = ref\(\"\"\)/);
+  assert.match(source, /请输入 API 名称/);
+  assert.match(source, /请输入空间名称/);
+  assert.match(source, /API 名称格式不正确/);
+  assert.match(source, /emit\("save", \{ \.\.\.draft \}\)/);
+});
+
+test("space form limits icon upload to one image and hides the add card after preview", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SpaceFormDialog.vue", import.meta.url), "utf8");
+  assert.match(source, /v-if="!draft\.iconUrl"/);
+  assert.match(source, /:limit="1"/);
+  assert.match(source, /:on-exceed="handleIconExceed"/);
+  assert.match(source, /仅支持上传一张图片/);
+  assert.match(source, /el-upload--picture-card/);
 });

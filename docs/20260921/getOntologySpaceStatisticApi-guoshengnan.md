@@ -1,10 +1,10 @@
 # 接口名称
 
-- 查询本体空间资源统计
+- 查询对象空间资源统计
 
 ## 接口描述
 
-- 查询指定本体空间下的资源数量统计，包括对象（本体）、关系、函数算子、行为及行为调度数量。
+- 查询指定对象空间下的资源数量统计，包括对象（对象）、关系、函数算子、行为及行为调度数量。
 - 对应后端 `OntologySpaceController#getStatistic`。
 
 ## 接口 domain
@@ -25,7 +25,7 @@
 
 | 参数名  | 类型            | 必填 | 默认值 | 说明        |
 | ------- | --------------- | ---- | ------ | ----------- |
-| spaceId | integer / int32 | 是   | -      | 本体空间 id |
+| spaceId | integer / int32 | 是   | -      | 对象空间 id |
 
 请求示例：
 
@@ -58,12 +58,12 @@ GET /ontology/space/statistic?spaceId=11
 | message | string                   | 消息描述 |
 | data    | OntologySpaceStatisticVO | 统计数据 |
 
-`data` 字段（`OntologySpaceStatisticVO`，本体空间资源统计）：
+`data` 字段（`OntologySpaceStatisticVO`，对象空间资源统计）：
 
 | 字段                  | 类型            | 说明                      | 示例 |
 | --------------------- | --------------- | ------------------------- | ---- |
-| spaceId               | integer / int32 | 本体空间 id               | 11   |
-| ontologyCount         | integer / int32 | 对象（本体）数量          | 23   |
+| spaceId               | integer / int32 | 对象空间 id               | 11   |
+| ontologyCount         | integer / int32 | 对象（对象）数量          | 23   |
 | linkCount             | integer / int32 | 关系数量                  | 8    |
 | functionCount         | integer / int32 | 函数算子数量              | 5    |
 | actionCount           | integer / int32 | 行为数量                  | 12   |
@@ -85,11 +85,11 @@ GET /ontology/space/statistic?spaceId=11
 文件：`src/types/apis/getOntologySpaceStatisticType.ts`
 
 ```ts
-/** 本体空间资源统计 VO。 */
+/** 对象空间资源统计 VO。 */
 export interface OntologySpaceStatisticVO {
-  /** 本体空间 id。 */
+  /** 对象空间 id。 */
   spaceId: number;
-  /** 对象（本体）数量。 */
+  /** 对象（对象）数量。 */
   ontologyCount: number;
   /** 关系数量。 */
   linkCount: number;
@@ -101,12 +101,12 @@ export interface OntologySpaceStatisticVO {
   actionSchedulingCount: number;
 }
 
-/** 查询本体空间资源统计的响应 data。 */
+/** 查询对象空间资源统计的响应 data。 */
 export type GetOntologySpaceStatisticData = OntologySpaceStatisticVO;
 
-/** 查询本体空间资源统计的查询参数。 */
+/** 查询对象空间资源统计的查询参数。 */
 export interface GetOntologySpaceStatisticParams {
-  /** 本体空间 id，必填。 */
+  /** 对象空间 id，必填。 */
   spaceId: number;
 }
 ```
@@ -126,13 +126,13 @@ import type { ApiResponse, GetOntologySpaceStatisticData, GetOntologySpaceStatis
 import { request } from "@/utils/request";
 
 /**
- * @description 查询指定本体空间下的资源数量统计。
+ * @description 查询指定对象空间下的资源数量统计。
  *
  * 请求方式：GET `/ontology/space/statistic`
  *
  * @param params 查询参数。
- * @param params.spaceId 本体空间 id，必填。
- * @returns 标准 API 响应，data 为本体空间资源统计对象。
+ * @param params.spaceId 对象空间 id，必填。
+ * @returns 标准 API 响应，data 为对象空间资源统计对象。
  */
 export function getOntologySpaceStatisticInterface(params: GetOntologySpaceStatisticParams): Promise<ApiResponse<GetOntologySpaceStatisticData>> {
   return request<GetOntologySpaceStatisticData>({

@@ -1,6 +1,6 @@
 # 接口名称
 
-- 本体对象手动创建
+- 对象手动创建
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 输入参数手动创建本体对象。
+- 输入参数手动创建对象。
 
 ## 接口domain
 
@@ -29,22 +29,22 @@
 - ```JSON
   {
     "spaceId": 11,
-    "displayName": "测试本体对象",
+    "displayName": "测试对象",
     "apiName":"object_1",
     "iconUrl": "",
-    "description": "这是本体描述",
+    "description": "这是对象描述",
     "parentOntologyUniqueIdentifier": "d3e1b0c27f29452eb7cadd1f51eac535",
     "categoryId": 29,
     "groupIds":[]
   }
   ```
 - 请求体：POST 请求使用 `data` 传递 JSON 对象。
-- `spaceId`：【number，必填】 本体空间 id
-- `displayName`：【string，必填】 本体名称
-- `apiName`：【string，必填】本体api名称
-- `iconUrl`：【string，可选】本体图标url
-- `description`：【string，可选】本体描述
-- `parentOntologyUniqueIdentifier`：【string，可选】继承的本体唯一标识
+- `spaceId`：【number，必填】 对象空间 id
+- `displayName`：【string，必填】 对象名称
+- `apiName`：【string，必填】对象api名称
+- `iconUrl`：【string，可选】对象图标url
+- `description`：【string，可选】对象描述
+- `parentOntologyUniqueIdentifier`：【string，可选】继承的对象唯一标识
 - `categoryId`：【number，可选】分类id
 - `groupIds`：【string[]，可选】分组ids
 
@@ -65,7 +65,7 @@
 - `message`：【string】消息描述
 - `success`：【boolean】请求是否成功
 - `data`：【object】响应数据
-  - `uniqueIdentifier`：【string】本体标识
+  - `uniqueIdentifier`：【string】对象标识
 
 前端以 `code === 200` 判定创建成功；即使服务端省略统一响应中的 `success` 字段，也会正常关闭弹窗并刷新列表。
 
@@ -117,20 +117,20 @@ import type { ApiResponse, CreateOntologyObjectData, CreateOntologyObjectParams 
 import { request } from "@/utils/request";
 
 /**
- * 创建本体。
+ * 创建对象。
  *
  * 请求方式：POST `/ontology/meta`
  *
- * @param params 创建本体参数。
+ * @param params 创建对象参数。
  * @param params.spaceId 空间ID。
- * @param params.apiName 本体API。
- * @param params.displayName 本体名称。
- * @param params.icon 本体图标url。
- * @param params.description 本体描述。
+ * @param params.apiName 对象API。
+ * @param params.displayName 对象名称。
+ * @param params.icon 对象图标url。
+ * @param params.description 对象描述。
  * @param params.parentOntologyUniqueIdentifier 继承ID。
- * @param params.categoryId 本体分类id。
- * @param params.groupIds 本体分组ids。
- * @returns 标准 API 响应，返回新创建的本体id。
+ * @param params.categoryId 对象分类id。
+ * @param params.groupIds 对象分组ids。
+ * @returns 标准 API 响应，返回新创建的对象id。
  */
 export function createOntologyObjectInterface(params: CreateOntologyObjectParams): Promise<ApiResponse<CreateOntologyObjectData>> {
   return request<CreateOntologyObjectData>({

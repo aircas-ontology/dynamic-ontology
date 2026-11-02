@@ -79,7 +79,7 @@ export function normalizeRequestError(error: unknown): RequestError {
 }
 
 /**
- * @description 在 USE_MOCK 打开时把登录与本体管理请求改写到 Mock 主机。
+ * @description 在 USE_MOCK 打开时把登录与对象管理请求改写到 Mock 主机。
  * @param config axios 内部请求配置。
  * @returns 改写 url 后的请求配置。
  */

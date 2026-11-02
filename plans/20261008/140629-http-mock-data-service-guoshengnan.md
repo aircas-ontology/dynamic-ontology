@@ -2,7 +2,7 @@
 
 ## 需求理解
 
-在 `src/mockData` 存放由接口响应生成的 HTTP Mock 文件，保留现有 `src/mocks`。本地 `npm run dev` 自动拉起 Mock 服务。`public/configs/domainConfig.js` 由开发人员手改 `USE_MOCK` 与 `MOCK_SERVER_URL`，本轮不修改 `public/`。`request` 按开关把登录与本体管理请求改写到 Mock 主机。写接口首批返回固定成功信封、不落盘。
+在 `src/mockData` 存放由接口响应生成的 HTTP Mock 文件，保留现有 `src/mocks`。本地 `npm run dev` 自动拉起 Mock 服务。`public/configs/domainConfig.js` 由开发人员手改 `USE_MOCK` 与 `MOCK_SERVER_URL`，本轮不修改 `public/`。`request` 按开关把登录与对象管理请求改写到 Mock 主机。写接口首批返回固定成功信封、不落盘。
 
 ## 修改范围
 

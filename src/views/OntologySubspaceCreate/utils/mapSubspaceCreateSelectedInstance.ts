@@ -25,7 +25,7 @@ export interface SubspaceCreateInstanceGroup {
 /**
  * @description 将实体查询记录映射为子空间实例表格行。
  * @param records 实体查询记录。
- * @param object 关联的本体对象。
+ * @param object 关联的对象。
  * @returns 实例表格行。
  */
 export function mapSubspaceCreateSelectedInstances(objects: SubspaceCreateSelectedObject[]): SubspaceCreateSelectedInstance[];

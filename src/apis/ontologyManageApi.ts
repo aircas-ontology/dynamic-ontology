@@ -37,7 +37,7 @@ import type {
 import { request, requestFull, RequestError } from "@/utils/request";
 
 /**
- * @description 创建本体空间。
+ * @description 创建对象空间。
  *
  * 请求方式：POST `/ontology/space`
  *
@@ -57,7 +57,7 @@ export function createOntologySpaceInterface(params: CreateOntologySpaceParams):
 }
 
 /**
- * @description 通过概念模型画布创建本体空间，或向已有空间写入对象、属性和关系。
+ * @description 通过概念模型画布创建对象空间，或向已有空间写入对象、属性和关系。
  * 请求方式：POST `/ontology/space/canvas`
  * @param params 新建空间或已有空间下的画布对象、属性和关系内容。
  * @returns 标准 API 响应，data 包含目标空间 id。
@@ -73,7 +73,7 @@ export function createOntologySpaceWithCanvasContentInterface(
 }
 
 /**
- * @description 删除本体空间。
+ * @description 删除对象空间。
  *
  * 请求方式：DELETE `/ontology/space/{spaceId}`
  *
@@ -89,7 +89,7 @@ export function deleteOntologySpaceInterface(params: DeleteOntologySpaceParams):
 }
 
 /**
- * @description 编辑本体空间。
+ * @description 编辑对象空间。
  *
  * 请求方式：PUT `/ontology/space`
  *
@@ -109,7 +109,7 @@ export function updateOntologySpaceInterface(params: UpdateOntologySpaceParams):
 }
 
 /**
- * @description 通过 multipart/form-data 导入文件创建本体空间。
+ * @description 通过 multipart/form-data 导入文件创建对象空间。
  *
  * 请求方式：POST `/ontology/space/import`
  *
@@ -149,7 +149,7 @@ export function postUploadOntologyThumbnailInterface(params: UploadOntologyThumb
 }
 
 /**
- * @description 查询本体分类体系树。
+ * @description 查询对象分类体系树。
  *
  * 请求方式：GET `/ontology`
  *
@@ -172,7 +172,7 @@ export function getOntologyCategoryTreeInterface(params: OntologyCategoryTreePar
  *
  * @param params 查询参数。
  * @param {string} params.spaceId 必填空间 id。
- * @param {string} [params.ontologyUniqueIdentifierFrom] 可选本体对象唯一标识；传入时仅返回该本体关联的关系。
+ * @param {string} [params.ontologyUniqueIdentifierFrom] 按源对象唯一标识过滤，可选；子空间创建页按选中对象查询父空间关系时使用。
  * @returns 标准 API 响应，data 为关系分类体系单根节点；无 data 时表示关系树为空。
  */
 export function getOntologyRelationCategoryTreeInterface(params: OntologyRelationCategoryTreeParams): Promise<ApiResponse<OntologyRelationCategoryTreeData>> {
@@ -184,43 +184,45 @@ export function getOntologyRelationCategoryTreeInterface(params: OntologyRelatio
 }
 
 /**
- * @description 查询本体空间列表。
+ * @description 查询对象空间列表。
  *
  * 请求方式：GET `/ontology/space`
  *
  * 无入参；10 秒超时，超时或失败由调用方回退样例数据。
- * @returns 标准 API 响应，data 为本体空间数组。
+ * @returns 标准 API 响应，data 为对象空间数组。
  */
-export function getOntologySpaceListInterface(): Promise<ApiResponse<OntologySpaceListData>> {
+export function getOntologySpaceListInterface(params: { type: number }): Promise<ApiResponse<OntologySpaceListData>> {
   return request<OntologySpaceListData>({
     // url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "get",
+    params,
   });
 }
 
 /**
- * @description 获取本体概览页面的资源数量统计。
+ * @description 获取对象概览页面的资源数量统计。
  *
  * 请求方式：GET `/ontology/overview/count`
  *
- * @returns 标准 API 响应，data 为本体空间、对象、行为、函数、属性和关系统计数据。
+ * @returns 标准 API 响应，data 为对象空间、对象、行为、函数、属性和关系统计数据。
  */
-export function getOntologyOverviewCountInterface(): Promise<ApiResponse<GetOntologyOverviewCountData>> {
+export function getOntologyOverviewCountInterface(params: { type: number }): Promise<ApiResponse<GetOntologyOverviewCountData>> {
   return request<GetOntologyOverviewCountData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/overview/count",
     method: "get",
+    params,
   });
 }
 
 /**
- * @description 查询指定本体空间下的资源数量统计。
+ * @description 查询指定对象空间下的资源数量统计。
  *
  * 请求方式：GET `/ontology/space/statistic`
  *
  * @param params 查询参数。
- * @param {number} params.spaceId 本体空间 id，必填。
- * @returns 标准 API 响应，data 为本体空间资源统计对象。
+ * @param {number} params.spaceId 对象空间 id，必填。
+ * @returns 标准 API 响应，data 为对象空间资源统计对象。
  */
 export function getOntologySpaceStatisticInterface(params: GetOntologySpaceStatisticParams): Promise<ApiResponse<GetOntologySpaceStatisticData>> {
   return request<GetOntologySpaceStatisticData>({
@@ -242,13 +244,13 @@ function readExportResponseHeader(headers: AxiosResponse["headers"], name: strin
 }
 
 /**
- * @description 按 exportType 导出本体空间。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
+ * @description 按 exportType 导出对象空间。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
  *
  * 请求方式：GET `/ontology/space/export`
  *
  * 在线文档未声明 JSON 响应体，成功结果按文件字节返回。
  * @param params 查询参数。
- * @param {number} params.spaceId 本体空间 id，必填。
+ * @param {number} params.spaceId 对象空间 id，必填。
  * @param {string} params.exportType 导出类型，必填。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
  * @returns 文件内容和用于命名的响应头。
  */
@@ -270,7 +272,7 @@ export async function getExportOntologySpaceInterface(params: ExportOntologySpac
 }
 
 /**
- * @description 创建本体分类体系树。
+ * @description 创建对象分类体系树。
  *
  * 请求方式：POST `/ontology/category/`
  *
@@ -345,14 +347,14 @@ export function deleteOntologyRelationCategoryTreeInterface(payload: DeleteOntol
 }
 
 /**
- * @description 创建本体之间的关系。
+ * @description 创建对象之间的关系。
  *
  * 请求方式：POST `/ontology/link`
  *
  * @param payload 创建参数。
  * @param {string} payload.name 关系名称。
- * @param {string} payload.ontologyUniqueIdentifierFrom 源本体唯一标识。
- * @param {string} payload.ontologyUniqueIdentifierTo 目标本体唯一标识。
+ * @param {string} payload.ontologyUniqueIdentifierFrom 源对象唯一标识。
+ * @param {string} payload.ontologyUniqueIdentifierTo 目标对象唯一标识。
  * @param {number} [payload.categoryId] 关系分类 id，非必填。
  * @param {string} payload.apiName 关系 API 名称。
  * @param {string} [payload.description] 关系备注/描述，非必填。
@@ -368,7 +370,7 @@ export function postCreateOntologyLinkInterface(payload: CreateOntologyLinkParam
 }
 
 /**
- * @description 修改本体之间的关系名称、分类与描述。
+ * @description 修改对象之间的关系名称、分类与描述。
  *
  * 请求方式：PUT `/ontology/link`
  *
@@ -388,7 +390,7 @@ export function putUpdateOntologyLinkInterface(payload: UpdateOntologyLinkParams
 }
 
 /**
- * @description 删除本体之间的关系。
+ * @description 删除对象之间的关系。
  *
  * 请求方式：DELETE `/ontology/link/{linkUniqIdentifier}`
  *
@@ -404,7 +406,7 @@ export function deleteOntologyLinkInterface(payload: DeleteOntologyLinkParams): 
 }
 
 /**
- * @description 删除本体分类体系树节点。
+ * @description 删除对象分类体系树节点。
  *
  * 请求方式：DELETE `/ontology/category`
  *
@@ -422,7 +424,7 @@ export function deleteOntologyCategoryTreeInterface(payload: DeleteOntologyCateg
 }
 
 /**
- * @description 修改本体分类名称。
+ * @description 修改对象分类名称。
  *
  * 请求方式：PUT `/ontology/category`
  *

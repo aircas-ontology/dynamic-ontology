@@ -14,7 +14,7 @@ interface SpaceManagementActionOptions {
 }
 
 /**
- * @description 编排本体空间页的进入、表单、删除与导出等命令操作。
+ * @description 编排对象空间页的进入、表单、删除与导出等命令操作。
  * @param options 关键词与空间增删回调。
  * @returns 弹窗状态与命令处理方法。
  */
@@ -37,7 +37,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   }
 
   /**
-   * @description 打开新建或编辑本体空间表单；传入 space 为编辑，缺省为新建。
+   * @description 打开新建或编辑对象空间表单；传入 space 为编辑，缺省为新建。
    * @param space 待编辑空间；新建时传 null。
    */
   function openOntologySpaceForm(space: OntologySpaceItem | null = null) {
@@ -55,7 +55,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
     activeSpace.value = space;
     resetOntologySpaceCommandState();
     if (action === "enter") {
-      void router.push({ name: "OntologySpaceManagementDetailOverview", params: { spaceId: space.id } });
+      void router.push({ name: "OntologySpaceManagementDetailObject", params: { spaceId: space.id } });
     } else if (action === "edit") {
       openOntologySpaceForm(space);
     } else if (action === "delete") {
@@ -77,7 +77,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   }
 
   /**
-   * @description 提交本体空间表单草稿：新建走创建接口，编辑走编辑接口；失败时保留弹窗并展示错误。
+   * @description 提交对象空间表单草稿：新建走创建接口，编辑走编辑接口；失败时保留弹窗并展示错误。
    * @param draft 表单草稿。
    */
   async function submitOntologySpaceForm(draft: OntologySpaceDraft) {
@@ -134,7 +134,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   }
 
   /**
-   * @description 确认删除当前选中的本体空间。
+   * @description 确认删除当前选中的对象空间。
    */
   async function confirmDeleteOntologySpace() {
     if (!activeSpace.value || actionBusy.value) return;
@@ -159,7 +159,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   }
 
   /**
-   * @description 确认导出当前选中本体空间，按所选类型下载接口返回的文件。
+   * @description 确认导出当前选中对象空间，按所选类型下载接口返回的文件。
    * @param exportType 导出类型。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
    */
   async function confirmExportOntologySpace(exportType: OntologySpaceExportType) {
@@ -191,7 +191,7 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
   }
 
   /**
-   * @description 导入接口成功后关闭新建弹窗并刷新本体空间列表。
+   * @description 导入接口成功后关闭新建弹窗并刷新对象空间列表。
    */
   function completeOntologySpaceImport() {
     formVisible.value = false;

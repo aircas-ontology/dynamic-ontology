@@ -1,6 +1,6 @@
 # 接口名称
 
-- 本体对象属性分类树编辑
+- 对象属性分类树编辑
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 输入参数修改本体对象属性分类节点。
+- 输入参数修改对象属性分类节点。
 
 ## 接口domain
 
@@ -34,7 +34,7 @@
   }
   ```
 - 请求体：put 请求使用 `data` 传递 JSON 对象。
-- `ontologyIdentifier`：【string，必填】 本体对象标识
+- `ontologyIdentifier`：【string，必填】 对象标识
 - `categoryId`：【number，必填】 分类id
 - `name`：【string，必填】分类名称
 
@@ -90,15 +90,15 @@ import type { ApiResponse, updateOntologyObjectArrTypeTreeParams } from "@/types
 import { request } from "@/utils/request";
 
 /**
- * 修改本体对象属性分类树。
+ * 修改对象属性分类树。
  *
  * 请求方式：put `/ontology/property/category`
  *
- * @param params 修改本体对象属性分类参数。
+ * @param params 修改对象属性分类参数。
  * @param params.ontologyIdentifier 对象标识。
  * @param params.categoryId 节点id。
  * @param params.name 属性分类名称。
- * @returns 标准 API 响应，返回新修改的本体id。
+ * @returns 标准 API 响应，返回新修改的对象id。
  */
 export function updateOntologyObjectArrTypeTreeInterface(params: updateOntologyObjectArrTypeTreeParams): Promise<ApiResponse<>> {
   return request<>({

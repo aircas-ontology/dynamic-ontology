@@ -8,7 +8,7 @@ import type {
 } from "@/types";
 
 /**
- * @description 将单个分类树节点映射为概念层级树节点；同时保留节点下本体对象显示名称。
+ * @description 将单个分类树节点映射为概念层级树节点；同时保留节点下对象显示名称。
  * @param node 接口分类节点。
  * @returns 页面概念树节点。
  */
@@ -36,15 +36,15 @@ export function mapOntologyCategoryTree(data: OntologyCategoryTreeData): Ontolog
 }
 
 /**
- * @description 将分类树中的本体元信息映射为对象工作区分区，供对象列表展示和本地创建回显使用。
- * @param data 本体分类树接口数据。
+ * @description 将分类树中的对象元信息映射为对象工作区分区，供对象列表展示和本地创建回显使用。
+ * @param data 对象分类树接口数据。
  * @returns 按分类组织的对象工作区分区。
  */
 export function mapOntologyCategorySections(data: OntologyCategoryTreeData): OntologyObjectSection[] {
   const sections: OntologyObjectSection[] = [];
 
   /**
-   * @description 递归遍历分类树，有本体的分类写入对象列表分区，包含名为全部的根分类。
+   * @description 递归遍历分类树，有对象的分类写入对象列表分区，包含名为全部的根分类。
    * @param node 当前分类树节点。
    */
   function visit(node: OntologyCategoryTreeNode) {
@@ -70,9 +70,9 @@ export function mapOntologyCategorySections(data: OntologyCategoryTreeData): Ont
 
 /**
  * @description 按分类查询结果组装对象列表分区，并使用分类树补充分区名称。
- * @param items 查询接口返回的本体元数据列表。
+ * @param items 查询接口返回的对象元数据列表。
  * @param tree 已映射的概念层级树。
- * @returns 按本体分类分组的右侧列表分区。
+ * @returns 按对象分类分组的右侧列表分区。
  */
 export function mapOntologyObjectSections(items: OntologyObjectQueryItem[], tree: OntologyConceptNode[]): OntologyObjectSection[] {
   const categoryNames = new Map<string, string>();
@@ -91,7 +91,7 @@ export function mapOntologyObjectSections(items: OntologyObjectQueryItem[], tree
     const item: OntologyObjectItem = {
       id: meta.uniqueIdentifier ?? `${categoryId}-${index}`,
       categoryId,
-      displayName: meta.displayName ?? "未命名本体",
+      displayName: meta.displayName ?? "未命名对象",
       apiName: meta.apiName ?? "",
       description: meta.description ?? "",
       parentDisplayName: meta.parentOntologyDisplayName ?? "无",

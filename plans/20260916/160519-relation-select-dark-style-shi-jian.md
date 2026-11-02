@@ -1,4 +1,4 @@
-# Plan：本体关系筛选对象下拉框深色样式
+# Plan：对象关系筛选对象下拉框深色样式
 
 确认范围：完善 `el-select` Aircas 公共覆盖，并为关系页筛选对象及同页表单源/目标 select 挂上 `aircas-select` / `aircas-select-popper`。不新增主题变量与依赖。
 

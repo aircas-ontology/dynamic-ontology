@@ -7,7 +7,7 @@
 ## 修改范围
 
 - 新增全局组件 `AircasLoading`，默认插槽放置原有文案，插槽上方为 CSS 圆环动画。
-- 接入本体空间列表、空间详情、对象工作区、关系工作区、空间总览和属性分类/属性表格的现有加载文案。
+- 接入对象空间列表、空间详情、对象工作区、关系工作区、空间总览和属性分类/属性表格的现有加载文案。
 - 不改错误态、空态和按钮提交中的 loading。
 
 ## 文件变更
@@ -40,4 +40,4 @@
 
 ## 验证方式
 
-先运行失败测试，再完成最小实现。执行 `node --test --experimental-strip-types tests/aircas-loading.test.mjs`、`npm run type-check` 和任务文件的 `npm run format:check`。在浏览器中查看本体空间列表的加载状态。
+先运行失败测试，再完成最小实现。执行 `node --test --experimental-strip-types tests/aircas-loading.test.mjs`、`npm run type-check` 和任务文件的 `npm run format:check`。在浏览器中查看对象空间列表的加载状态。

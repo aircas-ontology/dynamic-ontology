@@ -2,7 +2,7 @@
 
 ## 需求理解
 
-将 `ObjectWorkspacePanel.vue` 中分类树与本体对象相关的交互函数抽到页面级 composable；面板保留布局编排与树/列表定位；行为与接口调用不变。
+将 `ObjectWorkspacePanel.vue` 中分类树与对象相关的交互函数抽到页面级 composable；面板保留布局编排与树/列表定位；行为与接口调用不变。
 
 ## 修改范围
 

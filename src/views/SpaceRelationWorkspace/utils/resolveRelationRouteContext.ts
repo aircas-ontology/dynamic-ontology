@@ -14,7 +14,7 @@ export function resolveRelationSpaceId(route: RouteLocationNormalizedLoaded): st
 }
 
 /**
- * @description 解析对象详情关系页用于关系树请求的本体唯一标识；空间关系页返回空串。
+ * @description 解析对象详情关系页用于关系树请求的对象唯一标识；空间关系页返回空串。
  * @param route 当前路由。
  * @returns `params.objectId` 去空白后的值；非对象详情页为空串。
  */

@@ -14,10 +14,10 @@
           ariaLabel="搜索属性"
           @update:model-value="$emit('update:attributeSearch', $event)"
         />
-        <el-button :loading="dataSourceOpening" @click="$emit('open-data-source')">
+        <el-button :loading="dataSourceOpening" data-onboarding="associate-open" @click="$emit('open-data-source')">
           <el-icon><Connection /></el-icon>关联数据源
         </el-button>
-        <el-button @click="$emit('create-attribute')">
+        <el-button data-onboarding="attribute-create-open" @click="$emit('create-attribute')">
           <el-icon><Plus /></el-icon>添加
         </el-button>
       </div>

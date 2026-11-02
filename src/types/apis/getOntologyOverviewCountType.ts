@@ -1,10 +1,10 @@
-/** 本体概览页面资源数量统计。 */
+/** 对象概览页面资源数量统计。 */
 export interface OverviewCountVO {
-  /** 本体空间数量。 */
+  /** 对象空间数量。 */
   spaceCount?: number;
-  /** 本体对象数量。 */
+  /** 对象数量。 */
   ontologyCount?: number;
-  /** 本体分组数量。 */
+  /** 对象分组数量。 */
   groupCount?: number;
   /** 行为调度数量。 */
   actionSchedulingCount?: number;
@@ -18,5 +18,5 @@ export interface OverviewCountVO {
   linkCount?: number;
 }
 
-/** 获取本体概览统计接口的响应 data。 */
+/** 获取对象概览统计接口的响应 data。 */
 export type GetOntologyOverviewCountData = OverviewCountVO;

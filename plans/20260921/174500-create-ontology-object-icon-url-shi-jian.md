@@ -1,8 +1,8 @@
-# 创建本体对象参数 icon → iconUrl
+# 创建对象参数 icon → iconUrl
 
 ## 需求理解
 
-按 `docs/20260919/createOntologyObjectApi-guoshengnan.md` 正文，创建本体对象请求字段改为可选 `iconUrl`。编辑对象接口不在本次范围。
+按 `docs/20260919/createOntologyObjectApi-guoshengnan.md` 正文，创建对象请求字段改为可选 `iconUrl`。编辑对象接口不在本次范围。
 
 ## 修改范围
 

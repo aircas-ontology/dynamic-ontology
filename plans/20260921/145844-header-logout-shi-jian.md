@@ -32,4 +32,4 @@
 
 ## 验证方式
 
-先运行失败测试，再完成最小实现。执行 `node --test --experimental-strip-types tests/header-logout.test.mjs`、`npm run type-check` 和任务文件的格式检查。在浏览器中从本体空间页打开访客菜单并退出，确认回到登录页且令牌已清除。
+先运行失败测试，再完成最小实现。执行 `node --test --experimental-strip-types tests/header-logout.test.mjs`、`npm run type-check` 和任务文件的格式检查。在浏览器中从对象空间页打开访客菜单并退出，确认回到登录页且令牌已清除。

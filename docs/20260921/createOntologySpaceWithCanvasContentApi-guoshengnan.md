@@ -4,7 +4,7 @@
 
 ## 接口描述
 
-- 根据画布内容创建本体空间，并批量写入画布中的本体对象、对象属性和对象关系。
+- 根据画布内容创建对象空间，并批量写入画布中的对象、对象属性和对象关系。
 
 ## 接口 domain
 
@@ -29,7 +29,7 @@
     {
       "displayName": "驱逐舰",
       "apiName": "destroyer",
-      "description": "驱逐舰本体对象",
+      "description": "驱逐舰对象",
       "properties": [
         {
           "displayName": "舰名",
@@ -45,7 +45,7 @@
     {
       "displayName": "驱逐舰队",
       "apiName": "destroyer1",
-      "description": "驱逐舰队本体对象",
+      "description": "驱逐舰队对象",
       "properties": [
         {
           "displayName": "舰名",
@@ -73,15 +73,15 @@
 
 | 字段                                   | 类型             | 必填     | 说明                                                                    |
 | -------------------------------------- | ---------------- | -------- | ----------------------------------------------------------------------- |
-| spaceId                                | integer / int32  | 否       | 已有本体空间 id；传入后直接在该空间下创建对象、属性和关系，不再创建空间 |
+| spaceId                                | integer / int32  | 否       | 已有对象空间 id；传入后直接在该空间下创建对象、属性和关系，不再创建空间 |
 | displayName                            | string           | 条件必填 | 未传 `spaceId` 时的新建空间名称                                         |
 | apiName                                | string           | 条件必填 | 未传 `spaceId` 时的新建空间 API 名称                                    |
 | description                            | string           | 否       | 空间描述                                                                |
-| ontologies                             | CanvasOntology[] | 否       | 画布中的本体对象列表                                                    |
-| ontologies[].displayName               | string           | 是       | 本体对象名称                                                            |
-| ontologies[].apiName                   | string           | 是       | 本体对象 API 名称                                                       |
-| ontologies[].description               | string           | 否       | 本体对象描述                                                            |     |
-| ontologies[].properties                | CanvasProperty[] | 否       | 本体对象属性列表                                                        |
+| ontologies                             | CanvasOntology[] | 否       | 画布中的对象列表                                                    |
+| ontologies[].displayName               | string           | 是       | 对象名称                                                            |
+| ontologies[].apiName                   | string           | 是       | 对象 API 名称                                                       |
+| ontologies[].description               | string           | 否       | 对象描述                                                            |     |
+| ontologies[].properties                | CanvasProperty[] | 否       | 对象属性列表                                                        |
 | ontologies[].properties[].displayName  | string           | 是       | 属性展示名称                                                            |
 | ontologies[].properties[].apiName      | string           | 是       | 属性 API 名称                                                           |
 | ontologies[].properties[].dataType     | string           | 否       | 数据类型枚举名称，不传默认 `String`                                     |
@@ -192,7 +192,7 @@ import type { ApiResponse, CreateOntologySpaceWithCanvasContentData, CreateOntol
 import { request } from "@/utils/request";
 
 /**
- * 通过概念模型画布创建本体空间及其对象、属性、关系。
+ * 通过概念模型画布创建对象空间及其对象、属性、关系。
  *
  * 请求方式：POST `/ontology/space/canvas`
  *

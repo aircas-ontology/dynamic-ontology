@@ -1,6 +1,6 @@
 # 接口名称
 
-- 本体对象属性分类树查询
+- 对象属性分类树查询
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 查询本体对象属性分类
+- 查询对象属性分类
 
 ## 接口domain
 
@@ -32,7 +32,7 @@
   }
   ```
 - 请求体：GET 请求使用 `query` 传递参数。
-- `ontologyUniqueIdentifier`：【string，必填】 本体对象标识
+- `ontologyUniqueIdentifier`：【string，必填】 对象标识
 
 ## 输出参数
 
@@ -109,13 +109,13 @@ import type { ApiResponse, GetOntologyObjectArrTypeTreeParams, GetOntologyObject
 import { request } from "@/utils/request";
 
 /**
- * 查询本体对象属性分类树。
+ * 查询对象属性分类树。
  *
  * 请求方式：GET `/ontology/property/category`
  *
- * @param params 查询本体对象属性分类参数。
+ * @param params 查询对象属性分类参数。
  * @param params.ontologyUniqueIdentifier 对象唯一标识
- * @returns 标准 API 响应，返回本体属性分类树。
+ * @returns 标准 API 响应，返回对象属性分类树。
  */
 export function getOntologyObjectArrTypeTreeInterface(params: GetOntologyObjectArrTypeTreeParams): Promise<ApiResponse<GetOntologyObjectArrTypeTreeData>> {
   return request<GetOntologyObjectArrTypeTreeData>({

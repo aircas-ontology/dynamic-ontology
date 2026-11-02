@@ -1,6 +1,6 @@
 <template>
-  <el-dialog v-model="visible" title="删除本体" width="min(440px, 94vw)" append-to-body destroy-on-close>
-    <p>确认删除本体对象「{{ objectName }}」吗？此操作不可恢复。</p>
+  <el-dialog v-model="visible" title="删除对象" width="min(440px, 94vw)" append-to-body destroy-on-close>
+    <p>确认删除对象「{{ objectName }}」吗？此操作不可恢复。</p>
     <p v-if="error" class="ontology-object-delete-dialog__error" role="alert">{{ error }}</p>
     <template #footer>
       <el-button :disabled="submitting" @click="visible = false">取消</el-button>

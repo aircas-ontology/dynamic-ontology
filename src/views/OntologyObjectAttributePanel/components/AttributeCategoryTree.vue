@@ -2,8 +2,7 @@
   <aside class="ontology-object-attribute-panel__categories" aria-label="属性分类树">
     <header class="ontology-object-attribute-panel__section-header">
       <div>
-        <h1>属性分类树 <small>/ Property Category</small></h1>
-        <p>按分类浏览当前本体对象的属性</p>
+        <h1>属性分类树</h1>
       </div>
     </header>
     <el-input
@@ -17,7 +16,7 @@
     <p v-else-if="categoryTreeError" class="ontology-object-attribute-panel__tree-state is-error" role="alert">{{ categoryTreeError }}</p>
     <div v-else-if="categoryTreeEmpty" class="ontology-object-attribute-panel__tree-empty">
       <p class="ontology-object-attribute-panel__tree-state">暂无分类树数据</p>
-      <el-button @click="$emit('create-root')">创建分类</el-button>
+      <el-button data-onboarding="attribute-tree-create" @click="$emit('create-root')">创建分类</el-button>
     </div>
     <el-tree
       v-else
@@ -48,7 +47,13 @@
           </template>
           <span v-if="isCategoryNode(data)" class="ontology-object-attribute-panel__tree-actions" @click.stop>
             <el-tooltip content="添加子分类" placement="top" :show-after="200">
-              <button type="button" class="ontology-object-attribute-panel__tree-action" aria-label="添加子分类" @click="$emit('create-category', data)">
+              <button
+                type="button"
+                class="ontology-object-attribute-panel__tree-action"
+                data-onboarding="attribute-tree-create"
+                aria-label="添加子分类"
+                @click="$emit('create-category', data)"
+              >
                 <el-icon><Plus /></el-icon>
               </button>
             </el-tooltip>
@@ -94,7 +99,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:categorySearch": [value: string];
   "select-category": [data: OntologyAttributeTreeNode];
-  "edit-attribute": [data: OntologyAttributePropertyTreeNode];
+  "view-attribute": [data: OntologyAttributePropertyTreeNode];
   "create-root": [];
   "create-category": [data: OntologyAttributeCategoryNode];
   "edit-category": [data: OntologyAttributeCategoryNode];
@@ -109,12 +114,12 @@ function isCategoryNode(value: unknown): value is OntologyAttributeCategoryNode 
 }
 
 /**
- * @description 分类树节点点击：分类节点用于筛选属性列表，属性节点打开编辑弹窗。
+ * @description 分类树节点点击：分类节点用于筛选属性列表，属性节点打开详情弹窗。
  * @param data 被点击的树节点
  */
 function handleCategoryTreeNodeClick(data: OntologyAttributeTreeNode) {
   if (data.nodeType === "property") {
-    emit("edit-attribute", data);
+    emit("view-attribute", data);
     return;
   }
   emit("select-category", data);
@@ -265,7 +270,8 @@ watch(
 }
 
 .ontology-object-attribute-panel__tree :deep(.el-tree-node__content:hover) .ontology-object-attribute-panel__tree-actions,
-.ontology-object-attribute-panel__tree :deep(.el-tree-node__content:focus-within) .ontology-object-attribute-panel__tree-actions {
+.ontology-object-attribute-panel__tree :deep(.el-tree-node__content:focus-within) .ontology-object-attribute-panel__tree-actions,
+.ontology-object-attribute-panel__tree-actions:has(.onboarding-guide__target-revealed) {
   opacity: 1;
   pointer-events: auto;
 }

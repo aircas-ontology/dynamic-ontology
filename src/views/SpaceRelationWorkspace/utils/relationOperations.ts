@@ -191,3 +191,28 @@ export function filterRelationsByCategory(
   const ids = new Set(collectCategoryIds(node));
   return relations.filter((item) => ids.has(item.categoryId));
 }
+
+/**
+ * @description 递归裁剪关系分类树：移除自身及子树均不包含给定关系的分类分支，保留命中分类的完整父级路径。
+ * @param nodes 关系分类树节点。
+ * @param relations 需要在树中展示的关系列表。
+ * @returns 裁剪后的分类树。
+ */
+export function pruneRelationCategoryTree(nodes: OntologyRelationCategoryNode[], relations: OntologyRelationClass[]): OntologyRelationCategoryNode[] {
+  const matchedCategoryIds = new Set(relations.map((item) => item.categoryId));
+
+  /**
+   * @description 递归保留命中关系的分类节点及其祖先路径。
+   * @param children 当前层级的分类节点。
+   * @returns 裁剪后的分类节点。
+   */
+  function prune(children: OntologyRelationCategoryNode[]): OntologyRelationCategoryNode[] {
+    return children.flatMap((node) => {
+      const nextChildren = prune(node.children);
+      if (!matchedCategoryIds.has(node.id) && nextChildren.length === 0) return [];
+      return [{ ...node, children: nextChildren }];
+    });
+  }
+
+  return prune(nodes);
+}

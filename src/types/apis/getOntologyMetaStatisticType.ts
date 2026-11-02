@@ -1,6 +1,6 @@
-/** 本体对象资源统计 VO。 */
+/** 对象资源统计 VO。 */
 export interface OntologyMetaStatisticVO {
-  /** 本体 id。 */
+  /** 对象 id。 */
   uniqueIdentifier: string;
   /** 实例数量。 */
   entityCount: number;
@@ -12,11 +12,11 @@ export interface OntologyMetaStatisticVO {
   actionCount: number;
 }
 
-/** 统计本体对象资源数量的响应 data。 */
+/** 统计对象资源数量的响应 data。 */
 export type GetOntologyMetaStatisticData = OntologyMetaStatisticVO;
 
-/** 统计本体对象资源数量的查询参数。 */
+/** 统计对象资源数量的查询参数。 */
 export interface GetOntologyMetaStatisticParams {
-  /** 本体唯一标识，必填。 */
+  /** 对象唯一标识，必填。 */
   uniqueIdentifier: string;
 }

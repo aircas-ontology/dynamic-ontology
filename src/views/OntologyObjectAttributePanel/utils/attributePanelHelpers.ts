@@ -41,7 +41,7 @@ function mapPropertyTreeNode(item: OntologyPropertyInfo): OntologyAttributePrope
 /**
  * @description 将接口属性记录适配为属性列表项。
  * @param item 接口属性记录
- * @param ontologyUniqueIdentifier 当前本体对象标识
+ * @param ontologyUniqueIdentifier 当前对象标识
  * @returns 属性列表项
  */
 export function mapOntologyPropertyItem(item: OntologyPropertyInfo, ontologyUniqueIdentifier: string): OntologyAttributeItem {
@@ -59,6 +59,8 @@ export function mapOntologyPropertyItem(item: OntologyPropertyInfo, ontologyUniq
     description: item.description ?? "",
     isPrimary: item.isPrimaryKey === true,
     isNameKey: item.isTitleKey === true,
+    datasourceId: item.datasourceId ?? "",
+    datasourceColumnName: item.datasourceColumnName ?? "",
   };
 }
 
@@ -134,6 +136,25 @@ export function flattenCategoryOptions(nodes: OntologyAttributeCategoryNode[]): 
   return nodes.flatMap((node) => {
     const categoryChildren = node.children?.filter(isCategoryNode) ?? [];
     return [node, ...flattenCategoryOptions(categoryChildren)];
+  });
+}
+
+/**
+ * @description 将属性分类树映射为 tree-select 数据：只保留分类目录，去掉属性叶子。
+ * @param nodes 含属性叶子的分类树。
+ * @returns 仅含分类子节点的树，供 el-tree-select 使用。
+ */
+export function mapAttributeCategoryTreeSelectData(nodes: OntologyAttributeCategoryNode[]): OntologyAttributeCategoryNode[] {
+  return nodes.map((node) => {
+    const categoryChildren = mapAttributeCategoryTreeSelectData(node.children?.filter(isCategoryNode) ?? []);
+    return {
+      nodeType: "category",
+      id: node.id,
+      label: node.label,
+      propertyCount: node.propertyCount,
+      ...(node.isRoot ? { isRoot: true } : {}),
+      ...(categoryChildren.length ? { children: categoryChildren } : {}),
+    };
   });
 }
 

@@ -12,6 +12,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from "vue";
 import type { editor as MonacoEditor } from "monaco-editor";
+import { ensureMonacoEnvironment } from "@/utils/ensureMonacoEnvironment";
 
 const props = defineProps<{
   modelValue: string;
@@ -37,19 +38,6 @@ function disposeEditor() {
   }
   editor?.dispose();
   editor = null;
-}
-
-/**
- * @description 配置 Monaco worker，仅使用明文编辑器 worker。
- */
-function ensureMonacoEnvironment() {
-  const globalScope = globalThis as typeof globalThis & { MonacoEnvironment?: { getWorker(): Worker } };
-  if (globalScope.MonacoEnvironment) return;
-  globalScope.MonacoEnvironment = {
-    getWorker() {
-      return new Worker(new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url), { type: "module" });
-    },
-  };
 }
 
 /**

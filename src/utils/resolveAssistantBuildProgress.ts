@@ -1,7 +1,7 @@
 import type { AiAssistantBuildProgress, AiAssistantBuildStep, AiAssistantBuildStepStatus } from "@/types";
 
 const defaultBuildStepTitles = [
-  "定义本体对象",
+  "定义对象",
   "导入资料",
   "构建对象",
   "构建属性",

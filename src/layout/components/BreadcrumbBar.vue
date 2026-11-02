@@ -7,17 +7,19 @@
     </span>
     <el-breadcrumb>
       <template v-if="isObjectDetail">
-        <el-breadcrumb-item :to="{ name: 'OntologySpaceManagement' }">本体空间管理</el-breadcrumb-item>
-        <el-breadcrumb-item v-if="spaceName" :to="{ name: 'OntologySpaceManagementDetail', params: { spaceId } }">{{ spaceName }}</el-breadcrumb-item>
+        <el-breadcrumb-item :to="spaceEntryTarget">{{ spaceEntryLabel }}</el-breadcrumb-item>
+        <el-breadcrumb-item v-if="spaceName" :to="objectSpaceDetailTarget">{{ spaceName }}</el-breadcrumb-item>
         <el-breadcrumb-item>{{ objectDisplayName }}</el-breadcrumb-item>
       </template>
       <template v-else-if="isSubspaceCreate">
-        <el-breadcrumb-item :to="{ name: 'OntologySpaceManagement' }">本体空间管理</el-breadcrumb-item>
-        <el-breadcrumb-item :to="{ name: 'OntologySpaceManagementDetail', params: { spaceId: currentSpaceId } }">{{ spaceDisplayName }}</el-breadcrumb-item>
+        <el-breadcrumb-item :to="spaceEntryTarget">{{ spaceEntryLabel }}</el-breadcrumb-item>
+        <el-breadcrumb-item v-if="!isFromThemeSpace" :to="{ name: 'OntologySpaceManagementDetail', params: { spaceId: currentSpaceId } }">{{
+          spaceDisplayName
+        }}</el-breadcrumb-item>
         <el-breadcrumb-item>{{ subspaceCreateTitle }}</el-breadcrumb-item>
       </template>
       <template v-else-if="isSpaceDetail">
-        <el-breadcrumb-item :to="{ name: 'OntologySpaceManagement' }">本体空间管理</el-breadcrumb-item>
+        <el-breadcrumb-item :to="spaceEntryTarget">{{ spaceEntryLabel }}</el-breadcrumb-item>
         <el-breadcrumb-item>{{ spaceDisplayName }}</el-breadcrumb-item>
       </template>
       <template v-else>
@@ -43,7 +45,25 @@ const isObjectDetail = computed(() => route.matched.some((record) => record.name
 
 const isSubspaceCreate = computed(() => route.name === "OntologySubspaceCreate");
 
-const spaceDisplayName = computed(() => displayName.value.trim() || "未命名空间");
+const isFromThemeSpace = computed(() => route.query.from === "theme-space-management");
+
+const spaceEntryLabel = computed(() => (isFromThemeSpace.value ? "主题管理" : "对象空间管理"));
+
+const spaceEntryTarget = computed(() => (isFromThemeSpace.value ? { name: "ThemeSpaceManagement" } : { name: "OntologySpaceManagement" }));
+
+const objectSpaceDetailTarget = computed(() => ({
+  name: "OntologySpaceManagementDetail",
+  params: { spaceId: currentSpaceId.value },
+  query: isFromThemeSpace.value ? { spaceName: spaceName.value, from: "theme-space-management" } : { spaceName: spaceName.value },
+}));
+
+const spaceDisplayName = computed(() => {
+  if (isSpaceDetail.value || isSubspaceCreate.value) {
+    const fromQuery = route.query.spaceName;
+    if (typeof fromQuery === "string" && fromQuery.trim()) return fromQuery.trim();
+  }
+  return displayName.value.trim() || "未命名空间";
+});
 
 const currentSpaceId = computed(() => {
   const fromParams = route.params.spaceId;
@@ -53,7 +73,7 @@ const currentSpaceId = computed(() => {
 
 const subspaceCreateTitle = computed(() => {
   const title = route.meta.title;
-  return typeof title === "string" && title.trim() ? title.trim() : "创建子空间";
+  return typeof title === "string" && title.trim() ? title.trim() : "创建主题";
 });
 
 const spaceId = computed(() => {
@@ -70,7 +90,7 @@ const objectDisplayName = computed(() => {
   const fromQuery = route.query.objectName;
   if (typeof fromQuery === "string" && fromQuery.trim()) return fromQuery.trim();
   const fromParams = route.params.objectId;
-  return typeof fromParams === "string" && fromParams ? fromParams : "本体对象详情";
+  return typeof fromParams === "string" && fromParams ? fromParams : "对象详情";
 });
 </script>
 <style scoped lang="scss">

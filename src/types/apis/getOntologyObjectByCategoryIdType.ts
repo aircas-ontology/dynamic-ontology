@@ -1,9 +1,9 @@
-/** 根据分类查询本体对象列表的请求参数。 */
+/** 根据分类查询对象列表的请求参数。 */
 export interface GetOntologyObjectByCategoryIdParams {
   categoryId?: number;
 }
 
-/** 根据分类查询返回的本体元数据。 */
+/** 根据分类查询返回的对象元数据。 */
 export interface OntologyObjectQueryItem {
   uniqueIdentifier?: string;
   createTime?: string;

@@ -1,10 +1,10 @@
 # 接口名称
 
-- 搜索查询本体空间下数据源列表
+- 搜索查询对象空间下数据源列表
 
 ## 接口描述
 
-- 分页搜索指定本体空间下的数据源（数据表）列表，支持按关键字模糊查询。
+- 分页搜索指定对象空间下的数据源（数据表）列表，支持按关键字模糊查询。
 - 对应后端 `OntologyDatasourceController#getTables`。
 
 ## 接口 domain
@@ -25,7 +25,7 @@
 
 | 字段     | 类型            | 必填 | 默认值 | 说明                |
 | -------- | --------------- | ---- | ------ | ------------------- |
-| spaceId  | integer / int32 | 是   | -      | 本体空间 id         |
+| spaceId  | integer / int32 | 是   | -      | 对象空间 id         |
 | keyword  | string          | 否   | `""`   | 搜索关键字          |
 | pageNum  | integer / int32 | 否   | `1`    | 当前页码，从 1 开始 |
 | pageSize | integer / int32 | 否   | `1000` | 每页条数            |
@@ -123,9 +123,9 @@ export interface GetOntologyDatasourceTablesData {
   current: number;
 }
 
-/** 查询本体空间下数据源列表的查询参数。 */
+/** 查询对象空间下数据源列表的查询参数。 */
 export interface GetOntologyDatasourceTablesParams {
-  /** 本体空间 id。 */
+  /** 对象空间 id。 */
   spaceId: number;
   /** 搜索关键字，默认空字符串。 */
   keyword?: string;
@@ -152,12 +152,12 @@ import { requestTimeoutMs } from "@/utils/constants";
 import { request } from "@/utils/request";
 
 /**
- * @description 搜索查询本体空间下数据源（数据表）列表，支持关键字模糊搜索与分页。
+ * @description 搜索查询对象空间下数据源（数据表）列表，支持关键字模糊搜索与分页。
  *
  * 请求方式：GET `/ontology/datasource/table`
  *
  * @param params 查询参数。
- * @param params.spaceId 本体空间 id，必填。
+ * @param params.spaceId 对象空间 id，必填。
  * @param params.keyword 搜索关键字，可选，默认空字符串。
  * @param params.pageNum 当前页码，可选，默认 1。
  * @param params.pageSize 每页条数，可选，默认 1000。

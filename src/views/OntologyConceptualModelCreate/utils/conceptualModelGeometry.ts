@@ -1,8 +1,8 @@
 import type { ConceptualModelObject, ConceptualModelPort, ConceptualModelRelation } from "@/types";
 
 /**
- * @description 计算本体对象四边连接点在画布坐标系中的位置。
- * @param object 本体对象节点
+ * @description 计算对象四边连接点在画布坐标系中的位置。
+ * @param object 对象节点
  * @param port 四边连接点
  * @returns 连接点坐标
  */

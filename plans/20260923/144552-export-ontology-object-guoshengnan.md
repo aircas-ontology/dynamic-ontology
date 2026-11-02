@@ -1,13 +1,13 @@
-# 对接本体对象导出接口
+# 对接对象导出接口
 
 ## 需求理解
 
-本体对象卡片和列表上的导出按钮，点击后调用 `docs/20260923/4.exportOntologyApi.md` 中的 `GET /ontology/meta/export`。查询参数为当前对象的 `uniqueIdentifier`。在线文档只声明 HTTP 200，没有响应 schema，因此成功结果按文件下载，不编造 JSON 字段，也不生成 Mock。
+对象卡片和列表上的导出按钮，点击后调用 `docs/20260923/4.exportOntologyApi.md` 中的 `GET /ontology/meta/export`。查询参数为当前对象的 `uniqueIdentifier`。在线文档只声明 HTTP 200，没有响应 schema，因此成功结果按文件下载，不编造 JSON 字段，也不生成 Mock。
 
 ## 修改范围
 
 - 增加导出查询参数和文件传输结果类型。
-- 在本体对象管理 API 中增加导出请求，使用 blob 读取响应体和响应头。
+- 在对象管理 API 中增加导出请求，使用 blob 读取响应体和响应头。
 - 卡片与列表共用的对象动作里，导出不再提示尚未接入，而是下载接口返回的文件。
 - 不改按钮文案和布局，不新增确认弹窗。
 

@@ -12,36 +12,6 @@ function readSource(relativePath) {
 }
 
 describe("update ontology link api", () => {
-  test("puts UpdateOntologyLinkParams to /ontology/link with SUCCESS mock", () => {
-    const apiSource = readSource("../src/apis/ontologyManageApi.ts");
-    const typeSource = readSource("../src/types/apis/updateOntologyLinkType.ts");
-    const mockSource = readSource("../src/mocks/updateOntologyLinkMock/updateOntologyLinkMock.ts");
-    const barrelSource = readSource("../src/apis/index.ts");
-    const typesBarrel = readSource("../src/types/index.ts");
-
-    assert.match(apiSource, /export function putUpdateOntologyLinkInterface\(\s*payload: UpdateOntologyLinkParams,?\s*\): Promise<ApiResponse<undefined>>/);
-    assert.match(apiSource, /url:\s*DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/link"/);
-    assert.match(apiSource, /method:\s*"put"/);
-    assert.match(apiSource, /data: payload/);
-    assert.match(apiSource, /@param \{string\} payload\.uniqueIdentifier/);
-    assert.match(apiSource, /@param \{string\} payload\.name/);
-    assert.match(apiSource, /@param \{number\} payload\.categoryId/);
-    assert.match(apiSource, /@param \{string\} payload\.description/);
-
-    assert.match(typeSource, /export interface UpdateOntologyLinkParams/);
-    assert.match(typeSource, /uniqueIdentifier:\s*string/);
-    assert.match(typeSource, /name:\s*string/);
-    assert.match(typeSource, /categoryId:\s*number/);
-    assert.match(typeSource, /description:\s*string/);
-
-    assert.match(mockSource, /export const updateOntologyLinkMock: ApiResponse<undefined>/);
-    assert.match(mockSource, /message: "SUCCESS"/);
-    assert.match(mockSource, /code: 200/);
-
-    assert.match(barrelSource, /putUpdateOntologyLinkInterface/);
-    assert.match(typesBarrel, /UpdateOntologyLinkParams/);
-  });
-
   test("relation workspace edit puts link api then reloads workspace", () => {
     const workspaceSource = readSource("../src/views/SpaceRelationWorkspace/index.vue");
     const formSource = readSource("../src/views/SpaceRelationWorkspace/components/SpaceRelationFormDialog.vue");

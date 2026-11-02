@@ -4,7 +4,7 @@
       <h2>分类体系树</h2>
       <span>已选 {{ selectedCount }} 个</span>
     </header>
-    <el-input v-model="keyword" class="aircas-input subspace-create-tree-panel__search" clearable placeholder="搜索本体对象" />
+    <el-input v-model="keyword" class="aircas-input subspace-create-tree-panel__search" clearable placeholder="搜索对象" />
     <div v-if="status === 'loading'" class="subspace-create-tree-panel__state" role="status">正在加载分类体系树…</div>
     <div v-else-if="status === 'error'" class="subspace-create-tree-panel__state" role="alert">
       <span>{{ error }}</span>
@@ -14,6 +14,7 @@
     <el-tree
       v-else
       ref="treeRef"
+      data-onboarding="subspace-create-tree"
       class="aircas-tree subspace-create-tree-panel__tree"
       node-key="id"
       show-checkbox
@@ -42,6 +43,7 @@ import { ElMessage } from "element-plus";
 import type { TreeInstance, TreeNodeData } from "element-plus";
 import type { OntologyConceptNode, OntologyObjectWorkspace } from "@/types";
 import { useOntologyObjectWorkspace } from "@/views/ObjectWorkspacePanel/composables/useOntologyObjectWorkspace";
+import { loadGuideObjectWorkspace } from "../utils/loadGuideObjectWorkspace";
 import { mapSubspaceCreateSelectedObjects } from "../utils/mapSubspaceCreateSelectedObject";
 import type { SubspaceCreateSelectedObject } from "../utils/mapSubspaceCreateSelectedObject";
 
@@ -53,7 +55,7 @@ interface SubspaceCreateTreeNode {
   children?: SubspaceCreateTreeNode[];
 }
 
-const props = defineProps<{ currentStepIndex: number }>();
+const props = defineProps<{ currentStepIndex: number; guideMode?: boolean }>();
 const emit = defineEmits<{
   "update:selectedCount": [value: number];
   "update:selectedObjects": [value: SubspaceCreateSelectedObject[]];
@@ -61,7 +63,7 @@ const emit = defineEmits<{
 
 const route = useRoute();
 const spaceId = computed(() => String(route.params.spaceId || route.query.spaceId || ""));
-const { status, error, workspace, load } = useOntologyObjectWorkspace(spaceId);
+const { status, error, workspace, load } = useOntologyObjectWorkspace(spaceId, props.guideMode ? loadGuideObjectWorkspace : undefined);
 const treeRef = ref<TreeInstance>();
 const keyword = ref("");
 const selectedIds = ref<string[]>([]);
@@ -69,19 +71,20 @@ const treeProps = { children: "children", label: "label" };
 const treeData = computed(() => mapOntologyTreeToSubspaceNodes(workspace.value));
 const selectedCount = computed(() => selectedIds.value.length);
 
-/** @description 将本体空间分类树转换为子空间页面复选树节点。 @param value 本体对象工作区。 @returns 子空间树节点。 */
+/** @description 将对象空间分类树转换为子空间页面复选树节点。 @param value 对象工作区。 @returns 子空间树节点。 */
 function mapOntologyTreeToSubspaceNodes(value: OntologyObjectWorkspace | undefined): SubspaceCreateTreeNode[] {
-  return (value?.tree ?? []).flatMap((node) => mapOntologyNode(node));
+  const apiNameByObjectId = new Map((value?.sections ?? []).flatMap((section) => section.items.map((item) => [item.id, item.apiName] as const)));
+  return (value?.tree ?? []).flatMap((node) => mapOntologyNode(node, apiNameByObjectId));
 }
 
-/** @description 递归映射分类节点，并将分类下的本体对象转换为可勾选叶子。 @param node 本体分类节点。 @returns 子空间树节点。 */
-function mapOntologyNode(node: OntologyConceptNode): SubspaceCreateTreeNode[] {
-  const categories = node.children.flatMap((child) => mapOntologyNode(child));
+/** @description 递归映射分类节点，并将分类下的对象转换为可勾选叶子。 @param node 对象分类节点。 @returns 子空间树节点。 */
+function mapOntologyNode(node: OntologyConceptNode, apiNameByObjectId: Map<string, string>): SubspaceCreateTreeNode[] {
+  const categories = node.children.flatMap((child) => mapOntologyNode(child, apiNameByObjectId));
   const objects = (node.objects ?? []).map((object) => ({
     id: object.uniqueIdentifier,
     label: object.displayName,
     kind: "object" as const,
-    apiName: object.uniqueIdentifier,
+    apiName: apiNameByObjectId.get(object.uniqueIdentifier) ?? object.uniqueIdentifier,
   }));
   return [{ id: node.id, label: node.label, kind: "category", children: [...categories, ...objects] }];
 }
@@ -114,6 +117,28 @@ async function syncSelectedTreeObjects() {
   emit("update:selectedCount", objects.length);
 }
 
+/**
+ * @description 递归收集树节点中的对象叶子 id。
+ * @param nodes 子空间树节点列表。
+ * @returns 对象叶子 id 列表。
+ */
+function collectObjectIds(nodes: SubspaceCreateTreeNode[]): string[] {
+  return nodes.flatMap((node) => (node.kind === "object" ? [node.id] : collectObjectIds(node.children ?? [])));
+}
+
+/**
+ * @description 演示模式下分类树加载完成后自动勾选全部演示对象，保证右侧直接展示对象卡片。
+ */
+watch(treeData, async (nodes) => {
+  if (!props.guideMode || props.currentStepIndex !== 0 || selectedIds.value.length > 0) return;
+  const objectIds = collectObjectIds(nodes);
+  if (objectIds.length === 0) return;
+  await nextTick();
+  if (props.currentStepIndex !== 0) return;
+  treeRef.value?.setCheckedKeys(objectIds);
+  await syncSelectedTreeObjects();
+});
+
 watch(keyword, (value) => treeRef.value?.filter(value));
 </script>
 
@@ -136,7 +161,7 @@ watch(keyword, (value) => treeRef.value?.filter(value));
     0 0 18px var(--aircas-color-accent-blue-soft);
 }
 
-:root[theme="light"] .subspace-create-tree-panel {
+:root:not(.dark) .subspace-create-tree-panel {
   background:
     radial-gradient(circle at 12% 0, var(--aircas-color-accent-cyan-soft), var(--aircas-color-transparent) 42%),
     linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));

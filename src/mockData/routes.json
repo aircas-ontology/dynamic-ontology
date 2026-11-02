@@ -1,6 +1,11 @@
 [
   {
     "method": "POST",
+    "path": "/ontology/function/rate_limit_template",
+    "file": "fixtures/ontology/function/rateLimitTemplate.post.json"
+  },
+  {
+    "method": "POST",
     "path": "/agent/chat/stream",
     "file": "fixtures/agent/chat.stream.post.json",
     "responseType": "sse"
@@ -73,6 +78,21 @@
     "method": "POST",
     "path": "/ontology/file/thumbnail",
     "file": "fixtures/ontology/file/thumbnail.post.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/function/container/upload_image",
+    "file": "fixtures/ontology/function/container/upload_image.post.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/function/container/upload_doc",
+    "file": "fixtures/ontology/function/container/upload_doc.post.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/function/container/probe_interfaces",
+    "file": "fixtures/ontology/function/container/probe_interfaces.post.json"
   },
   {
     "method": "GET",
@@ -166,13 +186,13 @@
   },
   {
     "method": "POST",
-    "path": "/ontology/function/publish",
-    "file": "fixtures/common/success.json"
+    "path": "/ontology/function/parse_params",
+    "file": "fixtures/ontology/function/parse_params.post.json"
   },
   {
-    "method": "POST",
-    "path": "/ontology/function/unpublish",
-    "file": "fixtures/common/success.json"
+    "method": "GET",
+    "path": "/ontology/function/versions",
+    "file": "fixtures/ontology/function/versions.get.json"
   },
   {
     "method": "GET",
@@ -298,5 +318,30 @@
     "method": "GET",
     "path": "/ontology/v3/api-docs/ontology",
     "file": "fixtures/ontology/v3/api-docs.ontology.get.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/function/rate_limit_template/list",
+    "file": "fixtures/ontology/function/rateLimitTemplateList.get.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/function/rate_limit_template",
+    "file": "fixtures/ontology/function/rateLimitTemplate.put.json"
+  },
+  {
+    "method": "DELETE",
+    "path": "/ontology/function/rate_limit_template",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/function/rate_limit_template/enable",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/function/rate_limit_template/disable",
+    "file": "fixtures/common/success.json"
   }
 ]

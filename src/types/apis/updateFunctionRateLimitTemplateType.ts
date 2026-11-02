@@ -1,0 +1,3 @@
+import type { CreateFunctionRateLimitTemplateData, CreateFunctionRateLimitTemplateParams } from "./createFunctionRateLimitTemplateType";
+export type UpdateFunctionRateLimitTemplateParams = CreateFunctionRateLimitTemplateParams;
+export type UpdateFunctionRateLimitTemplateData = CreateFunctionRateLimitTemplateData;

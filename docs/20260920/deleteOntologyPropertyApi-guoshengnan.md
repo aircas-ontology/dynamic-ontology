@@ -1,10 +1,10 @@
 # 接口名称
 
-- 本体对象属性删除
+- 对象属性删除
 
 ## 接口描述
 
-- 根据属性唯一标识删除本体对象属性。
+- 根据属性唯一标识删除对象属性。
 
 ## 接口 domain
 
@@ -81,11 +81,11 @@ import type { ApiResponse, DeleteOntologyPropertyData, DeleteOntologyPropertyPar
 import { request } from "@/utils/request";
 
 /**
- * 删除本体对象属性。
+ * 删除对象属性。
  *
  * 请求方式：DELETE `/ontology/property/{propertyUniqueIdentifier}`
  *
- * @param params 删除本体对象属性参数。
+ * @param params 删除对象属性参数。
  * @param params.propertyUniqueIdentifier 属性唯一标识。
  * @returns 标准 API 响应。
  */

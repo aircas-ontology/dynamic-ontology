@@ -20,11 +20,6 @@
           <Bell />
         </el-icon>
       </button>
-      <button type="button" class="header-bar__tool" aria-label="帮助暂未开放" title="帮助暂未开放" disabled>
-        <el-icon :size="20">
-          <QuestionFilled />
-        </el-icon>
-      </button>
       <el-dropdown trigger="click" @command="logoutCurrentSession">
         <button type="button" class="header-bar__user" aria-label="访客菜单">
           <el-icon :size="20"><UserFilled /></el-icon>
@@ -44,7 +39,7 @@
 import { computed } from "vue";
 import { useDocumentTheme } from "@/composables/shared/useDocumentTheme";
 import { useRoute, useRouter } from "vue-router";
-import { Bell, Moon, QuestionFilled, Sunny, UserFilled } from "@element-plus/icons-vue";
+import { Bell, Moon, Sunny, UserFilled } from "@element-plus/icons-vue";
 import OntologyGlobalSearchField from "@/components/OntologyGlobalSearchField/OntologyGlobalSearchField.vue";
 import { LOGIN_ROUTE_NAME } from "@/router/authGuard";
 import { clearLoginToken } from "@/utils/authToken";

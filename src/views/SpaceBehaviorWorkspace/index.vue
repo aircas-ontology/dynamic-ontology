@@ -57,6 +57,7 @@
       ref="behaviorFormRef"
       v-model="behaviorFormVisible"
       :mode="behaviorFormMode"
+      :space-id="spaceId"
       :category-options="categoryOptions"
       :default-category-id="selectedCategoryId || ROOT_SPACE_BEHAVIOR_CATEGORY_ID"
       :behavior="activeBehavior"
@@ -88,6 +89,7 @@ import BehaviorDeleteDialog from "./components/BehaviorDeleteDialog.vue";
 
 const {
   status,
+  spaceId,
   errorMessage,
   categoryTree,
   selectedCategoryId,
@@ -175,8 +177,11 @@ function openCategoryDelete(categoryId: string): void {
  * @description 提交分类新建或重命名。
  * @param name 分类名称。
  */
-function handleCategorySubmit(name: string): void {
-  const ok = categoryFormMode.value === "create" ? createBehaviorCategory(categoryParentId.value, name) : renameBehaviorCategory(categoryActionId.value, name);
+async function handleCategorySubmit(name: string): Promise<void> {
+  const ok =
+    categoryFormMode.value === "create"
+      ? await createBehaviorCategory(categoryParentId.value, name)
+      : await renameBehaviorCategory(categoryActionId.value, name);
   categoryFormRef.value?.setLoading(false);
   if (!ok) {
     ElMessage.error("分类保存失败");
@@ -189,8 +194,8 @@ function handleCategorySubmit(name: string): void {
 /**
  * @description 确认删除空分类。
  */
-function handleCategoryDelete(): void {
-  const result = deleteBehaviorCategory(categoryActionId.value);
+async function handleCategoryDelete(): Promise<void> {
+  const result = await deleteBehaviorCategory(categoryActionId.value);
   if (!result.ok) {
     categoryDeleteBlocked.value = result.reason === "has-children" || result.reason === "has-behaviors";
     ElMessage.error(result.reason === "root" ? "根分类不可删除" : "分类删除失败");

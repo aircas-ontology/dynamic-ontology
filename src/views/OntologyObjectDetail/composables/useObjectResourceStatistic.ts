@@ -6,8 +6,8 @@ export type ObjectResourceStatId = "entity" | "property" | "relation" | "behavio
 export type ObjectResourceCounts = Partial<Record<ObjectResourceStatId, number>>;
 
 /**
- * @description 将本体对象资源统计映射为概览卡片和 Tab 使用的计数字段。
- * @param statistic 后端返回的本体对象资源统计。
+ * @description 将对象资源统计映射为概览卡片和 Tab 使用的计数字段。
+ * @param statistic 后端返回的对象资源统计。
  * @returns 实例、属性、关系和行为计数。
  */
 export function mapOntologyMetaStatistic(statistic: OntologyMetaStatisticVO): ObjectResourceCounts {
@@ -20,8 +20,8 @@ export function mapOntologyMetaStatistic(statistic: OntologyMetaStatisticVO): Ob
 }
 
 /**
- * @description 按本体唯一标识加载对象资源统计，并丢弃过期响应。
- * @param objectId 路由中的本体唯一标识。
+ * @description 按对象唯一标识加载对象资源统计，并丢弃过期响应。
+ * @param objectId 路由中的对象唯一标识。
  * @returns 计数、加载状态、错误信息和重新加载方法。
  */
 export function useObjectResourceStatistic(objectId: Ref<string>) {
@@ -45,7 +45,7 @@ export function useObjectResourceStatistic(objectId: Ref<string>) {
     counts.value = {};
     if (!id) {
       if (!disposed && requestId === generation) {
-        error.value = "缺少本体对象标识，无法加载对象资源统计。";
+        error.value = "缺少对象标识，无法加载对象资源统计。";
         loading.value = false;
       }
       return;

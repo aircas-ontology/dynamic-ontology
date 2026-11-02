@@ -21,12 +21,22 @@ export function toggleAssistantSelectionIds(selectedIds: string[], optionId: str
 }
 
 /**
- * @description 把已选选项 id 组装成回喂模型的一条 message。多个 id 用英文逗号连接。
+ * @description 将已选选项组装为页面和模型共用的确认消息。
  * @param selectedIds 已选选项 id。
- * @returns 可发送的 message；未选时为空串。
+ * @param options 选择卡片选项。
+ * @returns 带名称与 id 的确认消息；未选时为空串。
  */
-export function resolveAssistantSelectionConfirmMessage(selectedIds: string[]): string {
-  return selectedIds.filter((item) => item.length > 0).join(",");
+export function resolveAssistantSelectionConfirmMessage(
+  selectedIds: string[],
+  options: readonly Pick<StreamAgentChatSelectionOption, "id" | "label">[] = [],
+): string {
+  const selections = selectedIds
+    .filter((item) => item.length > 0)
+    .map((item) => {
+      const label = options.find((option) => option.id === item)?.label?.trim() || item;
+      return `${label}（id=${item}）`;
+    });
+  return selections.length > 0 ? `已选择：${selections.join("、")}` : "";
 }
 
 /**
@@ -39,11 +49,5 @@ export function resolveAssistantSelectionConfirmDisplay(
   selectedIds: string[],
   options: readonly Pick<StreamAgentChatSelectionOption, "id" | "label">[],
 ): string {
-  return selectedIds
-    .filter((item) => item.length > 0)
-    .map((item) => {
-      const label = options.find((option) => option.id === item)?.label?.trim();
-      return label && label.length > 0 ? label : item;
-    })
-    .join("、");
+  return resolveAssistantSelectionConfirmMessage(selectedIds, options);
 }

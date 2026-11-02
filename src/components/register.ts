@@ -7,10 +7,12 @@ import AircasLoading from "./AircasLoading.vue";
 import AircasPanel from "./AircasPanel.vue";
 import AircasTimeline from "./AircasTimeline.vue";
 import OntologyGlobalSearchField from "./OntologyGlobalSearchField/OntologyGlobalSearchField.vue";
+import OnboardingGuideOverlay from "./OnboardingGuide/OnboardingGuideOverlay.vue";
 
 export default (app: App) => {
   app.component("AircasLoading", AircasLoading);
   app.component("AircasPanel", AircasPanel);
   app.component("AircasTimeline", AircasTimeline);
   app.component("OntologyGlobalSearchField", OntologyGlobalSearchField);
+  app.component("OnboardingGuideOverlay", OnboardingGuideOverlay);
 };

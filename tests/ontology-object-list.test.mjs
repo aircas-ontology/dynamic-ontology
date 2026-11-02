@@ -7,7 +7,7 @@ const readSource = (relativePath) => readFileSync(new URL(relativePath, import.m
 test("object cards hide the parent ontology row when none is available", () => {
   const source = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue");
   assert.match(source, /parentDisplayName !== '无'/);
-  assert.doesNotMatch(source, /父本体：—/);
+  assert.doesNotMatch(source, /父对象：—/);
   assert.doesNotMatch(source, /ontology-object-card__parent--placeholder/);
 });
 
@@ -38,8 +38,8 @@ test("object list view switch matches the space list and create uses the detail 
   assert.match(source, /ontology-object-list__view-icon[\s\S]*fill: none/);
   assert.match(source, /ontology-object-list__view-icon[\s\S]*stroke: currentColor/);
   assert.doesNotMatch(source, /original-radio:checked/);
-  assert.match(source, /<el-button[^>]*type="primary"[\s\S]*新建本体/);
-  assert.doesNotMatch(source, /aircas-button--tone-primary"[\s\S]*新建本体/);
+  assert.match(source, /<el-button[^>]*type="primary"[\s\S]*新建对象/);
+  assert.doesNotMatch(source, /aircas-button--tone-primary"[\s\S]*新建对象/);
   assert.doesNotMatch(source, /<Grid|<List/);
 });
 

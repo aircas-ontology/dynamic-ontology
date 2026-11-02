@@ -1,6 +1,6 @@
 # 接口名称
 
-- 删除本体对象
+- 删除对象
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 根据本体对象唯一标识删除本体对象。
+- 根据对象唯一标识删除对象。
 - 在线接口文档：[OntologyMetaController_deleteOntology](http://172.16.18.58:37002/ontology/doc.html#/ontology/%E6%9C%AC%E4%BD%93%E5%AF%B9%E8%B1%A1%E7%AE%A1%E7%90%86/OntologyMetaController_deleteOntology/doc)。
 
 ## 接口 domain
@@ -34,7 +34,7 @@
 /ontology/meta/ae6cca59ced9432189da4af315554957
 ```
 
-- `ontologyIdentifier`：【string，必填】本体对象唯一标识，通过 URL 路径传递。
+- `ontologyIdentifier`：【string，必填】对象唯一标识，通过 URL 路径传递。
 
 ## 输出参数
 
@@ -85,12 +85,12 @@ import type { ApiResponse, DeleteOntologyObjectData, DeleteOntologyObjectParams 
 import { request } from "@/utils/request";
 
 /**
- * 删除本体对象。
+ * 删除对象。
  *
  * 请求方式：DELETE `/ontology/meta/{ontologyIdentifier}`
  *
- * @param params 删除本体对象参数。
- * @param params.ontologyIdentifier 本体对象唯一标识。
+ * @param params 删除对象参数。
+ * @param params.ontologyIdentifier 对象唯一标识。
  * @returns 标准 API 响应，data 未定义具体业务字段。
  */
 export function deleteOntologyObjectInterface(params: DeleteOntologyObjectParams): Promise<ApiResponse<DeleteOntologyObjectData>> {

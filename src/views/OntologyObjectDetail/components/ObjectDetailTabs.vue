@@ -1,25 +1,20 @@
 <template>
-  <nav class="object-detail-tabs" aria-label="本体对象详情">
+  <nav class="object-detail-tabs" aria-label="对象详情">
     <div class="object-detail-tabs__list" role="tablist">
-      <template v-for="tab in visibleTabs" :key="tab.id">
-        <span v-if="tab.id === firstMenuTabId" class="object-detail-tabs__separator" aria-hidden="true" />
-        <button
-          type="button"
-          class="object-detail-tabs__item"
-          :class="{
-            'object-detail-tabs__item-active': tab.id === activeTab,
-            'object-detail-tabs__item-object': tab.id === 'object',
-          }"
-          role="tab"
-          :aria-selected="tab.id === activeTab"
-          @click="emit('update:activeTab', tab.id)"
-        >
-          <span>{{ tab.label }}</span>
-          <span v-if="tab.id !== 'object'" class="object-detail-tabs__count">
-            {{ formatCount(props.counts?.[tab.id]) }}
-          </span>
-        </button>
-      </template>
+      <button
+        v-for="tab in visibleTabs"
+        :key="tab.id"
+        type="button"
+        class="object-detail-tabs__item"
+        :class="{ 'object-detail-tabs__item-active': tab.id === activeTab }"
+        :data-onboarding="`object-tab-${tab.id}`"
+        role="tab"
+        :aria-selected="tab.id === activeTab"
+        @click="emit('update:activeTab', tab.id)"
+      >
+        <span>{{ tab.label }}</span>
+        <span class="object-detail-tabs__count">{{ formatCount(props.counts?.[tab.id]) }}</span>
+      </button>
     </div>
   </nav>
 </template>
@@ -28,13 +23,10 @@
 import { computed } from "vue";
 import type { OntologyObjectDetailTab } from "@/types";
 
-type NonObjectTab = Exclude<OntologyObjectDetailTab, "object">;
-
 const props = defineProps<{
   activeTab: OntologyObjectDetailTab;
   availableTabs: readonly OntologyObjectDetailTab[];
-  objectName: string;
-  counts?: Partial<Record<NonObjectTab, number>>;
+  counts?: Partial<Record<OntologyObjectDetailTab, number>>;
 }>();
 
 const emit = defineEmits<{
@@ -42,14 +34,12 @@ const emit = defineEmits<{
 }>();
 
 const allTabs = computed(() => [
-  { id: "object" as const, label: props.objectName.trim() || "未命名对象" },
   { id: "attribute" as const, label: "属性" },
   { id: "relation" as const, label: "关系" },
   { id: "behavior" as const, label: "行为" },
 ]);
 
 const visibleTabs = computed(() => allTabs.value.filter((tab) => props.availableTabs.includes(tab.id)));
-const firstMenuTabId = computed(() => (visibleTabs.value.some((tab) => tab.id === "object") ? visibleTabs.value.find((tab) => tab.id !== "object")?.id : ""));
 
 /**
  * @description 格式化 Tab 徽标计数；undefined 时显示占位符。
@@ -86,14 +76,6 @@ function formatCount(value: number | undefined): string {
   overflow-x: auto;
 }
 
-.object-detail-tabs__separator {
-  width: 1px;
-  height: 20px;
-  flex-shrink: 0;
-  margin: 0 4px;
-  background: var(--aircas-color-border);
-}
-
 .object-detail-tabs__item {
   display: inline-flex;
   align-items: center;
@@ -110,18 +92,6 @@ function formatCount(value: number | undefined): string {
   text-align: center;
   font-family: inherit;
   cursor: pointer;
-}
-
-.object-detail-tabs__item-object {
-  max-width: 320px;
-  color: var(--aircas-color-text-primary);
-  font-weight: 600;
-}
-
-.object-detail-tabs__item-object span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .object-detail-tabs__item:hover {

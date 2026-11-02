@@ -92,18 +92,14 @@
               </template>
               <span v-else class="basic-filter-row__value-placeholder">无需取值</span>
             </div>
-            <el-button type="danger" plain class="basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
-              删除
-            </el-button>
+            <el-button type="danger" plain class="basic-filter-row__remove" @click="removeChild(index)">删除</el-button>
           </div>
         </template>
         <template v-else-if="child.type === 'GROUP' && child.group">
           <div class="basic-filter-group__nested">
             <div class="basic-filter-group__nested-header">
               <span>分组</span>
-              <el-button type="danger" plain class="basic-filter-row__remove" :disabled="group.children.length <= 1" @click="removeChild(index)">
-                删除分组
-              </el-button>
+              <el-button type="danger" plain class="basic-filter-row__remove" @click="removeChild(index)">删除分组</el-button>
             </div>
             <BasicFilterGroupEditor :group="child.group" :depth="depth + 1" @update:group="(value) => updateNestedGroup(index, value)" />
           </div>
@@ -168,8 +164,11 @@ function addGroup(): void {
   publish(next);
 }
 
+/**
+ * @description 删除指定下标的条件或嵌套分组；允许删空全部子节点。
+ * @param index 子节点下标。
+ */
 function removeChild(index: number): void {
-  if (props.group.children.length <= 1) return;
   const next = cloneGroup();
   next.children.splice(index, 1);
   publish(next);

@@ -1,6 +1,6 @@
 # 接口名称
 
-- 本体空间手动创建
+- 对象空间手动创建
 
 ## 编译位置
 
@@ -10,7 +10,7 @@
 
 ## 接口描述
 
-- 输入参数创建手动创建本体空间。
+- 输入参数创建手动创建对象空间。
 
 ## 接口domain
 
@@ -97,7 +97,7 @@ import type { ApiResponse, CreateOntologySpaceData, CreateOntologySpaceParams } 
 import { request } from "@/utils/request";
 
 /**
- * 创建本体空间。
+ * 创建对象空间。
  *
  * 请求方式：POST `/ontology/space`
  *

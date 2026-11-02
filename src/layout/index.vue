@@ -2,11 +2,12 @@
   <div class="layout-shell" :class="{ 'is-embedded': isEmbedded }">
     <HeaderBar v-if="!isEmbedded" />
     <div class="layout-workspace" :class="{ 'is-expanded': !collapsed, 'is-embedded': isEmbedded }">
-      <NavigationMenu v-if="!isEmbedded" v-model:collapsed="collapsed" />
+      <NavigationMenu v-if="!isEmbedded" v-model:collapsed="collapsed" v-model:assistant-visible="assistantVisible" />
       <section class="layout-content">
         <BreadcrumbBar />
         <main class="layout-page"><router-view /></main>
       </section>
+      <AiAssistantDrawer v-if="!isEmbedded" v-model="assistantVisible" />
     </div>
   </div>
 </template>
@@ -16,7 +17,9 @@ import { useRoute } from "vue-router";
 import HeaderBar from "./components/HeaderBar.vue";
 import NavigationMenu from "./components/NavigationMenu.vue";
 import BreadcrumbBar from "./components/BreadcrumbBar.vue";
+import AiAssistantDrawer from "./components/AiAssistantDrawer.vue";
 const collapsed = ref(true);
+const assistantVisible = ref(false);
 const route = useRoute();
 const isEmbedded = computed(() => !!route.query.userName);
 </script>
@@ -38,12 +41,12 @@ const isEmbedded = computed(() => !!route.query.userName);
 .layout-workspace {
   display: grid;
   min-width: 0;
-  grid-template-columns: 60px minmax(0, 1fr);
+  grid-template-columns: 60px minmax(0, 1fr) auto;
   min-height: 0;
   transition: grid-template-columns 0.2s ease;
 }
 .layout-workspace.is-expanded {
-  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr) auto;
 }
 .layout-workspace.is-embedded {
   grid-template-columns: minmax(0, 1fr);

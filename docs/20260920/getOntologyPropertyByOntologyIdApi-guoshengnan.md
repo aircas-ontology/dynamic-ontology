@@ -1,10 +1,10 @@
 # 接口名称
 
-- 根据本体标识查询本体对象属性列表
+- 根据对象标识查询对象属性列表
 
 ## 接口描述
 
-- 根据本体 `ontologyUniqueIdentifier` 查询用于展示的本体对象属性列表。
+- 根据对象 `ontologyUniqueIdentifier` 查询用于展示的对象属性列表。
 
 ## 接口 domain
 
@@ -22,7 +22,7 @@
 
 | 参数                     | 位置  | 类型   | 必填 | 说明                  |
 | ------------------------ | ----- | ------ | ---- | --------------------- |
-| ontologyUniqueIdentifier | query | string | 是   | 本体 uniqueIdentifier |
+| ontologyUniqueIdentifier | query | string | 是   | 对象 uniqueIdentifier |
 
 - 请求体：无。
 
@@ -55,7 +55,7 @@
 | ------------------------------- | --------------- | --------------------- |
 | code                            | integer / int32 | 响应码                |
 | message                         | string          | 消息描述              |
-| data                            | array           | 本体属性信息列表      |
+| data                            | array           | 对象属性信息列表      |
 | data[].displayName              | string          | 属性名称              |
 | data[].apiName                  | string          | 属性 API 名称         |
 | data[].propertyType             | string          | 属性数据类型          |
@@ -63,7 +63,7 @@
 | data[].isPrimaryKey             | boolean         | 是否为主键            |
 | data[].isTitleKey               | boolean         | 是否为名称键          |
 | data[].uniqueIdentifier         | string          | 属性唯一标识          |
-| data[].ontologyUniqueIdentifier | string          | 本体唯一标识          |
+| data[].ontologyUniqueIdentifier | string          | 对象唯一标识          |
 | data[].defaultValue             | string          | 属性默认值            |
 | data[].storageGroup             | string          | 属性存储分组          |
 | data[].categoryId               | integer / int32 | 属性分类 id           |
@@ -127,12 +127,12 @@ import type { ApiResponse, GetOntologyPropertyByOntologyIdData, GetOntologyPrope
 import { request } from "@/utils/request";
 
 /**
- * 根据本体标识查询本体对象属性列表。
+ * 根据对象标识查询对象属性列表。
  *
  * 请求方式：GET `/ontology/property/info`
  *
  * @param params 查询参数。
- * @param params.ontologyUniqueIdentifier 本体唯一标识。
+ * @param params.ontologyUniqueIdentifier 对象唯一标识。
  * @returns 标准 API 响应，data 为属性列表。
  */
 export function getOntologyPropertyByOntologyIdInterface(

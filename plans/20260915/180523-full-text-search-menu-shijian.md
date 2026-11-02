@@ -21,7 +21,7 @@
 ## 核心实现方式
 
 - **路由**：`name: 'FullTextSearch'`，`path: 'full-text-search'`（完整 URL：`/workspace/full-text-search`），`meta.title: '全文检索'`，懒加载页面
-- **菜单**：与「本体空间管理」同级，使用命名路由跳转；图标使用 Element Plus `Search`
+- **菜单**：与「对象空间管理」同级，使用命名路由跳转；图标使用 Element Plus `Search`
 - **页面**：放置 `el-input`（`aircas-input`），placeholder 按原文；本地 `ref` 绑定关键词，暂不实现检索逻辑
 
 ## 新增依赖

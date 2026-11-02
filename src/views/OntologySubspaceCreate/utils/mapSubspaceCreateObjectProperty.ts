@@ -36,7 +36,7 @@ const subspaceCreatePropertyCatalog = [
 
 /**
  * @description 按选中对象生成属性分组，供第三步按对象展示和分组全选。
- * @param objects 第一步勾选的本体对象。
+ * @param objects 第一步勾选的对象。
  * @returns 按对象分组的属性列表。
  */
 export function mapSubspaceCreateObjectPropertyGroups(objects: SubspaceCreateSelectedObject[]): SubspaceCreateObjectPropertyGroup[] {
@@ -57,7 +57,7 @@ export function mapSubspaceCreateObjectPropertyGroups(objects: SubspaceCreateSel
 /**
  * @description 将对象属性接口记录映射为子空间属性分组。
  * @param records 对象属性接口记录。
- * @param object 关联的本体对象。
+ * @param object 关联的对象。
  * @returns 页面属性分组。
  */
 export function mapSubspaceCreateObjectPropertyGroup(
