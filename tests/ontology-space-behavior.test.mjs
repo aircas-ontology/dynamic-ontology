@@ -101,30 +101,48 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   const drawerSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorDetailDrawer.vue");
   const deleteSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorDeleteDialog.vue");
   const workspaceSource = readSource("../src/views/SpaceBehaviorWorkspace/index.vue");
+  const typeSource = readSource("../src/types/pages/ontologySpaceBehaviorType.ts");
 
   assert.match(formSource, /创建行为/);
-  assert.match(formSource, /草稿配置/);
-  assert.match(formSource, /基本信息 \/ 输入参数 \/ 输出参数/);
   assert.match(formSource, /el-alert/);
   assert.match(formSource, /另存为独立草稿副本/);
   assert.match(formSource, /已停用行为为只读/);
+  assert.match(formSource, /基本信息/);
+  assert.match(formSource, /类别/);
+  assert.match(formSource, /SPACE_BEHAVIOR_KIND_OPTIONS/);
+  assert.match(formSource, /kind === ['"]basic['"]/);
+  assert.match(formSource, /kind === ['"]application['"]/);
+  assert.match(formSource, /kind === ['"]behaviorTree['"]/);
   assert.match(formSource, /行为描述/);
   assert.match(formSource, /输入行为名称/);
   assert.match(formSource, /行为分类/);
+  assert.match(formSource, /<el-tree-select\b/);
+  assert.match(formSource, /:data="categoryTree"/);
+  assert.match(formSource, /check-strictly/);
+  assert.match(formSource, /default-expand-all/);
+  assert.match(formSource, /:props="\{ label: 'label', children: 'children' \}"/);
+  assert.doesNotMatch(formSource, /v-for="item in categoryOptions"/);
+  assert.match(formSource, /行为类型/);
   assert.match(formSource, /基础操作/);
-  assert.match(formSource, /关联基础函数算子/);
-  assert.match(formSource, /el-empty/);
-  assert.match(formSource, /请选择函数算子以加载参数/);
-  assert.match(formSource, /参数 \/ 描述/);
-  assert.match(formSource, /输入来源/);
-  assert.match(formSource, /返回结果字段/);
-  assert.match(formSource, /配置状态/);
-  assert.match(formSource, /变更信息/);
-  assert.match(formSource, /变更说明/);
+  assert.match(formSource, /关联函数算子/);
+  assert.match(formSource, /构建行为树/);
+  assert.match(formSource, /行为树构建后续接入/);
   assert.match(formSource, /保存行为/);
   assert.match(formSource, /另存草稿副本/);
   assert.match(formSource, /min\(1120px, 94vw\)/);
+  assert.doesNotMatch(formSource, /基本信息 \/ 输入参数 \/ 输出参数/);
+  assert.doesNotMatch(formSource, /变更信息/);
+  assert.doesNotMatch(formSource, /请选择函数算子以加载参数/);
   assert.doesNotMatch(formSource, /behavior-form-dialog__nav/);
+  assert.match(workspaceSource, /:category-tree="categoryTree"/);
+  assert.match(typeSource, /SpaceBehaviorKind/);
+  assert.match(typeSource, /SpaceBehaviorValueType/);
+  assert.match(typeSource, /SPACE_BEHAVIOR_KIND_OPTIONS/);
+  assert.match(typeSource, /label: "属性值"/);
+  assert.match(typeSource, /label: "关系示例"/);
+  assert.match(typeSource, /label: "基础函数算子"/);
+  assert.match(typeSource, /SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS[\s\S]*label: "新增"[\s\S]*label: "修改"[\s\S]*label: "删除"/);
+  assert.doesNotMatch(typeSource, /SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS[\s\S]*label: "查询"/);
 
   assert.match(drawerSource, /<el-drawer\b/);
   assert.match(drawerSource, /size="680px"/);
@@ -171,7 +189,6 @@ test("space behavior edit and status dialogs stay open despite reactive clone an
   const deleteSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorDeleteDialog.vue");
   const listSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorListPanel.vue");
 
-  assert.match(formSource, /cloneSpaceBehaviorParameters/);
   assert.doesNotMatch(formSource, /structuredClone\(props\.behavior/);
   assert.match(formSource, /@update:model-value="emit\('update:modelValue', \$event\)"/);
   assert.match(statusSource, /:close-on-click-modal="false"/);
@@ -181,12 +198,13 @@ test("space behavior edit and status dialogs stay open despite reactive clone an
   assert.match(listSource, /void nextTick/);
 });
 
-test("space behavior operator selection clones list params without structuredClone", () => {
+test("space behavior operator selection writes operator id and name without structuredClone", () => {
   const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
   const applyBlock = formSource.match(/function applySelectedOperator\(operatorId: string\): void \{[\s\S]*?\n\}/)?.[0] ?? "";
 
-  assert.match(applyBlock, /inputParameters\.value = cloneSpaceBehaviorParameters\(operator\.inputParameters\)/);
-  assert.match(applyBlock, /outputParameters\.value = cloneSpaceBehaviorParameters\(operator\.outputParameters\)/);
+  assert.match(applyBlock, /functionOperatorId\.value = operator\.id/);
+  assert.match(applyBlock, /functionOperatorName\.value = operator\.name/);
+  assert.doesNotMatch(applyBlock, /inputParameters/);
   assert.doesNotMatch(formSource, /structuredClone\(/);
 });
 

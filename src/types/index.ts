@@ -179,7 +179,15 @@ export type {
   OntologyCompositeParameter,
   OntologyCompositePortMapping,
 } from "./apis/ontologyCompositeConfigType";
-export type { OntologyGlobalSearchData, OntologyGlobalSearchItem, OntologyGlobalSearchParams, OntologySpaceType } from "./apis/ontologyGlobalSearchType";
+export { ONTOLOGY_GLOBAL_SEARCH_TYPE_OPTIONS } from "./apis/ontologyGlobalSearchType";
+export type {
+  OntologyGlobalSearchData,
+  OntologyGlobalSearchItem,
+  OntologyGlobalSearchParams,
+  OntologyGlobalSearchTypeCode,
+  OntologyGlobalSearchTypeOption,
+  OntologySpaceType,
+} from "./apis/ontologyGlobalSearchType";
 export type { OntologySpaceListData, OntologySpaceListItem } from "./apis/ontologyManageType";
 export type {
   CreateOntologyRelationCategoryTreeParams,
@@ -394,10 +402,14 @@ export {
   ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
   SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
   SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS,
+  SPACE_BEHAVIOR_KIND_LABELS,
+  SPACE_BEHAVIOR_KIND_OPTIONS,
   SPACE_BEHAVIOR_STATUS_LABELS,
   SPACE_BEHAVIOR_STATUS_OPERATION_LABELS,
   SPACE_BEHAVIOR_STATUS_OPERATION_OPTIONS,
   SPACE_BEHAVIOR_STATUS_OPTIONS,
+  SPACE_BEHAVIOR_VALUE_TYPE_LABELS,
+  SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS,
 } from "./pages/ontologySpaceBehaviorType";
 export type {
   SpaceBehaviorBasicAction,
@@ -405,12 +417,14 @@ export type {
   SpaceBehaviorDeletePreflight,
   SpaceBehaviorDraft,
   SpaceBehaviorItem,
+  SpaceBehaviorKind,
   SpaceBehaviorOperatorOption,
   SpaceBehaviorParameter,
   SpaceBehaviorReferenceCheckResult,
   SpaceBehaviorStatus,
   SpaceBehaviorStatusChangeDraft,
   SpaceBehaviorStatusOperation,
+  SpaceBehaviorValueType,
   SpaceBehaviorWorkspaceData,
   SpaceBehaviorWorkspaceLoadStatus,
 } from "./pages/ontologySpaceBehaviorType";

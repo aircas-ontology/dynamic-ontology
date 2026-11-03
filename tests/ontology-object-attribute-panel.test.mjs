@@ -263,16 +263,12 @@ test("bound datasource attributes allow name, category and description edits", (
   assert.match(propertySource, /datasourceLocked,/);
   assert.match(formSource, /datasourceLocked: boolean/);
   assert.match(formSource, /该属性已绑定数据源，仅支持修改属性名称、属性分类和描述/);
-<<<<<<< HEAD
-  assert.doesNotMatch(formSource.match(/<el-select v-model="draft\.categoryId"[^>]*>/)?.[0] ?? "", /disabled/);
-=======
   {
     const treeSelectBlock = formSource.match(/<el-tree-select[\s\S]*?\/>/);
     assert.ok(treeSelectBlock, "missing el-tree-select");
     assert.doesNotMatch(treeSelectBlock[0], /:disabled=/);
   }
   assert.match(propertySource, /datasourceLocked\.value && originalEditParams[\s\S]*?categoryId/);
->>>>>>> 0a66214d1bb184d5e5bc29c6e430e7cc907cec5f
   assert.match(formSource, /:disabled="datasourceLocked \|\| draft\.isPrimary"/);
   assert.match(formSource, /v-model="draft\.storageGroup"[\s\S]*?:disabled="datasourceLocked"/);
   assert.match(formSource, /v-model="draft\.defaultValue"[\s\S]*?:disabled="datasourceLocked"/);

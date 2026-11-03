@@ -27,19 +27,39 @@ test("global search api posts keyword and optional sizs to manage domain search 
   assert.match(source, /method:\s*["']post["']/);
   assert.match(source, /data:\s*params/);
   assert.match(source, /sizs/);
+  assert.match(source, /searchType/);
 });
 
-test("global search types and api are exported from public barrels", () => {
+test("global search types and api are exported from public barrels", async () => {
   const types = readSource("../src/types/index.ts");
   assert.match(types, /ontologyGlobalSearchType/);
   assert.match(types, /OntologyGlobalSearchParams/);
   assert.match(types, /OntologyGlobalSearchItem/);
+  assert.match(types, /OntologyGlobalSearchTypeCode/);
+  assert.match(types, /ONTOLOGY_GLOBAL_SEARCH_TYPE_OPTIONS/);
 
   const typeSource = readSource("../src/types/apis/ontologyGlobalSearchType.ts");
   assert.match(typeSource, /spaceName\?:/);
   assert.match(typeSource, /uniqueIdentifier\?:/);
   assert.match(typeSource, /ontologyUniqueIdentifier\?:/);
   assert.match(typeSource, /ontologyName\?:/);
+  assert.match(typeSource, /searchType\?:/);
+  assert.match(typeSource, /OntologyGlobalSearchTypeCode\s*=\s*1\s*\|\s*2\s*\|\s*3\s*\|\s*4\s*\|\s*5/);
+  assert.match(typeSource, /ONTOLOGY_GLOBAL_SEARCH_TYPE_OPTIONS/);
+
+  const typeUrl = new URL("../src/types/apis/ontologyGlobalSearchType.ts", import.meta.url);
+  const { ONTOLOGY_GLOBAL_SEARCH_TYPE_OPTIONS } = await import(typeUrl.href);
+  assert.deepEqual(
+    ONTOLOGY_GLOBAL_SEARCH_TYPE_OPTIONS.map((item) => [item.value, item.label]),
+    [
+      ["", "全部"],
+      [1, "空间"],
+      [2, "对象"],
+      [3, "关系"],
+      [4, "属性"],
+      [5, "实例"],
+    ],
+  );
 
   const apis = readSource("../src/apis/index.ts");
   assert.match(apis, /postOntologyGlobalSearchInterface/);
@@ -148,6 +168,14 @@ test("global search click handler navigates object and property without meta api
   assert.match(source, /item\.type === "属性"/);
 });
 
+test("global search composable sends optional searchType and resets it on clear", () => {
+  const source = readSource("../src/composables/ontology/useOntologyGlobalSearch.ts");
+  assert.match(source, /const searchType = ref<OntologyGlobalSearchTypeCode\s*\|\s*"">\(""\)/);
+  assert.match(source, /\.\.\.\(searchType\.value !== "" \? \{ searchType: searchType\.value \} : \{\}\)/);
+  assert.match(source, /searchType\.value = ""/);
+  assert.match(source, /searchType,/);
+});
+
 test("full text search page and header wire OntologyGlobalSearchField", () => {
   const page = readSource("../src/views/FullTextSearch/index.vue");
   const header = readSource("../src/layout/components/HeaderBar.vue");
@@ -163,6 +191,11 @@ test("full text search page and header wire OntologyGlobalSearchField", () => {
   assert.match(field, /v-if="placement === ['"]page['"]"/);
   assert.match(field, /@click="submitSearch"/);
   assert.match(field, />检索<\/el-button>/);
+  assert.match(field, /<el-select\b/);
+  assert.match(field, /v-model="searchType"/);
+  assert.match(field, /ONTOLOGY_GLOBAL_SEARCH_TYPE_OPTIONS/);
+  assert.match(field, /aria-label="检索类型"/);
+  assert.match(field, /handleSearchTypeChange|@change="handleSearchTypeChange"/);
   assert.match(resultList, /<el-tag\b/);
   assert.match(resultList, /item\.spaceName/);
   assert.match(resultList, /item\.ontologyName/);

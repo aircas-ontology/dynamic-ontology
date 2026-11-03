@@ -58,7 +58,7 @@
       v-model="behaviorFormVisible"
       :mode="behaviorFormMode"
       :space-id="spaceId"
-      :category-options="categoryOptions"
+      :category-tree="categoryTree"
       :default-category-id="selectedCategoryId || ROOT_SPACE_BEHAVIOR_CATEGORY_ID"
       :behavior="activeBehavior"
       @submit="handleBehaviorSubmit"
@@ -77,7 +77,7 @@ import type { SpaceBehaviorDraft, SpaceBehaviorItem, SpaceBehaviorStatusChangeDr
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 import { useSpaceBehaviorWorkspace } from "./composables/useSpaceBehaviorWorkspace";
-import { createSpaceBehaviorDeletePreflight, findSpaceBehaviorCategoryNode, flattenSpaceBehaviorCategoryOptions } from "./utils/spaceBehaviorOperations";
+import { createSpaceBehaviorDeletePreflight, findSpaceBehaviorCategoryNode } from "./utils/spaceBehaviorOperations";
 import BehaviorCategoryPanel from "./components/BehaviorCategoryPanel.vue";
 import BehaviorListPanel from "./components/BehaviorListPanel.vue";
 import BehaviorCategoryFormDialog from "./components/BehaviorCategoryFormDialog.vue";
@@ -132,7 +132,6 @@ const behaviorStatusVisible = ref(false);
 const behaviorDeleteVisible = ref(false);
 const activeBehavior = ref<SpaceBehaviorItem | null>(null);
 
-const categoryOptions = computed(() => flattenSpaceBehaviorCategoryOptions(categoryTree.value));
 const categoryParentLabel = computed(() => findSpaceBehaviorCategoryNode(categoryTree.value, categoryParentId.value)?.label ?? "行为分类");
 const behaviorDeletePreflight = computed(() => (activeBehavior.value ? createSpaceBehaviorDeletePreflight(activeBehavior.value.displayName) : null));
 

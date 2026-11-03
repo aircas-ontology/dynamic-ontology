@@ -3,7 +3,7 @@ import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 
 import { postOntologyGlobalSearchInterface } from "@/apis";
-import type { OntologyGlobalSearchItem } from "@/types";
+import type { OntologyGlobalSearchItem, OntologyGlobalSearchTypeCode } from "@/types";
 import {
   resolveOntologyGlobalSearchObjectRoute,
   resolveOntologyGlobalSearchPropertyRoute,
@@ -13,19 +13,20 @@ import {
 export type OntologyGlobalSearchStatus = "idle" | "loading" | "success" | "empty" | "error";
 
 /**
- * @description 全局检索工作区：关键词检索、结果状态与空间/对象/关系分组/属性跳转。
+ * @description 全局检索工作区：关键词检索、类型筛选、结果状态与空间/对象/关系分组/属性跳转。
  * @returns 检索状态与操作方法。
  */
 export function useOntologyGlobalSearch() {
   const router = useRouter();
   const keyword = ref("");
+  const searchType = ref<OntologyGlobalSearchTypeCode | "">("");
   const results = ref<OntologyGlobalSearchItem[]>([]);
   const status = ref<OntologyGlobalSearchStatus>("idle");
   const errorMessage = ref("");
   let requestSerial = 0;
 
   /**
-   * @description 按当前关键词发起全局检索；空关键词则清空结果。
+   * @description 按当前关键词与检索类型发起全局检索；空关键词则清空结果。
    * @param sizs 可选返回条数上限。
    */
   async function searchOntologyGlobal(sizs?: number): Promise<void> {
@@ -44,6 +45,7 @@ export function useOntologyGlobalSearch() {
     try {
       const response = await postOntologyGlobalSearchInterface({
         keyword: trimmed,
+        ...(searchType.value !== "" ? { searchType: searchType.value } : {}),
         ...(sizs !== undefined ? { sizs } : {}),
       });
       if (serial !== requestSerial) {
@@ -69,11 +71,12 @@ export function useOntologyGlobalSearch() {
   }
 
   /**
-   * @description 清空关键词与结果。
+   * @description 清空关键词、检索类型与结果。
    */
   function clearOntologyGlobalSearch(): void {
     requestSerial += 1;
     keyword.value = "";
+    searchType.value = "";
     results.value = [];
     status.value = "idle";
     errorMessage.value = "";
@@ -101,6 +104,7 @@ export function useOntologyGlobalSearch() {
 
   return {
     keyword,
+    searchType,
     results,
     status,
     errorMessage,

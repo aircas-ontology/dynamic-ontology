@@ -55,15 +55,6 @@ export function filterSpaceBehaviorsByCategory(
 }
 
 /**
- * @description 将分类树展平为表单下拉选项。
- * @param nodes 分类树。
- * @returns 分类选项。
- */
-export function flattenSpaceBehaviorCategoryOptions(nodes: SpaceBehaviorCategoryNode[]): Array<{ id: string; label: string }> {
-  return nodes.flatMap((node) => [{ id: node.id, label: node.label }, ...flattenSpaceBehaviorCategoryOptions(node.children)]);
-}
-
-/**
  * @description 按分类子树内的行为数量回写节点 count。
  * @param data 行为工作区数据。
  */
