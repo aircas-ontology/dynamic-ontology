@@ -36,7 +36,7 @@
         </template>
 
         <template v-else>
-          <div class="behavior-form-dialog__grid behavior-form-dialog__grid--three">
+          <div class="behavior-form-dialog__grid">
             <el-form-item label="类别" required>
               <el-select v-model="kind" placeholder="选择类别" style="width: 100%" @change="handleKindChange">
                 <el-option v-for="item in SPACE_BEHAVIOR_KIND_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
@@ -45,10 +45,13 @@
             <el-form-item label="行为名称" required>
               <el-input v-model="displayName" maxlength="64" show-word-limit placeholder="输入行为名称" />
             </el-form-item>
+            <el-form-item label="行为api名称" required>
+              <el-input v-model="behaviorApiName" maxlength="64" show-word-limit placeholder="例如：act.pv.weapon.add" :disabled="mode === 'edit'" />
+            </el-form-item>
             <el-form-item label="行为分类" required>
               <el-tree-select
                 v-model="categoryId"
-                :data="categoryTree"
+                :data="categorySelectTree"
                 check-strictly
                 default-expand-all
                 :render-after-expand="false"
@@ -66,7 +69,7 @@
 
           <div v-if="kind === 'basic'" class="behavior-form-dialog__grid">
             <el-form-item label="行为类型" required>
-              <el-select v-model="valueType" placeholder="选择行为类型" style="width: 100%">
+              <el-select v-model="valueType" placeholder="选择行为类型" style="width: 100%" @change="handleValueTypeChange">
                 <el-option v-for="item in SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </el-form-item>
@@ -76,6 +79,59 @@
               </el-select>
             </el-form-item>
           </div>
+
+          <section v-if="showAttributeValueObjectSection" class="behavior-form-dialog__object-section">
+            <h3>对象信息</h3>
+            <el-form-item label="对象" required>
+              <el-select
+                :model-value="ontologyIdentifier"
+                filterable
+                clearable
+                :loading="objectLoading"
+                :disabled="objectLoading || objectError !== ''"
+                :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
+                style="width: 100%"
+                @change="handleOntologyChange"
+              >
+                <el-option v-for="item in objectOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </el-form-item>
+            <div class="behavior-form-dialog__attribute-head">
+              <div class="behavior-form-dialog__attribute-title">
+                <span>属性选择</span>
+                <el-tag size="small" effect="plain">{{ selectedPropertyIds.length }} 项</el-tag>
+              </div>
+              <span class="behavior-form-dialog__attribute-hint">{{ attributeSelectionHint }}</span>
+            </div>
+            <el-table
+              ref="attributeTableRef"
+              class="behavior-form-dialog__attribute-table"
+              :data="attributeLoading ? [] : attributeRows"
+              row-key="uniqueIdentifier"
+              :empty-text="attributeLoading ? '正在加载属性' : attributeError || (ontologyIdentifier ? '暂无属性' : '请先选择对象')"
+              @selection-change="handleAttributeSelectionChange"
+            >
+              <el-table-column type="selection" width="48" :selectable="isAttributeRowSelectable" />
+              <el-table-column prop="displayName" label="属性" min-width="160" show-overflow-tooltip />
+              <el-table-column
+                v-if="basicAction === 'create' || basicAction === 'update'"
+                :label="basicAction === 'create' ? '新增值' : '修改值'"
+                min-width="160"
+              >
+                <template #default="{ row }">
+                  <el-input
+                    v-if="selectedPropertyIds.includes(readPropertyRowId(row))"
+                    :model-value="selectedPropertyValues[readPropertyRowId(row)] ?? ''"
+                    :disabled="readonly"
+                    placeholder="输入值"
+                    @update:model-value="updatePropertyInputValue(readPropertyRowId(row), $event)"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column prop="propertyType" label="类型" width="120" show-overflow-tooltip />
+              <el-table-column prop="storageGroup" label="存储分组" width="140" show-overflow-tooltip />
+            </el-table>
+          </section>
 
           <el-form-item v-else-if="kind === 'application'" label="关联函数算子" required>
             <el-select
@@ -96,18 +152,19 @@
 
     <template #footer>
       <el-button @click="emit('update:modelValue', false)">{{ readonly ? "关闭" : "取消" }}</el-button>
-      <el-button v-if="saveAsCopy && kind !== 'behaviorTree'" :loading="loading" @click="submitBehaviorForm('copy')">另存草稿副本</el-button>
-      <el-button v-else-if="!readonly && kind !== 'behaviorTree'" :loading="loading" @click="submitBehaviorForm('save')">保存行为</el-button>
+      <el-button v-if="saveAsCopy && kind !== 'behaviorTree'" :loading="submitLoading" @click="submitBehaviorForm('copy')">另存草稿副本</el-button>
+      <el-button v-else-if="!readonly && kind !== 'behaviorTree'" :loading="submitLoading" @click="submitBehaviorForm('save')">保存行为</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { ElMessage } from "element-plus";
-import { getOntologyFunctionListInterface } from "@/apis";
+import { computed, nextTick, ref, watch } from "vue";
+import { ElMessage, type TableInstance } from "element-plus";
+import { getOntologyCategoryTreeInterface, getOntologyFunctionListInterface, getOntologyObjectArrTypeTreeInterface } from "@/apis";
 import type {
   GetOntologyFunctionListItem,
+  OntologyPropertyInfo,
   SpaceBehaviorBasicAction,
   SpaceBehaviorCategoryNode,
   SpaceBehaviorDraft,
@@ -116,8 +173,21 @@ import type {
   SpaceBehaviorOperatorOption,
   SpaceBehaviorStatus,
   SpaceBehaviorValueType,
+  SpaceRelationObjectOption,
 } from "@/types";
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID, SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS, SPACE_BEHAVIOR_KIND_OPTIONS, SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS } from "@/types";
+import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
+import { flattenPropertyInfosFromCategoryTree } from "../utils/flattenPropertyInfosFromCategoryTree";
+import {
+  isAttributeValueRowSelectable,
+  isMainStorageGroup,
+  listPropertyRowsByStorageGroup,
+  normalizeStorageGroup,
+  readPropertyRowId,
+  resolveAttributeValueSelection,
+} from "../utils/resolveAttributeValueSelection";
+import { omitActionLeavesFromCategoryTree } from "../utils/spaceBehaviorOperations";
+import { sortPropertyInfosByStorageGroup } from "../utils/sortPropertyInfosByStorageGroup";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -133,23 +203,101 @@ const emit = defineEmits<{
   "save-copy": [draft: SpaceBehaviorDraft];
 }>();
 
+/** 分类选择器仅展示分类节点，不展示行为叶子。 */
+const categorySelectTree = computed(() => omitActionLeavesFromCategoryTree(props.categoryTree));
+
 const operatorCatalog = ref<SpaceBehaviorOperatorOption[]>([]);
 const operatorLoading = ref(false);
 const operatorError = ref("");
 let operatorLoadToken = 0;
+const objectOptions = ref<SpaceRelationObjectOption[]>([]);
+const objectLoading = ref(false);
+const objectError = ref("");
+let objectLoadToken = 0;
+const attributeRows = ref<OntologyPropertyInfo[]>([]);
+const attributeLoading = ref(false);
+const attributeError = ref("");
+let attributeLoadToken = 0;
+const attributeTableRef = ref<TableInstance>();
+let syncingAttributeSelection = false;
 const kind = ref<SpaceBehaviorKind>("basic");
 const valueType = ref<SpaceBehaviorValueType>("attributeValue");
 const displayName = ref("");
+const behaviorApiName = ref("");
 const functionOperatorId = ref("");
 const functionOperatorName = ref("");
 const description = ref("");
 const categoryId = ref(ROOT_SPACE_BEHAVIOR_CATEGORY_ID);
 const status = ref<SpaceBehaviorStatus>("draft");
 const basicAction = ref<SpaceBehaviorBasicAction>("create");
-const loading = ref(false);
+const ontologyIdentifier = ref("");
+const selectedPropertyIds = ref<string[]>([]);
+const selectedPropertyValues = ref<Record<string, string>>({});
+const storageGroup = ref("");
+const submitLoading = ref(false);
 const dialogTitle = computed(() => (props.mode === "edit" ? "编辑行为" : "创建行为"));
 const saveAsCopy = computed(() => props.mode === "edit" && props.behavior?.status === "published");
 const readonly = computed(() => props.mode === "edit" && props.behavior?.status === "disabled");
+const showAttributeValueObjectSection = computed(() => kind.value === "basic" && valueType.value === "attributeValue");
+const attributeSelectionHint = computed(() => {
+  if (basicAction.value === "create") return "不可选择 main 分组；选中同组任一属性将全选该组";
+  if (basicAction.value === "delete") return "不可选择 main 分组；选中同组任一属性将全选该组";
+  return "仅可多选同一存储分组下的属性";
+});
+
+/**
+ * @description 清空对象与属性选择及相关列表状态。
+ */
+function clearObjectInfoSelection(): void {
+  ontologyIdentifier.value = "";
+  selectedPropertyIds.value = [];
+  selectedPropertyValues.value = {};
+  storageGroup.value = "";
+  attributeRows.value = [];
+  attributeError.value = "";
+  attributeLoadToken += 1;
+  attributeLoading.value = false;
+}
+
+/**
+ * @description 更新属性行对应的新增值/修改值录入。
+ * @param propertyId 属性 uniqueIdentifier。
+ * @param value 输入值。
+ */
+function updatePropertyInputValue(propertyId: string, value: string | number): void {
+  const id = propertyId.trim();
+  if (!id) return;
+  selectedPropertyValues.value = {
+    ...selectedPropertyValues.value,
+    [id]: String(value),
+  };
+}
+
+/**
+ * @description 仅保留当前已勾选属性的录入值，减小草稿噪声。
+ * @returns 勾选属性对应的录入值映射。
+ */
+function buildSelectedPropertyValuesForDraft(): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const propertyId of selectedPropertyIds.value) {
+    values[propertyId] = selectedPropertyValues.value[propertyId] ?? "";
+  }
+  return values;
+}
+
+/**
+ * @description 从当前属性行回填勾选属性的 apiName，供创建行为 mappingIns.parameterName。
+ * @returns 勾选属性 id 到 apiName 的映射。
+ */
+function buildSelectedPropertyApiNamesForDraft(): Record<string, string> {
+  const names: Record<string, string> = {};
+  for (const propertyId of selectedPropertyIds.value) {
+    const row = attributeRows.value.find((item) => readPropertyRowId(item) === propertyId);
+    const apiName = typeof row?.apiName === "string" ? row.apiName.trim() : "";
+    names[propertyId] = apiName;
+  }
+  return names;
+}
 
 /**
  * @description 清空当前关联的函数算子。
@@ -185,11 +333,13 @@ function handleKindChange(value: string | number | boolean | undefined): void {
     valueType.value = "attributeValue";
     return;
   }
+  clearObjectInfoSelection();
   if (value === "application") {
     basicAction.value = "create";
     return;
   }
   displayName.value = "";
+  behaviorApiName.value = "";
   description.value = "";
   categoryId.value = props.defaultCategoryId || ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
   valueType.value = "attributeValue";
@@ -198,12 +348,27 @@ function handleKindChange(value: string | number | boolean | undefined): void {
 }
 
 /**
- * @description 切换基础操作。
+ * @description 切换行为类型；离开属性值时清空对象信息。
+ * @param value 行为类型。
+ */
+function handleValueTypeChange(value: string | number | boolean | undefined): void {
+  if (value !== "attributeValue" && value !== "relationExample" && value !== "basicFunctionOperator") return;
+  valueType.value = value;
+  if (value !== "attributeValue") clearObjectInfoSelection();
+}
+
+/**
+ * @description 切换基础操作；在新增/修改/删除间按规则重算属性勾选，不清空对象。
  * @param value 基础操作。
  */
 function handleBasicActionChange(value: string | number | boolean | undefined): void {
   if (value !== "create" && value !== "update" && value !== "delete") return;
   basicAction.value = value;
+  if (!showAttributeValueObjectSection.value) {
+    clearObjectInfoSelection();
+    return;
+  }
+  reapplyAttributeSelectionForBasicAction();
 }
 
 /**
@@ -216,6 +381,103 @@ function handleOperatorChange(value: string | number | boolean | undefined): voi
     return;
   }
   applySelectedOperator(value);
+}
+
+/**
+ * @description 选择对象并重载属性表。
+ * @param value 对象 uniqueIdentifier。
+ */
+function handleOntologyChange(value: string | number | boolean | undefined): void {
+  const nextId = typeof value === "string" ? value.trim() : "";
+  ontologyIdentifier.value = nextId;
+  selectedPropertyIds.value = [];
+  selectedPropertyValues.value = {};
+  storageGroup.value = "";
+  attributeRows.value = [];
+  attributeError.value = "";
+  if (!nextId) return;
+  void loadAttributeRows(nextId);
+}
+
+/**
+ * @description 按当前基础操作判断属性行是否可勾选。
+ * @param row 属性行。
+ * @returns 可勾选时为 true。
+ */
+function isAttributeRowSelectable(row: OntologyPropertyInfo): boolean {
+  return isAttributeValueRowSelectable(basicAction.value, row, readonly.value);
+}
+
+/**
+ * @description 将决议后的属性勾选同步到表格与草稿字段。
+ * @param selectedRows 决议后的属性行。
+ * @param nextStorageGroup 决议后的存储分组。
+ * @param warning 可选警告文案。
+ */
+function applyResolvedAttributeSelection(selectedRows: OntologyPropertyInfo[], nextStorageGroup: string, warning = ""): void {
+  selectedPropertyIds.value = selectedRows.map((row) => readPropertyRowId(row)).filter(Boolean);
+  storageGroup.value = nextStorageGroup;
+  if (warning) ElMessage.warning(warning);
+  syncingAttributeSelection = true;
+  void nextTick(() => {
+    const table = attributeTableRef.value;
+    if (!table) {
+      syncingAttributeSelection = false;
+      return;
+    }
+    table.clearSelection();
+    const selectedIdSet = new Set(selectedPropertyIds.value);
+    for (const row of attributeRows.value) {
+      if (selectedIdSet.has(readPropertyRowId(row))) {
+        table.toggleRowSelection(row, true);
+      }
+    }
+    void nextTick(() => {
+      syncingAttributeSelection = false;
+    });
+  });
+}
+
+/**
+ * @description 切换基础操作后，按新规则重算当前属性勾选。
+ */
+function reapplyAttributeSelectionForBasicAction(): void {
+  if (!selectedPropertyIds.value.length) {
+    storageGroup.value = "";
+    return;
+  }
+  if ((basicAction.value === "create" || basicAction.value === "delete") && isMainStorageGroup(storageGroup.value)) {
+    applyResolvedAttributeSelection([], "", basicAction.value === "create" ? "新增不可选择 main 分组属性" : "删除不可选择 main 分组属性");
+    return;
+  }
+  const selectedRows = attributeRows.value.filter((row) => selectedPropertyIds.value.includes(readPropertyRowId(row)));
+  const resolved = resolveAttributeValueSelection({
+    basicAction: basicAction.value,
+    previousIds: [],
+    selection: selectedRows,
+    allRows: attributeRows.value,
+  });
+  applyResolvedAttributeSelection(resolved.selectedRows, resolved.storageGroup, resolved.warning);
+}
+
+/**
+ * @description 同步表格勾选到 selectedPropertyIds，并按基础操作规则限制同组/全选/禁 main。
+ * @param selection 当前勾选行。
+ */
+function handleAttributeSelectionChange(selection: OntologyPropertyInfo[]): void {
+  if (syncingAttributeSelection) return;
+  const resolved = resolveAttributeValueSelection({
+    basicAction: basicAction.value,
+    previousIds: selectedPropertyIds.value,
+    selection,
+    allRows: attributeRows.value,
+  });
+  const nextIds = resolved.selectedRows.map((row) => readPropertyRowId(row));
+  const sameIds = nextIds.length === selectedPropertyIds.value.length && nextIds.every((id, index) => id === selectedPropertyIds.value[index]);
+  if (sameIds && normalizeStorageGroup(resolved.storageGroup) === normalizeStorageGroup(storageGroup.value) && !resolved.warning) {
+    return;
+  }
+  applyResolvedAttributeSelection(resolved.selectedRows, resolved.storageGroup, resolved.warning);
 }
 
 /**
@@ -233,6 +495,7 @@ function openBehaviorTreeBuilder(): void {
 function buildBehaviorDraft(nextStatus: SpaceBehaviorStatus): SpaceBehaviorDraft {
   return {
     displayName: displayName.value.trim(),
+    behaviorApiName: behaviorApiName.value.trim(),
     kind: kind.value,
     valueType: valueType.value,
     functionOperatorId: functionOperatorId.value,
@@ -241,6 +504,11 @@ function buildBehaviorDraft(nextStatus: SpaceBehaviorStatus): SpaceBehaviorDraft
     categoryId: categoryId.value,
     status: nextStatus,
     basicAction: basicAction.value,
+    ontologyIdentifier: ontologyIdentifier.value.trim(),
+    selectedPropertyIds: [...selectedPropertyIds.value],
+    selectedPropertyValues: buildSelectedPropertyValuesForDraft(),
+    selectedPropertyApiNames: buildSelectedPropertyApiNamesForDraft(),
+    storageGroup: storageGroup.value,
   };
 }
 
@@ -250,19 +518,37 @@ function buildBehaviorDraft(nextStatus: SpaceBehaviorStatus): SpaceBehaviorDraft
  */
 function submitBehaviorForm(action: "save" | "copy"): void {
   if (readonly.value || kind.value === "behaviorTree") return;
-  if (!displayName.value.trim() || !categoryId.value) {
-    ElMessage.warning("请完整填写行为名称和行为分类");
+  if (!displayName.value.trim() || !behaviorApiName.value.trim() || !categoryId.value) {
+    ElMessage.warning("请完整填写行为名称、行为api名称和行为分类");
     return;
   }
   if (kind.value === "basic" && (!valueType.value || !basicAction.value)) {
     ElMessage.warning("请完整填写行为类型和基础操作");
     return;
   }
+  if (showAttributeValueObjectSection.value) {
+    if (!ontologyIdentifier.value.trim()) {
+      ElMessage.warning("请选择对象");
+      return;
+    }
+    if (selectedPropertyIds.value.length === 0) {
+      ElMessage.warning("请至少选择一项属性");
+      return;
+    }
+    if (
+      (basicAction.value === "create" || basicAction.value === "delete") &&
+      (isMainStorageGroup(storageGroup.value) ||
+        selectedPropertyIds.value.length !== listPropertyRowsByStorageGroup(attributeRows.value, storageGroup.value).length)
+    ) {
+      ElMessage.warning(basicAction.value === "create" ? "新增须全选同一非 main 存储分组属性" : "删除须全选同一非 main 存储分组属性");
+      return;
+    }
+  }
   if (kind.value === "application" && !functionOperatorId.value) {
     ElMessage.warning("请选择关联函数算子");
     return;
   }
-  loading.value = true;
+  submitLoading.value = true;
   const nextStatus = action === "copy" || props.mode === "create" ? "draft" : status.value;
   const draft = buildBehaviorDraft(nextStatus);
   if (action === "copy") {
@@ -302,6 +588,51 @@ async function loadOperatorCatalog(): Promise<void> {
 }
 
 /**
+ * @description 加载当前空间可选对象列表。
+ */
+async function loadObjectOptions(): Promise<void> {
+  const requestToken = ++objectLoadToken;
+  objectLoading.value = true;
+  objectError.value = "";
+  try {
+    const spaceId = props.spaceId.trim();
+    if (!spaceId) throw new Error("当前对象空间无效");
+    const response = await getOntologyCategoryTreeInterface({ spaceId });
+    if (requestToken !== objectLoadToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "对象列表加载失败");
+    objectOptions.value = mapOntologyObjectsToRelationOptions(response.data);
+  } catch (error) {
+    if (requestToken !== objectLoadToken) return;
+    objectOptions.value = [];
+    objectError.value = error instanceof Error ? error.message : "对象列表加载失败";
+  } finally {
+    if (requestToken === objectLoadToken) objectLoading.value = false;
+  }
+}
+
+/**
+ * @description 按对象标识加载属性分类树并扁平化为可选属性行。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ */
+async function loadAttributeRows(ontologyUniqueIdentifier: string): Promise<void> {
+  const requestToken = ++attributeLoadToken;
+  attributeLoading.value = true;
+  attributeError.value = "";
+  try {
+    const response = await getOntologyObjectArrTypeTreeInterface({ ontologyUniqueIdentifier });
+    if (requestToken !== attributeLoadToken) return;
+    if (response.code !== 200) throw new Error(response.message || "属性列表加载失败");
+    attributeRows.value = sortPropertyInfosByStorageGroup(flattenPropertyInfosFromCategoryTree(response.data));
+  } catch (error) {
+    if (requestToken !== attributeLoadToken) return;
+    attributeRows.value = [];
+    attributeError.value = error instanceof Error ? error.message : "属性列表加载失败";
+  } finally {
+    if (requestToken === attributeLoadToken) attributeLoading.value = false;
+  }
+}
+
+/**
  * @description 将函数列表记录映射为行为弹框使用的算子选项。
  * @param item 函数列表记录。
  * @returns 算子选项。
@@ -323,11 +654,14 @@ watch(
   (visible) => {
     if (!visible) return;
     void loadOperatorCatalog();
-    loading.value = false;
+    void loadObjectOptions();
+    submitLoading.value = false;
+    clearObjectInfoSelection();
     if (props.behavior) {
       kind.value = props.behavior.kind;
       valueType.value = props.behavior.valueType;
       displayName.value = props.behavior.displayName;
+      behaviorApiName.value = props.behavior.behaviorApiName;
       functionOperatorId.value = props.behavior.functionOperatorId;
       functionOperatorName.value = props.behavior.functionOperatorName;
       description.value = props.behavior.description;
@@ -339,6 +673,7 @@ watch(
     kind.value = "basic";
     valueType.value = "attributeValue";
     displayName.value = "";
+    behaviorApiName.value = "";
     description.value = "";
     categoryId.value = props.defaultCategoryId || ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
     status.value = "draft";
@@ -353,7 +688,7 @@ defineExpose({
    * @param value 是否处于提交中
    */
   setLoading(value: boolean) {
-    loading.value = value;
+    submitLoading.value = value;
   },
 });
 </script>
@@ -368,7 +703,8 @@ defineExpose({
   margin-bottom: 12px;
 }
 
-.behavior-form-dialog__section h3 {
+.behavior-form-dialog__section h3,
+.behavior-form-dialog__object-section h3 {
   margin: 0 0 12px;
   color: var(--aircas-color-text-primary);
   font-size: 14px;
@@ -381,8 +717,34 @@ defineExpose({
   gap: 12px;
 }
 
-.behavior-form-dialog__grid--three {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.behavior-form-dialog__object-section {
+  margin-top: 4px;
+}
+
+.behavior-form-dialog__attribute-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 8px;
+}
+
+.behavior-form-dialog__attribute-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--aircas-color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.behavior-form-dialog__attribute-hint {
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+}
+
+.behavior-form-dialog__attribute-table {
+  width: 100%;
 }
 
 .behavior-form-dialog__tree-panel {
@@ -395,9 +757,13 @@ defineExpose({
 }
 
 @media (max-width: 900px) {
-  .behavior-form-dialog__grid,
-  .behavior-form-dialog__grid--three {
+  .behavior-form-dialog__grid {
     grid-template-columns: 1fr;
+  }
+
+  .behavior-form-dialog__attribute-head {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

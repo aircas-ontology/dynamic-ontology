@@ -52,6 +52,7 @@ const props = defineProps<{
 const emit = defineEmits<{ "update:modelValue": [value: boolean]; submit: [draft: SpaceBehaviorDraft]; "save-copy": [draft: SpaceBehaviorDraft] }>();
 const draft = reactive<SpaceBehaviorDraft>({
   displayName: "",
+  behaviorApiName: "",
   kind: "basic",
   valueType: "attributeValue",
   functionOperatorId: "",
@@ -60,6 +61,11 @@ const draft = reactive<SpaceBehaviorDraft>({
   categoryId: ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
   status: "draft",
   basicAction: "query",
+  ontologyIdentifier: "",
+  selectedPropertyIds: [],
+  selectedPropertyValues: {},
+  selectedPropertyApiNames: {},
+  storageGroup: "",
   changeNote: "",
 });
 const readonly = computed(() => props.mode === "edit" && (props.behavior?.status === "published" || props.behavior?.status === "disabled"));
@@ -72,6 +78,7 @@ function initializeBehaviorDraft(): void {
     item
       ? {
           displayName: item.displayName,
+          behaviorApiName: item.behaviorApiName,
           kind: item.kind,
           valueType: item.valueType,
           functionOperatorId: item.functionOperatorId,
@@ -80,10 +87,16 @@ function initializeBehaviorDraft(): void {
           categoryId: item.categoryId,
           status: item.status,
           basicAction: item.basicAction,
+          ontologyIdentifier: "",
+          selectedPropertyIds: [],
+          selectedPropertyValues: {},
+          selectedPropertyApiNames: {},
+          storageGroup: "",
           changeNote: item.changeNote,
         }
       : {
           displayName: "",
+          behaviorApiName: "",
           kind: "basic",
           valueType: "attributeValue",
           functionOperatorId: "",
@@ -92,6 +105,11 @@ function initializeBehaviorDraft(): void {
           categoryId: props.defaultCategoryId || ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
           status: "draft",
           basicAction: "query" as SpaceBehaviorBasicAction,
+          ontologyIdentifier: "",
+          selectedPropertyIds: [],
+          selectedPropertyValues: {},
+          selectedPropertyApiNames: {},
+          storageGroup: "",
           changeNote: "",
         },
   );

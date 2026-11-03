@@ -6,6 +6,11 @@
   },
   {
     "method": "POST",
+    "path": "/ontology/action",
+    "file": "fixtures/ontology/action.post.json"
+  },
+  {
+    "method": "POST",
     "path": "/agent/chat/stream",
     "file": "fixtures/agent/chat.stream.post.json",
     "responseType": "sse"

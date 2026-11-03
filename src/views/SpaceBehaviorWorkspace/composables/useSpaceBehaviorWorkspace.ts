@@ -1,8 +1,13 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { createActionCategoryInterface, deleteActionCategoryInterface, getActionCategoryTreeInterface, updateActionCategoryInterface } from "@/apis";
+import {
+  createActionCategoryInterface,
+  deleteActionCategoryInterface,
+  getActionCategoryTreeInterface,
+  postCreateOntologyActionInterface,
+  updateActionCategoryInterface,
+} from "@/apis";
 import type {
-  ActionCategoryVO,
   SpaceBehaviorCategoryNode,
   SpaceBehaviorDraft,
   SpaceBehaviorItem,
@@ -18,6 +23,8 @@ import {
   querySpaceBehaviorWorkspaceMock,
   updateSpaceBehaviorMock,
 } from "@/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock";
+import { buildPropertyValueCreateActionParams, isPropertyValueActionCreateDraft } from "../utils/buildPropertyValueCreateActionParams";
+import { mapActionCategoryTree } from "../utils/mapActionCategoryTree";
 import { filterSpaceBehaviorsByCategory, findSpaceBehaviorCategoryNode } from "../utils/spaceBehaviorOperations";
 
 /**
@@ -49,37 +56,6 @@ export function useSpaceBehaviorWorkspace() {
   const pageSize = ref(10);
   const actionLoading = ref(false);
   let loadToken = 0;
-
-  /**
-   * @description 将行为分类树接口响应映射为工作区使用的节点结构。
-   * @param node 接口返回的行为分类节点。
-   * @returns 工作区分类节点。
-   */
-  function mapActionCategoryNode(node: ActionCategoryVO): SpaceBehaviorCategoryNode {
-    const itemChildren = Array.isArray(node.items) ? node.items : node.items ? [node.items] : [];
-    const nodeId = node.id ?? node.categoryId;
-    const nodeName = node.name ?? node.categoryName;
-    if (nodeId === undefined || !nodeName) throw new Error("行为分类树返回数据缺少节点 id 或名称");
-    return {
-      id: String(nodeId),
-      label: nodeName,
-      count: 0,
-      children: [...(node.children ?? []), ...itemChildren].map(mapActionCategoryNode),
-    };
-  }
-
-  /**
-   * @description 将接口返回的单节点或节点数组统一映射为工作区分类树。
-   * @param data 接口返回的分类数据。
-   * @returns 工作区分类树。
-   */
-  function mapActionCategoryTree(data: ActionCategoryVO | ActionCategoryVO[]): SpaceBehaviorCategoryNode[] {
-    const nodes = Array.isArray(data) ? data : [data];
-    const firstNode = nodes[0];
-    const container = firstNode && nodes.length === 1 && firstNode.id === undefined && firstNode.categoryId === undefined ? firstNode : undefined;
-    const children = container?.items ?? container?.children ?? nodes;
-    return (Array.isArray(children) ? children : [children]).map(mapActionCategoryNode);
-  }
 
   /**
    * @description 从本地 Mock 拉取当前空间的分类树与行为列表。
@@ -248,8 +224,8 @@ export function useSpaceBehaviorWorkspace() {
       const node = findSpaceBehaviorCategoryNode(categoryTree.value, categoryId);
       if (!node) return { ok: false, reason: "not-found" };
       if (categoryId === ROOT_SPACE_BEHAVIOR_CATEGORY_ID || categoryId === categoryTree.value[0]?.id) return { ok: false, reason: "root" };
-      if (node.children.length > 0) return { ok: false, reason: "has-children" };
-      if (node.count > 0) return { ok: false, reason: "has-behaviors" };
+      if (node.children.some((child) => child.kind === "category")) return { ok: false, reason: "has-children" };
+      if (node.count > 0 || node.children.some((child) => child.kind === "action")) return { ok: false, reason: "has-behaviors" };
       const numericSpaceId = Number(spaceId.value);
       const numericCategoryId = Number(categoryId);
       if (!Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId)) return { ok: false, reason: "not-found" };
@@ -267,16 +243,36 @@ export function useSpaceBehaviorWorkspace() {
   }
 
   /**
-   * @description 新建行为。
+   * @description 新建行为；创建表单的属性值基础行为可走真实创建接口，另存副本等路径可强制仅写本地 Mock。
    * @param draft 行为草稿。
-   * @returns 新增行为。
+   * @param options.useRemotePropertyValueAction 是否对属性值草稿调用 POST /ontology/action，默认 true。
+   * @returns 创建结果。
    */
-  function createBehavior(draft: SpaceBehaviorDraft): SpaceBehaviorItem {
+  async function createBehavior(
+    draft: SpaceBehaviorDraft,
+    options: { useRemotePropertyValueAction?: boolean } = {},
+  ): Promise<{ ok: boolean; message: string; item?: SpaceBehaviorItem }> {
+    const useRemotePropertyValueAction = options.useRemotePropertyValueAction !== false;
     actionLoading.value = true;
     try {
+      if (useRemotePropertyValueAction && isPropertyValueActionCreateDraft(draft)) {
+        const params = buildPropertyValueCreateActionParams(draft);
+        if ("error" in params) {
+          return { ok: false, message: params.error };
+        }
+        const response = await postCreateOntologyActionInterface(params);
+        if (response.code !== 200) {
+          return { ok: false, message: response.message || "行为创建失败" };
+        }
+        const created = createSpaceBehaviorMock(spaceId.value, draft);
+        loadSpaceBehaviorWorkspace();
+        return { ok: true, message: "", item: created };
+      }
       const created = createSpaceBehaviorMock(spaceId.value, draft);
       loadSpaceBehaviorWorkspace();
-      return created;
+      return { ok: true, message: "", item: created };
+    } catch (error) {
+      return { ok: false, message: error instanceof Error && error.message.trim() ? error.message : "行为创建失败" };
     } finally {
       actionLoading.value = false;
     }

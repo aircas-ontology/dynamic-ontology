@@ -38,19 +38,124 @@
 
 ```JSON
 {
-  "code": 200,
-  "message": "SUCCESS",
-  "success": true,
-  "data": {
-    "categoryId": 6,
-    "name": "qwe",
-    "children": [
-      {
-        "categoryId": 7,
-        "name": "qwe123"
-      }
-    ]
-  }
+    "code": 200,
+    "message": "SUCCESS",
+    "data": {
+        "categoryId": 1,
+        "name": "全部属性",
+        "children": [
+            {
+                "categoryId": 3,
+                "name": "标识信息",
+                "propertyInfos": [
+                    {
+                        "displayName": "飞机名称",
+                        "description": "飞机名称",
+                        "isPrimaryKey": false,
+                        "isTitleKey": true,
+                        "uniqueIdentifier": "602cc68cc3cb46daa47626516848ffad",
+                        "ontologyUniqueIdentifier": "d58eecff239c4c7f908d9c640a95d68e",
+                        "defaultValue": "ceshi",
+                        "storageGroup": "main",
+                        "categoryId": 3,
+                        "propertyType": "String",
+                        "apiName": "name"
+                    },
+                    {
+                        "displayName": "飞机id",
+                        "description": "飞机id",
+                        "isPrimaryKey": false,
+                        "isTitleKey": false,
+                        "uniqueIdentifier": "f793530eba5e4feb8ac9545d5a899f6d",
+                        "ontologyUniqueIdentifier": "d58eecff239c4c7f908d9c640a95d68e",
+                        "defaultValue": "ceshi",
+                        "storageGroup": "main",
+                        "categoryId": 3,
+                        "propertyType": "String",
+                        "apiName": "planeid"
+                    },
+                    {
+                        "displayName": "id",
+                        "description": "主键id",
+                        "isPrimaryKey": true,
+                        "isTitleKey": false,
+                        "uniqueIdentifier": "d00474647dfd4e6ca402bea7638c053f",
+                        "ontologyUniqueIdentifier": "d58eecff239c4c7f908d9c640a95d68e",
+                        "storageGroup": "main",
+                        "categoryId": 3,
+                        "propertyType": "String",
+                        "apiName": "id"
+                    },
+                    {
+                        "displayName": "飞机制造商",
+                        "description": "飞机制造商名称",
+                        "isPrimaryKey": false,
+                        "isTitleKey": false,
+                        "uniqueIdentifier": "5d54a3cd2c5b43479ada9f75f89e8a1a",
+                        "ontologyUniqueIdentifier": "d58eecff239c4c7f908d9c640a95d68e",
+                        "defaultValue": "",
+                        "storageGroup": "main",
+                        "categoryId": 3,
+                        "propertyType": "String",
+                        "apiName": "fjzzs"
+                    }
+                ]
+            },
+            {
+                "categoryId": 2,
+                "name": "物理特征",
+                "propertyInfos": [
+                    {
+                        "displayName": "舰船123456",
+                        "description": "舰船重量",
+                        "isPrimaryKey": false,
+                        "isTitleKey": false,
+                        "uniqueIdentifier": "dbe01dbc49cd461d8b5a8b10f847e482",
+                        "ontologyUniqueIdentifier": "d58eecff239c4c7f908d9c640a95d68e",
+                        "defaultValue": "",
+                        "storageGroup": "main",
+                        "categoryId": 2,
+                        "propertyType": "Double",
+                        "apiName": "zhongliang"
+                    },
+                    {
+                        "displayName": "发动机编号",
+                        "description": "发动机的出厂编号",
+                        "isPrimaryKey": false,
+                        "isTitleKey": false,
+                        "uniqueIdentifier": "c49f6a7b22a24b45976ddb3707434348",
+                        "ontologyUniqueIdentifier": "d58eecff239c4c7f908d9c640a95d68e",
+                        "storageGroup": "main",
+                        "categoryId": 2,
+                        "propertyType": "String",
+                        "apiName": "engineNumber"
+                    },
+                    {
+                        "displayName": "发动机名称",
+                        "description": "发动机的名称",
+                        "isPrimaryKey": false,
+                        "isTitleKey": false,
+                        "uniqueIdentifier": "51ef71aa4938489e9e22531462d59a57",
+                        "ontologyUniqueIdentifier": "d58eecff239c4c7f908d9c640a95d68e",
+                        "storageGroup": "main",
+                        "categoryId": 2,
+                        "propertyType": "String",
+                        "apiName": "enginename"
+                    }
+                ],
+                "children": [
+                    {
+                        "categoryId": 5,
+                        "name": "重量排水"
+                    },
+                    {
+                        "categoryId": 4,
+                        "name": "尺度"
+                    }
+                ]
+            }
+        ]
+    }
 }
 ```
 

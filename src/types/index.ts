@@ -24,6 +24,15 @@ export type { ActionCategoryNode, CreateActionCategoryParams } from "./apis/crea
 export type { CreateFunctionOperatorTemplateData, CreateFunctionOperatorTemplateParams } from "./apis/createFunctionOperatorTemplateType";
 export type { CreateFunctionRateLimitTemplateData, CreateFunctionRateLimitTemplateParams } from "./apis/createFunctionRateLimitTemplateType";
 export type {
+  CreateOntologyActionData,
+  CreateOntologyActionKind,
+  CreateOntologyActionMappingIn,
+  CreateOntologyActionOperation,
+  CreateOntologyActionParams,
+  CreateOntologyActionSourceType,
+  CreateOntologyActionSubjectType,
+} from "./apis/createOntologyActionType";
+export type {
   CreateOntologyFunctionContainerConfig,
   CreateOntologyFunctionContainerData,
   CreateOntologyFunctionContainerParams,
@@ -92,7 +101,7 @@ export type { ExportOntologyFile, ExportOntologyParams, OntologyExportType } fro
 export type { FunctionOperatorTemplateLanguage, FunctionOperatorTemplateParams, FunctionOperatorTemplate } from "./apis/functionOperatorTemplateType";
 export type { FunctionPublishData, FunctionPublishParams } from "./apis/functionPublishType";
 export type { FunctionUnpublishData, FunctionUnpublishParams } from "./apis/functionUnpublishType";
-export type { ActionCategoryVO, GetActionCategoryTreeParams } from "./apis/getActionCategoryTreeType";
+export type { ActionCategoryActionInfo, ActionCategoryVO, GetActionCategoryTreeParams } from "./apis/getActionCategoryTreeType";
 export type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceColumnsParams,
@@ -395,6 +404,7 @@ export {
 export type {
   SpaceBehaviorBasicAction,
   SpaceBehaviorCategoryNode,
+  SpaceBehaviorCategoryNodeKind,
   SpaceBehaviorDeletePreflight,
   SpaceBehaviorDraft,
   SpaceBehaviorItem,

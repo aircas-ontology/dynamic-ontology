@@ -7,6 +7,7 @@ import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
  * @returns 分类标识列表。
  */
 export function collectObjectBehaviorCategoryIds(node: SpaceBehaviorCategoryNode): string[] {
+  if (node.kind === "action") return [];
   return [node.id, ...node.children.flatMap(collectObjectBehaviorCategoryIds)];
 }
 
@@ -50,7 +51,7 @@ export function filterObjectBehaviorsByCategory(
  * @returns 分类下拉选项。
  */
 export function flattenObjectBehaviorCategoryOptions(nodes: SpaceBehaviorCategoryNode[]): Array<{ id: string; label: string }> {
-  return nodes.flatMap((node) => [{ id: node.id, label: node.label }, ...flattenObjectBehaviorCategoryOptions(node.children)]);
+  return nodes.flatMap((node) => (node.kind === "action" ? [] : [{ id: node.id, label: node.label }, ...flattenObjectBehaviorCategoryOptions(node.children)]));
 }
 
 /**

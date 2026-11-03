@@ -17,7 +17,22 @@ const ROOT_SPACE_BEHAVIOR_CATEGORY_ID = "behavior-root";
  * @returns 分类 id 列表。
  */
 export function collectSpaceBehaviorCategoryIds(node: SpaceBehaviorCategoryNode): string[] {
+  if (node.kind === "action") return [];
   return [node.id, ...node.children.flatMap(collectSpaceBehaviorCategoryIds)];
+}
+
+/**
+ * @description 从分类树中去掉行为叶子，供分类选择器仅展示可挂载分类。
+ * @param nodes 含行为叶子的分类树。
+ * @returns 仅含分类节点的树副本。
+ */
+export function omitActionLeavesFromCategoryTree(nodes: SpaceBehaviorCategoryNode[]): SpaceBehaviorCategoryNode[] {
+  return nodes
+    .filter((node) => node.kind !== "action")
+    .map((node) => ({
+      ...node,
+      children: omitActionLeavesFromCategoryTree(node.children),
+    }));
 }
 
 /**
@@ -65,6 +80,10 @@ export function recountSpaceBehaviorCategoryCounts(data: SpaceBehaviorWorkspaceD
    * @returns 该子树行为数量。
    */
   function recountNode(node: SpaceBehaviorCategoryNode): number {
+    if (node.kind === "action") {
+      node.count = 0;
+      return 0;
+    }
     const ownCount = data.behaviors.filter((item) => item.categoryId === node.id).length;
     const childCount = node.children.reduce((total, child) => total + recountNode(child), 0);
     node.count = ownCount + childCount;

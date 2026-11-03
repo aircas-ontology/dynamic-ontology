@@ -19,9 +19,11 @@ test("action category tree types and exports use the documented sample fields", 
   const typeSource = readSource("../src/types/apis/getActionCategoryTreeType.ts");
   const barrelSource = readSource("../src/types/index.ts");
   assert.match(typeSource, /interface GetActionCategoryTreeParams[\s\S]*spaceId: number/);
+  assert.match(typeSource, /interface ActionCategoryActionInfo/);
+  assert.match(typeSource, /actionInfos\?: ActionCategoryActionInfo\[\]/);
   assert.match(
     typeSource,
     /interface ActionCategoryVO[\s\S]*id\?: number[\s\S]*name\?: string[\s\S]*children\?: ActionCategoryVO\[\][\s\S]*items\?: ActionCategoryVO \| ActionCategoryVO\[\]/,
   );
-  assert.match(barrelSource, /ActionCategoryVO, GetActionCategoryTreeParams[\s\S]*getActionCategoryTreeType/);
+  assert.match(barrelSource, /ActionCategoryActionInfo, ActionCategoryVO, GetActionCategoryTreeParams[\s\S]*getActionCategoryTreeType/);
 });

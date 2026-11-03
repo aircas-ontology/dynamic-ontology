@@ -11,9 +11,19 @@ import {
   querySpaceBehaviorWorkspaceMock,
 } from "../src/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock.ts";
 import {
+  collectSpaceBehaviorCategoryIds,
   flattenSpaceBehaviorParameterRows,
   listAvailableSpaceBehaviorStatusOperations,
+  omitActionLeavesFromCategoryTree,
 } from "../src/views/SpaceBehaviorWorkspace/utils/spaceBehaviorOperations.ts";
+import { mapActionCategoryTree } from "../src/views/SpaceBehaviorWorkspace/utils/mapActionCategoryTree.ts";
+import { flattenPropertyInfosFromCategoryTree } from "../src/views/SpaceBehaviorWorkspace/utils/flattenPropertyInfosFromCategoryTree.ts";
+import { isAttributeValueRowSelectable, resolveAttributeValueSelection } from "../src/views/SpaceBehaviorWorkspace/utils/resolveAttributeValueSelection.ts";
+import { sortPropertyInfosByStorageGroup } from "../src/views/SpaceBehaviorWorkspace/utils/sortPropertyInfosByStorageGroup.ts";
+import {
+  buildPropertyValueCreateActionParams,
+  isPropertyValueActionCreateDraft,
+} from "../src/views/SpaceBehaviorWorkspace/utils/buildPropertyValueCreateActionParams.ts";
 
 /**
  * @description 读取相对 tests 目录的源文件文本。
@@ -91,9 +101,61 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
 
 test("space behavior workspace loads the action category tree on entry", () => {
   const source = readSource("../src/views/SpaceBehaviorWorkspace/composables/useSpaceBehaviorWorkspace.ts");
+  const panelSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorCategoryPanel.vue");
   assert.match(source, /getActionCategoryTreeInterface\(\{ spaceId: Number\(currentSpaceId\) \}\)/);
   assert.match(source, /response\.code !== 200/);
-  assert.match(source, /mapActionCategoryNode/);
+  assert.match(source, /mapActionCategoryTree/);
+  assert.match(panelSource, /isActionCategoryNode/);
+  assert.match(panelSource, /parentCategoryId/);
+  assert.match(panelSource, /behavior-category-panel__action-dot/);
+  assert.doesNotMatch(panelSource, /Document/);
+});
+
+test("space behavior maps actionInfos into category counts and displayName leaves", () => {
+  const tree = mapActionCategoryTree({
+    categoryId: 5,
+    name: "根节点",
+    children: [
+      {
+        categoryId: 11,
+        name: "单独1",
+        actionInfos: [
+          { actionApi: "cc", displayName: "cc", description: "ccc" },
+          { actionApi: "ee", displayName: "eee", description: "eeeeeee" },
+          { actionApi: "  ", displayName: "skip" },
+          { actionApi: "fallback", displayName: "  " },
+        ],
+      },
+    ],
+  });
+  assert.equal(tree.length, 1);
+  assert.equal(tree[0]?.label, "根节点");
+  assert.equal(tree[0]?.kind, "category");
+  assert.equal(tree[0]?.count, 3);
+  const child = tree[0]?.children[0];
+  assert.equal(child?.label, "单独1");
+  assert.equal(child?.count, 3);
+  assert.equal(child?.children.length, 3);
+  assert.equal(child?.children[0]?.kind, "action");
+  assert.equal(child?.children[0]?.label, "cc");
+  assert.equal(child?.children[1]?.label, "eee");
+  assert.equal(child?.children[2]?.label, "fallback");
+  assert.equal(child?.children[0]?.parentCategoryId, "11");
+  const categoryOnly = omitActionLeavesFromCategoryTree(tree);
+  assert.equal(categoryOnly[0]?.children[0]?.children.length, 0);
+  assert.deepEqual(collectSpaceBehaviorCategoryIds(tree[0]), ["5", "11"]);
+
+  const fromItems = mapActionCategoryTree({
+    items: { id: 7, categoryName: "兼容分类", actionInfos: [{ actionApi: "a1", displayName: "行为A" }] },
+  });
+  assert.equal(fromItems[0]?.id, "7");
+  assert.equal(fromItems[0]?.count, 1);
+
+  const fromArray = mapActionCategoryTree([{ id: 8, name: "数组根", items: [{ id: 9, name: "子项" }] }]);
+  assert.equal(fromArray[0]?.children[0]?.id, "9");
+
+  assert.throws(() => mapActionCategoryTree({ name: "缺 id" }), /缺少节点 id 或名称/);
+  assert.throws(() => mapActionCategoryTree({ categoryId: 1, name: "  " }), /缺少节点 id 或名称/);
 });
 
 test("space behavior crud dialogs follow prototype create view edit and delete surfaces", () => {
@@ -115,15 +177,56 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /kind === ['"]behaviorTree['"]/);
   assert.match(formSource, /行为描述/);
   assert.match(formSource, /输入行为名称/);
+  assert.match(formSource, /行为api名称/);
+  assert.match(formSource, /v-model="behaviorApiName"/);
+  assert.match(formSource, /:disabled="mode === ['"]edit['"]"/);
+  assert.match(formSource, /例如：act\.pv\.weapon\.add/);
+  assert.match(formSource, /请完整填写行为名称、行为api名称和行为分类/);
+  assert.match(formSource, /behaviorApiName: behaviorApiName\.value\.trim\(\)/);
   assert.match(formSource, /行为分类/);
   assert.match(formSource, /<el-tree-select\b/);
-  assert.match(formSource, /:data="categoryTree"/);
+  assert.match(formSource, /:data="categorySelectTree"/);
+  assert.match(formSource, /omitActionLeavesFromCategoryTree/);
+  assert.match(typeSource, /kind: SpaceBehaviorCategoryNodeKind/);
   assert.match(formSource, /check-strictly/);
   assert.match(formSource, /default-expand-all/);
   assert.match(formSource, /:props="\{ label: 'label', children: 'children' \}"/);
   assert.doesNotMatch(formSource, /v-for="item in categoryOptions"/);
   assert.match(formSource, /行为类型/);
   assert.match(formSource, /基础操作/);
+  assert.match(formSource, /showAttributeValueObjectSection/);
+  assert.match(
+    formSource,
+    /showAttributeValueObjectSection = computed\(\(\) => kind\.value === ['"]basic['"] && valueType\.value === ['"]attributeValue['"]\)/,
+  );
+  assert.match(formSource, /对象信息/);
+  assert.match(formSource, /属性选择/);
+  assert.match(formSource, /attributeSelectionHint/);
+  assert.match(formSource, /resolveAttributeValueSelection/);
+  assert.match(formSource, /getOntologyCategoryTreeInterface/);
+  assert.match(formSource, /getOntologyObjectArrTypeTreeInterface/);
+  assert.match(formSource, /flattenPropertyInfosFromCategoryTree/);
+  assert.match(formSource, /handleAttributeSelectionChange/);
+  assert.match(formSource, /请选择对象/);
+  assert.match(formSource, /请至少选择一项属性/);
+  assert.match(formSource, /ontologyIdentifier: ontologyIdentifier\.value\.trim\(\)/);
+  assert.match(formSource, /selectedPropertyIds: \[\.\.\.selectedPropertyIds\.value\]/);
+  assert.match(formSource, /selectedPropertyValues: buildSelectedPropertyValuesForDraft\(\)/);
+  assert.match(formSource, /selectedPropertyApiNames: buildSelectedPropertyApiNamesForDraft\(\)/);
+  assert.match(formSource, /storageGroup: storageGroup\.value/);
+  const workspaceComposable = readSource("../src/views/SpaceBehaviorWorkspace/composables/useSpaceBehaviorWorkspace.ts");
+  const workspaceIndex = readSource("../src/views/SpaceBehaviorWorkspace/index.vue");
+  assert.match(workspaceComposable, /postCreateOntologyActionInterface/);
+  assert.match(workspaceComposable, /buildPropertyValueCreateActionParams/);
+  assert.match(workspaceComposable, /isPropertyValueActionCreateDraft/);
+  assert.match(workspaceIndex, /await createBehavior/);
+  assert.match(workspaceIndex, /useRemotePropertyValueAction: false/);
+  assert.match(formSource, /新增值/);
+  assert.match(formSource, /修改值/);
+  assert.match(formSource, /v-if="selectedPropertyIds\.includes\(readPropertyRowId\(row\)\)"/);
+  assert.match(formSource, /basicAction === ['"]create['"] \|\| basicAction === ['"]update['"]/);
+  assert.match(formSource, /sortPropertyInfosByStorageGroup/);
+  assert.match(formSource, /updatePropertyInputValue/);
   assert.match(formSource, /关联函数算子/);
   assert.match(formSource, /构建行为树/);
   assert.match(formSource, /行为树构建后续接入/);
@@ -137,6 +240,11 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(workspaceSource, /:category-tree="categoryTree"/);
   assert.match(typeSource, /SpaceBehaviorKind/);
   assert.match(typeSource, /SpaceBehaviorValueType/);
+  assert.match(typeSource, /ontologyIdentifier: string/);
+  assert.match(typeSource, /selectedPropertyIds: string\[\]/);
+  assert.match(typeSource, /selectedPropertyValues: Record<string, string>/);
+  assert.match(typeSource, /selectedPropertyApiNames: Record<string, string>/);
+  assert.match(typeSource, /storageGroup: string/);
   assert.match(typeSource, /SPACE_BEHAVIOR_KIND_OPTIONS/);
   assert.match(typeSource, /label: "属性值"/);
   assert.match(typeSource, /label: "关系示例"/);
@@ -242,16 +350,216 @@ test("space behavior mock filters by category and supports local create", () => 
 
   const created = createSpaceBehaviorMock("behavior-test-space", {
     displayName: "单元测试行为",
+    behaviorApiName: "act.test.create",
+    kind: "basic",
+    valueType: "attributeValue",
     functionOperatorId: "operator-create-cvn",
     functionOperatorName: "新增福特级航空母舰(CVN)基础操作",
     description: "测试创建",
     categoryId: childId || ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
     status: "draft",
     basicAction: "create",
+    ontologyIdentifier: "ontology-test-1",
+    selectedPropertyIds: ["prop-1"],
+    selectedPropertyValues: { "prop-1": "demo" },
+    selectedPropertyApiNames: { "prop-1": "hull" },
+    storageGroup: "test",
   });
   assert.equal(created.displayName, "单元测试行为");
+  assert.equal(created.objectName.length > 0, true);
   const afterCreate = querySpaceBehaviorWorkspaceMock("behavior-test-space");
   assert.ok(afterCreate.behaviors.some((item) => item.id === created.id));
+});
+
+test("space behavior flattens propertyInfos from the attribute category tree", () => {
+  const rows = flattenPropertyInfosFromCategoryTree({
+    categoryId: 1,
+    name: "全部属性",
+    children: [
+      {
+        categoryId: 3,
+        name: "标识信息",
+        propertyInfos: [
+          { uniqueIdentifier: "p1", displayName: "舷号", propertyType: "string", storageGroup: "test" },
+          { uniqueIdentifier: "p2", displayName: "舰名", propertyType: "string", storageGroup: "test" },
+        ],
+      },
+      {
+        categoryId: 2,
+        name: "物理特征",
+        propertyInfos: [
+          { uniqueIdentifier: "p2", displayName: "舰名-重复", propertyType: "string", storageGroup: "test" },
+          { uniqueIdentifier: "p3", displayName: "全长", propertyType: "number", storageGroup: "main" },
+        ],
+        children: [{ categoryId: 4, name: "尺度" }],
+      },
+    ],
+  });
+  assert.equal(rows.length, 3);
+  assert.deepEqual(
+    rows.map((item) => item.uniqueIdentifier),
+    ["p1", "p2", "p3"],
+  );
+  assert.equal(flattenPropertyInfosFromCategoryTree(null).length, 0);
+});
+
+test("space behavior builds property-value createAction params for create update and delete", () => {
+  const baseDraft = {
+    displayName: "武器行-新增",
+    behaviorApiName: "act.pv.weapon.add",
+    kind: "basic",
+    valueType: "attributeValue",
+    functionOperatorId: "",
+    functionOperatorName: "",
+    description: "desc",
+    categoryId: "14",
+    status: "draft",
+    basicAction: "create",
+    ontologyIdentifier: "onto-1",
+    selectedPropertyIds: ["p1", "p2"],
+    selectedPropertyValues: { p1: "120.5", p2: "" },
+    selectedPropertyApiNames: { p1: "w_range", p2: "w_name" },
+    storageGroup: "weapon",
+  };
+  assert.equal(isPropertyValueActionCreateDraft(baseDraft), true);
+  const created = buildPropertyValueCreateActionParams(baseDraft);
+  assert.equal("error" in created, false);
+  if (!("error" in created)) {
+    assert.equal(created.actionKind, "BASE");
+    assert.equal(created.subjectType, "PROPERTY_VALUE");
+    assert.equal(created.operation, "CREATE");
+    assert.equal(created.categoryId, 14);
+    assert.equal(created.mappingIns.length, 2);
+    assert.equal(created.mappingIns[0]?.sourceType, "FIXED");
+    assert.equal(created.mappingIns[0]?.sourceConfig, "120.5");
+    assert.equal(created.mappingIns[0]?.parameterName, "w_range");
+    assert.equal(created.mappingIns[1]?.sourceConfig, "");
+  }
+
+  const updated = buildPropertyValueCreateActionParams({ ...baseDraft, basicAction: "update", description: "  " });
+  assert.equal("error" in updated, false);
+  if (!("error" in updated)) {
+    assert.equal(updated.operation, "UPDATE");
+    assert.equal("description" in updated, false);
+  }
+
+  const deleted = buildPropertyValueCreateActionParams({ ...baseDraft, basicAction: "delete", behaviorApiName: "act.pv.weapon.del" });
+  assert.equal("error" in deleted, false);
+  if (!("error" in deleted)) {
+    assert.equal(deleted.operation, "DELETE");
+    assert.deepEqual(Object.keys(deleted.mappingIns[0] ?? {}).sort(), ["ontologyUniqueIdentifier", "propertyUniqueIdentifier"]);
+  }
+
+  assert.equal(isPropertyValueActionCreateDraft({ ...baseDraft, kind: "application" }), false);
+  assert.equal(isPropertyValueActionCreateDraft({ ...baseDraft, valueType: "relationExample" }), false);
+  assert.equal(isPropertyValueActionCreateDraft({ ...baseDraft, basicAction: "query" }), false);
+
+  assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, categoryId: "behavior-root" }), true);
+  assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, ontologyIdentifier: "  " }), true);
+  assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, behaviorApiName: "" }), true);
+  assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, displayName: " " }), true);
+  assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, storageGroup: "" }), true);
+  assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, selectedPropertyIds: [] }), true);
+  assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, basicAction: "query" }), true);
+
+  const withoutApiName = buildPropertyValueCreateActionParams({
+    ...baseDraft,
+    selectedPropertyApiNames: { p1: "  ", p2: "" },
+  });
+  assert.equal("error" in withoutApiName, false);
+  if (!("error" in withoutApiName)) {
+    assert.equal("parameterName" in (withoutApiName.mappingIns[0] ?? {}), false);
+  }
+});
+
+test("space behavior sorts attribute rows by storage group while keeping relative order", () => {
+  const sorted = sortPropertyInfosByStorageGroup([
+    { uniqueIdentifier: "a1", displayName: "a1", storageGroup: "type" },
+    { uniqueIdentifier: "m1", displayName: "m1", storageGroup: "main" },
+    { uniqueIdentifier: "a2", displayName: "a2", storageGroup: "type" },
+    { uniqueIdentifier: "m2", displayName: "m2", storageGroup: "main" },
+    { uniqueIdentifier: "z1", displayName: "z1", storageGroup: "weapon" },
+  ]);
+  assert.deepEqual(
+    sorted.map((item) => item.uniqueIdentifier),
+    ["m1", "m2", "a1", "a2", "z1"],
+  );
+});
+
+test("space behavior attribute value selection follows create update and delete rules", () => {
+  const rows = [
+    { uniqueIdentifier: "p1", displayName: "舷号", propertyType: "string", storageGroup: "test" },
+    { uniqueIdentifier: "p2", displayName: "舰名", propertyType: "string", storageGroup: "test" },
+    { uniqueIdentifier: "p3", displayName: "全长", propertyType: "number", storageGroup: "main" },
+    { uniqueIdentifier: "p4", displayName: "服役时间", propertyType: "string", storageGroup: "main" },
+  ];
+
+  assert.equal(isAttributeValueRowSelectable("create", rows[2], false), false);
+  assert.equal(isAttributeValueRowSelectable("delete", rows[2], false), false);
+  assert.equal(isAttributeValueRowSelectable("update", rows[2], false), true);
+
+  const created = resolveAttributeValueSelection({
+    basicAction: "create",
+    previousIds: [],
+    selection: [rows[0]],
+    allRows: rows,
+  });
+  assert.deepEqual(
+    created.selectedRows.map((item) => item.uniqueIdentifier),
+    ["p1", "p2"],
+  );
+  assert.equal(created.storageGroup, "test");
+
+  const createMain = resolveAttributeValueSelection({
+    basicAction: "create",
+    previousIds: [],
+    selection: [rows[2]],
+    allRows: rows,
+  });
+  assert.equal(createMain.selectedRows.length, 0);
+  assert.match(createMain.warning, /main/);
+
+  const updated = resolveAttributeValueSelection({
+    basicAction: "update",
+    previousIds: [],
+    selection: [rows[0]],
+    allRows: rows,
+  });
+  assert.deepEqual(
+    updated.selectedRows.map((item) => item.uniqueIdentifier),
+    ["p1"],
+  );
+
+  const updateCrossGroup = resolveAttributeValueSelection({
+    basicAction: "update",
+    previousIds: ["p1"],
+    selection: [rows[0], rows[2]],
+    allRows: rows,
+  });
+  assert.deepEqual(
+    updateCrossGroup.selectedRows.map((item) => item.uniqueIdentifier),
+    ["p3"],
+  );
+  assert.match(updateCrossGroup.warning, /同一存储分组/);
+
+  const deleted = resolveAttributeValueSelection({
+    basicAction: "delete",
+    previousIds: [],
+    selection: [rows[1]],
+    allRows: rows,
+  });
+  assert.deepEqual(
+    deleted.selectedRows.map((item) => item.uniqueIdentifier),
+    ["p1", "p2"],
+  );
+
+  const deletePartial = resolveAttributeValueSelection({
+    basicAction: "delete",
+    previousIds: ["p1", "p2"],
+    selection: [rows[0]],
+    allRows: rows,
+  });
+  assert.equal(deletePartial.selectedRows.length, 0);
 });
 
 test("space behavior status operations filter by current status and persist disable", () => {

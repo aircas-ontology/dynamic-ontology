@@ -5,6 +5,7 @@ import {
   getActionCategoryTreeInterface,
   updateActionCategoryInterface,
 } from "./actionCategoryApi";
+import { postCreateOntologyActionInterface } from "./ontologyActionApi";
 import { getExampleInterface } from "./exampleApi";
 import {
   deleteFunctionRateLimitTemplateInterface,
@@ -110,6 +111,7 @@ export {
   autoBindOntologyPropertyDatasourceInterface,
   createActionCategoryInterface,
   deleteActionCategoryInterface,
+  postCreateOntologyActionInterface,
   createOntologyFunctionInterface,
   createOntologySpaceInterface,
   createOntologySpaceWithCanvasContentInterface,

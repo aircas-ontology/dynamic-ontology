@@ -16,11 +16,19 @@ export type SpaceBehaviorValueType = "attributeValue" | "relationExample" | "bas
 
 export type SpaceBehaviorWorkspaceLoadStatus = "loading" | "ready" | "empty" | "error";
 
+/** 行为分类树节点类型：分类或行为叶子。 */
+export type SpaceBehaviorCategoryNodeKind = "category" | "action";
+
 export interface SpaceBehaviorCategoryNode {
   id: string;
   label: string;
+  kind: SpaceBehaviorCategoryNodeKind;
   count: number;
   children: SpaceBehaviorCategoryNode[];
+  /** 行为叶子所属分类 id。 */
+  parentCategoryId?: string;
+  /** 行为叶子对应的 actionApi。 */
+  actionApi?: string;
 }
 
 export interface SpaceBehaviorParameter {
@@ -76,6 +84,7 @@ export interface SpaceBehaviorItem {
 
 export interface SpaceBehaviorDraft {
   displayName: string;
+  behaviorApiName: string;
   kind: SpaceBehaviorKind;
   valueType: SpaceBehaviorValueType;
   functionOperatorId: string;
@@ -84,6 +93,16 @@ export interface SpaceBehaviorDraft {
   categoryId: string;
   status: SpaceBehaviorStatus;
   basicAction: SpaceBehaviorBasicAction;
+  /** 属性值新增：选中对象唯一标识。 */
+  ontologyIdentifier: string;
+  /** 属性值新增：勾选属性 uniqueIdentifier 列表。 */
+  selectedPropertyIds: string[];
+  /** 属性值新增/修改：属性 uniqueIdentifier 对应的录入值。 */
+  selectedPropertyValues: Record<string, string>;
+  /** 属性值提交：属性 uniqueIdentifier 对应的 apiName，供 mappingIns.parameterName。 */
+  selectedPropertyApiNames: Record<string, string>;
+  /** 属性值新增：当前勾选属性所属存储分组。 */
+  storageGroup: string;
   changeNote?: string;
   version?: string;
 }
