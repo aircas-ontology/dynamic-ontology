@@ -17,6 +17,11 @@ import {
   omitActionLeavesFromCategoryTree,
 } from "../src/views/SpaceBehaviorWorkspace/utils/spaceBehaviorOperations.ts";
 import { mapActionCategoryTree } from "../src/views/SpaceBehaviorWorkspace/utils/mapActionCategoryTree.ts";
+import {
+  mapListOntologyActionRecord,
+  mapSpaceBehaviorItemToListStatus,
+  mapSpaceBehaviorListStatusToQuery,
+} from "../src/views/SpaceBehaviorWorkspace/utils/mapListOntologyActionRecord.ts";
 import { flattenPropertyInfosFromCategoryTree } from "../src/views/SpaceBehaviorWorkspace/utils/flattenPropertyInfosFromCategoryTree.ts";
 import { isAttributeValueRowSelectable, resolveAttributeValueSelection } from "../src/views/SpaceBehaviorWorkspace/utils/resolveAttributeValueSelection.ts";
 import { sortPropertyInfosByStorageGroup } from "../src/views/SpaceBehaviorWorkspace/utils/sortPropertyInfosByStorageGroup.ts";
@@ -24,6 +29,7 @@ import {
   buildPropertyValueCreateActionParams,
   isPropertyValueActionCreateDraft,
 } from "../src/views/SpaceBehaviorWorkspace/utils/buildPropertyValueCreateActionParams.ts";
+import { buildLinkCreateActionParams, isLinkActionCreateDraft } from "../src/views/SpaceBehaviorWorkspace/utils/buildLinkCreateActionParams.ts";
 
 /**
  * @description 读取相对 tests 目录的源文件文本。
@@ -87,12 +93,17 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(listSource, /aircas-table--accent-header/);
   assert.match(listSource, /stripe/);
   assert.match(listSource, /label="行为名称"/);
-  assert.match(listSource, /label="函数算子"/);
+  assert.match(listSource, /label="类别"/);
+  assert.match(listSource, /SPACE_BEHAVIOR_KIND_LABELS/);
+  assert.doesNotMatch(listSource, /label="函数算子"/);
+  assert.doesNotMatch(listSource, /label="行为类型"/);
   assert.match(listSource, /label="描述"/);
   assert.match(listSource, /label="状态"/);
   assert.match(listSource, /label="更新时间"/);
   assert.match(listSource, /新建行为/);
   assert.match(listSource, /placeholder="行为状态"/);
+  assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_OPTIONS/);
+  assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_LABELS/);
   assert.match(listSource, /<el-pagination\b/);
   assert.match(listSource, /<el-dropdown\b/);
   assert.match(listSource, /状态管理/);
@@ -102,13 +113,90 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
 test("space behavior workspace loads the action category tree on entry", () => {
   const source = readSource("../src/views/SpaceBehaviorWorkspace/composables/useSpaceBehaviorWorkspace.ts");
   const panelSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorCategoryPanel.vue");
-  assert.match(source, /getActionCategoryTreeInterface\(\{ spaceId: Number\(currentSpaceId\) \}\)/);
+  assert.match(source, /getActionCategoryTreeInterface\(\{ spaceId: numericSpaceId \}\)/);
+  assert.match(source, /getListOntologyActionInterface/);
+  assert.match(source, /mapListOntologyActionRecord/);
   assert.match(source, /response\.code !== 200/);
   assert.match(source, /mapActionCategoryTree/);
+  assert.match(source, /resolveListActionCategoryIdQuery/);
+  assert.match(source, /categoryId: categoryIdQuery/);
+  assert.match(source, /function selectBehaviorCategory\(categoryId: string\): void \{[\s\S]*void loadSpaceBehaviorList\(\);/);
+  assert.doesNotMatch(source, /filterSpaceBehaviorsByCategory/);
   assert.match(panelSource, /isActionCategoryNode/);
   assert.match(panelSource, /parentCategoryId/);
   assert.match(panelSource, /behavior-category-panel__action-dot/);
   assert.doesNotMatch(panelSource, /Document/);
+});
+
+test("space behavior maps listAction records to table rows with enabled disabled status", () => {
+  const enabled = mapListOntologyActionRecord({
+    id: 1,
+    actionApi: "act.pv.weapon.add",
+    displayName: "武器行-新增",
+    description: "属性值行为：向 weapon 分组新增一行",
+    ontologyUniqIdentifier: "ea512d439cd34c6ebbcde6b692261ab5",
+    categoryId: 14,
+    status: 1,
+    actionKind: "BASE",
+    subjectType: "PROPERTY_VALUE",
+    operation: "CREATE",
+    storageGroup: "weapon",
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+  });
+  assert.equal(enabled.displayName, "武器行-新增");
+  assert.equal(enabled.behaviorApiName, "act.pv.weapon.add");
+  assert.equal(enabled.functionOperatorName, "-");
+  assert.equal(enabled.status, "published");
+  assert.equal(mapSpaceBehaviorItemToListStatus(enabled.status), "enabled");
+  assert.equal(enabled.updatedAt, "-");
+  assert.equal(enabled.kind, "basic");
+  assert.equal(enabled.valueType, "attributeValue");
+  assert.equal(enabled.basicAction, "create");
+
+  const disabled = mapListOntologyActionRecord({
+    id: 2,
+    actionApi: "fn.demo",
+    displayName: "失效行为",
+    description: "desc",
+    ontologyUniqIdentifier: "oid",
+    categoryId: 11,
+    status: 0,
+    actionKind: "APPLICATION",
+    subjectType: "BASIC_OPERATOR",
+    operation: "UPDATE",
+    storageGroup: "",
+    functionApi: "op.api",
+    functionDescription: "算子说明",
+    outputMode: null,
+  });
+  assert.equal(disabled.status, "disabled");
+  assert.equal(mapSpaceBehaviorItemToListStatus(disabled.status), "disabled");
+  assert.equal(disabled.functionOperatorName, "op.api");
+  assert.equal(disabled.kind, "application");
+  assert.equal(disabled.basicAction, "update");
+  assert.equal(mapSpaceBehaviorListStatusToQuery("enabled"), 1);
+  assert.equal(mapSpaceBehaviorListStatusToQuery("disabled"), 0);
+  assert.equal(mapSpaceBehaviorListStatusToQuery(""), undefined);
+
+  const linkAction = mapListOntologyActionRecord({
+    id: 3,
+    actionApi: "act.link.demo",
+    displayName: "关系实例行为",
+    description: "link",
+    ontologyUniqIdentifier: "oid-link",
+    categoryId: 12,
+    status: 1,
+    actionKind: "BASE",
+    subjectType: "LINK",
+    operation: "CREATE",
+    storageGroup: "",
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+  });
+  assert.equal(linkAction.valueType, "relationInstance");
 });
 
 test("space behavior maps actionInfos into category counts and displayName leaves", () => {
@@ -199,8 +287,25 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
     formSource,
     /showAttributeValueObjectSection = computed\(\(\) => kind\.value === ['"]basic['"] && valueType\.value === ['"]attributeValue['"]\)/,
   );
+  assert.match(formSource, /showRelationInstanceSection/);
+  assert.match(formSource, /showRelationInstanceSection = computed\(\(\) => kind\.value === ['"]basic['"] && valueType\.value === ['"]relationInstance['"]\)/);
+  assert.match(formSource, /showRelationLinkMappingSection/);
+  assert.match(formSource, /basicAction\.value === ['"]create['"] \|\| basicAction\.value === ['"]update['"]/);
   assert.match(formSource, /对象信息/);
   assert.match(formSource, /属性选择/);
+  assert.match(formSource, /关系选择/);
+  assert.match(formSource, /从当前空间关系中单选一条/);
+  assert.match(formSource, /getOntologyRelationCategoryTreeInterface/);
+  assert.match(formSource, /mapOntologyRelationLinks/);
+  assert.match(formSource, /请选择一条关系/);
+  assert.match(formSource, /请选择状态/);
+  assert.match(formSource, /请至少添加一条持续时段/);
+  assert.match(formSource, /添加时段/);
+  assert.match(formSource, /type="datetimerange"/);
+  assert.match(formSource, /SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS/);
+  assert.match(formSource, /selectedRelationId: selectedRelationId\.value\.trim\(\)/);
+  assert.match(formSource, /relationTargetStatus:/);
+  assert.match(formSource, /relationVisibilityWindows:/);
   assert.match(formSource, /attributeSelectionHint/);
   assert.match(formSource, /resolveAttributeValueSelection/);
   assert.match(formSource, /getOntologyCategoryTreeInterface/);
@@ -219,8 +324,11 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(workspaceComposable, /postCreateOntologyActionInterface/);
   assert.match(workspaceComposable, /buildPropertyValueCreateActionParams/);
   assert.match(workspaceComposable, /isPropertyValueActionCreateDraft/);
+  assert.match(workspaceComposable, /buildLinkCreateActionParams/);
+  assert.match(workspaceComposable, /isLinkActionCreateDraft/);
   assert.match(workspaceIndex, /await createBehavior/);
   assert.match(workspaceIndex, /useRemotePropertyValueAction: false/);
+  assert.match(formSource, /sourceOntologyId/);
   assert.match(formSource, /新增值/);
   assert.match(formSource, /修改值/);
   assert.match(formSource, /v-if="selectedPropertyIds\.includes\(readPropertyRowId\(row\)\)"/);
@@ -245,9 +353,18 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(typeSource, /selectedPropertyValues: Record<string, string>/);
   assert.match(typeSource, /selectedPropertyApiNames: Record<string, string>/);
   assert.match(typeSource, /storageGroup: string/);
+  assert.match(typeSource, /selectedRelationId: string/);
+  assert.match(typeSource, /relationTargetStatus: SpaceBehaviorRelationTargetStatus \| ""/);
+  assert.match(typeSource, /relationVisibilityWindows: SpaceBehaviorRelationVisibilityWindow\[\]/);
+  assert.match(typeSource, /SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS/);
+  assert.match(typeSource, /value: "ENABLE"/);
+  assert.match(typeSource, /value: "DELETE"/);
+  assert.match(typeSource, /label: "enable"/);
+  assert.match(typeSource, /label: "delete"/);
   assert.match(typeSource, /SPACE_BEHAVIOR_KIND_OPTIONS/);
   assert.match(typeSource, /label: "属性值"/);
-  assert.match(typeSource, /label: "关系示例"/);
+  assert.match(typeSource, /label: "关系实例"/);
+  assert.match(typeSource, /value: "relationInstance"/);
   assert.match(typeSource, /label: "基础函数算子"/);
   assert.match(typeSource, /SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS[\s\S]*label: "新增"[\s\S]*label: "修改"[\s\S]*label: "删除"/);
   assert.doesNotMatch(typeSource, /SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS[\s\S]*label: "查询"/);
@@ -420,6 +537,9 @@ test("space behavior builds property-value createAction params for create update
     selectedPropertyValues: { p1: "120.5", p2: "" },
     selectedPropertyApiNames: { p1: "w_range", p2: "w_name" },
     storageGroup: "weapon",
+    selectedRelationId: "",
+    relationTargetStatus: "",
+    relationVisibilityWindows: [],
   };
   assert.equal(isPropertyValueActionCreateDraft(baseDraft), true);
   const created = buildPropertyValueCreateActionParams(baseDraft);
@@ -451,7 +571,7 @@ test("space behavior builds property-value createAction params for create update
   }
 
   assert.equal(isPropertyValueActionCreateDraft({ ...baseDraft, kind: "application" }), false);
-  assert.equal(isPropertyValueActionCreateDraft({ ...baseDraft, valueType: "relationExample" }), false);
+  assert.equal(isPropertyValueActionCreateDraft({ ...baseDraft, valueType: "relationInstance" }), false);
   assert.equal(isPropertyValueActionCreateDraft({ ...baseDraft, basicAction: "query" }), false);
 
   assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, categoryId: "behavior-root" }), true);
@@ -470,6 +590,93 @@ test("space behavior builds property-value createAction params for create update
   if (!("error" in withoutApiName)) {
     assert.equal("parameterName" in (withoutApiName.mappingIns[0] ?? {}), false);
   }
+});
+
+test("space behavior builds link createAction params for create update and delete", () => {
+  const baseDraft = {
+    displayName: "搭载关系-新增",
+    behaviorApiName: "act.lk.carry.create",
+    kind: "basic",
+    valueType: "relationInstance",
+    functionOperatorId: "",
+    functionOperatorName: "",
+    description: "desc",
+    categoryId: "14",
+    status: "draft",
+    basicAction: "create",
+    ontologyIdentifier: "onto-from",
+    selectedPropertyIds: [],
+    selectedPropertyValues: {},
+    selectedPropertyApiNames: {},
+    storageGroup: "",
+    selectedRelationId: "link-1",
+    relationTargetStatus: "ENABLE",
+    relationVisibilityWindows: [{ startTime: 1767225600000, endTime: 1798761599000 }],
+  };
+  assert.equal(isLinkActionCreateDraft(baseDraft), true);
+  assert.equal(isPropertyValueActionCreateDraft(baseDraft), false);
+
+  const created = buildLinkCreateActionParams(baseDraft);
+  assert.equal("error" in created, false);
+  if (!("error" in created)) {
+    assert.equal(created.subjectType, "LINK");
+    assert.equal(created.operation, "CREATE");
+    assert.equal(created.ontologyIdentifier, "onto-from");
+    assert.equal("storageGroup" in created, false);
+    assert.equal("mappingIns" in created, false);
+    assert.deepEqual(created.linkMapping, {
+      ontologyLinkUniqIdentifier: "link-1",
+      targetStatus: "ENABLE",
+      visibilityWindows: [{ startTime: 1767225600000, endTime: 1798761599000 }],
+    });
+  }
+
+  const updated = buildLinkCreateActionParams({
+    ...baseDraft,
+    basicAction: "update",
+    relationTargetStatus: "DELETE",
+    relationVisibilityWindows: [],
+    description: "  ",
+  });
+  assert.equal("error" in updated, false);
+  if (!("error" in updated)) {
+    assert.equal(updated.operation, "UPDATE");
+    assert.deepEqual(updated.linkMapping, {
+      ontologyLinkUniqIdentifier: "link-1",
+      targetStatus: "DELETE",
+    });
+    assert.equal("visibilityWindows" in (updated.linkMapping ?? {}), false);
+  }
+
+  const updatedWithWindows = buildLinkCreateActionParams({
+    ...baseDraft,
+    basicAction: "update",
+    relationTargetStatus: "ENABLE",
+  });
+  assert.equal("error" in updatedWithWindows, false);
+  if (!("error" in updatedWithWindows)) {
+    assert.equal(updatedWithWindows.linkMapping?.visibilityWindows?.length, 1);
+  }
+
+  const deleted = buildLinkCreateActionParams({
+    ...baseDraft,
+    basicAction: "delete",
+    behaviorApiName: "act.lk.carry.delete",
+    relationTargetStatus: "",
+    relationVisibilityWindows: [{ startTime: 1, endTime: 2 }],
+  });
+  assert.equal("error" in deleted, false);
+  if (!("error" in deleted)) {
+    assert.equal(deleted.operation, "DELETE");
+    assert.deepEqual(deleted.linkMapping, { ontologyLinkUniqIdentifier: "link-1" });
+  }
+
+  assert.equal(isLinkActionCreateDraft({ ...baseDraft, valueType: "attributeValue" }), false);
+  assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, selectedRelationId: " " }), true);
+  assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, ontologyIdentifier: "" }), true);
+  assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, relationTargetStatus: "" }), true);
+  assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, relationVisibilityWindows: [] }), true);
+  assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, basicAction: "update", relationTargetStatus: "" }), true);
 });
 
 test("space behavior sorts attribute rows by storage group while keeping relative order", () => {

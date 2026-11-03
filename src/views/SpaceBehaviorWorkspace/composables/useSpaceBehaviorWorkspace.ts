@@ -4,6 +4,7 @@ import {
   createActionCategoryInterface,
   deleteActionCategoryInterface,
   getActionCategoryTreeInterface,
+  getListOntologyActionInterface,
   postCreateOntologyActionInterface,
   updateActionCategoryInterface,
 } from "@/apis";
@@ -11,7 +12,7 @@ import type {
   SpaceBehaviorCategoryNode,
   SpaceBehaviorDraft,
   SpaceBehaviorItem,
-  SpaceBehaviorStatus,
+  SpaceBehaviorListStatus,
   SpaceBehaviorStatusChangeDraft,
   SpaceBehaviorWorkspaceLoadStatus,
 } from "@/types";
@@ -20,12 +21,13 @@ import {
   applySpaceBehaviorStatusChangeMock,
   createSpaceBehaviorMock,
   deleteSpaceBehaviorMock,
-  querySpaceBehaviorWorkspaceMock,
   updateSpaceBehaviorMock,
 } from "@/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock";
+import { buildLinkCreateActionParams, isLinkActionCreateDraft } from "../utils/buildLinkCreateActionParams";
 import { buildPropertyValueCreateActionParams, isPropertyValueActionCreateDraft } from "../utils/buildPropertyValueCreateActionParams";
 import { mapActionCategoryTree } from "../utils/mapActionCategoryTree";
-import { filterSpaceBehaviorsByCategory, findSpaceBehaviorCategoryNode } from "../utils/spaceBehaviorOperations";
+import { mapListOntologyActionRecord, mapSpaceBehaviorListStatusToQuery } from "../utils/mapListOntologyActionRecord";
+import { findSpaceBehaviorCategoryNode } from "../utils/spaceBehaviorOperations";
 
 /**
  * @description 读取路由空间 id。
@@ -37,7 +39,22 @@ function readSpaceId(value: unknown): string {
 }
 
 /**
- * @description 管理空间内行为工作区的本地查询、筛选、分页与增删改。
+ * @description 将选中分类解析为列表查询 categoryId；根分类或不合法 id 时不传。
+ * @param categoryId 当前选中分类 id。
+ * @param tree 分类树。
+ * @returns 数字 categoryId；根或无效时为 undefined。
+ */
+function resolveListActionCategoryIdQuery(categoryId: string, tree: SpaceBehaviorCategoryNode[]): number | undefined {
+  const id = categoryId.trim();
+  if (!id || id === ROOT_SPACE_BEHAVIOR_CATEGORY_ID) return undefined;
+  if (tree[0]?.id === id) return undefined;
+  const numericCategoryId = Number(id);
+  if (!Number.isInteger(numericCategoryId)) return undefined;
+  return numericCategoryId;
+}
+
+/**
+ * @description 管理空间内行为工作区的分类树、列表查询、筛选、分页与增删改。
  * @returns 行为工作区状态与命令。
  */
 export function useSpaceBehaviorWorkspace() {
@@ -47,92 +64,146 @@ export function useSpaceBehaviorWorkspace() {
   const errorMessage = ref("");
   const categoryTree = ref<SpaceBehaviorCategoryNode[]>([]);
   const behaviors = ref<SpaceBehaviorItem[]>([]);
+  const total = ref(0);
   const selectedCategoryId = ref(ROOT_SPACE_BEHAVIOR_CATEGORY_ID);
   const keyword = ref("");
-  const statusFilter = ref<SpaceBehaviorStatus | "">("");
+  const statusFilter = ref<SpaceBehaviorListStatus | "">("");
   const appliedKeyword = ref("");
-  const appliedStatus = ref<SpaceBehaviorStatus | "">("");
+  const appliedStatus = ref<SpaceBehaviorListStatus | "">("");
   const page = ref(1);
   const pageSize = ref(10);
   const actionLoading = ref(false);
-  let loadToken = 0;
+  let workspaceToken = 0;
+  let listToken = 0;
+
+  const selectedCategory = computed(() => findSpaceBehaviorCategoryNode(categoryTree.value, selectedCategoryId.value));
+  const selectedCategoryLabel = computed(() => selectedCategory.value?.label ?? "行为分类");
+  const pagedBehaviors = computed(() => behaviors.value);
 
   /**
-   * @description 从本地 Mock 拉取当前空间的分类树与行为列表。
+   * @description 加载行为分类树。
+   * @param token 工作区加载令牌；过期时中止写回。
+   */
+  async function loadActionCategoryTree(token: number): Promise<void> {
+    const currentSpaceId = spaceId.value.trim();
+    const numericSpaceId = Number(currentSpaceId);
+    if (!Number.isInteger(numericSpaceId)) {
+      throw new Error("空间标识无效");
+    }
+    const response = await getActionCategoryTreeInterface({ spaceId: numericSpaceId });
+    if ((response.code !== 0 && response.code !== 200) || !response.data) {
+      throw new Error(response.message || "行为分类树加载失败");
+    }
+    if (token !== workspaceToken) return;
+    categoryTree.value = mapActionCategoryTree(response.data);
+    if (!findSpaceBehaviorCategoryNode(categoryTree.value, selectedCategoryId.value)) {
+      selectedCategoryId.value = categoryTree.value[0]?.id ?? ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
+    }
+  }
+
+  /**
+   * @description 按当前筛选与分页拉取行为列表。
+   * @param options.markLoading 是否将工作区状态置为 loading；默认仅在当前非 ready 时置 loading。
+   */
+  async function loadSpaceBehaviorList(options: { markLoading?: boolean } = {}): Promise<void> {
+    const token = ++listToken;
+    const currentSpaceId = spaceId.value.trim();
+    const numericSpaceId = Number(currentSpaceId);
+    const markLoading = options.markLoading === true || status.value !== "ready";
+    if (markLoading) {
+      status.value = "loading";
+      errorMessage.value = "";
+    }
+    if (!currentSpaceId || !Number.isInteger(numericSpaceId)) {
+      behaviors.value = [];
+      total.value = 0;
+      status.value = currentSpaceId ? "error" : "empty";
+      errorMessage.value = currentSpaceId ? "空间标识无效" : "";
+      return;
+    }
+    try {
+      const keywordValue = appliedKeyword.value.trim();
+      const statusQuery = mapSpaceBehaviorListStatusToQuery(appliedStatus.value);
+      const categoryIdQuery = resolveListActionCategoryIdQuery(selectedCategoryId.value, categoryTree.value);
+      const response = await getListOntologyActionInterface({
+        ontologySpaceId: numericSpaceId,
+        pageNum: page.value,
+        pageSize: pageSize.value,
+        ...(categoryIdQuery === undefined ? {} : { categoryId: categoryIdQuery }),
+        ...(keywordValue ? { keyword: keywordValue } : {}),
+        ...(statusQuery === undefined ? {} : { status: statusQuery }),
+      });
+      if ((response.code !== 0 && response.code !== 200) || !response.data) {
+        throw new Error(response.message || "行为列表加载失败");
+      }
+      if (token !== listToken) return;
+      behaviors.value = (response.data.records ?? []).map(mapListOntologyActionRecord);
+      total.value = Number(response.data.total) || 0;
+      status.value = "ready";
+      errorMessage.value = "";
+    } catch (error) {
+      if (token !== listToken) return;
+      behaviors.value = [];
+      total.value = 0;
+      status.value = "error";
+      errorMessage.value = error instanceof Error ? error.message : "行为列表加载失败";
+    }
+  }
+
+  /**
+   * @description 加载分类树与行为列表。
    */
   async function loadSpaceBehaviorWorkspace(): Promise<void> {
-    const token = ++loadToken;
-    const currentSpaceId = spaceId.value.trim();
+    const token = ++workspaceToken;
+    listToken += 1;
     status.value = "loading";
     errorMessage.value = "";
+    const currentSpaceId = spaceId.value.trim();
     if (!currentSpaceId) {
       categoryTree.value = [];
       behaviors.value = [];
+      total.value = 0;
       status.value = "empty";
       return;
     }
     try {
-      const data = querySpaceBehaviorWorkspaceMock(currentSpaceId);
-      const response = await getActionCategoryTreeInterface({ spaceId: Number(currentSpaceId) });
-      if ((response.code !== 0 && response.code !== 200) || !response.data) throw new Error(response.message || "行为分类树加载失败");
-      if (token !== loadToken) return;
-      categoryTree.value = mapActionCategoryTree(response.data);
-      behaviors.value = data.behaviors;
-      if (!findSpaceBehaviorCategoryNode(categoryTree.value, selectedCategoryId.value)) {
-        selectedCategoryId.value = categoryTree.value[0]?.id ?? ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
-      }
-      status.value = categoryTree.value.length === 0 && data.behaviors.length === 0 ? "empty" : "ready";
+      await loadActionCategoryTree(token);
+      if (token !== workspaceToken) return;
+      await loadSpaceBehaviorList({ markLoading: true });
     } catch (error) {
-      if (token !== loadToken) return;
+      if (token !== workspaceToken) return;
       categoryTree.value = [];
       behaviors.value = [];
+      total.value = 0;
       status.value = "error";
       errorMessage.value = error instanceof Error ? error.message : "行为工作区加载失败";
     }
   }
 
-  const selectedCategory = computed(() => findSpaceBehaviorCategoryNode(categoryTree.value, selectedCategoryId.value));
-  const selectedCategoryLabel = computed(() => selectedCategory.value?.label ?? "行为分类");
-  const categoryFilteredBehaviors = computed(() => filterSpaceBehaviorsByCategory(behaviors.value, categoryTree.value, selectedCategoryId.value));
-  const filteredBehaviors = computed(() => {
-    const keywordValue = appliedKeyword.value.trim().toLocaleLowerCase();
-    const statusValue = appliedStatus.value;
-    return categoryFilteredBehaviors.value.filter((item) => {
-      const matchesKeyword =
-        !keywordValue ||
-        item.displayName.toLocaleLowerCase().includes(keywordValue) ||
-        item.functionOperatorName.toLocaleLowerCase().includes(keywordValue) ||
-        item.description.toLocaleLowerCase().includes(keywordValue);
-      const matchesStatus = !statusValue || item.status === statusValue;
-      return matchesKeyword && matchesStatus;
-    });
-  });
-  const total = computed(() => filteredBehaviors.value.length);
-  const pagedBehaviors = computed(() => {
-    const start = (page.value - 1) * pageSize.value;
-    return filteredBehaviors.value.slice(start, start + pageSize.value);
-  });
-
   /**
-   * @description 选中分类并回到第一页。
+   * @description 选中分类并按 categoryId 重新拉取行为列表；根分类不传 categoryId。
    * @param categoryId 分类 id。
    */
   function selectBehaviorCategory(categoryId: string): void {
-    selectedCategoryId.value = categoryId;
+    const nextId = categoryId.trim();
+    if (!nextId || selectedCategoryId.value === nextId) return;
+    selectedCategoryId.value = nextId;
     page.value = 1;
+    void loadSpaceBehaviorList();
   }
 
   /**
-   * @description 应用关键字与状态筛选。
+   * @description 应用关键字与状态筛选并重新拉取列表。
    */
   function applyBehaviorFilters(): void {
     appliedKeyword.value = keyword.value.trim();
     appliedStatus.value = statusFilter.value;
     page.value = 1;
+    void loadSpaceBehaviorList();
   }
 
   /**
-   * @description 清空关键字与状态筛选。
+   * @description 清空关键字与状态筛选并重新拉取列表。
    */
   function resetBehaviorFilters(): void {
     keyword.value = "";
@@ -140,23 +211,26 @@ export function useSpaceBehaviorWorkspace() {
     appliedKeyword.value = "";
     appliedStatus.value = "";
     page.value = 1;
+    void loadSpaceBehaviorList();
   }
 
   /**
-   * @description 更新分页页码。
+   * @description 更新分页页码并重新拉取列表。
    * @param nextPage 目标页。
    */
   function changeBehaviorPage(nextPage: number): void {
     page.value = nextPage;
+    void loadSpaceBehaviorList();
   }
 
   /**
-   * @description 更新每页条数并回到第一页。
+   * @description 更新每页条数并重新拉取列表。
    * @param nextPageSize 每页条数。
    */
   function changeBehaviorPageSize(nextPageSize: number): void {
     pageSize.value = nextPageSize;
     page.value = 1;
+    void loadSpaceBehaviorList();
   }
 
   /**
@@ -243,9 +317,9 @@ export function useSpaceBehaviorWorkspace() {
   }
 
   /**
-   * @description 新建行为；创建表单的属性值基础行为可走真实创建接口，另存副本等路径可强制仅写本地 Mock。
+   * @description 新建行为；属性值/关系实例基础行为可走真实创建接口，另存副本等路径可强制仅写本地 Mock。
    * @param draft 行为草稿。
-   * @param options.useRemotePropertyValueAction 是否对属性值草稿调用 POST /ontology/action，默认 true。
+   * @param options.useRemotePropertyValueAction 是否对可远程创建的草稿调用 POST /ontology/action，默认 true。
    * @returns 创建结果。
    */
   async function createBehavior(
@@ -255,8 +329,8 @@ export function useSpaceBehaviorWorkspace() {
     const useRemotePropertyValueAction = options.useRemotePropertyValueAction !== false;
     actionLoading.value = true;
     try {
-      if (useRemotePropertyValueAction && isPropertyValueActionCreateDraft(draft)) {
-        const params = buildPropertyValueCreateActionParams(draft);
+      if (useRemotePropertyValueAction && (isPropertyValueActionCreateDraft(draft) || isLinkActionCreateDraft(draft))) {
+        const params = isLinkActionCreateDraft(draft) ? buildLinkCreateActionParams(draft) : buildPropertyValueCreateActionParams(draft);
         if ("error" in params) {
           return { ok: false, message: params.error };
         }
@@ -265,11 +339,11 @@ export function useSpaceBehaviorWorkspace() {
           return { ok: false, message: response.message || "行为创建失败" };
         }
         const created = createSpaceBehaviorMock(spaceId.value, draft);
-        loadSpaceBehaviorWorkspace();
+        await loadSpaceBehaviorWorkspace();
         return { ok: true, message: "", item: created };
       }
       const created = createSpaceBehaviorMock(spaceId.value, draft);
-      loadSpaceBehaviorWorkspace();
+      await loadSpaceBehaviorWorkspace();
       return { ok: true, message: "", item: created };
     } catch (error) {
       return { ok: false, message: error instanceof Error && error.message.trim() ? error.message : "行为创建失败" };
@@ -289,7 +363,7 @@ export function useSpaceBehaviorWorkspace() {
     try {
       const updated = updateSpaceBehaviorMock(spaceId.value, behaviorId, draft);
       if (!updated) return false;
-      loadSpaceBehaviorWorkspace();
+      void loadSpaceBehaviorList();
       return true;
     } finally {
       actionLoading.value = false;
@@ -307,7 +381,7 @@ export function useSpaceBehaviorWorkspace() {
     try {
       const updated = applySpaceBehaviorStatusChangeMock(spaceId.value, behaviorId, draft);
       if (!updated) return false;
-      loadSpaceBehaviorWorkspace();
+      void loadSpaceBehaviorList();
       return true;
     } finally {
       actionLoading.value = false;
@@ -324,8 +398,8 @@ export function useSpaceBehaviorWorkspace() {
     try {
       const ok = deleteSpaceBehaviorMock(spaceId.value, behaviorId);
       if (!ok) return false;
-      loadSpaceBehaviorWorkspace();
-      if (page.value > 1 && pagedBehaviors.value.length === 0) page.value -= 1;
+      if (page.value > 1 && behaviors.value.length <= 1) page.value -= 1;
+      void loadSpaceBehaviorList();
       return true;
     } finally {
       actionLoading.value = false;
@@ -334,10 +408,16 @@ export function useSpaceBehaviorWorkspace() {
 
   watch(spaceId, () => {
     selectedCategoryId.value = ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
-    resetBehaviorFilters();
-    loadSpaceBehaviorWorkspace();
+    keyword.value = "";
+    statusFilter.value = "";
+    appliedKeyword.value = "";
+    appliedStatus.value = "";
+    page.value = 1;
+    void loadSpaceBehaviorWorkspace();
   });
-  onMounted(loadSpaceBehaviorWorkspace);
+  onMounted(() => {
+    void loadSpaceBehaviorWorkspace();
+  });
 
   return {
     spaceId,

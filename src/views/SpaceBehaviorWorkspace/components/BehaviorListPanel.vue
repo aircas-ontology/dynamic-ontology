@@ -8,7 +8,7 @@
       <div class="behavior-list-panel__filters">
         <el-input v-model="keywordModel" class="behavior-list-panel__keyword" clearable placeholder="按行为名称搜索" />
         <el-select v-model="statusModel" class="behavior-list-panel__status" clearable placeholder="行为状态">
-          <el-option v-for="item in SPACE_BEHAVIOR_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+          <el-option v-for="item in SPACE_BEHAVIOR_LIST_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
         <el-button @click="emit('query')">查询</el-button>
         <el-button @click="emit('reset')">重置</el-button>
@@ -23,15 +23,17 @@
             <span class="behavior-list-panel__name">{{ asBehavior(row).displayName }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="函数算子" min-width="220" show-overflow-tooltip>
-          <template #default="{ row }">{{ asBehavior(row).functionOperatorName }}</template>
+        <el-table-column label="类别" min-width="120" show-overflow-tooltip>
+          <template #default="{ row }">{{ SPACE_BEHAVIOR_KIND_LABELS[asBehavior(row).kind] }}</template>
         </el-table-column>
         <el-table-column label="描述" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ asBehavior(row).description }}</template>
         </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag size="small" :type="statusTagType(asBehavior(row).status)">{{ SPACE_BEHAVIOR_STATUS_LABELS[asBehavior(row).status] }}</el-tag>
+            <el-tag size="small" :type="statusTagType(asBehavior(row).status)">{{
+              SPACE_BEHAVIOR_LIST_STATUS_LABELS[mapSpaceBehaviorItemToListStatus(asBehavior(row).status)]
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="更新时间" width="160">
@@ -78,8 +80,9 @@
 <script setup lang="ts">
 import { computed, nextTick } from "vue";
 import { ArrowDown, Plus } from "@element-plus/icons-vue";
-import type { SpaceBehaviorItem, SpaceBehaviorStatus } from "@/types";
-import { SPACE_BEHAVIOR_STATUS_LABELS, SPACE_BEHAVIOR_STATUS_OPTIONS } from "@/types";
+import type { SpaceBehaviorItem, SpaceBehaviorListStatus, SpaceBehaviorStatus } from "@/types";
+import { SPACE_BEHAVIOR_KIND_LABELS, SPACE_BEHAVIOR_LIST_STATUS_LABELS, SPACE_BEHAVIOR_LIST_STATUS_OPTIONS } from "@/types";
+import { mapSpaceBehaviorItemToListStatus } from "../utils/mapListOntologyActionRecord";
 
 const props = defineProps<{
   categoryLabel: string;
@@ -88,12 +91,12 @@ const props = defineProps<{
   page: number;
   pageSize: number;
   keyword: string;
-  statusFilter: SpaceBehaviorStatus | "";
+  statusFilter: SpaceBehaviorListStatus | "";
 }>();
 
 const emit = defineEmits<{
   "update:keyword": [value: string];
-  "update:statusFilter": [value: SpaceBehaviorStatus | ""];
+  "update:statusFilter": [value: SpaceBehaviorListStatus | ""];
   query: [];
   reset: [];
   create: [];
@@ -111,7 +114,7 @@ const keywordModel = computed({
 });
 const statusModel = computed({
   get: () => props.statusFilter,
-  set: (value: SpaceBehaviorStatus | "") => emit("update:statusFilter", value),
+  set: (value: SpaceBehaviorListStatus | "") => emit("update:statusFilter", value),
 });
 
 /**
@@ -124,14 +127,12 @@ function asBehavior(row: unknown): SpaceBehaviorItem {
 }
 
 /**
- * @description 将行为状态映射为标签颜色。
+ * @description 将行为状态映射为标签颜色；启用成功色，失效警告色。
  * @param status 行为状态。
  * @returns Element Plus 标签类型。
  */
-function statusTagType(status: SpaceBehaviorStatus): "success" | "info" | "warning" {
-  if (status === "published") return "success";
-  if (status === "disabled") return "warning";
-  return "info";
+function statusTagType(status: SpaceBehaviorStatus): "success" | "warning" {
+  return mapSpaceBehaviorItemToListStatus(status) === "enabled" ? "success" : "warning";
 }
 
 /**

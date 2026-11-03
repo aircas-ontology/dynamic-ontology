@@ -4,6 +4,9 @@ export const ROOT_SPACE_BEHAVIOR_CATEGORY_ID = "behavior-root";
 
 export type SpaceBehaviorStatus = "published" | "draft" | "disabled";
 
+/** 行为列表筛选项：对接 listAction 的启用/失效。 */
+export type SpaceBehaviorListStatus = "enabled" | "disabled";
+
 export type SpaceBehaviorStatusOperation = "publish" | "disable" | "draft";
 
 export type SpaceBehaviorBasicAction = "create" | "update" | "delete" | "query";
@@ -12,7 +15,16 @@ export type SpaceBehaviorBasicAction = "create" | "update" | "delete" | "query";
 export type SpaceBehaviorKind = "basic" | "application" | "behaviorTree";
 
 /** 基础行为的行为类型。 */
-export type SpaceBehaviorValueType = "attributeValue" | "relationExample" | "basicFunctionOperator";
+export type SpaceBehaviorValueType = "attributeValue" | "relationInstance" | "basicFunctionOperator";
+
+/** 关系实例 linkMapping.targetStatus。 */
+export type SpaceBehaviorRelationTargetStatus = "ENABLE" | "DELETE";
+
+/** 关系实例持续时段（epoch millis）。 */
+export interface SpaceBehaviorRelationVisibilityWindow {
+  startTime: number;
+  endTime: number;
+}
 
 export type SpaceBehaviorWorkspaceLoadStatus = "loading" | "ready" | "empty" | "error";
 
@@ -103,6 +115,12 @@ export interface SpaceBehaviorDraft {
   selectedPropertyApiNames: Record<string, string>;
   /** 属性值新增：当前勾选属性所属存储分组。 */
   storageGroup: string;
+  /** 关系实例：选中关系 uniqueIdentifier。 */
+  selectedRelationId: string;
+  /** 关系实例新增/修改：目标边状态。 */
+  relationTargetStatus: SpaceBehaviorRelationTargetStatus | "";
+  /** 关系实例新增/修改：持续时段列表。 */
+  relationVisibilityWindows: SpaceBehaviorRelationVisibilityWindow[];
   changeNote?: string;
   version?: string;
 }
@@ -147,6 +165,16 @@ export const SPACE_BEHAVIOR_STATUS_LABELS: Record<SpaceBehaviorStatus, string> =
   disabled: "停用",
 };
 
+export const SPACE_BEHAVIOR_LIST_STATUS_OPTIONS: ReadonlyArray<{ value: SpaceBehaviorListStatus; label: string }> = [
+  { value: "enabled", label: "启用" },
+  { value: "disabled", label: "失效" },
+];
+
+export const SPACE_BEHAVIOR_LIST_STATUS_LABELS: Record<SpaceBehaviorListStatus, string> = {
+  enabled: "启用",
+  disabled: "失效",
+};
+
 export const SPACE_BEHAVIOR_STATUS_OPERATION_OPTIONS: ReadonlyArray<{ value: SpaceBehaviorStatusOperation; label: string }> = [
   { value: "publish", label: "发布" },
   { value: "disable", label: "停用" },
@@ -186,12 +214,25 @@ export const SPACE_BEHAVIOR_KIND_LABELS: Record<SpaceBehaviorKind, string> = {
 
 export const SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS: ReadonlyArray<{ value: SpaceBehaviorValueType; label: string }> = [
   { value: "attributeValue", label: "属性值" },
-  { value: "relationExample", label: "关系示例" },
+  { value: "relationInstance", label: "关系实例" },
   { value: "basicFunctionOperator", label: "基础函数算子" },
 ];
 
 export const SPACE_BEHAVIOR_VALUE_TYPE_LABELS: Record<SpaceBehaviorValueType, string> = {
   attributeValue: "属性值",
-  relationExample: "关系示例",
+  relationInstance: "关系实例",
   basicFunctionOperator: "基础函数算子",
+};
+
+export const SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS: ReadonlyArray<{
+  value: SpaceBehaviorRelationTargetStatus;
+  label: string;
+}> = [
+  { value: "ENABLE", label: "enable" },
+  { value: "DELETE", label: "delete" },
+];
+
+export const SPACE_BEHAVIOR_RELATION_TARGET_STATUS_LABELS: Record<SpaceBehaviorRelationTargetStatus, string> = {
+  ENABLE: "enable",
+  DELETE: "delete",
 };

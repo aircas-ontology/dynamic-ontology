@@ -26,11 +26,13 @@ export type { CreateFunctionRateLimitTemplateData, CreateFunctionRateLimitTempla
 export type {
   CreateOntologyActionData,
   CreateOntologyActionKind,
+  CreateOntologyActionLinkMapping,
   CreateOntologyActionMappingIn,
   CreateOntologyActionOperation,
   CreateOntologyActionParams,
   CreateOntologyActionSourceType,
   CreateOntologyActionSubjectType,
+  CreateOntologyActionVisibilityWindow,
 } from "./apis/createOntologyActionType";
 export type {
   CreateOntologyFunctionContainerConfig,
@@ -145,6 +147,7 @@ export type {
   ListFunctionRateLimitTemplateItem,
   ListFunctionRateLimitTemplateParams,
 } from "./apis/listFunctionRateLimitTemplateType";
+export type { ListOntologyActionData, ListOntologyActionParams, ListOntologyActionRecord } from "./apis/listOntologyActionType";
 export type { LoginData, LoginParams } from "./apis/loginType";
 export type {
   OntologyApiDocsComponents,
@@ -394,6 +397,10 @@ export {
   SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS,
   SPACE_BEHAVIOR_KIND_LABELS,
   SPACE_BEHAVIOR_KIND_OPTIONS,
+  SPACE_BEHAVIOR_LIST_STATUS_LABELS,
+  SPACE_BEHAVIOR_LIST_STATUS_OPTIONS,
+  SPACE_BEHAVIOR_RELATION_TARGET_STATUS_LABELS,
+  SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS,
   SPACE_BEHAVIOR_STATUS_LABELS,
   SPACE_BEHAVIOR_STATUS_OPERATION_LABELS,
   SPACE_BEHAVIOR_STATUS_OPERATION_OPTIONS,
@@ -409,9 +416,12 @@ export type {
   SpaceBehaviorDraft,
   SpaceBehaviorItem,
   SpaceBehaviorKind,
+  SpaceBehaviorListStatus,
   SpaceBehaviorOperatorOption,
   SpaceBehaviorParameter,
   SpaceBehaviorReferenceCheckResult,
+  SpaceBehaviorRelationTargetStatus,
+  SpaceBehaviorRelationVisibilityWindow,
   SpaceBehaviorStatus,
   SpaceBehaviorStatusChangeDraft,
   SpaceBehaviorStatusOperation,

@@ -124,7 +124,7 @@ POST /ontology/action
 | 字段                         | 类型   | 必填              | 说明                                                                      |
 | ---------------------------- | ------ | ----------------- | ------------------------------------------------------------------------- |
 | `ontologyLinkUniqIdentifier` | String | **是**            | 关系唯一标识                                                              |
-| `targetStatus`               | String | **新增/修改必填** | `"ENABLE"` / `"DISABLE"`（新增还允许 `"DELETE"`）                         |
+| `targetStatus`               | String | **新增/修改必填** | `"ENABLE"` / `"DELETE"`                                                   |
 | `visibilityWindows`          | Array  | **新增必填**      | 持续时段列表，每项 `{startTime: <epoch_millis>, endTime: <epoch_millis>}` |
 
 **语义规则**：
@@ -170,7 +170,7 @@ POST /ontology/action
   "operation": "UPDATE",
   "linkMapping": {
     "ontologyLinkUniqIdentifier": "4ed7c4da646f4006bec301815b61debb",
-    "targetStatus": "DISABLE"
+    "targetStatus": "DELETE"
   }
 }
 ```

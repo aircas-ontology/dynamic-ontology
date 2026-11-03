@@ -1,0 +1,45 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "actionApi": "act.pv.weapon.add",
+        "displayName": "武器行-新增",
+        "description": "属性值行为：向 weapon 分组新增一行",
+        "ontologyUniqIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
+        "categoryId": 14,
+        "status": 1,
+        "actionKind": "BASE",
+        "subjectType": "PROPERTY_VALUE",
+        "operation": "CREATE",
+        "storageGroup": "weapon",
+        "functionApi": null,
+        "functionDescription": null,
+        "outputMode": null
+      },
+      {
+        "id": 2,
+        "actionApi": "cc",
+        "displayName": "cc",
+        "description": "ccc",
+        "ontologyUniqIdentifier": "246ef68e87524c33911b92af900700f9",
+        "categoryId": 11,
+        "status": 1,
+        "actionKind": "BASE",
+        "subjectType": "PROPERTY_VALUE",
+        "operation": "CREATE",
+        "storageGroup": "main",
+        "functionApi": null,
+        "functionDescription": null,
+        "outputMode": null
+      }
+    ],
+    "total": 2,
+    "size": 10,
+    "current": 1,
+    "pages": 1
+  }
+}

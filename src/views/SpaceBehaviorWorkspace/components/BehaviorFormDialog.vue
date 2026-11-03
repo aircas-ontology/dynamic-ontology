@@ -133,6 +133,59 @@
             </el-table>
           </section>
 
+          <section v-else-if="showRelationInstanceSection" class="behavior-form-dialog__object-section">
+            <div class="behavior-form-dialog__attribute-head">
+              <div class="behavior-form-dialog__attribute-title">
+                <span>关系选择</span>
+                <el-tag size="small" effect="plain">{{ relationRows.length }}项</el-tag>
+              </div>
+              <span class="behavior-form-dialog__attribute-hint">从当前空间关系中单选一条</span>
+            </div>
+            <el-table
+              class="behavior-form-dialog__attribute-table"
+              :data="relationLoading ? [] : relationRows"
+              row-key="id"
+              :empty-text="relationLoading ? '正在加载关系' : relationError || '暂无关系'"
+              @row-click="handleRelationRowClick"
+            >
+              <el-table-column width="48" align="center">
+                <template #default="{ row }">
+                  <el-radio :model-value="selectedRelationId" :value="row.id" :disabled="readonly" @change="selectRelationRow(row.id)" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="displayName" label="关系名称" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="sourceName" label="源对象" min-width="160" show-overflow-tooltip />
+              <el-table-column prop="targetName" label="目标对象" min-width="160" show-overflow-tooltip />
+              <el-table-column prop="description" label="说明" min-width="200" show-overflow-tooltip />
+            </el-table>
+            <div v-if="showRelationLinkMappingSection" class="behavior-form-dialog__link-mapping">
+              <el-form-item label="状态" required>
+                <el-select v-model="relationTargetStatus" placeholder="选择状态" style="width: 100%" :disabled="readonly">
+                  <el-option v-for="item in SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="持续时间" :required="basicAction === 'create'">
+                <div class="behavior-form-dialog__visibility-windows">
+                  <div v-for="(row, index) in visibilityWindowRows" :key="index" class="behavior-form-dialog__visibility-row">
+                    <el-date-picker
+                      class="behavior-form-dialog__visibility-picker"
+                      :model-value="row"
+                      type="datetimerange"
+                      value-format="x"
+                      range-separator="至"
+                      start-placeholder="开始时间"
+                      end-placeholder="结束时间"
+                      :disabled="readonly"
+                      @update:model-value="updateVisibilityWindowRow(index, $event)"
+                    />
+                    <el-button link type="danger" :disabled="readonly" @click="removeVisibilityWindowRow(index)">删除</el-button>
+                  </div>
+                  <el-button link type="primary" :disabled="readonly" @click="addVisibilityWindowRow">添加时段</el-button>
+                </div>
+              </el-form-item>
+            </div>
+          </section>
+
           <el-form-item v-else-if="kind === 'application'" label="关联函数算子" required>
             <el-select
               :model-value="functionOperatorId"
@@ -161,22 +214,37 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
 import { ElMessage, type TableInstance } from "element-plus";
-import { getOntologyCategoryTreeInterface, getOntologyFunctionListInterface, getOntologyObjectArrTypeTreeInterface } from "@/apis";
+import {
+  getOntologyCategoryTreeInterface,
+  getOntologyFunctionListInterface,
+  getOntologyObjectArrTypeTreeInterface,
+  getOntologyRelationCategoryTreeInterface,
+} from "@/apis";
 import type {
   GetOntologyFunctionListItem,
   OntologyPropertyInfo,
+  OntologyRelationClass,
   SpaceBehaviorBasicAction,
   SpaceBehaviorCategoryNode,
   SpaceBehaviorDraft,
   SpaceBehaviorItem,
   SpaceBehaviorKind,
   SpaceBehaviorOperatorOption,
+  SpaceBehaviorRelationTargetStatus,
+  SpaceBehaviorRelationVisibilityWindow,
   SpaceBehaviorStatus,
   SpaceBehaviorValueType,
   SpaceRelationObjectOption,
 } from "@/types";
-import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID, SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS, SPACE_BEHAVIOR_KIND_OPTIONS, SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS } from "@/types";
+import {
+  ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
+  SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS,
+  SPACE_BEHAVIOR_KIND_OPTIONS,
+  SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS,
+  SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS,
+} from "@/types";
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
+import { mapOntologyRelationLinks } from "@/views/SpaceRelationWorkspace/utils/mapOntologyRelationCategoryTree";
 import { flattenPropertyInfosFromCategoryTree } from "../utils/flattenPropertyInfosFromCategoryTree";
 import {
   isAttributeValueRowSelectable,
@@ -220,6 +288,14 @@ const attributeError = ref("");
 let attributeLoadToken = 0;
 const attributeTableRef = ref<TableInstance>();
 let syncingAttributeSelection = false;
+const relationRows = ref<OntologyRelationClass[]>([]);
+const relationLoading = ref(false);
+const relationError = ref("");
+let relationLoadToken = 0;
+const selectedRelationId = ref("");
+const relationTargetStatus = ref<SpaceBehaviorRelationTargetStatus | "">("");
+/** 时段选择器行；value-format=x 时为毫秒时间戳字符串对。 */
+const visibilityWindowRows = ref<Array<[string, string] | null>>([]);
 const kind = ref<SpaceBehaviorKind>("basic");
 const valueType = ref<SpaceBehaviorValueType>("attributeValue");
 const displayName = ref("");
@@ -239,6 +315,10 @@ const dialogTitle = computed(() => (props.mode === "edit" ? "编辑行为" : "�
 const saveAsCopy = computed(() => props.mode === "edit" && props.behavior?.status === "published");
 const readonly = computed(() => props.mode === "edit" && props.behavior?.status === "disabled");
 const showAttributeValueObjectSection = computed(() => kind.value === "basic" && valueType.value === "attributeValue");
+const showRelationInstanceSection = computed(() => kind.value === "basic" && valueType.value === "relationInstance");
+const showRelationLinkMappingSection = computed(
+  () => showRelationInstanceSection.value && Boolean(selectedRelationId.value.trim()) && (basicAction.value === "create" || basicAction.value === "update"),
+);
 const attributeSelectionHint = computed(() => {
   if (basicAction.value === "create") return "不可选择 main 分组；选中同组任一属性将全选该组";
   if (basicAction.value === "delete") return "不可选择 main 分组；选中同组任一属性将全选该组";
@@ -257,6 +337,124 @@ function clearObjectInfoSelection(): void {
   attributeError.value = "";
   attributeLoadToken += 1;
   attributeLoading.value = false;
+}
+
+/**
+ * @description 清空关系实例选中项、linkMapping 字段与关系列表加载状态。
+ */
+function clearRelationSelection(): void {
+  selectedRelationId.value = "";
+  ontologyIdentifier.value = "";
+  clearRelationLinkMappingFields();
+  relationRows.value = [];
+  relationError.value = "";
+  relationLoadToken += 1;
+  relationLoading.value = false;
+}
+
+/**
+ * @description 清空关系目标状态与持续时段录入。
+ */
+function clearRelationLinkMappingFields(): void {
+  relationTargetStatus.value = "";
+  visibilityWindowRows.value = [];
+}
+
+/**
+ * @description 新增时保证至少有一行空时段便于录入。
+ */
+function ensureDefaultVisibilityWindowRow(): void {
+  if (visibilityWindowRows.value.length === 0) {
+    visibilityWindowRows.value = [null];
+  }
+}
+
+/**
+ * @description 追加一条空持续时段。
+ */
+function addVisibilityWindowRow(): void {
+  if (readonly.value) return;
+  visibilityWindowRows.value = [...visibilityWindowRows.value, null];
+}
+
+/**
+ * @description 删除指定持续时段行。
+ * @param index 行下标。
+ */
+function removeVisibilityWindowRow(index: number): void {
+  if (readonly.value) return;
+  visibilityWindowRows.value = visibilityWindowRows.value.filter((_, rowIndex) => rowIndex !== index);
+}
+
+/**
+ * @description 更新指定持续时段行的起止时间。
+ * @param index 行下标。
+ * @param value 选择器返回值。
+ */
+function updateVisibilityWindowRow(index: number, value: unknown): void {
+  if (readonly.value) return;
+  const nextRows = [...visibilityWindowRows.value];
+  if (Array.isArray(value) && value.length === 2 && value[0] != null && value[1] != null) {
+    nextRows[index] = [String(value[0]), String(value[1])];
+  } else {
+    nextRows[index] = null;
+  }
+  visibilityWindowRows.value = nextRows;
+}
+
+/**
+ * @description 将时段选择器行映射为草稿 visibilityWindows。
+ * @returns 完整时段列表。
+ */
+function buildRelationVisibilityWindowsForDraft(): SpaceBehaviorRelationVisibilityWindow[] {
+  const windows: SpaceBehaviorRelationVisibilityWindow[] = [];
+  for (const row of visibilityWindowRows.value) {
+    if (!row) continue;
+    const startTime = Number(row[0]);
+    const endTime = Number(row[1]);
+    if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) continue;
+    windows.push({ startTime, endTime });
+  }
+  return windows;
+}
+
+/**
+ * @description 校验持续时段行是否均完整或均为空。
+ * @returns 存在半填行时为 true。
+ */
+function hasIncompleteVisibilityWindowRow(): boolean {
+  return visibilityWindowRows.value.some((row) => {
+    if (row == null) return false;
+    const startTime = Number(row[0]);
+    const endTime = Number(row[1]);
+    return !Number.isFinite(startTime) || !Number.isFinite(endTime);
+  });
+}
+
+/**
+ * @description 单选一条关系；切换关系时重置 linkMapping 录入。
+ * @param relationId 关系 uniqueIdentifier。
+ */
+function selectRelationRow(relationId: string): void {
+  if (readonly.value) return;
+  const nextId = relationId.trim();
+  if (!nextId) return;
+  if (selectedRelationId.value === nextId) return;
+  selectedRelationId.value = nextId;
+  const row = relationRows.value.find((item) => item.id === nextId);
+  ontologyIdentifier.value = row?.sourceOntologyId.trim() ?? "";
+  clearRelationLinkMappingFields();
+  if (basicAction.value === "create" || basicAction.value === "update") {
+    ensureDefaultVisibilityWindowRow();
+  }
+}
+
+/**
+ * @description 点击关系行时同步单选。
+ * @param row 关系行。
+ */
+function handleRelationRowClick(row: OntologyRelationClass): void {
+  selectRelationRow(row.id);
 }
 
 /**
@@ -330,10 +528,12 @@ function handleKindChange(value: string | number | boolean | undefined): void {
   kind.value = value;
   if (value === "basic") {
     clearSelectedOperator();
+    clearRelationSelection();
     valueType.value = "attributeValue";
     return;
   }
   clearObjectInfoSelection();
+  clearRelationSelection();
   if (value === "application") {
     basicAction.value = "create";
     return;
@@ -348,13 +548,19 @@ function handleKindChange(value: string | number | boolean | undefined): void {
 }
 
 /**
- * @description 切换行为类型；离开属性值时清空对象信息。
+ * @description 切换行为类型；离开属性值时清空对象信息，进入/离开关系实例时同步关系列表。
  * @param value 行为类型。
  */
 function handleValueTypeChange(value: string | number | boolean | undefined): void {
-  if (value !== "attributeValue" && value !== "relationExample" && value !== "basicFunctionOperator") return;
+  if (value !== "attributeValue" && value !== "relationInstance" && value !== "basicFunctionOperator") return;
   valueType.value = value;
   if (value !== "attributeValue") clearObjectInfoSelection();
+  if (value === "relationInstance") {
+    selectedRelationId.value = "";
+    void loadRelationRows();
+    return;
+  }
+  clearRelationSelection();
 }
 
 /**
@@ -364,6 +570,14 @@ function handleValueTypeChange(value: string | number | boolean | undefined): vo
 function handleBasicActionChange(value: string | number | boolean | undefined): void {
   if (value !== "create" && value !== "update" && value !== "delete") return;
   basicAction.value = value;
+  if (showRelationInstanceSection.value) {
+    if (value === "delete") {
+      clearRelationLinkMappingFields();
+    } else if (selectedRelationId.value.trim()) {
+      ensureDefaultVisibilityWindowRow();
+    }
+    return;
+  }
   if (!showAttributeValueObjectSection.value) {
     clearObjectInfoSelection();
     return;
@@ -509,6 +723,9 @@ function buildBehaviorDraft(nextStatus: SpaceBehaviorStatus): SpaceBehaviorDraft
     selectedPropertyValues: buildSelectedPropertyValuesForDraft(),
     selectedPropertyApiNames: buildSelectedPropertyApiNamesForDraft(),
     storageGroup: storageGroup.value,
+    selectedRelationId: selectedRelationId.value.trim(),
+    relationTargetStatus: showRelationLinkMappingSection.value ? relationTargetStatus.value : "",
+    relationVisibilityWindows: showRelationLinkMappingSection.value ? buildRelationVisibilityWindowsForDraft() : [],
   };
 }
 
@@ -541,6 +758,24 @@ function submitBehaviorForm(action: "save" | "copy"): void {
         selectedPropertyIds.value.length !== listPropertyRowsByStorageGroup(attributeRows.value, storageGroup.value).length)
     ) {
       ElMessage.warning(basicAction.value === "create" ? "新增须全选同一非 main 存储分组属性" : "删除须全选同一非 main 存储分组属性");
+      return;
+    }
+  }
+  if (showRelationInstanceSection.value && !selectedRelationId.value.trim()) {
+    ElMessage.warning("请选择一条关系");
+    return;
+  }
+  if (showRelationLinkMappingSection.value) {
+    if (!relationTargetStatus.value) {
+      ElMessage.warning("请选择状态");
+      return;
+    }
+    if (hasIncompleteVisibilityWindowRow()) {
+      ElMessage.warning("请完整填写持续时段的开始与结束时间");
+      return;
+    }
+    if (basicAction.value === "create" && buildRelationVisibilityWindowsForDraft().length === 0) {
+      ElMessage.warning("请至少添加一条持续时段");
       return;
     }
   }
@@ -633,6 +868,33 @@ async function loadAttributeRows(ontologyUniqueIdentifier: string): Promise<void
 }
 
 /**
+ * @description 按当前空间加载关系分类树并映射为可选关系行。
+ */
+async function loadRelationRows(): Promise<void> {
+  const requestToken = ++relationLoadToken;
+  relationLoading.value = true;
+  relationError.value = "";
+  try {
+    const spaceId = props.spaceId.trim();
+    if (!spaceId) throw new Error("当前对象空间无效");
+    const response = await getOntologyRelationCategoryTreeInterface({ spaceId });
+    if (requestToken !== relationLoadToken) return;
+    if (response.code !== 200) throw new Error(response.message || "关系列表加载失败");
+    if (!response.data) {
+      relationRows.value = [];
+      return;
+    }
+    relationRows.value = mapOntologyRelationLinks(response.data);
+  } catch (error) {
+    if (requestToken !== relationLoadToken) return;
+    relationRows.value = [];
+    relationError.value = error instanceof Error ? error.message : "关系列表加载失败";
+  } finally {
+    if (requestToken === relationLoadToken) relationLoading.value = false;
+  }
+}
+
+/**
  * @description 将函数列表记录映射为行为弹框使用的算子选项。
  * @param item 函数列表记录。
  * @returns 算子选项。
@@ -657,6 +919,7 @@ watch(
     void loadObjectOptions();
     submitLoading.value = false;
     clearObjectInfoSelection();
+    clearRelationSelection();
     if (props.behavior) {
       kind.value = props.behavior.kind;
       valueType.value = props.behavior.valueType;
@@ -668,6 +931,9 @@ watch(
       categoryId.value = props.behavior.categoryId;
       status.value = props.behavior.status;
       basicAction.value = props.behavior.basicAction;
+      if (kind.value === "basic" && valueType.value === "relationInstance") {
+        void loadRelationRows();
+      }
       return;
     }
     kind.value = "basic";
@@ -745,6 +1011,29 @@ defineExpose({
 
 .behavior-form-dialog__attribute-table {
   width: 100%;
+}
+
+.behavior-form-dialog__link-mapping {
+  margin-top: 16px;
+}
+
+.behavior-form-dialog__visibility-windows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.behavior-form-dialog__visibility-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.behavior-form-dialog__visibility-picker {
+  flex: 1;
+  min-width: 0;
 }
 
 .behavior-form-dialog__tree-panel {

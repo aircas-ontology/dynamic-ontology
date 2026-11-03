@@ -61,6 +61,8 @@ function mapOntologyRelationLink(
     apiName: link.apiName ?? "",
     sourceName: link.ontologyNameFrom ?? "",
     targetName: link.ontologyNameTo ?? "",
+    sourceOntologyId: link.ontologyUniqueIdentifierFrom ?? "",
+    targetOntologyId: link.ontologyUniqueIdentifierTo ?? "",
     cardinality: "一对多",
     description: link.description ?? "",
   };

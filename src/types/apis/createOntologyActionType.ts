@@ -19,7 +19,20 @@ export interface CreateOntologyActionMappingIn {
   sourceConfig?: string;
 }
 
-/** 创建行为请求体（本轮属性值路径使用）。 */
+/** 关系实例行为持续时段。 */
+export interface CreateOntologyActionVisibilityWindow {
+  startTime: number;
+  endTime: number;
+}
+
+/** 关系实例行为 linkMapping。 */
+export interface CreateOntologyActionLinkMapping {
+  ontologyLinkUniqIdentifier: string;
+  targetStatus?: "ENABLE" | "DELETE";
+  visibilityWindows?: CreateOntologyActionVisibilityWindow[];
+}
+
+/** 创建行为请求体（属性值 / 关系实例等路径按 subjectType 选用字段）。 */
 export interface CreateOntologyActionParams {
   actionApi: string;
   displayName: string;
@@ -29,8 +42,12 @@ export interface CreateOntologyActionParams {
   actionKind: CreateOntologyActionKind;
   subjectType: CreateOntologyActionSubjectType;
   operation: CreateOntologyActionOperation;
-  storageGroup: string;
-  mappingIns: CreateOntologyActionMappingIn[];
+  /** 属性值行为必填。 */
+  storageGroup?: string;
+  /** 属性值行为必填。 */
+  mappingIns?: CreateOntologyActionMappingIn[];
+  /** 关系实例行为必填。 */
+  linkMapping?: CreateOntologyActionLinkMapping;
 }
 
 /** 创建行为成功响应 data；文档约定为 null。 */
