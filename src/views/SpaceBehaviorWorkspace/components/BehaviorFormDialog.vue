@@ -294,8 +294,8 @@ const relationError = ref("");
 let relationLoadToken = 0;
 const selectedRelationId = ref("");
 const relationTargetStatus = ref<SpaceBehaviorRelationTargetStatus | "">("");
-/** 时段选择器行；value-format=x 时为毫秒时间戳字符串对。 */
-const visibilityWindowRows = ref<Array<[string, string] | null>>([]);
+/** 时段选择器行；value-format=x 时用数字毫秒时间戳，避免字符串被解析为年份。 */
+const visibilityWindowRows = ref<Array<[number, number] | null>>([]);
 const kind = ref<SpaceBehaviorKind>("basic");
 const valueType = ref<SpaceBehaviorValueType>("attributeValue");
 const displayName = ref("");
@@ -387,6 +387,18 @@ function removeVisibilityWindowRow(index: number): void {
 }
 
 /**
+ * @description 将选择器返回值规范为毫秒时间戳数字。
+ * @param value 选择器单项。
+ * @returns 有限数字毫秒；无法解析时为 NaN。
+ */
+function readVisibilityWindowTimestamp(value: unknown): number {
+  if (typeof value === "number") return value;
+  if (typeof value === "string" && value.trim()) return Number(value);
+  if (value instanceof Date) return value.getTime();
+  return Number.NaN;
+}
+
+/**
  * @description 更新指定持续时段行的起止时间。
  * @param index 行下标。
  * @param value 选择器返回值。
@@ -394,8 +406,10 @@ function removeVisibilityWindowRow(index: number): void {
 function updateVisibilityWindowRow(index: number, value: unknown): void {
   if (readonly.value) return;
   const nextRows = [...visibilityWindowRows.value];
-  if (Array.isArray(value) && value.length === 2 && value[0] != null && value[1] != null) {
-    nextRows[index] = [String(value[0]), String(value[1])];
+  if (Array.isArray(value) && value.length === 2) {
+    const startTime = readVisibilityWindowTimestamp(value[0]);
+    const endTime = readVisibilityWindowTimestamp(value[1]);
+    nextRows[index] = Number.isFinite(startTime) && Number.isFinite(endTime) ? [startTime, endTime] : null;
   } else {
     nextRows[index] = null;
   }
@@ -410,25 +424,9 @@ function buildRelationVisibilityWindowsForDraft(): SpaceBehaviorRelationVisibili
   const windows: SpaceBehaviorRelationVisibilityWindow[] = [];
   for (const row of visibilityWindowRows.value) {
     if (!row) continue;
-    const startTime = Number(row[0]);
-    const endTime = Number(row[1]);
-    if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) continue;
-    windows.push({ startTime, endTime });
+    windows.push({ startTime: row[0], endTime: row[1] });
   }
   return windows;
-}
-
-/**
- * @description 校验持续时段行是否均完整或均为空。
- * @returns 存在半填行时为 true。
- */
-function hasIncompleteVisibilityWindowRow(): boolean {
-  return visibilityWindowRows.value.some((row) => {
-    if (row == null) return false;
-    const startTime = Number(row[0]);
-    const endTime = Number(row[1]);
-    return !Number.isFinite(startTime) || !Number.isFinite(endTime);
-  });
 }
 
 /**
@@ -768,10 +766,6 @@ function submitBehaviorForm(action: "save" | "copy"): void {
   if (showRelationLinkMappingSection.value) {
     if (!relationTargetStatus.value) {
       ElMessage.warning("请选择状态");
-      return;
-    }
-    if (hasIncompleteVisibilityWindowRow()) {
-      ElMessage.warning("请完整填写持续时段的开始与结束时间");
       return;
     }
     if (basicAction.value === "create" && buildRelationVisibilityWindowsForDraft().length === 0) {
