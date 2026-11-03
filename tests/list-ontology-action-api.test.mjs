@@ -12,6 +12,20 @@ test("list ontology action API follows the documented GET contract", () => {
   assert.match(source, /params,/);
 });
 
+test("ontology action info and edit APIs follow GET and PUT contracts", () => {
+  const source = readSource("../src/apis/ontologyActionApi.ts");
+  const apiBarrel = readSource("../src/apis/index.ts");
+  const typeBarrel = readSource("../src/types/index.ts");
+  assert.match(source, /export function getOntologyActionInfoInterface\(params: GetOntologyActionInfoParams\)/);
+  assert.match(source, /DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/action"/);
+  assert.match(source, /export function putEditOntologyActionInterface\(params: EditOntologyActionParams\)/);
+  assert.match(source, /method: "put"/);
+  assert.match(apiBarrel, /getOntologyActionInfoInterface/);
+  assert.match(apiBarrel, /putEditOntologyActionInterface/);
+  assert.match(typeBarrel, /GetOntologyActionInfoData/);
+  assert.match(typeBarrel, /EditOntologyActionParams/);
+});
+
 test("list ontology action types and exports use the documented sample fields", () => {
   const typeSource = readSource("../src/types/apis/listOntologyActionType.ts");
   const barrelSource = readSource("../src/types/index.ts");
@@ -35,4 +49,14 @@ test("list ontology action mock route and fixture are registered", () => {
   assert.match(routes, /action\.list\.get\.json/);
   assert.match(fixture, /"actionApi": "act\.pv\.weapon\.add"/);
   assert.match(fixture, /"total": 2/);
+});
+
+test("ontology action info and edit mock routes are registered", () => {
+  const routes = readSource("../src/mockData/routes.json");
+  const infoFixture = readSource("../src/mockData/fixtures/ontology/action.info.get.json");
+  const editFixture = readSource("../src/mockData/fixtures/ontology/action.edit.put.json");
+  assert.match(routes, /"method": "GET"[\s\S]*"path": "\/ontology\/action"[\s\S]*action\.info\.get\.json/);
+  assert.match(routes, /"method": "PUT"[\s\S]*"path": "\/ontology\/action"[\s\S]*action\.edit\.put\.json/);
+  assert.match(infoFixture, /"subjectType": "PROPERTY_VALUE"/);
+  assert.match(editFixture, /"data": null/);
 });

@@ -101,12 +101,18 @@ export interface SpaceBehaviorDraft {
   valueType: SpaceBehaviorValueType;
   functionOperatorId: string;
   functionOperatorName: string;
+  /** 基础函数算子版本。 */
+  functionOperatorVersion: string;
   description: string;
   categoryId: string;
   status: SpaceBehaviorStatus;
   basicAction: SpaceBehaviorBasicAction;
-  /** 属性值新增：选中对象唯一标识。 */
+  /** 属性值新增 / 基础函数算子：选中对象唯一标识。 */
   ontologyIdentifier: string;
+  /** 基础函数算子：参数名 → 属性 apiName。 */
+  operatorParamBindings: Record<string, string>;
+  /** 基础函数算子：参数名 → 详情 paramId（functionParamId）。 */
+  operatorParamIds: Record<string, number>;
   /** 属性值新增：勾选属性 uniqueIdentifier 列表。 */
   selectedPropertyIds: string[];
   /** 属性值新增/修改：属性 uniqueIdentifier 对应的录入值。 */

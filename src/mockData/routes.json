@@ -11,6 +11,16 @@
   },
   {
     "method": "GET",
+    "path": "/ontology/action",
+    "file": "fixtures/ontology/action.info.get.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/action",
+    "file": "fixtures/ontology/action.edit.put.json"
+  },
+  {
+    "method": "GET",
     "path": "/ontology/action/list",
     "file": "fixtures/ontology/action.list.get.json"
   },

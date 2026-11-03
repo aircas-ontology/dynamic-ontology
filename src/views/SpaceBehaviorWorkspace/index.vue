@@ -267,14 +267,14 @@ async function handleBehaviorSubmit(draft: SpaceBehaviorDraft): Promise<void> {
     ElMessage.success("行为已创建");
     return;
   }
-  if (!activeBehavior.value || activeBehavior.value.status === "published" || activeBehavior.value.status === "disabled") {
+  if (!activeBehavior.value || activeBehavior.value.status === "disabled") {
     behaviorFormRef.value?.setLoading(false);
     return;
   }
-  const ok = updateBehavior(activeBehavior.value.id, draft);
+  const result = await updateBehavior(activeBehavior.value.id, draft);
   behaviorFormRef.value?.setLoading(false);
-  if (!ok) {
-    ElMessage.error("行为保存失败");
+  if (!result.ok) {
+    ElMessage.error(result.message || "行为保存失败");
     return;
   }
   behaviorFormVisible.value = false;

@@ -10,15 +10,10 @@
     :close-on-click-modal="false"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <el-alert
-      v-if="saveAsCopy"
-      title="另存为独立草稿副本"
-      description="保存将创建新的行为 ID；原已发布行为及其行为树、调度引用保持不变。此操作不是发布新版本。"
-      type="info"
-      show-icon
-      :closable="false"
-    />
-    <el-alert v-if="readonly" title="已停用行为为只读，请先通过状态管理转为草稿" type="warning" show-icon :closable="false" />
+    <el-alert v-if="detailLoading" title="正在加载行为详情…" type="info" show-icon :closable="false" />
+    <el-alert v-else-if="detailError" :title="detailError" type="error" show-icon :closable="false" />
+    <el-alert v-else-if="unsupportedEditReason" :title="unsupportedEditReason" type="warning" show-icon :closable="false" />
+    <el-alert v-if="readonly" title="已失效行为为只读" type="warning" show-icon :closable="false" />
 
     <el-form class="behavior-form-dialog__form" label-position="top" :disabled="readonly">
       <section class="behavior-form-dialog__section">
@@ -73,9 +68,22 @@
                 <el-option v-for="item in SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </el-form-item>
-            <el-form-item label="基础操作" required>
+            <el-form-item v-if="!showBasicFunctionOperatorSection" label="基础操作" required>
               <el-select :model-value="basicAction" placeholder="选择基础操作" style="width: 100%" @change="handleBasicActionChange">
                 <el-option v-for="item in SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </el-form-item>
+            <el-form-item v-else label="函数基础算子" required>
+              <el-select
+                :model-value="functionOperatorId"
+                filterable
+                :loading="operatorLoading"
+                :disabled="operatorLoading || operatorError !== ''"
+                :placeholder="operatorLoading ? '正在加载基础函数' : operatorError || (operatorCatalog.length ? '选择基础函数算子' : '当前空间暂无基础函数')"
+                style="width: 100%"
+                @change="handleBasicFunctionOperatorChange"
+              >
+                <el-option v-for="item in operatorCatalog" :key="item.id" :label="`${item.name} · ${item.version}`" :value="item.id" />
               </el-select>
             </el-form-item>
           </div>
@@ -186,6 +194,49 @@
             </div>
           </section>
 
+          <section v-else-if="showBasicFunctionOperatorSection && functionOperatorId" class="behavior-form-dialog__object-section">
+            <h3>参数配置</h3>
+            <p v-if="operatorDetailLoading" class="behavior-form-dialog__param-state" role="status">正在加载函数详情…</p>
+            <p v-else-if="operatorDetailError" class="behavior-form-dialog__param-state" role="alert">{{ operatorDetailError }}</p>
+            <template v-else>
+              <el-form-item label="选择对象" required>
+                <el-select
+                  :model-value="ontologyIdentifier"
+                  filterable
+                  clearable
+                  :loading="objectLoading"
+                  :disabled="objectLoading || objectError !== ''"
+                  :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
+                  style="width: 100%"
+                  @change="handleOperatorOntologyChange"
+                >
+                  <el-option v-for="item in objectOptions" :key="item.value" :label="item.label" :value="item.value" />
+                </el-select>
+              </el-form-item>
+              <el-form-item v-for="bindingKey in operatorBindingKeys" :key="bindingKey" :label="`参数 ${bindingKey}`" required>
+                <el-select
+                  :model-value="operatorParamBindings[bindingKey] ?? ''"
+                  filterable
+                  clearable
+                  :disabled="!ontologyIdentifier || operatorPropertyLoading"
+                  :loading="operatorPropertyLoading"
+                  :placeholder="
+                    !ontologyIdentifier ? '请先选择对象' : operatorPropertyError || (operatorPropertyOptions.length ? '请选择对象属性' : '当前对象暂无属性')
+                  "
+                  style="width: 100%"
+                  @change="updateOperatorParamBinding(bindingKey, $event)"
+                >
+                  <el-option
+                    v-for="item in operatorPropertyOptions"
+                    :key="`${bindingKey}-${item.value}`"
+                    :label="`${item.label}（${item.value}）`"
+                    :value="item.value"
+                  />
+                </el-select>
+              </el-form-item>
+            </template>
+          </section>
+
           <el-form-item v-else-if="kind === 'application'" label="关联函数算子" required>
             <el-select
               :model-value="functionOperatorId"
@@ -205,8 +256,14 @@
 
     <template #footer>
       <el-button @click="emit('update:modelValue', false)">{{ readonly ? "关闭" : "取消" }}</el-button>
-      <el-button v-if="saveAsCopy && kind !== 'behaviorTree'" :loading="submitLoading" @click="submitBehaviorForm('copy')">另存草稿副本</el-button>
-      <el-button v-else-if="!readonly && kind !== 'behaviorTree'" :loading="submitLoading" @click="submitBehaviorForm('save')">保存行为</el-button>
+      <el-button
+        v-if="!readonly && kind !== 'behaviorTree'"
+        :loading="submitLoading || detailLoading"
+        :disabled="detailLoading || Boolean(detailError) || Boolean(unsupportedEditReason)"
+        @click="submitBehaviorForm('save')"
+      >
+        保存行为
+      </el-button>
     </template>
   </el-dialog>
 </template>
@@ -215,9 +272,12 @@
 import { computed, nextTick, ref, watch } from "vue";
 import { ElMessage, type TableInstance } from "element-plus";
 import {
+  getOntologyActionInfoInterface,
   getOntologyCategoryTreeInterface,
+  getOntologyFunctionDetailInterface,
   getOntologyFunctionListInterface,
   getOntologyObjectArrTypeTreeInterface,
+  getOntologyPropertyByOntologyIdInterface,
   getOntologyRelationCategoryTreeInterface,
 } from "@/apis";
 import type {
@@ -243,6 +303,7 @@ import {
   SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS,
   SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS,
 } from "@/types";
+import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestBindingParamIds } from "@/utils/mapOntologyFunctionTest";
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
 import { mapOntologyRelationLinks } from "@/views/SpaceRelationWorkspace/utils/mapOntologyRelationCategoryTree";
 import { flattenPropertyInfosFromCategoryTree } from "../utils/flattenPropertyInfosFromCategoryTree";
@@ -254,6 +315,7 @@ import {
   readPropertyRowId,
   resolveAttributeValueSelection,
 } from "../utils/resolveAttributeValueSelection";
+import { mapOntologyActionInfoToFormState, type SpaceBehaviorActionInfoFormState } from "../utils/mapOntologyActionInfoToFormState";
 import { omitActionLeavesFromCategoryTree } from "../utils/spaceBehaviorOperations";
 import { sortPropertyInfosByStorageGroup } from "../utils/sortPropertyInfosByStorageGroup";
 
@@ -302,6 +364,17 @@ const displayName = ref("");
 const behaviorApiName = ref("");
 const functionOperatorId = ref("");
 const functionOperatorName = ref("");
+const functionOperatorVersion = ref("");
+const operatorBindingKeys = ref<string[]>([]);
+const operatorParamBindings = ref<Record<string, string>>({});
+const operatorParamIds = ref<Record<string, number>>({});
+const operatorDetailLoading = ref(false);
+const operatorDetailError = ref("");
+let operatorDetailToken = 0;
+const operatorPropertyOptions = ref<SpaceRelationObjectOption[]>([]);
+const operatorPropertyLoading = ref(false);
+const operatorPropertyError = ref("");
+let operatorPropertyToken = 0;
 const description = ref("");
 const categoryId = ref(ROOT_SPACE_BEHAVIOR_CATEGORY_ID);
 const status = ref<SpaceBehaviorStatus>("draft");
@@ -311,11 +384,15 @@ const selectedPropertyIds = ref<string[]>([]);
 const selectedPropertyValues = ref<Record<string, string>>({});
 const storageGroup = ref("");
 const submitLoading = ref(false);
+const detailLoading = ref(false);
+const detailError = ref("");
+const unsupportedEditReason = ref("");
+let detailLoadToken = 0;
 const dialogTitle = computed(() => (props.mode === "edit" ? "编辑行为" : "创建行为"));
-const saveAsCopy = computed(() => props.mode === "edit" && props.behavior?.status === "published");
 const readonly = computed(() => props.mode === "edit" && props.behavior?.status === "disabled");
 const showAttributeValueObjectSection = computed(() => kind.value === "basic" && valueType.value === "attributeValue");
 const showRelationInstanceSection = computed(() => kind.value === "basic" && valueType.value === "relationInstance");
+const showBasicFunctionOperatorSection = computed(() => kind.value === "basic" && valueType.value === "basicFunctionOperator");
 const showRelationLinkMappingSection = computed(
   () => showRelationInstanceSection.value && Boolean(selectedRelationId.value.trim()) && (basicAction.value === "create" || basicAction.value === "update"),
 );
@@ -496,15 +573,36 @@ function buildSelectedPropertyApiNamesForDraft(): Record<string, string> {
 }
 
 /**
- * @description 清空当前关联的函数算子。
+ * @description 清空当前关联的函数算子与参数绑定。
  */
 function clearSelectedOperator(): void {
   functionOperatorId.value = "";
   functionOperatorName.value = "";
+  functionOperatorVersion.value = "";
+  operatorBindingKeys.value = [];
+  operatorParamBindings.value = {};
+  operatorParamIds.value = {};
+  operatorDetailError.value = "";
+  operatorDetailToken += 1;
+  operatorDetailLoading.value = false;
+  operatorPropertyOptions.value = [];
+  operatorPropertyError.value = "";
+  operatorPropertyToken += 1;
+  operatorPropertyLoading.value = false;
 }
 
 /**
- * @description 按选中的函数算子回填标识与名称。
+ * @description 按绑定键重置参数绑定为空。
+ * @param keys 参数绑定键。
+ */
+function resetOperatorParamBindings(keys: string[]): void {
+  const next: Record<string, string> = {};
+  for (const key of keys) next[key] = "";
+  operatorParamBindings.value = next;
+}
+
+/**
+ * @description 按选中的函数算子回填标识、名称与版本。
  * @param operatorId 函数算子 id。
  */
 function applySelectedOperator(operatorId: string): void {
@@ -515,6 +613,68 @@ function applySelectedOperator(operatorId: string): void {
   }
   functionOperatorId.value = operator.id;
   functionOperatorName.value = operator.name;
+  functionOperatorVersion.value = operator.version;
+}
+
+/**
+ * @description 拉取基础函数详情并生成参数绑定键。
+ * @param functionApi 函数 api。
+ * @param version 函数版本。
+ */
+async function loadOperatorDetailBindings(functionApi: string, version: string): Promise<void> {
+  const requestToken = ++operatorDetailToken;
+  operatorDetailLoading.value = true;
+  operatorDetailError.value = "";
+  operatorBindingKeys.value = [];
+  operatorParamBindings.value = {};
+  operatorParamIds.value = {};
+  try {
+    const response = await getOntologyFunctionDetailInterface({ functionApi, version });
+    if (requestToken !== operatorDetailToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "函数详情加载失败");
+    const params = response.data.params ?? [];
+    const keys = buildOntologyFunctionTestBindingKeys(params);
+    operatorBindingKeys.value = keys;
+    operatorParamIds.value = buildOntologyFunctionTestBindingParamIds(params);
+    resetOperatorParamBindings(keys);
+  } catch (error) {
+    if (requestToken !== operatorDetailToken) return;
+    operatorBindingKeys.value = [];
+    operatorParamBindings.value = {};
+    operatorParamIds.value = {};
+    operatorDetailError.value = error instanceof Error ? error.message : "函数详情加载失败";
+  } finally {
+    if (requestToken === operatorDetailToken) operatorDetailLoading.value = false;
+  }
+}
+
+/**
+ * @description 按对象加载可供参数绑定的属性 apiName 选项。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ */
+async function loadOperatorPropertyOptions(ontologyUniqueIdentifier: string): Promise<void> {
+  const requestToken = ++operatorPropertyToken;
+  operatorPropertyLoading.value = true;
+  operatorPropertyError.value = "";
+  try {
+    const response = await getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier });
+    if (requestToken !== operatorPropertyToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "属性列表加载失败");
+    const options = new Map<string, SpaceRelationObjectOption>();
+    for (const item of response.data) {
+      const value = typeof item.apiName === "string" ? item.apiName.trim() : "";
+      if (!value || options.has(value)) continue;
+      const label = typeof item.displayName === "string" && item.displayName.trim() ? item.displayName.trim() : value;
+      options.set(value, { value, label });
+    }
+    operatorPropertyOptions.value = [...options.values()].sort((a, b) => a.label.localeCompare(b.label, "zh-CN") || a.value.localeCompare(b.value));
+  } catch (error) {
+    if (requestToken !== operatorPropertyToken) return;
+    operatorPropertyOptions.value = [];
+    operatorPropertyError.value = error instanceof Error ? error.message : "属性列表加载失败";
+  } finally {
+    if (requestToken === operatorPropertyToken) operatorPropertyLoading.value = false;
+  }
 }
 
 /**
@@ -552,13 +712,20 @@ function handleKindChange(value: string | number | boolean | undefined): void {
 function handleValueTypeChange(value: string | number | boolean | undefined): void {
   if (value !== "attributeValue" && value !== "relationInstance" && value !== "basicFunctionOperator") return;
   valueType.value = value;
-  if (value !== "attributeValue") clearObjectInfoSelection();
+  if (value !== "attributeValue" && value !== "basicFunctionOperator") clearObjectInfoSelection();
+  if (value === "attributeValue") clearSelectedOperator();
   if (value === "relationInstance") {
+    clearSelectedOperator();
+    clearObjectInfoSelection();
     selectedRelationId.value = "";
     void loadRelationRows();
     return;
   }
   clearRelationSelection();
+  if (value === "basicFunctionOperator") {
+    clearObjectInfoSelection();
+    clearSelectedOperator();
+  }
 }
 
 /**
@@ -584,7 +751,7 @@ function handleBasicActionChange(value: string | number | boolean | undefined): 
 }
 
 /**
- * @description 选择关联函数算子。
+ * @description 选择关联函数算子（应用行为）。
  * @param value 函数算子 id。
  */
 function handleOperatorChange(value: string | number | boolean | undefined): void {
@@ -593,6 +760,51 @@ function handleOperatorChange(value: string | number | boolean | undefined): voi
     return;
   }
   applySelectedOperator(value);
+}
+
+/**
+ * @description 选择基础函数算子并加载参数绑定键。
+ * @param value 函数算子 id。
+ */
+function handleBasicFunctionOperatorChange(value: string | number | boolean | undefined): void {
+  if (typeof value !== "string" || !value.trim()) {
+    clearSelectedOperator();
+    ontologyIdentifier.value = "";
+    operatorPropertyOptions.value = [];
+    return;
+  }
+  applySelectedOperator(value);
+  ontologyIdentifier.value = "";
+  operatorPropertyOptions.value = [];
+  operatorPropertyError.value = "";
+  void loadOperatorDetailBindings(functionOperatorId.value, functionOperatorVersion.value);
+}
+
+/**
+ * @description 基础函数参数配置中选择对象并加载属性选项。
+ * @param value 对象 uniqueIdentifier。
+ */
+function handleOperatorOntologyChange(value: string | number | boolean | undefined): void {
+  const nextId = typeof value === "string" ? value.trim() : "";
+  ontologyIdentifier.value = nextId;
+  resetOperatorParamBindings(operatorBindingKeys.value);
+  operatorPropertyOptions.value = [];
+  operatorPropertyError.value = "";
+  if (!nextId) return;
+  void loadOperatorPropertyOptions(nextId);
+}
+
+/**
+ * @description 更新基础函数单个参数的属性 apiName 绑定。
+ * @param bindingKey 参数名。
+ * @param value 属性 apiName。
+ */
+function updateOperatorParamBinding(bindingKey: string, value: string | number | boolean | undefined): void {
+  const apiName = typeof value === "string" ? value.trim() : "";
+  operatorParamBindings.value = {
+    ...operatorParamBindings.value,
+    [bindingKey]: apiName,
+  };
 }
 
 /**
@@ -712,11 +924,14 @@ function buildBehaviorDraft(nextStatus: SpaceBehaviorStatus): SpaceBehaviorDraft
     valueType: valueType.value,
     functionOperatorId: functionOperatorId.value,
     functionOperatorName: functionOperatorName.value.trim(),
+    functionOperatorVersion: functionOperatorVersion.value.trim(),
     description: description.value.trim(),
     categoryId: categoryId.value,
     status: nextStatus,
     basicAction: basicAction.value,
     ontologyIdentifier: ontologyIdentifier.value.trim(),
+    operatorParamBindings: showBasicFunctionOperatorSection.value ? { ...operatorParamBindings.value } : {},
+    operatorParamIds: showBasicFunctionOperatorSection.value ? { ...operatorParamIds.value } : {},
     selectedPropertyIds: [...selectedPropertyIds.value],
     selectedPropertyValues: buildSelectedPropertyValuesForDraft(),
     selectedPropertyApiNames: buildSelectedPropertyApiNamesForDraft(),
@@ -728,18 +943,166 @@ function buildBehaviorDraft(nextStatus: SpaceBehaviorStatus): SpaceBehaviorDraft
 }
 
 /**
- * @description 按类别校验后提交保存或另存草稿副本。
+ * @description 将详情映射结果写入表单基础字段。
+ * @param state 详情映射状态。
+ */
+function applyActionInfoBaseFields(state: SpaceBehaviorActionInfoFormState): void {
+  kind.value = state.kind;
+  valueType.value = state.valueType;
+  displayName.value = state.displayName;
+  behaviorApiName.value = state.behaviorApiName;
+  description.value = state.description;
+  categoryId.value = state.categoryId || ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
+  status.value = state.status;
+  basicAction.value = state.basicAction;
+  functionOperatorId.value = state.functionOperatorId;
+  functionOperatorName.value = state.functionOperatorName;
+  unsupportedEditReason.value = state.unsupportedEditReason;
+}
+
+/**
+ * @description 按详情映射结果回填对象属性 / 关系 / 基础算子分区。
+ * @param state 详情映射状态。
+ */
+async function hydrateActionInfoSections(state: SpaceBehaviorActionInfoFormState): Promise<void> {
+  if (state.valueType === "attributeValue" && state.kind === "basic") {
+    ontologyIdentifier.value = state.ontologyIdentifier;
+    storageGroup.value = state.storageGroup;
+    selectedPropertyIds.value = [...state.selectedPropertyIds];
+    selectedPropertyValues.value = { ...state.selectedPropertyValues };
+    if (!state.ontologyIdentifier) return;
+    await loadAttributeRows(state.ontologyIdentifier);
+    const selectedRows = attributeRows.value.filter((row) => selectedPropertyIds.value.includes(readPropertyRowId(row)));
+    applyResolvedAttributeSelection(selectedRows, state.storageGroup);
+    return;
+  }
+  if (state.valueType === "relationInstance") {
+    selectedRelationId.value = state.selectedRelationId;
+    ontologyIdentifier.value = state.ontologyIdentifier;
+    relationTargetStatus.value = state.relationTargetStatus;
+    visibilityWindowRows.value = state.relationVisibilityWindows.map((item) => [item.startTime, item.endTime]);
+    await loadRelationRows();
+    return;
+  }
+  if (state.valueType === "basicFunctionOperator") {
+    ontologyIdentifier.value = state.ontologyIdentifier;
+    const savedBindings = { ...state.operatorParamBindings };
+    const savedIds = { ...state.operatorParamIds };
+    if (state.functionOperatorId) {
+      const matched = operatorCatalog.value.find((item) => item.id === state.functionOperatorId);
+      if (matched) {
+        functionOperatorVersion.value = matched.version;
+      }
+      if (functionOperatorVersion.value) {
+        await loadOperatorDetailBindings(state.functionOperatorId, functionOperatorVersion.value);
+      } else {
+        operatorBindingKeys.value = Object.keys(savedBindings);
+        resetOperatorParamBindings(operatorBindingKeys.value);
+        operatorParamIds.value = { ...savedIds };
+      }
+      operatorParamBindings.value = {
+        ...operatorParamBindings.value,
+        ...savedBindings,
+      };
+      operatorParamIds.value = {
+        ...savedIds,
+        ...operatorParamIds.value,
+      };
+    }
+    if (state.ontologyIdentifier) {
+      await loadOperatorPropertyOptions(state.ontologyIdentifier);
+    }
+  }
+}
+
+/**
+ * @description 编辑态拉取行为详情并回显；失败时保留列表行基础字段。
+ */
+async function loadActionInfoForEdit(): Promise<void> {
+  const actionApi = (props.behavior?.behaviorApiName ?? behaviorApiName.value).trim();
+  if (!actionApi) {
+    detailError.value = "行为 api 名称无效，无法加载详情";
+    return;
+  }
+  const requestToken = ++detailLoadToken;
+  detailLoading.value = true;
+  detailError.value = "";
+  unsupportedEditReason.value = "";
+  try {
+    const response = await getOntologyActionInfoInterface({ actionApi });
+    if (requestToken !== detailLoadToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "行为详情加载失败");
+    const state = mapOntologyActionInfoToFormState(response.data);
+    clearObjectInfoSelection();
+    clearRelationSelection();
+    clearSelectedOperator();
+    applyActionInfoBaseFields(state);
+    if (state.valueType === "basicFunctionOperator") {
+      await loadOperatorCatalog();
+      if (requestToken !== detailLoadToken) return;
+    }
+    await hydrateActionInfoSections(state);
+  } catch (error) {
+    if (requestToken !== detailLoadToken) return;
+    detailError.value = error instanceof Error ? error.message : "行为详情加载失败";
+  } finally {
+    if (requestToken === detailLoadToken) detailLoading.value = false;
+  }
+}
+
+/**
+ * @description 按类别校验后提交保存。
  * @param action 保存动作。
  */
 function submitBehaviorForm(action: "save" | "copy"): void {
   if (readonly.value || kind.value === "behaviorTree") return;
+  if (action !== "save") return;
+  if (detailLoading.value) {
+    ElMessage.warning("行为详情加载中，请稍候");
+    return;
+  }
+  if (detailError.value) {
+    ElMessage.warning(detailError.value);
+    return;
+  }
+  if (unsupportedEditReason.value && props.mode === "edit") {
+    ElMessage.warning(unsupportedEditReason.value);
+    return;
+  }
   if (!displayName.value.trim() || !behaviorApiName.value.trim() || !categoryId.value) {
     ElMessage.warning("请完整填写行为名称、行为api名称和行为分类");
     return;
   }
-  if (kind.value === "basic" && (!valueType.value || !basicAction.value)) {
+  if (kind.value === "basic" && !valueType.value) {
+    ElMessage.warning("请选择行为类型");
+    return;
+  }
+  if (kind.value === "basic" && valueType.value !== "basicFunctionOperator" && !basicAction.value) {
     ElMessage.warning("请完整填写行为类型和基础操作");
     return;
+  }
+  if (showBasicFunctionOperatorSection.value) {
+    if (!functionOperatorId.value) {
+      ElMessage.warning("请选择函数基础算子");
+      return;
+    }
+    if (operatorDetailLoading.value) {
+      ElMessage.warning("函数详情加载中，请稍候");
+      return;
+    }
+    if (operatorDetailError.value) {
+      ElMessage.warning(operatorDetailError.value);
+      return;
+    }
+    if (!ontologyIdentifier.value.trim()) {
+      ElMessage.warning("请选择对象");
+      return;
+    }
+    const missingBinding = operatorBindingKeys.value.find((key) => !(operatorParamBindings.value[key] ?? "").trim());
+    if (missingBinding) {
+      ElMessage.warning(`请为参数 ${missingBinding} 选择对象属性`);
+      return;
+    }
   }
   if (showAttributeValueObjectSection.value) {
     if (!ontologyIdentifier.value.trim()) {
@@ -778,12 +1141,8 @@ function submitBehaviorForm(action: "save" | "copy"): void {
     return;
   }
   submitLoading.value = true;
-  const nextStatus = action === "copy" || props.mode === "create" ? "draft" : status.value;
+  const nextStatus = props.mode === "create" ? "draft" : status.value;
   const draft = buildBehaviorDraft(nextStatus);
-  if (action === "copy") {
-    emit("save-copy", draft);
-    return;
-  }
   emit("submit", draft);
 }
 
@@ -908,12 +1267,20 @@ function mapFunctionOperator(item: GetOntologyFunctionListItem): SpaceBehaviorOp
 watch(
   () => props.modelValue,
   (visible) => {
-    if (!visible) return;
+    if (!visible) {
+      detailLoadToken += 1;
+      detailLoading.value = false;
+      detailError.value = "";
+      unsupportedEditReason.value = "";
+      return;
+    }
     void loadOperatorCatalog();
     void loadObjectOptions();
     submitLoading.value = false;
     clearObjectInfoSelection();
     clearRelationSelection();
+    detailError.value = "";
+    unsupportedEditReason.value = "";
     if (props.behavior) {
       kind.value = props.behavior.kind;
       valueType.value = props.behavior.valueType;
@@ -921,12 +1288,19 @@ watch(
       behaviorApiName.value = props.behavior.behaviorApiName;
       functionOperatorId.value = props.behavior.functionOperatorId;
       functionOperatorName.value = props.behavior.functionOperatorName;
+      functionOperatorVersion.value = props.behavior.functionOperatorVersion;
+      operatorBindingKeys.value = [];
+      operatorParamBindings.value = {};
+      operatorParamIds.value = {};
+      operatorDetailError.value = "";
+      operatorPropertyOptions.value = [];
+      operatorPropertyError.value = "";
       description.value = props.behavior.description;
       categoryId.value = props.behavior.categoryId;
       status.value = props.behavior.status;
       basicAction.value = props.behavior.basicAction;
-      if (kind.value === "basic" && valueType.value === "relationInstance") {
-        void loadRelationRows();
+      if (props.mode === "edit") {
+        void loadActionInfoForEdit();
       }
       return;
     }
@@ -1009,6 +1383,12 @@ defineExpose({
 
 .behavior-form-dialog__link-mapping {
   margin-top: 16px;
+}
+
+.behavior-form-dialog__param-state {
+  margin: 0 0 12px;
+  color: var(--aircas-color-text-secondary);
+  font-size: 13px;
 }
 
 .behavior-form-dialog__visibility-windows {

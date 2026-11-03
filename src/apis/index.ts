@@ -5,7 +5,12 @@ import {
   getActionCategoryTreeInterface,
   updateActionCategoryInterface,
 } from "./actionCategoryApi";
-import { getListOntologyActionInterface, postCreateOntologyActionInterface } from "./ontologyActionApi";
+import {
+  getListOntologyActionInterface,
+  getOntologyActionInfoInterface,
+  postCreateOntologyActionInterface,
+  putEditOntologyActionInterface,
+} from "./ontologyActionApi";
 import { getExampleInterface } from "./exampleApi";
 import {
   deleteFunctionRateLimitTemplateInterface,
@@ -128,7 +133,9 @@ export {
   createActionCategoryInterface,
   deleteActionCategoryInterface,
   getListOntologyActionInterface,
+  getOntologyActionInfoInterface,
   postCreateOntologyActionInterface,
+  putEditOntologyActionInterface,
   createOntologyFunctionInterface,
   createOntologySpaceInterface,
   createOntologySpaceWithCanvasContentInterface,

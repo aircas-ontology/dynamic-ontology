@@ -6,6 +6,7 @@ import {
   getActionCategoryTreeInterface,
   getListOntologyActionInterface,
   postCreateOntologyActionInterface,
+  putEditOntologyActionInterface,
   updateActionCategoryInterface,
 } from "@/apis";
 import type {
@@ -23,6 +24,7 @@ import {
   deleteSpaceBehaviorMock,
   updateSpaceBehaviorMock,
 } from "@/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock";
+import { buildBasicOperatorCreateActionParams, isBasicOperatorActionCreateDraft } from "../utils/buildBasicOperatorCreateActionParams";
 import { buildLinkCreateActionParams, isLinkActionCreateDraft } from "../utils/buildLinkCreateActionParams";
 import { buildPropertyValueCreateActionParams, isPropertyValueActionCreateDraft } from "../utils/buildPropertyValueCreateActionParams";
 import { mapActionCategoryTree } from "../utils/mapActionCategoryTree";
@@ -329,8 +331,15 @@ export function useSpaceBehaviorWorkspace() {
     const useRemotePropertyValueAction = options.useRemotePropertyValueAction !== false;
     actionLoading.value = true;
     try {
-      if (useRemotePropertyValueAction && (isPropertyValueActionCreateDraft(draft) || isLinkActionCreateDraft(draft))) {
-        const params = isLinkActionCreateDraft(draft) ? buildLinkCreateActionParams(draft) : buildPropertyValueCreateActionParams(draft);
+      if (
+        useRemotePropertyValueAction &&
+        (isPropertyValueActionCreateDraft(draft) || isLinkActionCreateDraft(draft) || isBasicOperatorActionCreateDraft(draft))
+      ) {
+        const params = isBasicOperatorActionCreateDraft(draft)
+          ? buildBasicOperatorCreateActionParams(draft)
+          : isLinkActionCreateDraft(draft)
+            ? buildLinkCreateActionParams(draft)
+            : buildPropertyValueCreateActionParams(draft);
         if ("error" in params) {
           return { ok: false, message: params.error };
         }
@@ -353,18 +362,37 @@ export function useSpaceBehaviorWorkspace() {
   }
 
   /**
-   * @description 更新行为。
+   * @description 更新行为；属性值 / 关系实例 / 基础算子走 PUT /ontology/action，其余仅写本地 Mock。
    * @param behaviorId 行为 id。
    * @param draft 行为草稿。
-   * @returns 是否成功。
+   * @returns 更新结果。
    */
-  function updateBehavior(behaviorId: string, draft: SpaceBehaviorDraft): boolean {
+  async function updateBehavior(behaviorId: string, draft: SpaceBehaviorDraft): Promise<{ ok: boolean; message: string; item?: SpaceBehaviorItem }> {
     actionLoading.value = true;
     try {
+      if (isPropertyValueActionCreateDraft(draft) || isLinkActionCreateDraft(draft) || isBasicOperatorActionCreateDraft(draft)) {
+        const params = isBasicOperatorActionCreateDraft(draft)
+          ? buildBasicOperatorCreateActionParams(draft)
+          : isLinkActionCreateDraft(draft)
+            ? buildLinkCreateActionParams(draft)
+            : buildPropertyValueCreateActionParams(draft);
+        if ("error" in params) {
+          return { ok: false, message: params.error };
+        }
+        const response = await putEditOntologyActionInterface(params);
+        if (response.code !== 200) {
+          return { ok: false, message: response.message || "行为保存失败" };
+        }
+        const updated = updateSpaceBehaviorMock(spaceId.value, behaviorId, draft);
+        await loadSpaceBehaviorWorkspace();
+        return { ok: true, message: "", item: updated ?? undefined };
+      }
       const updated = updateSpaceBehaviorMock(spaceId.value, behaviorId, draft);
-      if (!updated) return false;
-      void loadSpaceBehaviorList();
-      return true;
+      if (!updated) return { ok: false, message: "行为保存失败" };
+      await loadSpaceBehaviorList();
+      return { ok: true, message: "", item: updated };
+    } catch (error) {
+      return { ok: false, message: error instanceof Error && error.message.trim() ? error.message : "行为保存失败" };
     } finally {
       actionLoading.value = false;
     }

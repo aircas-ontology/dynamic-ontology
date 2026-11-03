@@ -30,6 +30,11 @@ import {
   isPropertyValueActionCreateDraft,
 } from "../src/views/SpaceBehaviorWorkspace/utils/buildPropertyValueCreateActionParams.ts";
 import { buildLinkCreateActionParams, isLinkActionCreateDraft } from "../src/views/SpaceBehaviorWorkspace/utils/buildLinkCreateActionParams.ts";
+import {
+  buildBasicOperatorCreateActionParams,
+  isBasicOperatorActionCreateDraft,
+} from "../src/views/SpaceBehaviorWorkspace/utils/buildBasicOperatorCreateActionParams.ts";
+import { mapOntologyActionInfoToFormState } from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyActionInfoToFormState.ts";
 
 /**
  * @description 读取相对 tests 目录的源文件文本。
@@ -255,8 +260,10 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
 
   assert.match(formSource, /创建行为/);
   assert.match(formSource, /el-alert/);
-  assert.match(formSource, /另存为独立草稿副本/);
-  assert.match(formSource, /已停用行为为只读/);
+  assert.match(formSource, /getOntologyActionInfoInterface/);
+  assert.match(formSource, /mapOntologyActionInfoToFormState/);
+  assert.match(formSource, /loadActionInfoForEdit/);
+  assert.match(formSource, /已失效行为为只读/);
   assert.match(formSource, /基本信息/);
   assert.match(formSource, /类别/);
   assert.match(formSource, /SPACE_BEHAVIOR_KIND_OPTIONS/);
@@ -289,12 +296,18 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   );
   assert.match(formSource, /showRelationInstanceSection/);
   assert.match(formSource, /showRelationInstanceSection = computed\(\(\) => kind\.value === ['"]basic['"] && valueType\.value === ['"]relationInstance['"]\)/);
+  assert.match(formSource, /showBasicFunctionOperatorSection/);
   assert.match(formSource, /showRelationLinkMappingSection/);
   assert.match(formSource, /basicAction\.value === ['"]create['"] \|\| basicAction\.value === ['"]update['"]/);
   assert.match(formSource, /对象信息/);
   assert.match(formSource, /属性选择/);
   assert.match(formSource, /关系选择/);
   assert.match(formSource, /从当前空间关系中单选一条/);
+  assert.match(formSource, /函数基础算子/);
+  assert.match(formSource, /参数配置/);
+  assert.match(formSource, /getOntologyFunctionDetailInterface/);
+  assert.match(formSource, /buildOntologyFunctionTestBindingKeys/);
+  assert.match(formSource, /getOntologyPropertyByOntologyIdInterface/);
   assert.match(formSource, /getOntologyRelationCategoryTreeInterface/);
   assert.match(formSource, /mapOntologyRelationLinks/);
   assert.match(formSource, /请选择一条关系/);
@@ -306,6 +319,10 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /selectedRelationId: selectedRelationId\.value\.trim\(\)/);
   assert.match(formSource, /relationTargetStatus:/);
   assert.match(formSource, /relationVisibilityWindows:/);
+  assert.match(formSource, /functionOperatorVersion:/);
+  assert.match(formSource, /operatorParamBindings:/);
+  assert.match(formSource, /operatorParamIds:/);
+  assert.match(formSource, /buildOntologyFunctionTestBindingParamIds/);
   assert.match(formSource, /attributeSelectionHint/);
   assert.match(formSource, /resolveAttributeValueSelection/);
   assert.match(formSource, /getOntologyCategoryTreeInterface/);
@@ -326,8 +343,13 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(workspaceComposable, /isPropertyValueActionCreateDraft/);
   assert.match(workspaceComposable, /buildLinkCreateActionParams/);
   assert.match(workspaceComposable, /isLinkActionCreateDraft/);
+  assert.match(workspaceComposable, /buildBasicOperatorCreateActionParams/);
+  assert.match(workspaceComposable, /isBasicOperatorActionCreateDraft/);
+  assert.match(workspaceComposable, /putEditOntologyActionInterface/);
   assert.match(workspaceIndex, /await createBehavior/);
+  assert.match(workspaceIndex, /await updateBehavior/);
   assert.match(workspaceIndex, /useRemotePropertyValueAction: false/);
+  assert.doesNotMatch(formSource, /另存草稿副本/);
   assert.match(formSource, /sourceOntologyId/);
   assert.match(formSource, /新增值/);
   assert.match(formSource, /修改值/);
@@ -339,7 +361,6 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /构建行为树/);
   assert.match(formSource, /行为树构建后续接入/);
   assert.match(formSource, /保存行为/);
-  assert.match(formSource, /另存草稿副本/);
   assert.match(formSource, /min\(1120px, 94vw\)/);
   assert.doesNotMatch(formSource, /基本信息 \/ 输入参数 \/ 输出参数/);
   assert.doesNotMatch(formSource, /变更信息/);
@@ -353,6 +374,9 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(typeSource, /selectedPropertyValues: Record<string, string>/);
   assert.match(typeSource, /selectedPropertyApiNames: Record<string, string>/);
   assert.match(typeSource, /storageGroup: string/);
+  assert.match(typeSource, /functionOperatorVersion: string/);
+  assert.match(typeSource, /operatorParamBindings: Record<string, string>/);
+  assert.match(typeSource, /operatorParamIds: Record<string, number>/);
   assert.match(typeSource, /selectedRelationId: string/);
   assert.match(typeSource, /relationTargetStatus: SpaceBehaviorRelationTargetStatus \| ""/);
   assert.match(typeSource, /relationVisibilityWindows: SpaceBehaviorRelationVisibilityWindow\[\]/);
@@ -472,15 +496,21 @@ test("space behavior mock filters by category and supports local create", () => 
     valueType: "attributeValue",
     functionOperatorId: "operator-create-cvn",
     functionOperatorName: "新增福特级航空母舰(CVN)基础操作",
+    functionOperatorVersion: "",
     description: "测试创建",
     categoryId: childId || ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
     status: "draft",
     basicAction: "create",
     ontologyIdentifier: "ontology-test-1",
+    operatorParamBindings: {},
+    operatorParamIds: {},
     selectedPropertyIds: ["prop-1"],
     selectedPropertyValues: { "prop-1": "demo" },
     selectedPropertyApiNames: { "prop-1": "hull" },
     storageGroup: "test",
+    selectedRelationId: "",
+    relationTargetStatus: "",
+    relationVisibilityWindows: [],
   });
   assert.equal(created.displayName, "单元测试行为");
   assert.equal(created.objectName.length > 0, true);
@@ -528,11 +558,14 @@ test("space behavior builds property-value createAction params for create update
     valueType: "attributeValue",
     functionOperatorId: "",
     functionOperatorName: "",
+    functionOperatorVersion: "",
     description: "desc",
     categoryId: "14",
     status: "draft",
     basicAction: "create",
     ontologyIdentifier: "onto-1",
+    operatorParamBindings: {},
+    operatorParamIds: {},
     selectedPropertyIds: ["p1", "p2"],
     selectedPropertyValues: { p1: "120.5", p2: "" },
     selectedPropertyApiNames: { p1: "w_range", p2: "w_name" },
@@ -600,11 +633,14 @@ test("space behavior builds link createAction params for create update and delet
     valueType: "relationInstance",
     functionOperatorId: "",
     functionOperatorName: "",
+    functionOperatorVersion: "",
     description: "desc",
     categoryId: "14",
     status: "draft",
     basicAction: "create",
     ontologyIdentifier: "onto-from",
+    operatorParamBindings: {},
+    operatorParamIds: {},
     selectedPropertyIds: [],
     selectedPropertyValues: {},
     selectedPropertyApiNames: {},
@@ -677,6 +713,199 @@ test("space behavior builds link createAction params for create update and delet
   assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, relationTargetStatus: "" }), true);
   assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, relationVisibilityWindows: [] }), true);
   assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, basicAction: "update", relationTargetStatus: "" }), true);
+});
+
+test("space behavior maps action info detail into edit form state", () => {
+  const propertyState = mapOntologyActionInfoToFormState({
+    id: 1,
+    actionApi: "act.pv.weapon.add",
+    displayName: "武器行-新增",
+    description: "desc",
+    ontologyUniqIdentifier: "onto-1",
+    categoryId: 14,
+    status: 1,
+    actionKind: "BASE",
+    subjectType: "PROPERTY_VALUE",
+    operation: "CREATE",
+    storageGroup: "weapon",
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: null,
+    mappingIns: [
+      {
+        propertyUniqueIdentifier: "p1",
+        ontologyUniqueIdentifier: "onto-1",
+        parameterName: "w_range",
+        sourceType: "FIXED",
+        sourceConfig: "120.5",
+      },
+    ],
+    functionParams: [],
+  });
+  assert.equal(propertyState.valueType, "attributeValue");
+  assert.equal(propertyState.basicAction, "create");
+  assert.equal(propertyState.ontologyIdentifier, "onto-1");
+  assert.deepEqual(propertyState.selectedPropertyIds, ["p1"]);
+  assert.equal(propertyState.selectedPropertyValues.p1, "120.5");
+  assert.equal(propertyState.selectedPropertyApiNames.p1, "w_range");
+  assert.equal(propertyState.unsupportedEditReason, "");
+
+  const linkState = mapOntologyActionInfoToFormState({
+    id: 2,
+    actionApi: "act.lk.carry.create",
+    displayName: "搭载关系",
+    description: "",
+    ontologyUniqIdentifier: "onto-from",
+    categoryId: 14,
+    status: 1,
+    actionKind: "BASE",
+    subjectType: "LINK",
+    operation: "UPDATE",
+    storageGroup: null,
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: {
+      ontologyLinkUniqIdentifier: "link-1",
+      targetStatus: "ENABLE",
+      visibilityWindows: [{ startTime: 10, endTime: 20 }],
+    },
+    mappingIns: [],
+    functionParams: [],
+  });
+  assert.equal(linkState.valueType, "relationInstance");
+  assert.equal(linkState.basicAction, "update");
+  assert.equal(linkState.selectedRelationId, "link-1");
+  assert.equal(linkState.relationTargetStatus, "ENABLE");
+  assert.deepEqual(linkState.relationVisibilityWindows, [{ startTime: 10, endTime: 20 }]);
+
+  const operatorState = mapOntologyActionInfoToFormState({
+    id: 3,
+    actionApi: "act.bo.aircraft",
+    displayName: "基础算子",
+    description: "",
+    ontologyUniqIdentifier: "onto-1",
+    categoryId: 14,
+    status: 0,
+    actionKind: "BASE",
+    subjectType: "BASIC_OPERATOR",
+    operation: null,
+    storageGroup: null,
+    functionApi: "act.bq.aircraft",
+    functionDescription: "查飞机",
+    outputMode: "RESULT_ONLY",
+    linkMapping: null,
+    mappingIns: [
+      {
+        functionParamId: 2292,
+        parameterName: "nm",
+        sourceType: "FIXED",
+        sourceConfig: "name",
+      },
+    ],
+    functionParams: [],
+  });
+  assert.equal(operatorState.valueType, "basicFunctionOperator");
+  assert.equal(operatorState.status, "disabled");
+  assert.equal(operatorState.functionOperatorId, "act.bq.aircraft");
+  assert.equal(operatorState.operatorParamBindings.nm, "name");
+  assert.equal(operatorState.operatorParamIds.nm, 2292);
+
+  const applicationState = mapOntologyActionInfoToFormState({
+    id: 8,
+    actionApi: "act.ap.obj.nested",
+    displayName: "应用行为",
+    description: "",
+    ontologyUniqIdentifier: "onto-1",
+    categoryId: 14,
+    status: 1,
+    actionKind: "APPLICATION",
+    subjectType: null,
+    operation: null,
+    storageGroup: null,
+    functionApi: "act.fn.obj",
+    functionDescription: "OBJECT",
+    outputMode: "RESULT_ONLY",
+    linkMapping: null,
+    mappingIns: [],
+    functionParams: [],
+  });
+  assert.equal(applicationState.kind, "application");
+  assert.match(applicationState.unsupportedEditReason, /应用行为/);
+});
+
+test("space behavior builds basic-operator createAction params with FIXED apiName bindings", () => {
+  const baseDraft = {
+    displayName: "基础算子-查飞机",
+    behaviorApiName: "act.bo.aircraft",
+    kind: "basic",
+    valueType: "basicFunctionOperator",
+    functionOperatorId: "act.bq.aircraft",
+    functionOperatorName: "查飞机",
+    functionOperatorVersion: "1.0.0",
+    description: "基础算子行为：绑定 BASIC_QUERY",
+    categoryId: "14",
+    status: "draft",
+    basicAction: "create",
+    ontologyIdentifier: "ea512d439cd34c6ebbcde6b692261ab5",
+    operatorParamBindings: { nm: "name" },
+    operatorParamIds: { nm: 2292 },
+    selectedPropertyIds: [],
+    selectedPropertyValues: {},
+    selectedPropertyApiNames: {},
+    storageGroup: "",
+    selectedRelationId: "",
+    relationTargetStatus: "",
+    relationVisibilityWindows: [],
+  };
+  assert.equal(isBasicOperatorActionCreateDraft(baseDraft), true);
+  assert.equal(isPropertyValueActionCreateDraft(baseDraft), false);
+  assert.equal(isLinkActionCreateDraft(baseDraft), false);
+
+  const created = buildBasicOperatorCreateActionParams(baseDraft);
+  assert.equal("error" in created, false);
+  if (!("error" in created)) {
+    assert.equal(created.actionKind, "BASE");
+    assert.equal(created.subjectType, "BASIC_OPERATOR");
+    assert.equal(created.functionApi, "act.bq.aircraft");
+    assert.equal(created.outputMode, "RESULT_ONLY");
+    assert.equal(created.categoryId, 14);
+    assert.equal(created.ontologyIdentifier, "ea512d439cd34c6ebbcde6b692261ab5");
+    assert.equal("operation" in created, false);
+    assert.equal("storageGroup" in created, false);
+    assert.equal("linkMapping" in created, false);
+    assert.deepEqual(created.mappingIns, [
+      {
+        functionParamId: 2292,
+        parameterName: "nm",
+        sourceType: "FIXED",
+        sourceConfig: "name",
+      },
+    ]);
+  }
+
+  const withoutBindings = buildBasicOperatorCreateActionParams({
+    ...baseDraft,
+    operatorParamBindings: {},
+    operatorParamIds: {},
+    description: "  ",
+  });
+  assert.equal("error" in withoutBindings, false);
+  if (!("error" in withoutBindings)) {
+    assert.equal("mappingIns" in withoutBindings, false);
+    assert.equal("description" in withoutBindings, false);
+  }
+
+  assert.equal(isBasicOperatorActionCreateDraft({ ...baseDraft, kind: "application" }), false);
+  assert.equal(isBasicOperatorActionCreateDraft({ ...baseDraft, valueType: "attributeValue" }), false);
+  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, categoryId: "behavior-root" }), true);
+  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, ontologyIdentifier: "  " }), true);
+  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, behaviorApiName: "" }), true);
+  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, displayName: " " }), true);
+  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, functionOperatorId: "" }), true);
+  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, operatorParamBindings: { nm: "  " } }), true);
+  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, operatorParamIds: {} }), true);
 });
 
 test("space behavior sorts attribute rows by storage group while keeping relative order", () => {

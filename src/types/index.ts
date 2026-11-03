@@ -36,11 +36,21 @@ export type {
   CreateOntologyActionLinkMapping,
   CreateOntologyActionMappingIn,
   CreateOntologyActionOperation,
+  CreateOntologyActionOutputMode,
   CreateOntologyActionParams,
   CreateOntologyActionSourceType,
   CreateOntologyActionSubjectType,
   CreateOntologyActionVisibilityWindow,
+  EditOntologyActionData,
+  EditOntologyActionParams,
 } from "./apis/createOntologyActionType";
+export type {
+  GetOntologyActionInfoData,
+  GetOntologyActionInfoFunctionParam,
+  GetOntologyActionInfoLinkMapping,
+  GetOntologyActionInfoMappingIn,
+  GetOntologyActionInfoParams,
+} from "./apis/getOntologyActionInfoType";
 export type {
   CreateOntologyFunctionContainerConfig,
   CreateOntologyFunctionContainerData,
