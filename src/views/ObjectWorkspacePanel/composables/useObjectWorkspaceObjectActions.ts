@@ -1,13 +1,22 @@
 import { computed, ref, type Ref } from "vue";
 import { ElMessage } from "element-plus";
 import {
+  postBuildObjectFromDatasourceInterface,
   createOntologyObjectInterface,
   deleteOntologyObjectInterface,
   getExportOntologyInterface,
   postImportOntologiesInterface,
   updateOntologyObjectInterface,
 } from "@/apis";
-import type { OntologyExportType, OntologyObjectCreateDraft, OntologyObjectItem, OntologyObjectWorkspace } from "@/types";
+import type {
+  BuildObjectFromDatasourceForeignKey,
+  BuildObjectFromDatasourceParams,
+  OntologyExportType,
+  OntologyObjectCreateDraft,
+  OntologyObjectItem,
+  OntologyObjectWorkspace,
+  DatasourceBuildSelection,
+} from "@/types";
 import { downloadOntologyFile } from "../utils/downloadOntologyFile";
 import { collectCategoryOptions } from "../utils/objectWorkspace";
 import { resolveExportOntologyFileName } from "../utils/resolveExportOntologyFileName";
@@ -127,6 +136,66 @@ export function useObjectWorkspaceObjectActions(options: {
       await load();
     } catch (cause) {
       objectCreateError.value = cause instanceof Error && cause.message.trim() ? cause.message : "对象创建失败，请重试。";
+    } finally {
+      objectCreateSubmitting.value = false;
+    }
+  }
+
+  /**
+   * @description 将数据源向导选择转换为后端构建对象请求并刷新对象工作区。
+   * @param selection 数据源向导的表、字段和外键选择。
+   * @param draft 数据源构建生成的对象草稿。
+   */
+  async function createOntologyObjectFromDatasource(selection: DatasourceBuildSelection, draft: OntologyObjectCreateDraft): Promise<void> {
+    if (objectCreateSubmitting.value) return;
+    const numericSpaceId = Number(spaceId.value.trim());
+    const numericCategoryId = Number(draft.categoryId);
+    if (!Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId)) {
+      objectCreateError.value = "缺少有效的空间或分类 id，无法构建对象。";
+      return;
+    }
+    const tableById = new Map(selection.selectedTables.map((table) => [table.id, table]));
+    const tables = selection.selectedTableIds.map((tableId) => {
+      const table = tableById.get(tableId);
+      const selectedFieldIds = new Set(selection.fieldIdsByTable[tableId] ?? []);
+      return {
+        tableName: table?.name ?? tableId,
+        master: tableId === selection.primaryTableId,
+        columns: (table?.fields ?? []).filter((field) => selectedFieldIds.has(field.id)).map((field) => ({ columnName: field.name, displayName: field.name })),
+      };
+    });
+    const foreignKeys: BuildObjectFromDatasourceForeignKey[] = Object.entries(selection.foreignKeys).map(([childTableId, relation]) => {
+      const childTable = tableById.get(childTableId);
+      const masterTable = tableById.get(selection.primaryTableId);
+      const childColumn = childTable?.fields.find((field) => field.id === relation.childFieldId)?.name ?? relation.childFieldId;
+      const masterColumn = masterTable?.fields.find((field) => field.id === relation.parentFieldId)?.name ?? relation.parentFieldId;
+      return {
+        childTable: childTable?.name ?? childTableId,
+        childColumn,
+        masterTable: masterTable?.name ?? selection.primaryTableId,
+        masterColumn,
+      };
+    });
+    const payload: BuildObjectFromDatasourceParams = {
+      spaceId: numericSpaceId,
+      categoryId: numericCategoryId,
+      displayName: draft.displayName,
+      apiName: draft.apiName,
+      description: draft.description,
+      datasourceId: selection.datasourceId,
+      tables,
+      ...(foreignKeys.length ? { foreignKeys } : {}),
+    };
+    objectCreateSubmitting.value = true;
+    objectCreateError.value = "";
+    try {
+      const response = await postBuildObjectFromDatasourceInterface(payload);
+      if (response.code !== 200) throw new Error(response.message || "数据源构建对象失败");
+      objectCreateVisible.value = false;
+      ElMessage.success(response.data?.message || "对象构建成功");
+      await load();
+    } catch (cause) {
+      objectCreateError.value = cause instanceof Error && cause.message.trim() ? cause.message : "数据源构建对象失败，请重试。";
     } finally {
       objectCreateSubmitting.value = false;
     }
@@ -268,6 +337,7 @@ export function useObjectWorkspaceObjectActions(options: {
     openOntologyObjectDeleteDialog,
     importOntologyObjects,
     createOntologyObject,
+    createOntologyObjectFromDatasource,
     updateOntologyObject,
     confirmDeleteOntologyObject,
     openOntologyObjectExportDialog,

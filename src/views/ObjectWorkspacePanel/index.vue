@@ -8,6 +8,8 @@
     <div v-else class="object-workspace-panel__layout">
       <ConceptHierarchyTree
         :tree="workspaceTree"
+        :objects="workspaceObjects"
+        :space-name="spaceDisplayName"
         :selected-node-id="selectedNodeId"
         @select="selectNode"
         @select-object="locateObjectFromTree"
@@ -61,6 +63,7 @@
       @submit-manual="createOntologyObject"
       @submit-import="importOntologyObjects"
       @submit-edit="updateOntologyObject"
+      @submit-datasource="createOntologyObjectFromDatasource"
       @open-llm="openOntologyLlmBuilder"
     />
     <OntologyObjectDeleteDialog
@@ -110,6 +113,7 @@ const { displayName: spaceDisplayName } = storeToRefs(detailStore);
 const { status, error, workspace, load } = useOntologyObjectWorkspace(spaceId);
 const workspaceTree = computed(() => workspace.value?.tree ?? []);
 const workspaceSections = computed(() => workspace.value?.sections ?? []);
+const workspaceObjects = computed(() => workspaceSections.value.flatMap((section) => section.items));
 const categoryActions = useObjectWorkspaceCategoryActions({ spaceId, load });
 const objectActions = useObjectWorkspaceObjectActions({ spaceId, workspace, load, onOpenLlmBuilder: openOntologyLlmBuilderPage });
 const {
@@ -155,6 +159,7 @@ const {
   openOntologyObjectDeleteDialog,
   importOntologyObjects,
   createOntologyObject,
+  createOntologyObjectFromDatasource,
   updateOntologyObject,
   confirmDeleteOntologyObject,
   openOntologyObjectExportDialog,

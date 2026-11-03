@@ -21,7 +21,7 @@
       </el-button>
       <template #dropdown>
         <el-dropdown-menu>
-          <el-dropdown-item v-if="canBuildConceptualModel" command="conceptual-model">概念构建</el-dropdown-item>
+          <el-dropdown-item command="conceptual-model">概念构建</el-dropdown-item>
           <el-dropdown-item command="export">导出</el-dropdown-item>
           <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
         </el-dropdown-menu>
@@ -30,19 +30,16 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed } from "vue";
 import { ArrowDown, Edit, Right } from "@element-plus/icons-vue";
 import type { OntologySpaceAction, OntologySpaceItem } from "@/types";
 const props = defineProps<{ space: OntologySpaceItem; gradient?: boolean }>();
 const emit = defineEmits<{ action: [action: OntologySpaceAction, space: OntologySpaceItem] }>();
-const canBuildConceptualModel = computed(() => props.space.metrics.ontology === 0);
 /**
- * @description 将下拉命令转成空间运维动作。对象数量不为 0 时不进入概念构建。
+ * @description 将下拉命令转成空间运维动作。
  * @param value 下拉菜单提交的未知命令。
  */
 function command(value: unknown) {
   if (value === "conceptual-model") {
-    if (!canBuildConceptualModel.value) return;
     emit("action", value, props.space);
     return;
   }

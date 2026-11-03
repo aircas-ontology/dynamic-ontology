@@ -42,6 +42,15 @@ import {
   updateOntologyFunctionInterface,
 } from "./functionApi";
 import { postLoginInterface } from "./loginApi";
+import {
+  getDatasourceConnectionDetailInterface,
+  getDatasourceConnectionListInterface,
+  getDatasourceTableColumnsInterface,
+  getDatasourceTableListInterface,
+  postDatasourceConnectionInterface,
+  postDatasourceConnectionTestInterface,
+  postBuildObjectFromDatasourceInterface,
+} from "./datasourceConnectionApi";
 import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
 import { getOntologyApiDocsInterface } from "./ontologyDocApi";
 import { getOntologyEntitiesInterface } from "./ontologyEntityApi";
@@ -98,6 +107,13 @@ import {
 } from "./ontologyPropertyApi";
 
 export {
+  getDatasourceConnectionDetailInterface,
+  getDatasourceConnectionListInterface,
+  getDatasourceTableColumnsInterface,
+  getDatasourceTableListInterface,
+  postDatasourceConnectionInterface,
+  postDatasourceConnectionTestInterface,
+  postBuildObjectFromDatasourceInterface,
   deleteFunctionRateLimitTemplateInterface,
   getListFunctionRateLimitTemplateInterface,
   postCreateFunctionRateLimitTemplateInterface,

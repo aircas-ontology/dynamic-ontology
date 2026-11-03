@@ -210,6 +210,11 @@
     "file": "fixtures/ontology/datasource/table.get.json"
   },
   {
+    "method": "POST",
+    "path": "/ontology/datasource/build_object",
+    "file": "fixtures/ontology/datasource/buildObject.post.json"
+  },
+  {
     "method": "GET",
     "path": "/ontology/datasource/column",
     "file": "fixtures/ontology/datasource/column.get.json"

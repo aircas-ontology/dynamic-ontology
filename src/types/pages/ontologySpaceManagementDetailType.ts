@@ -30,6 +30,7 @@ export interface OntologyObjectItem {
   displayName: string;
   apiName: string;
   description: string;
+  parentUniqueIdentifier?: string;
   parentDisplayName: string;
   createdAt: string;
   iconUrl: string;

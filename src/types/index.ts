@@ -20,6 +20,13 @@ export type {
   BatchUpdateOntologyPropertyDatasource,
   BatchUpdateOntologyPropertyItem,
 } from "./apis/batchUpdateOntologyPropertiesType";
+export type {
+  BuildObjectFromDatasourceData,
+  BuildObjectFromDatasourceForeignKey,
+  BuildObjectFromDatasourceParams,
+  BuildObjectFromDatasourceSelectedColumn,
+  BuildObjectFromDatasourceSelectedTable,
+} from "./apis/buildObjectFromDatasourceType";
 export type { ActionCategoryNode, CreateActionCategoryParams } from "./apis/createActionCategoryType";
 export type { CreateFunctionOperatorTemplateData, CreateFunctionOperatorTemplateParams } from "./apis/createFunctionOperatorTemplateType";
 export type { CreateFunctionRateLimitTemplateData, CreateFunctionRateLimitTemplateParams } from "./apis/createFunctionRateLimitTemplateType";
@@ -86,6 +93,17 @@ export type {
   OntologySubspacePropertyFilterValue,
   OntologySubspacePropertySelection,
 } from "./apis/createOntologySubspaceType";
+export type {
+  DatasourceColumn,
+  DatasourceConnectionItem,
+  DatasourceConnectionPage,
+  DatasourceConnectionParam,
+  DatasourceForeignKeyCandidate,
+  DatasourceTableDetail,
+  DatasourceTableSummary,
+  ListDatasourceConnectionsParams,
+  ListDatasourceTableColumnsParams,
+} from "./apis/datasourceConnectionType";
 export type { DeleteActionCategoryParams } from "./apis/deleteActionCategoryType";
 export type { DeleteFunctionOperatorTemplateParams } from "./apis/deleteFunctionOperatorTemplateType";
 export type { DeleteFunctionRateLimitTemplateParams } from "./apis/deleteFunctionRateLimitTemplateType";
@@ -279,6 +297,7 @@ export type {
   ConceptualModelSelectedAttribute,
   ConceptualModelSelection,
 } from "./pages/ontologyConceptualModelCreateType";
+export type { DatasourceBuildSelection, DatasourceConnection, DatasourceDbType, DatasourceField, DatasourceTable } from "./pages/datasourceBuildType";
 export { BASIC_FILTER_LOGIC_OPTIONS, BASIC_FILTER_OP_OPTIONS, BASIC_FILTER_VALUE_TYPE_OPTIONS } from "./pages/ontologyFunctionOperatorBasicFilterType";
 export type {
   BasicFilterCondition,
@@ -433,8 +452,8 @@ export type {
   ManagementWorkspaceTab,
   OntologyConceptNode,
   OntologyConceptObjectRef,
-  OntologyObjectItem,
   OntologyObjectCreateDraft,
+  OntologyObjectItem,
   OntologyObjectLocationTarget,
   OntologyObjectMetrics,
   OntologyObjectSection,
