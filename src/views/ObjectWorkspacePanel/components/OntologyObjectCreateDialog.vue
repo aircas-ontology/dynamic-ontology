@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" class="ontology-object-create-dialog" title="新建对象" width="min(720px, 94vw)" append-to-body destroy-on-close>
+  <el-dialog v-model="visible" class="ontology-object-create-dialog" title="新建对象" width="min(860px, 94vw)" append-to-body destroy-on-close>
     <template #header>
       <span>{{ editingItem ? "编辑对象" : "新建对象" }}</span>
     </template>
@@ -104,6 +104,15 @@
       <p v-if="importError" class="ontology-object-create-dialog__error" role="alert">{{ importError }}</p>
     </div>
 
+    <div v-else-if="createMode === 'datasource'" class="ontology-object-create-dialog__datasource-card">
+      <div class="ontology-object-create-dialog__datasource-icon">
+        <el-icon><Upload /></el-icon>
+      </div>
+      <div class="ontology-object-create-dialog__datasource-copy">
+        <strong>数据源构建</strong>
+        <p>连接 MySQL / PostgreSQL，选择主子表与字段映射后，按主表生成本体对象。</p>
+      </div>
+    </div>
     <div v-else class="ontology-object-create-dialog__panel ontology-object-create-dialog__panel--llm">
       <el-icon><MagicStick /></el-icon>
       <div>
@@ -116,22 +125,26 @@
     <p v-if="error" class="ontology-object-create-dialog__error" role="alert">{{ error }}</p>
     <template #footer>
       <el-button :disabled="submitting" data-onboarding="object-create-cancel" @click="visible = false">取消</el-button>
+      <el-button v-if="createMode === 'datasource'" type="primary" @click="openDatasourceBuild">进入数据源构建</el-button>
       <el-button v-if="createMode === 'llm'" type="primary" :disabled="submitting" @click="emit('open-llm')">进入大模型构建</el-button>
-      <el-button v-else type="primary" data-onboarding="object-create-confirm" :loading="submitting" @click="submitCreate">{{
+      <el-button v-else-if="createMode !== 'datasource'" type="primary" data-onboarding="object-create-confirm" :loading="submitting" @click="submitCreate">{{
         editingItem ? "保存修改" : "确认创建"
       }}</el-button>
     </template>
   </el-dialog>
+  <DatasourceBuildDialog v-model="datasourceVisible" @submit="handleDatasourceSubmit" />
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue";
-import { MagicStick, UploadFilled, Plus, Upload } from "@element-plus/icons-vue";
+import { MagicStick, UploadFilled, Plus, Upload, Grid } from "@element-plus/icons-vue";
 import type { UploadFile } from "element-plus";
 
 import { postUploadOntologyThumbnailInterface } from "@/apis";
 import ontologyImportTemplate from "@/assets/pages/ontologyObjectCreate/ontologyImportTemplate.json";
 import type { OntologyConceptNode, OntologyObjectCreateDraft, OntologyObjectItem } from "@/types";
+import type { DatasourceBuildSelection } from "@/types";
+import DatasourceBuildDialog from "./DatasourceBuildDialog.vue";
 
 interface CategoryTreeOption {
   id: string;
@@ -144,7 +157,7 @@ interface ParentOption {
   apiName: string;
   categoryId: string;
 }
-type CreateMode = "manual" | "import" | "llm";
+type CreateMode = "manual" | "import" | "datasource" | "llm";
 
 const visible = defineModel<boolean>({ required: true });
 const props = defineProps<{
@@ -158,14 +171,17 @@ const emit = defineEmits<{
   "submit-manual": [draft: OntologyObjectCreateDraft];
   "submit-import": [file: File];
   "submit-edit": [draft: OntologyObjectCreateDraft];
+  "submit-datasource": [selection: DatasourceBuildSelection, draft: OntologyObjectCreateDraft];
   "open-llm": [];
 }>();
 const modes = [
   { value: "manual" as const, label: "手动创建", hint: "表单填写并可继承", icon: Plus },
   { value: "import" as const, label: "导入创建", hint: "JSON 批量导入", icon: Upload },
+  { value: "datasource" as const, label: "数据源构建", hint: "从数据表构建对象", icon: Grid },
   { value: "llm" as const, label: "大模型构建", hint: "智能助手流程", icon: MagicStick },
 ];
 const createMode = ref<CreateMode>("manual");
+const datasourceVisible = ref(false);
 const draft = reactive<OntologyObjectCreateDraft>({ apiName: "", displayName: "", description: "", iconUrl: "", categoryId: "", parentId: undefined });
 const importFile = ref<File | null>(null);
 const importError = ref("");
@@ -205,6 +221,7 @@ watch(
 watch([visible, () => props.editingItem], ([opened, editingItem]) => {
   if (!opened) return;
   createMode.value = "manual";
+  datasourceVisible.value = false;
   draft.apiName = editingItem?.apiName ?? "";
   draft.displayName = editingItem?.displayName ?? "";
   draft.description = editingItem?.description ?? "";
@@ -231,6 +248,23 @@ function selectCreateMode(mode: CreateMode) {
   validationError.value = "";
   importFile.value = null;
   importError.value = "";
+  if (mode !== "datasource") datasourceVisible.value = false;
+}
+
+/** @description 关闭对象创建弹窗并打开数据源构建弹窗。 */
+function openDatasourceBuild(): void {
+  visible.value = false;
+  datasourceVisible.value = true;
+}
+
+/** @description 将数据源构建结果转换为现有对象创建草稿。 */
+function handleDatasourceSubmit(selection: DatasourceBuildSelection): void {
+  const primaryTable = selection.selectedTables.find((table) => table.id === selection.primaryTableId);
+  const name = (primaryTable?.storageName || primaryTable?.name || selection.primaryTableId).replace(/-/g, "_");
+  draft.apiName = name;
+  draft.displayName = name;
+  draft.description = "由数据源构建生成";
+  emit("submit-datasource", selection, { ...draft });
 }
 
 /**
@@ -330,9 +364,44 @@ function submitCreate() {
 <style scoped lang="scss">
 .ontology-object-create-dialog__modes {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 16px;
+}
+.ontology-object-create-dialog__datasource-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 132px;
+  padding: 22px;
+  border: 1px solid var(--aircas-color-effect-primary-border);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--aircas-color-panel-background-deep), var(--aircas-color-card-background));
+}
+.ontology-object-create-dialog__datasource-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  place-items: center;
+  border: 1px solid var(--aircas-color-primary);
+  border-radius: 8px;
+  color: var(--aircas-color-primary);
+  font-size: 28px;
+}
+.ontology-object-create-dialog__datasource-copy {
+  flex: 1;
+  min-width: 0;
+}
+.ontology-object-create-dialog__datasource-copy strong {
+  color: var(--aircas-color-primary);
+  font-size: 16px;
+}
+.ontology-object-create-dialog__datasource-copy p {
+  margin: 8px 0 0;
+  color: var(--aircas-color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
 }
 .ontology-object-create-dialog__mode {
   display: flex;
@@ -464,6 +533,10 @@ function submitCreate() {
   .ontology-object-create-dialog__modes,
   .ontology-object-create-dialog__grid {
     grid-template-columns: 1fr;
+  }
+  .ontology-object-create-dialog__datasource-card {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>

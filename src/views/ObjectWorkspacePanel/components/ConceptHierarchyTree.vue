@@ -1,16 +1,20 @@
 <template>
-  <aside class="concept-hierarchy" aria-label="概念层级树">
+  <aside class="concept-hierarchy" :aria-label="mode === 'concept' ? '概念层级树' : '继承层级树'">
     <header class="concept-hierarchy__header">
-      <h1>概念层级树</h1>
+      <el-radio-group :model-value="mode" class="concept-hierarchy__mode-switch" size="large" aria-label="层级树类型" @update:model-value="setMode">
+        <el-radio-button label="concept">概念层级树</el-radio-button>
+        <el-radio-button label="inheritance">继承层级树</el-radio-button>
+      </el-radio-group>
     </header>
-    <el-input v-model="keyword" class="concept-hierarchy__search" clearable placeholder="搜索概念类">
+    <el-input v-model="keyword" class="concept-hierarchy__search" clearable :placeholder="mode === 'concept' ? '搜索概念类' : '搜索对象'">
       <template #prefix
         ><el-icon> <Search /> </el-icon
       ></template>
     </el-input>
-    <div v-if="tree.length === 0" class="concept-hierarchy__empty">
+    <div v-if="mode === 'concept' && tree.length === 0" class="concept-hierarchy__empty">
       <el-button type="primary" data-onboarding="object-tree-create" @click="emit('create')">添加分类树</el-button>
     </div>
+    <div v-else-if="mode === 'inheritance' && objects.length === 0" class="concept-hierarchy__empty">暂无对象继承关系</div>
     <el-tree
       v-else
       class="concept-hierarchy__tree"
@@ -22,7 +26,7 @@
       highlight-current
       :current-node-key="selectedNodeId"
       :expand-on-click-node="false"
-      :empty-text="keyword ? '未找到匹配概念' : '暂无概念层级'"
+      :empty-text="keyword ? '未找到匹配内容' : mode === 'concept' ? '暂无概念层级' : '暂无对象继承关系'"
       @node-click="handleNodeClick"
     >
       <template #default="{ data }">
@@ -33,7 +37,7 @@
         <template v-else>
           <span class="concept-hierarchy__node">
             <el-icon>
-              <FolderOpened />
+              <component :is="data.kind === 'space' ? Folder : FolderOpened" />
             </el-icon>
             <span class="concept-hierarchy__content">
               <span class="concept-hierarchy__heading">
@@ -41,7 +45,7 @@
                 <span v-if="nodeCount(data)" class="concept-hierarchy__count">{{ nodeCount(data) }}</span>
               </span>
             </span>
-            <span class="concept-hierarchy__create-child-wrap" @click.stop>
+            <span v-if="data.kind === 'category'" class="concept-hierarchy__create-child-wrap" @click.stop>
               <el-tooltip content="新建子分类" placement="top" :show-after="200">
                 <button
                   type="button"
@@ -83,8 +87,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { Delete, Edit, FolderOpened, Plus, Search } from "@element-plus/icons-vue";
-import type { OntologyConceptNode, OntologyConceptObjectRef } from "@/types";
+import { Delete, Edit, Folder, FolderOpened, Plus, Search } from "@element-plus/icons-vue";
+import type { OntologyConceptNode, OntologyConceptObjectRef, OntologyObjectItem } from "@/types";
 
 /** el-tree 渲染用的本地节点类型；分类和对象在同一个 children 数组里混合。 */
 interface ConceptCategoryTreeNode {
@@ -96,6 +100,14 @@ interface ConceptCategoryTreeNode {
   children: ConceptTreeNode[];
 }
 
+interface InheritanceSpaceTreeNode {
+  kind: "space";
+  id: string;
+  label: string;
+  count: number;
+  children: ConceptTreeNode[];
+}
+
 interface ConceptObjectTreeNode {
   kind: "object";
   id: string;
@@ -104,11 +116,13 @@ interface ConceptObjectTreeNode {
   children: ConceptTreeNode[];
 }
 
-type ConceptTreeNode = ConceptCategoryTreeNode | ConceptObjectTreeNode;
+type ConceptTreeNode = ConceptCategoryTreeNode | ConceptObjectTreeNode | InheritanceSpaceTreeNode;
 
 const props = defineProps<{
   tree: OntologyConceptNode[];
   selectedNodeId: string;
+  objects: OntologyObjectItem[];
+  spaceName: string;
 }>();
 
 const emit = defineEmits<{
@@ -121,6 +135,12 @@ const emit = defineEmits<{
 }>();
 
 const keyword = ref("");
+const mode = ref<"concept" | "inheritance">("concept");
+
+/** @description 更新层级树展示模式。 */
+function setMode(value: string | number | boolean | undefined): void {
+  mode.value = value === "inheritance" ? "inheritance" : "concept";
+}
 
 const treeNodeProps = {
   children: "children",
@@ -151,6 +171,37 @@ function transformCategoryNode(node: OntologyConceptNode): ConceptCategoryTreeNo
   };
 }
 
+/** @description 根据对象父级唯一标识构建当前空间的继承层级树。 */
+function transformInheritanceTree(objects: OntologyObjectItem[], spaceName: string): InheritanceSpaceTreeNode[] {
+  const objectNodes = new Map<string, ConceptObjectTreeNode>();
+  const parentIds = new Map<string, string>();
+  objects.forEach((item) => {
+    objectNodes.set(item.id, { kind: "object", id: `object-${item.id}`, label: item.displayName, objectId: item.id, children: [] });
+    const parentId = item.parentUniqueIdentifier?.trim();
+    if (parentId) parentIds.set(item.id, parentId);
+  });
+  const roots: ConceptObjectTreeNode[] = [];
+  objects.forEach((item) => {
+    const current = objectNodes.get(item.id);
+    const parentId = item.parentUniqueIdentifier?.trim();
+    const parent = parentId ? objectNodes.get(parentId) : undefined;
+    let ancestorId = parentId;
+    const visited = new Set<string>();
+    while (ancestorId && !visited.has(ancestorId)) {
+      visited.add(ancestorId);
+      ancestorId = parentIds.get(ancestorId);
+    }
+    const hasCycle = Boolean(ancestorId && ancestorId === item.id);
+    if (!current || !parent || parent === current || hasCycle) {
+      if (current) roots.push(current);
+      return;
+    }
+    parent.children.push(current);
+  });
+  const root = { kind: "space" as const, id: "inheritance-space-root", label: spaceName || "本空间", count: objects.length, children: roots };
+  return [root];
+}
+
 /** @description 递归过滤混合节点树：保留分类节点（label 匹配或子树有匹配），对象节点按 label 匹配。 */
 function filterMixedTree(nodes: ConceptTreeNode[], keyword: string): ConceptTreeNode[] {
   if (!keyword) return nodes;
@@ -171,7 +222,7 @@ function filterMixedTree(nodes: ConceptTreeNode[], keyword: string): ConceptTree
 /** el-tree 的数据源，已把后端 objectNames 展开为嵌套子节点。 */
 const treeNodes = computed<ConceptTreeNode[]>(() => {
   const keywordValue = keyword.value.trim();
-  const raw = props.tree.map((node) => transformCategoryNode(node));
+  const raw = mode.value === "concept" ? props.tree.map((node) => transformCategoryNode(node)) : transformInheritanceTree(props.objects, props.spaceName);
   return keywordValue ? filterMixedTree(raw, keywordValue) : raw;
 });
 
@@ -186,9 +237,10 @@ const defaultExpandedKeys = computed<string[]>(() => collectCategoryIds(treeNode
 function collectCategoryIds(nodes: ConceptTreeNode[]): string[] {
   const ids: string[] = [];
   for (const node of nodes) {
-    if (node.kind !== "category") continue;
-    const hasChildCategory = node.children.some((child) => child.kind === "category");
-    if (hasChildCategory) ids.push(node.id);
+    if (node.kind === "category") {
+      const hasChildCategory = node.children.some((child) => child.kind === "category");
+      if (hasChildCategory) ids.push(node.id);
+    }
     ids.push(...collectCategoryIds(node.children));
   }
   return ids;
@@ -196,6 +248,10 @@ function collectCategoryIds(nodes: ConceptTreeNode[]): string[] {
 
 function isCategoryNode(value: unknown): value is ConceptCategoryTreeNode {
   return Boolean(value && typeof value === "object" && "kind" in value && (value as { kind: string }).kind === "category");
+}
+
+function isSpaceNode(value: unknown): value is InheritanceSpaceTreeNode {
+  return Boolean(value && typeof value === "object" && "kind" in value && (value as { kind: string }).kind === "space");
 }
 
 function isObjectNode(value: unknown): value is ConceptObjectTreeNode {
@@ -224,11 +280,11 @@ function handleNodeClick(value: unknown) {
 }
 
 function nodeLabel(value: unknown) {
-  return isCategoryNode(value) ? value.label : "";
+  return isCategoryNode(value) || isSpaceNode(value) ? value.label : "";
 }
 
 function nodeCount(value: unknown) {
-  return isCategoryNode(value) ? value.count : 0;
+  return isCategoryNode(value) || isSpaceNode(value) ? value.count : 0;
 }
 
 /**
@@ -286,21 +342,49 @@ function openDeleteCategoryDialog(value: unknown) {
 
 .concept-hierarchy__header {
   display: flex;
-  align-items: baseline;
-  gap: 7px;
-  margin-bottom: 10px;
+  flex-shrink: 0;
+  margin-bottom: 12px;
 }
 
-.concept-hierarchy__header h1 {
-  margin: 0;
-  color: var(--aircas-color-text-primary);
-  font-size: 16px;
+.concept-hierarchy__mode-switch {
+  display: flex;
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--aircas-color-panel-background-deep);
+}
+
+.concept-hierarchy__mode-switch :deep(.el-radio-button) {
+  flex: 1;
+}
+
+.concept-hierarchy__mode-switch :deep(.el-radio-button__inner) {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  color: var(--aircas-color-text-secondary);
+  background: transparent;
+  box-shadow: none;
+  font-size: 15px;
   font-weight: 600;
 }
 
-.concept-hierarchy__header span {
-  color: var(--aircas-color-text-secondary);
-  font-size: 12px;
+.concept-hierarchy__mode-switch :deep(.el-radio-button:first-child .el-radio-button__inner) {
+  border-left: 0;
+}
+
+.concept-hierarchy__mode-switch :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  border: 0;
+  box-shadow: none;
+  color: var(--aircas-color-text-primary);
+  background: var(--aircas-color-selected-background);
+}
+
+.concept-hierarchy__mode-switch :deep(.el-radio-button__inner:hover) {
+  color: var(--aircas-color-text-primary);
 }
 
 .concept-hierarchy__search {

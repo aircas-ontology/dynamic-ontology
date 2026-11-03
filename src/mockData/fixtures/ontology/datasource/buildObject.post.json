@@ -1,0 +1,13 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": {
+    "uniqueIdentifier": "mock-datasource-object",
+    "apiName": "ship",
+    "displayName": "舰船",
+    "propertyCount": 2,
+    "entityTables": ["ship"],
+    "mappingCount": 2,
+    "message": "对象构建成功"
+  }
+}
