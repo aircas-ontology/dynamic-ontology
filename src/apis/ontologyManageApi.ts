@@ -25,6 +25,8 @@ import type {
   CreateOntologySpaceParams,
   CreateOntologySpaceWithCanvasContentData,
   CreateOntologySpaceWithCanvasContentParams,
+  GetOntologySpaceCanvasContentData,
+  GetOntologySpaceCanvasContentParams,
   DeleteOntologySpaceData,
   DeleteOntologySpaceParams,
   ExportOntologySpaceFile,
@@ -105,6 +107,21 @@ export function updateOntologySpaceInterface(params: UpdateOntologySpaceParams):
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space",
     method: "put",
     data: params,
+  });
+}
+
+/**
+ * @description 查询对象空间画布中的全部对象、属性和关系。
+ * 请求方式：GET `/ontology/space/canvas`
+ * @param params 查询参数。
+ * @param {number} params.spaceId 对象空间 id。
+ * @returns 标准 API 响应，data 为画布对象、属性和关系内容。
+ */
+export function getOntologySpaceCanvasContentInterface(params: GetOntologySpaceCanvasContentParams): Promise<ApiResponse<GetOntologySpaceCanvasContentData>> {
+  return request<GetOntologySpaceCanvasContentData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/space/canvas",
+    method: "get",
+    params,
   });
 }
 

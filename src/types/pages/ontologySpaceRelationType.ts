@@ -6,7 +6,7 @@ export const RELATION_CARDINALITIES = ["一对一", "一对多", "多对一", "�
 
 export type OntologyRelationCardinality = (typeof RELATION_CARDINALITIES)[number];
 
-export type RelationViewMode = "graph" | "list";
+export type RelationViewMode = "graph" | "graph2d" | "list";
 
 export type RelationGraphLayoutMode = "star" | "network";
 

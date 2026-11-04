@@ -54,15 +54,24 @@
             ariaLabel="展示方式"
             @update:model-value="handleRelationViewModeChange"
           >
-            <el-tooltip content="关系图" placement="top">
+            <el-tooltip content="三维关系图" placement="top">
               <el-radio-button value="graph">
+                <svg class="space-relation-workspace__view-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3 20 7.5v9L12 21 4 16.5v-9L12 3Z" />
+                  <path d="M12 12 20 7.5M12 12v9M12 12 4 7.5" />
+                </svg>
+                <span class="space-relation-workspace__visually-hidden">三维关系图视图</span>
+              </el-radio-button>
+            </el-tooltip>
+            <el-tooltip content="二维关系图" placement="top">
+              <el-radio-button value="graph2d">
                 <svg class="space-relation-workspace__view-icon" viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="5" cy="6" r="1.8" />
                   <circle cx="19" cy="6" r="1.8" />
                   <circle cx="12" cy="18" r="1.8" />
                   <path d="M6.6 7.2 11 16.4M17.4 7.2 13 16.4M6.8 6h10.4" />
                 </svg>
-                <span class="space-relation-workspace__visually-hidden">关系图视图</span>
+                <span class="space-relation-workspace__visually-hidden">二维关系图视图</span>
               </el-radio-button>
             </el-tooltip>
             <el-tooltip content="列表" placement="top">
@@ -90,6 +99,13 @@
           :items="visibleSpaceRelations"
           :seed-names="graphSeedNames"
           :max-hop="graphMaxHop"
+          @edit="openRelationEdit"
+          @delete="openRelationDelete"
+        />
+        <RelationGraph2dView
+          v-else-if="relationViewMode === 'graph2d'"
+          :items="visibleSpaceRelations"
+          :seed-names="graphSeedNames"
           @edit="openRelationEdit"
           @delete="openRelationDelete"
         />
@@ -178,6 +194,7 @@ import RelationGraphView from "./components/RelationGraphView.vue";
 import RelationCategoryFormDialog from "./components/RelationCategoryFormDialog.vue";
 import RelationCategoryDeleteDialog from "./components/RelationCategoryDeleteDialog.vue";
 import RelationDeleteDialog from "./components/RelationDeleteDialog.vue";
+import RelationGraph2dView from "./components/RelationGraph2dView.vue";
 import SpaceRelationFormDialog from "./components/SpaceRelationFormDialog.vue";
 import RelationDetailDialog from "./components/RelationDetailDialog.vue";
 
@@ -249,7 +266,7 @@ function asRelation(row: unknown): OntologyRelationClass {
  * @returns
  */
 function handleRelationViewModeChange(value: unknown) {
-  if (value === "graph" || value === "list") setRelationViewMode(value);
+  if (value === "graph" || value === "graph2d" || value === "list") setRelationViewMode(value);
 }
 
 function handleSeedChange(value: string | number | boolean | undefined) {

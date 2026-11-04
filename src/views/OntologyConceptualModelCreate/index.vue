@@ -22,11 +22,13 @@
         <el-button size="small" @click="zoomIn">放大</el-button>
         <el-button size="small" @click="fitCanvas">适应画布</el-button>
         <el-button type="danger" size="small" :disabled="!selected" @click="deleteSelected">删除选中</el-button>
-        <el-button type="primary" size="small" :loading="saving" @click="saveConceptualModel">保存</el-button>
+        <el-button type="primary" size="small" :loading="saving" :disabled="canvasLoading || !!canvasLoadError" @click="saveConceptualModel">保存</el-button>
       </div>
     </header>
-    <p v-if="saveError" class="conceptual-model-create__save-error" role="alert">{{ saveError }}</p>
-    <div class="conceptual-model-create__workspace">
+    <p v-if="canvasLoading" class="conceptual-model-create__save-error" role="status">正在加载空间画布...</p>
+    <p v-else-if="canvasLoadError" class="conceptual-model-create__save-error" role="alert">{{ canvasLoadError }}</p>
+    <p v-else-if="saveError" class="conceptual-model-create__save-error" role="alert">{{ saveError }}</p>
+    <div class="conceptual-model-create__workspace" :inert="canvasLoading || !!canvasLoadError">
       <aside class="conceptual-model-create__palette" aria-label="UML 组件">
         <span class="conceptual-model-create__eyebrow">UML COMPONENTS</span>
         <h2>UML 组件</h2>
@@ -142,14 +144,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useRoute, useRouter } from "vue-router";
-import { createOntologySpaceWithCanvasContentInterface } from "@/apis";
+import { createOntologySpaceWithCanvasContentInterface, getOntologySpaceCanvasContentInterface } from "@/apis";
 import type { CanvasLink, CanvasOntology, CanvasProperty, CreateOntologySpaceWithCanvasContentParams } from "@/types";
 import ConceptualModelGraphCanvas from "./components/ConceptualModelGraphCanvas.vue";
 import { findConflictingConceptualAttributeKey, formatConceptualAttributeKeyConflictMessage } from "./utils/groupConceptualAttributes";
 import { removeRelationsConnectedToObject } from "./utils/removeRelationsConnectedToObject";
+import { mapCanvasContentToConceptualModel } from "./utils/mapCanvasContentToConceptualModel";
 type PaletteType = "object" | "attribute" | "relation";
 type Port = "top" | "right" | "bottom" | "left";
 type Selection = { kind: "object" | "attribute" | "relation"; id: number };
@@ -199,6 +202,8 @@ const hasRouteSpaceContext = computed(
 );
 const saving = ref(false);
 const saveError = ref("");
+const canvasLoading = ref(false);
+const canvasLoadError = ref("");
 const zoom = ref(100);
 const selected = ref<Selection | null>({ kind: "object", id: 1 });
 const objects = ref<ModelObject[]>([{ id: 1, displayName: "Object_1", apiName: "Object_1", description: "", x: 120, y: 100, attributes: [] }]);
@@ -238,6 +243,56 @@ function initializeRouteSpaceContext() {
 }
 
 initializeRouteSpaceContext();
+
+let canvasLoadRequestId = 0;
+
+/**
+ * @description 查询已有空间的画布内容并回显到概念模型页面。
+ */
+async function loadConceptualModelCanvas() {
+  const spaceId = routeSpaceId.value;
+  if (spaceId === undefined) return;
+  const requestId = ++canvasLoadRequestId;
+  canvasLoading.value = true;
+  canvasLoadError.value = "";
+  objects.value = [];
+  relations.value = [];
+  selected.value = null;
+  try {
+    const response = await getOntologySpaceCanvasContentInterface({ spaceId });
+    if (requestId !== canvasLoadRequestId) return;
+    if (response.code !== 200) throw new Error(response.message || "画布内容加载失败");
+    const mapped = mapCanvasContentToConceptualModel(response.data);
+    if (mapped.relations.some((relation) => relation.sourceId === null || relation.targetId === null)) {
+      throw new Error("画布关系引用了不存在的对象，无法完整回显。");
+    }
+    objects.value = mapped.objects;
+    relations.value = mapped.relations;
+    sequence = mapped.nextSequence;
+    selected.value = mapped.objects[0] ? { kind: "object", id: mapped.objects[0].id } : null;
+    storageGroupOptions.value = [...new Set(["main", ...mapped.objects.flatMap((object) => object.attributes.map((attribute) => attribute.storageGroup))])];
+    await nextTick();
+    if (requestId === canvasLoadRequestId) graphCanvasRef.value?.fit();
+  } catch (cause) {
+    if (requestId !== canvasLoadRequestId) return;
+    canvasLoadError.value = cause instanceof Error && cause.message.trim() ? cause.message : "画布内容加载失败，请重试。";
+    ElMessage.error(canvasLoadError.value);
+  } finally {
+    if (requestId === canvasLoadRequestId) canvasLoading.value = false;
+  }
+}
+
+watch(
+  routeSpaceId,
+  () => {
+    void loadConceptualModelCanvas();
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(() => {
+  canvasLoadRequestId += 1;
+});
 /** @description 返回空间管理页。 */
 function goBack() {
   void router.push({ name: "OntologySpaceManagement" });

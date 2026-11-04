@@ -28,15 +28,15 @@
     <div v-else-if="visibleAttributes.length" class="ontology-object-attribute-panel__table-wrap">
       <el-table :data="visibleAttributes" class="ontology-object-attribute-panel__table" height="100%" stripe row-key="uniqueIdentifier">
         <el-table-column prop="displayName" label="属性名称" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="apiName" label="API" min-width="150" show-overflow-tooltip />
         <el-table-column prop="dataType" label="数据类型" width="110" />
-        <el-table-column prop="storageGroup" label="存储分组" width="120" />
-        <el-table-column label="默认值" min-width="110" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.defaultValue || "—" }}</template>
-        </el-table-column>
         <el-table-column prop="description" label="属性描述" min-width="210" show-overflow-tooltip />
         <el-table-column label="主键" width="72">
           <template #default="{ row }">{{ row.isPrimary ? "是" : "否" }}</template>
+        </el-table-column>
+        <el-table-column prop="apiName" label="API" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="storageGroup" label="存储分组" width="120" />
+        <el-table-column label="默认值" min-width="110" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.defaultValue || "—" }}</template>
         </el-table-column>
         <el-table-column label="名称键" width="72">
           <template #default="{ row }">{{ row.isNameKey ? "是" : "否" }}</template>

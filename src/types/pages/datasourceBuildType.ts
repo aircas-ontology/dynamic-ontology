@@ -4,6 +4,7 @@ export interface DatasourceField {
   id: string;
   name: string;
   dataType: string;
+  description?: string;
 }
 
 export interface DatasourceTable {
@@ -25,7 +26,7 @@ export interface DatasourceConnection {
 }
 
 export interface DatasourceBuildSelection {
-  datasourceId: number;
+  schemaName: string;
   primaryTableId: string;
   selectedTableIds: string[];
   selectedTables: DatasourceTable[];

@@ -55,6 +55,7 @@
     />
     <OntologyObjectCreateDialog
       v-model="objectCreateVisible"
+      :space-id="spaceId"
       :category-tree="workspaceTree"
       :parent-options="parentOptions"
       :submitting="objectCreateSubmitting"
@@ -64,6 +65,7 @@
       @submit-import="importOntologyObjects"
       @submit-edit="updateOntologyObject"
       @submit-datasource="createOntologyObjectFromDatasource"
+      @asset-created="load"
       @open-llm="openOntologyLlmBuilder"
     />
     <OntologyObjectDeleteDialog

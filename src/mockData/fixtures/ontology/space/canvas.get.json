@@ -1,0 +1,42 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": {
+    "spaceId": 8,
+    "ontologies": [
+      {
+        "displayName": "舰船",
+        "apiName": "ship",
+        "description": "舰船对象",
+        "properties": [
+          {
+            "displayName": "名称",
+            "apiName": "name",
+            "dataType": "String",
+            "storageGroup": "main",
+            "description": "舰船名称",
+            "isPrimaryKey": true,
+            "isTitleKey": true,
+            "defaultValue": ""
+          }
+        ]
+      },
+      {
+        "displayName": "国家",
+        "apiName": "country",
+        "description": "国家对象",
+        "properties": []
+      }
+    ],
+    "links": [
+      {
+        "name": "隶属于",
+        "apiName": "belongsTo",
+        "description": "舰船所属国家",
+        "fromOntologyApiName": "ship",
+        "toOntologyApiName": "country"
+      }
+    ]
+  }
+}

@@ -45,6 +45,11 @@
     "file": "fixtures/ontology/space/canvas.post.json"
   },
   {
+    "method": "GET",
+    "path": "/ontology/space/canvas",
+    "file": "fixtures/ontology/space/canvas.get.json"
+  },
+  {
     "method": "POST",
     "path": "/ontology/space/subspace",
     "file": "fixtures/ontology/space/subspace.post.json"
@@ -295,6 +300,11 @@
     "file": "fixtures/common/success.json"
   },
   {
+    "method": "POST",
+    "path": "/ontology/meta/build_object",
+    "file": "fixtures/ontology/meta/build-object.post.json"
+  },
+  {
     "method": "PUT",
     "path": "/ontology/meta",
     "file": "fixtures/common/success.json"
@@ -348,5 +358,10 @@
     "method": "PUT",
     "path": "/ontology/function/rate_limit_template/disable",
     "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/datasource/connection/schema/list",
+    "file": "fixtures/ontology/datasource/schemas.get.json"
   }
 ]
