@@ -31,6 +31,7 @@
         @create="openBehaviorCreate"
         @view="openBehaviorView"
         @edit="openBehaviorEdit"
+        @test="openBehaviorTest"
         @status="openBehaviorStatus"
         @delete="openBehaviorDelete"
         @page-change="changeBehaviorPage"
@@ -231,6 +232,15 @@ function openBehaviorEdit(item: SpaceBehaviorItem): void {
   behaviorFormMode.value = "edit";
   activeBehavior.value = item;
   behaviorFormVisible.value = true;
+}
+
+/**
+ * @description 行为测试入口占位；后续对接测试接口与弹窗。
+ * @param item 行为记录。
+ */
+function openBehaviorTest(item: SpaceBehaviorItem): void {
+  activeBehavior.value = item;
+  ElMessage.info("行为测试功能后续接入");
 }
 
 /**

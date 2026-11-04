@@ -53,13 +53,13 @@ POST /ontology/action
 
 **mappingIns 每项**：
 
-| 字段                       | 类型   | 必填   | 说明                                                                                     |
-| -------------------------- | ------ | ------ | ---------------------------------------------------------------------------------------- |
-| `propertyUniqueIdentifier` | String | **是** | 属性唯一标识                                                                             |
-| `ontologyUniqueIdentifier` | String | **是** | 本体标识（同外层）                                                                       |
-| `parameterName`            | String | 否     | 参数名（不传则用属性 apiName）                                                           |
-| `sourceType`               | String | 否     | `"PROPERTY"`（对象属性）/ `"EXTERNAL"`（外部输入）/ `"FIXED"`（固定值），默认 `PROPERTY` |
-| `sourceConfig`             | String | 否     | 固定值时填字面量（如 `"120.5"`、`"空空导弹"`）                                           |
+| 字段                       | 类型   | 必填   | 说明                           |
+| -------------------------- | ------ | ------ | ------------------------------ |
+| `propertyUniqueIdentifier` | String | **是** | 属性唯一标识                   |
+| `ontologyUniqueIdentifier` | String | **是** | 本体标识（同外层）             |
+| `parameterName`            | String | 否     | 参数名（不传则用属性 apiName） |
+| `sourceType`               | String | 否     | `"EXTERNAL"`（外部输入）       |
+| ）                         |
 
 **CREATE 特殊规则**：必须绑定分组内**全部**非空属性。
 
@@ -88,20 +88,6 @@ POST /ontology/action
       "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
       "parameterName": "w_count",
       "sourceType": "EXTERNAL"
-    },
-    {
-      "propertyUniqueIdentifier": "6e0f9bde6afb4d0b8d1e3abddbf4b57b",
-      "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
-      "parameterName": "w_range",
-      "sourceType": "FIXED",
-      "sourceConfig": "120.5"
-    },
-    {
-      "propertyUniqueIdentifier": "7bc448386a3b4bc7a9b9d4db3a274e59",
-      "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
-      "parameterName": "w_type",
-      "sourceType": "FIXED",
-      "sourceConfig": "空空导弹"
     }
   ]
 }
@@ -124,7 +110,7 @@ POST /ontology/action
 | 字段                         | 类型   | 必填              | 说明                                                                      |
 | ---------------------------- | ------ | ----------------- | ------------------------------------------------------------------------- |
 | `ontologyLinkUniqIdentifier` | String | **是**            | 关系唯一标识                                                              |
-| `targetStatus`               | String | **新增/修改必填** | `"ENABLE"` / `"DELETE"`                                                   |
+| `targetStatus`               | String | **新增/修改必填** | `"ENABLE"` / `"DELETE"`/`" DISABLE "`                                     |
 | `visibilityWindows`          | Array  | **新增必填**      | 持续时段列表，每项 `{startTime: <epoch_millis>, endTime: <epoch_millis>}` |
 
 **语义规则**：
@@ -249,199 +235,238 @@ POST /ontology/action
 
 ### 3.5 应用行为（`actionKind=APPLICATION`）
 
-绑定 CUSTOMIZE/EXTERNAL/CONTAINER 算子，必须绑一条关系。
+---
 
-| 字段          | 类型   | 必填   | 说明                                                                                                       |
-| ------------- | ------ | ------ | ---------------------------------------------------------------------------------------------------------- |
-| `functionApi` | String | **是** | 算子 api                                                                                                   |
-| `outputMode`  | String | **是** | `"RESULT_ONLY"`（仅返回）/ `"WRITE_PROPERTY"`（写回属性）                                                  |
-| `linkMapping` | Object | **是** | 关系绑定（应用行为的边落位只看算子返回的 `startTime/endTime`，与 `targetStatus`/`visibilityWindows` 无关） |
+## 请求体（`ActionCreateOrUpdateParam`）
 
-**linkMapping**：
+| 字段名               | 类型                                  | 必填 | 说明                                                                    |
+| -------------------- | ------------------------------------- | ---- | ----------------------------------------------------------------------- |
+| `actionApi`          | String                                | 是   | 行为 api（空间内唯一，建议用 `act.ap.` 前缀）                           |
+| `displayName`        | String                                | 是   | 行为显示名称                                                            |
+| `description`        | String                                | 否   | 行为描述                                                                |
+| `icon`               | String                                | 否   | 图标 URL                                                                |
+| `categoryId`         | Integer                               | 是   | 所属行为分类 id                                                         |
+| `ontologyIdentifier` | String                                | 否   | 对象唯一标识（行为挂载的对象；**应用行为可不传**，空间 id 从分类推导）  |
+| `actionKind`         | ActionKindEnum                        | 是   | **固定为 `APPLICATION`**                                                |
+| `functionApi`        | String                                | 是   | 绑定的算子 api（必须已发布，`publishStatus=1`）                         |
+| `outputMode`         | ActionOutputModeEnum                  | 是   | 输出方式：`RESULT_ONLY`（仅返回结果）/ `WRITE_PROPERTY`（写入对象属性） |
+| `linkMapping`        | ActionLinkMappingParam                | 是   | **应用行为必须绑定一条对象关系**                                        |
+| `mappingIns`         | List\<ActionParamMappingCreateParam\> | 是   | 参数绑定列表（绑定算子入参的取值来源）                                  |
 
-| 字段                                  | 类型   | 必填   | 说明                                       |
-| ------------------------------------- | ------ | ------ | ------------------------------------------ |
-| `ontologyLinkUniqIdentifier`          | String | **是** | 关系唯一标识                               |
-| `ontologyLinkFunctionParamExpression` | String | 否     | **已废弃**，仅存储，执行时不再参与关系判定 |
+---
 
-**mappingIns 入参绑定**（重点：对象入参的子字段绑定）：
+## 子对象字段说明
 
-| 字段                       | 类型    | 必填                       | 说明                                                                                                                                         |
-| -------------------------- | ------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `functionParamId`          | Integer | **是**                     | 函数入参 id（从 `GET /function/detail` 获取；**对象入参的子字段没有独立 paramId，用顶层参数的 paramId**）                                    |
-| `paramPath`                | String  | **对象入参子字段必填**     | 子字段路径（相对参数名按点分层级，如 `position.longitude`；带上参数名前缀也可识别，如 `pos.position.longitude` 等价于 `position.longitude`） |
-| `propertyUniqueIdentifier` | String  | sourceType=PROPERTY 时必填 | 属性标识                                                                                                                                     |
-| `parameterName`            | String  | sourceType=EXTERNAL 时必填 | 参数名（行为测试时从 `params.<parameterName>` 取值）                                                                                         |
-| `sourceType`               | String  | 否                         | `"PROPERTY"` / `"EXTERNAL"` / `"FIXED"`，默认 `PROPERTY`                                                                                     |
-| `sourceConfig`             | String  | sourceType=FIXED 时必填    | 固定值字面量                                                                                                                                 |
+### ActionLinkMappingParam（关系映射）
 
-**出参绑定**（仅 `WRITE_PROPERTY` 需要）：
+| 字段名                       | 类型   | 必填 | 说明                                       |
+| ---------------------------- | ------ | ---- | ------------------------------------------ |
+| `ontologyLinkUniqIdentifier` | String | 是   | 关系唯一标识（通过 `GET /link/list` 获取） |
 
-| 字段                       | 类型    | 必填   | 说明                                                  |
-| -------------------------- | ------- | ------ | ----------------------------------------------------- |
-| `functionParamId`          | Integer | **是** | 函数出参 id                                           |
-| `propertyUniqueIdentifier` | String  | **是** | 要写回的属性标识                                      |
-| `functionParamExpression`  | String  | **是** | JsonPath（如 `"$.newName"`），作用于算子返回的 `data` |
+> **重要**：应用行为必须绑定一条对象关系，否则创建时报「该行为必须绑定一条对象关系」。
 
-#### 3.5.1 对象入参的子字段绑定（paramPath）
+### ActionParamMappingCreateParam（参数绑定）
 
-**场景**：算子的某个入参类型是 OBJECT（自定义类），前端需要把该对象的多个子字段分别绑定到不同的属性或外部输入。
+| 字段名                     | 类型                  | 必填     | 说明                                                                              |
+| -------------------------- | --------------------- | -------- | --------------------------------------------------------------------------------- |
+| `parameterName`            | String                | 是       | 算子入参名（与函数 `parameters` 里的 `paramName` 对应）                           |
+| `functionParamId`          | Long                  | 是       | 函数参数 id（从 `GET /function/detail` 的 `data.parameters[].id` 获取）           |
+| `functionParamExpression`  | String                | 是       | 属性 apiName（`sourceType=PROPERTY` 时填写，从实体属性取值）                      |
+| `propertyUniqueIdentifier` | String                | 是       | 属性唯一标识                                                                      |
+| `ontologyUniqueIdentifier` | String                | 是       | 属性所属对象唯一标识                                                              |
+| `sourceType`               | ActionParamSourceEnum | 是       | 取值来源：`PROPERTY`（从实体属性取值）/ `EXTERNAL`（外部输入）/ `FIXED`（固定值） |
+| `sourceConfig`             | String                | 条件必填 | 固定值内容。**`sourceType=FIXED` 时必填**                                         |
+| `paramPath`                | String                | 否       | 对象入参的子字段路径（算子入参类型为 `OBJECT` 时使用，如 `address.city`）         |
 
-**规则**：
+---
 
-1. **子字段没有独立的 paramId**：`GET /action` 的 `functionParams` 只返回顶层参数，不包含 `fields`。要获取子字段树，前端必须调用 `GET /function/detail?functionApi=<api>&spaceId=<spaceId>`，从 `params[].fields` 读取嵌套结构。
-2. **paramPath 是相对路径**：从参数名开始按点分层级，如参数名 `pos` 有子字段 `lng`/`lat`，则 `paramPath` 填 `lng` 或 `lat`（不带参数名前缀）；也可以带前缀 `pos.lng`，后端会自动去掉。
-3. **同一 functionParamId 可以出现多次**：每次用不同的 `paramPath` 绑定不同的子字段。
-4. **整包绑定与子字段绑定互斥**：如果同一 `functionParamId` 既有一条不带 `paramPath` 的绑定（整包），又有带 `paramPath` 的绑定（子字段），执行时整包取值优先，子字段不生效。
-5. **类型校验**：创建时后端会按 `paramPath` 在算子声明的 `fields` 树里逐层定位，取出子字段的声明类型，与绑定的属性类型比对；不匹配会报 `行为属性类型与函数参数类型不匹配`。
-6. **路径不存在**：如果 `paramPath` 指向的子字段在算子声明里不存在，会报 `算子入参 <paramName> 不存在子字段：<paramPath>`。
+## 创建约束
 
-**示例 - 对象入参逐子字段绑定**：
+1. **`actionKind` 必须为 `APPLICATION`**
+2. **`functionApi` 必填**：应用行为必须绑定算子
+3. **`outputMode` 必填**：`RESULT_ONLY` 或 `WRITE_PROPERTY`
+4. **`linkMapping` 必填**：必须绑定一条对象关系（`ontologyLinkUniqIdentifier` 不能为空）
+5. **`mappingIns` 必填**：必须覆盖算子的所有 INPUT 参数
+6. **绑定的算子必须已发布**：发布行为时会校验 `function.publishStatus == 1`，但创建时不校验
 
-假设算子 `act.fn.obj` 有一个 INPUT 参数 `pos`（类型 OBJECT），声明了两个子字段 `lng`（DOUBLE）和 `lat`（DOUBLE）。前端需要把 `lng` 绑定到属性 `max_mach`，`lat` 作为外部输入。
+---
+
+## 示例
+
+### 示例 1：参数从实体属性取值（`sourceType=PROPERTY`）
 
 ```json
 {
-  "ontologyIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
+  "actionApi": "act.ap.aircraft.greeting",
+  "displayName": "飞机问候语行为",
+  "description": "调用脚本函数生成飞机问候语",
   "categoryId": 14,
-  "actionApi": "act.ap.obj.nested",
-  "displayName": "应用行为-对象子字段绑定",
-  "description": "验证 OBJECT 入参按子字段绑定：lng 取属性，lat 外部输入",
   "actionKind": "APPLICATION",
-  "functionApi": "act.fn.obj",
+  "functionApi": "act.fn.aircraft.greeting",
   "outputMode": "RESULT_ONLY",
   "linkMapping": {
     "ontologyLinkUniqIdentifier": "4ed7c4da646f4006bec301815b61debb"
   },
   "mappingIns": [
     {
-      "functionParamId": 2298,
-      "paramPath": "lng",
-      "propertyUniqueIdentifier": "7f7f85dc5c68422aba360ca89d7b6831",
+      "functionParamId": 3001,
+      "functionParamExpression": "name",
+      "parameterName": "name",
+      "propertyUniqueIdentifier": "1d63fe1e5e794e449fb1ca514605c1f6",
       "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
-      "parameterName": "lng",
       "sourceType": "PROPERTY"
     },
     {
-      "functionParamId": 2298,
-      "paramPath": "lat",
-      "parameterName": "lat",
+      "functionParamId": 3002,
+      "functionParamExpression": "max_mach",
+      "parameterName": "max_mach",
+      "propertyUniqueIdentifier": "7f7f85dc5c68422aba360ca89d7b6831",
+      "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
+      "sourceType": "PROPERTY"
+    }
+  ]
+}
+```
+
+> **说明**：
+>
+> - `functionParamId` 从 `GET /function/detail?functionApi=act.fn.aircraft.greeting&version=1.0.0&spaceId=156` 获取
+> - `propertyUniqueIdentifier` 从对象属性列表获取
+> - `sourceType=PROPERTY`：参数值从实体属性自动读取，测试/执行时不需要传 `params`
+
+### 示例 2：参数从外部输入取值（`sourceType=EXTERNAL`）
+
+```json
+{
+  "actionApi": "act.ap.aircraft.greeting.external",
+  "displayName": "飞机问候语行为（外部输入）",
+  "description": "参数来自外部输入",
+  "categoryId": 14,
+  "actionKind": "APPLICATION",
+  "functionApi": "act.fn.aircraft.greeting",
+  "outputMode": "RESULT_ONLY",
+  "linkMapping": {
+    "ontologyLinkUniqIdentifier": "4ed7c4da646f4006bec301815b61debb"
+  },
+  "mappingIns": [
+    {
+      "functionParamId": 3001,
+      "functionParamExpression": "name",
+      "parameterName": "name",
+      "propertyUniqueIdentifier": "1d63fe1e5e794e449fb1ca514605c1f6",
+      "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
+      "sourceType": "EXTERNAL"
+    },
+    {
+      "functionParamId": 3002,
+      "functionParamExpression": "max_mach",
+      "parameterName": "max_mach",
+      "propertyUniqueIdentifier": "7f7f85dc5c68422aba360ca89d7b6831",
+      "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
       "sourceType": "EXTERNAL"
     }
   ]
 }
 ```
 
-**执行时**：后端会把两条绑定组装成一个嵌套对象 `{"lng": <属性值>, "lat": <外部输入值>}`，传给算子的 `pos` 参数。
+> **说明**：
+>
+> - `sourceType=EXTERNAL`：参数值来自测试/执行时的 `params` 参数
+> - 测试时传：`{"params": {"name": "F-22", "max_mach": 2.25}}`
 
-**示例 - 整包绑定（不传 paramPath）**：
-
-如果算子接受整个对象一次取值（比如从某个属性直接取一个 JSON 对象），可以不传 `paramPath`，用一条绑定完成：
-
-```json
-{
-  "functionParamId": 2298,
-  "propertyUniqueIdentifier": "7f7f85dc5c68422aba360ca89d7b6831",
-  "sourceType": "PROPERTY"
-}
-```
-
-此时 `propertyUniqueIdentifier` 指向的属性类型必须是 OBJECT（自定义类），否则创建时会报 `行为属性类型与函数参数类型不匹配`。
-
-#### 3.5.2 应用行为的边落位（算子返回窗口）
-
-**规则**：应用行为执行后，是否写入/更新实例关系边，**只看算子返回的** `startTime`**/**`endTime`，与行为定义里的 `targetStatus`/`visibilityWindows` 无关。
-
-- **算子返回了 startTime + endTime**：
-  - 边不存在 → 新建边，状态 ENABLE，时段写入
-  - 边已存在 → 更新边的 startTime/endTime/timeWindows，状态置为 ENABLE
-- **算子没返回 startTime 或 endTime**：整段跳过，不建不删不改
-
-**算子返回示例**（Groovy 脚本）：
-
-```groovy
-def handle(max_mach) {
-    def now = System.currentTimeMillis()
-    return [
-        startTime: now,
-        endTime: now + 86400000L,
-        timeWindows: [[startTime: now, endTime: now + 86400000L]],
-        data: [result: "ok"]
-    ]
-}
-```
-
-**示例 - 应用行为（算子返回窗口，自动建边）**：
+### 示例 3：参数使用固定值（`sourceType=FIXED`）
 
 ```json
 {
-  "ontologyIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
+  "actionApi": "act.ap.aircraft.greeting.fixed",
+  "displayName": "飞机问候语行为（固定值）",
+  "description": "参数使用固定值",
   "categoryId": 14,
-  "actionApi": "act.ap.window",
-  "displayName": "应用行为-按窗口建边",
   "actionKind": "APPLICATION",
-  "functionApi": "act.fn.window",
+  "functionApi": "act.fn.aircraft.greeting",
   "outputMode": "RESULT_ONLY",
   "linkMapping": {
     "ontologyLinkUniqIdentifier": "4ed7c4da646f4006bec301815b61debb"
   },
   "mappingIns": [
     {
-      "functionParamId": 2301,
-      "propertyUniqueIdentifier": "7f7f85dc5c68422aba360ca89d7b6831",
+      "functionParamId": 3001,
+      "functionParamExpression": "name",
+      "parameterName": "name",
+      "propertyUniqueIdentifier": "1d63fe1e5e794e449fb1ca514605c1f6",
+      "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
+      "sourceType": "FIXED",
+      "sourceConfig": "F-22"
+    },
+    {
+      "functionParamId": 3002,
+      "functionParamExpression": "max_mach",
       "parameterName": "max_mach",
-      "sourceType": "PROPERTY"
+      "propertyUniqueIdentifier": "7f7f85dc5c68422aba360ca89d7b6831",
+      "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
+      "sourceType": "FIXED",
+      "sourceConfig": "2.25"
     }
   ]
 }
 ```
 
----
+> **说明**：
+>
+> - `sourceType=FIXED`：参数值固定，`sourceConfig` 填写固定值（字符串格式）
+> - 测试/执行时不需要传 `params`
 
-### 3.6 完整示例 - 应用行为写回属性
+### 示例 4：输出方式写入对象属性（`outputMode=WRITE_PROPERTY`）
 
 ```json
 {
-  "ontologyIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
+  "actionApi": "act.ap.aircraft.update.speed",
+  "displayName": "更新飞机最大速度",
+  "description": "计算并更新飞机最大速度",
   "categoryId": 14,
-  "actionApi": "act.ap.rename",
-  "displayName": "应用行为-改名并刷新速度",
-  "description": "应用行为：出参写回 name 和 max_mach",
   "actionKind": "APPLICATION",
-  "functionApi": "act.fn.rename",
+  "functionApi": "act.fn.calculate.speed",
   "outputMode": "WRITE_PROPERTY",
   "linkMapping": {
     "ontologyLinkUniqIdentifier": "4ed7c4da646f4006bec301815b61debb"
   },
   "mappingIns": [
     {
-      "functionParamId": 2287,
-      "propertyUniqueIdentifier": "1d63fe1e5e794e449fb1ca514605c1f6",
-      "parameterName": "name",
+      "functionParamId": 4001,
+      "functionParamExpression": "current_speed",
+      "parameterName": "current_speed",
+      "propertyUniqueIdentifier": "7f7f85dc5c68422aba360ca89d7b6831",
+      "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
       "sourceType": "PROPERTY"
     },
     {
-      "functionParamId": 2289,
-      "propertyUniqueIdentifier": "7f7f85dc5c68422aba360ca89d7b6831",
+      "functionParamId": 4002,
+      "functionParamExpression": "max_mach",
       "parameterName": "max_mach",
-      "sourceType": "PROPERTY"
-    },
-    {
-      "functionParamId": 2288,
-      "propertyUniqueIdentifier": "1d63fe1e5e794e449fb1ca514605c1f6",
-      "parameterName": "newName",
-      "sourceType": "PROPERTY",
-      "functionParamExpression": "$.newName"
-    },
-    {
-      "functionParamId": 2288,
       "propertyUniqueIdentifier": "7f7f85dc5c68422aba360ca89d7b6831",
-      "parameterName": "speed",
+      "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
       "sourceType": "PROPERTY",
-      "functionParamExpression": "$.speed"
+      "paramPath": "value"
     }
   ]
 }
 ```
 
+> **说明**：
+>
+> - `outputMode=WRITE_PROPERTY`：算子输出按 `mappingIns` 的出参绑定写回对象属性
+> - `paramPath`：对象入参的子字段路径（算子入参类型为 `OBJECT` 时使用）
+
 ---
+
+## 响应
+
+**成功响应**：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```

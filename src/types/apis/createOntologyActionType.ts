@@ -35,7 +35,7 @@ export interface CreateOntologyActionVisibilityWindow {
 /** 关系实例行为 linkMapping。 */
 export interface CreateOntologyActionLinkMapping {
   ontologyLinkUniqIdentifier: string;
-  targetStatus?: "ENABLE" | "DELETE";
+  targetStatus?: "ENABLE" | "DISABLE" | "DELETE";
   visibilityWindows?: CreateOntologyActionVisibilityWindow[];
 }
 

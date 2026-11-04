@@ -23,11 +23,17 @@
             <span class="behavior-list-panel__name">{{ asBehavior(row).displayName }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="类别" min-width="120" show-overflow-tooltip>
-          <template #default="{ row }">{{ SPACE_BEHAVIOR_KIND_LABELS[asBehavior(row).kind] }}</template>
+        <el-table-column label="行为类别" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatBehaviorCategoryLabel(asBehavior(row)) }}</template>
         </el-table-column>
-        <el-table-column label="描述" min-width="200" show-overflow-tooltip>
+        <el-table-column label="描述" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">{{ asBehavior(row).description }}</template>
+        </el-table-column>
+        <el-table-column label="函数算子" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ asBehavior(row).functionOperatorName }}</template>
+        </el-table-column>
+        <el-table-column label="apiName" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ asBehavior(row).behaviorApiName }}</template>
         </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
@@ -39,11 +45,12 @@
         <el-table-column label="更新时间" width="160">
           <template #default="{ row }">{{ asBehavior(row).updatedAt }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <div class="behavior-list-panel__row-actions">
               <el-button size="small" @click="emit('view', asBehavior(row))">查看</el-button>
               <el-button size="small" @click="emit('edit', asBehavior(row))">编辑</el-button>
+              <el-button size="small" @click="emit('test', asBehavior(row))">测试</el-button>
               <el-dropdown trigger="click" @command="handleMoreCommand($event, asBehavior(row))">
                 <el-button size="small"
                   >更多<el-icon><ArrowDown /></el-icon
@@ -81,7 +88,7 @@
 import { computed, nextTick } from "vue";
 import { ArrowDown, Plus } from "@element-plus/icons-vue";
 import type { SpaceBehaviorItem, SpaceBehaviorListStatus, SpaceBehaviorStatus } from "@/types";
-import { SPACE_BEHAVIOR_KIND_LABELS, SPACE_BEHAVIOR_LIST_STATUS_LABELS, SPACE_BEHAVIOR_LIST_STATUS_OPTIONS } from "@/types";
+import { SPACE_BEHAVIOR_KIND_LABELS, SPACE_BEHAVIOR_LIST_STATUS_LABELS, SPACE_BEHAVIOR_LIST_STATUS_OPTIONS, SPACE_BEHAVIOR_VALUE_TYPE_LABELS } from "@/types";
 import { mapSpaceBehaviorItemToListStatus } from "../utils/mapListOntologyActionRecord";
 
 const props = defineProps<{
@@ -102,6 +109,7 @@ const emit = defineEmits<{
   create: [];
   view: [item: SpaceBehaviorItem];
   edit: [item: SpaceBehaviorItem];
+  test: [item: SpaceBehaviorItem];
   status: [item: SpaceBehaviorItem];
   delete: [item: SpaceBehaviorItem];
   "page-change": [page: number];
@@ -127,12 +135,24 @@ function asBehavior(row: unknown): SpaceBehaviorItem {
 }
 
 /**
+ * @description 格式化行为类别展示；基础行为时追加行为类型，如「基础行为-属性值」。
+ * @param item 行为记录。
+ * @returns 列表展示文案。
+ */
+function formatBehaviorCategoryLabel(item: SpaceBehaviorItem): string {
+  const kindLabel = SPACE_BEHAVIOR_KIND_LABELS[item.kind];
+  if (item.kind !== "basic") return kindLabel;
+  const valueTypeLabel = SPACE_BEHAVIOR_VALUE_TYPE_LABELS[item.valueType];
+  return valueTypeLabel ? `${kindLabel}-${valueTypeLabel}` : kindLabel;
+}
+
+/**
  * @description 将行为状态映射为标签颜色；启用成功色，失效警告色。
  * @param status 行为状态。
  * @returns Element Plus 标签类型。
  */
 function statusTagType(status: SpaceBehaviorStatus): "success" | "warning" {
-  return mapSpaceBehaviorItemToListStatus(status) === "enabled" ? "success" : "warning";
+  return mapSpaceBehaviorItemToListStatus(status) === "published" ? "success" : "warning";
 }
 
 /**

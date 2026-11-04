@@ -63,10 +63,10 @@ export function buildLinkCreateActionParams(draft: SpaceBehaviorDraft): BuildLin
     linkMapping = { ontologyLinkUniqIdentifier };
   } else {
     const targetStatus = draft.relationTargetStatus;
-    if (targetStatus !== "ENABLE" && targetStatus !== "DELETE") {
-      return { error: "请选择状态" };
-    }
     if (operation === "CREATE") {
+      if (targetStatus !== "ENABLE" && targetStatus !== "DISABLE") {
+        return { error: "请选择状态" };
+      }
       if (!draft.relationVisibilityWindows.length) {
         return { error: "请至少添加一条持续时段" };
       }
@@ -79,6 +79,9 @@ export function buildLinkCreateActionParams(draft: SpaceBehaviorDraft): BuildLin
         })),
       };
     } else {
+      if (targetStatus !== "ENABLE" && targetStatus !== "DISABLE") {
+        return { error: "请选择状态" };
+      }
       linkMapping = { ontologyLinkUniqIdentifier, targetStatus };
       if (draft.relationVisibilityWindows.length) {
         linkMapping.visibilityWindows = draft.relationVisibilityWindows.map((item) => ({

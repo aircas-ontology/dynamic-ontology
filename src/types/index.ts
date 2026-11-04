@@ -421,7 +421,12 @@ export type {
   ScheduleRuleFlowDocument,
 } from "./pages/ontologySpaceBehaviorScheduleType";
 export {
+  listSpaceBehaviorRelationTargetStatusOptions,
   ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
+  SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_LABELS,
+  SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_OPTIONS,
+  SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_LABELS,
+  SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_OPTIONS,
   SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
   SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS,
   SPACE_BEHAVIOR_KIND_LABELS,
@@ -438,6 +443,10 @@ export {
   SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS,
 } from "./pages/ontologySpaceBehaviorType";
 export type {
+  SpaceBehaviorApplicationInputBinding,
+  SpaceBehaviorApplicationInputSourceType,
+  SpaceBehaviorApplicationOutputBinding,
+  SpaceBehaviorApplicationOutputMode,
   SpaceBehaviorBasicAction,
   SpaceBehaviorCategoryNode,
   SpaceBehaviorCategoryNodeKind,

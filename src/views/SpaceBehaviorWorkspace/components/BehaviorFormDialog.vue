@@ -121,21 +121,6 @@
             >
               <el-table-column type="selection" width="48" :selectable="isAttributeRowSelectable" />
               <el-table-column prop="displayName" label="属性" min-width="160" show-overflow-tooltip />
-              <el-table-column
-                v-if="basicAction === 'create' || basicAction === 'update'"
-                :label="basicAction === 'create' ? '新增值' : '修改值'"
-                min-width="160"
-              >
-                <template #default="{ row }">
-                  <el-input
-                    v-if="selectedPropertyIds.includes(readPropertyRowId(row))"
-                    :model-value="selectedPropertyValues[readPropertyRowId(row)] ?? ''"
-                    :disabled="readonly"
-                    placeholder="输入值"
-                    @update:model-value="updatePropertyInputValue(readPropertyRowId(row), $event)"
-                  />
-                </template>
-              </el-table-column>
               <el-table-column prop="propertyType" label="类型" width="120" show-overflow-tooltip />
               <el-table-column prop="storageGroup" label="存储分组" width="140" show-overflow-tooltip />
             </el-table>
@@ -169,7 +154,7 @@
             <div v-if="showRelationLinkMappingSection" class="behavior-form-dialog__link-mapping">
               <el-form-item label="状态" required>
                 <el-select v-model="relationTargetStatus" placeholder="选择状态" style="width: 100%" :disabled="readonly">
-                  <el-option v-for="item in SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+                  <el-option v-for="item in relationTargetStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
                 </el-select>
               </el-form-item>
               <el-form-item label="持续时间" :required="basicAction === 'create'">
@@ -237,19 +222,249 @@
             </template>
           </section>
 
-          <el-form-item v-else-if="kind === 'application'" label="关联函数算子" required>
-            <el-select
-              :model-value="functionOperatorId"
-              filterable
-              :loading="operatorLoading"
-              :disabled="operatorLoading || operatorError !== ''"
-              :placeholder="operatorLoading ? '正在加载函数算子' : operatorError || (operatorCatalog.length ? '选择函数算子' : '当前空间暂无函数算子')"
-              style="width: 100%"
-              @change="handleOperatorChange"
-            >
-              <el-option v-for="item in operatorCatalog" :key="item.id" :label="`${item.name} · ${item.version}`" :value="item.id" />
-            </el-select>
-          </el-form-item>
+          <template v-else-if="kind === 'application'">
+            <el-form-item label="关联函数算子" required>
+              <el-select
+                :model-value="functionOperatorId"
+                filterable
+                :loading="operatorLoading"
+                :disabled="operatorLoading || operatorError !== ''"
+                :placeholder="operatorLoading ? '正在加载函数算子' : operatorError || (operatorCatalog.length ? '选择函数算子' : '当前空间暂无函数算子')"
+                style="width: 100%"
+                @change="handleOperatorChange"
+              >
+                <el-option v-for="item in operatorCatalog" :key="item.id" :label="`${item.name} · ${item.version}`" :value="item.id" />
+              </el-select>
+            </el-form-item>
+
+            <template v-if="functionOperatorId">
+              <section class="behavior-form-dialog__object-section">
+                <div class="behavior-form-dialog__attribute-head">
+                  <div class="behavior-form-dialog__attribute-title">
+                    <span>输入参数</span>
+                    <el-tag size="small" effect="plain">{{ applicationInputRows.length }}项</el-tag>
+                  </div>
+                </div>
+                <p v-if="applicationDetailLoading" class="behavior-form-dialog__param-state" role="status">正在加载函数详情…</p>
+                <p v-else-if="applicationDetailError" class="behavior-form-dialog__param-state" role="alert">{{ applicationDetailError }}</p>
+                <el-table v-else class="behavior-form-dialog__attribute-table" :data="applicationInputRows" row-key="rowKey" empty-text="暂无输入参数">
+                  <el-table-column label="参数" min-width="160" show-overflow-tooltip>
+                    <template #default="{ row }">
+                      <div class="behavior-form-dialog__param-name" :style="{ paddingLeft: `${row.depth * 16}px` }">
+                        <span>{{ row.paramName }}</span>
+                        <span v-if="row.paramPath" class="behavior-form-dialog__param-path">{{ row.fullPath }}</span>
+                      </div>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="类型" width="100">
+                    <template #default="{ row }">
+                      <el-tag size="small" effect="plain">{{ row.typeLabel }}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="输入来源" min-width="140">
+                    <template #default="{ row }">
+                      <el-select
+                        v-if="!row.isObject"
+                        :model-value="readApplicationInputBinding(row.rowKey).sourceType"
+                        placeholder="选择输入来源"
+                        style="width: 100%"
+                        @change="(value) => updateApplicationInputSourceType(row.rowKey, value)"
+                      >
+                        <el-option v-for="item in SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="读取属性 / 参数值" min-width="260">
+                    <template #default="{ row }">
+                      <template v-if="!row.isObject">
+                        <div v-if="readApplicationInputBinding(row.rowKey).sourceType === 'PROPERTY'" class="behavior-form-dialog__object-property-pickers">
+                          <el-select
+                            :model-value="readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier"
+                            filterable
+                            :loading="objectLoading"
+                            :disabled="objectLoading || objectError !== ''"
+                            :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
+                            style="width: 100%"
+                            @change="(value) => updateApplicationInputOntologyId(row.rowKey, value)"
+                          >
+                            <el-option v-for="item in objectOptions" :key="item.value" :label="item.label" :value="item.value" />
+                          </el-select>
+                          <el-select
+                            :model-value="readApplicationInputBinding(row.rowKey).propertyUniqueIdentifier"
+                            filterable
+                            :loading="isApplicationPropertyLoading(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier)"
+                            :disabled="!readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier"
+                            :placeholder="
+                              !readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier
+                                ? '请先选择对象'
+                                : readApplicationPropertyError(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier) ||
+                                  (readApplicationPropertyOptions(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier).length
+                                    ? '选择读取属性'
+                                    : '当前对象暂无属性')
+                            "
+                            style="width: 100%"
+                            @change="(value) => updateApplicationInputPropertyId(row.rowKey, value)"
+                          >
+                            <el-option
+                              v-for="item in readApplicationPropertyOptions(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier)"
+                              :key="item.value"
+                              :label="item.label"
+                              :value="item.value"
+                            />
+                          </el-select>
+                        </div>
+                        <el-input
+                          v-else-if="readApplicationInputBinding(row.rowKey).sourceType === 'FIXED'"
+                          type="textarea"
+                          :rows="2"
+                          :model-value="readApplicationInputBinding(row.rowKey).fixedValue"
+                          placeholder='例如: {"target":"A"}'
+                          @update:model-value="(value) => updateApplicationInputFixedValue(row.rowKey, value)"
+                        />
+                        <div v-else class="behavior-form-dialog__external-default">
+                          <el-checkbox
+                            :model-value="readApplicationInputBinding(row.rowKey).enableDefaultValue"
+                            @update:model-value="(value) => updateApplicationInputEnableDefaultValue(row.rowKey, value)"
+                          >
+                            启用默认值
+                          </el-checkbox>
+                          <el-input
+                            v-if="readApplicationInputBinding(row.rowKey).enableDefaultValue"
+                            type="textarea"
+                            :rows="2"
+                            :model-value="readApplicationInputBinding(row.rowKey).defaultValue"
+                            placeholder='例如：{"target":"A"}'
+                            @update:model-value="(value) => updateApplicationInputDefaultValue(row.rowKey, value)"
+                          />
+                        </div>
+                      </template>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </section>
+
+              <section class="behavior-form-dialog__object-section">
+                <div class="behavior-form-dialog__attribute-head">
+                  <div class="behavior-form-dialog__attribute-title">
+                    <span>输出参数</span>
+                    <el-tag size="small" effect="plain">{{ applicationOutputRows.length }}项</el-tag>
+                  </div>
+                </div>
+                <p v-if="applicationDetailLoading" class="behavior-form-dialog__param-state" role="status">正在加载函数详情…</p>
+                <p v-else-if="applicationDetailError" class="behavior-form-dialog__param-state" role="alert">{{ applicationDetailError }}</p>
+                <el-table v-else class="behavior-form-dialog__attribute-table" :data="applicationOutputRows" row-key="rowKey" empty-text="暂无输出参数">
+                  <el-table-column label="参数" min-width="160" show-overflow-tooltip>
+                    <template #default="{ row }">
+                      <div class="behavior-form-dialog__param-name" :style="{ paddingLeft: `${row.depth * 16}px` }">
+                        <span>{{ row.paramName }}</span>
+                        <span v-if="row.paramPath" class="behavior-form-dialog__param-path">{{ row.fullPath }}</span>
+                      </div>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="类型" width="100">
+                    <template #default="{ row }">
+                      <el-tag size="small" effect="plain">{{ row.typeLabel }}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="输出方式" min-width="140">
+                    <template #default="{ row }">
+                      <el-select
+                        v-if="!row.isObject"
+                        :model-value="readApplicationOutputBinding(row.rowKey).outputMode"
+                        placeholder="选择输出方式"
+                        style="width: 100%"
+                        @change="(value) => updateApplicationOutputMode(row.rowKey, value)"
+                      >
+                        <el-option v-for="item in SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="写入目标" min-width="260">
+                    <template #default="{ row }">
+                      <template v-if="!row.isObject">
+                        <p v-if="readApplicationOutputBinding(row.rowKey).outputMode === 'RESULT_ONLY'" class="behavior-form-dialog__output-target-hint">
+                          返回算子结果，不写入本体属性
+                        </p>
+                        <div v-else class="behavior-form-dialog__object-property-pickers">
+                          <el-select
+                            :model-value="readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier"
+                            filterable
+                            :loading="objectLoading"
+                            :disabled="objectLoading || objectError !== ''"
+                            :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
+                            style="width: 100%"
+                            @change="(value) => updateApplicationOutputOntologyId(row.rowKey, value)"
+                          >
+                            <el-option v-for="item in objectOptions" :key="item.value" :label="item.label" :value="item.value" />
+                          </el-select>
+                          <el-select
+                            :model-value="readApplicationOutputBinding(row.rowKey).propertyUniqueIdentifier"
+                            filterable
+                            :loading="isApplicationPropertyLoading(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier)"
+                            :disabled="!readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier"
+                            :placeholder="
+                              !readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier
+                                ? '请先选择对象'
+                                : readApplicationPropertyError(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier) ||
+                                  (readApplicationPropertyOptions(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier).length
+                                    ? '选择写入属性'
+                                    : '当前对象暂无属性')
+                            "
+                            style="width: 100%"
+                            @change="(value) => updateApplicationOutputPropertyId(row.rowKey, value)"
+                          >
+                            <el-option
+                              v-for="item in readApplicationPropertyOptions(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier)"
+                              :key="item.value"
+                              :label="item.label"
+                              :value="item.value"
+                            />
+                          </el-select>
+                        </div>
+                      </template>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </section>
+            </template>
+
+            <section class="behavior-form-dialog__object-section">
+              <div class="behavior-form-dialog__attribute-head">
+                <div class="behavior-form-dialog__attribute-title">
+                  <span>绑定关系</span>
+                  <el-tag size="small" effect="plain">{{ relationRows.length }}项</el-tag>
+                </div>
+                <span class="behavior-form-dialog__attribute-hint">可多选本空间关系</span>
+              </div>
+              <el-table
+                class="behavior-form-dialog__attribute-table"
+                :data="relationLoading ? [] : relationRows"
+                row-key="id"
+                :show-header="false"
+                :empty-text="relationLoading ? '正在加载关系' : relationError || '暂无关系'"
+              >
+                <el-table-column width="48" align="center">
+                  <template #default="{ row }">
+                    <el-checkbox
+                      :model-value="applicationSelectedRelationIds.includes(row.id)"
+                      :disabled="readonly || relationLoading"
+                      @update:model-value="(value) => toggleApplicationRelationId(row.id, value)"
+                    />
+                  </template>
+                </el-table-column>
+                <el-table-column min-width="140" show-overflow-tooltip>
+                  <template #default="{ row }">
+                    <span>{{ row.displayName }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column min-width="220" show-overflow-tooltip>
+                  <template #default="{ row }">
+                    <span class="behavior-form-dialog__relation-mapping">{{ formatApplicationRelationMapping(row) }}</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </section>
+          </template>
         </template>
       </section>
     </el-form>
@@ -284,6 +499,10 @@ import type {
   GetOntologyFunctionListItem,
   OntologyPropertyInfo,
   OntologyRelationClass,
+  SpaceBehaviorApplicationInputBinding,
+  SpaceBehaviorApplicationInputSourceType,
+  SpaceBehaviorApplicationOutputBinding,
+  SpaceBehaviorApplicationOutputMode,
   SpaceBehaviorBasicAction,
   SpaceBehaviorCategoryNode,
   SpaceBehaviorDraft,
@@ -298,10 +517,12 @@ import type {
 } from "@/types";
 import {
   ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
+  SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_OPTIONS,
+  SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_OPTIONS,
   SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS,
   SPACE_BEHAVIOR_KIND_OPTIONS,
-  SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS,
   SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS,
+  listSpaceBehaviorRelationTargetStatusOptions,
 } from "@/types";
 import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestBindingParamIds } from "@/utils/mapOntologyFunctionTest";
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
@@ -315,6 +536,11 @@ import {
   readPropertyRowId,
   resolveAttributeValueSelection,
 } from "../utils/resolveAttributeValueSelection";
+import {
+  flattenApplicationFunctionInputRows,
+  flattenApplicationFunctionOutputRows,
+  type ApplicationFunctionParamRow,
+} from "../utils/flattenApplicationFunctionParamRows";
 import { mapOntologyActionInfoToFormState, type SpaceBehaviorActionInfoFormState } from "../utils/mapOntologyActionInfoToFormState";
 import { omitActionLeavesFromCategoryTree } from "../utils/spaceBehaviorOperations";
 import { sortPropertyInfosByStorageGroup } from "../utils/sortPropertyInfosByStorageGroup";
@@ -355,6 +581,8 @@ const relationLoading = ref(false);
 const relationError = ref("");
 let relationLoadToken = 0;
 const selectedRelationId = ref("");
+/** 应用行为「绑定关系」多选 id 列表。 */
+const applicationSelectedRelationIds = ref<string[]>([]);
 const relationTargetStatus = ref<SpaceBehaviorRelationTargetStatus | "">("");
 /** 时段选择器行；value-format=x 时用数字毫秒时间戳，避免字符串被解析为年份。 */
 const visibilityWindowRows = ref<Array<[number, number] | null>>([]);
@@ -375,6 +603,329 @@ const operatorPropertyOptions = ref<SpaceRelationObjectOption[]>([]);
 const operatorPropertyLoading = ref(false);
 const operatorPropertyError = ref("");
 let operatorPropertyToken = 0;
+const applicationInputRows = ref<ApplicationFunctionParamRow[]>([]);
+const applicationOutputRows = ref<ApplicationFunctionParamRow[]>([]);
+const applicationInputBindings = ref<Record<string, SpaceBehaviorApplicationInputBinding>>({});
+const applicationDetailLoading = ref(false);
+const applicationDetailError = ref("");
+let applicationDetailToken = 0;
+
+/**
+ * @description 创建应用行为入参绑定的默认草稿。
+ * @returns 默认绑定。
+ */
+function createDefaultApplicationInputBinding(): SpaceBehaviorApplicationInputBinding {
+  return {
+    sourceType: "PROPERTY",
+    ontologyUniqueIdentifier: "",
+    propertyUniqueIdentifier: "",
+    fixedValue: "",
+    enableDefaultValue: false,
+    defaultValue: "",
+  };
+}
+
+/**
+ * @description 读取指定入参行的本地绑定；缺失时回退默认草稿。
+ * @param rowKey 入参行键。
+ * @returns 绑定草稿。
+ */
+function readApplicationInputBinding(rowKey: string): SpaceBehaviorApplicationInputBinding {
+  return applicationInputBindings.value[rowKey] ?? createDefaultApplicationInputBinding();
+}
+
+/**
+ * @description 按非对象入参行初始化本地绑定状态。
+ * @param rows 入参扁平行。
+ */
+function syncApplicationInputBindings(rows: ApplicationFunctionParamRow[]): void {
+  const next: Record<string, SpaceBehaviorApplicationInputBinding> = {};
+  for (const row of rows) {
+    if (row.isObject) continue;
+    next[row.rowKey] = applicationInputBindings.value[row.rowKey] ?? createDefaultApplicationInputBinding();
+  }
+  applicationInputBindings.value = next;
+}
+
+/**
+ * @description 写入单个入参绑定的局部字段。
+ * @param rowKey 入参行键。
+ * @param patch 局部更新。
+ */
+function patchApplicationInputBinding(rowKey: string, patch: Partial<SpaceBehaviorApplicationInputBinding>): void {
+  applicationInputBindings.value = {
+    ...applicationInputBindings.value,
+    [rowKey]: {
+      ...readApplicationInputBinding(rowKey),
+      ...patch,
+    },
+  };
+}
+
+/**
+ * @description 更新入参输入来源，并清空不适用的取值字段。
+ * @param rowKey 入参行键。
+ * @param value 新来源。
+ */
+function updateApplicationInputSourceType(rowKey: string, value: string | number | boolean | undefined): void {
+  if (value !== "PROPERTY" && value !== "FIXED" && value !== "EXTERNAL") return;
+  const sourceType = value as SpaceBehaviorApplicationInputSourceType;
+  patchApplicationInputBinding(rowKey, {
+    sourceType,
+    ontologyUniqueIdentifier: "",
+    propertyUniqueIdentifier: "",
+    fixedValue: "",
+    enableDefaultValue: false,
+    defaultValue: "",
+  });
+}
+
+/**
+ * @description 更新对象属性来源下选中的对象，并加载属性选项。
+ * @param rowKey 入参行键。
+ * @param value 对象 uniqueIdentifier。
+ */
+function updateApplicationInputOntologyId(rowKey: string, value: string | number | boolean | undefined): void {
+  const ontologyUniqueIdentifier = typeof value === "string" ? value.trim() : "";
+  patchApplicationInputBinding(rowKey, {
+    ontologyUniqueIdentifier,
+    propertyUniqueIdentifier: "",
+  });
+  if (ontologyUniqueIdentifier) void ensureApplicationPropertyOptions(ontologyUniqueIdentifier);
+}
+
+/**
+ * @description 更新对象属性来源下选中的属性标识。
+ * @param rowKey 入参行键。
+ * @param value 属性 uniqueIdentifier。
+ */
+function updateApplicationInputPropertyId(rowKey: string, value: string | number | boolean | undefined): void {
+  const propertyUniqueIdentifier = typeof value === "string" ? value.trim() : "";
+  patchApplicationInputBinding(rowKey, { propertyUniqueIdentifier });
+}
+
+/**
+ * @description 更新固定值来源下的字面量。
+ * @param rowKey 入参行键。
+ * @param value 固定值文本。
+ */
+function updateApplicationInputFixedValue(rowKey: string, value: string): void {
+  patchApplicationInputBinding(rowKey, { fixedValue: value });
+}
+
+/**
+ * @description 更新外部输入是否启用默认值。
+ * @param rowKey 入参行键。
+ * @param value 是否启用。
+ */
+function updateApplicationInputEnableDefaultValue(rowKey: string, value: string | number | boolean): void {
+  const enableDefaultValue = value === true;
+  patchApplicationInputBinding(rowKey, {
+    enableDefaultValue,
+    defaultValue: enableDefaultValue ? readApplicationInputBinding(rowKey).defaultValue : "",
+  });
+}
+
+/**
+ * @description 更新外部输入默认值字面量。
+ * @param rowKey 入参行键。
+ * @param value 默认值文本。
+ */
+function updateApplicationInputDefaultValue(rowKey: string, value: string): void {
+  patchApplicationInputBinding(rowKey, { defaultValue: value });
+}
+
+const applicationOutputBindings = ref<Record<string, SpaceBehaviorApplicationOutputBinding>>({});
+
+/**
+ * @description 创建应用行为出参绑定的默认草稿。
+ * @returns 默认绑定。
+ */
+function createDefaultApplicationOutputBinding(): SpaceBehaviorApplicationOutputBinding {
+  return {
+    outputMode: "RESULT_ONLY",
+    ontologyUniqueIdentifier: "",
+    propertyUniqueIdentifier: "",
+  };
+}
+
+/**
+ * @description 读取指定出参行的本地绑定；缺失时回退默认草稿。
+ * @param rowKey 出参行键。
+ * @returns 绑定草稿。
+ */
+function readApplicationOutputBinding(rowKey: string): SpaceBehaviorApplicationOutputBinding {
+  return applicationOutputBindings.value[rowKey] ?? createDefaultApplicationOutputBinding();
+}
+
+/**
+ * @description 按非对象出参行初始化本地绑定状态。
+ * @param rows 出参扁平行。
+ */
+function syncApplicationOutputBindings(rows: ApplicationFunctionParamRow[]): void {
+  const next: Record<string, SpaceBehaviorApplicationOutputBinding> = {};
+  for (const row of rows) {
+    if (row.isObject) continue;
+    next[row.rowKey] = applicationOutputBindings.value[row.rowKey] ?? createDefaultApplicationOutputBinding();
+  }
+  applicationOutputBindings.value = next;
+}
+
+/**
+ * @description 写入单个出参绑定的局部字段。
+ * @param rowKey 出参行键。
+ * @param patch 局部更新。
+ */
+function patchApplicationOutputBinding(rowKey: string, patch: Partial<SpaceBehaviorApplicationOutputBinding>): void {
+  applicationOutputBindings.value = {
+    ...applicationOutputBindings.value,
+    [rowKey]: {
+      ...readApplicationOutputBinding(rowKey),
+      ...patch,
+    },
+  };
+}
+
+/**
+ * @description 更新出参输出方式，并清空不适用的写入属性。
+ * @param rowKey 出参行键。
+ * @param value 新输出方式。
+ */
+function updateApplicationOutputMode(rowKey: string, value: string | number | boolean | undefined): void {
+  if (value !== "RESULT_ONLY" && value !== "WRITE_PROPERTY") return;
+  const outputMode = value as SpaceBehaviorApplicationOutputMode;
+  patchApplicationOutputBinding(rowKey, {
+    outputMode,
+    ontologyUniqueIdentifier: "",
+    propertyUniqueIdentifier: "",
+  });
+}
+
+/**
+ * @description 更新写入对象属性时选中的对象，并加载属性选项。
+ * @param rowKey 出参行键。
+ * @param value 对象 uniqueIdentifier。
+ */
+function updateApplicationOutputOntologyId(rowKey: string, value: string | number | boolean | undefined): void {
+  const ontologyUniqueIdentifier = typeof value === "string" ? value.trim() : "";
+  patchApplicationOutputBinding(rowKey, {
+    ontologyUniqueIdentifier,
+    propertyUniqueIdentifier: "",
+  });
+  if (ontologyUniqueIdentifier) void ensureApplicationPropertyOptions(ontologyUniqueIdentifier);
+}
+
+/**
+ * @description 更新写入对象属性时选中的属性标识。
+ * @param rowKey 出参行键。
+ * @param value 属性 uniqueIdentifier。
+ */
+function updateApplicationOutputPropertyId(rowKey: string, value: string | number | boolean | undefined): void {
+  const propertyUniqueIdentifier = typeof value === "string" ? value.trim() : "";
+  patchApplicationOutputBinding(rowKey, { propertyUniqueIdentifier });
+}
+
+/** 应用行为按对象缓存的属性选项（value=uniqueIdentifier）。 */
+const applicationPropertyOptionsByOntology = ref<Record<string, SpaceRelationObjectOption[]>>({});
+const applicationPropertyLoadingByOntology = ref<Record<string, boolean>>({});
+const applicationPropertyErrorByOntology = ref<Record<string, string>>({});
+const applicationPropertyLoadTokens: Record<string, number> = {};
+
+/**
+ * @description 清空应用行为属性选项缓存。
+ */
+function clearApplicationPropertyOptionCache(): void {
+  applicationPropertyOptionsByOntology.value = {};
+  applicationPropertyLoadingByOntology.value = {};
+  applicationPropertyErrorByOntology.value = {};
+  for (const key of Object.keys(applicationPropertyLoadTokens)) delete applicationPropertyLoadTokens[key];
+}
+
+/**
+ * @description 读取对象下的属性选项。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @returns 属性选项。
+ */
+function readApplicationPropertyOptions(ontologyUniqueIdentifier: string): SpaceRelationObjectOption[] {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  if (!ontologyId) return [];
+  return applicationPropertyOptionsByOntology.value[ontologyId] ?? [];
+}
+
+/**
+ * @description 判断对象属性选项是否加载中。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @returns 加载中为 true。
+ */
+function isApplicationPropertyLoading(ontologyUniqueIdentifier: string): boolean {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  if (!ontologyId) return false;
+  return Boolean(applicationPropertyLoadingByOntology.value[ontologyId]);
+}
+
+/**
+ * @description 读取对象属性选项加载错误。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @returns 错误文案。
+ */
+function readApplicationPropertyError(ontologyUniqueIdentifier: string): string {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  if (!ontologyId) return "";
+  return applicationPropertyErrorByOntology.value[ontologyId] ?? "";
+}
+
+/**
+ * @description 按对象加载并缓存属性选项（uniqueIdentifier）；已缓存则跳过。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ */
+async function ensureApplicationPropertyOptions(ontologyUniqueIdentifier: string): Promise<void> {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  if (!ontologyId) return;
+  if (Object.prototype.hasOwnProperty.call(applicationPropertyOptionsByOntology.value, ontologyId)) return;
+  if (applicationPropertyLoadingByOntology.value[ontologyId]) return;
+  const requestToken = (applicationPropertyLoadTokens[ontologyId] ?? 0) + 1;
+  applicationPropertyLoadTokens[ontologyId] = requestToken;
+  applicationPropertyLoadingByOntology.value = {
+    ...applicationPropertyLoadingByOntology.value,
+    [ontologyId]: true,
+  };
+  applicationPropertyErrorByOntology.value = {
+    ...applicationPropertyErrorByOntology.value,
+    [ontologyId]: "",
+  };
+  try {
+    const response = await getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier: ontologyId });
+    if (applicationPropertyLoadTokens[ontologyId] !== requestToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "属性列表加载失败");
+    const options = new Map<string, SpaceRelationObjectOption>();
+    for (const item of response.data) {
+      const value = typeof item.uniqueIdentifier === "string" ? item.uniqueIdentifier.trim() : "";
+      if (!value || options.has(value)) continue;
+      const apiName = typeof item.apiName === "string" ? item.apiName.trim() : "";
+      const displayName = typeof item.displayName === "string" ? item.displayName.trim() : "";
+      const label = displayName ? (apiName ? `${displayName}（${apiName}）` : displayName) : apiName || value;
+      options.set(value, { value, label });
+    }
+    applicationPropertyOptionsByOntology.value = {
+      ...applicationPropertyOptionsByOntology.value,
+      [ontologyId]: [...options.values()].sort((left, right) => left.label.localeCompare(right.label, "zh-CN") || left.value.localeCompare(right.value)),
+    };
+  } catch (error) {
+    if (applicationPropertyLoadTokens[ontologyId] !== requestToken) return;
+    applicationPropertyErrorByOntology.value = {
+      ...applicationPropertyErrorByOntology.value,
+      [ontologyId]: error instanceof Error ? error.message : "属性列表加载失败",
+    };
+  } finally {
+    if (applicationPropertyLoadTokens[ontologyId] === requestToken) {
+      applicationPropertyLoadingByOntology.value = {
+        ...applicationPropertyLoadingByOntology.value,
+        [ontologyId]: false,
+      };
+    }
+  }
+}
+
 const description = ref("");
 const categoryId = ref(ROOT_SPACE_BEHAVIOR_CATEGORY_ID);
 const status = ref<SpaceBehaviorStatus>("draft");
@@ -396,6 +947,7 @@ const showBasicFunctionOperatorSection = computed(() => kind.value === "basic" &
 const showRelationLinkMappingSection = computed(
   () => showRelationInstanceSection.value && Boolean(selectedRelationId.value.trim()) && (basicAction.value === "create" || basicAction.value === "update"),
 );
+const relationTargetStatusOptions = computed(() => listSpaceBehaviorRelationTargetStatusOptions(basicAction.value));
 const attributeSelectionHint = computed(() => {
   if (basicAction.value === "create") return "不可选择 main 分组；选中同组任一属性将全选该组";
   if (basicAction.value === "delete") return "不可选择 main 分组；选中同组任一属性将全选该组";
@@ -417,16 +969,49 @@ function clearObjectInfoSelection(): void {
 }
 
 /**
+ * @description 清空应用行为绑定关系多选。
+ */
+function clearApplicationRelationSelection(): void {
+  applicationSelectedRelationIds.value = [];
+}
+
+/**
  * @description 清空关系实例选中项、linkMapping 字段与关系列表加载状态。
  */
 function clearRelationSelection(): void {
   selectedRelationId.value = "";
   ontologyIdentifier.value = "";
+  clearApplicationRelationSelection();
   clearRelationLinkMappingFields();
   relationRows.value = [];
   relationError.value = "";
   relationLoadToken += 1;
   relationLoading.value = false;
+}
+
+/**
+ * @description 格式化应用行为关系行的源→目标展示文案。
+ * @param row 关系行。
+ * @returns 映射文案。
+ */
+function formatApplicationRelationMapping(row: OntologyRelationClass): string {
+  const sourceName = row.sourceName.trim() || "—";
+  const targetName = row.targetName.trim() || "—";
+  return `${sourceName} → ${targetName}`;
+}
+
+/**
+ * @description 切换应用行为绑定关系的勾选状态。
+ * @param relationId 关系 uniqueIdentifier。
+ * @param checked 是否勾选。
+ */
+function toggleApplicationRelationId(relationId: string, checked: string | number | boolean): void {
+  const nextId = relationId.trim();
+  if (!nextId) return;
+  const selected = new Set(applicationSelectedRelationIds.value);
+  if (checked === true) selected.add(nextId);
+  else selected.delete(nextId);
+  applicationSelectedRelationIds.value = [...selected];
 }
 
 /**
@@ -533,29 +1118,11 @@ function handleRelationRowClick(row: OntologyRelationClass): void {
 }
 
 /**
- * @description 更新属性行对应的新增值/修改值录入。
- * @param propertyId 属性 uniqueIdentifier。
- * @param value 输入值。
- */
-function updatePropertyInputValue(propertyId: string, value: string | number): void {
-  const id = propertyId.trim();
-  if (!id) return;
-  selectedPropertyValues.value = {
-    ...selectedPropertyValues.value,
-    [id]: String(value),
-  };
-}
-
-/**
- * @description 仅保留当前已勾选属性的录入值，减小草稿噪声。
- * @returns 勾选属性对应的录入值映射。
+ * @description 属性值行为不再录入固定值，草稿中返回空映射以保持类型兼容。
+ * @returns 空的属性值映射。
  */
 function buildSelectedPropertyValuesForDraft(): Record<string, string> {
-  const values: Record<string, string> = {};
-  for (const propertyId of selectedPropertyIds.value) {
-    values[propertyId] = selectedPropertyValues.value[propertyId] ?? "";
-  }
-  return values;
+  return {};
 }
 
 /**
@@ -570,6 +1137,19 @@ function buildSelectedPropertyApiNamesForDraft(): Record<string, string> {
     names[propertyId] = apiName;
   }
   return names;
+}
+
+/**
+ * @description 清空应用行为函数详情入出参展示。
+ */
+function clearApplicationOperatorDetail(): void {
+  applicationDetailToken += 1;
+  applicationInputRows.value = [];
+  applicationOutputRows.value = [];
+  applicationInputBindings.value = {};
+  applicationOutputBindings.value = {};
+  applicationDetailError.value = "";
+  applicationDetailLoading.value = false;
 }
 
 /**
@@ -589,6 +1169,7 @@ function clearSelectedOperator(): void {
   operatorPropertyError.value = "";
   operatorPropertyToken += 1;
   operatorPropertyLoading.value = false;
+  clearApplicationOperatorDetail();
 }
 
 /**
@@ -688,12 +1269,16 @@ function handleKindChange(value: string | number | boolean | undefined): void {
     clearSelectedOperator();
     clearRelationSelection();
     valueType.value = "attributeValue";
+    void loadOperatorCatalog();
     return;
   }
   clearObjectInfoSelection();
   clearRelationSelection();
   if (value === "application") {
     basicAction.value = "create";
+    clearSelectedOperator();
+    void loadOperatorCatalog();
+    void loadRelationRows();
     return;
   }
   displayName.value = "";
@@ -740,6 +1325,10 @@ function handleBasicActionChange(value: string | number | boolean | undefined): 
       clearRelationLinkMappingFields();
     } else if (selectedRelationId.value.trim()) {
       ensureDefaultVisibilityWindowRow();
+      const allowed = listSpaceBehaviorRelationTargetStatusOptions(value).map((item) => item.value);
+      if (relationTargetStatus.value && !allowed.includes(relationTargetStatus.value)) {
+        relationTargetStatus.value = "";
+      }
     }
     return;
   }
@@ -751,15 +1340,52 @@ function handleBasicActionChange(value: string | number | boolean | undefined): 
 }
 
 /**
- * @description 选择关联函数算子（应用行为）。
+ * @description 拉取应用行为所选算子详情并展开入出参行。
+ * @param functionApi 函数 api。
+ * @param version 函数版本。
+ */
+async function loadApplicationOperatorDetail(functionApi: string, version: string): Promise<void> {
+  const requestToken = ++applicationDetailToken;
+  applicationDetailLoading.value = true;
+  applicationDetailError.value = "";
+  applicationInputRows.value = [];
+  applicationOutputRows.value = [];
+  try {
+    const response = await getOntologyFunctionDetailInterface({ functionApi, version });
+    if (requestToken !== applicationDetailToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "函数详情加载失败");
+    const params = response.data.params ?? [];
+    const inputRows = flattenApplicationFunctionInputRows(params);
+    const outputRows = flattenApplicationFunctionOutputRows(params);
+    applicationInputRows.value = inputRows;
+    applicationOutputRows.value = outputRows;
+    syncApplicationInputBindings(inputRows);
+    syncApplicationOutputBindings(outputRows);
+  } catch (error) {
+    if (requestToken !== applicationDetailToken) return;
+    applicationInputRows.value = [];
+    applicationOutputRows.value = [];
+    applicationInputBindings.value = {};
+    applicationOutputBindings.value = {};
+    applicationDetailError.value = error instanceof Error ? error.message : "函数详情加载失败";
+  } finally {
+    if (requestToken === applicationDetailToken) applicationDetailLoading.value = false;
+  }
+}
+
+/**
+ * @description 选择关联函数算子（应用行为）并加载入出参。
  * @param value 函数算子 id。
  */
 function handleOperatorChange(value: string | number | boolean | undefined): void {
-  if (typeof value !== "string") {
+  if (typeof value !== "string" || !value.trim()) {
     clearSelectedOperator();
     return;
   }
   applySelectedOperator(value);
+  clearApplicationOperatorDetail();
+  if (!functionOperatorId.value || !functionOperatorVersion.value) return;
+  void loadApplicationOperatorDetail(functionOperatorId.value, functionOperatorVersion.value);
 }
 
 /**
@@ -1012,6 +1638,17 @@ async function hydrateActionInfoSections(state: SpaceBehaviorActionInfoFormState
     if (state.ontologyIdentifier) {
       await loadOperatorPropertyOptions(state.ontologyIdentifier);
     }
+    return;
+  }
+  if (state.kind === "application" && state.functionOperatorId) {
+    const matched = operatorCatalog.value.find((item) => item.id === state.functionOperatorId);
+    if (matched) {
+      functionOperatorVersion.value = matched.version;
+      functionOperatorName.value = matched.name || state.functionOperatorName;
+    }
+    if (functionOperatorVersion.value) {
+      await loadApplicationOperatorDetail(state.functionOperatorId, functionOperatorVersion.value);
+    }
   }
 }
 
@@ -1037,8 +1674,12 @@ async function loadActionInfoForEdit(): Promise<void> {
     clearRelationSelection();
     clearSelectedOperator();
     applyActionInfoBaseFields(state);
-    if (state.valueType === "basicFunctionOperator") {
+    if (state.valueType === "basicFunctionOperator" || state.kind === "application") {
       await loadOperatorCatalog();
+      if (requestToken !== detailLoadToken) return;
+    }
+    if (state.kind === "application") {
+      await loadRelationRows();
       if (requestToken !== detailLoadToken) return;
     }
     await hydrateActionInfoSections(state);
@@ -1158,7 +1799,7 @@ async function loadOperatorCatalog(): Promise<void> {
     if (!Number.isInteger(numericSpaceId)) throw new Error("当前对象空间无效");
     const response = await getOntologyFunctionListInterface({
       ontologySpaceId: numericSpaceId,
-      type: "BASIC_QUERY",
+      ...(kind.value === "application" ? { excludeTypes: "BASIC_QUERY" } : { type: "BASIC_QUERY" as const }),
       publishStatus: 1,
       pageNum: 1,
       pageSize: 100,
@@ -1272,9 +1913,9 @@ watch(
       detailLoading.value = false;
       detailError.value = "";
       unsupportedEditReason.value = "";
+      clearApplicationPropertyOptionCache();
       return;
     }
-    void loadOperatorCatalog();
     void loadObjectOptions();
     submitLoading.value = false;
     clearObjectInfoSelection();
@@ -1299,6 +1940,11 @@ watch(
       categoryId.value = props.behavior.categoryId;
       status.value = props.behavior.status;
       basicAction.value = props.behavior.basicAction;
+      clearApplicationRelationSelection();
+      void loadOperatorCatalog();
+      if (kind.value === "application") {
+        void loadRelationRows();
+      }
       if (props.mode === "edit") {
         void loadActionInfoForEdit();
       }
@@ -1313,6 +1959,7 @@ watch(
     status.value = "draft";
     basicAction.value = "create";
     clearSelectedOperator();
+    void loadOperatorCatalog();
   },
 );
 
@@ -1389,6 +2036,43 @@ defineExpose({
   margin: 0 0 12px;
   color: var(--aircas-color-text-secondary);
   font-size: 13px;
+}
+
+.behavior-form-dialog__param-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.behavior-form-dialog__param-path {
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+}
+
+.behavior-form-dialog__external-default {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.behavior-form-dialog__object-property-pickers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.behavior-form-dialog__output-target-hint {
+  margin: 0;
+  color: var(--aircas-color-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.behavior-form-dialog__relation-mapping {
+  color: var(--aircas-color-text-secondary);
 }
 
 .behavior-form-dialog__visibility-windows {

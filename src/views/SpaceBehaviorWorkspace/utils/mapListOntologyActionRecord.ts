@@ -9,31 +9,31 @@ import type {
 } from "@/types";
 
 /**
- * @description 将列表接口状态码映射为工作区行为状态（兼容编辑弹窗既有取值）。
- * @param status 接口状态：1 启用，0 失效。
- * @returns published 或 disabled。
+ * @description 将列表接口状态码映射为工作区行为状态。
+ * @param status 接口状态：1 已发布，2 草稿。
+ * @returns published 或 draft。
  */
 export function mapListOntologyActionStatus(status: number): SpaceBehaviorStatus {
-  return status === 1 ? "published" : "disabled";
+  return status === 1 ? "published" : "draft";
 }
 
 /**
- * @description 将工作区行为状态映射为列表筛选项启用/失效。
+ * @description 将工作区行为状态映射为列表筛选项已发布/草稿。
  * @param status 行为状态。
  * @returns 列表状态。
  */
 export function mapSpaceBehaviorItemToListStatus(status: SpaceBehaviorStatus): SpaceBehaviorListStatus {
-  return status === "disabled" ? "disabled" : "enabled";
+  return status === "published" ? "published" : "draft";
 }
 
 /**
  * @description 将列表筛选项映射为接口 status 查询值。
  * @param status 列表筛选项；空表示不筛选。
- * @returns 1 / 0；未选时为 undefined。
+ * @returns 1 / 2；未选时为 undefined。
  */
 export function mapSpaceBehaviorListStatusToQuery(status: SpaceBehaviorListStatus | ""): number | undefined {
-  if (status === "enabled") return 1;
-  if (status === "disabled") return 0;
+  if (status === "published") return 1;
+  if (status === "draft") return 2;
   return undefined;
 }
 

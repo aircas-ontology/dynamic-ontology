@@ -35,6 +35,11 @@ import {
   isBasicOperatorActionCreateDraft,
 } from "../src/views/SpaceBehaviorWorkspace/utils/buildBasicOperatorCreateActionParams.ts";
 import { mapOntologyActionInfoToFormState } from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyActionInfoToFormState.ts";
+import {
+  flattenApplicationFunctionInputRows,
+  flattenApplicationFunctionOutputRows,
+  mapFunctionParamTypeLabel,
+} from "../src/views/SpaceBehaviorWorkspace/utils/flattenApplicationFunctionParamRows.ts";
 
 /**
  * @description 读取相对 tests 目录的源文件文本。
@@ -98,14 +103,25 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(listSource, /aircas-table--accent-header/);
   assert.match(listSource, /stripe/);
   assert.match(listSource, /label="行为名称"/);
-  assert.match(listSource, /label="类别"/);
-  assert.match(listSource, /SPACE_BEHAVIOR_KIND_LABELS/);
-  assert.doesNotMatch(listSource, /label="函数算子"/);
-  assert.doesNotMatch(listSource, /label="行为类型"/);
+  assert.match(listSource, /label="行为类别"/);
+  assert.match(listSource, /formatBehaviorCategoryLabel/);
+  assert.match(listSource, /SPACE_BEHAVIOR_VALUE_TYPE_LABELS/);
+  assert.match(listSource, /\$\{kindLabel\}-\$\{valueTypeLabel\}/);
   assert.match(listSource, /label="描述"/);
+  assert.match(listSource, /label="函数算子"/);
+  assert.match(listSource, /functionOperatorName/);
+  assert.match(listSource, /label="apiName"/);
+  assert.match(listSource, /behaviorApiName/);
   assert.match(listSource, /label="状态"/);
   assert.match(listSource, /label="更新时间"/);
+  assert.doesNotMatch(listSource, /label="类别"/);
+  assert.doesNotMatch(listSource, /label="行为类型"/);
+  assert.match(listSource, /SPACE_BEHAVIOR_KIND_LABELS/);
   assert.match(listSource, /新建行为/);
+  assert.match(listSource, />测试</);
+  assert.match(listSource, /emit\('test'/);
+  assert.match(workspaceSource, /@test="openBehaviorTest"/);
+  assert.match(workspaceSource, /行为测试功能后续接入/);
   assert.match(listSource, /placeholder="行为状态"/);
   assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_OPTIONS/);
   assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_LABELS/);
@@ -133,8 +149,8 @@ test("space behavior workspace loads the action category tree on entry", () => {
   assert.doesNotMatch(panelSource, /Document/);
 });
 
-test("space behavior maps listAction records to table rows with enabled disabled status", () => {
-  const enabled = mapListOntologyActionRecord({
+test("space behavior maps listAction records to table rows with published draft status", () => {
+  const published = mapListOntologyActionRecord({
     id: 1,
     actionApi: "act.pv.weapon.add",
     displayName: "武器行-新增",
@@ -150,24 +166,24 @@ test("space behavior maps listAction records to table rows with enabled disabled
     functionDescription: null,
     outputMode: null,
   });
-  assert.equal(enabled.displayName, "武器行-新增");
-  assert.equal(enabled.behaviorApiName, "act.pv.weapon.add");
-  assert.equal(enabled.functionOperatorName, "-");
-  assert.equal(enabled.status, "published");
-  assert.equal(mapSpaceBehaviorItemToListStatus(enabled.status), "enabled");
-  assert.equal(enabled.updatedAt, "-");
-  assert.equal(enabled.kind, "basic");
-  assert.equal(enabled.valueType, "attributeValue");
-  assert.equal(enabled.basicAction, "create");
+  assert.equal(published.displayName, "武器行-新增");
+  assert.equal(published.behaviorApiName, "act.pv.weapon.add");
+  assert.equal(published.functionOperatorName, "-");
+  assert.equal(published.status, "published");
+  assert.equal(mapSpaceBehaviorItemToListStatus(published.status), "published");
+  assert.equal(published.updatedAt, "-");
+  assert.equal(published.kind, "basic");
+  assert.equal(published.valueType, "attributeValue");
+  assert.equal(published.basicAction, "create");
 
-  const disabled = mapListOntologyActionRecord({
+  const draft = mapListOntologyActionRecord({
     id: 2,
     actionApi: "fn.demo",
-    displayName: "失效行为",
+    displayName: "草稿行为",
     description: "desc",
     ontologyUniqIdentifier: "oid",
     categoryId: 11,
-    status: 0,
+    status: 2,
     actionKind: "APPLICATION",
     subjectType: "BASIC_OPERATOR",
     operation: "UPDATE",
@@ -176,13 +192,13 @@ test("space behavior maps listAction records to table rows with enabled disabled
     functionDescription: "算子说明",
     outputMode: null,
   });
-  assert.equal(disabled.status, "disabled");
-  assert.equal(mapSpaceBehaviorItemToListStatus(disabled.status), "disabled");
-  assert.equal(disabled.functionOperatorName, "op.api");
-  assert.equal(disabled.kind, "application");
-  assert.equal(disabled.basicAction, "update");
-  assert.equal(mapSpaceBehaviorListStatusToQuery("enabled"), 1);
-  assert.equal(mapSpaceBehaviorListStatusToQuery("disabled"), 0);
+  assert.equal(draft.status, "draft");
+  assert.equal(mapSpaceBehaviorItemToListStatus(draft.status), "draft");
+  assert.equal(draft.functionOperatorName, "op.api");
+  assert.equal(draft.kind, "application");
+  assert.equal(draft.basicAction, "update");
+  assert.equal(mapSpaceBehaviorListStatusToQuery("published"), 1);
+  assert.equal(mapSpaceBehaviorListStatusToQuery("draft"), 2);
   assert.equal(mapSpaceBehaviorListStatusToQuery(""), undefined);
 
   const linkAction = mapListOntologyActionRecord({
@@ -315,7 +331,8 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /请至少添加一条持续时段/);
   assert.match(formSource, /添加时段/);
   assert.match(formSource, /type="datetimerange"/);
-  assert.match(formSource, /SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS/);
+  assert.match(formSource, /listSpaceBehaviorRelationTargetStatusOptions/);
+  assert.match(formSource, /relationTargetStatusOptions/);
   assert.match(formSource, /selectedRelationId: selectedRelationId\.value\.trim\(\)/);
   assert.match(formSource, /relationTargetStatus:/);
   assert.match(formSource, /relationVisibilityWindows:/);
@@ -351,13 +368,53 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(workspaceIndex, /useRemotePropertyValueAction: false/);
   assert.doesNotMatch(formSource, /另存草稿副本/);
   assert.match(formSource, /sourceOntologyId/);
-  assert.match(formSource, /新增值/);
-  assert.match(formSource, /修改值/);
-  assert.match(formSource, /v-if="selectedPropertyIds\.includes\(readPropertyRowId\(row\)\)"/);
-  assert.match(formSource, /basicAction === ['"]create['"] \|\| basicAction === ['"]update['"]/);
+  assert.doesNotMatch(formSource, /新增值/);
+  assert.doesNotMatch(formSource, /修改值/);
+  assert.doesNotMatch(formSource, /updatePropertyInputValue/);
   assert.match(formSource, /sortPropertyInfosByStorageGroup/);
-  assert.match(formSource, /updatePropertyInputValue/);
   assert.match(formSource, /关联函数算子/);
+  assert.match(formSource, /excludeTypes: "BASIC_QUERY"/);
+  assert.match(formSource, /loadApplicationOperatorDetail/);
+  assert.match(formSource, /flattenApplicationFunctionInputRows/);
+  assert.match(formSource, /flattenApplicationFunctionOutputRows/);
+  assert.match(formSource, /applicationInputRows/);
+  assert.match(formSource, /applicationOutputRows/);
+  assert.match(formSource, /label="输入来源"/);
+  assert.match(formSource, /label="输出方式"/);
+  assert.match(formSource, /v-if="!row\.isObject"/);
+  assert.match(formSource, /SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_OPTIONS/);
+  assert.match(formSource, /updateApplicationInputSourceType/);
+  assert.match(formSource, /updateApplicationInputOntologyId/);
+  assert.match(formSource, /ensureApplicationPropertyOptions/);
+  assert.match(formSource, /请先选择对象/);
+  assert.match(formSource, /选择读取属性/);
+  assert.match(formSource, /sourceType === ['"]FIXED['"]/);
+  assert.match(formSource, /启用默认值/);
+  assert.match(formSource, /placeholder='例如: \{"target":"A"\}'/);
+  assert.match(formSource, /SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_OPTIONS/);
+  assert.match(formSource, /updateApplicationOutputMode/);
+  assert.match(formSource, /updateApplicationOutputOntologyId/);
+  assert.match(formSource, /返回算子结果，不写入本体属性/);
+  assert.match(formSource, /选择写入属性/);
+  assert.match(formSource, /behavior-form-dialog__object-property-pickers/);
+  assert.match(formSource, /绑定关系/);
+  assert.match(formSource, /applicationSelectedRelationIds/);
+  assert.match(formSource, /toggleApplicationRelationId/);
+  assert.match(formSource, /formatApplicationRelationMapping/);
+  assert.match(formSource, /可多选本空间关系/);
+  assert.doesNotMatch(formSource, /placeholder="后续可选"/);
+  assert.doesNotMatch(formSource, /label="配置状态"/);
+  assert.doesNotMatch(formSource, /待完善/);
+  assert.match(typeSource, /SpaceBehaviorApplicationInputSourceType/);
+  assert.match(typeSource, /SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_OPTIONS/);
+  assert.match(typeSource, /ontologyUniqueIdentifier: string/);
+  assert.match(typeSource, /label: "对象属性"/);
+  assert.match(typeSource, /label: "固定值"/);
+  assert.match(typeSource, /label: "外部输入"/);
+  assert.match(typeSource, /SpaceBehaviorApplicationOutputMode/);
+  assert.match(typeSource, /SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_OPTIONS/);
+  assert.match(typeSource, /label: "仅返回结果"/);
+  assert.match(typeSource, /label: "写入对象属性"/);
   assert.match(formSource, /构建行为树/);
   assert.match(formSource, /行为树构建后续接入/);
   assert.match(formSource, /保存行为/);
@@ -381,9 +438,12 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(typeSource, /relationTargetStatus: SpaceBehaviorRelationTargetStatus \| ""/);
   assert.match(typeSource, /relationVisibilityWindows: SpaceBehaviorRelationVisibilityWindow\[\]/);
   assert.match(typeSource, /SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS/);
+  assert.match(typeSource, /listSpaceBehaviorRelationTargetStatusOptions/);
   assert.match(typeSource, /value: "ENABLE"/);
+  assert.match(typeSource, /value: "DISABLE"/);
   assert.match(typeSource, /value: "DELETE"/);
   assert.match(typeSource, /label: "enable"/);
+  assert.match(typeSource, /label: "disable"/);
   assert.match(typeSource, /label: "delete"/);
   assert.match(typeSource, /SPACE_BEHAVIOR_KIND_OPTIONS/);
   assert.match(typeSource, /label: "属性值"/);
@@ -473,6 +533,162 @@ test("space behavior parameter flatten treats missing children as leaf rows", ()
   ]);
   assert.equal(rows.length, 1);
   assert.equal(rows[0]?.isGroup, false);
+});
+
+test("application function detail params flatten nested object fields for input and output", () => {
+  assert.equal(mapFunctionParamTypeLabel("OBJECT"), "对象");
+  assert.equal(mapFunctionParamTypeLabel("MAP"), "对象");
+  assert.equal(mapFunctionParamTypeLabel("LIST"), "列表");
+  assert.equal(mapFunctionParamTypeLabel("ARRAY"), "列表");
+  assert.equal(mapFunctionParamTypeLabel("STRING"), "字符串");
+  assert.equal(mapFunctionParamTypeLabel("INTEGER"), "整数");
+  assert.equal(mapFunctionParamTypeLabel("INT"), "整数");
+  assert.equal(mapFunctionParamTypeLabel("LONG"), "整数");
+  assert.equal(mapFunctionParamTypeLabel("DOUBLE"), "数值");
+  assert.equal(mapFunctionParamTypeLabel("FLOAT"), "数值");
+  assert.equal(mapFunctionParamTypeLabel("NUMBER"), "数值");
+  assert.equal(mapFunctionParamTypeLabel("DECIMAL"), "数值");
+  assert.equal(mapFunctionParamTypeLabel("BOOLEAN"), "布尔");
+  assert.equal(mapFunctionParamTypeLabel("BOOL"), "布尔");
+  assert.equal(mapFunctionParamTypeLabel("CUSTOM"), "CUSTOM");
+  assert.equal(mapFunctionParamTypeLabel(""), "未知");
+  assert.equal(mapFunctionParamTypeLabel("   "), "未知");
+
+  const params = [
+    {
+      paramId: 11,
+      paramName: "pos",
+      paramType: "OBJECT",
+      category: "INPUT",
+      paramOrder: 2,
+      fields: [
+        {
+          paramName: "longitude",
+          paramType: "DOUBLE",
+          category: "INPUT",
+          paramOrder: 1,
+        },
+        {
+          paramName: "latitude",
+          paramType: "DOUBLE",
+          category: "INPUT",
+          paramOrder: 0,
+        },
+        {
+          paramName: "",
+          paramType: "STRING",
+          category: "INPUT",
+          paramOrder: 3,
+        },
+      ],
+    },
+    {
+      paramId: 10,
+      paramName: "name",
+      paramType: "STRING",
+      category: "INPUT",
+      paramOrder: 1,
+    },
+    {
+      paramName: "skipped",
+      paramType: "STRING",
+      category: "OTHER",
+      paramOrder: 9,
+    },
+    {
+      paramName: "unordered",
+      paramType: "BOOL",
+      category: "input",
+    },
+    {
+      paramId: 20,
+      paramName: "result",
+      paramType: "MAP",
+      category: "OUTPUT",
+      paramOrder: 1,
+      fields: [
+        {
+          paramName: "code",
+          paramType: "INTEGER",
+          category: "OUTPUT",
+          paramOrder: 1,
+        },
+        {
+          paramName: "tags",
+          paramType: "LIST",
+          category: "OUTPUT",
+          paramOrder: 2,
+        },
+      ],
+    },
+  ];
+
+  const inputRows = flattenApplicationFunctionInputRows(params);
+  assert.deepEqual(
+    inputRows.map((row) => ({
+      fullPath: row.fullPath,
+      paramPath: row.paramPath,
+      depth: row.depth,
+      functionParamId: row.functionParamId,
+      typeLabel: row.typeLabel,
+      hasChildren: row.hasChildren,
+    })),
+    [
+      {
+        fullPath: "name",
+        paramPath: "",
+        depth: 0,
+        functionParamId: 10,
+        typeLabel: "字符串",
+        hasChildren: false,
+      },
+      {
+        fullPath: "pos",
+        paramPath: "",
+        depth: 0,
+        functionParamId: 11,
+        typeLabel: "对象",
+        hasChildren: true,
+      },
+      {
+        fullPath: "pos.latitude",
+        paramPath: "pos.latitude",
+        depth: 1,
+        functionParamId: 11,
+        typeLabel: "数值",
+        hasChildren: false,
+      },
+      {
+        fullPath: "pos.longitude",
+        paramPath: "pos.longitude",
+        depth: 1,
+        functionParamId: 11,
+        typeLabel: "数值",
+        hasChildren: false,
+      },
+      {
+        fullPath: "unordered",
+        paramPath: "",
+        depth: 0,
+        functionParamId: null,
+        typeLabel: "布尔",
+        hasChildren: false,
+      },
+    ],
+  );
+
+  const outputRows = flattenApplicationFunctionOutputRows(params);
+  assert.equal(outputRows.length, 3);
+  assert.equal(outputRows[0]?.fullPath, "result");
+  assert.equal(outputRows[0]?.typeLabel, "对象");
+  assert.equal(outputRows[0]?.isObject, true);
+  assert.equal(outputRows[1]?.fullPath, "result.code");
+  assert.equal(outputRows[1]?.functionParamId, 20);
+  assert.equal(outputRows[1]?.typeLabel, "整数");
+  assert.equal(outputRows[1]?.depth, 1);
+  assert.equal(outputRows[2]?.fullPath, "result.tags");
+  assert.equal(outputRows[2]?.typeLabel, "列表");
+  assert.equal(flattenApplicationFunctionInputRows([]).length, 0);
 });
 
 test("space behavior mock filters by category and supports local create", () => {
@@ -583,16 +799,19 @@ test("space behavior builds property-value createAction params for create update
     assert.equal(created.operation, "CREATE");
     assert.equal(created.categoryId, 14);
     assert.equal(created.mappingIns.length, 2);
-    assert.equal(created.mappingIns[0]?.sourceType, "FIXED");
-    assert.equal(created.mappingIns[0]?.sourceConfig, "120.5");
+    assert.equal(created.mappingIns[0]?.sourceType, "EXTERNAL");
+    assert.equal("sourceConfig" in (created.mappingIns[0] ?? {}), false);
     assert.equal(created.mappingIns[0]?.parameterName, "w_range");
-    assert.equal(created.mappingIns[1]?.sourceConfig, "");
+    assert.equal(created.mappingIns[1]?.sourceType, "EXTERNAL");
+    assert.equal("sourceConfig" in (created.mappingIns[1] ?? {}), false);
   }
 
   const updated = buildPropertyValueCreateActionParams({ ...baseDraft, basicAction: "update", description: "  " });
   assert.equal("error" in updated, false);
   if (!("error" in updated)) {
     assert.equal(updated.operation, "UPDATE");
+    assert.equal(updated.mappingIns[0]?.sourceType, "EXTERNAL");
+    assert.equal("sourceConfig" in (updated.mappingIns[0] ?? {}), false);
     assert.equal("description" in updated, false);
   }
 
@@ -667,10 +886,20 @@ test("space behavior builds link createAction params for create update and delet
     });
   }
 
+  const createdDisable = buildLinkCreateActionParams({
+    ...baseDraft,
+    relationTargetStatus: "DISABLE",
+  });
+  assert.equal("error" in createdDisable, false);
+  if (!("error" in createdDisable)) {
+    assert.equal(createdDisable.linkMapping?.targetStatus, "DISABLE");
+  }
+  assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, relationTargetStatus: "DELETE" }), true);
+
   const updated = buildLinkCreateActionParams({
     ...baseDraft,
     basicAction: "update",
-    relationTargetStatus: "DELETE",
+    relationTargetStatus: "ENABLE",
     relationVisibilityWindows: [],
     description: "  ",
   });
@@ -679,9 +908,30 @@ test("space behavior builds link createAction params for create update and delet
     assert.equal(updated.operation, "UPDATE");
     assert.deepEqual(updated.linkMapping, {
       ontologyLinkUniqIdentifier: "link-1",
-      targetStatus: "DELETE",
+      targetStatus: "ENABLE",
     });
     assert.equal("visibilityWindows" in (updated.linkMapping ?? {}), false);
+  }
+  assert.equal(
+    "error" in
+      buildLinkCreateActionParams({
+        ...baseDraft,
+        basicAction: "update",
+        relationTargetStatus: "DELETE",
+        relationVisibilityWindows: [],
+      }),
+    true,
+  );
+
+  const updatedDisable = buildLinkCreateActionParams({
+    ...baseDraft,
+    basicAction: "update",
+    relationTargetStatus: "DISABLE",
+    relationVisibilityWindows: [],
+  });
+  assert.equal("error" in updatedDisable, false);
+  if (!("error" in updatedDisable)) {
+    assert.equal(updatedDisable.linkMapping?.targetStatus, "DISABLE");
   }
 
   const updatedWithWindows = buildLinkCreateActionParams({
@@ -713,6 +963,19 @@ test("space behavior builds link createAction params for create update and delet
   assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, relationTargetStatus: "" }), true);
   assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, relationVisibilityWindows: [] }), true);
   assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, basicAction: "update", relationTargetStatus: "" }), true);
+});
+
+test("space behavior lists relation target status options by basic action", async () => {
+  const { listSpaceBehaviorRelationTargetStatusOptions } = await import("../src/types/pages/ontologySpaceBehaviorType.ts");
+  assert.deepEqual(
+    listSpaceBehaviorRelationTargetStatusOptions("create").map((item) => item.value),
+    ["ENABLE", "DISABLE"],
+  );
+  assert.deepEqual(
+    listSpaceBehaviorRelationTargetStatusOptions("update").map((item) => item.value),
+    ["ENABLE", "DISABLE"],
+  );
+  assert.deepEqual(listSpaceBehaviorRelationTargetStatusOptions("delete"), []);
 });
 
 test("space behavior maps action info detail into edit form state", () => {
@@ -780,6 +1043,56 @@ test("space behavior maps action info detail into edit form state", () => {
   assert.equal(linkState.relationTargetStatus, "ENABLE");
   assert.deepEqual(linkState.relationVisibilityWindows, [{ startTime: 10, endTime: 20 }]);
 
+  const linkDisableState = mapOntologyActionInfoToFormState({
+    id: 21,
+    actionApi: "act.lk.carry.disable",
+    displayName: "搭载关系-disable",
+    description: "",
+    ontologyUniqIdentifier: "onto-from",
+    categoryId: 14,
+    status: 1,
+    actionKind: "BASE",
+    subjectType: "LINK",
+    operation: "CREATE",
+    storageGroup: null,
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: {
+      ontologyLinkUniqIdentifier: "link-2",
+      targetStatus: "DISABLE",
+      visibilityWindows: [],
+    },
+    mappingIns: [],
+    functionParams: [],
+  });
+  assert.equal(linkDisableState.relationTargetStatus, "DISABLE");
+
+  const linkUnknownStatus = mapOntologyActionInfoToFormState({
+    id: 22,
+    actionApi: "act.lk.carry.unknown",
+    displayName: "搭载关系-unknown",
+    description: "",
+    ontologyUniqIdentifier: "onto-from",
+    categoryId: 14,
+    status: 1,
+    actionKind: "BASE",
+    subjectType: "LINK",
+    operation: "UPDATE",
+    storageGroup: null,
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: {
+      ontologyLinkUniqIdentifier: "link-3",
+      targetStatus: "UNKNOWN",
+      visibilityWindows: null,
+    },
+    mappingIns: [],
+    functionParams: [],
+  });
+  assert.equal(linkUnknownStatus.relationTargetStatus, "");
+
   const operatorState = mapOntologyActionInfoToFormState({
     id: 3,
     actionApi: "act.bo.aircraft",
@@ -787,7 +1100,7 @@ test("space behavior maps action info detail into edit form state", () => {
     description: "",
     ontologyUniqIdentifier: "onto-1",
     categoryId: 14,
-    status: 0,
+    status: 2,
     actionKind: "BASE",
     subjectType: "BASIC_OPERATOR",
     operation: null,
@@ -807,7 +1120,7 @@ test("space behavior maps action info detail into edit form state", () => {
     functionParams: [],
   });
   assert.equal(operatorState.valueType, "basicFunctionOperator");
-  assert.equal(operatorState.status, "disabled");
+  assert.equal(operatorState.status, "draft");
   assert.equal(operatorState.functionOperatorId, "act.bq.aircraft");
   assert.equal(operatorState.operatorParamBindings.nm, "name");
   assert.equal(operatorState.operatorParamIds.nm, 2292);
@@ -833,6 +1146,88 @@ test("space behavior maps action info detail into edit form state", () => {
   });
   assert.equal(applicationState.kind, "application");
   assert.match(applicationState.unsupportedEditReason, /应用行为/);
+
+  const unsupportedSubject = mapOntologyActionInfoToFormState({
+    id: 9,
+    actionApi: "act.unknown",
+    displayName: "未知主体",
+    description: "",
+    ontologyUniqIdentifier: "onto-1",
+    categoryId: 14,
+    status: 1,
+    actionKind: "BASE",
+    subjectType: "UNKNOWN_SUBJECT",
+    operation: "CREATE",
+    storageGroup: null,
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: null,
+    mappingIns: [],
+    functionParams: [],
+  });
+  assert.match(unsupportedSubject.unsupportedEditReason, /暂不支持编辑保存/);
+
+  const linkDeleteStatus = mapOntologyActionInfoToFormState({
+    id: 23,
+    actionApi: "act.lk.carry.delete-status",
+    displayName: "",
+    description: "",
+    ontologyUniqIdentifier: "onto-from",
+    categoryId: 14,
+    status: 2,
+    actionKind: "BASE",
+    subjectType: "LINK",
+    operation: "QUERY",
+    storageGroup: null,
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: {
+      ontologyLinkUniqIdentifier: "link-4",
+      targetStatus: "DELETE",
+      visibilityWindows: [
+        { startTime: "bad", endTime: 20 },
+        { startTime: 1, endTime: 2 },
+      ],
+    },
+    mappingIns: null,
+    functionParams: [],
+  });
+  assert.equal(linkDeleteStatus.relationTargetStatus, "DELETE");
+  assert.equal(linkDeleteStatus.basicAction, "query");
+  assert.equal(linkDeleteStatus.status, "draft");
+  assert.equal(linkDeleteStatus.displayName, "act.lk.carry.delete-status");
+  assert.deepEqual(linkDeleteStatus.relationVisibilityWindows, [{ startTime: 1, endTime: 2 }]);
+
+  const propertyEdge = mapOntologyActionInfoToFormState({
+    id: 24,
+    actionApi: "act.pv.edge",
+    displayName: "属性边",
+    description: "",
+    ontologyUniqIdentifier: "onto-1",
+    categoryId: 14,
+    status: 1,
+    actionKind: "BASE",
+    subjectType: "PROPERTY_VALUE",
+    operation: "DELETE",
+    storageGroup: "g1",
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: null,
+    mappingIns: [
+      { propertyUniqueIdentifier: "  ", parameterName: "skip", sourceConfig: "x" },
+      { propertyUniqueIdentifier: "p2", parameterName: "  ", sourceConfig: 12 },
+      { propertyUniqueIdentifier: "p3", parameterName: "named", sourceConfig: "ok" },
+    ],
+    functionParams: [],
+  });
+  assert.equal(propertyEdge.basicAction, "delete");
+  assert.deepEqual(propertyEdge.selectedPropertyIds, ["p2", "p3"]);
+  assert.equal(propertyEdge.selectedPropertyValues.p2, "");
+  assert.equal(propertyEdge.selectedPropertyApiNames.p3, "named");
+  assert.equal("p2" in propertyEdge.selectedPropertyApiNames, false);
 });
 
 test("space behavior builds basic-operator createAction params with FIXED apiName bindings", () => {

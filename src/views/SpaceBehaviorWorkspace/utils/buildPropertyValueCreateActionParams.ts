@@ -72,8 +72,7 @@ export function buildPropertyValueCreateActionParams(draft: SpaceBehaviorDraft):
     const mapping: CreateOntologyActionMappingIn = {
       propertyUniqueIdentifier: propertyId,
       ontologyUniqueIdentifier: ontologyIdentifier,
-      sourceType: "FIXED",
-      sourceConfig: draft.selectedPropertyValues[propertyId] ?? "",
+      sourceType: "EXTERNAL",
     };
     if (parameterName) {
       mapping.parameterName = parameterName;

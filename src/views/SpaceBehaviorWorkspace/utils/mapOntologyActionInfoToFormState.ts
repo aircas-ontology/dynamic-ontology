@@ -36,11 +36,11 @@ export interface SpaceBehaviorActionInfoFormState {
 
 /**
  * @description 将详情状态码映射为工作区行为状态。
- * @param status 接口状态：1 启用，0 失效。
- * @returns published 或 disabled。
+ * @param status 接口状态：1 已发布，2 草稿。
+ * @returns published 或 draft。
  */
 function mapActionInfoStatus(status: number): SpaceBehaviorStatus {
-  return status === 1 ? "published" : "disabled";
+  return status === 1 ? "published" : "draft";
 }
 
 /**
@@ -79,10 +79,10 @@ function mapOperation(operation: string): SpaceBehaviorBasicAction {
 /**
  * @description 将详情 targetStatus 收窄为表单可选值。
  * @param value 详情状态。
- * @returns ENABLE / DELETE 或空。
+ * @returns ENABLE / DISABLE / DELETE 或空。
  */
 function mapRelationTargetStatus(value: string | null | undefined): SpaceBehaviorRelationTargetStatus | "" {
-  if (value === "ENABLE" || value === "DELETE") return value;
+  if (value === "ENABLE" || value === "DISABLE" || value === "DELETE") return value;
   return "";
 }
 

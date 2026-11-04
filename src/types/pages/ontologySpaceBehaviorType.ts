@@ -4,8 +4,8 @@ export const ROOT_SPACE_BEHAVIOR_CATEGORY_ID = "behavior-root";
 
 export type SpaceBehaviorStatus = "published" | "draft" | "disabled";
 
-/** 行为列表筛选项：对接 listAction 的启用/失效。 */
-export type SpaceBehaviorListStatus = "enabled" | "disabled";
+/** 行为列表筛选项：对接 listAction 的已发布/草稿。 */
+export type SpaceBehaviorListStatus = "published" | "draft";
 
 export type SpaceBehaviorStatusOperation = "publish" | "disable" | "draft";
 
@@ -18,7 +18,37 @@ export type SpaceBehaviorKind = "basic" | "application" | "behaviorTree";
 export type SpaceBehaviorValueType = "attributeValue" | "relationInstance" | "basicFunctionOperator";
 
 /** 关系实例 linkMapping.targetStatus。 */
-export type SpaceBehaviorRelationTargetStatus = "ENABLE" | "DELETE";
+export type SpaceBehaviorRelationTargetStatus = "ENABLE" | "DISABLE" | "DELETE";
+
+/** 应用行为入参绑定的输入来源。 */
+export type SpaceBehaviorApplicationInputSourceType = "PROPERTY" | "FIXED" | "EXTERNAL";
+
+/** 应用行为单个入参（或对象子字段）的本地绑定草稿。 */
+export interface SpaceBehaviorApplicationInputBinding {
+  sourceType: SpaceBehaviorApplicationInputSourceType;
+  /** sourceType=PROPERTY 时选中的对象 uniqueIdentifier。 */
+  ontologyUniqueIdentifier: string;
+  /** sourceType=PROPERTY 时的属性 uniqueIdentifier。 */
+  propertyUniqueIdentifier: string;
+  /** sourceType=FIXED 时的固定值字面量。 */
+  fixedValue: string;
+  /** sourceType=EXTERNAL 时是否启用默认值。 */
+  enableDefaultValue: boolean;
+  /** 外部输入启用默认值时的字面量。 */
+  defaultValue: string;
+}
+
+/** 应用行为出参绑定的输出方式。 */
+export type SpaceBehaviorApplicationOutputMode = "RESULT_ONLY" | "WRITE_PROPERTY";
+
+/** 应用行为单个出参（或对象子字段）的本地绑定草稿。 */
+export interface SpaceBehaviorApplicationOutputBinding {
+  outputMode: SpaceBehaviorApplicationOutputMode;
+  /** outputMode=WRITE_PROPERTY 时选中的对象 uniqueIdentifier。 */
+  ontologyUniqueIdentifier: string;
+  /** outputMode=WRITE_PROPERTY 时的写入属性 uniqueIdentifier。 */
+  propertyUniqueIdentifier: string;
+}
 
 /** 关系实例持续时段（epoch millis）。 */
 export interface SpaceBehaviorRelationVisibilityWindow {
@@ -172,13 +202,13 @@ export const SPACE_BEHAVIOR_STATUS_LABELS: Record<SpaceBehaviorStatus, string> =
 };
 
 export const SPACE_BEHAVIOR_LIST_STATUS_OPTIONS: ReadonlyArray<{ value: SpaceBehaviorListStatus; label: string }> = [
-  { value: "enabled", label: "启用" },
-  { value: "disabled", label: "失效" },
+  { value: "published", label: "已发布" },
+  { value: "draft", label: "草稿" },
 ];
 
 export const SPACE_BEHAVIOR_LIST_STATUS_LABELS: Record<SpaceBehaviorListStatus, string> = {
-  enabled: "启用",
-  disabled: "失效",
+  published: "已发布",
+  draft: "草稿",
 };
 
 export const SPACE_BEHAVIOR_STATUS_OPERATION_OPTIONS: ReadonlyArray<{ value: SpaceBehaviorStatusOperation; label: string }> = [
@@ -235,10 +265,54 @@ export const SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS: ReadonlyArray<{
   label: string;
 }> = [
   { value: "ENABLE", label: "enable" },
+  { value: "DISABLE", label: "disable" },
   { value: "DELETE", label: "delete" },
 ];
 
 export const SPACE_BEHAVIOR_RELATION_TARGET_STATUS_LABELS: Record<SpaceBehaviorRelationTargetStatus, string> = {
   ENABLE: "enable",
+  DISABLE: "disable",
   DELETE: "delete",
+};
+
+/**
+ * @description 按基础操作返回关系实例状态可选值；新增与修改均为 ENABLE/DISABLE。
+ * @param basicAction 基础操作。
+ * @returns 可选状态列表；非新增/修改时为空。
+ */
+export function listSpaceBehaviorRelationTargetStatusOptions(
+  basicAction: SpaceBehaviorBasicAction,
+): ReadonlyArray<{ value: SpaceBehaviorRelationTargetStatus; label: string }> {
+  if (basicAction === "create" || basicAction === "update") {
+    return SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS.filter((item) => item.value === "ENABLE" || item.value === "DISABLE");
+  }
+  return [];
+}
+
+export const SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_OPTIONS: ReadonlyArray<{
+  value: SpaceBehaviorApplicationInputSourceType;
+  label: string;
+}> = [
+  { value: "PROPERTY", label: "对象属性" },
+  { value: "FIXED", label: "固定值" },
+  { value: "EXTERNAL", label: "外部输入" },
+];
+
+export const SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_LABELS: Record<SpaceBehaviorApplicationInputSourceType, string> = {
+  PROPERTY: "对象属性",
+  FIXED: "固定值",
+  EXTERNAL: "外部输入",
+};
+
+export const SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_OPTIONS: ReadonlyArray<{
+  value: SpaceBehaviorApplicationOutputMode;
+  label: string;
+}> = [
+  { value: "RESULT_ONLY", label: "仅返回结果" },
+  { value: "WRITE_PROPERTY", label: "写入对象属性" },
+];
+
+export const SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_LABELS: Record<SpaceBehaviorApplicationOutputMode, string> = {
+  RESULT_ONLY: "仅返回结果",
+  WRITE_PROPERTY: "写入对象属性",
 };
