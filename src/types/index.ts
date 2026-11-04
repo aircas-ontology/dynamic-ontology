@@ -14,7 +14,6 @@ export type {
 export type { AgentDocumentUploadData } from "./apis/agentDocumentUploadType";
 export type { ApiResponse } from "./apis/apiResponseType";
 export type { AutoBindOntologyPropertyDatasourceData, AutoBindOntologyPropertyDatasourceParams } from "./apis/autoBindOntologyPropertyDatasourceType";
-export type { BuildOntologyAssetData, BuildOntologyAssetParams, BuildOntologyAssetProperty } from "./apis/buildOntologyAssetType";
 export type {
   BatchUpdateOntologyPropertiesData,
   BatchUpdateOntologyPropertiesParams,
@@ -28,6 +27,7 @@ export type {
   BuildObjectFromDatasourceSelectedColumn,
   BuildObjectFromDatasourceSelectedTable,
 } from "./apis/buildObjectFromDatasourceType";
+export type { BuildOntologyAssetData, BuildOntologyAssetParams, BuildOntologyAssetProperty } from "./apis/buildOntologyAssetType";
 export type { ActionCategoryNode, CreateActionCategoryParams } from "./apis/createActionCategoryType";
 export type { CreateFunctionOperatorTemplateData, CreateFunctionOperatorTemplateParams } from "./apis/createFunctionOperatorTemplateType";
 export type { CreateFunctionRateLimitTemplateData, CreateFunctionRateLimitTemplateParams } from "./apis/createFunctionRateLimitTemplateType";

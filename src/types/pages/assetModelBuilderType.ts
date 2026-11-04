@@ -30,6 +30,8 @@ export interface AssetModelProperty {
   description: string;
   /** 属性元数据（表单校验规则） */
   metaList: AssetModelPropertyMeta[];
+  /** 属性元数据“值”的可选范围。 */
+  enumValues?: string[];
 }
 
 /** 根据资产数据元生成的可编辑对象属性。 */

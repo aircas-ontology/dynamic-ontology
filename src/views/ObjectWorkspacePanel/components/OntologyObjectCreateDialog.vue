@@ -113,24 +113,14 @@
         <p>连接 MySQL / PostgreSQL，选择主子表与字段映射后，按主表生成本体对象。</p>
       </div>
     </div>
-    <div v-else-if="createMode === 'asset'" class="ontology-object-create-dialog__panel">
-      <p>选择对象所属分类后，进入资产构建并配置模型与属性。</p>
-      <el-form label-position="top">
-        <el-form-item label="分类" required :error="categoryError">
-          <el-tree-select
-            v-model="draft.categoryId"
-            :data="categoryTreeOptions"
-            check-strictly
-            filterable
-            :render-after-expand="false"
-            node-key="id"
-            :props="{ label: 'label', children: 'children' }"
-            placeholder="请选择分类"
-            :disabled="submitting"
-            style="width: 100%"
-          />
-        </el-form-item>
-      </el-form>
+    <div v-else-if="createMode === 'asset'" class="ontology-object-create-dialog__datasource-card">
+      <div class="ontology-object-create-dialog__datasource-icon">
+        <el-icon><Grid /></el-icon>
+      </div>
+      <div class="ontology-object-create-dialog__datasource-copy">
+        <strong>资产构建</strong>
+        <p>选择资产模型与属性，配置对象信息后创建对象。</p>
+      </div>
     </div>
     <div v-else class="ontology-object-create-dialog__panel ontology-object-create-dialog__panel--llm">
       <el-icon><MagicStick /></el-icon>
@@ -158,7 +148,13 @@
     </template>
   </el-dialog>
   <DatasourceBuildDialog :space-id="spaceId" v-model="datasourceVisible" @submit="handleDatasourceSubmit" />
-  <AssetModelBuildDialog v-model="assetVisible" :space-id="spaceId" :category-tree="categoryTreeOptions" :parent-options="parentOptions" :initial-category-id="draft.categoryId" @created="emit('asset-created')" />
+  <AssetModelBuildDialog
+    v-model="assetVisible"
+    :space-id="spaceId"
+    :category-tree="categoryTreeOptions"
+    :initial-category-id="draft.categoryId"
+    @created="emit('asset-created')"
+  />
 </template>
 
 <script setup lang="ts">
@@ -288,10 +284,9 @@ function openDatasourceBuild(): void {
   datasourceVisible.value = true;
 }
 
-/** @description 校验分类后关闭创建面板并打开资产构建弹窗。 */
+/** @description 关闭创建面板并打开资产构建弹窗。 */
 function openAssetBuild(): void {
-  categoryError.value = draft.categoryId ? "" : "请选择分类。";
-  if (categoryError.value || props.submitting) return;
+  if (props.submitting) return;
   visible.value = false;
   assetVisible.value = true;
 }
