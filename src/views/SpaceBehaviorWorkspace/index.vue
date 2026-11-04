@@ -67,7 +67,12 @@
     />
     <BehaviorDetailDrawer v-model="behaviorDetailVisible" :behavior="activeBehavior" />
     <BehaviorStatusDialog v-model="behaviorStatusVisible" :behavior="activeBehavior" :loading="actionLoading" @confirm="handleBehaviorStatusSubmit" />
-    <BehaviorDeleteDialog v-model="behaviorDeleteVisible" :preflight="behaviorDeletePreflight" :loading="actionLoading" @confirm="handleBehaviorDelete" />
+    <BehaviorDeleteDialog
+      v-model="behaviorDeleteVisible"
+      :behavior-name="activeBehavior?.displayName ?? ''"
+      :loading="actionLoading"
+      @confirm="handleBehaviorDelete"
+    />
   </div>
 </template>
 
@@ -78,7 +83,7 @@ import type { SpaceBehaviorDraft, SpaceBehaviorItem, SpaceBehaviorStatusChangeDr
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 import { useSpaceBehaviorWorkspace } from "./composables/useSpaceBehaviorWorkspace";
-import { createSpaceBehaviorDeletePreflight, findSpaceBehaviorCategoryNode } from "./utils/spaceBehaviorOperations";
+import { findSpaceBehaviorCategoryNode } from "./utils/spaceBehaviorOperations";
 import BehaviorCategoryPanel from "./components/BehaviorCategoryPanel.vue";
 import BehaviorListPanel from "./components/BehaviorListPanel.vue";
 import BehaviorCategoryFormDialog from "./components/BehaviorCategoryFormDialog.vue";
@@ -134,7 +139,6 @@ const behaviorDeleteVisible = ref(false);
 const activeBehavior = ref<SpaceBehaviorItem | null>(null);
 
 const categoryParentLabel = computed(() => findSpaceBehaviorCategoryNode(categoryTree.value, categoryParentId.value)?.label ?? "行为分类");
-const behaviorDeletePreflight = computed(() => (activeBehavior.value ? createSpaceBehaviorDeletePreflight(activeBehavior.value.displayName) : null));
 
 /**
  * @description 打开新建子分类弹窗。
@@ -324,9 +328,9 @@ function handleBehaviorStatusSubmit(draft: SpaceBehaviorStatusChangeDraft): void
 /**
  * @description 确认删除行为。
  */
-function handleBehaviorDelete(): void {
+async function handleBehaviorDelete(): Promise<void> {
   if (!activeBehavior.value) return;
-  const ok = deleteBehavior(activeBehavior.value.id);
+  const ok = await deleteBehavior(activeBehavior.value.id);
   if (!ok) {
     ElMessage.error("行为删除失败");
     return;

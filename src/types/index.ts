@@ -121,6 +121,7 @@ export type {
 export type { DeleteActionCategoryParams } from "./apis/deleteActionCategoryType";
 export type { DeleteFunctionOperatorTemplateParams } from "./apis/deleteFunctionOperatorTemplateType";
 export type { DeleteFunctionRateLimitTemplateParams } from "./apis/deleteFunctionRateLimitTemplateType";
+export type { DeleteOntologyActionData, DeleteOntologyActionParams } from "./apis/deleteOntologyActionType";
 export type { DeleteOntologyFunctionData, DeleteOntologyFunctionParams } from "./apis/deleteOntologyFunctionType";
 export type { DeleteOntologyLinkParams } from "./apis/deleteOntologyLinkType";
 export type { DeleteOntologyObjectArrTypeTreeParams } from "./apis/deleteOntologyObjectArrTypeTreeType";

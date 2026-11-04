@@ -2,6 +2,8 @@ import type {
   ApiResponse,
   CreateOntologyActionData,
   CreateOntologyActionParams,
+  DeleteOntologyActionData,
+  DeleteOntologyActionParams,
   EditOntologyActionData,
   EditOntologyActionParams,
   GetOntologyActionInfoData,
@@ -10,6 +12,24 @@ import type {
   ListOntologyActionParams,
 } from "@/types";
 import { request } from "@/utils/request";
+
+/**
+ * @description 删除本体行为。
+ *
+ * 请求方式：DELETE `/ontology/action`
+ *
+ * @param params 删除行为查询参数。
+ * @param params.ontologySpaceId 本体空间 id。
+ * @param params.actionApi 行为 api。
+ * @returns 标准 API 响应，成功时 data 为 null。
+ */
+export function deleteOntologyActionInterface(params: DeleteOntologyActionParams): Promise<ApiResponse<DeleteOntologyActionData>> {
+  return request<DeleteOntologyActionData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action",
+    method: "delete",
+    params,
+  });
+}
 
 /**
  * @description 创建本体行为。
