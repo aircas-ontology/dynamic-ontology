@@ -6,6 +6,7 @@ import {
   updateActionCategoryInterface,
 } from "./actionCategoryApi";
 import {
+  deleteOntologyActionInterface,
   getListOntologyActionInterface,
   getOntologyActionInfoInterface,
   postCreateOntologyActionInterface,
@@ -132,6 +133,7 @@ export {
   autoBindOntologyPropertyDatasourceInterface,
   createActionCategoryInterface,
   deleteActionCategoryInterface,
+  deleteOntologyActionInterface,
   getListOntologyActionInterface,
   getOntologyActionInfoInterface,
   postCreateOntologyActionInterface,

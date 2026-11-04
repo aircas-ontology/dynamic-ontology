@@ -3,6 +3,7 @@ import { useRoute } from "vue-router";
 import {
   createActionCategoryInterface,
   deleteActionCategoryInterface,
+  deleteOntologyActionInterface,
   getActionCategoryTreeInterface,
   getListOntologyActionInterface,
   postCreateOntologyActionInterface,
@@ -21,7 +22,6 @@ import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
 import {
   applySpaceBehaviorStatusChangeMock,
   createSpaceBehaviorMock,
-  deleteSpaceBehaviorMock,
   updateSpaceBehaviorMock,
 } from "@/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock";
 import { buildBasicOperatorCreateActionParams, isBasicOperatorActionCreateDraft } from "../utils/buildBasicOperatorCreateActionParams";
@@ -417,18 +417,26 @@ export function useSpaceBehaviorWorkspace() {
   }
 
   /**
-   * @description 删除行为。
+   * @description 删除行为；调用删除接口成功后刷新行为列表。
    * @param behaviorId 行为 id。
    * @returns 是否成功。
    */
-  function deleteBehavior(behaviorId: string): boolean {
+  async function deleteBehavior(behaviorId: string): Promise<boolean> {
+    if (actionLoading.value) return false;
     actionLoading.value = true;
     try {
-      const ok = deleteSpaceBehaviorMock(spaceId.value, behaviorId);
-      if (!ok) return false;
+      const behavior = behaviors.value.find((item) => item.id === behaviorId);
+      const currentSpaceId = spaceId.value.trim();
+      const actionApi = behavior?.behaviorApiName.trim() ?? "";
+      if (!currentSpaceId || !actionApi) return false;
+      const response = await deleteOntologyActionInterface({ ontologySpaceId: currentSpaceId, actionApi });
+      if (response.code !== 0 && response.code !== 200) return false;
       if (page.value > 1 && behaviors.value.length <= 1) page.value -= 1;
-      void loadSpaceBehaviorList();
+      await loadSpaceBehaviorList();
       return true;
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : "行为删除失败";
+      return false;
     } finally {
       actionLoading.value = false;
     }

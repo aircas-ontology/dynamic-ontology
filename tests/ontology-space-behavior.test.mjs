@@ -463,10 +463,11 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(drawerSource, /状态操作记录/);
 
   assert.match(deleteSource, /删除行为/);
-  assert.match(deleteSource, /影响范围/);
-  assert.match(deleteSource, /请输入行为名称确认删除/);
+  assert.match(deleteSource, /确定删除行为/);
   assert.match(deleteSource, /确认删除/);
   assert.match(deleteSource, /width="520px"/);
+  assert.doesNotMatch(deleteSource, /影响范围/);
+  assert.doesNotMatch(deleteSource, /请输入行为名称确认删除/);
 
   assert.match(workspaceSource, /BehaviorDetailDrawer/);
   assert.doesNotMatch(workspaceSource, /behaviorFormMode\.value = "view"/);
