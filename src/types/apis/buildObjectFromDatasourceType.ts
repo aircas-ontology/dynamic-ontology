@@ -22,7 +22,7 @@ export interface BuildObjectFromDatasourceParams {
   displayName: string;
   apiName: string;
   description?: string;
-  datasourceId: number;
+  schemaName: string;
   tables: BuildObjectFromDatasourceSelectedTable[];
   foreignKeys?: BuildObjectFromDatasourceForeignKey[];
 }

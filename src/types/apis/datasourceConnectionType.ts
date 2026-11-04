@@ -76,6 +76,20 @@ export interface DatasourceTableDetail {
 }
 
 export interface ListDatasourceTableColumnsParams {
-  datasourceId: number;
+  spaceId: number;
+  schemaName: string;
   tableNames: string[];
+}
+
+export interface DatasourceSchema {
+  schemaName: string;
+  catalogName?: string;
+}
+
+export interface ListDatasourceSchemasParams {
+  spaceId: number;
+}
+
+export interface ListDatasourceTablesParams extends ListDatasourceSchemasParams {
+  schemaName: string;
 }

@@ -142,7 +142,7 @@ export function useObjectWorkspaceObjectActions(options: {
   }
 
   /**
-   * @description 将数据源向导选择转换为后端构建对象请求并刷新对象工作区。
+   * @description 将数据源向导选择转换为后端构建对象请求，成功刷新工作区，失败弹出具体原因。
    * @param selection 数据源向导的表、字段和外键选择。
    * @param draft 数据源构建生成的对象草稿。
    */
@@ -182,7 +182,7 @@ export function useObjectWorkspaceObjectActions(options: {
       displayName: draft.displayName,
       apiName: draft.apiName,
       description: draft.description,
-      datasourceId: selection.datasourceId,
+      schemaName: selection.schemaName,
       tables,
       ...(foreignKeys.length ? { foreignKeys } : {}),
     };
@@ -190,12 +190,13 @@ export function useObjectWorkspaceObjectActions(options: {
     objectCreateError.value = "";
     try {
       const response = await postBuildObjectFromDatasourceInterface(payload);
-      if (response.code !== 200) throw new Error(response.message || "数据源构建对象失败");
+      if (response.code !== 200) throw new Error(response.message?.trim() || "数据源构建对象失败，请重试。");
       objectCreateVisible.value = false;
       ElMessage.success(response.data?.message || "对象构建成功");
       await load();
     } catch (cause) {
       objectCreateError.value = cause instanceof Error && cause.message.trim() ? cause.message : "数据源构建对象失败，请重试。";
+      ElMessage.error(objectCreateError.value);
     } finally {
       objectCreateSubmitting.value = false;
     }

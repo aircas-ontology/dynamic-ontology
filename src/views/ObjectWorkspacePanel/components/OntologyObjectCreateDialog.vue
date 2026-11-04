@@ -113,6 +113,25 @@
         <p>连接 MySQL / PostgreSQL，选择主子表与字段映射后，按主表生成本体对象。</p>
       </div>
     </div>
+    <div v-else-if="createMode === 'asset'" class="ontology-object-create-dialog__panel">
+      <p>选择对象所属分类后，进入资产构建并配置模型与属性。</p>
+      <el-form label-position="top">
+        <el-form-item label="分类" required :error="categoryError">
+          <el-tree-select
+            v-model="draft.categoryId"
+            :data="categoryTreeOptions"
+            check-strictly
+            filterable
+            :render-after-expand="false"
+            node-key="id"
+            :props="{ label: 'label', children: 'children' }"
+            placeholder="请选择分类"
+            :disabled="submitting"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+    </div>
     <div v-else class="ontology-object-create-dialog__panel ontology-object-create-dialog__panel--llm">
       <el-icon><MagicStick /></el-icon>
       <div>
@@ -126,13 +145,20 @@
     <template #footer>
       <el-button :disabled="submitting" data-onboarding="object-create-cancel" @click="visible = false">取消</el-button>
       <el-button v-if="createMode === 'datasource'" type="primary" @click="openDatasourceBuild">进入数据源构建</el-button>
+      <el-button v-if="createMode === 'asset'" type="primary" :disabled="submitting" @click="openAssetBuild">进入资产构建</el-button>
       <el-button v-if="createMode === 'llm'" type="primary" :disabled="submitting" @click="emit('open-llm')">进入大模型构建</el-button>
-      <el-button v-else-if="createMode !== 'datasource'" type="primary" data-onboarding="object-create-confirm" :loading="submitting" @click="submitCreate">{{
-        editingItem ? "保存修改" : "确认创建"
-      }}</el-button>
+      <el-button
+        v-else-if="createMode !== 'datasource' && createMode !== 'asset'"
+        type="primary"
+        data-onboarding="object-create-confirm"
+        :loading="submitting"
+        @click="submitCreate"
+        >{{ editingItem ? "保存修改" : "确认创建" }}</el-button
+      >
     </template>
   </el-dialog>
-  <DatasourceBuildDialog v-model="datasourceVisible" @submit="handleDatasourceSubmit" />
+  <DatasourceBuildDialog :space-id="spaceId" v-model="datasourceVisible" @submit="handleDatasourceSubmit" />
+  <AssetModelBuildDialog v-model="assetVisible" :space-id="spaceId" :category-tree="categoryTreeOptions" :parent-options="parentOptions" :initial-category-id="draft.categoryId" @created="emit('asset-created')" />
 </template>
 
 <script setup lang="ts">
@@ -145,6 +171,7 @@ import ontologyImportTemplate from "@/assets/pages/ontologyObjectCreate/ontology
 import type { OntologyConceptNode, OntologyObjectCreateDraft, OntologyObjectItem } from "@/types";
 import type { DatasourceBuildSelection } from "@/types";
 import DatasourceBuildDialog from "./DatasourceBuildDialog.vue";
+import AssetModelBuildDialog from "./AssetModelBuildDialog.vue";
 
 interface CategoryTreeOption {
   id: string;
@@ -157,10 +184,11 @@ interface ParentOption {
   apiName: string;
   categoryId: string;
 }
-type CreateMode = "manual" | "import" | "datasource" | "llm";
+type CreateMode = "manual" | "import" | "datasource" | "llm" | "asset";
 
 const visible = defineModel<boolean>({ required: true });
 const props = defineProps<{
+  spaceId: string;
   categoryTree: OntologyConceptNode[];
   parentOptions: ParentOption[];
   submitting: boolean;
@@ -172,16 +200,18 @@ const emit = defineEmits<{
   "submit-import": [file: File];
   "submit-edit": [draft: OntologyObjectCreateDraft];
   "submit-datasource": [selection: DatasourceBuildSelection, draft: OntologyObjectCreateDraft];
+  "asset-created": [];
   "open-llm": [];
 }>();
 const modes = [
   { value: "manual" as const, label: "手动创建", hint: "表单填写并可继承", icon: Plus },
   { value: "import" as const, label: "导入创建", hint: "JSON 批量导入", icon: Upload },
   { value: "datasource" as const, label: "数据源构建", hint: "从数据表构建对象", icon: Grid },
-  { value: "llm" as const, label: "大模型构建", hint: "智能助手流程", icon: MagicStick },
+  { value: "asset" as const, label: "资产构建", hint: "从资产模型配置", icon: Grid },
 ];
 const createMode = ref<CreateMode>("manual");
 const datasourceVisible = ref(false);
+const assetVisible = ref(false);
 const draft = reactive<OntologyObjectCreateDraft>({ apiName: "", displayName: "", description: "", iconUrl: "", categoryId: "", parentId: undefined });
 const importFile = ref<File | null>(null);
 const importError = ref("");
@@ -245,6 +275,7 @@ watch([visible, () => props.editingItem], ([opened, editingItem]) => {
  */
 function selectCreateMode(mode: CreateMode) {
   createMode.value = mode;
+  categoryError.value = "";
   validationError.value = "";
   importFile.value = null;
   importError.value = "";
@@ -257,13 +288,21 @@ function openDatasourceBuild(): void {
   datasourceVisible.value = true;
 }
 
+/** @description 校验分类后关闭创建面板并打开资产构建弹窗。 */
+function openAssetBuild(): void {
+  categoryError.value = draft.categoryId ? "" : "请选择分类。";
+  if (categoryError.value || props.submitting) return;
+  visible.value = false;
+  assetVisible.value = true;
+}
+
 /** @description 将数据源构建结果转换为现有对象创建草稿。 */
 function handleDatasourceSubmit(selection: DatasourceBuildSelection): void {
   const primaryTable = selection.selectedTables.find((table) => table.id === selection.primaryTableId);
   const name = (primaryTable?.storageName || primaryTable?.name || selection.primaryTableId).replace(/-/g, "_");
   draft.apiName = name;
   draft.displayName = name;
-  draft.description = "由数据源构建生成";
+  draft.description = primaryTable?.comment ?? "";
   emit("submit-datasource", selection, { ...draft });
 }
 

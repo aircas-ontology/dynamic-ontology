@@ -14,6 +14,7 @@ export type {
 export type { AgentDocumentUploadData } from "./apis/agentDocumentUploadType";
 export type { ApiResponse } from "./apis/apiResponseType";
 export type { AutoBindOntologyPropertyDatasourceData, AutoBindOntologyPropertyDatasourceParams } from "./apis/autoBindOntologyPropertyDatasourceType";
+export type { BuildOntologyAssetData, BuildOntologyAssetParams, BuildOntologyAssetProperty } from "./apis/buildOntologyAssetType";
 export type {
   BatchUpdateOntologyPropertiesData,
   BatchUpdateOntologyPropertiesParams,
@@ -109,10 +110,13 @@ export type {
   DatasourceConnectionPage,
   DatasourceConnectionParam,
   DatasourceForeignKeyCandidate,
+  DatasourceSchema,
   DatasourceTableDetail,
   DatasourceTableSummary,
   ListDatasourceConnectionsParams,
+  ListDatasourceSchemasParams,
   ListDatasourceTableColumnsParams,
+  ListDatasourceTablesParams,
 } from "./apis/datasourceConnectionType";
 export type { DeleteActionCategoryParams } from "./apis/deleteActionCategoryType";
 export type { DeleteFunctionOperatorTemplateParams } from "./apis/deleteFunctionOperatorTemplateType";
@@ -167,6 +171,7 @@ export type {
   GetOntologyPropertyDetailByOntologyIdParams,
   OntologyPropertyDetail,
 } from "./apis/getOntologyPropertyDetailByOntologyIdType";
+export type { GetOntologySpaceCanvasContentData, GetOntologySpaceCanvasContentParams } from "./apis/getOntologySpaceCanvasContentType";
 export type { GetOntologySpaceStatisticData, GetOntologySpaceStatisticParams, OntologySpaceStatisticVO } from "./apis/getOntologySpaceStatisticType";
 export type { ImportOntologiesData, ImportOntologiesParams } from "./apis/importOntologiesType";
 export type { ImportOntologySpaceData, ImportOntologySpaceParams } from "./apis/importOntologySpaceType";
@@ -277,6 +282,14 @@ export type {
   ApiDocsSchemaFieldRow,
   ApiDocsServiceInfo,
 } from "./pages/applicationManagementType";
+export type {
+  AssetModelDetail,
+  AssetModelProperty,
+  AssetModelPropertyMeta,
+  AssetModelSummary,
+  AssetModelTreeNode,
+  AssetObjectPropertyDraft,
+} from "./pages/assetModelBuilderType";
 export { COMPOSITE_WORKFLOW_DND_MIME } from "./pages/ontologyCompositeWorkflowType";
 export type {
   CompositeWorkflowBranchConfig,

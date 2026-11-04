@@ -51,6 +51,7 @@ import { postLoginInterface } from "./loginApi";
 import {
   getDatasourceConnectionDetailInterface,
   getDatasourceConnectionListInterface,
+  getDatasourceSchemaListInterface,
   getDatasourceTableColumnsInterface,
   getDatasourceTableListInterface,
   postDatasourceConnectionInterface,
@@ -73,6 +74,7 @@ import {
   getOntologyCategoryTreeInterface,
   getOntologyOverviewCountInterface,
   getOntologyRelationCategoryTreeInterface,
+  getOntologySpaceCanvasContentInterface,
   getOntologySpaceListInterface,
   getOntologySpaceStatisticInterface,
   postCreateOntologyCategoryTreeInterface,
@@ -98,6 +100,7 @@ import {
   getExportOntologyInterface,
   getOntologyMetaStatisticInterface,
   getOntologyObjectByCategoryIdInterface,
+  postBuildOntologyAssetInterface,
   postImportOntologiesInterface,
   updateOntologyObjectInterface,
 } from "./ontologyObjectManageApi";
@@ -115,6 +118,7 @@ import {
 export {
   getDatasourceConnectionDetailInterface,
   getDatasourceConnectionListInterface,
+  getDatasourceSchemaListInterface,
   getDatasourceTableColumnsInterface,
   getDatasourceTableListInterface,
   postDatasourceConnectionInterface,
@@ -175,6 +179,7 @@ export {
   getOntologyMetaStatisticInterface,
   getOntologyOverviewCountInterface,
   getOntologyRelationCategoryTreeInterface,
+  getOntologySpaceCanvasContentInterface,
   getOntologySpaceListInterface,
   getOntologySpaceStatisticInterface,
   postAgentChatStreamInterface,
@@ -183,6 +188,7 @@ export {
   postCreateOntologyCategoryTreeInterface,
   postCreateOntologyLinkInterface,
   postCreateOntologyRelationCategoryTreeInterface,
+  postBuildOntologyAssetInterface,
   postImportOntologiesInterface,
   postImportOntologySpaceInterface,
   postLoginInterface,

@@ -1,0 +1,5 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": { "uniqueIdentifier": "mock-asset-object" }
+}

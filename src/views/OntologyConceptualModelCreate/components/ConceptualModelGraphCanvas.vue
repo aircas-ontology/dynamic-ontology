@@ -41,6 +41,7 @@ import {
   type ConceptualModelGraphRelation,
   type ConceptualModelGraphSelection,
 } from "../utils/conceptualModelGraph";
+import { calculateParallelRelationVertices } from "../utils/layoutConceptualModelContent";
 
 const props = defineProps<{
   objects: ConceptualModelGraphObject[];
@@ -184,15 +185,24 @@ function syncGraph(): void {
       const relationId = parseConceptualRelationCellId(edge.id);
       if (relationId === null || !relationIds.has(relationId)) graph?.removeEdge(edge.id);
     });
+    const parallelVertices = calculateParallelRelationVertices(props.objects, props.relations);
     props.relations.forEach((relation) => {
       const source = relationTerminal(relation, "source", objectIds);
       const target = relationTerminal(relation, "target", objectIds);
       const cellId = conceptualRelationCellId(relation.id);
       const existing = graph?.getCellById(cellId);
       const labelText = relation.displayName || relation.apiName || "关系";
+      const vertices = parallelVertices.get(relation.id) ?? [];
       if (existing?.isEdge()) {
         if (!sameTerminal(existing, "source", source)) existing.setSource(source);
         if (!sameTerminal(existing, "target", target)) existing.setTarget(target);
+        const currentVertices = existing.getVertices();
+        if (
+          currentVertices.length !== vertices.length ||
+          currentVertices.some((point, index) => point.x !== vertices[index]?.x || point.y !== vertices[index]?.y)
+        ) {
+          existing.setVertices(vertices);
+        }
         existing.setLabels([conceptualEdgeLabel(labelText)]);
         existing.setAttrs(conceptualEdgeAttrs());
         existing.setZIndex(4);
@@ -203,6 +213,7 @@ function syncGraph(): void {
         id: cellId,
         source,
         target,
+        vertices,
         router: { name: "normal" },
         connector: { name: "normal" },
         attrs: conceptualEdgeAttrs(),
@@ -321,6 +332,7 @@ function initGraph(): void {
     emit("move-object", objectId, Math.round(position.x), Math.round(position.y));
     void nextTick(() => {
       skipNextSync = false;
+      syncGraph();
     });
   });
   graph.on("edge:connected", ({ edge }) => handleConnectedEdge(edge));

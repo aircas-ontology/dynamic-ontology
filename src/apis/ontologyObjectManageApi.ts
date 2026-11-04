@@ -2,6 +2,8 @@ import type { AxiosResponse } from "axios";
 
 import type {
   ApiResponse,
+  BuildOntologyAssetData,
+  BuildOntologyAssetParams,
   CreateOntologyObjectData,
   CreateOntologyObjectParams,
   DeleteOntologyObjectData,
@@ -18,6 +20,19 @@ import type {
   UpdateOntologyObjectParams,
 } from "@/types";
 import { request, requestFull, RequestError } from "@/utils/request";
+
+/**
+ * @description POST `/ontology/meta/build_object` 从资产数据创建对象及其属性。
+ * @param params 空间、对象信息和已配置的属性及元数据。
+ * @returns 标准响应，data 包含新建对象的唯一标识。
+ */
+export function postBuildOntologyAssetInterface(params: BuildOntologyAssetParams): Promise<ApiResponse<BuildOntologyAssetData>> {
+  return request<BuildOntologyAssetData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/meta/build_object",
+    method: "post",
+    data: params,
+  });
+}
 
 /**
  * @description 根据对象唯一标识删除对象。
