@@ -134,6 +134,8 @@ export function addRelation(data: SpaceRelationWorkspaceData, payload: RelationC
       apiName,
       sourceName,
       targetName,
+      sourceOntologyId: "",
+      targetOntologyId: "",
       cardinality: payload.cardinality,
       description: payload.description.trim(),
     },

@@ -120,9 +120,13 @@ test("relation category tree mapper builds page nodes from categoryId and name",
     apiName: "link_a",
     sourceName: "舰船2",
     targetName: "舰船1",
+    sourceOntologyId: "a",
+    targetOntologyId: "b",
     cardinality: "一对多",
     description: "根分类下的关系",
   });
+  assert.equal(relations[1]?.sourceOntologyId, "c");
+  assert.equal(relations[1]?.targetOntologyId, "d");
   assert.equal(relations[1]?.id, "l2");
   assert.equal(relations[1]?.displayName, "指挥");
   assert.equal(relations[1]?.categoryId, "2");

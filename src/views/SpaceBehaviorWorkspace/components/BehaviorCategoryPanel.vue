@@ -27,43 +27,49 @@
       >
         <template #default="{ data }">
           <div class="behavior-category-panel__tree-node">
-            <span class="behavior-category-panel__tree-label" :title="data.label">
-              <el-icon><FolderOpened /></el-icon>
-              <span class="behavior-category-panel__label">{{ data.label }}</span>
-              <em class="behavior-category-panel__count">{{ data.count }}</em>
+            <span v-if="isActionCategoryNode(data)" class="behavior-category-panel__action-row" :title="data.label">
+              <span class="behavior-category-panel__action-dot" aria-hidden="true"></span>
+              <span class="behavior-category-panel__action-name">{{ data.label }}</span>
             </span>
-            <span class="behavior-category-panel__actions" @click.stop>
-              <el-tooltip content="添加子分类" placement="top" :show-after="200">
-                <button
-                  type="button"
-                  class="behavior-category-panel__action behavior-category-panel__action--add"
-                  aria-label="添加子分类"
-                  @click="emit('create', data.id)"
-                >
-                  <el-icon><Plus /></el-icon>
-                </button>
-              </el-tooltip>
-              <el-tooltip v-if="!isRootCategory(data.id)" content="编辑分类" placement="top" :show-after="200">
-                <button
-                  type="button"
-                  class="behavior-category-panel__action behavior-category-panel__action--edit"
-                  aria-label="编辑分类"
-                  @click="emit('edit', data.id)"
-                >
-                  <el-icon><EditPen /></el-icon>
-                </button>
-              </el-tooltip>
-              <el-tooltip v-if="!isRootCategory(data.id)" content="删除分类" placement="top" :show-after="200">
-                <button
-                  type="button"
-                  class="behavior-category-panel__action behavior-category-panel__action--danger"
-                  aria-label="删除分类"
-                  @click="emit('delete', data.id)"
-                >
-                  <el-icon><Delete /></el-icon>
-                </button>
-              </el-tooltip>
-            </span>
+            <template v-else>
+              <span class="behavior-category-panel__tree-label" :title="data.label">
+                <el-icon><FolderOpened /></el-icon>
+                <span class="behavior-category-panel__label">{{ data.label }}</span>
+                <em class="behavior-category-panel__count">{{ data.count }}</em>
+              </span>
+              <span class="behavior-category-panel__actions" @click.stop>
+                <el-tooltip content="添加子分类" placement="top" :show-after="200">
+                  <button
+                    type="button"
+                    class="behavior-category-panel__action behavior-category-panel__action--add"
+                    aria-label="添加子分类"
+                    @click="emit('create', data.id)"
+                  >
+                    <el-icon><Plus /></el-icon>
+                  </button>
+                </el-tooltip>
+                <el-tooltip v-if="!isRootCategory(data.id)" content="编辑分类" placement="top" :show-after="200">
+                  <button
+                    type="button"
+                    class="behavior-category-panel__action behavior-category-panel__action--edit"
+                    aria-label="编辑分类"
+                    @click="emit('edit', data.id)"
+                  >
+                    <el-icon><EditPen /></el-icon>
+                  </button>
+                </el-tooltip>
+                <el-tooltip v-if="!isRootCategory(data.id)" content="删除分类" placement="top" :show-after="200">
+                  <button
+                    type="button"
+                    class="behavior-category-panel__action behavior-category-panel__action--danger"
+                    aria-label="删除分类"
+                    @click="emit('delete', data.id)"
+                  >
+                    <el-icon><Delete /></el-icon>
+                  </button>
+                </el-tooltip>
+              </span>
+            </template>
           </div>
         </template>
       </el-tree>
@@ -128,6 +134,15 @@ function isRootCategory(categoryId: string): boolean {
 }
 
 /**
+ * @description 判断树节点是否为行为叶子。
+ * @param data 树节点。
+ * @returns 是否为行为叶子。
+ */
+function isActionCategoryNode(data: SpaceBehaviorCategoryNode): boolean {
+  return data.kind === "action";
+}
+
+/**
  * @description el-tree 按分类名称过滤。
  * @param value 当前搜索关键字。
  * @param data 树节点数据。
@@ -139,10 +154,14 @@ function filterBehaviorCategoryNode(value: string, data: TreeNodeData): boolean 
 }
 
 /**
- * @description 点击分类节点后筛选右侧行为列表。
- * @param data 被点击的分类。
+ * @description 点击分类或行为叶子；行为叶子选中其父分类以筛选右侧列表。
+ * @param data 被点击的节点。
  */
 function handleBehaviorCategoryClick(data: SpaceBehaviorCategoryNode): void {
+  if (data.kind === "action") {
+    emit("select-node", data.parentCategoryId || data.id);
+    return;
+  }
   emit("select-node", data.id);
 }
 
@@ -223,6 +242,27 @@ watch(
   background: var(--aircas-color-input-background);
   font-size: 11px;
   font-style: normal;
+}
+.behavior-category-panel__action-row {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  color: var(--aircas-color-text-secondary);
+}
+.behavior-category-panel__action-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--aircas-color-primary);
+}
+.behavior-category-panel__action-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .behavior-category-panel__actions {
   display: inline-flex;

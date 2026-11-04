@@ -300,10 +300,11 @@ function createSpaceBehaviorSeedData(): SpaceBehaviorWorkspaceData {
       {
         id: ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
         label: "åºç¡æä½",
+        kind: "category",
         count: 0,
         children: [
-          { id: "ship-basic", label: "è°è¹åºç¡", count: 0, children: [] },
-          { id: "plane-basic", label: "é£æºåºç¡", count: 0, children: [] },
+          { id: "ship-basic", label: "è°è¹åºç¡", kind: "category", count: 0, children: [] },
+          { id: "plane-basic", label: "é£æºåºç¡", kind: "category", count: 0, children: [] },
         ],
       },
     ],
@@ -453,8 +454,8 @@ function buildBehaviorFromDraft(draft: SpaceBehaviorDraft, id: string): SpaceBeh
     status: draft.status,
     version: draft.version?.trim() || "v1.0.0",
     basicAction: draft.basicAction ?? operator?.basicAction ?? "create",
-    objectName: operator?.objectName ?? "",
-    behaviorApiName: id.replaceAll("-", "_"),
+    objectName: operator?.objectName ?? (draft.ontologyIdentifier?.trim() || ""),
+    behaviorApiName: draft.behaviorApiName?.trim() || id.replaceAll("-", "_"),
     executionPeriod: "â",
     singleObject: true,
     executionCount: 0,
@@ -550,6 +551,7 @@ export function createSpaceBehaviorCategoryMock(spaceId: string, parentId: strin
   const created = {
     id: `behavior-category-${nextCategorySeq++}`,
     label,
+    kind: "category" as const,
     count: 0,
     children: [],
   };

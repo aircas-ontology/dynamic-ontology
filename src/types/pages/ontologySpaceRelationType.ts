@@ -28,6 +28,10 @@ export interface OntologyRelationClass {
   apiName: string;
   sourceName: string;
   targetName: string;
+  /** 源对象唯一标识，供创建 LINK 行为外层 ontologyIdentifier。 */
+  sourceOntologyId: string;
+  /** 目标对象唯一标识。 */
+  targetOntologyId: string;
   cardinality: OntologyRelationCardinality;
   description: string;
 }

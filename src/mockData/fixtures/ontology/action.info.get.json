@@ -1,0 +1,45 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": {
+    "id": 8,
+    "actionApi": "act.pv.weapon.add",
+    "displayName": "武器行-新增",
+    "description": "属性值行为：向 weapon 分组新增一行",
+    "ontologyUniqIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
+    "categoryId": 14,
+    "status": 1,
+    "actionKind": "BASE",
+    "subjectType": "PROPERTY_VALUE",
+    "operation": "CREATE",
+    "storageGroup": "weapon",
+    "functionApi": null,
+    "functionDescription": null,
+    "outputMode": null,
+    "linkMapping": null,
+    "mappingIns": [
+      {
+        "functionParamId": null,
+        "parameterName": "w_range",
+        "sourceType": "FIXED",
+        "sourceConfig": "120.5",
+        "paramPath": null,
+        "propertyUniqueIdentifier": "2a5886db0f664be3b86ff89a085363fe",
+        "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
+        "functionParamExpression": null
+      },
+      {
+        "functionParamId": null,
+        "parameterName": "w_name",
+        "sourceType": "FIXED",
+        "sourceConfig": "",
+        "paramPath": null,
+        "propertyUniqueIdentifier": "06eb8a07b9f248c6b32963deb4cfbb54",
+        "ontologyUniqueIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
+        "functionParamExpression": null
+      }
+    ],
+    "functionParams": []
+  }
+}

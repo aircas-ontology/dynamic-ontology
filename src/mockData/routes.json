@@ -6,6 +6,26 @@
   },
   {
     "method": "POST",
+    "path": "/ontology/action",
+    "file": "fixtures/ontology/action.post.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/action",
+    "file": "fixtures/ontology/action.info.get.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/action",
+    "file": "fixtures/ontology/action.edit.put.json"
+  },
+  {
+    "method": "GET",
+    "path": "/ontology/action/list",
+    "file": "fixtures/ontology/action.list.get.json"
+  },
+  {
+    "method": "POST",
     "path": "/agent/chat/stream",
     "file": "fixtures/agent/chat.stream.post.json",
     "responseType": "sse"

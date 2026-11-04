@@ -49,6 +49,23 @@ export function buildOntologyFunctionTestBindingKeys(params: GetOntologyFunction
 }
 
 /**
+ * @description 按详情 params 生成绑定键对应的 paramId（供 createAction mappingIns.functionParamId）。
+ * @param params 详情接口 params。
+ * @returns 参数名 → paramId；无有效 paramId 的键不写入。
+ */
+export function buildOntologyFunctionTestBindingParamIds(params: GetOntologyFunctionDetailParamItem[]): Record<string, number> {
+  const ids: Record<string, number> = {};
+  for (const item of params) {
+    const name = typeof item.paramName === "string" ? item.paramName.trim() : "";
+    if (!name) continue;
+    if (item.paramRole !== "AGGREGATION" && item.paramRole !== "FILTER") continue;
+    if (typeof item.paramId !== "number" || !Number.isInteger(item.paramId)) continue;
+    ids[name] = item.paramId;
+  }
+  return ids;
+}
+
+/**
  * @description 从详情参数项生成脚本测试入参树。仅顶层保留 INPUT；每层按 paramOrder 排序。空 fields 视为叶子，paramValue 初始为空字符串。
  * @param items 详情参数项。
  * @param filterInput 为 true 时只保留 category 为 INPUT 的项。

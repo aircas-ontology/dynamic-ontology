@@ -31,6 +31,7 @@
         @create="openBehaviorCreate"
         @view="openBehaviorView"
         @edit="openBehaviorEdit"
+        @test="openBehaviorTest"
         @status="openBehaviorStatus"
         @delete="openBehaviorDelete"
         @page-change="changeBehaviorPage"
@@ -168,7 +169,8 @@ function openCategoryDelete(categoryId: string): void {
   if (!node) return;
   categoryActionId.value = categoryId;
   categoryActionName.value = node.label;
-  categoryDeleteBlocked.value = node.children.length > 0 || node.count > 0;
+  categoryDeleteBlocked.value =
+    node.children.some((child) => child.kind === "category") || node.count > 0 || node.children.some((child) => child.kind === "action");
   categoryDeleteVisible.value = true;
 }
 
@@ -233,6 +235,15 @@ function openBehaviorEdit(item: SpaceBehaviorItem): void {
 }
 
 /**
+ * @description 行为测试入口占位；后续对接测试接口与弹窗。
+ * @param item 行为记录。
+ */
+function openBehaviorTest(item: SpaceBehaviorItem): void {
+  activeBehavior.value = item;
+  ElMessage.info("行为测试功能后续接入");
+}
+
+/**
  * @description 打开行为状态管理弹窗。
  * @param item 行为记录。
  */
@@ -251,25 +262,29 @@ function openBehaviorDelete(item: SpaceBehaviorItem): void {
 }
 
 /**
- * @description 提交行为新建或就地编辑。
+ * @description 提交行为新建或就地编辑；创建时属性值基础行为走真实接口。
  * @param draft 行为草稿。
  */
-function handleBehaviorSubmit(draft: SpaceBehaviorDraft): void {
+async function handleBehaviorSubmit(draft: SpaceBehaviorDraft): Promise<void> {
   if (behaviorFormMode.value === "create") {
-    createBehavior({ ...draft, status: "draft" });
+    const result = await createBehavior({ ...draft, status: "draft" });
     behaviorFormRef.value?.setLoading(false);
+    if (!result.ok) {
+      ElMessage.error(result.message || "行为创建失败");
+      return;
+    }
     behaviorFormVisible.value = false;
     ElMessage.success("行为已创建");
     return;
   }
-  if (!activeBehavior.value || activeBehavior.value.status === "published" || activeBehavior.value.status === "disabled") {
+  if (!activeBehavior.value || activeBehavior.value.status === "disabled") {
     behaviorFormRef.value?.setLoading(false);
     return;
   }
-  const ok = updateBehavior(activeBehavior.value.id, draft);
+  const result = await updateBehavior(activeBehavior.value.id, draft);
   behaviorFormRef.value?.setLoading(false);
-  if (!ok) {
-    ElMessage.error("行为保存失败");
+  if (!result.ok) {
+    ElMessage.error(result.message || "行为保存失败");
     return;
   }
   behaviorFormVisible.value = false;
@@ -277,12 +292,16 @@ function handleBehaviorSubmit(draft: SpaceBehaviorDraft): void {
 }
 
 /**
- * @description 将已发布行为另存为独立草稿副本，不修改原行为。
+ * @description 将已发布行为另存为独立草稿副本，不修改原行为；本轮仍仅写本地 Mock。
  * @param draft 行为草稿。
  */
-function handleBehaviorSaveCopy(draft: SpaceBehaviorDraft): void {
-  createBehavior({ ...draft, status: "draft" });
+async function handleBehaviorSaveCopy(draft: SpaceBehaviorDraft): Promise<void> {
+  const result = await createBehavior({ ...draft, status: "draft" }, { useRemotePropertyValueAction: false });
   behaviorFormRef.value?.setLoading(false);
+  if (!result.ok) {
+    ElMessage.error(result.message || "另存草稿失败");
+    return;
+  }
   behaviorFormVisible.value = false;
   ElMessage.success("已另存为草稿副本");
 }
