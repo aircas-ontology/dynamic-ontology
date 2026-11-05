@@ -14,7 +14,7 @@ function createWizard(api = {}) {
   const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
   const code = ts.transpile(
     script +
-      "\nreturn { nextStep, loadSchemas, step, schemas, schemaName, tables, selected, primary, error, busy, resetTableSelection, fieldIdsByTable, foreignKeys, visible };",
+      "\nreturn { objectName, categoryId, nextStep, loadSchemas, step, schemas, schemaName, tables, selected, primary, error, busy, resetTableSelection, fieldIdsByTable, foreignKeys, visible };",
     { target: ts.ScriptTarget.ES2022 },
   );
   const dependencies = {
@@ -25,13 +25,38 @@ function createWizard(api = {}) {
     watch: () => {},
     onBeforeUnmount: () => {},
     defineModel: () => ref(true),
-    defineProps: () => ({ spaceId: "42" }),
+    defineProps: () => ({ spaceId: "42", categoryTree: [{ id: "3", label: "分类", children: [] }] }),
     defineEmits: () => () => {},
     getDatasourceSchemaListInterface: async () => ({ code: 200, data: [{ schemaName: "public" }] }),
     ...api,
   };
-  return new Function(...Object.keys(dependencies), code)(...Object.values(dependencies));
+  const wizard = new Function(...Object.keys(dependencies), code)(...Object.values(dependencies));
+  wizard.objectName.value = "舰船";
+  wizard.categoryId.value = "3";
+  return wizard;
 }
+
+test("first step validates object information and retains it when schema changes", async () => {
+  const wizard = createWizard({ getDatasourceTableListInterface: async () => ({ code: 200, data: [] }) });
+  wizard.schemaName.value = "public";
+  wizard.objectName.value = "  ";
+  await wizard.nextStep();
+  assert.equal(wizard.step.value, 0);
+  assert.match(wizard.error.value, /对象名称/);
+  wizard.objectName.value = "舰船";
+  for (const category of ["", "missing"]) {
+    wizard.categoryId.value = category;
+    await wizard.nextStep();
+    assert.equal(wizard.step.value, 0);
+    assert.match(wizard.error.value, /分类/);
+  }
+  wizard.categoryId.value = "3";
+  wizard.resetTableSelection();
+  assert.equal(wizard.objectName.value, "舰船");
+  assert.equal(wizard.categoryId.value, "3");
+  await wizard.nextStep();
+  assert.equal(wizard.step.value, 1);
+});
 
 test("schema query uses current space and table query uses selected schema", async () => {
   const wizard = createWizard({
@@ -99,13 +124,15 @@ test("changing schema invalidates pending tables and clears dependent choices", 
 
 test("columns and submission retain selected schema and edited field descriptions", async () => {
   let emitted;
+  let objectInfo;
   const wizard = createWizard({
-    defineEmits: () => (event, value) => {
+    defineEmits: () => (event, value, info) => {
       emitted = value;
+      objectInfo = info;
     },
     getDatasourceTableColumnsInterface: async (params) => {
       assert.deepEqual(params, { spaceId: 42, schemaName: "public", tableNames: ["ship"] });
-      return { code: 200, data: [{ tableName: "ship", columns: [{ columnName: "id", nativeType: "int", description: "编号" }] }] };
+      return { code: 200, data: [{ tableName: "ship", columns: [{ columnName: "id", ontologyDataType: "Int", nativeType: "int", description: "编号" }] }] };
     },
   });
   wizard.schemaName.value = "public";
@@ -121,6 +148,7 @@ test("columns and submission retain selected schema and edited field description
   assert.equal(wizard.tables.value[0].fields[0].description, "编辑说明");
   await wizard.nextStep();
   assert.equal(emitted.schemaName, "public");
+  assert.deepEqual(objectInfo, { displayName: "舰船", categoryId: "3" });
   assert.equal(emitted.selectedTables[0].fields[0].description, "编辑说明");
   assert.equal(wizard.visible.value, false);
 });

@@ -78,6 +78,43 @@ for (const [name, request, expected] of [
   });
 }
 
+test("datasource column displayName uses trimmed field description and falls back to property name", async () => {
+  /** @type {object | undefined} */
+  let payload;
+  const state = createActions(async (value) => {
+    payload = value;
+    return { code: 200, data: { message: "构建成功" } };
+  });
+  await state.actions.createOntologyObjectFromDatasource(
+    {
+      schemaName: "public",
+      primaryTableId: "demo_destroyer",
+      selectedTableIds: ["demo_destroyer"],
+      selectedTables: [
+        {
+          id: "demo_destroyer",
+          name: "demo_destroyer",
+          storageName: "  aircraftApi  ",
+          comment: "舰船表说明",
+          fields: [
+            { id: "displacement", name: "displacement", description: "  排水量  " },
+            { id: "shipname", name: "shipname", description: "   " },
+            { id: "skipped", name: "skipped", description: "未选用" },
+          ],
+        },
+      ],
+      fieldIdsByTable: { demo_destroyer: ["displacement", "shipname"] },
+      foreignKeys: {},
+    },
+    draft,
+  );
+  assert.deepEqual(payload.tables[0].columns, [
+    { columnName: "displacement", displayName: "排水量", description: "排水量" },
+    { columnName: "shipname", displayName: "shipname", description: "" },
+  ]);
+  assert.equal(payload.description, "舰船表说明");
+});
+
 test("successful datasource creation refreshes once and blocks duplicate submission", async () => {
   let finish;
   let calls = 0;

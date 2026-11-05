@@ -5,6 +5,25 @@
     /></el-steps>
     <el-alert v-if="error" :title="error" type="error" :closable="false" />
     <section v-if="step === 0" v-loading="busy" class="datasource-build-dialog__tables">
+      <el-form label-position="top" :disabled="busy">
+        <el-form-item label="对象名称" required>
+          <el-input v-model="objectName" maxlength="64" placeholder="请输入对象名称" ariaLabel="对象名称" />
+        </el-form-item>
+        <el-form-item label="对象分类" required>
+          <el-tree-select
+            v-model="categoryId"
+            :data="categoryTree"
+            check-strictly
+            filterable
+            :render-after-expand="false"
+            node-key="id"
+            :props="{ label: 'label', children: 'children' }"
+            placeholder="请选择对象分类"
+            ariaLabel="对象分类"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
       <p>选择当前空间的数据源 schema</p>
       <el-select v-model="schemaName" placeholder="请选择 schema" :ariaLabel="'选择 schema'" :disabled="busy" @change="resetTableSelection">
         <el-option v-for="item in schemas" :key="item.schemaName" :label="item.schemaName" :value="item.schemaName" />
@@ -57,11 +76,14 @@
         <el-table v-if="activeTable" :data="activeTable.fields" row-key="id" class="datasource-build-dialog__field-list">
           <el-table-column label="选用" width="64" align="center">
             <template #default="{ row }">
-              <el-checkbox
-                :model-value="(fieldIdsByTable[activeTable.id] || []).includes(row.id)"
-                :ariaLabel="`选用字段 ${row.name}`"
-                @update:model-value="setFieldSelected(activeTable.id, row.id, $event)"
-              />
+              <span :title="isSupportedFieldType(row.dataType) ? '' : '该数据类型不支持创建属性'">
+                <el-checkbox
+                  :model-value="(fieldIdsByTable[activeTable.id] || []).includes(row.id)"
+                  :ariaLabel="`选用字段 ${row.name}`"
+                  :disabled="!isSupportedFieldType(row.dataType)"
+                  @update:model-value="setFieldSelected(activeTable.id, row.id, $event)"
+                />
+              </span>
             </template>
           </el-table-column>
           <el-table-column prop="name" label="属性名" min-width="180" show-overflow-tooltip />
@@ -108,10 +130,17 @@ import { computed, reactive, ref, watch, onBeforeUnmount } from "vue";
 import { ElLoading } from "element-plus";
 import { getDatasourceSchemaListInterface, getDatasourceTableColumnsInterface, getDatasourceTableListInterface } from "@/apis";
 import type { DatasourceBuildSelection, DatasourceSchema, DatasourceTable } from "@/types";
-const props = defineProps<{ spaceId: string }>();
+interface CategoryOption {
+  id: string;
+  label: string;
+  children: CategoryOption[];
+}
+const props = defineProps<{ spaceId: string; categoryTree: CategoryOption[] }>();
 const vLoading = ElLoading.directive;
 const visible = defineModel<boolean>({ required: true });
-const emit = defineEmits<{ submit: [value: DatasourceBuildSelection] }>();
+const emit = defineEmits<{ submit: [value: DatasourceBuildSelection, objectInfo: { displayName: string; categoryId: string }] }>();
+const objectName = ref("");
+const categoryId = ref("");
 const step = ref(0);
 const busy = ref(false);
 const error = ref("");
@@ -128,6 +157,16 @@ const selectedTables = computed(() => tables.value.filter((table) => selected.va
 const childTables = computed(() => selectedTables.value.filter((table) => table.id !== primary.value));
 const primaryTable = computed(() => tables.value.find((table) => table.id === primary.value));
 const activeTable = computed(() => selectedTables.value.find((table) => table.id === activeTableId.value) || selectedTables.value[0]);
+const supportedFieldTypes = new Set(["Boolean", "Int", "Long", "Float", "Short", "Byte", "Double", "Decimal", "String", "Date", "Array", "Timestamp"]);
+
+/**
+ * @description 按属性创建允许的类型判断数据源字段能否作为属性。
+ * @param dataType 接口返回的本体类型，缺失时为数据库原生类型。
+ * @returns 支持创建属性时返回 true。
+ */
+function isSupportedFieldType(dataType: string): boolean {
+  return supportedFieldTypes.has(dataType.trim());
+}
 /** @description 更新选中的数据库表。 */
 function setTableSelected(tableId: string, checked: string | number | boolean): void {
   selected.value = checked ? [...new Set([...selected.value, tableId])] : selected.value.filter((id) => id !== tableId);
@@ -156,6 +195,8 @@ function setForeignKeyField(tableId: string, field: "childFieldId" | "parentFiel
  * @param checked 是否选用。
  */
 function setFieldSelected(tableId: string, fieldId: string, checked: string | number | boolean): void {
+  const field = tables.value.find((table) => table.id === tableId)?.fields.find((item) => item.id === fieldId);
+  if (checked && (!field || !isSupportedFieldType(field.dataType))) return;
   const current = fieldIdsByTable[tableId] || [];
   fieldIdsByTable[tableId] = checked ? [...new Set([...current, fieldId])] : current.filter((id) => id !== fieldId);
 }
@@ -178,6 +219,8 @@ watch(
     schemas.value = [];
     schemaName.value = "";
     step.value = 0;
+    objectName.value = "";
+    categoryId.value = "";
     if (opened) void loadSchemas();
   },
   { immediate: true },
@@ -214,6 +257,16 @@ async function nextStep(): Promise<void> {
   const token = generation;
   busy.value = true;
   try {
+    if (step.value === 0 || step.value === 2) {
+      if (!objectName.value.trim()) {
+        error.value = "请输入对象名称";
+        return;
+      }
+      if (!hasObjectCategory(props.categoryTree, categoryId.value)) {
+        error.value = "请选择有效的对象分类";
+        return;
+      }
+    }
     if (step.value === 0) {
       if (!schemaName.value) {
         error.value = "请选择 schema";
@@ -261,12 +314,19 @@ async function nextStep(): Promise<void> {
           description: previousFields.get(`${table.id}-${field.columnName}`)?.description ?? field.description ?? "",
         }));
         fieldIdsByTable[table.id] =
-          fieldIdsByTable[table.id]?.filter((id) => table.fields.some((field) => field.id === id)) ?? table.fields.map((field) => field.id);
+          fieldIdsByTable[table.id]?.filter((id) => table.fields.some((field) => field.id === id && isSupportedFieldType(field.dataType))) ??
+          table.fields.filter((field) => isSupportedFieldType(field.dataType)).map((field) => field.id);
         if (table.id !== primary.value) foreignKeys[table.id] ??= { childFieldId: "", parentFieldId: "" };
       }
       activeTableId.value = primary.value;
       step.value = 2;
       return;
+    }
+    for (const table of selectedTables.value) {
+      if ((fieldIdsByTable[table.id] ?? []).some((id) => !table.fields.some((field) => field.id === id && isSupportedFieldType(field.dataType)))) {
+        error.value = `数据表「${table.name}」包含不支持的数据类型，请重新选择字段`;
+        return;
+      }
     }
     if (!fieldIdsByTable[primary.value]?.length) {
       error.value = "主表请至少选择一个字段";
@@ -277,22 +337,26 @@ async function nextStep(): Promise<void> {
         error.value = `请完成子表「${table.name}」字段和外键配置`;
         return;
       }
-    emit("submit", {
-      schemaName: schemaName.value,
-      primaryTableId: primary.value,
-      selectedTableIds: [...selected.value],
-      selectedTables: selectedTables.value.map((table) => ({ ...table, fields: table.fields.map((field) => ({ ...field })) })),
-      fieldIdsByTable: { ...fieldIdsByTable },
-      foreignKeys: Object.fromEntries(
-        childTables.value.map((table) => [
-          table.id,
-          {
-            childFieldId: foreignKeys[table.id]?.childFieldId ?? "",
-            parentFieldId: foreignKeys[table.id]?.parentFieldId ?? "",
-          },
-        ]),
-      ),
-    });
+    emit(
+      "submit",
+      {
+        schemaName: schemaName.value,
+        primaryTableId: primary.value,
+        selectedTableIds: [...selected.value],
+        selectedTables: selectedTables.value.map((table) => ({ ...table, fields: table.fields.map((field) => ({ ...field })) })),
+        fieldIdsByTable: { ...fieldIdsByTable },
+        foreignKeys: Object.fromEntries(
+          childTables.value.map((table) => [
+            table.id,
+            {
+              childFieldId: foreignKeys[table.id]?.childFieldId ?? "",
+              parentFieldId: foreignKeys[table.id]?.parentFieldId ?? "",
+            },
+          ]),
+        ),
+      },
+      { displayName: objectName.value.trim(), categoryId: categoryId.value },
+    );
     visible.value = false;
   } catch (cause) {
     if (token === generation) error.value = cause instanceof Error ? cause.message : "数据查询失败";
@@ -300,9 +364,20 @@ async function nextStep(): Promise<void> {
     if (token === generation) busy.value = false;
   }
 }
-/** @description 全选当前表字段。 */
+
+/**
+ * @description 校验所选分类属于当前空间分类树。
+ * @param nodes 当前分类选项。
+ * @param selectedId 所选分类标识。
+ * @returns 分类有效时返回 true。
+ */
+function hasObjectCategory(nodes: CategoryOption[], selectedId: string): boolean {
+  return nodes.some((node) => node.id === selectedId || hasObjectCategory(node.children, selectedId));
+}
+/** @description 全选当前表中类型受支持的字段。 */
 function selectAllFields(): void {
-  if (activeTable.value) fieldIdsByTable[activeTable.value.id] = activeTable.value.fields.map((field) => field.id);
+  if (activeTable.value)
+    fieldIdsByTable[activeTable.value.id] = activeTable.value.fields.filter((field) => isSupportedFieldType(field.dataType)).map((field) => field.id);
 }
 /** @description 清空当前表字段。 */
 function clearFields(): void {

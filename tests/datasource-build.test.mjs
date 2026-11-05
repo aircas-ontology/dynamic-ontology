@@ -1,6 +1,70 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
+import ts from "typescript";
+import { computed, reactive, ref } from "vue";
+
+/** @description 创建可执行的向导状态，注入字段查询接口。 @returns {object} 向导状态与操作。 */
+function createFieldWizard() {
+  const source = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/DatasourceBuildDialog.vue", import.meta.url), "utf8");
+  const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
+  const emitted = [];
+  const deps = {
+    computed,
+    reactive,
+    ref,
+    watch: () => {},
+    onBeforeUnmount: () => {},
+    defineProps: () => ({ spaceId: "1", categoryTree: [{ id: "3", label: "分类", children: [] }] }),
+    defineModel: () => ref(true),
+    defineEmits:
+      () =>
+      (...args) =>
+        emitted.push(args),
+    ElLoading: { directive: {} },
+    getDatasourceTableColumnsInterface: async () => ({
+      code: 200,
+      data: [
+        {
+          tableName: "ships",
+          columns: [
+            { columnName: "name", ontologyDataType: "String", nativeType: "varchar" },
+            { columnName: "geometry", ontologyDataType: "Geometry", nativeType: "geometry" },
+            { columnName: "unknown", nativeType: "jsonb" },
+          ],
+        },
+      ],
+    }),
+  };
+  const code = ts.transpile(
+    `${script}\nobjectName.value = "舰船"; categoryId.value = "3"; return { step, tables, selected, primary, fieldIdsByTable, nextStep, selectAllFields, clearFields, setFieldSelected, error };`,
+    { target: ts.ScriptTarget.ES2022 },
+  );
+  return { ...new Function(...Object.keys(deps), code)(...Object.values(deps)), emitted };
+}
+
+test("datasource field selection excludes unsupported types on load, single selection and select all", async () => {
+  const wizard = createFieldWizard();
+  wizard.tables.value = [{ id: "ships", name: "ships", storageName: "ships", fields: [] }];
+  wizard.selected.value = ["ships"];
+  wizard.primary.value = "ships";
+  wizard.step.value = 1;
+  await wizard.nextStep();
+  assert.deepEqual(wizard.fieldIdsByTable.ships, ["ships-name"]);
+  wizard.setFieldSelected("ships", "ships-geometry", true);
+  assert.deepEqual(wizard.fieldIdsByTable.ships, ["ships-name"]);
+  wizard.clearFields();
+  wizard.selectAllFields();
+  assert.deepEqual(wizard.fieldIdsByTable.ships, ["ships-name"]);
+  wizard.step.value = 1;
+  wizard.fieldIdsByTable.ships.push("ships-geometry");
+  await wizard.nextStep();
+  assert.deepEqual(wizard.fieldIdsByTable.ships, ["ships-name"]);
+  wizard.fieldIdsByTable.ships.push("ships-geometry");
+  await wizard.nextStep();
+  assert.equal(wizard.emitted.length, 0);
+  assert.match(wizard.error.value, /不支持/);
+});
 
 test("object creation exposes datasource build mode and three-step workflow", () => {
   const dialog = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue", import.meta.url), "utf8");

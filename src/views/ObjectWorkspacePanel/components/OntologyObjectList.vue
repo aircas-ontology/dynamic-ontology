@@ -127,7 +127,14 @@
         </div>
 
         <div v-else class="ontology-object-section__table">
-          <el-table class="aircas-table--accent-header" :data="section.items" row-key="id" height="100%" stripe :row-class-name="objectRowClassName">
+          <el-table
+            class="aircas-table--accent-header"
+            :data="section.items"
+            row-key="id"
+            max-height="min(420px, 48vh)"
+            stripe
+            :row-class-name="objectRowClassName"
+          >
             <el-table-column label="对象名称" min-width="220">
               <template #default="{ row }"
                 ><strong>{{ objectRow(row).displayName }}</strong
@@ -604,8 +611,6 @@ onBeforeUnmount(() => {
 }
 
 .ontology-object-section__table {
-  height: min(420px, 48vh);
-  min-height: 240px;
   padding: 8px;
 }
 .ontology-object-section__table .el-button {

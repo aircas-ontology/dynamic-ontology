@@ -134,7 +134,7 @@
     <p v-if="error" class="ontology-object-create-dialog__error" role="alert">{{ error }}</p>
     <template #footer>
       <el-button :disabled="submitting" data-onboarding="object-create-cancel" @click="visible = false">取消</el-button>
-      <el-button v-if="createMode === 'datasource'" type="primary" @click="openDatasourceBuild">进入数据源构建</el-button>
+      <el-button v-if="createMode === 'datasource'" type="primary" :disabled="submitting" @click="openDatasourceBuild">进入数据源构建</el-button>
       <el-button v-if="createMode === 'asset'" type="primary" :disabled="submitting" @click="openAssetBuild">进入资产构建</el-button>
       <el-button v-if="createMode === 'llm'" type="primary" :disabled="submitting" @click="emit('open-llm')">进入大模型构建</el-button>
       <el-button
@@ -147,7 +147,7 @@
       >
     </template>
   </el-dialog>
-  <DatasourceBuildDialog :space-id="spaceId" v-model="datasourceVisible" @submit="handleDatasourceSubmit" />
+  <DatasourceBuildDialog :space-id="spaceId" :category-tree="categoryTreeOptions" v-model="datasourceVisible" @submit="handleDatasourceSubmit" />
   <AssetModelBuildDialog
     v-model="assetVisible"
     :space-id="spaceId"
@@ -190,6 +190,7 @@ const props = defineProps<{
   submitting: boolean;
   error: string;
   editingItem?: OntologyObjectItem | null;
+  initialParentId?: string;
 }>();
 const emit = defineEmits<{
   "submit-manual": [draft: OntologyObjectCreateDraft];
@@ -252,8 +253,9 @@ watch([visible, () => props.editingItem], ([opened, editingItem]) => {
   draft.displayName = editingItem?.displayName ?? "";
   draft.description = editingItem?.description ?? "";
   draft.iconUrl = editingItem?.iconUrl ?? "";
-  draft.parentId = undefined;
-  draft.categoryId = editingItem?.categoryId ?? categoryTreeOptions.value[0]?.id ?? "";
+  draft.parentId = editingItem ? undefined : props.initialParentId;
+  const initialParent = props.parentOptions.find((item) => item.id === draft.parentId);
+  draft.categoryId = editingItem?.categoryId ?? initialParent?.categoryId ?? categoryTreeOptions.value[0]?.id ?? "";
   importFile.value = null;
   importError.value = "";
   validationError.value = "";
@@ -278,8 +280,9 @@ function selectCreateMode(mode: CreateMode) {
   if (mode !== "datasource") datasourceVisible.value = false;
 }
 
-/** @description 关闭对象创建弹窗并打开数据源构建弹窗。 */
+/** @description 关闭创建弹窗并进入数据源构建向导，在向导中填写对象信息。 */
 function openDatasourceBuild(): void {
+  if (props.submitting || datasourceVisible.value) return;
   visible.value = false;
   datasourceVisible.value = true;
 }
@@ -291,12 +294,17 @@ function openAssetBuild(): void {
   assetVisible.value = true;
 }
 
-/** @description 将数据源构建结果转换为现有对象创建草稿。 */
-function handleDatasourceSubmit(selection: DatasourceBuildSelection): void {
+/**
+ * @description 将数据源构建结果及向导填写的名称分类转换为对象创建草稿。
+ * @param selection 数据源表与字段选择。
+ * @param objectInfo 向导填写的对象名称和分类。
+ */
+function handleDatasourceSubmit(selection: DatasourceBuildSelection, objectInfo: { displayName: string; categoryId: string }): void {
   const primaryTable = selection.selectedTables.find((table) => table.id === selection.primaryTableId);
   const name = (primaryTable?.storageName || primaryTable?.name || selection.primaryTableId).replace(/-/g, "_");
   draft.apiName = name;
-  draft.displayName = name;
+  draft.displayName = objectInfo.displayName;
+  draft.categoryId = objectInfo.categoryId;
   draft.description = primaryTable?.comment ?? "";
   emit("submit-datasource", selection, { ...draft });
 }

@@ -12,17 +12,24 @@ import { computed, reactive, ref } from "vue";
 function createEntry(submitting) {
   const source = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue", import.meta.url), "utf8");
   const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
-  const code = ts.transpile(`${script}\nreturn { selectCreateMode, openAssetBuild, assetVisible, visible, draft, createMode };`, {
-    target: ts.ScriptTarget.ES2022,
-  });
+  const code = ts.transpile(
+    `${script}\nreturn { selectCreateMode, openAssetBuild, openDatasourceBuild, handleDatasourceSubmit, datasourceVisible, categoryError, assetVisible, visible, draft, createMode, emitted };`,
+    {
+      target: ts.ScriptTarget.ES2022,
+    },
+  );
   const deps = {
+    emitted: [],
     computed,
     reactive,
     ref,
     watch: () => {},
     defineModel: () => ref(true),
-    defineProps: () => ({ spaceId: "1", categoryTree: [], parentOptions: [], submitting, error: "" }),
-    defineEmits: () => () => {},
+    defineProps: () => ({ spaceId: "1", categoryTree: [{ id: "3", label: "分类", children: [] }], parentOptions: [], submitting, error: "" }),
+    defineEmits:
+      () =>
+      (...args) =>
+        deps.emitted.push(args),
     ontologyImportTemplate: {},
     MagicStick: {},
     UploadFilled: {},
@@ -42,6 +49,27 @@ test("asset mode requires button action but can enter without selecting a catego
   entry.openAssetBuild();
   assert.equal(entry.assetVisible.value, true);
   assert.equal(entry.visible.value, false);
+});
+
+test("datasource entry opens without external category and uses wizard object information", () => {
+  const entry = createEntry(false);
+  entry.selectCreateMode("datasource");
+  entry.draft.categoryId = "";
+  entry.openDatasourceBuild();
+  assert.equal(entry.datasourceVisible.value, true);
+  assert.equal(entry.categoryError.value, "");
+  entry.handleDatasourceSubmit({ primaryTableId: "ships", selectedTables: [] }, { displayName: "舰船", categoryId: "3" });
+  assert.equal(entry.emitted.at(-1)[0], "submit-datasource");
+  assert.equal(entry.emitted.at(-1)[2].categoryId, "3");
+  assert.equal(entry.emitted.at(-1)[2].displayName, "舰船");
+  assert.equal(entry.emitted.at(-1)[2].apiName, "ships");
+});
+
+test("datasource entry is blocked during submission", () => {
+  const entry = createEntry(true);
+  entry.draft.categoryId = "3";
+  entry.openDatasourceBuild();
+  assert.equal(entry.datasourceVisible.value, false);
 });
 
 test("asset entry remains blocked while another create operation is submitting", () => {
