@@ -2,6 +2,7 @@ import type { CanvasOntology, GetOntologySpaceCanvasContentData } from "@/types"
 import { layoutConceptualModelContent } from "./layoutConceptualModelContent.ts";
 
 export interface MappedCanvasAttribute {
+  uniqueIdentifier?: string;
   id: number;
   displayName: string;
   apiName: string;
@@ -14,6 +15,8 @@ export interface MappedCanvasAttribute {
 }
 
 export interface MappedCanvasObject {
+  uniqueIdentifier?: string;
+  iconUrl?: string;
   id: number;
   displayName: string;
   apiName: string;
@@ -24,6 +27,7 @@ export interface MappedCanvasObject {
 }
 
 export interface MappedCanvasRelation {
+  uniqueIdentifier?: string;
   id: number;
   displayName: string;
   apiName: string;
@@ -61,6 +65,7 @@ export function mapCanvasContentToConceptualModel(data: GetOntologySpaceCanvasCo
     const targetId = objectIdByApiName.get(link.toOntologyApiName) ?? null;
     return {
       id,
+      ...(link.uniqueIdentifier ? { uniqueIdentifier: link.uniqueIdentifier } : {}),
       displayName: link.name,
       apiName: link.apiName ?? `relation_${id}`,
       description: link.description ?? "",
@@ -86,6 +91,8 @@ export function mapCanvasContentToConceptualModel(data: GetOntologySpaceCanvasCo
 function mapCanvasOntology(ontology: CanvasOntology, id: number, index: number, nextSequence: () => number): MappedCanvasObject {
   return {
     id,
+    ...(ontology.uniqueIdentifier ? { uniqueIdentifier: ontology.uniqueIdentifier } : {}),
+    ...(ontology.iconUrl !== undefined ? { iconUrl: ontology.iconUrl } : {}),
     displayName: ontology.displayName,
     apiName: ontology.apiName,
     description: ontology.description ?? "",
@@ -93,6 +100,7 @@ function mapCanvasOntology(ontology: CanvasOntology, id: number, index: number, 
     y: 100,
     attributes: (ontology.properties ?? []).map((property) => ({
       id: nextSequence(),
+      ...(property.uniqueIdentifier ? { uniqueIdentifier: property.uniqueIdentifier } : {}),
       displayName: property.displayName,
       apiName: property.apiName,
       dataType: property.dataType ?? "String",

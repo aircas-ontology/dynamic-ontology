@@ -33,6 +33,13 @@
         <span v-if="isObjectNode(data)" class="concept-hierarchy__object-row">
           <span class="concept-hierarchy__object-dot" aria-hidden="true" />
           <span class="concept-hierarchy__object-name" :title="data.label">{{ data.label }}</span>
+          <span v-if="mode === 'inheritance'" class="concept-hierarchy__create-child-wrap" @click.stop>
+            <el-tooltip content="新建继承对象" placement="top" :show-after="200">
+              <button type="button" class="concept-hierarchy__create-child" aria-label="新建继承对象" @click="openInheritedObjectDialog(data)">
+                <el-icon><Plus /></el-icon>
+              </button>
+            </el-tooltip>
+          </span>
         </span>
         <template v-else>
           <span class="concept-hierarchy__node">
@@ -130,12 +137,22 @@ const emit = defineEmits<{
   "select-object": [object: OntologyConceptObjectRef];
   create: [];
   createChild: [categoryId: string];
+  createInherited: [object: OntologyObjectItem];
   rename: [categoryId: string, name: string];
   delete: [categoryId: string, name: string];
 }>();
 
 const keyword = ref("");
 const mode = ref<"concept" | "inheritance">("concept");
+
+/**
+ * @description 将当前继承树对象交给创建弹窗，保留其标识及分类。
+ * @param node 触发新增的对象节点。
+ */
+function openInheritedObjectDialog(node: ConceptObjectTreeNode): void {
+  const item = props.objects.find((object) => object.id === node.objectId);
+  if (item) emit("createInherited", item);
+}
 
 /** @description 更新层级树展示模式。 */
 function setMode(value: string | number | boolean | undefined): void {
@@ -459,6 +476,7 @@ function openDeleteCategoryDialog(value: unknown) {
 /* 对象节点（树嵌套子节点，无展开箭头） */
 .concept-hierarchy__object-row {
   display: inline-flex;
+  flex: 1;
   min-width: 0;
   align-items: center;
   gap: 8px;

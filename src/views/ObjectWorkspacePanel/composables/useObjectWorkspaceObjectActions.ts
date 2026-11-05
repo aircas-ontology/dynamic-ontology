@@ -40,6 +40,8 @@ export function useObjectWorkspaceObjectActions(options: {
   const objectCreateSubmitting = ref(false);
   const objectCreateError = ref("");
   const editingObject = ref<OntologyObjectItem | null>(null);
+  const initialParentObject = ref<OntologyObjectItem | null>(null);
+  const initialParentId = computed(() => initialParentObject.value?.id);
   const objectDeleteVisible = ref(false);
   const objectDeleteSubmitting = ref(false);
   const objectDeleteError = ref("");
@@ -50,13 +52,27 @@ export function useObjectWorkspaceObjectActions(options: {
   const exportingObject = ref<OntologyObjectItem | null>(null);
 
   const categoryOptions = computed(() => collectCategoryOptions(workspace.value?.tree ?? []));
-  const parentOptions = computed(() => (workspace.value?.sections ?? []).flatMap((section) => section.items));
+  const parentOptions = computed(() => {
+    const items = (workspace.value?.sections ?? []).flatMap((section) => section.items);
+    const parent = initialParentObject.value;
+    return parent && !items.some((item) => item.id === parent.id) ? [...items, parent] : items;
+  });
 
   /** @description 打开对象创建弹框并清理上次提交错误。 */
   function openOntologyObjectCreateDialog() {
+    initialParentObject.value = null;
     objectCreateError.value = "";
     editingObject.value = null;
     objectCreateVisible.value = true;
+  }
+
+  /**
+   * @description 从继承树打开手动创建，保留当前对象作为初始继承对象。
+   * @param item 当前继承树对象。
+   */
+  function openInheritedOntologyObjectCreateDialog(item: OntologyObjectItem) {
+    openOntologyObjectCreateDialog();
+    initialParentObject.value = item;
   }
 
   /**
@@ -64,6 +80,7 @@ export function useObjectWorkspaceObjectActions(options: {
    * @param item 待编辑的对象。
    */
   function openOntologyObjectEditDialog(item: OntologyObjectItem) {
+    initialParentObject.value = null;
     objectCreateError.value = "";
     editingObject.value = item;
     objectCreateVisible.value = true;
@@ -161,7 +178,9 @@ export function useObjectWorkspaceObjectActions(options: {
       return {
         tableName: table?.name ?? tableId,
         master: tableId === selection.primaryTableId,
-        columns: (table?.fields ?? []).filter((field) => selectedFieldIds.has(field.id)).map((field) => ({ columnName: field.name, displayName: field.name })),
+        columns: (table?.fields ?? [])
+          .filter((field) => selectedFieldIds.has(field.id))
+          .map((field) => ({ columnName: field.name, displayName: field.description?.trim() || field.name, description: field.description?.trim() ?? "" })),
       };
     });
     const foreignKeys: BuildObjectFromDatasourceForeignKey[] = Object.entries(selection.foreignKeys).map(([childTableId, relation]) => {
@@ -181,7 +200,7 @@ export function useObjectWorkspaceObjectActions(options: {
       categoryId: numericCategoryId,
       displayName: draft.displayName,
       apiName: draft.apiName,
-      description: draft.description,
+      description: tableById.get(selection.primaryTableId)?.comment?.trim() ?? "",
       schemaName: selection.schemaName,
       tables,
       ...(foreignKeys.length ? { foreignKeys } : {}),
@@ -319,6 +338,8 @@ export function useObjectWorkspaceObjectActions(options: {
   }
 
   return {
+    initialParentId,
+    openInheritedOntologyObjectCreateDialog,
     objectCreateVisible,
     objectCreateSubmitting,
     objectCreateError,

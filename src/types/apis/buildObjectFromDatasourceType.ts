@@ -1,6 +1,8 @@
 export interface BuildObjectFromDatasourceSelectedColumn {
   columnName: string;
   displayName?: string;
+  /** 数据源字段说明。 */
+  description?: string;
 }
 
 export interface BuildObjectFromDatasourceSelectedTable {

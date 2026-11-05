@@ -157,6 +157,7 @@ type PaletteType = "object" | "attribute" | "relation";
 type Port = "top" | "right" | "bottom" | "left";
 type Selection = { kind: "object" | "attribute" | "relation"; id: number };
 interface Attribute {
+  uniqueIdentifier?: string;
   id: number;
   displayName: string;
   apiName: string;
@@ -168,6 +169,8 @@ interface Attribute {
   storageGroup: string;
 }
 interface ModelObject {
+  uniqueIdentifier?: string;
+  iconUrl?: string;
   id: number;
   displayName: string;
   apiName: string;
@@ -177,6 +180,7 @@ interface ModelObject {
   attributes: Attribute[];
 }
 interface Relation {
+  uniqueIdentifier?: string;
   id: number;
   displayName: string;
   apiName: string;
@@ -245,6 +249,7 @@ function initializeRouteSpaceContext() {
 initializeRouteSpaceContext();
 
 let canvasLoadRequestId = 0;
+let initialCanvasContent: CreateOntologySpaceWithCanvasContentParams["base"];
 
 /**
  * @description 查询已有空间的画布内容并回显到概念模型页面。
@@ -255,6 +260,7 @@ async function loadConceptualModelCanvas() {
   const requestId = ++canvasLoadRequestId;
   canvasLoading.value = true;
   canvasLoadError.value = "";
+  initialCanvasContent = undefined;
   objects.value = [];
   relations.value = [];
   selected.value = null;
@@ -267,6 +273,7 @@ async function loadConceptualModelCanvas() {
       throw new Error("画布关系引用了不存在的对象，无法完整回显。");
     }
     objects.value = mapped.objects;
+    initialCanvasContent = structuredClone({ ontologies: response.data?.ontologies ?? [], links: response.data?.links ?? [] });
     relations.value = mapped.relations;
     sequence = mapped.nextSequence;
     selected.value = mapped.objects[0] ? { kind: "object", id: mapped.objects[0].id } : null;
@@ -520,6 +527,7 @@ function mapCanvasDataType(value: string): string {
 
 function mapCanvasProperty(attribute: Attribute): CanvasProperty {
   return {
+    ...(attribute.uniqueIdentifier ? { uniqueIdentifier: attribute.uniqueIdentifier } : {}),
     displayName: attribute.displayName.trim(),
     apiName: attribute.apiName.trim(),
     dataType: mapCanvasDataType(attribute.dataType),
@@ -535,6 +543,8 @@ function mapCanvasProperty(attribute: Attribute): CanvasProperty {
 
 function mapCanvasOntology(object: ModelObject): CanvasOntology {
   return {
+    ...(object.uniqueIdentifier ? { uniqueIdentifier: object.uniqueIdentifier } : {}),
+    ...(object.iconUrl !== undefined ? { iconUrl: object.iconUrl } : {}),
     displayName: object.displayName.trim(),
     apiName: object.apiName.trim(),
     description: object.description.trim(),
@@ -549,6 +559,7 @@ function mapCanvasLink(relation: Relation): CanvasLink | undefined {
   const target = objects.value.find((object) => object.id === relation.targetId);
   if (!source || !target) return undefined;
   return {
+    ...(relation.uniqueIdentifier ? { uniqueIdentifier: relation.uniqueIdentifier } : {}),
     name: relation.displayName.trim(),
     apiName: relation.apiName.trim(),
     description: relation.description.trim(),
@@ -569,6 +580,7 @@ function buildCanvasSpaceParams(): CreateOntologySpaceWithCanvasContentParams {
   };
   if (routeSpaceId.value !== undefined) {
     params.spaceId = routeSpaceId.value;
+    params.base = structuredClone(initialCanvasContent);
   } else {
     params.displayName = spaceDisplayName.value.trim();
     params.apiName = spaceApiName.value.trim();
@@ -580,7 +592,7 @@ function buildCanvasSpaceParams(): CreateOntologySpaceWithCanvasContentParams {
 /** @description 调用画布保存接口，成功后进入目标空间概览，失败时保留当前画布。 */
 
 async function saveConceptualModel() {
-  if (saving.value) return;
+  if (saving.value || canvasLoading.value || canvasLoadError.value || (routeSpaceId.value !== undefined && !initialCanvasContent)) return;
   saveError.value = "";
   if (!spaceDisplayName.value.trim()) {
     saveError.value = "请输入空间名称。";

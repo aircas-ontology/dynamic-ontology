@@ -1,5 +1,6 @@
 /** 画布中的对象属性。 */
 export interface CanvasProperty {
+  uniqueIdentifier?: string;
   displayName: string;
   apiName: string;
   dataType?: string;
@@ -13,6 +14,7 @@ export interface CanvasProperty {
 
 /** 画布中的对象。 */
 export interface CanvasOntology {
+  uniqueIdentifier?: string;
   displayName: string;
   apiName: string;
   description?: string;
@@ -22,6 +24,7 @@ export interface CanvasOntology {
 
 /** 画布中的对象关系。 */
 export interface CanvasLink {
+  uniqueIdentifier?: string;
   name: string;
   apiName?: string;
   description?: string;
@@ -31,6 +34,11 @@ export interface CanvasLink {
 
 /** 画布保存或创建对象空间请求参数。 */
 export interface CreateOntologySpaceWithCanvasContentParams {
+  /** 已有空间加载时的原始内容，用于和编辑结果比较。 */
+  base?: {
+    ontologies?: CanvasOntology[];
+    links?: CanvasLink[];
+  };
   /** 已有对象空间 id；传入后直接向该空间写入画布内容。 */
   spaceId?: number;
   /** 新建对象空间时使用的显示名称。 */

@@ -15,6 +15,7 @@
         @select-object="locateObjectFromTree"
         @create="openCategoryTreeCreateDialog"
         @create-child="openCategoryChildDialog"
+        @create-inherited="openInheritedOntologyObjectCreateDialog"
         @rename="openCategoryRenameDialog"
         @delete="openCategoryDeleteDialog"
       />
@@ -61,6 +62,7 @@
       :submitting="objectCreateSubmitting"
       :error="objectCreateError"
       :editing-item="editingObject"
+      :initial-parent-id="initialParentId"
       @submit-manual="createOntologyObject"
       @submit-import="importOntologyObjects"
       @submit-edit="updateOntologyObject"
@@ -145,6 +147,8 @@ const {
 } = categoryActions;
 const {
   objectCreateVisible,
+  initialParentId,
+  openInheritedOntologyObjectCreateDialog,
   objectCreateSubmitting,
   objectCreateError,
   editingObject,
