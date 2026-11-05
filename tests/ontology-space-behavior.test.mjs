@@ -185,6 +185,11 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(mapDataRowsSource, /storageGroupFilter/);
   assert.match(testDialogSource, /resolvedStorageGroup/);
   assert.match(testDialogSource, /行为未配置存储分组，无法选择数据行/);
+  assert.match(testDialogSource, /isMainStorageGroup/);
+  assert.match(testDialogSource, /isMainGroupDataRowLocked/);
+  assert.match(testDialogSource, /applyLockedMainGroupDataRowSelection/);
+  assert.match(testDialogSource, /:disabled="isMainGroupDataRowLocked"/);
+  assert.match(testDialogSource, /isUpdateTest\.value && isMainStorageGroup\(resolvedStorageGroup\.value\)/);
   assert.match(listSource, /placeholder="行为状态"/);
   assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_OPTIONS/);
   assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_LABELS/);

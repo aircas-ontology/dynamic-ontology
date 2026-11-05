@@ -66,7 +66,12 @@
       >
         <el-table-column width="48" align="center">
           <template #default="{ row }">
-            <el-radio :model-value="selectedGroupDataRowKey" :value="asGroupDataRow(row).rowKey" @change="selectGroupDataRow(asGroupDataRow(row))" />
+            <el-radio
+              :model-value="selectedGroupDataRowKey"
+              :value="asGroupDataRow(row).rowKey"
+              :disabled="isMainGroupDataRowLocked"
+              @change="selectGroupDataRow(asGroupDataRow(row))"
+            />
           </template>
         </el-table-column>
         <el-table-column prop="storageGroup" label="存储分组" min-width="120" show-overflow-tooltip />
@@ -123,6 +128,7 @@ import BehaviorEntityRowDetailDialog from "./BehaviorEntityRowDetailDialog.vue";
 import { coerceBehaviorTestParamValue } from "../utils/coerceBehaviorTestParamValue";
 import { mapOntologyEntityRowDetailToDataRows, type BehaviorTestEntityDataRow } from "../utils/mapOntologyEntityRowDetailToDataRows";
 import { mapOntologyActionInfoToViewState, type SpaceBehaviorActionInfoViewParamRow } from "../utils/mapOntologyActionInfoToViewState";
+import { isMainStorageGroup } from "../utils/resolveAttributeValueSelection";
 
 /** 测试弹窗实体表格行。 */
 interface BehaviorTestEntityRow {
@@ -192,6 +198,8 @@ const isCreateTest = computed(() => props.behavior?.basicAction === "create");
 const isUpdateTest = computed(() => props.behavior?.basicAction === "update");
 const isDeleteTest = computed(() => props.behavior?.basicAction === "delete");
 const needsDataRowSelection = computed(() => isUpdateTest.value || isDeleteTest.value);
+/** 属性值-编辑且存储分组为 main 时，数据行默认勾选且不可取消。 */
+const isMainGroupDataRowLocked = computed(() => isUpdateTest.value && isMainStorageGroup(resolvedStorageGroup.value));
 
 const dialogHint = computed(() => {
   if (isUpdateTest.value) return "选择实体实例与数据行，并填写外部输入参数，用于属性值-编辑测试。";
@@ -426,18 +434,29 @@ function handleEntityRowClick(row: unknown): void {
 }
 
 /**
- * @description 单选实体属性数据行。
+ * @description 编辑-main 分组锁定时自动选中第一条数据行。
+ */
+function applyLockedMainGroupDataRowSelection(): void {
+  if (!isMainGroupDataRowLocked.value) return;
+  const firstRow = groupDataRows.value[0];
+  selectedGroupDataRowKey.value = firstRow ? firstRow.rowKey : "";
+}
+
+/**
+ * @description 单选实体属性数据行；编辑-main 分组锁定时忽略切换。
  * @param row 数据行。
  */
 function selectGroupDataRow(row: BehaviorTestEntityDataRow): void {
+  if (isMainGroupDataRowLocked.value) return;
   selectedGroupDataRowKey.value = row.rowKey;
 }
 
 /**
- * @description 点击数据行时同步单选。
+ * @description 点击数据行时同步单选；编辑-main 分组锁定时忽略。
  * @param row 表格行。
  */
 function handleGroupDataRowClick(row: unknown): void {
+  if (isMainGroupDataRowLocked.value) return;
   selectGroupDataRow(asGroupDataRow(row));
 }
 
@@ -590,7 +609,9 @@ async function loadEntityGroupDataRows(): Promise<void> {
     if (requestToken !== groupRowLoadToken) return;
     if (response.code !== 200) throw new Error(response.message || "实体行数据加载失败");
     groupDataRows.value = mapOntologyEntityRowDetailToDataRows(response.data, storageGroup);
-    if (selectedGroupDataRowKey.value && !groupDataRows.value.some((item) => item.rowKey === selectedGroupDataRowKey.value)) {
+    if (isMainGroupDataRowLocked.value) {
+      applyLockedMainGroupDataRowSelection();
+    } else if (selectedGroupDataRowKey.value && !groupDataRows.value.some((item) => item.rowKey === selectedGroupDataRowKey.value)) {
       selectedGroupDataRowKey.value = "";
     }
   } catch (error) {
