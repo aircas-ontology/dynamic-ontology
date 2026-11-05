@@ -92,7 +92,7 @@ export function useSpaceRelationWorkspace() {
   const errorMessage = ref("");
   const workspace = ref<SpaceRelationWorkspaceData | null>(null);
   const selectedRelationCategoryId = ref(ROOT_RELATION_CATEGORY_ID);
-  const relationViewMode = ref<RelationViewMode>("graph");
+  const relationViewMode = ref<RelationViewMode>("graph2d");
   const relationFilter = ref<SpaceRelationFilterState>({
     seedNames: [],
     maxHop: 1,

@@ -120,13 +120,6 @@
               <el-table-column label="属性描述" min-width="230">
                 <template #default="{ row }"><el-input v-model="row.description" :ariaLabel="`${row.name}属性描述`" placeholder="请输入属性描述" /></template>
               </el-table-column>
-              <el-table-column label="主键" width="64" align="center">
-                <template #default="{ row }"
-                  ><el-radio :model-value="row.isPrimary" :value="true" @change="setAssetPropertyKey(row.sourceKey, 'primary')"
-                    ><span class="asset-build__sr-only">{{ row.name }}设为主键</span></el-radio
-                  ></template
-                >
-              </el-table-column>
               <el-table-column label="名称键" width="75" align="center">
                 <template #default="{ row }"
                   ><el-radio :model-value="row.isNameKey" :value="true" @change="setAssetPropertyKey(row.sourceKey, 'name')"
@@ -310,14 +303,13 @@ async function goToAssetStandardStep(): Promise<void> {
 }
 
 /**
- * @description 为已选属性设置唯一的主键或名称键。
+ * @description 为已选属性设置唯一的名称键。
  * @param sourceKey 属性行标识。
  * @param kind 要设置的键类型。
  */
 function setAssetPropertyKey(sourceKey: string, kind: "primary" | "name"): void {
   for (const property of objectPropertyList.value) {
-    if (kind === "primary") property.isPrimary = property.sourceKey === sourceKey;
-    else property.isNameKey = property.sourceKey === sourceKey;
+    if (kind === "name") property.isNameKey = property.sourceKey === sourceKey;
   }
 }
 

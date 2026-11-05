@@ -59,7 +59,7 @@ export function buildAssetPropertyDrafts(
       ...property,
       ...(property.enumValues ? { enumValues: [...property.enumValues] } : {}),
       sourceKey: key,
-      apiName: "",
+      apiName: property.apiName,
       dataType: mapAssetPropertyDataType(property.dataType),
       defaultValue: "",
       description: property.description,
@@ -136,7 +136,6 @@ export function buildAssetModelConfiguration(
     apiNames.add(apiName);
     if (!ASSET_PROPERTY_DATA_TYPES.includes(property.dataType)) throw new Error(`请选择属性「${property.name}」的数据类型`);
   }
-  if (properties.filter((property) => property.isPrimary).length !== 1) throw new Error("请选择且仅选择一个主键");
   if (properties.filter((property) => property.isNameKey).length > 1) throw new Error("名称键最多选择一个");
   return {
     modelId: detail.id,
@@ -193,7 +192,7 @@ export function buildAssetOntologyRequest(configuration: AssetModelBuildConfigur
         description: property.description,
         dataType: property.dataType === "Boolean" ? "Bool" : property.dataType,
         defaultValue: property.defaultValue,
-        isPrimaryKey: property.isPrimary,
+        isPrimaryKey: false,
         isTitleKey: property.isNameKey,
         storageGroup: "main",
         ...(metadata ? { metadata } : {}),

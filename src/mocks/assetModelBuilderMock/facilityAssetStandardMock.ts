@@ -1,4 +1,5 @@
 import type { AssetModelProperty } from "@/types";
+import { createAssetPropertyApiName, ensureUniqueAssetPropertyApiNames } from "./assetPropertyApiName.ts";
 
 /** 设施标准原表十二列，破折号表示原表空项。 */
 type FacilityStandardRow = readonly [
@@ -398,7 +399,7 @@ function mapFacilityStandardRow(row: FacilityStandardRow): AssetModelProperty {
     id,
     name,
     shortName: shortName === "—" ? "" : shortName,
-    apiName: id,
+    apiName: createAssetPropertyApiName(name, id, shortName === "—" ? "" : shortName),
     dataType,
     representation,
     required: false,
@@ -408,4 +409,6 @@ function mapFacilityStandardRow(row: FacilityStandardRow): AssetModelProperty {
 }
 
 /** 设施类资产标准属性列表（对齐数据元规范表）。 */
-export const facilityAssetStandardProperties: AssetModelProperty[] = FACILITY_ASSET_STANDARD_ROWS.map(mapFacilityStandardRow);
+export const facilityAssetStandardProperties: AssetModelProperty[] = ensureUniqueAssetPropertyApiNames(
+  FACILITY_ASSET_STANDARD_ROWS.map(mapFacilityStandardRow),
+);

@@ -121,6 +121,7 @@ test("bindRelationGraph2dLinkNodes resolves string endpoints to the same node ob
 test("space relation workspace exposes three view modes including graph2d", () => {
   const typeSource = readFileSync(new URL("../src/types/pages/ontologySpaceRelationType.ts", import.meta.url), "utf8");
   const pageSource = readFileSync(new URL("../src/views/SpaceRelationWorkspace/index.vue", import.meta.url), "utf8");
+  const workspaceSource = readFileSync(new URL("../src/views/SpaceRelationWorkspace/composables/useSpaceRelationWorkspace.ts", import.meta.url), "utf8");
 
   assert.match(typeSource, /export type RelationViewMode = "graph" \| "graph2d" \| "list"/);
   assert.match(pageSource, /value="graph2d"/);
@@ -129,4 +130,5 @@ test("space relation workspace exposes three view modes including graph2d", () =
   assert.match(pageSource, /value === "graph" \|\| value === "graph2d" \|\| value === "list"/);
   assert.match(pageSource, /content="二维关系图"/);
   assert.match(pageSource, /content="三维关系图"/);
+  assert.match(workspaceSource, /relationViewMode = ref<RelationViewMode>\("graph2d"\)/);
 });

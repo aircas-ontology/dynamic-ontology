@@ -1,4 +1,5 @@
 import type { AssetModelProperty } from "@/types";
+import { createAssetPropertyApiName, ensureUniqueAssetPropertyApiNames } from "./assetPropertyApiName.ts";
 
 /** 船舶数据元标准表十二列；破折号表示原表空项，标识符保留原图写法。 */
 type ShipStandardRow = readonly [
@@ -502,7 +503,7 @@ function mapShipStandardRow(row: ShipStandardRow): AssetModelProperty {
     id,
     name,
     shortName: shortName === "—" ? "" : shortName,
-    apiName: id,
+    apiName: createAssetPropertyApiName(name, id, shortName === "—" ? "" : shortName),
     dataType,
     representation,
     required: false,
@@ -513,4 +514,6 @@ function mapShipStandardRow(row: ShipStandardRow): AssetModelProperty {
 }
 
 /** 民用运输船舶资产标准属性列表：五个通用数据元及一百零三个船舶数据元。 */
-export const civilTransportShipAssetStandardProperties: AssetModelProperty[] = CIVIL_TRANSPORT_SHIP_ASSET_STANDARD_ROWS.map(mapShipStandardRow);
+export const civilTransportShipAssetStandardProperties: AssetModelProperty[] = ensureUniqueAssetPropertyApiNames(
+  CIVIL_TRANSPORT_SHIP_ASSET_STANDARD_ROWS.map(mapShipStandardRow),
+);

@@ -8,7 +8,7 @@
     <div v-else class="object-workspace-panel__layout">
       <ConceptHierarchyTree
         :tree="workspaceTree"
-        :objects="workspaceObjects"
+        :objects="inheritanceObjects"
         :space-name="spaceDisplayName"
         :selected-node-id="selectedNodeId"
         @select="selectNode"
@@ -116,6 +116,7 @@ const { status, error, workspace, load } = useOntologyObjectWorkspace(spaceId);
 const workspaceTree = computed(() => workspace.value?.tree ?? []);
 const workspaceSections = computed(() => workspace.value?.sections ?? []);
 const workspaceObjects = computed(() => workspaceSections.value.flatMap((section) => section.items));
+const inheritanceObjects = computed(() => workspace.value?.inheritanceObjects ?? workspaceObjects.value);
 const categoryActions = useObjectWorkspaceCategoryActions({ spaceId, load });
 const objectActions = useObjectWorkspaceObjectActions({ spaceId, workspace, load, onOpenLlmBuilder: openOntologyLlmBuilderPage });
 const {

@@ -109,7 +109,7 @@ test("expanded metadata omits representation and shows empty state when no rules
     assert.match(html, /元数据/);
     assert.ok(html.includes("暂无元数据"));
     assert.ok(!html.includes("普通文本") && !html.includes("数字代码"));
-    assert.equal(row.apiName, "");
+    assert.equal(row.apiName, selected[index].apiName);
   }
 });
 
@@ -122,15 +122,15 @@ test("asset standard types map to supported property enum values", () => {
   assert.equal(mapAssetPropertyDataType("其他"), "");
 });
 
-test("editable properties start blank and retain separate edits for duplicate data-element ids", () => {
+test("editable properties prefill API names and retain separate edits for duplicate data-element ids", () => {
   const original = [property("dup", "第一项", "数值型"), property("dup", "第二项", "字符串型")];
   const selected = original.map((item, index) => ({ key: String(index), property: item }));
   const initial = buildAssetPropertyDrafts(selected, []);
   assert.deepEqual(
     initial.map((item) => [item.name, item.apiName, item.dataType, item.defaultValue, item.description, item.isPrimary, item.isNameKey]),
     [
-      ["第一项", "", "Int", "", "第一项定义", false, false],
-      ["第二项", "", "String", "", "第二项定义", false, false],
+      ["第一项", "dup", "Int", "", "第一项定义", false, false],
+      ["第二项", "dup", "String", "", "第二项定义", false, false],
     ],
   );
   initial[1].apiName = "second";
@@ -143,31 +143,29 @@ test("editable properties start blank and retain separate edits for duplicate da
   assert.equal(original[1].description, "第二项定义");
 });
 
-test("configuration enforces unique API names, one primary and at most one name key", () => {
+test("configuration enforces unique API names and at most one name key without a primary key", () => {
   const standard = [property("a", "名称", "字符串型"), property("b", "编号", "数值型")];
   const properties = buildAssetPropertyDrafts(
     standard.map((item, index) => ({ key: String(index), property: item })),
     [],
   );
   const detail = { id: "model", properties: standard };
+  properties.forEach((item) => {
+    item.apiName = "";
+  });
   assert.throws(() => buildAssetModelConfiguration(detail, draft, properties), /API/);
   properties[0].apiName = "name";
   properties[1].apiName = "name";
   assert.throws(() => buildAssetModelConfiguration(detail, draft, properties), /API/);
   properties[1].apiName = "number";
-  assert.throws(() => buildAssetModelConfiguration(detail, draft, properties), /主键/);
-  properties[1].isPrimary = true;
   properties[0].isNameKey = true;
   properties[0].defaultValue = "unknown";
   const result = buildAssetModelConfiguration(detail, draft, properties);
   assert.equal(result.properties[0].apiName, "name");
   assert.equal(result.properties[0].defaultValue, "unknown");
-  assert.equal(result.properties[1].isPrimary, true);
+  assert.equal(result.properties[1].isPrimary, false);
   result.properties[0].description = "changed";
   assert.equal(properties[0].description, "名称定义");
-  properties[0].isPrimary = true;
-  assert.throws(() => buildAssetModelConfiguration(detail, draft, properties), /主键/);
-  properties[0].isPrimary = false;
   properties[1].isNameKey = true;
   assert.throws(() => buildAssetModelConfiguration(detail, draft, properties), /名称键/);
   properties[1].isNameKey = false;
@@ -210,12 +208,10 @@ test("wizard restores distinct selected rows and edited properties when moving b
   wizard.objectPropertyList.value[0].apiName = "alpha";
   wizard.objectPropertyList.value[1].apiName = "beta";
   wizard.objectPropertyList.value[1].description = "编辑定义";
-  wizard.setAssetPropertyKey("0", "primary");
-  wizard.setAssetPropertyKey("1", "primary");
   wizard.setAssetPropertyKey("0", "name");
   assert.deepEqual(
     wizard.objectPropertyList.value.map((item) => item.isPrimary),
-    [false, true],
+    [false, false],
   );
   assert.deepEqual(
     wizard.objectPropertyList.value.map((item) => item.isNameKey),
@@ -234,7 +230,7 @@ test("wizard restores distinct selected rows and edited properties when moving b
   wizard.goToObjectInfoStep();
   assert.equal(wizard.objectPropertyList.value[1].apiName, "beta");
   assert.equal(wizard.objectPropertyList.value[1].description, "编辑定义");
-  assert.equal(wizard.objectPropertyList.value[1].isPrimary, true);
+  assert.equal(wizard.objectPropertyList.value[1].isPrimary, false);
   wizard.objectPropertyList.value[1].description = "新描述";
   assert.equal(model.properties[1].description, "乙定义");
 });

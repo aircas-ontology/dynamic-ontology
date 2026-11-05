@@ -61,6 +61,7 @@ import {
 import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
 import { getOntologyApiDocsInterface } from "./ontologyDocApi";
 import { getOntologyEntitiesInterface } from "./ontologyEntityApi";
+import { getOntologyInheritanceTreeInterface } from "./ontologyInheritanceTreeApi";
 import { postOntologyGlobalSearchInterface } from "./ontologySearchApi";
 import { createOntologySubspaceInterface } from "./ontologySubspaceApi";
 import {
@@ -176,6 +177,7 @@ export {
   getOntologyPropertyDetailByOntologyIdInterface,
   getOntologyDatasourceTablesInterface,
   getOntologyEntitiesInterface,
+  getOntologyInheritanceTreeInterface,
   getOntologyMetaStatisticInterface,
   getOntologyOverviewCountInterface,
   getOntologyRelationCategoryTreeInterface,

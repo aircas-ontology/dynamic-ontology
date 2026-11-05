@@ -216,6 +216,7 @@ export type {
   OntologyGlobalSearchTypeOption,
   OntologySpaceType,
 } from "./apis/ontologyGlobalSearchType";
+export type { GetOntologyInheritanceTreeParams, OntologyInheritanceTreeNode } from "./apis/ontologyInheritanceTreeType";
 export type { OntologySpaceListData, OntologySpaceListItem } from "./apis/ontologyManageType";
 export type {
   CreateOntologyRelationCategoryTreeParams,

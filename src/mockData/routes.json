@@ -315,6 +315,11 @@
     "file": "fixtures/ontology/meta/category.get.json"
   },
   {
+    "method": "GET",
+    "path": "/ontology/meta/inheritance_tree",
+    "file": "fixtures/ontology/meta/inheritance-tree.get.json"
+  },
+  {
     "method": "POST",
     "path": "/ontology/meta",
     "file": "fixtures/common/success.json"

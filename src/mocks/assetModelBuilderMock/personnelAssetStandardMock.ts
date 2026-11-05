@@ -1,4 +1,5 @@
 import type { AssetModelProperty } from "@/types";
+import { createAssetPropertyApiName, ensureUniqueAssetPropertyApiNames } from "./assetPropertyApiName.ts";
 
 /** 人员标准原表十二列，破折号表示原表空项。 */
 type PersonnelStandardRow = readonly [
@@ -323,7 +324,7 @@ function mapPersonnelStandardRow(row: PersonnelStandardRow): AssetModelProperty 
     id,
     name,
     shortName: shortName === "—" ? "" : shortName,
-    apiName: id,
+    apiName: createAssetPropertyApiName(name, id, shortName === "—" ? "" : shortName),
     dataType,
     representation,
     required: false,
@@ -333,4 +334,6 @@ function mapPersonnelStandardRow(row: PersonnelStandardRow): AssetModelProperty 
 }
 
 /** 人员类资产标准属性列表（对齐数据元规范表）。 */
-export const personnelAssetStandardProperties: AssetModelProperty[] = PERSONNEL_ASSET_STANDARD_ROWS.map(mapPersonnelStandardRow);
+export const personnelAssetStandardProperties: AssetModelProperty[] = ensureUniqueAssetPropertyApiNames(
+  PERSONNEL_ASSET_STANDARD_ROWS.map(mapPersonnelStandardRow),
+);
