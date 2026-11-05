@@ -1,6 +1,6 @@
 import { onScopeDispose, ref, watch, type Ref } from "vue";
-import type { OntologyObjectWorkspace } from "@/types";
-import { getOntologyCategoryTreeInterface } from "@/apis";
+import type { OntologyInheritanceTreeNode, OntologyObjectItem, OntologyObjectWorkspace } from "@/types";
+import { getOntologyCategoryTreeInterface, getOntologyInheritanceTreeInterface } from "@/apis";
 import { mapOntologyCategorySections, mapOntologyCategoryTree } from "../utils/mapOntologyCategoryTree";
 
 export type OntologyObjectWorkspaceStatus = "loading" | "success" | "empty" | "error";
@@ -20,7 +20,30 @@ function isMissingOntologyCategoryTreeData(data: unknown): boolean {
  * @returns 空工作区。
  */
 function createEmptyObjectWorkspace(spaceId: string): OntologyObjectWorkspace {
-  return { spaceId, tree: [], sections: [] };
+  return { spaceId, tree: [], sections: [], inheritanceObjects: [] };
+}
+
+/** @description 将继承树节点展开为对象列表，供继承树组件补建空间根节点。 */
+function flattenInheritanceTree(nodes: OntologyInheritanceTreeNode[], parentUniqueIdentifier = ""): OntologyObjectItem[] {
+  return nodes.flatMap((node) => {
+    const id = node.uniqueIdentifier.trim();
+    if (!id) return [];
+    const item = {
+      id,
+      categoryId: "",
+      displayName: node.displayName,
+      apiName: "",
+      description: "",
+      ...(node.parentUniqueIdentifier?.trim() || parentUniqueIdentifier
+        ? { parentUniqueIdentifier: node.parentUniqueIdentifier?.trim() || parentUniqueIdentifier }
+        : {}),
+      parentDisplayName: "",
+      createdAt: "",
+      iconUrl: "",
+      metrics: { attribute: 0, relation: 0, behavior: 0 },
+    } satisfies OntologyObjectItem;
+    return [item, ...flattenInheritanceTree(node.childNodes ?? [], id)];
+  });
 }
 
 /**
@@ -31,13 +54,19 @@ function createEmptyObjectWorkspace(spaceId: string): OntologyObjectWorkspace {
 async function loadObjectWorkspaceFromCategoryTree(spaceId: string): Promise<OntologyObjectWorkspace | undefined> {
   const id = spaceId.trim();
   if (!id) return createEmptyObjectWorkspace(spaceId);
-  const response = await getOntologyCategoryTreeInterface({ spaceId: id });
+  const [response, inheritanceResponse] = await Promise.all([
+    getOntologyCategoryTreeInterface({ spaceId: id }),
+    getOntologyInheritanceTreeInterface({ spaceId: id }),
+  ]);
   if (response.code !== 200) throw new Error(response.message || "对象分类体系树查询失败");
-  if (isMissingOntologyCategoryTreeData(response.data)) return createEmptyObjectWorkspace(id);
+  if (inheritanceResponse.code !== 200) throw new Error(inheritanceResponse.message || "对象继承层级树查询失败");
+  if (isMissingOntologyCategoryTreeData(response.data))
+    return { ...createEmptyObjectWorkspace(id), inheritanceObjects: flattenInheritanceTree(inheritanceResponse.data ?? []) };
   return {
     spaceId: id,
     tree: mapOntologyCategoryTree(response.data),
     sections: mapOntologyCategorySections(response.data),
+    inheritanceObjects: flattenInheritanceTree(inheritanceResponse.data ?? []),
   };
 }
 

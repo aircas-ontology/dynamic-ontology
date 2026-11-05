@@ -1,4 +1,5 @@
 import type { AssetModelProperty } from "@/types";
+import { createAssetPropertyApiName, ensureUniqueAssetPropertyApiNames } from "./assetPropertyApiName.ts";
 
 /** 卫生器材原表十三列，含序号，破折号表示原表空项。 */
 type MedicalEquipmentStandardRow = readonly [
@@ -1495,7 +1496,7 @@ function mapMedicalEquipmentStandardRow(row: MedicalEquipmentStandardRow): Asset
     id,
     name,
     shortName: shortName === "—" ? "" : shortName,
-    apiName: id,
+    apiName: createAssetPropertyApiName(name, id, shortName === "—" ? "" : shortName),
     dataType,
     representation,
     required: false,
@@ -1506,4 +1507,6 @@ function mapMedicalEquipmentStandardRow(row: MedicalEquipmentStandardRow): Asset
 }
 
 /** 卫生器材资产标准属性列表（含 H1139—H1146）。 */
-export const medicalEquipmentAssetStandardProperties: AssetModelProperty[] = MEDICAL_EQUIPMENT_ASSET_STANDARD_ROWS.map(mapMedicalEquipmentStandardRow);
+export const medicalEquipmentAssetStandardProperties: AssetModelProperty[] = ensureUniqueAssetPropertyApiNames(
+  MEDICAL_EQUIPMENT_ASSET_STANDARD_ROWS.map(mapMedicalEquipmentStandardRow),
+);

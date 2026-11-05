@@ -1,4 +1,5 @@
 import type { AssetModelProperty } from "@/types";
+import { createAssetPropertyApiName, ensureUniqueAssetPropertyApiNames } from "./assetPropertyApiName.ts";
 
 /** 图片表格的十二列，按原表顺序保存；破折号表示原表空项。 */
 type OilStandardRow = readonly [
@@ -814,7 +815,7 @@ function mapOilStandardRow(row: OilStandardRow): AssetModelProperty {
     id,
     name,
     shortName: shortName === "—" ? "" : shortName,
-    apiName: id,
+    apiName: createAssetPropertyApiName(name, id, shortName === "—" ? "" : shortName),
     dataType,
     representation,
     required: false,
@@ -825,4 +826,4 @@ function mapOilStandardRow(row: OilStandardRow): AssetModelProperty {
 }
 
 /** 油品资产标准属性列表：四个通用数据元及七十五个油品数据元。 */
-export const oilAssetStandardProperties: AssetModelProperty[] = OIL_ASSET_STANDARD_ROWS.map(mapOilStandardRow);
+export const oilAssetStandardProperties: AssetModelProperty[] = ensureUniqueAssetPropertyApiNames(OIL_ASSET_STANDARD_ROWS.map(mapOilStandardRow));

@@ -179,6 +179,17 @@ test("facility asset standard mock matches data-element table", () => {
   assert.ok(facilityDetail.properties.every((item) => item.representation && item.dataType && typeof item.shortName === "string"));
 });
 
+test("asset mock properties have unique API names within each model", () => {
+  for (const model of assetModelDetailMock) {
+    const apiNames = model.properties.map((property) => property.apiName);
+    assert.equal(new Set(apiNames).size, apiNames.length, `${model.name} contains duplicate API names`);
+    assert.ok(
+      apiNames.every((apiName) => apiName.trim()),
+      `${model.name} contains an empty API name`,
+    );
+  }
+});
+
 test("asset build dialog exposes two steps and confirm create without manual submit", () => {
   const source = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/AssetModelBuildDialog.vue", import.meta.url), "utf8");
   assert.match(source, /title="资产标准"/);

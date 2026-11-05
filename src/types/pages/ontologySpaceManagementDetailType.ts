@@ -73,6 +73,7 @@ export interface OntologyObjectWorkspace {
   spaceId: string;
   tree: OntologyConceptNode[];
   sections: OntologyObjectSection[];
+  inheritanceObjects: OntologyObjectItem[];
 }
 
 export interface OntologyObjectLocationTarget {

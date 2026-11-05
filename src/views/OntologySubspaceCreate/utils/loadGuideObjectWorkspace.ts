@@ -12,5 +12,6 @@ export async function loadGuideObjectWorkspace(spaceId: string): Promise<Ontolog
     spaceId,
     tree: mapOntologyCategoryTree(GUIDE_ONTOLOGY_CATEGORY_TREE_DATA),
     sections: mapOntologyCategorySections(GUIDE_ONTOLOGY_CATEGORY_TREE_DATA),
+    inheritanceObjects: mapOntologyCategorySections(GUIDE_ONTOLOGY_CATEGORY_TREE_DATA).flatMap((section) => section.items),
   };
 }

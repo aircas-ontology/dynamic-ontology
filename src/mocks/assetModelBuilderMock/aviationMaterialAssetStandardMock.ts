@@ -1,4 +1,5 @@
 import type { AssetModelProperty } from "@/types";
+import { createAssetPropertyApiName, ensureUniqueAssetPropertyApiNames } from "./assetPropertyApiName.ts";
 
 /** 航材原始标准表十二列，破折号表示原表空项。 */
 type AviationMaterialStandardRow = readonly [
@@ -999,7 +1000,7 @@ function mapAviationMaterialStandardRow(row: AviationMaterialStandardRow): Asset
     id,
     name,
     shortName: shortName === "—" ? "" : shortName,
-    apiName: id,
+    apiName: createAssetPropertyApiName(name, id, shortName === "—" ? "" : shortName),
     dataType,
     representation,
     required: false,
@@ -1010,4 +1011,6 @@ function mapAviationMaterialStandardRow(row: AviationMaterialStandardRow): Asset
 }
 
 /** 航材资产标准属性列表（对齐数据元规范表）。 */
-export const aviationMaterialAssetStandardProperties: AssetModelProperty[] = AVIATION_MATERIAL_ASSET_STANDARD_ROWS.map(mapAviationMaterialStandardRow);
+export const aviationMaterialAssetStandardProperties: AssetModelProperty[] = ensureUniqueAssetPropertyApiNames(
+  AVIATION_MATERIAL_ASSET_STANDARD_ROWS.map(mapAviationMaterialStandardRow),
+);
