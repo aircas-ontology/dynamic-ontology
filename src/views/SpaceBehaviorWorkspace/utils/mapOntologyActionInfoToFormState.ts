@@ -87,6 +87,45 @@ function mapRelationTargetStatus(value: string | null | undefined): SpaceBehavio
 }
 
 /**
+ * @description 将详情持续时段时间值解析为有限毫秒时间戳。
+ * @param value 毫秒数字、数字字符串或 ISO 时间字符串。
+ * @returns 有限毫秒；无法解析时为 NaN。
+ */
+function parseVisibilityWindowTimestamp(value: unknown): number {
+  if (typeof value === "number") return Number.isFinite(value) ? value : Number.NaN;
+  if (typeof value === "string" && value.trim()) {
+    const trimmed = value.trim();
+    const asNumber = Number(trimmed);
+    if (Number.isFinite(asNumber)) return asNumber;
+    const parsed = Date.parse(trimmed);
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  }
+  if (value instanceof Date) {
+    const time = value.getTime();
+    return Number.isFinite(time) ? time : Number.NaN;
+  }
+  return Number.NaN;
+}
+
+/**
+ * @description 将详情 visibilityWindows 映射为表单毫秒时段列表。
+ * @param windows 详情持续时段。
+ * @returns 合法毫秒时段；非法项丢弃。
+ */
+function mapRelationVisibilityWindows(windows: Array<{ startTime?: unknown; endTime?: unknown }> | null | undefined): SpaceBehaviorRelationVisibilityWindow[] {
+  if (!Array.isArray(windows)) return [];
+  const result: SpaceBehaviorRelationVisibilityWindow[] = [];
+  for (const item of windows) {
+    if (!item || typeof item !== "object") continue;
+    const startTime = parseVisibilityWindowTimestamp(item.startTime);
+    const endTime = parseVisibilityWindowTimestamp(item.endTime);
+    if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) continue;
+    result.push({ startTime, endTime });
+  }
+  return result;
+}
+
+/**
  * @description 将行为详情接口 data 映射为编辑弹窗可回填状态。
  * @param data 行为详情。
  * @returns 表单状态；APPLICATION 等会带 unsupportedEditReason。
@@ -136,11 +175,7 @@ export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData
     subjectType === "LINK" && typeof linkMapping?.ontologyLinkUniqIdentifier === "string" ? linkMapping.ontologyLinkUniqIdentifier.trim() : "";
   const relationTargetStatus = subjectType === "LINK" ? mapRelationTargetStatus(linkMapping?.targetStatus) : "";
   const relationVisibilityWindows: SpaceBehaviorRelationVisibilityWindow[] =
-    subjectType === "LINK" && Array.isArray(linkMapping?.visibilityWindows)
-      ? linkMapping.visibilityWindows
-          .filter((item) => typeof item?.startTime === "number" && typeof item?.endTime === "number")
-          .map((item) => ({ startTime: item.startTime, endTime: item.endTime }))
-      : [];
+    subjectType === "LINK" ? mapRelationVisibilityWindows(linkMapping?.visibilityWindows) : [];
 
   let unsupportedEditReason = "";
   if (kind === "application") {

@@ -47,13 +47,6 @@ export type {
   EditOntologyActionParams,
 } from "./apis/createOntologyActionType";
 export type {
-  GetOntologyActionInfoData,
-  GetOntologyActionInfoFunctionParam,
-  GetOntologyActionInfoLinkMapping,
-  GetOntologyActionInfoMappingIn,
-  GetOntologyActionInfoParams,
-} from "./apis/getOntologyActionInfoType";
-export type {
   CreateOntologyFunctionContainerConfig,
   CreateOntologyFunctionContainerData,
   CreateOntologyFunctionContainerParams,
@@ -138,6 +131,14 @@ export type { FunctionOperatorTemplateLanguage, FunctionOperatorTemplateParams, 
 export type { FunctionPublishData, FunctionPublishParams } from "./apis/functionPublishType";
 export type { FunctionUnpublishData, FunctionUnpublishParams } from "./apis/functionUnpublishType";
 export type { ActionCategoryActionInfo, ActionCategoryVO, GetActionCategoryTreeParams } from "./apis/getActionCategoryTreeType";
+export type {
+  GetOntologyActionInfoData,
+  GetOntologyActionInfoFunctionParam,
+  GetOntologyActionInfoLinkMapping,
+  GetOntologyActionInfoMappingIn,
+  GetOntologyActionInfoParams,
+  GetOntologyActionInfoVisibilityWindow,
+} from "./apis/getOntologyActionInfoType";
 export type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceColumnsParams,

@@ -1065,9 +1065,18 @@ function removeVisibilityWindowRow(index: number): void {
  * @returns 有限数字毫秒；无法解析时为 NaN。
  */
 function readVisibilityWindowTimestamp(value: unknown): number {
-  if (typeof value === "number") return value;
-  if (typeof value === "string" && value.trim()) return Number(value);
-  if (value instanceof Date) return value.getTime();
+  if (typeof value === "number") return Number.isFinite(value) ? value : Number.NaN;
+  if (typeof value === "string" && value.trim()) {
+    const trimmed = value.trim();
+    const asNumber = Number(trimmed);
+    if (Number.isFinite(asNumber)) return asNumber;
+    const parsed = Date.parse(trimmed);
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  }
+  if (value instanceof Date) {
+    const time = value.getTime();
+    return Number.isFinite(time) ? time : Number.NaN;
+  }
   return Number.NaN;
 }
 

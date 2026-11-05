@@ -4,7 +4,6 @@ import type {
   CreateOntologyActionOutputMode,
   CreateOntologyActionSourceType,
   CreateOntologyActionSubjectType,
-  CreateOntologyActionVisibilityWindow,
 } from "./createOntologyActionType";
 
 /** 行为详情查询参数。 */
@@ -35,12 +34,18 @@ export interface GetOntologyActionInfoMappingIn {
   outputMode?: CreateOntologyActionOutputMode | string | null;
 }
 
+/** 行为详情持续时段；详情接口可能返回毫秒数字或 ISO 时间字符串。 */
+export interface GetOntologyActionInfoVisibilityWindow {
+  startTime: number | string;
+  endTime: number | string;
+}
+
 /** 行为详情 linkMapping。 */
 export interface GetOntologyActionInfoLinkMapping {
   ontologyLinkUniqIdentifier?: string | null;
   ontologyLinkFunctionParamExpression?: string | null;
   targetStatus?: "ENABLE" | "DELETE" | "DISABLE" | string | null;
-  visibilityWindows?: CreateOntologyActionVisibilityWindow[] | null;
+  visibilityWindows?: GetOntologyActionInfoVisibilityWindow[] | null;
 }
 
 /** 行为详情 functionParams 单项。 */
