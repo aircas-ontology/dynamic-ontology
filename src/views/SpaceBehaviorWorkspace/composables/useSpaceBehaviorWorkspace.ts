@@ -24,6 +24,7 @@ import {
   createSpaceBehaviorMock,
   updateSpaceBehaviorMock,
 } from "@/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock";
+import { buildApplicationCreateActionParams, isApplicationActionCreateDraft } from "../utils/buildApplicationCreateActionParams";
 import { buildBasicOperatorCreateActionParams, isBasicOperatorActionCreateDraft } from "../utils/buildBasicOperatorCreateActionParams";
 import { buildLinkCreateActionParams, isLinkActionCreateDraft } from "../utils/buildLinkCreateActionParams";
 import { buildPropertyValueCreateActionParams, isPropertyValueActionCreateDraft } from "../utils/buildPropertyValueCreateActionParams";
@@ -333,13 +334,18 @@ export function useSpaceBehaviorWorkspace() {
     try {
       if (
         useRemotePropertyValueAction &&
-        (isPropertyValueActionCreateDraft(draft) || isLinkActionCreateDraft(draft) || isBasicOperatorActionCreateDraft(draft))
+        (isPropertyValueActionCreateDraft(draft) ||
+          isLinkActionCreateDraft(draft) ||
+          isBasicOperatorActionCreateDraft(draft) ||
+          isApplicationActionCreateDraft(draft))
       ) {
-        const params = isBasicOperatorActionCreateDraft(draft)
-          ? buildBasicOperatorCreateActionParams(draft)
-          : isLinkActionCreateDraft(draft)
-            ? buildLinkCreateActionParams(draft)
-            : buildPropertyValueCreateActionParams(draft);
+        const params = isApplicationActionCreateDraft(draft)
+          ? buildApplicationCreateActionParams(draft)
+          : isBasicOperatorActionCreateDraft(draft)
+            ? buildBasicOperatorCreateActionParams(draft)
+            : isLinkActionCreateDraft(draft)
+              ? buildLinkCreateActionParams(draft)
+              : buildPropertyValueCreateActionParams(draft);
         if ("error" in params) {
           return { ok: false, message: params.error };
         }

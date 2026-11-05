@@ -34,7 +34,19 @@ import {
   buildBasicOperatorCreateActionParams,
   isBasicOperatorActionCreateDraft,
 } from "../src/views/SpaceBehaviorWorkspace/utils/buildBasicOperatorCreateActionParams.ts";
+import {
+  buildApplicationCreateActionParams,
+  buildApplicationOutputFunctionParamExpression,
+  isApplicationActionCreateDraft,
+} from "../src/views/SpaceBehaviorWorkspace/utils/buildApplicationCreateActionParams.ts";
 import { mapOntologyActionInfoToFormState } from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyActionInfoToFormState.ts";
+
+const EMPTY_APPLICATION_DRAFT_FIELDS = {
+  applicationInputRows: [],
+  applicationOutputRows: [],
+  applicationInputBindings: {},
+  applicationOutputBindings: {},
+};
 import {
   flattenApplicationFunctionInputRows,
   flattenApplicationFunctionOutputRows,
@@ -362,6 +374,8 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(workspaceComposable, /isLinkActionCreateDraft/);
   assert.match(workspaceComposable, /buildBasicOperatorCreateActionParams/);
   assert.match(workspaceComposable, /isBasicOperatorActionCreateDraft/);
+  assert.match(workspaceComposable, /buildApplicationCreateActionParams/);
+  assert.match(workspaceComposable, /isApplicationActionCreateDraft/);
   assert.match(workspaceComposable, /putEditOntologyActionInterface/);
   assert.match(workspaceIndex, /await createBehavior/);
   assert.match(workspaceIndex, /await updateBehavior/);
@@ -398,14 +412,19 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /选择写入属性/);
   assert.match(formSource, /behavior-form-dialog__object-property-pickers/);
   assert.match(formSource, /绑定关系/);
-  assert.match(formSource, /applicationSelectedRelationIds/);
-  assert.match(formSource, /toggleApplicationRelationId/);
+  assert.match(formSource, /selectApplicationRelationRow/);
+  assert.match(formSource, /handleApplicationRelationRowClick/);
   assert.match(formSource, /formatApplicationRelationMapping/);
-  assert.match(formSource, /可多选本空间关系/);
+  assert.match(formSource, /从当前空间关系中单选一条/);
+  assert.match(formSource, /buildApplicationCreateActionParams/);
+  assert.match(formSource, /applicationInputBindings/);
+  assert.match(formSource, /applicationOutputBindings/);
   assert.doesNotMatch(formSource, /placeholder="后续可选"/);
   assert.doesNotMatch(formSource, /label="配置状态"/);
   assert.doesNotMatch(formSource, /待完善/);
   assert.match(typeSource, /SpaceBehaviorApplicationInputSourceType/);
+  assert.match(typeSource, /SpaceBehaviorApplicationParamRowSnapshot/);
+  assert.match(typeSource, /applicationInputRows: SpaceBehaviorApplicationParamRowSnapshot\[\]/);
   assert.match(typeSource, /SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_OPTIONS/);
   assert.match(typeSource, /ontologyUniqueIdentifier: string/);
   assert.match(typeSource, /label: "对象属性"/);
@@ -728,6 +747,7 @@ test("space behavior mock filters by category and supports local create", () => 
     selectedRelationId: "",
     relationTargetStatus: "",
     relationVisibilityWindows: [],
+    ...EMPTY_APPLICATION_DRAFT_FIELDS,
   });
   assert.equal(created.displayName, "单元测试行为");
   assert.equal(created.objectName.length > 0, true);
@@ -790,6 +810,7 @@ test("space behavior builds property-value createAction params for create update
     selectedRelationId: "",
     relationTargetStatus: "",
     relationVisibilityWindows: [],
+    ...EMPTY_APPLICATION_DRAFT_FIELDS,
   };
   assert.equal(isPropertyValueActionCreateDraft(baseDraft), true);
   const created = buildPropertyValueCreateActionParams(baseDraft);
@@ -868,6 +889,7 @@ test("space behavior builds link createAction params for create update and delet
     selectedRelationId: "link-1",
     relationTargetStatus: "ENABLE",
     relationVisibilityWindows: [{ startTime: 1767225600000, endTime: 1798761599000 }],
+    ...EMPTY_APPLICATION_DRAFT_FIELDS,
   };
   assert.equal(isLinkActionCreateDraft(baseDraft), true);
   assert.equal(isPropertyValueActionCreateDraft(baseDraft), false);
@@ -1254,6 +1276,7 @@ test("space behavior builds basic-operator createAction params with FIXED apiNam
     selectedRelationId: "",
     relationTargetStatus: "",
     relationVisibilityWindows: [],
+    ...EMPTY_APPLICATION_DRAFT_FIELDS,
   };
   assert.equal(isBasicOperatorActionCreateDraft(baseDraft), true);
   assert.equal(isPropertyValueActionCreateDraft(baseDraft), false);
@@ -1302,6 +1325,392 @@ test("space behavior builds basic-operator createAction params with FIXED apiNam
   assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, functionOperatorId: "" }), true);
   assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, operatorParamBindings: { nm: "  " } }), true);
   assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, operatorParamIds: {} }), true);
+});
+
+test("space behavior builds application createAction params with linkMapping and mixed mappingIns", () => {
+  const baseDraft = {
+    displayName: "飞机问候语行为",
+    behaviorApiName: "act.ap.aircraft.greeting",
+    kind: "application",
+    valueType: "attributeValue",
+    functionOperatorId: "act.fn.aircraft.greeting",
+    functionOperatorName: "问候语",
+    functionOperatorVersion: "1.0.0",
+    description: "应用行为",
+    categoryId: "14",
+    status: "draft",
+    basicAction: "create",
+    ontologyIdentifier: "",
+    operatorParamBindings: {},
+    operatorParamIds: {},
+    selectedPropertyIds: [],
+    selectedPropertyValues: {},
+    selectedPropertyApiNames: {},
+    storageGroup: "",
+    selectedRelationId: "4ed7c4da646f4006bec301815b61debb",
+    relationTargetStatus: "",
+    relationVisibilityWindows: [],
+    applicationInputRows: [
+      {
+        rowKey: "in-name",
+        functionParamId: 3001,
+        paramName: "name",
+        paramPath: "",
+        fullPath: "name",
+        isObject: false,
+      },
+      {
+        rowKey: "in-obj",
+        functionParamId: 3099,
+        paramName: "payload",
+        paramPath: "",
+        fullPath: "payload",
+        isObject: true,
+      },
+      {
+        rowKey: "in-mach",
+        functionParamId: 3002,
+        paramName: "max_mach",
+        paramPath: "",
+        fullPath: "max_mach",
+        isObject: false,
+      },
+      {
+        rowKey: "in-ext",
+        functionParamId: 3003,
+        paramName: "note",
+        paramPath: "",
+        fullPath: "note",
+        isObject: false,
+      },
+    ],
+    applicationOutputRows: [
+      {
+        rowKey: "out-greeting",
+        functionParamId: 4001,
+        paramName: "greeting",
+        paramPath: "",
+        fullPath: "greeting",
+        isObject: false,
+      },
+      {
+        rowKey: "out-speed",
+        functionParamId: 4002,
+        paramName: "new_speed",
+        paramPath: "",
+        fullPath: "new_speed",
+        isObject: false,
+      },
+    ],
+    applicationInputBindings: {
+      "in-name": {
+        sourceType: "PROPERTY",
+        ontologyUniqueIdentifier: "onto-1",
+        propertyUniqueIdentifier: "prop-name",
+        fixedValue: "",
+        enableDefaultValue: false,
+        defaultValue: "",
+      },
+      "in-mach": {
+        sourceType: "FIXED",
+        ontologyUniqueIdentifier: "",
+        propertyUniqueIdentifier: "",
+        fixedValue: "2.25",
+        enableDefaultValue: false,
+        defaultValue: "",
+      },
+      "in-ext": {
+        sourceType: "EXTERNAL",
+        ontologyUniqueIdentifier: "",
+        propertyUniqueIdentifier: "",
+        fixedValue: "",
+        enableDefaultValue: true,
+        defaultValue: '"ignored"',
+      },
+    },
+    applicationOutputBindings: {
+      "out-greeting": {
+        outputMode: "RESULT_ONLY",
+        ontologyUniqueIdentifier: "",
+        propertyUniqueIdentifier: "",
+      },
+      "out-speed": {
+        outputMode: "WRITE_PROPERTY",
+        ontologyUniqueIdentifier: "onto-1",
+        propertyUniqueIdentifier: "prop-speed",
+      },
+    },
+  };
+
+  assert.equal(isApplicationActionCreateDraft(baseDraft), true);
+  assert.equal(isBasicOperatorActionCreateDraft(baseDraft), false);
+  assert.equal(
+    buildApplicationOutputFunctionParamExpression({
+      rowKey: "x",
+      functionParamId: 1,
+      paramName: "greeting",
+      paramPath: "",
+      fullPath: "greeting",
+      isObject: false,
+    }),
+    "$.data.greeting",
+  );
+
+  const created = buildApplicationCreateActionParams(baseDraft);
+  assert.equal("error" in created, false);
+  if (!("error" in created)) {
+    assert.equal(created.actionKind, "APPLICATION");
+    assert.equal(created.functionApi, "act.fn.aircraft.greeting");
+    assert.equal("ontologyIdentifier" in created, false);
+    assert.equal("subjectType" in created, false);
+    assert.equal("outputMode" in created, false);
+    assert.deepEqual(created.linkMapping, { ontologyLinkUniqIdentifier: "4ed7c4da646f4006bec301815b61debb" });
+    assert.deepEqual(created.mappingIns, [
+      {
+        functionParamId: 3001,
+        category: "INPUT",
+        sourceType: "PROPERTY",
+        parameterName: "name",
+        propertyUniqueIdentifier: "prop-name",
+        ontologyUniqueIdentifier: "onto-1",
+      },
+      {
+        functionParamId: 3002,
+        category: "INPUT",
+        sourceType: "FIXED",
+        parameterName: "max_mach",
+        sourceConfig: "2.25",
+      },
+      {
+        functionParamId: 3003,
+        category: "INPUT",
+        sourceType: "EXTERNAL",
+        parameterName: "note",
+      },
+      {
+        functionParamId: 4001,
+        category: "OUTPUT",
+        outputMode: "RESULT_ONLY",
+        parameterName: "greeting",
+      },
+      {
+        functionParamId: 4002,
+        category: "OUTPUT",
+        outputMode: "WRITE_PROPERTY",
+        parameterName: "new_speed",
+        functionParamExpression: "$.data.new_speed",
+        propertyUniqueIdentifier: "prop-speed",
+        ontologyUniqueIdentifier: "onto-1",
+      },
+    ]);
+  }
+
+  assert.equal("error" in buildApplicationCreateActionParams({ ...baseDraft, selectedRelationId: " " }), true);
+  assert.equal("error" in buildApplicationCreateActionParams({ ...baseDraft, functionOperatorId: "" }), true);
+  assert.equal(
+    "error" in
+      buildApplicationCreateActionParams({
+        ...baseDraft,
+        applicationInputBindings: {
+          ...baseDraft.applicationInputBindings,
+          "in-name": { ...baseDraft.applicationInputBindings["in-name"], propertyUniqueIdentifier: "" },
+        },
+      }),
+    true,
+  );
+  assert.equal(
+    "error" in
+      buildApplicationCreateActionParams({
+        ...baseDraft,
+        applicationOutputBindings: {
+          ...baseDraft.applicationOutputBindings,
+          "out-speed": { ...baseDraft.applicationOutputBindings["out-speed"], propertyUniqueIdentifier: "" },
+        },
+      }),
+    true,
+  );
+  assert.equal(
+    "error" in
+      buildApplicationCreateActionParams({
+        ...baseDraft,
+        applicationInputRows: baseDraft.applicationInputRows.filter((row) => row.isObject),
+      }),
+    true,
+  );
+  assert.equal("error" in buildApplicationCreateActionParams({ ...baseDraft, categoryId: "root" }), true);
+  assert.equal("error" in buildApplicationCreateActionParams({ ...baseDraft, behaviorApiName: "" }), true);
+  assert.equal("error" in buildApplicationCreateActionParams({ ...baseDraft, displayName: " " }), true);
+  assert.equal(
+    "error" in
+      buildApplicationCreateActionParams({
+        ...baseDraft,
+        applicationInputBindings: {
+          ...baseDraft.applicationInputBindings,
+          "in-name": { ...baseDraft.applicationInputBindings["in-name"], ontologyUniqueIdentifier: "" },
+        },
+      }),
+    true,
+  );
+  assert.equal(
+    "error" in
+      buildApplicationCreateActionParams({
+        ...baseDraft,
+        applicationInputBindings: {
+          ...baseDraft.applicationInputBindings,
+          "in-mach": { ...baseDraft.applicationInputBindings["in-mach"], fixedValue: "  " },
+        },
+      }),
+    true,
+  );
+  assert.equal(
+    "error" in
+      buildApplicationCreateActionParams({
+        ...baseDraft,
+        applicationInputRows: [{ ...baseDraft.applicationInputRows[0], functionParamId: null }],
+      }),
+    true,
+  );
+  assert.equal(
+    "error" in
+      buildApplicationCreateActionParams({
+        ...baseDraft,
+        applicationOutputRows: [{ ...baseDraft.applicationOutputRows[0], functionParamId: null }],
+      }),
+    true,
+  );
+  assert.equal(
+    "error" in
+      buildApplicationCreateActionParams({
+        ...baseDraft,
+        applicationOutputBindings: {
+          ...baseDraft.applicationOutputBindings,
+          "out-speed": { ...baseDraft.applicationOutputBindings["out-speed"], ontologyUniqueIdentifier: "" },
+        },
+      }),
+    true,
+  );
+
+  const nested = buildApplicationCreateActionParams({
+    ...baseDraft,
+    description: "  ",
+    applicationInputRows: [
+      {
+        rowKey: "in-nested",
+        functionParamId: 3010,
+        paramName: "longitude",
+        paramPath: "position.longitude",
+        fullPath: "pos.position.longitude",
+        isObject: false,
+      },
+    ],
+    applicationInputBindings: {
+      "in-nested": {
+        sourceType: "PROPERTY",
+        ontologyUniqueIdentifier: "onto-1",
+        propertyUniqueIdentifier: "prop-lon",
+        fixedValue: "",
+        enableDefaultValue: false,
+        defaultValue: "",
+      },
+    },
+    applicationOutputRows: [
+      {
+        rowKey: "out-nested",
+        functionParamId: 4010,
+        paramName: "longitude",
+        paramPath: "position.longitude",
+        fullPath: "pos.position.longitude",
+        isObject: false,
+      },
+    ],
+    applicationOutputBindings: {
+      "out-nested": {
+        outputMode: "WRITE_PROPERTY",
+        ontologyUniqueIdentifier: "onto-1",
+        propertyUniqueIdentifier: "prop-lon",
+      },
+    },
+  });
+  assert.equal("error" in nested, false);
+  if (!("error" in nested)) {
+    assert.equal("description" in nested, false);
+    assert.equal(nested.mappingIns?.[0]?.paramPath, "position.longitude");
+    assert.equal(nested.mappingIns?.[1]?.functionParamExpression, "$.data.pos.position.longitude");
+  }
+
+  assert.equal(
+    "error" in
+      buildApplicationCreateActionParams({
+        ...baseDraft,
+        applicationInputRows: [
+          {
+            rowKey: "missing-binding",
+            functionParamId: 5001,
+            paramName: "orphan",
+            paramPath: "",
+            fullPath: "orphan",
+            isObject: false,
+          },
+        ],
+        applicationInputBindings: {},
+        applicationOutputRows: [],
+        applicationOutputBindings: {},
+      }),
+    true,
+  );
+
+  const defaultOutput = buildApplicationCreateActionParams({
+    ...baseDraft,
+    applicationInputRows: [
+      {
+        rowKey: "in-ext-only",
+        functionParamId: 5002,
+        paramName: "",
+        paramPath: "",
+        fullPath: "",
+        isObject: false,
+      },
+    ],
+    applicationInputBindings: {
+      "in-ext-only": {
+        sourceType: "EXTERNAL",
+        ontologyUniqueIdentifier: "",
+        propertyUniqueIdentifier: "",
+        fixedValue: "",
+        enableDefaultValue: false,
+        defaultValue: "",
+      },
+    },
+    applicationOutputRows: [
+      {
+        rowKey: "out-default",
+        functionParamId: 5003,
+        paramName: "result",
+        paramPath: "",
+        fullPath: "",
+        isObject: false,
+      },
+    ],
+    applicationOutputBindings: {},
+  });
+  assert.equal("error" in defaultOutput, false);
+  if (!("error" in defaultOutput)) {
+    assert.equal(defaultOutput.mappingIns?.[0]?.parameterName, undefined);
+    assert.equal(defaultOutput.mappingIns?.[1]?.outputMode, "RESULT_ONLY");
+    assert.equal("parameterName" in (defaultOutput.mappingIns?.[1] ?? {}), true);
+  }
+
+  assert.equal(
+    buildApplicationOutputFunctionParamExpression({
+      rowKey: "fallback",
+      functionParamId: 1,
+      paramName: "onlyName",
+      paramPath: "",
+      fullPath: "  ",
+      isObject: false,
+    }),
+    "$.data.onlyName",
+  );
 });
 
 test("space behavior sorts attribute rows by storage group while keeping relative order", () => {

@@ -434,7 +434,7 @@
                   <span>绑定关系</span>
                   <el-tag size="small" effect="plain">{{ relationRows.length }}项</el-tag>
                 </div>
-                <span class="behavior-form-dialog__attribute-hint">可多选本空间关系</span>
+                <span class="behavior-form-dialog__attribute-hint">从当前空间关系中单选一条</span>
               </div>
               <el-table
                 class="behavior-form-dialog__attribute-table"
@@ -442,13 +442,15 @@
                 row-key="id"
                 :show-header="false"
                 :empty-text="relationLoading ? '正在加载关系' : relationError || '暂无关系'"
+                @row-click="handleApplicationRelationRowClick"
               >
                 <el-table-column width="48" align="center">
                   <template #default="{ row }">
-                    <el-checkbox
-                      :model-value="applicationSelectedRelationIds.includes(row.id)"
+                    <el-radio
+                      :model-value="selectedRelationId"
+                      :value="row.id"
                       :disabled="readonly || relationLoading"
-                      @update:model-value="(value) => toggleApplicationRelationId(row.id, value)"
+                      @change="selectApplicationRelationRow(row.id)"
                     />
                   </template>
                 </el-table-column>
@@ -503,6 +505,7 @@ import type {
   SpaceBehaviorApplicationInputSourceType,
   SpaceBehaviorApplicationOutputBinding,
   SpaceBehaviorApplicationOutputMode,
+  SpaceBehaviorApplicationParamRowSnapshot,
   SpaceBehaviorBasicAction,
   SpaceBehaviorCategoryNode,
   SpaceBehaviorDraft,
@@ -527,6 +530,7 @@ import {
 import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestBindingParamIds } from "@/utils/mapOntologyFunctionTest";
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
 import { mapOntologyRelationLinks } from "@/views/SpaceRelationWorkspace/utils/mapOntologyRelationCategoryTree";
+import { buildApplicationCreateActionParams } from "../utils/buildApplicationCreateActionParams";
 import { flattenPropertyInfosFromCategoryTree } from "../utils/flattenPropertyInfosFromCategoryTree";
 import {
   isAttributeValueRowSelectable,
@@ -582,7 +586,6 @@ const relationError = ref("");
 let relationLoadToken = 0;
 const selectedRelationId = ref("");
 /** 应用行为「绑定关系」多选 id 列表。 */
-const applicationSelectedRelationIds = ref<string[]>([]);
 const relationTargetStatus = ref<SpaceBehaviorRelationTargetStatus | "">("");
 /** 时段选择器行；value-format=x 时用数字毫秒时间戳，避免字符串被解析为年份。 */
 const visibilityWindowRows = ref<Array<[number, number] | null>>([]);
@@ -969,10 +972,10 @@ function clearObjectInfoSelection(): void {
 }
 
 /**
- * @description 清空应用行为绑定关系多选。
+ * @description 清空应用行为绑定关系单选。
  */
 function clearApplicationRelationSelection(): void {
-  applicationSelectedRelationIds.value = [];
+  selectedRelationId.value = "";
 }
 
 /**
@@ -994,24 +997,27 @@ function clearRelationSelection(): void {
  * @param row 关系行。
  * @returns 映射文案。
  */
-function formatApplicationRelationMapping(row: OntologyRelationClass): string {
-  const sourceName = row.sourceName.trim() || "—";
-  const targetName = row.targetName.trim() || "—";
+function formatApplicationRelationMapping(row: { sourceName?: string; targetName?: string }): string {
+  const sourceName = (row.sourceName ?? "").trim() || "—";
+  const targetName = (row.targetName ?? "").trim() || "—";
   return `${sourceName} → ${targetName}`;
 }
 
 /**
- * @description 切换应用行为绑定关系的勾选状态。
+ * @description 单选应用行为绑定关系。
  * @param relationId 关系 uniqueIdentifier。
- * @param checked 是否勾选。
  */
-function toggleApplicationRelationId(relationId: string, checked: string | number | boolean): void {
-  const nextId = relationId.trim();
-  if (!nextId) return;
-  const selected = new Set(applicationSelectedRelationIds.value);
-  if (checked === true) selected.add(nextId);
-  else selected.delete(nextId);
-  applicationSelectedRelationIds.value = [...selected];
+function selectApplicationRelationRow(relationId: string): void {
+  if (readonly.value) return;
+  selectedRelationId.value = relationId.trim();
+}
+
+/**
+ * @description 点击应用行为关系行时同步单选。
+ * @param row 关系行。
+ */
+function handleApplicationRelationRowClick(row: Pick<OntologyRelationClass, "id">): void {
+  selectApplicationRelationRow(row.id);
 }
 
 /**
@@ -1538,11 +1544,28 @@ function openBehaviorTreeBuilder(): void {
 }
 
 /**
+ * @description 将应用行为参数表行压缩为草稿快照。
+ * @param rows 表格行。
+ * @returns 草稿快照列表。
+ */
+function snapshotApplicationParamRows(rows: ApplicationFunctionParamRow[]): SpaceBehaviorApplicationParamRowSnapshot[] {
+  return rows.map((row) => ({
+    rowKey: row.rowKey,
+    functionParamId: row.functionParamId,
+    paramName: row.paramName,
+    paramPath: row.paramPath,
+    fullPath: row.fullPath,
+    isObject: row.isObject,
+  }));
+}
+
+/**
  * @description 组装当前表单草稿。
  * @param nextStatus 提交后的行为状态。
  * @returns 行为草稿。
  */
 function buildBehaviorDraft(nextStatus: SpaceBehaviorStatus): SpaceBehaviorDraft {
+  const isApplication = kind.value === "application";
   return {
     displayName: displayName.value.trim(),
     behaviorApiName: behaviorApiName.value.trim(),
@@ -1565,6 +1588,10 @@ function buildBehaviorDraft(nextStatus: SpaceBehaviorStatus): SpaceBehaviorDraft
     selectedRelationId: selectedRelationId.value.trim(),
     relationTargetStatus: showRelationLinkMappingSection.value ? relationTargetStatus.value : "",
     relationVisibilityWindows: showRelationLinkMappingSection.value ? buildRelationVisibilityWindowsForDraft() : [],
+    applicationInputRows: isApplication ? snapshotApplicationParamRows(applicationInputRows.value) : [],
+    applicationOutputRows: isApplication ? snapshotApplicationParamRows(applicationOutputRows.value) : [],
+    applicationInputBindings: isApplication ? { ...applicationInputBindings.value } : {},
+    applicationOutputBindings: isApplication ? { ...applicationOutputBindings.value } : {},
   };
 }
 
@@ -1777,13 +1804,31 @@ function submitBehaviorForm(action: "save" | "copy"): void {
       return;
     }
   }
-  if (kind.value === "application" && !functionOperatorId.value) {
-    ElMessage.warning("请选择关联函数算子");
-    return;
+  if (kind.value === "application") {
+    if (!functionOperatorId.value) {
+      ElMessage.warning("请选择关联函数算子");
+      return;
+    }
+    if (applicationDetailLoading.value) {
+      ElMessage.warning("正在加载函数详情，请稍后再试");
+      return;
+    }
+    if (applicationDetailError.value) {
+      ElMessage.warning(applicationDetailError.value);
+      return;
+    }
   }
   submitLoading.value = true;
   const nextStatus = props.mode === "create" ? "draft" : status.value;
   const draft = buildBehaviorDraft(nextStatus);
+  if (kind.value === "application") {
+    const params = buildApplicationCreateActionParams(draft);
+    if ("error" in params) {
+      submitLoading.value = false;
+      ElMessage.warning(params.error);
+      return;
+    }
+  }
   emit("submit", draft);
 }
 
