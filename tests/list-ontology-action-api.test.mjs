@@ -14,10 +14,13 @@ test("list ontology action API follows the documented GET contract", () => {
 
 test("ontology action info and edit APIs follow GET and PUT contracts", () => {
   const source = readSource("../src/apis/ontologyActionApi.ts");
+  const infoTypeSource = readSource("../src/types/apis/getOntologyActionInfoType.ts");
   const apiBarrel = readSource("../src/apis/index.ts");
   const typeBarrel = readSource("../src/types/index.ts");
   assert.match(source, /export function getOntologyActionInfoInterface\(params: GetOntologyActionInfoParams\)/);
   assert.match(source, /DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/action"/);
+  assert.match(source, /actionApi、ontologySpaceId/);
+  assert.match(infoTypeSource, /interface GetOntologyActionInfoParams[\s\S]*actionApi: string[\s\S]*ontologySpaceId: string/);
   assert.match(source, /export function putEditOntologyActionInterface\(params: EditOntologyActionParams\)/);
   assert.match(source, /method: "put"/);
   assert.match(apiBarrel, /getOntologyActionInfoInterface/);

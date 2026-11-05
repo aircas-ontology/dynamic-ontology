@@ -434,7 +434,7 @@
                   <span>绑定关系</span>
                   <el-tag size="small" effect="plain">{{ relationRows.length }}项</el-tag>
                 </div>
-                <span class="behavior-form-dialog__attribute-hint">从当前空间关系中单选一条</span>
+                <span class="behavior-form-dialog__attribute-hint">从当前空间关系中单选一条，可再次点击取消</span>
               </div>
               <el-table
                 class="behavior-form-dialog__attribute-table"
@@ -450,7 +450,7 @@
                       :model-value="selectedRelationId"
                       :value="row.id"
                       :disabled="readonly || relationLoading"
-                      @change="selectApplicationRelationRow(row.id)"
+                      @click.stop="selectApplicationRelationRow(row.id)"
                     />
                   </template>
                 </el-table-column>
@@ -1004,12 +1004,17 @@ function formatApplicationRelationMapping(row: { sourceName?: string; targetName
 }
 
 /**
- * @description 单选应用行为绑定关系。
+ * @description 单选或取消单选应用行为绑定关系；再次点击已选项则清空。
  * @param relationId 关系 uniqueIdentifier。
  */
 function selectApplicationRelationRow(relationId: string): void {
   if (readonly.value) return;
-  selectedRelationId.value = relationId.trim();
+  const nextId = relationId.trim();
+  if (!nextId) {
+    selectedRelationId.value = "";
+    return;
+  }
+  selectedRelationId.value = selectedRelationId.value === nextId ? "" : nextId;
 }
 
 /**
@@ -1688,12 +1693,17 @@ async function loadActionInfoForEdit(): Promise<void> {
     detailError.value = "行为 api 名称无效，无法加载详情";
     return;
   }
+  const ontologySpaceId = props.spaceId.trim();
+  if (!ontologySpaceId) {
+    detailError.value = "当前对象空间无效，无法加载详情";
+    return;
+  }
   const requestToken = ++detailLoadToken;
   detailLoading.value = true;
   detailError.value = "";
   unsupportedEditReason.value = "";
   try {
-    const response = await getOntologyActionInfoInterface({ actionApi });
+    const response = await getOntologyActionInfoInterface({ actionApi, ontologySpaceId });
     if (requestToken !== detailLoadToken) return;
     if (response.code !== 200 || !response.data) throw new Error(response.message || "行为详情加载失败");
     const state = mapOntologyActionInfoToFormState(response.data);

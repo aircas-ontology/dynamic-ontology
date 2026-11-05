@@ -1,7 +1,7 @@
 ## 二、行为详情
 
 ```
-GET /ontology/action?actionApi=<actionApi>
+GET /ontology/action?actionApi=<actionApi>&ontologySpaceId=<ontologySpaceId>
 ```
 
 **响应示例**（应用行为 - 对象入参子字段绑定）：

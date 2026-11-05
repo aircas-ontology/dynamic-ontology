@@ -2,134 +2,106 @@
   <el-drawer
     :model-value="modelValue"
     class="behavior-detail-drawer"
-    :title="behavior?.displayName || '行为详情'"
+    :title="drawerTitle"
     size="680px"
     append-to-body
     destroy-on-close
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <template v-if="behavior">
+    <p v-if="detailLoading" class="behavior-detail-drawer__state" role="status">正在加载行为详情…</p>
+    <p v-else-if="detailError" class="behavior-detail-drawer__state" role="alert">{{ detailError }}</p>
+    <template v-else-if="viewState">
       <header class="behavior-detail-drawer__header">
-        <p class="behavior-detail-drawer__description" :title="behavior.description || '暂无描述'">{{ behavior.description || "暂无描述" }}</p>
+        <p class="behavior-detail-drawer__description" :title="viewState.description || '暂无描述'">
+          {{ viewState.description || "暂无描述" }}
+        </p>
         <div class="behavior-detail-drawer__tags">
-          <el-tag size="small" :type="statusTagType(behavior.status)">{{ SPACE_BEHAVIOR_STATUS_LABELS[behavior.status] }}</el-tag>
+          <el-tag size="small" :type="statusTagType(viewState.status)">{{ SPACE_BEHAVIOR_STATUS_LABELS[viewState.status] }}</el-tag>
+          <el-tag size="small" effect="plain">{{ viewState.actionKindLabel }}</el-tag>
+          <el-tag v-if="viewState.subjectTypeLabel !== '—'" size="small" effect="plain">{{ viewState.subjectTypeLabel }}</el-tag>
+          <el-tag v-if="viewState.operationLabel !== '—'" size="small" effect="plain">{{ viewState.operationLabel }}</el-tag>
         </div>
         <div class="behavior-detail-drawer__meta-line">
-          <span
-            >对象 {{ behavior.objectName || "未关联对象" }} · 基础算子 {{ behavior.functionOperatorName || "未绑定" }} ·
-            {{ behavior.functionOperatorVersion }}</span
-          >
-          <span>更新于 {{ behavior.updatedAt }}</span>
+          <span>apiName {{ viewState.actionApi || "—" }}</span>
+          <span v-if="viewState.functionApi">算子 {{ viewState.functionDescription || viewState.functionApi }}</span>
         </div>
       </header>
 
       <el-descriptions class="behavior-detail-drawer__summary" :column="2" border size="small">
-        <el-descriptions-item label="行为 ID">{{ behavior.id }}</el-descriptions-item>
-        <el-descriptions-item label="执行范围">{{ behavior.singleObject ? "单对象" : "批量" }}</el-descriptions-item>
-        <el-descriptions-item label="执行次数">{{ behavior.executionCount }}</el-descriptions-item>
-        <el-descriptions-item label="成功率">{{ behavior.successRate }}</el-descriptions-item>
-        <el-descriptions-item label="发布人">{{ behavior.publisher || "—" }}</el-descriptions-item>
-        <el-descriptions-item label="发布时间">{{ behavior.publishedAt || "—" }}</el-descriptions-item>
+        <el-descriptions-item label="行为 ID">{{ viewState.id }}</el-descriptions-item>
+        <el-descriptions-item label="行为 api">{{ viewState.actionApi || "—" }}</el-descriptions-item>
+        <el-descriptions-item label="行为类别">{{ viewState.actionKindLabel }}</el-descriptions-item>
+        <el-descriptions-item label="主体类型">{{ viewState.subjectTypeLabel }}</el-descriptions-item>
+        <el-descriptions-item label="基础操作">{{ viewState.operationLabel }}</el-descriptions-item>
+        <el-descriptions-item label="对象标识">{{ viewState.ontologyUniqIdentifier || "—" }}</el-descriptions-item>
+        <el-descriptions-item v-if="viewState.storageGroup" label="存储分组">{{ viewState.storageGroup }}</el-descriptions-item>
+        <el-descriptions-item v-if="viewState.functionApi" label="绑定算子">
+          {{ viewState.functionDescription || viewState.functionApi }}
+        </el-descriptions-item>
+        <el-descriptions-item v-if="viewState.functionApi" label="算子 api">{{ viewState.functionApi }}</el-descriptions-item>
+        <el-descriptions-item v-if="viewState.outputMode" label="输出方式">{{ viewState.outputMode }}</el-descriptions-item>
+        <el-descriptions-item v-if="viewState.linkRelationId" label="绑定关系">{{ viewState.linkRelationId }}</el-descriptions-item>
+        <el-descriptions-item v-if="viewState.linkTargetStatus" label="关系状态">{{ viewState.linkTargetStatus }}</el-descriptions-item>
       </el-descriptions>
 
       <section class="behavior-detail-drawer__section">
         <h4>输入参数</h4>
-        <el-table v-if="inputRows.length" :data="inputRows" class="aircas-table--accent-header" size="small">
-          <el-table-column label="参数" min-width="160" show-overflow-tooltip>
-            <template #default="{ row }">{{ asParameterRow(row).parameter.path || asParameterRow(row).parameter.name }}</template>
+        <el-table v-if="viewState.inputRows.length" :data="viewState.inputRows" row-key="rowKey" class="aircas-table--accent-header" size="small">
+          <el-table-column label="参数" min-width="140" show-overflow-tooltip>
+            <template #default="{ row }">{{ formatParamLabel(asParamRow(row)) }}</template>
           </el-table-column>
-          <el-table-column label="类型" width="90">
-            <template #default="{ row }">{{ asParameterRow(row).parameter.type }}</template>
-          </el-table-column>
-          <el-table-column label="必填" width="70">
-            <template #default="{ row }">{{ asParameterRow(row).parameter.required ? "是" : "否" }}</template>
-          </el-table-column>
-          <el-table-column label="描述" min-width="160" show-overflow-tooltip>
-            <template #default="{ row }">{{ asParameterRow(row).parameter.description }}</template>
-          </el-table-column>
-          <el-table-column label="输入来源 / 绑定" min-width="200" show-overflow-tooltip>
-            <template #default="{ row }">{{ asParameterRow(row).parameter.bindLabel || asParameterRow(row).parameter.sourceLabel || "—" }}</template>
-          </el-table-column>
+          <el-table-column prop="paramType" label="类型" width="100" show-overflow-tooltip />
+          <el-table-column prop="sourceType" label="来源" width="110" show-overflow-tooltip />
+          <el-table-column prop="bindSummary" label="绑定" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="description" label="描述" min-width="140" show-overflow-tooltip />
         </el-table>
         <p v-else class="behavior-detail-drawer__empty">暂无输入参数</p>
       </section>
 
       <section class="behavior-detail-drawer__section">
         <h4>输出参数</h4>
-        <el-table v-if="outputRows.length" :data="outputRows" class="aircas-table--accent-header" size="small">
-          <el-table-column label="参数" min-width="160" show-overflow-tooltip>
-            <template #default="{ row }">{{ asParameterRow(row).parameter.path || asParameterRow(row).parameter.name }}</template>
+        <el-table v-if="viewState.outputRows.length" :data="viewState.outputRows" row-key="rowKey" class="aircas-table--accent-header" size="small">
+          <el-table-column label="参数" min-width="140" show-overflow-tooltip>
+            <template #default="{ row }">{{ formatParamLabel(asParamRow(row)) }}</template>
           </el-table-column>
-          <el-table-column label="类型" width="90">
-            <template #default="{ row }">{{ asParameterRow(row).parameter.type }}</template>
+          <el-table-column prop="paramType" label="类型" width="100" show-overflow-tooltip />
+          <el-table-column prop="outputMode" label="输出方式" width="140" show-overflow-tooltip>
+            <template #default="{ row }">{{ asParamRow(row).outputMode || "—" }}</template>
           </el-table-column>
-          <el-table-column label="描述" min-width="160" show-overflow-tooltip>
-            <template #default="{ row }">{{ asParameterRow(row).parameter.description }}</template>
-          </el-table-column>
-          <el-table-column label="返回字段 → 写入目标" min-width="220" show-overflow-tooltip>
-            <template #default="{ row }">{{ asParameterRow(row).parameter.bindLabel || asParameterRow(row).parameter.path || "—" }}</template>
-          </el-table-column>
+          <el-table-column prop="bindSummary" label="绑定" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="description" label="描述" min-width="140" show-overflow-tooltip />
         </el-table>
         <p v-else class="behavior-detail-drawer__empty">暂无输出参数</p>
       </section>
-
-      <section class="behavior-detail-drawer__section">
-        <h4>变更信息</h4>
-        <div class="behavior-detail-drawer__change">
-          <span>变更说明：</span>
-          <p>{{ behavior.changeNote || "暂无变更说明" }}</p>
-        </div>
-      </section>
-
-      <section class="behavior-detail-drawer__section" aria-label="状态操作记录">
-        <h4>状态操作记录</h4>
-        <ul v-if="statusHistory.length" class="behavior-detail-drawer__logs">
-          <li v-for="(item, index) in statusHistory" :key="`${behavior.id}-log-${index}`">
-            <time v-if="item.time">{{ item.time }}</time>
-            <p>{{ item.content }}</p>
-          </li>
-        </ul>
-        <p v-else class="behavior-detail-drawer__empty">无</p>
-      </section>
     </template>
+    <p v-else class="behavior-detail-drawer__state" role="status">暂无行为详情</p>
   </el-drawer>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
+import { getOntologyActionInfoInterface } from "@/apis";
 import type { SpaceBehaviorItem, SpaceBehaviorStatus } from "@/types";
 import { SPACE_BEHAVIOR_STATUS_LABELS } from "@/types";
-import { flattenSpaceBehaviorParameterRows, type SpaceBehaviorParameterRow } from "../utils/spaceBehaviorOperations";
+import {
+  mapOntologyActionInfoToViewState,
+  type SpaceBehaviorActionInfoViewParamRow,
+  type SpaceBehaviorActionInfoViewState,
+} from "../utils/mapOntologyActionInfoToViewState";
 
 const props = defineProps<{
   modelValue: boolean;
+  spaceId: string;
   behavior: SpaceBehaviorItem | null;
 }>();
 const emit = defineEmits<{ "update:modelValue": [value: boolean] }>();
 
-const inputRows = computed(() => flattenSpaceBehaviorParameterRows(props.behavior?.inputParameters ?? []).filter((row) => !row.isGroup));
-const outputRows = computed(() => flattenSpaceBehaviorParameterRows(props.behavior?.outputParameters ?? []).filter((row) => !row.isGroup));
-const statusHistory = computed(() => (props.behavior?.statusLogs ?? []).map(parseBehaviorStatusLog).reverse());
+const detailLoading = ref(false);
+const detailError = ref("");
+const viewState = ref<SpaceBehaviorActionInfoViewState | null>(null);
+let detailLoadToken = 0;
 
-/**
- * @description 将表格行收窄为参数展示行。
- * @param row 表格行。
- * @returns 参数展示行。
- */
-function asParameterRow(row: unknown): SpaceBehaviorParameterRow {
-  return row as SpaceBehaviorParameterRow;
-}
-
-/**
- * @description 解析 Mock 状态日志为时间与内容。
- * @param log 状态日志文本。
- * @returns 时间与内容。
- */
-function parseBehaviorStatusLog(log: string): { time: string; content: string } {
-  const matched = log.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*(.*)$/);
-  if (!matched) return { time: "", content: log };
-  return { time: matched[1] ?? "", content: matched[2] || log };
-}
+const drawerTitle = computed(() => viewState.value?.displayName || props.behavior?.displayName || "行为详情");
 
 /**
  * @description 将行为状态映射为标签颜色。
@@ -141,6 +113,80 @@ function statusTagType(status: SpaceBehaviorStatus): "success" | "info" | "warni
   if (status === "disabled") return "info";
   return "warning";
 }
+
+/**
+ * @description 将表格行收窄为详情参数行类型。
+ * @param row 表格行。
+ * @returns 参数行。
+ */
+function asParamRow(row: unknown): SpaceBehaviorActionInfoViewParamRow {
+  return row as SpaceBehaviorActionInfoViewParamRow;
+}
+
+/**
+ * @description 格式化参数名与路径展示。
+ * @param row 入出参行。
+ * @returns 展示文案。
+ */
+function formatParamLabel(row: SpaceBehaviorActionInfoViewParamRow): string {
+  if (row.paramPath) return `${row.paramName}.${row.paramPath}`;
+  return row.paramName || "—";
+}
+
+/**
+ * @description 清空详情加载结果。
+ */
+function clearDetailViewState(): void {
+  viewState.value = null;
+  detailError.value = "";
+  detailLoading.value = false;
+}
+
+/**
+ * @description 打开查看抽屉时拉取行为详情并映射展示状态。
+ */
+async function loadActionInfoForView(): Promise<void> {
+  const actionApi = (props.behavior?.behaviorApiName ?? "").trim();
+  const ontologySpaceId = props.spaceId.trim();
+  if (!actionApi) {
+    clearDetailViewState();
+    detailError.value = "行为 api 名称无效，无法加载详情";
+    return;
+  }
+  if (!ontologySpaceId) {
+    clearDetailViewState();
+    detailError.value = "当前对象空间无效，无法加载详情";
+    return;
+  }
+  const requestToken = ++detailLoadToken;
+  detailLoading.value = true;
+  detailError.value = "";
+  viewState.value = null;
+  try {
+    const response = await getOntologyActionInfoInterface({ actionApi, ontologySpaceId });
+    if (requestToken !== detailLoadToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "行为详情加载失败");
+    viewState.value = mapOntologyActionInfoToViewState(response.data);
+  } catch (error) {
+    if (requestToken !== detailLoadToken) return;
+    viewState.value = null;
+    detailError.value = error instanceof Error ? error.message : "行为详情加载失败";
+  } finally {
+    if (requestToken === detailLoadToken) detailLoading.value = false;
+  }
+}
+
+watch(
+  () => [props.modelValue, props.behavior?.behaviorApiName, props.spaceId] as const,
+  ([visible]) => {
+    if (!visible) {
+      detailLoadToken += 1;
+      clearDetailViewState();
+      return;
+    }
+    void loadActionInfoForView();
+  },
+);
 </script>
 
 <style scoped lang="scss">
@@ -179,59 +225,30 @@ function statusTagType(status: SpaceBehaviorStatus): "success" | "info" | "warni
   color: var(--aircas-color-text-primary);
   font-size: 14px;
 }
-.behavior-detail-drawer__empty {
-  margin: 0;
-  color: var(--aircas-color-text-secondary);
-  font-size: 12px;
-}
-.behavior-detail-drawer__change {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: 0;
-  padding: 8px 12px;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 4px;
-  background: var(--aircas-color-panel-background-deep);
-  font-size: 14px;
-  line-height: 1.5;
-}
-.behavior-detail-drawer__change span {
-  flex-shrink: 0;
-  color: var(--aircas-color-text-secondary);
-  white-space: nowrap;
-}
-.behavior-detail-drawer__change p {
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  color: var(--aircas-color-text-primary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.behavior-detail-drawer__logs {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.behavior-detail-drawer__logs li {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  padding: 8px 0;
-  line-height: 1.5;
-}
-.behavior-detail-drawer__logs time {
-  flex-shrink: 0;
-  color: var(--aircas-color-text-secondary);
-  font-size: 12px;
-  white-space: nowrap;
-}
-.behavior-detail-drawer__logs p {
-  min-width: 0;
+.behavior-detail-drawer__empty,
+.behavior-detail-drawer__state {
   margin: 0;
   color: var(--aircas-color-text-secondary);
   font-size: 13px;
-  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+</style>
+
+<style lang="scss">
+.behavior-detail-drawer.el-drawer .el-drawer__header {
+  margin-bottom: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--aircas-color-border-light);
+  background: var(--aircas-color-section-header);
+  color: var(--aircas-color-text-primary);
+}
+
+.behavior-detail-drawer.el-drawer .el-drawer__title {
+  color: var(--aircas-color-text-primary);
+  font-weight: 600;
+}
+
+.behavior-detail-drawer.el-drawer .el-drawer__body {
+  padding-top: 16px;
 }
 </style>

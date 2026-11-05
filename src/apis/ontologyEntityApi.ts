@@ -1,4 +1,10 @@
-import type { ApiResponse, GetOntologyEntitiesData, GetOntologyEntitiesParams } from "@/types";
+import type {
+  ApiResponse,
+  GetOntologyEntitiesData,
+  GetOntologyEntitiesParams,
+  GetOntologyEntityRowDetailData,
+  GetOntologyEntityRowDetailParams,
+} from "@/types";
 import { request } from "@/utils/request";
 
 /**
@@ -11,5 +17,24 @@ export function getOntologyEntitiesInterface(params: GetOntologyEntitiesParams):
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/entity/list",
     method: "get",
     params,
+  });
+}
+
+/**
+ * @description 查询实体属性详情（按行返回，带存储分组）。
+ *
+ * 请求方式：POST `/ontology/entity/row_detail`
+ *
+ * @param params 查询请求体。
+ * @param params.ontologyUniqueIdentifier 对象唯一标识。
+ * @param params.entityPrimaryKey 实体主键。
+ * @param params.sort 动态属性行排序 ASC/DESC。
+ * @returns 标准 API 响应；data 为分组属性详情或 null。
+ */
+export function postGetOntologyEntityRowDetailInterface(params: GetOntologyEntityRowDetailParams): Promise<ApiResponse<GetOntologyEntityRowDetailData>> {
+  return request<GetOntologyEntityRowDetailData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/entity/row_detail",
+    method: "post",
+    data: params,
   });
 }

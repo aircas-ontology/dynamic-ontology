@@ -146,6 +146,14 @@ export type {
 export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
 export type { GetOntologyEntitiesData, GetOntologyEntitiesParams, OntologyEntityInfo } from "./apis/getOntologyEntitiesType";
 export type {
+  GetOntologyEntityRowDetailData,
+  GetOntologyEntityRowDetailParams,
+  OntologyEntityRowDetailVO,
+  OntologyEntityRowPropertyGroup,
+  OntologyEntityRowPropertyGroupData,
+  OntologyEntityRowPropertyInfo,
+} from "./apis/getOntologyEntityRowDetailType";
+export type {
   GetOntologyFunctionContainerRuntimeListData,
   GetOntologyFunctionContainerRuntimeListParams,
   OntologyFunctionContainerRuntimeHeartbeatStatus,
@@ -258,6 +266,7 @@ export type {
   StreamAgentChatSelectionOption,
   StreamAgentChatSelectionScenario,
 } from "./apis/streamAgentChatType";
+export type { TestOntologyActionData, TestOntologyActionParams, TestOntologyActionResult } from "./apis/testOntologyActionType";
 export type { TestOntologyFunctionData, TestOntologyFunctionParameterItem, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
 export type { UpdateActionCategoryParams } from "./apis/updateActionCategoryType";
 export type { UpdateFunctionOperatorTemplateData, UpdateFunctionOperatorTemplateParams } from "./apis/updateFunctionOperatorTemplateType";

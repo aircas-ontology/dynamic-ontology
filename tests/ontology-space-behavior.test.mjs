@@ -40,6 +40,9 @@ import {
   isApplicationActionCreateDraft,
 } from "../src/views/SpaceBehaviorWorkspace/utils/buildApplicationCreateActionParams.ts";
 import { mapOntologyActionInfoToFormState } from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyActionInfoToFormState.ts";
+import { mapOntologyActionInfoToViewState } from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyActionInfoToViewState.ts";
+import { coerceBehaviorTestParamValue } from "../src/views/SpaceBehaviorWorkspace/utils/coerceBehaviorTestParamValue.ts";
+import { mapOntologyEntityRowDetailToDataRows } from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyEntityRowDetailToDataRows.ts";
 
 const EMPTY_APPLICATION_DRAFT_FIELDS = {
   applicationInputRows: [],
@@ -133,7 +136,55 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(listSource, />测试</);
   assert.match(listSource, /emit\('test'/);
   assert.match(workspaceSource, /@test="openBehaviorTest"/);
-  assert.match(workspaceSource, /行为测试功能后续接入/);
+  assert.match(workspaceSource, /BehaviorTestDialog/);
+  assert.match(workspaceSource, /:space-id="spaceId"/);
+  assert.match(workspaceSource, /behaviorTestVisible/);
+  assert.match(workspaceSource, /当前仅支持基础行为-属性值测试/);
+  assert.match(workspaceSource, /当前行为缺少对象标识，无法加载实体列表/);
+  const testDialogSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorTestDialog.vue");
+  assert.match(testDialogSource, /getOntologyEntitiesInterface/);
+  assert.match(testDialogSource, /getOntologyActionInfoInterface/);
+  assert.match(testDialogSource, /postTestOntologyActionInterface/);
+  assert.match(testDialogSource, /ontologyUniqueIdentifier/);
+  assert.match(testDialogSource, /ontologyUniqIdentifier/);
+  assert.match(testDialogSource, /选择实体实例/);
+  assert.match(testDialogSource, /测试参数/);
+  assert.match(testDialogSource, /v-if="!isDeleteTest"/);
+  assert.match(testDialogSource, /sourceType === "EXTERNAL"/);
+  assert.match(testDialogSource, /label="属性名称"/);
+  assert.match(testDialogSource, /propertyDisplayName/);
+  assert.match(testDialogSource, /propertyType/);
+  assert.match(testDialogSource, /coerceBehaviorTestParamValue/);
+  assert.match(testDialogSource, /查看实例数据/);
+  assert.match(testDialogSource, /BehaviorEntityRowDetailDialog/);
+  assert.match(testDialogSource, /openEntityRowDetail/);
+  assert.match(testDialogSource, /entityPrimaryKey/);
+  assert.match(testDialogSource, /isUpdateTest/);
+  assert.match(testDialogSource, /isDeleteTest/);
+  assert.match(testDialogSource, /needsDataRowSelection/);
+  assert.match(testDialogSource, /选择数据行/);
+  assert.match(testDialogSource, /postGetOntologyEntityRowDetailInterface/);
+  assert.match(testDialogSource, /mapOntologyEntityRowDetailToDataRows/);
+  assert.match(testDialogSource, /dataPrimaryKey/);
+  assert.match(testDialogSource, /当前仅支持属性值-新增\/编辑\/删除测试/);
+  assert.match(testDialogSource, /属性值-删除测试/);
+  assert.match(testDialogSource, /!isDeleteTest\.value/);
+  assert.match(testDialogSource, /开始测试/);
+  assert.match(testDialogSource, /<el-pagination\b/);
+  const entityRowDetailSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorEntityRowDetailDialog.vue");
+  assert.match(entityRowDetailSource, /postGetOntologyEntityRowDetailInterface/);
+  assert.match(entityRowDetailSource, /sort: "DESC"/);
+  assert.match(entityRowDetailSource, /propertyGroups/);
+  assert.match(entityRowDetailSource, /dataPrimaryKey/);
+  assert.match(entityRowDetailSource, /propertyDisplayName/);
+  const mapDataRowsSource = readSource("../src/views/SpaceBehaviorWorkspace/utils/mapOntologyEntityRowDetailToDataRows.ts");
+  assert.match(mapDataRowsSource, /export function mapOntologyEntityRowDetailToDataRows/);
+  assert.match(mapDataRowsSource, /dataPrimaryKey/);
+  assert.match(mapDataRowsSource, /storageGroup/);
+  assert.match(mapDataRowsSource, /normalizeStorageGroupName/);
+  assert.match(mapDataRowsSource, /storageGroupFilter/);
+  assert.match(testDialogSource, /resolvedStorageGroup/);
+  assert.match(testDialogSource, /行为未配置存储分组，无法选择数据行/);
   assert.match(listSource, /placeholder="行为状态"/);
   assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_OPTIONS/);
   assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_LABELS/);
@@ -182,6 +233,7 @@ test("space behavior maps listAction records to table rows with published draft 
   assert.equal(published.behaviorApiName, "act.pv.weapon.add");
   assert.equal(published.functionOperatorName, "-");
   assert.equal(published.status, "published");
+  assert.equal(published.ontologyUniqIdentifier, "ea512d439cd34c6ebbcde6b692261ab5");
   assert.equal(mapSpaceBehaviorItemToListStatus(published.status), "published");
   assert.equal(published.updatedAt, "-");
   assert.equal(published.kind, "basic");
@@ -289,6 +341,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /创建行为/);
   assert.match(formSource, /el-alert/);
   assert.match(formSource, /getOntologyActionInfoInterface/);
+  assert.match(formSource, /getOntologyActionInfoInterface\(\{ actionApi, ontologySpaceId \}\)/);
   assert.match(formSource, /mapOntologyActionInfoToFormState/);
   assert.match(formSource, /loadActionInfoForEdit/);
   assert.match(formSource, /已失效行为为只读/);
@@ -415,7 +468,9 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /selectApplicationRelationRow/);
   assert.match(formSource, /handleApplicationRelationRowClick/);
   assert.match(formSource, /formatApplicationRelationMapping/);
-  assert.match(formSource, /从当前空间关系中单选一条/);
+  assert.match(formSource, /从当前空间关系中单选一条，可再次点击取消/);
+  assert.match(formSource, /selectedRelationId\.value === nextId \? "" : nextId/);
+  assert.match(formSource, /@click\.stop="selectApplicationRelationRow\(row\.id\)"/);
   assert.match(formSource, /buildApplicationCreateActionParams/);
   assert.match(formSource, /applicationInputBindings/);
   assert.match(formSource, /applicationOutputBindings/);
@@ -456,6 +511,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(typeSource, /selectedRelationId: string/);
   assert.match(typeSource, /relationTargetStatus: SpaceBehaviorRelationTargetStatus \| ""/);
   assert.match(typeSource, /relationVisibilityWindows: SpaceBehaviorRelationVisibilityWindow\[\]/);
+  assert.match(typeSource, /ontologyUniqIdentifier: string/);
   assert.match(typeSource, /SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS/);
   assert.match(typeSource, /listSpaceBehaviorRelationTargetStatusOptions/);
   assert.match(typeSource, /value: "ENABLE"/);
@@ -474,12 +530,20 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
 
   assert.match(drawerSource, /<el-drawer\b/);
   assert.match(drawerSource, /size="680px"/);
+  assert.match(drawerSource, /getOntologyActionInfoInterface/);
+  assert.match(drawerSource, /mapOntologyActionInfoToViewState/);
+  assert.match(drawerSource, /loadActionInfoForView/);
+  assert.match(drawerSource, /spaceId: string/);
+  assert.match(drawerSource, /background: var\(--aircas-color-section-header\)/);
   assert.match(drawerSource, /行为 ID/);
-  assert.match(drawerSource, /执行范围/);
+  assert.match(drawerSource, /行为 api/);
+  assert.match(drawerSource, /主体类型/);
   assert.match(drawerSource, /输入参数/);
   assert.match(drawerSource, /输出参数/);
-  assert.match(drawerSource, /变更说明/);
-  assert.match(drawerSource, /状态操作记录/);
+  assert.doesNotMatch(drawerSource, /执行范围/);
+  assert.doesNotMatch(drawerSource, /执行次数/);
+  assert.doesNotMatch(drawerSource, /变更说明/);
+  assert.doesNotMatch(drawerSource, /状态操作记录/);
 
   assert.match(deleteSource, /删除行为/);
   assert.match(deleteSource, /确定删除行为/);
@@ -489,7 +553,271 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.doesNotMatch(deleteSource, /请输入行为名称确认删除/);
 
   assert.match(workspaceSource, /BehaviorDetailDrawer/);
+  assert.match(workspaceSource, /:space-id="spaceId"/);
   assert.doesNotMatch(workspaceSource, /behaviorFormMode\.value = "view"/);
+});
+
+test("space behavior maps entity row detail into selectable data rows for update test", () => {
+  const detail = {
+    primaryKey: "1",
+    ontologyUniqueIdentifier: "onto-1",
+    propertyGroups: [
+      {
+        storageGroup: "engine",
+        groupDataList: [
+          {
+            dataPrimaryKey: "100",
+            props: [
+              {
+                propertyUniqIdentifier: "p1",
+                propertyApiName: "e_thrust",
+                propertyDisplayName: "加力推力",
+                propertyValue: 1,
+              },
+            ],
+          },
+          {
+            dataPrimaryKey: "",
+            props: [],
+          },
+        ],
+      },
+      {
+        storageGroup: "main",
+        groupDataList: [
+          {
+            dataPrimaryKey: "200",
+            props: [
+              {
+                propertyUniqIdentifier: "p2",
+                propertyApiName: "name",
+                propertyDisplayName: "名称",
+                propertyValue: "F-22",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const engineRows = mapOntologyEntityRowDetailToDataRows(detail, "engine");
+  assert.equal(engineRows.length, 1);
+  assert.equal(engineRows[0]?.storageGroup, "engine");
+  assert.equal(engineRows[0]?.dataPrimaryKey, "100");
+  assert.match(engineRows[0]?.propertySummary ?? "", /加力推力/);
+  const mainRows = mapOntologyEntityRowDetailToDataRows(detail, " main ");
+  assert.equal(mainRows.length, 1);
+  assert.equal(mainRows[0]?.dataPrimaryKey, "200");
+  assert.deepEqual(mapOntologyEntityRowDetailToDataRows(null, "engine"), []);
+});
+
+test("space behavior coerces test param values by property type for backend params", () => {
+  const doubleOk = coerceBehaviorTestParamValue("1.5", "Double", "加力推力");
+  assert.equal(doubleOk.ok, true);
+  if (doubleOk.ok) assert.equal(doubleOk.value, 1.5);
+
+  const intOk = coerceBehaviorTestParamValue("2", "Int", "装机数量");
+  assert.equal(intOk.ok, true);
+  if (intOk.ok) assert.equal(intOk.value, 2);
+
+  const stringOk = coerceBehaviorTestParamValue(" a ", "String", "发动机型号");
+  assert.equal(stringOk.ok, true);
+  if (stringOk.ok) assert.equal(stringOk.value, "a");
+
+  const boolOk = coerceBehaviorTestParamValue("true", "Boolean", "启用");
+  assert.equal(boolOk.ok, true);
+  if (boolOk.ok) assert.equal(boolOk.value, true);
+
+  const intBad = coerceBehaviorTestParamValue("1.2", "Int", "装机数量");
+  assert.equal(intBad.ok, false);
+  if (!intBad.ok) assert.match(intBad.error, /装机数量/);
+
+  const doubleBad = coerceBehaviorTestParamValue("abc", "Double", "加力推力");
+  assert.equal(doubleBad.ok, false);
+  if (!doubleBad.ok) assert.match(doubleBad.error, /加力推力/);
+});
+
+test("space behavior maps action info detail into view drawer state", () => {
+  const propertyView = mapOntologyActionInfoToViewState({
+    id: 8,
+    actionApi: "act.pv.weapon.add",
+    displayName: "武器行-新增",
+    description: "属性值行为",
+    ontologyUniqIdentifier: "onto-1",
+    categoryId: 14,
+    status: 1,
+    actionKind: "BASE",
+    subjectType: "PROPERTY_VALUE",
+    operation: "CREATE",
+    storageGroup: "weapon",
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: null,
+    mappingIns: [
+      {
+        functionParamId: null,
+        parameterName: "w_range",
+        displayName: "射程",
+        propertyType: "Double",
+        sourceType: "FIXED",
+        sourceConfig: "120.5",
+        propertyUniqueIdentifier: "p1",
+        ontologyUniqueIdentifier: "onto-1",
+      },
+      {
+        functionParamId: null,
+        parameterName: "e_thrust",
+        displayName: "加力推力",
+        propertyType: "Double",
+        sourceType: "EXTERNAL",
+        propertyUniqueIdentifier: "p2",
+        ontologyUniqueIdentifier: "onto-1",
+      },
+    ],
+    functionParams: [],
+  });
+  assert.equal(propertyView.status, "published");
+  assert.equal(propertyView.actionKindLabel, "基础行为");
+  assert.equal(propertyView.subjectTypeLabel, "属性值");
+  assert.equal(propertyView.operationLabel, "新增");
+  assert.equal(propertyView.storageGroup, "weapon");
+  assert.equal(propertyView.inputRows.length, 2);
+  assert.equal(propertyView.outputRows.length, 0);
+  assert.match(propertyView.inputRows[0]?.bindSummary ?? "", /固定值 120\.5/);
+  assert.equal(propertyView.inputRows[0]?.propertyDisplayName, "射程");
+  assert.equal(propertyView.inputRows[0]?.propertyType, "Double");
+  assert.equal(propertyView.inputRows[0]?.paramType, "Double");
+  assert.equal(propertyView.inputRows[1]?.paramName, "e_thrust");
+  assert.equal(propertyView.inputRows[1]?.propertyDisplayName, "加力推力");
+  assert.equal(propertyView.inputRows[1]?.propertyType, "Double");
+  assert.match(propertyView.inputRows[1]?.bindSummary ?? "", /外部输入/);
+
+  const applicationView = mapOntologyActionInfoToViewState({
+    id: 9,
+    actionApi: "act.ap.obj.nested",
+    displayName: "应用行为-对象子字段绑定",
+    description: "desc",
+    ontologyUniqIdentifier: "onto-1",
+    categoryId: 14,
+    status: 2,
+    actionKind: "APPLICATION",
+    subjectType: null,
+    operation: null,
+    storageGroup: null,
+    functionApi: "act.fn.obj",
+    functionDescription: "OBJECT 入参演示算子",
+    outputMode: "RESULT_ONLY",
+    linkMapping: {
+      ontologyLinkUniqIdentifier: "link-1",
+      targetStatus: null,
+      visibilityWindows: [],
+    },
+    mappingIns: [
+      {
+        functionParamId: 2298,
+        parameterName: "lng",
+        sourceType: "PROPERTY",
+        paramPath: "lng",
+        propertyUniqueIdentifier: "prop-lng",
+        ontologyUniqueIdentifier: "onto-1",
+      },
+      {
+        functionParamId: 2298,
+        parameterName: "lat",
+        sourceType: "EXTERNAL",
+        paramPath: "lat",
+      },
+      {
+        functionParamId: 2300,
+        parameterName: "sum",
+        functionParamExpression: "$.data.sum",
+        outputMode: "RESULT_ONLY",
+      },
+    ],
+    functionParams: [
+      {
+        paramId: 2298,
+        paramName: "pos",
+        paramType: "OBJECT",
+        category: "INPUT",
+        paramOrder: 1,
+        description: "坐标对象",
+      },
+      {
+        paramId: 2300,
+        paramName: "sum",
+        paramType: "DOUBLE",
+        category: "OUTPUT",
+        paramOrder: 2,
+        description: "lng+lat 之和",
+      },
+    ],
+  });
+  assert.equal(applicationView.status, "draft");
+  assert.equal(applicationView.actionKindLabel, "应用行为");
+  assert.equal(applicationView.linkRelationId, "link-1");
+  assert.equal(applicationView.inputRows.length, 2);
+  assert.equal(applicationView.outputRows.length, 1);
+  assert.equal(applicationView.inputRows[0]?.paramPath, "lng");
+  assert.equal(applicationView.inputRows[0]?.paramType, "OBJECT");
+  assert.match(applicationView.inputRows[0]?.bindSummary ?? "", /对象属性/);
+  assert.match(applicationView.outputRows[0]?.bindSummary ?? "", /仅返回/);
+
+  const edgeView = mapOntologyActionInfoToViewState({
+    id: 10,
+    actionApi: "act.link.demo",
+    displayName: "",
+    description: "",
+    ontologyUniqIdentifier: "onto-2",
+    categoryId: 1,
+    status: 1,
+    actionKind: "BASE",
+    subjectType: "LINK",
+    operation: "UPDATE",
+    storageGroup: null,
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: {
+      ontologyLinkUniqIdentifier: "link-2",
+      targetStatus: "ENABLE",
+    },
+    mappingIns: [
+      { category: "INPUT", sourceType: "PROPERTY" },
+      { category: "INPUT", sourceType: "FIXED" },
+      { category: "INPUT", sourceType: "EXTERNAL" },
+      { category: "INPUT", sourceType: "OBJECT", propertyUniqueIdentifier: "obj-1" },
+      { category: "INPUT", sourceType: "LIST", propertyUniqueIdentifier: "list-1" },
+      { category: "INPUT", propertyUniqueIdentifier: "only-prop" },
+      { category: "INPUT", sourceConfig: "raw-config" },
+      { category: "INPUT" },
+      {
+        category: "OUTPUT",
+        outputMode: "WRITE_PROPERTY",
+        functionParamExpression: "$.data.x",
+        propertyUniqueIdentifier: "out-prop",
+      },
+      { category: "OUTPUT" },
+    ],
+    functionParams: null,
+  });
+  assert.equal(edgeView.displayName, "act.link.demo");
+  assert.equal(edgeView.subjectTypeLabel, "关系实例");
+  assert.equal(edgeView.operationLabel, "修改");
+  assert.equal(edgeView.linkTargetStatus, "ENABLE");
+  assert.equal(edgeView.inputRows.length, 8);
+  assert.equal(edgeView.outputRows.length, 2);
+  assert.equal(edgeView.inputRows[0]?.bindSummary, "对象属性");
+  assert.equal(edgeView.inputRows[1]?.bindSummary, "固定值");
+  assert.equal(edgeView.inputRows[2]?.bindSummary, "外部输入");
+  assert.match(edgeView.inputRows[3]?.bindSummary ?? "", /对象 obj-1/);
+  assert.match(edgeView.inputRows[4]?.bindSummary ?? "", /列表 list-1/);
+  assert.match(edgeView.inputRows[5]?.bindSummary ?? "", /属性 only-prop/);
+  assert.equal(edgeView.inputRows[6]?.bindSummary, "raw-config");
+  assert.equal(edgeView.inputRows[7]?.bindSummary, "—");
+  assert.match(edgeView.outputRows[0]?.bindSummary ?? "", /\$\.data\.x/);
+  assert.equal(edgeView.outputRows[1]?.bindSummary, "仅返回结果");
 });
 
 test("space behavior category form validates the required name before submit", () => {
