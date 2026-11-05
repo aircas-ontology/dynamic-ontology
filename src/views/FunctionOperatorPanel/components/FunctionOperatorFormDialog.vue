@@ -226,7 +226,8 @@
                 上传接口文档
               </el-button>
             </el-upload>
-            <span class="function-operator-form__upload-hint">支持 OpenAPI / Swagger (.json / .yaml / .yml)</span>
+            <span class="function-operator-form__upload-hint">支持 Swagger (.json)</span>
+            <el-button link type="primary" native-type="button" @click="downloadSwaggerApiDocTemplate">下载接口文档模版</el-button>
             <span v-if="externalApiDocFileName" class="function-operator-form__upload-name">{{ externalApiDocFileName }}</span>
             <el-button v-if="externalApiDocFileName" link type="primary" native-type="button" @click="clearExternalApiDocFile">清除</el-button>
           </div>
@@ -473,7 +474,8 @@
                   上传接口文档
                 </el-button>
               </el-upload>
-              <span class="function-operator-form__upload-hint">支持 OpenAPI / Swagger (.json / .yaml / .yml)</span>
+              <span class="function-operator-form__upload-hint">支持 Swagger (.json)</span>
+              <el-button link type="primary" native-type="button" @click="downloadSwaggerApiDocTemplate">下载接口文档模版</el-button>
               <span v-if="dockerApiDocFileName" class="function-operator-form__upload-name">{{ dockerApiDocFileName }}</span>
               <el-button v-if="dockerApiDocFileName" link type="primary" native-type="button" @click="clearDockerApiDocFile">清除</el-button>
             </div>
@@ -632,6 +634,7 @@ import {
   type UploadOntologyFunctionContainerDocData,
   type UploadOntologyFunctionContainerImageData,
 } from "@/types";
+import swaggerApiDocTemplate from "@/assets/pages/functionOperatorPanel/swaggerApiDocTemplate.json";
 
 /** 探查参数树展示行：在契约字段上附加稳定 _rowKey。 */
 type ProbeContainerParamTreeRow = ProbeOntologyFunctionContainerInterfaceParameter & {
@@ -1251,6 +1254,19 @@ async function onDockerImageFileChange(uploadFile: UploadFile): Promise<void> {
 function clearDockerImageFile(): void {
   dockerImageFileName.value = "";
   dockerImageInfo.value = null;
+}
+
+/**
+ * @description 下载最简 OpenAPI / Swagger 接口文档模版，供上传联调参考。
+ */
+function downloadSwaggerApiDocTemplate(): void {
+  const content = `${JSON.stringify(swaggerApiDocTemplate, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([content], { type: "application/json" }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "swagger-api-doc-template.json";
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 /**

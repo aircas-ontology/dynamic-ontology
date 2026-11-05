@@ -91,6 +91,7 @@ export function mapListOntologyActionRecord(record: ListOntologyActionRecord): S
     version: "",
     basicAction: mapOperationToBasicAction(record.operation),
     objectName: "",
+    ontologyUniqIdentifier: (record.ontologyUniqIdentifier ?? "").trim(),
     behaviorApiName: record.actionApi.trim(),
     executionPeriod: "",
     singleObject: false,

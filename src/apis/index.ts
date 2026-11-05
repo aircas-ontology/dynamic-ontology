@@ -10,6 +10,7 @@ import {
   getListOntologyActionInterface,
   getOntologyActionInfoInterface,
   postCreateOntologyActionInterface,
+  postTestOntologyActionInterface,
   putEditOntologyActionInterface,
 } from "./ontologyActionApi";
 import { getExampleInterface } from "./exampleApi";
@@ -60,7 +61,7 @@ import {
 } from "./datasourceConnectionApi";
 import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
 import { getOntologyApiDocsInterface } from "./ontologyDocApi";
-import { getOntologyEntitiesInterface } from "./ontologyEntityApi";
+import { getOntologyEntitiesInterface, postGetOntologyEntityRowDetailInterface } from "./ontologyEntityApi";
 import { getOntologyInheritanceTreeInterface } from "./ontologyInheritanceTreeApi";
 import { postOntologyGlobalSearchInterface } from "./ontologySearchApi";
 import { createOntologySubspaceInterface } from "./ontologySubspaceApi";
@@ -142,6 +143,7 @@ export {
   getListOntologyActionInterface,
   getOntologyActionInfoInterface,
   postCreateOntologyActionInterface,
+  postTestOntologyActionInterface,
   putEditOntologyActionInterface,
   createOntologyFunctionInterface,
   createOntologySpaceInterface,
@@ -177,6 +179,7 @@ export {
   getOntologyPropertyDetailByOntologyIdInterface,
   getOntologyDatasourceTablesInterface,
   getOntologyEntitiesInterface,
+  postGetOntologyEntityRowDetailInterface,
   getOntologyInheritanceTreeInterface,
   getOntologyMetaStatisticInterface,
   getOntologyOverviewCountInterface,

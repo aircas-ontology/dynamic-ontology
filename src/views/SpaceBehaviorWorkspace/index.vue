@@ -65,7 +65,8 @@
       @submit="handleBehaviorSubmit"
       @save-copy="handleBehaviorSaveCopy"
     />
-    <BehaviorDetailDrawer v-model="behaviorDetailVisible" :behavior="activeBehavior" />
+    <BehaviorDetailDrawer v-model="behaviorDetailVisible" :space-id="spaceId" :behavior="activeBehavior" />
+    <BehaviorTestDialog v-model="behaviorTestVisible" :space-id="spaceId" :behavior="activeBehavior" />
     <BehaviorStatusDialog v-model="behaviorStatusVisible" :behavior="activeBehavior" :loading="actionLoading" @confirm="handleBehaviorStatusSubmit" />
     <BehaviorDeleteDialog
       v-model="behaviorDeleteVisible"
@@ -90,6 +91,7 @@ import BehaviorCategoryFormDialog from "./components/BehaviorCategoryFormDialog.
 import BehaviorCategoryDeleteDialog from "./components/BehaviorCategoryDeleteDialog.vue";
 import BehaviorFormDialog from "./components/BehaviorFormDialog.vue";
 import BehaviorDetailDrawer from "./components/BehaviorDetailDrawer.vue";
+import BehaviorTestDialog from "./components/BehaviorTestDialog.vue";
 import BehaviorStatusDialog from "./components/BehaviorStatusDialog.vue";
 import BehaviorDeleteDialog from "./components/BehaviorDeleteDialog.vue";
 
@@ -134,6 +136,7 @@ const categoryDeleteBlocked = ref(false);
 const behaviorFormVisible = ref(false);
 const behaviorFormMode = ref<"create" | "edit">("create");
 const behaviorDetailVisible = ref(false);
+const behaviorTestVisible = ref(false);
 const behaviorStatusVisible = ref(false);
 const behaviorDeleteVisible = ref(false);
 const activeBehavior = ref<SpaceBehaviorItem | null>(null);
@@ -239,12 +242,20 @@ function openBehaviorEdit(item: SpaceBehaviorItem): void {
 }
 
 /**
- * @description 行为测试入口占位；后续对接测试接口与弹窗。
+ * @description 打开行为测试弹窗；本轮仅支持基础行为-属性值，先加载实体列表。
  * @param item 行为记录。
  */
 function openBehaviorTest(item: SpaceBehaviorItem): void {
+  if (item.kind !== "basic" || item.valueType !== "attributeValue") {
+    ElMessage.info("当前仅支持基础行为-属性值测试");
+    return;
+  }
+  if (!item.ontologyUniqIdentifier.trim()) {
+    ElMessage.warning("当前行为缺少对象标识，无法加载实体列表");
+    return;
+  }
   activeBehavior.value = item;
-  ElMessage.info("行为测试功能后续接入");
+  behaviorTestVisible.value = true;
 }
 
 /**

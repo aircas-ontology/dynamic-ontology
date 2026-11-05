@@ -11,18 +11,28 @@ import type {
 export interface GetOntologyActionInfoParams {
   /** 行为 api 名称。 */
   actionApi: string;
+  /** 本体空间 id。 */
+  ontologySpaceId: string;
 }
 
 /** 行为详情 mappingIns 单项。 */
 export interface GetOntologyActionInfoMappingIn {
   functionParamId?: number | null;
   parameterName?: string | null;
+  /** 属性展示名称；部分详情响应会返回。 */
+  displayName?: string | null;
+  /** 属性类型；部分详情响应会返回。 */
+  propertyType?: string | null;
+  /** 入出参类别；部分详情响应会返回。 */
+  category?: "INPUT" | "OUTPUT" | string | null;
   sourceType?: CreateOntologyActionSourceType | string | null;
   sourceConfig?: string | null;
   paramPath?: string | null;
   propertyUniqueIdentifier?: string | null;
   ontologyUniqueIdentifier?: string | null;
   functionParamExpression?: string | null;
+  /** 出参输出方式；部分详情响应会返回。 */
+  outputMode?: CreateOntologyActionOutputMode | string | null;
 }
 
 /** 行为详情 linkMapping。 */

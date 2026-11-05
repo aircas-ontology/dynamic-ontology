@@ -26,6 +26,11 @@
   },
   {
     "method": "POST",
+    "path": "/ontology/action/test",
+    "file": "fixtures/ontology/action.test.post.json"
+  },
+  {
+    "method": "POST",
     "path": "/agent/chat/stream",
     "file": "fixtures/agent/chat.stream.post.json",
     "responseType": "sse"
@@ -238,6 +243,11 @@
     "method": "GET",
     "path": "/ontology/entity/list",
     "file": "fixtures/ontology/entity/list.get.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/entity/row_detail",
+    "file": "fixtures/ontology/entity/rowDetail.post.json"
   },
   {
     "method": "GET",

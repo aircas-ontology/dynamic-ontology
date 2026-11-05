@@ -120,6 +120,8 @@ export interface SpaceBehaviorItem {
   version: string;
   basicAction: SpaceBehaviorBasicAction;
   objectName: string;
+  /** 行为挂载对象唯一标识（列表 ontologyUniqIdentifier）。 */
+  ontologyUniqIdentifier: string;
   behaviorApiName: string;
   executionPeriod: string;
   singleObject: boolean;
