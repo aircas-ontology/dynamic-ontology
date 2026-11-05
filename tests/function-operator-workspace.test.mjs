@@ -481,6 +481,9 @@ test("external api function create form shows endpoint method and auth without s
   assert.doesNotMatch(formSource, /testOntologyFunctionInterface/);
   assert.doesNotMatch(formSource, /function-operator-form__param-card/);
   assert.match(formSource, /上传接口文档/);
+  assert.match(formSource, /下载接口文档模版/);
+  assert.match(formSource, /downloadSwaggerApiDocTemplate/);
+  assert.match(formSource, /swaggerApiDocTemplate/);
   assert.match(formSource, /已发现接口/);
   assert.match(formSource, /请勾选一条接口以回填入出参/);
   assert.match(formSource, /postUploadOntologyFunctionContainerDocInterface/);
@@ -549,6 +552,8 @@ test("docker container operator form shows general and container config with rea
   assert.match(formSource, /上传镜像/);
   assert.match(formSource, /\.tar\s*\/\s*\.tar\.gz\s*\/\s*\.tgz/);
   assert.match(formSource, /上传接口文档/);
+  assert.match(formSource, /下载接口文档模版/);
+  assert.match(formSource, /downloadSwaggerApiDocTemplate/);
   assert.match(formSource, /OpenAPI\s*\/\s*Swagger/);
   assert.match(formSource, /启动命令/);
   assert.match(formSource, /python \/app\/main\.py/);

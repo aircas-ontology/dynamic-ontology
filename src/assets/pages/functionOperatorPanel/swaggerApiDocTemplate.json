@@ -1,0 +1,45 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "示例接口文档",
+    "version": "1.0.0",
+    "description": "最简 OpenAPI 模版，可用于函数算子接口文档上传联调"
+  },
+  "paths": {
+    "/example": {
+      "get": {
+        "summary": "示例查询",
+        "operationId": "getExample",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "示例查询参数"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "示例返回字段"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
