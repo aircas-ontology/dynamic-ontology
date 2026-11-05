@@ -50,6 +50,16 @@ export interface SpaceBehaviorApplicationOutputBinding {
   propertyUniqueIdentifier: string;
 }
 
+/** 应用行为提交用参数行快照（非对象叶子）。 */
+export interface SpaceBehaviorApplicationParamRowSnapshot {
+  rowKey: string;
+  functionParamId: number | null;
+  paramName: string;
+  paramPath: string;
+  fullPath: string;
+  isObject: boolean;
+}
+
 /** 关系实例持续时段（epoch millis）。 */
 export interface SpaceBehaviorRelationVisibilityWindow {
   startTime: number;
@@ -151,12 +161,20 @@ export interface SpaceBehaviorDraft {
   selectedPropertyApiNames: Record<string, string>;
   /** 属性值新增：当前勾选属性所属存储分组。 */
   storageGroup: string;
-  /** 关系实例：选中关系 uniqueIdentifier。 */
+  /** 关系实例 / 应用行为：选中关系 uniqueIdentifier。 */
   selectedRelationId: string;
   /** 关系实例新增/修改：目标边状态。 */
   relationTargetStatus: SpaceBehaviorRelationTargetStatus | "";
   /** 关系实例新增/修改：持续时段列表。 */
   relationVisibilityWindows: SpaceBehaviorRelationVisibilityWindow[];
+  /** 应用行为：入参行快照。 */
+  applicationInputRows: SpaceBehaviorApplicationParamRowSnapshot[];
+  /** 应用行为：出参行快照。 */
+  applicationOutputRows: SpaceBehaviorApplicationParamRowSnapshot[];
+  /** 应用行为：入参绑定。 */
+  applicationInputBindings: Record<string, SpaceBehaviorApplicationInputBinding>;
+  /** 应用行为：出参绑定。 */
+  applicationOutputBindings: Record<string, SpaceBehaviorApplicationOutputBinding>;
   changeNote?: string;
   version?: string;
 }

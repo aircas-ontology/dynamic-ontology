@@ -72,6 +72,10 @@ const draft = reactive<SpaceBehaviorDraft>({
   selectedRelationId: "",
   relationTargetStatus: "",
   relationVisibilityWindows: [],
+  applicationInputRows: [],
+  applicationOutputRows: [],
+  applicationInputBindings: {},
+  applicationOutputBindings: {},
   changeNote: "",
 });
 const readonly = computed(() => props.mode === "edit" && (props.behavior?.status === "published" || props.behavior?.status === "disabled"));
@@ -104,6 +108,10 @@ function initializeBehaviorDraft(): void {
           selectedRelationId: "",
           relationTargetStatus: "",
           relationVisibilityWindows: [],
+          applicationInputRows: [],
+          applicationOutputRows: [],
+          applicationInputBindings: {},
+          applicationOutputBindings: {},
           changeNote: item.changeNote,
         }
       : {
@@ -128,6 +136,10 @@ function initializeBehaviorDraft(): void {
           selectedRelationId: "",
           relationTargetStatus: "",
           relationVisibilityWindows: [],
+          applicationInputRows: [],
+          applicationOutputRows: [],
+          applicationInputBindings: {},
+          applicationOutputBindings: {},
           changeNote: "",
         },
   );
