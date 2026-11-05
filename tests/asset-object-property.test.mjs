@@ -27,7 +27,32 @@ const property = (id, name, dataType) => ({
 });
 const draft = { apiName: "ship", displayName: "舰船", categoryId: "1", iconUrl: "", description: "" };
 
-test("expanded metadata renders each selected data element's representation and empty state", async () => {
+test("object form puts category beside both names and omits icon and inheritance fields", () => {
+  const source = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/AssetModelBuildDialog.vue", import.meta.url), "utf8");
+  const root = baseParse(parse(source).descriptor.template.content);
+  /** @description 查找对象信息表单。 @param {object} node 模板节点。 @returns {object | undefined} 表单节点。 */
+  function findObjectForm(node) {
+    if (node.type === 1 && node.tag === "el-form" && node.props.some((item) => item.name === "class" && item.value?.content === "asset-build__object-form"))
+      return node;
+    for (const child of node.children ?? []) {
+      const found = findObjectForm(child);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  const form = findObjectForm(root);
+  assert.ok(form);
+  const row = form.children.find(
+    (node) => node.type === 1 && node.tag === "div" && node.props.some((item) => item.name === "class" && item.value?.content === "asset-build__form"),
+  );
+  const labels = row.children
+    .filter((item) => item.type === 1 && item.tag === "el-form-item")
+    .map((item) => item.props.find((prop) => prop.name === "label")?.value?.content);
+  assert.deepEqual(labels, ["API 名称", "显示名称", "分类"]);
+  assert.doesNotMatch(form.loc.source, /对象图标|继承对象/);
+});
+
+test("expanded metadata omits representation and shows empty state when no rules exist", async () => {
   const source = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/AssetModelBuildDialog.vue", import.meta.url), "utf8");
   const template = parse(source).descriptor.template.content;
   const root = baseParse(template);
@@ -71,12 +96,7 @@ test("expanded metadata renders each selected data element's representation and 
     selected.map((item, index) => ({ key: String(index), property: item })),
     [],
   );
-  for (const [index, expected] of [
-    [0, "普通文本"],
-    [1, "数字代码"],
-    [2, "暂无元数据"],
-    [3, "暂无元数据"],
-  ]) {
+  for (const index of [0, 1, 2, 3]) {
     const row = drafts[index];
     const app = Vue.createSSRApp({ render });
     app.component("el-table-column", {
@@ -87,7 +107,8 @@ test("expanded metadata renders each selected data element's representation and 
     });
     const html = await renderToString(app);
     assert.match(html, /元数据/);
-    assert.ok(html.includes(expected));
+    assert.ok(html.includes("暂无元数据"));
+    assert.ok(!html.includes("普通文本") && !html.includes("数字代码"));
     assert.equal(row.apiName, "");
   }
 });

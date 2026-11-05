@@ -1,5 +1,16 @@
 <template>
-  <el-dialog v-model="visible" class="asset-build-dialog" title="资产构建" width="min(1480px, 98vw)" :show-close="!submitting" :close-on-click-modal="!submitting" :close-on-press-escape="!submitting" align-center append-to-body destroy-on-close>
+  <el-dialog
+    v-model="visible"
+    class="asset-build-dialog"
+    title="资产构建"
+    width="min(1480px, 98vw)"
+    :show-close="!submitting"
+    :close-on-click-modal="!submitting"
+    :close-on-press-escape="!submitting"
+    align-center
+    append-to-body
+    destroy-on-close
+  >
     <div v-loading="submitting" class="asset-build">
       <aside class="asset-build__tree">
         <h3>资产模型树</h3>
@@ -60,45 +71,10 @@
             <el-form label-position="top" class="asset-build__object-form">
               <div class="asset-build__form">
                 <el-form-item label="API 名称" required>
-                  <el-input v-model="objectDraft.apiName" maxlength="63" ariaLabel="API 名称" placeholder="如 airplane" :disabled="iconUploading" />
+                  <el-input v-model="objectDraft.apiName" maxlength="63" ariaLabel="API 名称" placeholder="如 airplane" :disabled="submitting" />
                 </el-form-item>
                 <el-form-item label="显示名称" required>
-                  <el-input v-model="objectDraft.displayName" maxlength="64" ariaLabel="显示名称" placeholder="请输入对象显示名称" :disabled="iconUploading" />
-                </el-form-item>
-              </div>
-              <el-form-item label="描述">
-                <el-input v-model="objectDraft.description" type="textarea" :rows="2" maxlength="300" ariaLabel="描述" :disabled="iconUploading" />
-              </el-form-item>
-              <el-form-item label="对象图标">
-                <div class="asset-build__icon-field">
-                  <div v-if="objectDraft.iconUrl" class="asset-build__icon-preview">
-                    <img :src="objectDraft.iconUrl" alt="对象图标预览" />
-                    <el-button :disabled="iconUploading" @click="clearIcon">清除</el-button>
-                  </div>
-                  <el-upload
-                    v-if="!objectDraft.iconUrl"
-                    class="asset-build__picture-upload"
-                    action="#"
-                    list-type="picture-card"
-                    :auto-upload="false"
-                    :show-file-list="false"
-                    :limit="1"
-                    accept="image/png,image/jpeg,.png,.jpg,.jpeg"
-                    :disabled="iconUploading"
-                    :on-change="handleIconChange"
-                    :on-exceed="handleIconExceed"
-                  >
-                    <el-icon><Plus /></el-icon>
-                  </el-upload>
-                  <span class="asset-build__hint">可选，PNG / JPG，不超过 2MB</span>
-                  <p v-if="iconError" class="asset-build__error" role="alert">{{ iconError }}</p>
-                </div>
-              </el-form-item>
-              <div class="asset-build__form">
-                <el-form-item label="继承对象">
-                  <el-select v-model="objectDraft.parentId" clearable filterable placeholder="可选" :disabled="iconUploading" style="width: 100%">
-                    <el-option v-for="item in parentOptions" :key="item.id" :label="`${item.displayName} (${item.apiName})`" :value="item.id" />
-                  </el-select>
+                  <el-input v-model="objectDraft.displayName" maxlength="64" ariaLabel="显示名称" placeholder="请输入对象显示名称" :disabled="submitting" />
                 </el-form-item>
                 <el-form-item label="分类" required>
                   <el-tree-select
@@ -110,11 +86,14 @@
                     node-key="id"
                     :props="{ label: 'label', children: 'children' }"
                     placeholder="请选择分类"
-                    :disabled="iconUploading || Boolean(objectDraft.parentId)"
+                    :disabled="submitting"
                     style="width: 100%"
                   />
                 </el-form-item>
               </div>
+              <el-form-item label="描述">
+                <el-input v-model="objectDraft.description" type="textarea" :rows="2" maxlength="300" ariaLabel="描述" :disabled="submitting" />
+              </el-form-item>
             </el-form>
 
             <header class="asset-build__heading">
@@ -157,7 +136,13 @@
               </el-table-column>
               <el-table-column type="expand" label="元数据" width="80">
                 <template #default="{ row }">
-                  <p class="asset-build__metadata"><span>元数据：</span>{{ row.representation?.trim() ? row.representation : "暂无元数据" }}</p>
+                  <!-- 完整数据元标准表含十二列；其他资产的简略信息不作为完整元数据展示。 -->
+                  <div v-if="row.metaList.length === 12 || row.metaList.length === 13" class="asset-build__metadata">
+                    <p v-for="meta in row.metaList" :key="meta.label">
+                      <span>{{ meta.label }}：</span>{{ meta.value }}
+                    </p>
+                  </div>
+                  <p v-else class="asset-build__metadata">暂无元数据</p>
                 </template>
               </el-table-column>
             </el-table>
@@ -171,17 +156,15 @@
       <el-button :disabled="submitting" @click="visible = false">关闭</el-button>
       <el-button v-if="detail && buildStep === 2" :disabled="submitting" @click="goToAssetStandardStep">上一步</el-button>
       <el-button v-if="detail && buildStep === 1" type="primary" :disabled="selectionRestoring || submitting" @click="goToObjectInfoStep">下一步</el-button>
-      <el-button v-if="detail && buildStep === 2" type="primary" :disabled="iconUploading" :loading="submitting" @click="confirmAssetCreate">确认创建</el-button>
+      <el-button v-if="detail && buildStep === 2" type="primary" :loading="submitting" @click="confirmAssetCreate">确认创建</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
-import { Plus } from "@element-plus/icons-vue";
 import { ElMessage, ElTree, vLoading } from "element-plus";
-import type { UploadFile } from "element-plus";
-import { postBuildOntologyAssetInterface, postUploadOntologyThumbnailInterface } from "@/apis";
+import { postBuildOntologyAssetInterface } from "@/apis";
 import type { AssetModelDetail, AssetModelProperty, AssetObjectPropertyDraft, OntologyObjectCreateDraft } from "@/types";
 import { assetModelDetailMock, assetModelTreeMock } from "@/mocks/assetModelBuilderMock/assetModelBuilderMock";
 import {
@@ -198,18 +181,10 @@ interface CategoryTreeOption {
   children: CategoryTreeOption[];
 }
 
-interface ParentOption {
-  id: string;
-  displayName: string;
-  apiName: string;
-  categoryId: string;
-}
-
 const visible = defineModel<boolean>({ required: true });
 const props = defineProps<{
   spaceId: string;
   categoryTree: CategoryTreeOption[];
-  parentOptions: ParentOption[];
   initialCategoryId: string;
 }>();
 const emit = defineEmits<{ created: [] }>();
@@ -232,10 +207,7 @@ const selectedIds = ref<string[]>([]);
 const objectPropertyList = ref<AssetObjectPropertyDraft[]>([]);
 const selectionRestoring = ref(false);
 const error = ref("");
-const iconError = ref("");
-const iconUploading = ref(false);
 const submitting = ref(false);
-let iconUploadSerial = 0;
 let selectionRestoreSerial = 0;
 let createRequestSerial = 0;
 
@@ -279,7 +251,6 @@ function selectAssetModel(node: { modelId?: string }): void {
   selectionRestoring.value = false;
   selectionRestoreSerial += 1;
   error.value = "";
-  iconError.value = "";
 }
 
 /**
@@ -351,55 +322,10 @@ function setAssetPropertyKey(sourceKey: string, kind: "primary" | "name"): void 
 }
 
 /**
- * @description 校验并上传对象图标。
- * @param file Element Plus 上传文件。
- */
-async function handleIconChange(file: UploadFile): Promise<void> {
-  const raw = file.raw;
-  iconError.value = "";
-  if (!raw || iconUploading.value) return;
-  if (raw.size > 2 * 1024 * 1024 || (!/^(image\/(png|jpeg))$/i.test(raw.type) && !/\.(png|jpe?g)$/i.test(raw.name))) {
-    iconError.value = "仅支持不超过 2MB 的 PNG / JPG 图片";
-    return;
-  }
-  const serial = ++iconUploadSerial;
-  iconUploading.value = true;
-  try {
-    const response = await postUploadOntologyThumbnailInterface({ image: raw });
-    if (serial !== iconUploadSerial) return;
-    if (response.code !== 200) {
-      iconError.value = typeof response.message === "string" && response.message.trim() ? response.message : "图标上传失败";
-      return;
-    }
-    objectDraft.iconUrl = typeof response.data === "string" ? response.data : "";
-    if (!objectDraft.iconUrl) iconError.value = "图标上传失败";
-  } catch (cause: unknown) {
-    if (serial === iconUploadSerial) {
-      iconError.value = cause instanceof Error && cause.message.trim() ? cause.message : "图标上传失败";
-    }
-  } finally {
-    if (serial === iconUploadSerial) iconUploading.value = false;
-  }
-}
-
-/** @description 提示对象图标仅允许选择一张图片。 */
-function handleIconExceed(): void {
-  iconError.value = "对象图标仅支持上传一张图片，请先清除当前图片。";
-}
-
-/** @description 清除当前对象图标预览。 */
-function clearIcon(): void {
-  iconUploadSerial += 1;
-  iconUploading.value = false;
-  objectDraft.iconUrl = "";
-  iconError.value = "";
-}
-
-/**
  * @description 校验配置并创建资产对象，成功后关闭弹窗并通知刷新列表。
  */
 async function confirmAssetCreate(): Promise<void> {
-  if (!detail.value || submitting.value || iconUploading.value || iconError.value) return;
+  if (!detail.value || submitting.value) return;
   error.value = "";
   try {
     const configuration = buildAssetModelConfiguration(detail.value, objectDraft, objectPropertyList.value);
@@ -431,37 +357,29 @@ async function confirmAssetCreate(): Promise<void> {
 watch(keyword, (value) => treeRef.value?.filter(value));
 
 watch(
-  () => objectDraft.parentId,
-  (parentId) => {
-    if (!parentId) return;
-    const parentOption = props.parentOptions.find((item) => item.id === parentId);
-    if (parentOption) objectDraft.categoryId = parentOption.categoryId;
+  visible,
+  (opened) => {
+    createRequestSerial += 1;
+    submitting.value = false;
+    keyword.value = "";
+    detail.value = null;
+    buildStep.value = 1;
+    selectedIds.value = [];
+    objectPropertyList.value = [];
+    selectionRestoring.value = false;
+    selectionRestoreSerial += 1;
+    error.value = "";
+    Object.assign(objectDraft, {
+      apiName: "",
+      displayName: "",
+      description: "",
+      iconUrl: "",
+      categoryId: opened ? props.initialCategoryId : "",
+      parentId: undefined,
+    });
   },
+  { flush: "sync" },
 );
-
-watch(visible, (opened) => {
-  createRequestSerial += 1;
-  submitting.value = false;
-  keyword.value = "";
-  detail.value = null;
-  buildStep.value = 1;
-  selectedIds.value = [];
-  objectPropertyList.value = [];
-  selectionRestoring.value = false;
-  selectionRestoreSerial += 1;
-  error.value = "";
-  iconError.value = "";
-  iconUploading.value = false;
-  iconUploadSerial += 1;
-  Object.assign(objectDraft, {
-    apiName: "",
-    displayName: "",
-    description: "",
-    iconUrl: "",
-    categoryId: opened ? props.initialCategoryId : "",
-    parentId: undefined,
-  });
-}, { flush: "sync" });
 
 onBeforeUnmount(() => {
   createRequestSerial += 1;
@@ -480,6 +398,9 @@ onBeforeUnmount(() => {
 }
 .asset-build__metadata span {
   color: var(--aircas-color-text-secondary);
+}
+.asset-build__metadata p {
+  margin: 4px 0;
 }
 .asset-build__sr-only {
   position: absolute;
@@ -538,37 +459,11 @@ onBeforeUnmount(() => {
 }
 .asset-build__form {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 .asset-build__object-form {
   margin-bottom: 16px;
-}
-.asset-build__icon-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.asset-build__icon-preview {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.asset-build__icon-preview img {
-  width: 72px;
-  height: 72px;
-  object-fit: cover;
-  border: 1px solid var(--aircas-color-border-light);
-  border-radius: 6px;
-}
-.asset-build__picture-upload :deep(.el-upload--picture-card) {
-  width: 72px;
-  height: 72px;
-}
-.asset-build__error {
-  margin: 0;
-  color: var(--aircas-color-danger);
-  font-size: 12px;
 }
 .asset-build__saved {
   margin-top: 12px;

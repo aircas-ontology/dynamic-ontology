@@ -69,14 +69,13 @@ test("asset model tree uses civil-military root with six selectable leaves", () 
   assert.equal(assetModelDetailMock.length, 6);
 });
 
-test("asset entry switches panel before validating category and opening dialog", () => {
+test("asset entry switches panel before opening dialog", () => {
   const source = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue", import.meta.url), "utf8");
   assert.match(source, /@click="openAssetBuild"/);
   const switchMode = source.slice(source.indexOf("function selectCreateMode"), source.indexOf("function openDatasourceBuild"));
   assert.doesNotMatch(switchMode, /assetVisible.value = true/);
   assert.match(source, /function openAssetBuild/);
   assert.match(source, /:category-tree="categoryTreeOptions"/);
-  assert.match(source, /:parent-options="parentOptions"/);
   assert.match(source, /:initial-category-id="draft.categoryId"/);
 });
 
@@ -127,7 +126,7 @@ test("aviation material asset standard mock matches data-element table", () => {
 });
 
 test("medical equipment asset standard mock matches data-element table", () => {
-  assert.equal(medicalEquipmentAssetStandardProperties.length, 277);
+  assert.equal(medicalEquipmentAssetStandardProperties.length, 285);
   assert.equal(medicalEquipmentAssetStandardProperties[0].id, "Z0001G0000");
   assert.equal(medicalEquipmentAssetStandardProperties[0].name, "军民通用资源品种标识代码");
   assert.equal(medicalEquipmentAssetStandardProperties[2].id, "H1000A0000");
@@ -135,12 +134,12 @@ test("medical equipment asset standard mock matches data-element table", () => {
   assert.equal(medicalEquipmentAssetStandardProperties.at(-1)?.id, "H1282A0000");
   assert.equal(medicalEquipmentAssetStandardProperties.at(-1)?.name, "是否具备条码识别功能");
   assert.equal(medicalEquipmentAssetStandardProperties.at(-1)?.representation, "布尔值");
-  assert.ok(!medicalEquipmentAssetStandardProperties.some((item) => item.id === "H1139A0000"));
+  assert.ok(medicalEquipmentAssetStandardProperties.some((item) => item.id === "H1139A0000"));
 
   const medicalDetail = assetModelDetailMock.find((item) => item.id === "device-medical");
   assert.ok(medicalDetail);
-  assert.equal(medicalDetail.propertyCount, 277);
-  assert.equal(medicalDetail.properties.length, 277);
+  assert.equal(medicalDetail.propertyCount, 285);
+  assert.equal(medicalDetail.properties.length, 285);
   assert.ok(medicalDetail.properties.every((item) => item.representation && item.dataType && typeof item.shortName === "string"));
 });
 
@@ -198,8 +197,8 @@ test("asset build dialog exposes two steps and confirm create without manual sub
   assert.match(source, /label="数据元值的数据类型"/);
   assert.match(source, /label="数据元值的表示形式"/);
   assert.match(source, /objectDraft\.apiName/);
-  assert.match(source, /objectDraft\.iconUrl/);
-  assert.match(source, /objectDraft\.parentId/);
+  assert.doesNotMatch(source, /objectDraft\.iconUrl/);
+  assert.doesNotMatch(source, /objectDraft\.parentId/);
   assert.match(source, /objectDraft\.categoryId/);
   assert.doesNotMatch(source, /submit-manual|createOntologyObject/);
 });

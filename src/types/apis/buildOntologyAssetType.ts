@@ -8,7 +8,7 @@ export interface BuildOntologyAssetProperty {
   isPrimaryKey: boolean;
   isTitleKey: boolean;
   storageGroup: string;
-  metadata?: Record<string, { value: string }>;
+  metadata?: Record<string, Record<string, string>>;
 }
 
 /** 资产构建对象请求。 */

@@ -1,4 +1,11 @@
-import type { AssetModelDetail, AssetModelProperty, AssetObjectPropertyDraft, BuildOntologyAssetParams, OntologyObjectCreateDraft } from "@/types";
+import type {
+  AssetModelDetail,
+  AssetModelProperty,
+  AssetObjectPropertyDraft,
+  BuildOntologyAssetParams,
+  BuildOntologyAssetProperty,
+  OntologyObjectCreateDraft,
+} from "@/types";
 
 /** 资产构建本地配置结果（待专用创建接口接入）。 */
 export interface AssetModelBuildConfiguration {
@@ -42,9 +49,15 @@ export function buildAssetPropertyDrafts(
   const previousByKey = new Map(previous.map((item) => [item.sourceKey, item]));
   return selected.map(({ key, property }) => {
     const existing = previousByKey.get(key);
-    if (existing) return { ...existing, metaList: existing.metaList.map((meta) => ({ ...meta })) };
+    if (existing)
+      return {
+        ...existing,
+        ...(existing.enumValues ? { enumValues: [...existing.enumValues] } : {}),
+        metaList: existing.metaList.map((meta) => ({ ...meta })),
+      };
     return {
       ...property,
+      ...(property.enumValues ? { enumValues: [...property.enumValues] } : {}),
       sourceKey: key,
       apiName: "",
       dataType: mapAssetPropertyDataType(property.dataType),
@@ -135,8 +148,23 @@ export function buildAssetModelConfiguration(
       categoryId: draft.categoryId,
       parentId: draft.parentId,
     },
-    properties: properties.map((property) => ({ ...property, apiName: property.apiName.trim(), metaList: property.metaList.map((meta) => ({ ...meta })) })),
+    properties: properties.map((property) => ({
+      ...property,
+      ...(property.enumValues ? { enumValues: [...property.enumValues] } : {}),
+      apiName: property.apiName.trim(),
+      metaList: property.metaList.map((meta) => ({ ...meta })),
+    })),
   };
+}
+
+/**
+ * @description 将属性元数据列表按原始表头和值完整转换为创建请求中的元数据对象。
+ * @param property 资产属性草稿。
+ * @returns 元数据，未提供内容时返回 undefined。
+ */
+function buildAssetPropertyMetadata(property: AssetObjectPropertyDraft): BuildOntologyAssetProperty["metadata"] {
+  if (!property.metaList.length) return undefined;
+  return { 元数据: Object.fromEntries(property.metaList.map(({ label, value }) => [label, value])) };
 }
 
 /**
@@ -150,26 +178,26 @@ export function buildAssetOntologyRequest(configuration: AssetModelBuildConfigur
   const numericCategoryId = Number(configuration.draft.categoryId);
   if (!Number.isSafeInteger(numericSpaceId) || numericSpaceId <= 0 || numericSpaceId > 2147483647) throw new Error("缺少有效的空间 ID");
   if (!Number.isSafeInteger(numericCategoryId) || numericCategoryId <= 0 || numericCategoryId > 2147483647) throw new Error("请选择有效的对象分类");
-  const parent = configuration.draft.parentId?.trim();
   return {
     spaceId: numericSpaceId,
     displayName: configuration.draft.displayName,
     apiName: configuration.draft.apiName,
     description: configuration.draft.description,
     categoryId: numericCategoryId,
-    ...(configuration.draft.iconUrl ? { iconUrl: configuration.draft.iconUrl } : {}),
-    ...(parent ? { parentOntologyUniqueIdentifier: parent } : {}),
     groupIds: [],
-    properties: configuration.properties.map((property) => ({
-      displayName: property.name,
-      apiName: property.apiName,
-      description: property.description,
-      dataType: property.dataType === "Boolean" ? "Bool" : property.dataType,
-      defaultValue: property.defaultValue,
-      isPrimaryKey: property.isPrimary,
-      isTitleKey: property.isNameKey,
-      storageGroup: "main",
-      ...(property.representation.trim() ? { metadata: { 元数据: { value: property.representation } } } : {}),
-    })),
+    properties: configuration.properties.map((property) => {
+      const metadata = buildAssetPropertyMetadata(property);
+      return {
+        displayName: property.name,
+        apiName: property.apiName,
+        description: property.description,
+        dataType: property.dataType === "Boolean" ? "Bool" : property.dataType,
+        defaultValue: property.defaultValue,
+        isPrimaryKey: property.isPrimary,
+        isTitleKey: property.isNameKey,
+        storageGroup: "main",
+        ...(metadata ? { metadata } : {}),
+      };
+    }),
   };
 }
