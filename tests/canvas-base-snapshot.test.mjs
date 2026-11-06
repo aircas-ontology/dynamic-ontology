@@ -5,6 +5,12 @@ import ts from "typescript";
 import { computed, ref, nextTick } from "vue";
 import { mapCanvasContentToConceptualModel } from "../src/views/OntologyConceptualModelCreate/utils/mapCanvasContentToConceptualModel.ts";
 import { removeRelationsConnectedToObject } from "../src/views/OntologyConceptualModelCreate/utils/removeRelationsConnectedToObject.ts";
+import { findInvalidConceptualAttribute } from "../src/views/OntologyConceptualModelCreate/utils/validateConceptualAttributes.ts";
+import { findInvalidCanvasModel } from "../src/views/OntologyConceptualModelCreate/utils/validateCanvasModel.ts";
+import {
+  findConflictingConceptualAttributeKey,
+  formatConceptualAttributeKeyConflictMessage,
+} from "../src/views/OntologyConceptualModelCreate/utils/groupConceptualAttributes.ts";
 
 /** @description 执行画布页面的真实加载及保存映射逻辑。 @param {Function} request 查询接口。 @returns {object} 页面状态和操作。 */
 function createCanvas(request) {
@@ -28,12 +34,16 @@ function createCanvas(request) {
     getOntologySpaceCanvasContentInterface: request,
     mapCanvasContentToConceptualModel,
     removeRelationsConnectedToObject,
+    findInvalidConceptualAttribute,
+    findInvalidCanvasModel,
+    findConflictingConceptualAttributeKey,
+    formatConceptualAttributeKeyConflictMessage,
   };
   return {
     ...new Function(
       ...Object.keys(deps),
       ts.transpile(
-        `${script}\nreturn { loadConceptualModelCanvas, buildCanvasSpaceParams, saveConceptualModel, spaceApiName, objects, relations, addConnectedRelation, addObject, addAttribute, selected, deleteSelected, canvasLoadError };`,
+        `${script}\nreturn { loadConceptualModelCanvas, buildCanvasSpaceParams, saveConceptualModel, spaceApiName, objects, relations, addConnectedRelation, addObject, addAttribute, updateObject, updateAttribute, selected, deleteSelected, canvasLoadError };`,
         { target: ts.ScriptTarget.ES2022 },
       ),
     )(...Object.values(deps)),
@@ -56,6 +66,35 @@ const content = () => ({
     { uniqueIdentifier: "o2", displayName: "港", apiName: "port", properties: [] },
   ],
   links: [{ uniqueIdentifier: "r1", name: "停靠", apiName: "berth", fromOntologyApiName: "ship", toOntologyApiName: "port" }],
+});
+
+test("invalid attribute blocks saving and selects the attribute; primary key fixes its fields", async () => {
+  const state = createCanvas(async () => ({ code: 200, data: content() }));
+  await state.loadConceptualModelCanvas();
+  state.spaceApiName.value = "space";
+  const attribute = state.objects.value[0].attributes[0];
+  attribute.displayName = " ";
+  await state.saveConceptualModel();
+  assert.equal(state.requests.length, 0);
+  assert.deepEqual(state.selected.value, { kind: "attribute", id: attribute.id });
+  attribute.displayName = "名称";
+  state.updateAttribute("isPrimary", true);
+  assert.equal(attribute.apiName, "id");
+  assert.equal(attribute.dataType, "Int");
+  await state.saveConceptualModel();
+  assert.equal(state.requests.length, 1);
+});
+
+test("existing object API is locked and invalid relations stop submission", async () => {
+  const state = createCanvas(async () => ({ code: 200, data: content() }));
+  await state.loadConceptualModelCanvas();
+  state.spaceApiName.value = "space";
+  state.updateObject("apiName", "changed");
+  assert.equal(state.objects.value[0].apiName, "ship");
+  state.relations.value[0].apiName = "无效";
+  await state.saveConceptualModel();
+  assert.equal(state.requests.length, 0);
+  assert.deepEqual(state.selected.value, { kind: "relation", id: state.relations.value[0].id });
 });
 
 test("canvas saves immutable base and retains original identifiers through edits and additions", async () => {

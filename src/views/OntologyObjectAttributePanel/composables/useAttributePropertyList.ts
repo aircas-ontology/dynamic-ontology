@@ -1,7 +1,8 @@
 import { computed, reactive, ref, type Ref } from "vue";
 import { ElMessage, ElMessageBox, type FormRules } from "element-plus";
 import { useRoute } from "vue-router";
-import { validateAttributeDefaultValue } from "../utils/validateAttributeDefaultValue";
+import { validateAttributeDefaultValue } from "@/utils/validateAttributeDefaultValue";
+import { validateApiName } from "@/utils/validateApiName";
 import { createOntologyPropertyInterface, deleteOntologyPropertyInterface, updateOntologyPropertyInterface } from "@/apis";
 import type {
   CreateOntologyPropertyParams,
@@ -64,7 +65,14 @@ export function useAttributePropertyList(options: {
   });
   const attributeRules: FormRules<OntologyAttributeDraft> = {
     displayName: [{ required: true, whitespace: true, message: "请输入属性名称", trigger: "blur" }],
-    apiName: [{ required: true, whitespace: true, message: "请输入 API 名称", trigger: "blur" }],
+    apiName: [
+      { required: true, whitespace: true, message: "请输入 API 名称", trigger: "blur" },
+      {
+        validator: (_rule, value: string, callback) =>
+          callback(validateApiName(value) ? undefined : new Error("API 名称须以字母或下划线开头，且只能包含字母、数字和下划线")),
+        trigger: "blur",
+      },
+    ],
     defaultValue: [
       {
         validator: (_rule, value: string, callback) => {
@@ -238,9 +246,11 @@ export function useAttributePropertyList(options: {
     const validationError =
       !draft.displayName.trim() || !draft.apiName.trim()
         ? "属性名称和 API 不能为空白"
-        : datasourceLocked.value
-          ? ""
-          : validateAttributeDefaultValue(draft.dataType, draft.defaultValue);
+        : !validateApiName(draft.apiName)
+          ? "API 名称须以字母或下划线开头，且只能包含字母、数字和下划线"
+          : datasourceLocked.value
+            ? ""
+            : validateAttributeDefaultValue(draft.dataType, draft.defaultValue);
     if (validationError) {
       attributeCommandError.value = validationError;
       return;

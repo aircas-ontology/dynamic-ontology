@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { validateAttributeDefaultValue } from "../src/views/OntologyObjectAttributePanel/utils/validateAttributeDefaultValue.ts";
+import { validateAttributeDefaultValue } from "../src/utils/validateAttributeDefaultValue.ts";
 test("validates default values for supported types without rejecting optional empty values", () => {
   for (const [type, value] of [
     ["Int", "42"],

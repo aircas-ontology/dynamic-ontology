@@ -1,8 +1,89 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { computed, ref } from "vue";
+import ts from "typescript";
 
 const readSource = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), "utf8");
+
+/** @description 使用组件实际脚本创建关联草稿测试环境。 @param {object[]} properties 属性及已保存关联。 @returns {object} 状态和提交记录。 */
+function createMappingDialog(properties) {
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
+  const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
+  const submissions = [];
+  let exposed;
+  const deps = {
+    computed,
+    ref,
+    nextTick: () => Promise.resolve(),
+    watch: () => {},
+    onMounted: () => {},
+    onBeforeUnmount: () => {},
+    defineProps: () => ({ properties, catalog: [], modelValue: true, autoAssociateLoading: false }),
+    defineEmits: () => (name, payload) => {
+      if (name === "submit") submissions.push(payload);
+    },
+    defineExpose: (value) => {
+      exposed = value;
+    },
+  };
+  const create = new Function(
+    ...Object.keys(deps),
+    ts.transpile(
+      `${script}\nreturn { initDraftBinds, draftBinds, savedBinds, pendingOperations, mappedCount, removeAllBinds, undoOperation, handleConfirm, loading };`,
+      {
+        target: ts.ScriptTarget.ES2022,
+      },
+    ),
+  );
+  const state = create(...Object.values(deps));
+  state.initDraftBinds();
+  return { ...state, submissions, exposed };
+}
+
+test("remove all stages saved deletions, cancels additions, and preserves retry and undo", () => {
+  const bind = (field) => ({ databaseId: "db", databaseName: "db", schemaName: "s", tableId: "t", tableName: "table", fieldId: field, fieldName: field });
+  const properties = [
+    { id: "a", apiName: "a", dataSource: bind("old-a") },
+    { id: "b", apiName: "b", dataSource: bind("old-b") },
+    { id: "c", apiName: "c", dataSource: null },
+  ];
+  const state = createMappingDialog(properties);
+  state.draftBinds.value = new Map([
+    ["a", bind("new-a")],
+    ["b", bind("old-b")],
+    ["c", bind("new-c")],
+  ]);
+  state.removeAllBinds();
+  assert.equal(state.mappedCount.value, 0);
+  assert.deepEqual(
+    state.pendingOperations.value.map(({ propertyId, kind }) => [propertyId, kind]),
+    [
+      ["a", "remove"],
+      ["b", "remove"],
+    ],
+  );
+  assert.equal(state.submissions.length, 0);
+  state.removeAllBinds();
+  assert.equal(state.pendingOperations.value.length, 2);
+  state.undoOperation("a", "remove");
+  assert.equal(state.draftBinds.value.get("a").fieldId, "old-a");
+  state.removeAllBinds();
+  state.handleConfirm();
+  assert.deepEqual(state.submissions[0], [
+    { id: "a", dataSource: null },
+    { id: "b", dataSource: null },
+  ]);
+  state.removeAllBinds();
+  state.handleConfirm();
+  assert.equal(state.submissions.length, 1);
+  state.exposed.setLoading(false);
+  assert.equal(state.pendingOperations.value.length, 2);
+  state.handleConfirm();
+  assert.equal(state.submissions.length, 2);
+  state.exposed.completeSubmit();
+  assert.equal(state.pendingOperations.value.length, 0);
+});
 
 test("data source mapping dialog uses prototype class, width and non-dismissable modal", () => {
   const source = readSource("../src/views/OntologyObjectAttributePanel/components/DataSourceAssociateDialog.vue");
@@ -37,6 +118,8 @@ test("data source mapping dialog renders prototype workspace, panels and svg lin
   assert.match(source, /property-datasource-mapping-dialog__svg/);
   assert.match(source, /class="mapping-line/);
   assert.match(source, /@dblclick\.stop="removeBind\(line\.id\)"/);
+  assert.match(source, /:disabled="loading \|\| autoAssociateLoading \|\| !mappedCount"/);
+  assert.match(source, /@click="removeAllBinds"/);
 });
 
 test("data source mapping dialog renders mind-node tables, field-list and property-list with anchors", () => {

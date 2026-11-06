@@ -75,14 +75,19 @@
           ><h2>对象检查器</h2>
           <small>对齐对象创建表单的核心字段</small
           ><el-form label-position="top"
-            ><el-form-item label="API 名称"
-              ><el-input :model-value="selectedObject.apiName" @update:model-value="updateObject('apiName', $event)" /></el-form-item
-            ><el-form-item label="显示名称"
-              ><el-input :model-value="selectedObject.displayName" @update:model-value="updateObject('displayName', $event)" /></el-form-item
-            ><el-form-item label="描述"
+            ><el-form-item label="API 名称" required :error="fieldError('object', selectedObject.id, 'apiName')"
+              ><el-input
+                :model-value="selectedObject.apiName"
+                maxlength="64"
+                :disabled="Boolean(selectedObject.uniqueIdentifier)"
+                @update:model-value="updateObject('apiName', $event)" /></el-form-item
+            ><el-form-item label="显示名称" required :error="fieldError('object', selectedObject.id, 'displayName')"
+              ><el-input :model-value="selectedObject.displayName" maxlength="64" @update:model-value="updateObject('displayName', $event)" /></el-form-item
+            ><el-form-item label="描述" :error="fieldError('object', selectedObject.id, 'description')"
               ><el-input
                 type="textarea"
                 :rows="3"
+                maxlength="300"
                 :model-value="selectedObject.description"
                 @update:model-value="updateObject('description', $event)" /></el-form-item></el-form
           ><el-button type="primary" @click="addAttribute(selectedObject.id)">添加属性</el-button></template
@@ -90,14 +95,25 @@
           ><h2>属性检查器</h2>
           <small>所属对象：{{ selectedAttribute.owner }}</small
           ><el-form label-position="top"
-            ><el-form-item label="属性名称"
+            ><el-form-item label="属性名称" required :error="fieldError('attribute', selectedAttribute.id, 'displayName')"
               ><el-input :model-value="selectedAttribute.displayName" @update:model-value="updateAttribute('displayName', $event)" /></el-form-item
-            ><el-form-item label="API"
-              ><el-input :model-value="selectedAttribute.apiName" @update:model-value="updateAttribute('apiName', $event)" /></el-form-item
-            ><el-form-item label="数据类型"
-              ><el-select :model-value="selectedAttribute.dataType" @update:model-value="updateAttribute('dataType', $event)"
+            ><el-form-item label="API" required :error="fieldError('attribute', selectedAttribute.id, 'apiName')"
+              ><el-input
+                :model-value="selectedAttribute.apiName"
+                :disabled="selectedAttribute.isPrimary"
+                @update:model-value="updateAttribute('apiName', $event)" /></el-form-item
+            ><el-form-item label="数据类型" required :error="fieldError('attribute', selectedAttribute.id, 'dataType')"
+              ><el-select
+                :model-value="selectedAttribute.dataType"
+                :disabled="selectedAttribute.isPrimary"
+                @update:model-value="updateAttribute('dataType', $event)"
                 ><el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" /></el-select></el-form-item
-            ><el-form-item label="存储分组"
+            ><el-form-item required :error="fieldError('attribute', selectedAttribute.id, 'storageGroup')"
+              ><template #label
+                ><span>存储分组</span
+                ><el-tooltip content="支持输入分组名称回车后创建新的存储分组" placement="top" :show-after="200"
+                  ><button type="button" class="el-button is-text is-circle" aria-label="存储分组帮助">
+                    <el-icon><QuestionFilled /></el-icon></button></el-tooltip></template
               ><el-select
                 :model-value="selectedAttribute.storageGroup"
                 filterable
@@ -106,7 +122,7 @@
                 @update:model-value="updateAttribute('storageGroup', $event)"
                 @change="registerStorageGroup"
                 ><el-option v-for="group in storageGroupOptions" :key="group" :label="group" :value="group" /></el-select></el-form-item
-            ><el-form-item label="默认值"
+            ><el-form-item label="默认值" :error="fieldError('attribute', selectedAttribute.id, 'defaultValue')"
               ><el-input :model-value="selectedAttribute.defaultValue" @update:model-value="updateAttribute('defaultValue', $event)" /></el-form-item
             ><el-form-item label="属性描述"
               ><el-input
@@ -120,20 +136,21 @@
           ><h2>关系检查器</h2>
           <small>拖动两端连到对象四边圆点，或在此选择源/目标</small
           ><el-form label-position="top"
-            ><el-form-item label="关系名称"
-              ><el-input :model-value="selectedRelation.displayName" @update:model-value="updateRelation('displayName', $event)" /></el-form-item
-            ><el-form-item label="API 名称"
-              ><el-input :model-value="selectedRelation.apiName" @update:model-value="updateRelation('apiName', $event)" /></el-form-item
-            ><el-form-item label="源对象"
+            ><el-form-item label="关系名称" required :error="fieldError('relation', selectedRelation.id, 'displayName')"
+              ><el-input :model-value="selectedRelation.displayName" maxlength="64" @update:model-value="updateRelation('displayName', $event)" /></el-form-item
+            ><el-form-item label="API 名称" required :error="fieldError('relation', selectedRelation.id, 'apiName')"
+              ><el-input :model-value="selectedRelation.apiName" maxlength="64" @update:model-value="updateRelation('apiName', $event)" /></el-form-item
+            ><el-form-item label="源对象" required :error="fieldError('relation', selectedRelation.id, 'sourceId')"
               ><el-select clearable :model-value="selectedRelation.sourceId" @update:model-value="updateRelation('sourceId', $event)"
                 ><el-option v-for="object in objects" :key="object.id" :label="object.displayName" :value="object.id" /></el-select></el-form-item
-            ><el-form-item label="目标对象"
+            ><el-form-item label="目标对象" required :error="fieldError('relation', selectedRelation.id, 'targetId')"
               ><el-select clearable :model-value="selectedRelation.targetId" @update:model-value="updateRelation('targetId', $event)"
                 ><el-option v-for="object in objects" :key="object.id" :label="object.displayName" :value="object.id" /></el-select></el-form-item
-            ><el-form-item label="描述"
+            ><el-form-item label="描述" :error="fieldError('relation', selectedRelation.id, 'description')"
               ><el-input
                 type="textarea"
                 :rows="3"
+                maxlength="300"
                 :model-value="selectedRelation.description"
                 @update:model-value="updateRelation('description', $event)" /></el-form-item></el-form
         ></template>
@@ -146,6 +163,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
+import { QuestionFilled } from "@element-plus/icons-vue";
 import { useRoute, useRouter } from "vue-router";
 import { createOntologySpaceWithCanvasContentInterface, getOntologySpaceCanvasContentInterface } from "@/apis";
 import type { CanvasLink, CanvasOntology, CanvasProperty, CreateOntologySpaceWithCanvasContentParams } from "@/types";
@@ -153,6 +171,7 @@ import ConceptualModelGraphCanvas from "./components/ConceptualModelGraphCanvas.
 import { findConflictingConceptualAttributeKey, formatConceptualAttributeKeyConflictMessage } from "./utils/groupConceptualAttributes";
 import { removeRelationsConnectedToObject } from "./utils/removeRelationsConnectedToObject";
 import { mapCanvasContentToConceptualModel } from "./utils/mapCanvasContentToConceptualModel";
+import { findInvalidCanvasModel, type CanvasValidationError } from "./utils/validateCanvasModel";
 type PaletteType = "object" | "attribute" | "relation";
 type Port = "top" | "right" | "bottom" | "left";
 type Selection = { kind: "object" | "attribute" | "relation"; id: number };
@@ -206,6 +225,18 @@ const hasRouteSpaceContext = computed(
 );
 const saving = ref(false);
 const saveError = ref("");
+const validationError = ref<CanvasValidationError | null>(null);
+
+/** @description 获取当前节点字段的校验错误。 @param kind 节点类型。 @param id 节点标识。 @param field 字段名称。 @returns 对应错误或空字符串。 */
+function fieldError(kind: Selection["kind"], id: number, field: string): string {
+  const error = validationError.value;
+  return error?.kind === kind && error.id === id && error.field === field ? error.message : "";
+}
+
+/** @description 清除已编辑字段的错误。 @param kind 节点类型。 @param id 节点标识。 @param field 字段名称。 */
+function clearFieldError(kind: Selection["kind"], id: number, field: string): void {
+  if (fieldError(kind, id, field)) validationError.value = null;
+}
 const canvasLoading = ref(false);
 const canvasLoadError = ref("");
 const zoom = ref(100);
@@ -447,13 +478,18 @@ function updateRelationEnds(
 }
 /** @description 修改对象字段。 */
 function updateObject(field: "apiName" | "displayName" | "description", value: string) {
-  if (selectedObject.value) selectedObject.value[field] = value;
+  if (selectedObject.value) {
+    if (field === "apiName" && selectedObject.value.uniqueIdentifier) return;
+    selectedObject.value[field] = value;
+    clearFieldError("object", selectedObject.value.id, field);
+  }
 }
 /** @description 修改属性字段。 */
 function updateAttribute(field: keyof Attribute, value: string | boolean | number) {
   const owner = objects.value.find((item) => item.attributes.some((attr) => attr.id === selectedAttribute.value?.id));
   const attr = owner?.attributes.find((item) => item.id === selectedAttribute.value?.id);
   if (!owner || !attr) return;
+  clearFieldError("attribute", attr.id, field);
   if (field === "isPrimary" || field === "isNameKey") {
     const enabled = value === true;
     if (!enabled) {
@@ -467,6 +503,10 @@ function updateAttribute(field: keyof Attribute, value: string | boolean | numbe
       return;
     }
     attr[field] = true;
+    if (field === "isPrimary") {
+      attr.apiName = "id";
+      attr.dataType = "Int";
+    }
     return;
   }
   if (field === "storageGroup") {
@@ -485,7 +525,10 @@ function registerStorageGroup(value: string | number | boolean) {
 }
 /** @description 修改关系字段。 */
 function updateRelation(field: keyof Relation, value: string | number | null) {
-  if (selectedRelation.value) selectedRelation.value[field] = value as never;
+  if (selectedRelation.value) {
+    selectedRelation.value[field] = value as never;
+    clearFieldError("relation", selectedRelation.value.id, field);
+  }
 }
 /** @description 清除选中元素。 */
 function clearSelection() {
@@ -601,6 +644,14 @@ async function saveConceptualModel() {
   }
   if (!spaceApiName.value.trim()) {
     saveError.value = "请输入空间 API 名称。";
+    ElMessage.warning(saveError.value);
+    return;
+  }
+  const invalid = findInvalidCanvasModel(objects.value, relations.value);
+  validationError.value = invalid;
+  if (invalid) {
+    select({ kind: invalid.kind, id: invalid.id });
+    saveError.value = invalid.message;
     ElMessage.warning(saveError.value);
     return;
   }

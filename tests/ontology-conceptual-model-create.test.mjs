@@ -10,6 +10,70 @@ const readSource = (relativePath) => {
   return readFileSync(fileUrl, "utf8");
 };
 
+test("canvas validates object, attribute and relation identifiers and duplicates", async () => {
+  const { findInvalidCanvasModel } = await import("../src/views/OntologyConceptualModelCreate/utils/validateCanvasModel.ts");
+  const attribute = {
+    id: 2,
+    displayName: "属性",
+    apiName: "field",
+    dataType: "String",
+    storageGroup: "main",
+    defaultValue: "",
+    isPrimary: false,
+    isNameKey: false,
+  };
+  const objects = [
+    { id: 1, displayName: "对象", apiName: "object", description: "", attributes: [attribute] },
+    { id: 3, displayName: "其他", apiName: "other", description: "", attributes: [] },
+  ];
+  const relations = [{ id: 4, displayName: "关系", apiName: "link", description: "", sourceId: 1, targetId: 3 }];
+  assert.equal(findInvalidCanvasModel(objects, relations), null);
+  assert.equal(findInvalidCanvasModel([{ ...objects[0], apiName: "中文" }], []).field, "apiName");
+  assert.equal(findInvalidCanvasModel([{ ...objects[0], displayName: " " }], []).field, "displayName");
+  assert.equal(findInvalidCanvasModel([objects[0], { ...objects[1], apiName: "object" }], []).kind, "object");
+  assert.equal(findInvalidCanvasModel([{ ...objects[0], attributes: [attribute, { ...attribute, id: 5 }] }], []).kind, "attribute");
+  assert.equal(findInvalidCanvasModel(objects, [relations[0], { ...relations[0], id: 5 }]).kind, "relation");
+  assert.equal(findInvalidCanvasModel(objects, [{ ...relations[0], sourceId: 99 }]).field, "sourceId");
+  assert.equal(findInvalidCanvasModel([{ ...objects[0], attributes: [{ ...attribute, apiName: "1field" }] }], []).kind, "attribute");
+  assert.equal(findInvalidCanvasModel(objects, [{ ...relations[0], apiName: "关系" }]).kind, "relation");
+  assert.equal(findInvalidCanvasModel([objects[0], { ...objects[1], apiName: "Object", attributes: [{ ...attribute, id: 6 }] }], relations), null);
+});
+
+test("API names allow letters, digits and underscores with a non-digit start", async () => {
+  const { validateApiName } = await import("../src/utils/validateApiName.ts");
+  for (const name of ["abc", "_id", "A_9", " abc "]) assert.equal(validateApiName(name), true, name);
+  for (const name of ["", "1abc", "中文", "a-b", "a b", "$foo"]) assert.equal(validateApiName(name), false, name);
+});
+
+test("canvas validates all attributes and identifies the first invalid one", async () => {
+  const { findInvalidConceptualAttribute } = await import("../src/views/OntologyConceptualModelCreate/utils/validateConceptualAttributes.ts");
+  const attribute = {
+    id: 2,
+    displayName: "名称",
+    apiName: "name",
+    dataType: "Int",
+    storageGroup: "main",
+    defaultValue: "1",
+    isPrimary: false,
+    isNameKey: false,
+  };
+  const objects = [{ id: 1, displayName: "对象", attributes: [attribute] }];
+  assert.equal(findInvalidConceptualAttribute(objects), null);
+  for (const [field, value] of [
+    ["displayName", " "],
+    ["apiName", ""],
+    ["dataType", ""],
+    ["storageGroup", "bad group"],
+    ["defaultValue", "1.5"],
+  ]) {
+    const result = findInvalidConceptualAttribute([{ ...objects[0], attributes: [{ ...attribute, [field]: value }] }]);
+    assert.equal(result?.attributeId, 2, field);
+    assert.ok(result?.message, field);
+  }
+  assert.ok(findInvalidConceptualAttribute([{ ...objects[0], attributes: [{ ...attribute, isPrimary: true }] }]));
+  assert.equal(findInvalidConceptualAttribute([{ ...objects[0], attributes: [{ ...attribute, isPrimary: true, apiName: "id" }] }]), null);
+});
+
 test("conceptual model page exposes the prototype canvas areas and interactions", () => {
   const source = readSource("../src/views/OntologyConceptualModelCreate/index.vue");
   assert.match(source, /概念模型画布/);

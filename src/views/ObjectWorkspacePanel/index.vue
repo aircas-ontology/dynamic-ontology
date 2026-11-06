@@ -221,7 +221,7 @@ function locateObjectFromTree(object: OntologyConceptObjectRef) {
     ElMessage.error("缺少对象唯一标识，无法定位对象。");
     return;
   }
-  const item = workspaceSections.value.flatMap((section) => section.items).find((candidate) => candidate.id === objectId);
+  const item = workspaceObjects.value.find((candidate) => candidate.id === objectId);
   if (!item) {
     ElMessage.warning(`未在对象列表中找到“${object.displayName}”，无法定位。`);
     return;
