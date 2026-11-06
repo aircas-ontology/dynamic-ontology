@@ -187,31 +187,63 @@
 
 ---
 
-#### 5.3.4 应用行为（`actionKind=APPLICATION`）
+#### 5.3.4 测试应用行为
 
-应用行为的测试传值与基础算子行为相同，区别在于应用行为必须绑定算子（`functionApi` 必填），且 `outputMode` 必填。
+**接口**：`POST /action/test`
+
+**用途**：测试应用行为是否能正常执行，调用绑定的算子并返回结果。测试会真实执行算子。
+
+### 5.1 请求体（`ActionTestParam`）
+
+| 字段名                 | 类型                  | 必填 | 说明                                                                                                 |
+| ---------------------- | --------------------- | ---- | ---------------------------------------------------------------------------------------------------- |
+| `ontologySpaceId`      | Integer               | 是   | 对象空间 id                                                                                          |
+| `actionApi`            | String                | 是   | 行为 api                                                                                             |
+| `entityPrimaryKey`     | Object                | 否   | 单个实例主键；**仅当行为本身带顶层 `ontologyIdentifier` 时生效**。新建的应用行为一般不带对象，见 5.6 |
+| `entityPrimaryKeys`    | Map\<String, Object\> | 否   | 对象唯一标识 → 实例主键。映射涉及多个对象、或行为没有顶层对象时用它                                  |
+| `linkEntityPrimaryKey` | Object                | 否   | 关系对端实例主键。传了只跑这一对；不传则遍历对端对象的**全部实例**                                   |
+| `params`               | Map\<String, Object\> | 否   | 仅 `sourceType=EXTERNAL` 的入参，key 为 `parameterName`（不填时默认算子参数名）                      |
+| `dataPrimaryKey`       | Object                | 否   | **应用行为不使用**；只有基础行为-属性值-修改/删除需要                                                |
+
+> 每个字段的详细作用、`params` 支持的全部值类型、10 种场景的完整请求示例，见
+> [api-application-action-test-params.md](./api-application-action-test-params.md)。
+
+**实例选择规则**（缺实例会在执行时报「对象[X]未选择实例数据」）：
+
+- 只有 `FIXED`/`EXTERNAL` 入参 + 全部 `RESULT_ONLY` 出参时，可以一个实例都不传；
+- 某对象的属性被 `PROPERTY`/`OBJECT`/`LIST` 入参或 `WRITE_PROPERTY` 出参引用，就要给它一个实例；
+- 关系对端对象的实例由遍历或 `linkEntityPrimaryKey` 提供，不用写进 `entityPrimaryKeys`；
+- 主键类型要与图库节点一致（图库存数字就传 `1`，不要传 `"1"`）。
+
+### 5.2 响应体（`ActionTestResultVO`）
+
+| 字段名             | 类型             | 说明                                                                                                                                                                            |
+| ------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code` / `message` | Integer / String | 接口层结果。`200` 表示测试流程没有抛错；参数/定义问题会以 400 抛出，不会走到这里                                                                                                |
+| `data.actionApi`   | String           | 回显本次测试的行为 api，便于批量调用时对号                                                                                                                                      |
+| `data.message`     | String           | 本次执行的动作说明（成功为 `行为执行成功`，不含具体落库描述）                                                                                                                   |
+| `data.result`      | String           | 算子返回结果，**内容是 JSON 数组字符串**：数组每个元素是一次算子调用的 `FunctionResultVO`（含 `data` 和 `description`）。没有关系时通常 1 个元素；关系对端全量遍历时有 N 个元素 |
 
 ```json
 {
-  "actionApi": "act.app.custom",
-  "entityPrimaryKey": "1",
-  "params": {
-    "input1": "value1",
-    "input2": 100
+  "code": 200,
+  "message": "success",
+  "data": {
+    "actionApi": "act.ap.aircraft.greeting",
+    "message": "行为执行成功",
+    "result": "[{\"data\":{\"greeting\":\"飞机 F-22 的最大速度是 2.25 马赫\"},\"description\":\"aircraft greeting\"}]"
   }
 }
 ```
 
----
+### 5.3 错误码与排查
 
-### 5.4 错误码
-
-| HTTP 状态码 | 场景                                    | 错误信息                                          |
-| ----------- | --------------------------------------- | ------------------------------------------------- |
-| 400         | 行为 api 无效                           | `无效的action api`                                |
-| 400         | 未传实体主键                            | `行为测试必须提供实体主键`                        |
-| 400         | 属性值-删除未传 `dataPrimaryKey`        | `属性值-删除必须提供分组数据主键`                 |
-| 400         | 实例关系行为未传 `linkEntityPrimaryKey` | `实例关系行为必须提供对端实体主键`                |
-| 400         | 存储分组有必填属性未绑定                | `存储分组[<group>]的必填属性未绑定取值：<属性名>` |
+| HTTP 状态码 / 错误信息                | 场景                                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `无效的 action api`                   | `ontologySpaceId` + `actionApi` 查不到行为                                                        |
+| `行为树不支持按单个行为测试`          | 传入的是 `actionKind=TREE` 的 api                                                                 |
+| `对象[X]未选择实例数据，无法执行行为` | 映射用到该对象但没给实例：补 `entityPrimaryKeys`（无顶层对象的应用行为不能用 `entityPrimaryKey`） |
+| `对象[X]未配置主键属性，无法写回`     | `WRITE_PROPERTY` 的目标对象没有主键属性，属于定义问题                                             |
+| 外部参数取到 `null`                   | `params` 的 key 与 `parameterName` 不一致；不填 `parameterName` 时默认取算子参数名                |
 
 ---
