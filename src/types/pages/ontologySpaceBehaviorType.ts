@@ -233,14 +233,14 @@ export const SPACE_BEHAVIOR_LIST_STATUS_LABELS: Record<SpaceBehaviorListStatus, 
 
 export const SPACE_BEHAVIOR_STATUS_OPERATION_OPTIONS: ReadonlyArray<{ value: SpaceBehaviorStatusOperation; label: string }> = [
   { value: "publish", label: "发布" },
+  { value: "draft", label: "撤销发布" },
   { value: "disable", label: "停用" },
-  { value: "draft", label: "转草稿" },
 ];
 
 export const SPACE_BEHAVIOR_STATUS_OPERATION_LABELS: Record<SpaceBehaviorStatusOperation, string> = {
   publish: "发布",
+  draft: "撤销发布",
   disable: "停用",
-  draft: "转草稿",
 };
 
 export const SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS: ReadonlyArray<{ value: SpaceBehaviorBasicAction; label: string }> = [

@@ -428,13 +428,13 @@
               </section>
             </template>
 
-            <section class="behavior-form-dialog__object-section">
+            <section v-if="showApplicationRelationSection" class="behavior-form-dialog__object-section">
               <div class="behavior-form-dialog__attribute-head">
                 <div class="behavior-form-dialog__attribute-title">
                   <span>绑定关系</span>
                   <el-tag size="small" effect="plain">{{ relationRows.length }}项</el-tag>
                 </div>
-                <span class="behavior-form-dialog__attribute-hint">从当前空间关系中单选一条，可再次点击取消</span>
+                <span class="behavior-form-dialog__attribute-hint">可选；从当前空间关系中单选一条，可再次点击取消</span>
               </div>
               <el-table
                 class="behavior-form-dialog__attribute-table"
@@ -530,6 +530,7 @@ import {
 import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestBindingParamIds } from "@/utils/mapOntologyFunctionTest";
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
 import { mapOntologyRelationLinks } from "@/views/SpaceRelationWorkspace/utils/mapOntologyRelationCategoryTree";
+import { applyApplicationActionInfoBindings } from "../utils/applyApplicationActionInfoBindings.ts";
 import { buildApplicationCreateActionParams } from "../utils/buildApplicationCreateActionParams";
 import { flattenPropertyInfosFromCategoryTree } from "../utils/flattenPropertyInfosFromCategoryTree";
 import {
@@ -906,7 +907,9 @@ async function ensureApplicationPropertyOptions(ontologyUniqueIdentifier: string
       if (!value || options.has(value)) continue;
       const apiName = typeof item.apiName === "string" ? item.apiName.trim() : "";
       const displayName = typeof item.displayName === "string" ? item.displayName.trim() : "";
-      const label = displayName ? (apiName ? `${displayName}（${apiName}）` : displayName) : apiName || value;
+      const propertyType = typeof item.propertyType === "string" ? item.propertyType.trim() : "";
+      const nameLabel = displayName ? (apiName ? `${displayName}（${apiName}）` : displayName) : apiName || value;
+      const label = propertyType ? `${nameLabel} · ${propertyType}` : nameLabel;
       options.set(value, { value, label });
     }
     applicationPropertyOptionsByOntology.value = {
@@ -950,6 +953,12 @@ const showBasicFunctionOperatorSection = computed(() => kind.value === "basic" &
 const showRelationLinkMappingSection = computed(
   () => showRelationInstanceSection.value && Boolean(selectedRelationId.value.trim()) && (basicAction.value === "create" || basicAction.value === "update"),
 );
+/** 是否存在写入对象属性的应用行为出参。 */
+const hasApplicationWritePropertyOutput = computed(() =>
+  Object.values(applicationOutputBindings.value).some((binding) => binding.outputMode === "WRITE_PROPERTY"),
+);
+/** 应用行为绑定关系：无 WRITE_PROPERTY 出参时展示，且非必选。 */
+const showApplicationRelationSection = computed(() => kind.value === "application" && !hasApplicationWritePropertyOutput.value);
 const relationTargetStatusOptions = computed(() => listSpaceBehaviorRelationTargetStatusOptions(basicAction.value));
 const attributeSelectionHint = computed(() => {
   if (basicAction.value === "create") return "不可选择 main 分组；选中同组任一属性将全选该组";
@@ -1599,7 +1608,7 @@ function buildBehaviorDraft(nextStatus: SpaceBehaviorStatus): SpaceBehaviorDraft
     selectedPropertyValues: buildSelectedPropertyValuesForDraft(),
     selectedPropertyApiNames: buildSelectedPropertyApiNamesForDraft(),
     storageGroup: storageGroup.value,
-    selectedRelationId: selectedRelationId.value.trim(),
+    selectedRelationId: isApplication ? (showApplicationRelationSection.value ? selectedRelationId.value.trim() : "") : selectedRelationId.value.trim(),
     relationTargetStatus: showRelationLinkMappingSection.value ? relationTargetStatus.value : "",
     relationVisibilityWindows: showRelationLinkMappingSection.value ? buildRelationVisibilityWindowsForDraft() : [],
     applicationInputRows: isApplication ? snapshotApplicationParamRows(applicationInputRows.value) : [],
@@ -1681,7 +1690,9 @@ async function hydrateActionInfoSections(state: SpaceBehaviorActionInfoFormState
     }
     return;
   }
-  if (state.kind === "application" && state.functionOperatorId) {
+  if (state.kind === "application") {
+    selectedRelationId.value = state.selectedRelationId;
+    if (!state.functionOperatorId) return;
     const matched = operatorCatalog.value.find((item) => item.id === state.functionOperatorId);
     if (matched) {
       functionOperatorVersion.value = matched.version;
@@ -1690,6 +1701,26 @@ async function hydrateActionInfoSections(state: SpaceBehaviorActionInfoFormState
     if (functionOperatorVersion.value) {
       await loadApplicationOperatorDetail(state.functionOperatorId, functionOperatorVersion.value);
     }
+    if (!state.applicationBindingSeeds.length) return;
+    const applied = applyApplicationActionInfoBindings(state.applicationBindingSeeds, applicationInputRows.value, applicationOutputRows.value);
+    applicationInputBindings.value = {
+      ...applicationInputBindings.value,
+      ...applied.applicationInputBindings,
+    };
+    applicationOutputBindings.value = {
+      ...applicationOutputBindings.value,
+      ...applied.applicationOutputBindings,
+    };
+    const ontologyIds = new Set<string>();
+    for (const binding of Object.values(applied.applicationInputBindings)) {
+      const ontologyId = binding.ontologyUniqueIdentifier.trim();
+      if (ontologyId) ontologyIds.add(ontologyId);
+    }
+    for (const binding of Object.values(applied.applicationOutputBindings)) {
+      const ontologyId = binding.ontologyUniqueIdentifier.trim();
+      if (ontologyId) ontologyIds.add(ontologyId);
+    }
+    await Promise.all([...ontologyIds].map((ontologyId) => ensureApplicationPropertyOptions(ontologyId)));
   }
 }
 
@@ -1863,7 +1894,7 @@ async function loadOperatorCatalog(): Promise<void> {
     if (!Number.isInteger(numericSpaceId)) throw new Error("当前对象空间无效");
     const response = await getOntologyFunctionListInterface({
       ontologySpaceId: numericSpaceId,
-      ...(kind.value === "application" ? { excludeTypes: "BASIC_QUERY" } : { type: "BASIC_QUERY" as const }),
+      ...(kind.value === "application" ? { excludeTypes: "BASIC_QUERY" } : { types: "BASIC_QUERY" as const }),
       publishStatus: 1,
       pageNum: 1,
       pageSize: 100,
@@ -1968,6 +1999,10 @@ function mapFunctionOperator(item: GetOntologyFunctionListItem): SpaceBehaviorOp
     outputParameters: [],
   };
 }
+
+watch(showApplicationRelationSection, (visible) => {
+  if (!visible) clearApplicationRelationSelection();
+});
 
 watch(
   () => props.modelValue,

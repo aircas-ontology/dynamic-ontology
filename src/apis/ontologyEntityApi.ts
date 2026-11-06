@@ -4,6 +4,8 @@ import type {
   GetOntologyEntitiesParams,
   GetOntologyEntityRowDetailData,
   GetOntologyEntityRowDetailParams,
+  PostOntologyEntityAllLinkData,
+  PostOntologyEntityAllLinkParams,
 } from "@/types";
 import { request } from "@/utils/request";
 
@@ -34,6 +36,22 @@ export function getOntologyEntitiesInterface(params: GetOntologyEntitiesParams):
 export function postGetOntologyEntityRowDetailInterface(params: GetOntologyEntityRowDetailParams): Promise<ApiResponse<GetOntologyEntityRowDetailData>> {
   return request<GetOntologyEntityRowDetailData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/entity/row_detail",
+    method: "post",
+    data: params,
+  });
+}
+
+/**
+ * @description 查询两端实体之间的关联关系。
+ *
+ * 请求方式：POST `/ontology/entity/link_between`
+ *
+ * @param params From/To 对象标识与实体主键。
+ * @returns 标准 API 响应；data 为两端实体关联关系列表。
+ */
+export function postOntologyEntityAllLinkInterface(params: PostOntologyEntityAllLinkParams): Promise<ApiResponse<PostOntologyEntityAllLinkData>> {
+  return request<PostOntologyEntityAllLinkData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/entity/link_between",
     method: "post",
     data: params,
   });

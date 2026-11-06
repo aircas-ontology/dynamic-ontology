@@ -27,7 +27,7 @@ describe("test ontology action api", () => {
     assert.match(typeSource, /interface TestOntologyActionParams/);
     assert.match(typeSource, /ontologySpaceId: string/);
     assert.match(typeSource, /actionApi: string/);
-    assert.match(typeSource, /entityPrimaryKey: string \| number \| boolean \| Record<string, unknown>/);
+    assert.match(typeSource, /entityPrimaryKey\?: string \| number \| boolean \| Record<string, unknown>/);
     assert.match(typeSource, /dataPrimaryKey\?:/);
     assert.match(typeSource, /linkEntityPrimaryKey\?:/);
     assert.match(typeSource, /params\?: Record<string, unknown>/);

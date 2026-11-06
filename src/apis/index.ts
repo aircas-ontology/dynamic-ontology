@@ -12,6 +12,8 @@ import {
   postCreateOntologyActionInterface,
   postTestOntologyActionInterface,
   putEditOntologyActionInterface,
+  putPublishOntologyActionInterface,
+  putUnpublishOntologyActionInterface,
 } from "./ontologyActionApi";
 import { getExampleInterface } from "./exampleApi";
 import {
@@ -61,7 +63,7 @@ import {
 } from "./datasourceConnectionApi";
 import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
 import { getOntologyApiDocsInterface } from "./ontologyDocApi";
-import { getOntologyEntitiesInterface, postGetOntologyEntityRowDetailInterface } from "./ontologyEntityApi";
+import { getOntologyEntitiesInterface, postGetOntologyEntityRowDetailInterface, postOntologyEntityAllLinkInterface } from "./ontologyEntityApi";
 import { getOntologyInheritanceTreeInterface } from "./ontologyInheritanceTreeApi";
 import { postOntologyGlobalSearchInterface } from "./ontologySearchApi";
 import { createOntologySubspaceInterface } from "./ontologySubspaceApi";
@@ -74,6 +76,7 @@ import {
   deleteOntologySpaceInterface,
   getExportOntologySpaceInterface,
   getOntologyCategoryTreeInterface,
+  getOntologyLinkByUniqueIdentifierInterface,
   getOntologyOverviewCountInterface,
   getOntologyRelationCategoryTreeInterface,
   getOntologySpaceCanvasContentInterface,
@@ -145,6 +148,8 @@ export {
   postCreateOntologyActionInterface,
   postTestOntologyActionInterface,
   putEditOntologyActionInterface,
+  putPublishOntologyActionInterface,
+  putUnpublishOntologyActionInterface,
   createOntologyFunctionInterface,
   createOntologySpaceInterface,
   createOntologySpaceWithCanvasContentInterface,
@@ -171,6 +176,7 @@ export {
   getOntologyFunctionDetailInterface,
   getOntologyFunctionListInterface,
   getOntologyFunctionVersionsInterface,
+  getOntologyLinkByUniqueIdentifierInterface,
   getOntologyMetaByObjectIdInterface,
   getOntologyObjectArrTypeTreeInterface,
   getOntologyObjectByCategoryIdInterface,
@@ -180,6 +186,7 @@ export {
   getOntologyDatasourceTablesInterface,
   getOntologyEntitiesInterface,
   postGetOntologyEntityRowDetailInterface,
+  postOntologyEntityAllLinkInterface,
   getOntologyInheritanceTreeInterface,
   getOntologyMetaStatisticInterface,
   getOntologyOverviewCountInterface,

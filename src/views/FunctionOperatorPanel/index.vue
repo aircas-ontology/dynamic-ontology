@@ -192,19 +192,20 @@
               <el-option v-for="item in testObjectOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
-          <el-form-item v-for="bindingKey in testBindingKeys" :key="bindingKey" :label="`参数 ${bindingKey}`">
+          <el-form-item v-for="row in testBindingRows" :key="row.paramName" :label="`参数 ${row.paramName}`">
+            <p class="function-operator-test__param-meta">类型：{{ row.paramType || "—" }}；描述：{{ row.description || "—" }}</p>
             <el-select
-              :model-value="testPropertyBindings[bindingKey] ?? ''"
+              :model-value="testPropertyBindings[row.paramName] ?? ''"
               filterable
               clearable
               :disabled="!testSelectedOntologyId"
               :loading="testPropertyLoading"
               placeholder="请选择属性 apiName"
-              @update:model-value="updateTestPropertyBinding(bindingKey, String($event ?? ''))"
+              @update:model-value="updateTestPropertyBinding(row.paramName, String($event ?? ''))"
             >
               <el-option
                 v-for="item in testPropertyOptions"
-                :key="`${bindingKey}-${item.value}`"
+                :key="`${row.paramName}-${item.value}`"
                 :label="`${item.label}（${item.value}）`"
                 :value="item.value"
               />
@@ -297,7 +298,7 @@ const {
   testDetailLoading,
   testObjectLoading,
   testPropertyLoading,
-  testBindingKeys,
+  testBindingRows,
   testObjectOptions,
   testPropertyOptions,
   testSelectedOntologyId,
@@ -636,6 +637,13 @@ function statusTagType(status: FunctionOperatorStatus): TagProps["type"] {
   margin: 0;
   color: var(--aircas-color-text-secondary);
   font-size: 13px;
+}
+
+.function-operator-test__param-meta {
+  margin: 0 0 8px;
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .function-operator-test__form {

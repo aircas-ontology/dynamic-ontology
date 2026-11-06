@@ -8,6 +8,8 @@ import type {
   DeleteOntologyCategoryTreeParams,
   DeleteOntologyLinkParams,
   DeleteOntologyRelationCategoryTreeParams,
+  GetOntologyLinkByUniqueIdentifierData,
+  GetOntologyLinkByUniqueIdentifierParams,
   OntologyCategoryTreeData,
   OntologyCategoryTreeParams,
   OntologyRelationCategoryTreeData,
@@ -360,6 +362,25 @@ export function deleteOntologyRelationCategoryTreeInterface(payload: DeleteOntol
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link_category",
     method: "delete",
     data: payload,
+  });
+}
+
+/**
+ * @description 根据 link 唯一标识查询关系详情。
+ *
+ * 请求方式：GET `/ontology/link`
+ *
+ * @param params 查询参数。
+ * @param params.uniqueIdentifier 关系唯一标识。
+ * @returns 标准 API 响应；data 为关系详情，未找到时可为 null。
+ */
+export function getOntologyLinkByUniqueIdentifierInterface(
+  params: GetOntologyLinkByUniqueIdentifierParams,
+): Promise<ApiResponse<GetOntologyLinkByUniqueIdentifierData | null>> {
+  return request<GetOntologyLinkByUniqueIdentifierData | null>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link",
+    method: "get",
+    params,
   });
 }
 

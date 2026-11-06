@@ -98,9 +98,9 @@ export function recountSpaceBehaviorCategoryCounts(data: SpaceBehaviorWorkspaceD
  * @returns 可执行操作列表。
  */
 export function listAvailableSpaceBehaviorStatusOperations(status: SpaceBehaviorStatus): SpaceBehaviorStatusOperation[] {
-  if (status === "published") return ["disable", "draft"];
-  if (status === "draft") return ["publish", "disable"];
-  return ["publish", "draft"];
+  if (status === "draft") return ["publish"];
+  if (status === "published") return ["draft"];
+  return [];
 }
 
 /**

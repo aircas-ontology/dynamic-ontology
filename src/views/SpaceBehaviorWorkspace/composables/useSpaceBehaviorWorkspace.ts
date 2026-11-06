@@ -8,6 +8,8 @@ import {
   getListOntologyActionInterface,
   postCreateOntologyActionInterface,
   putEditOntologyActionInterface,
+  putPublishOntologyActionInterface,
+  putUnpublishOntologyActionInterface,
   updateActionCategoryInterface,
 } from "@/apis";
 import type {
@@ -19,11 +21,7 @@ import type {
   SpaceBehaviorWorkspaceLoadStatus,
 } from "@/types";
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
-import {
-  applySpaceBehaviorStatusChangeMock,
-  createSpaceBehaviorMock,
-  updateSpaceBehaviorMock,
-} from "@/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock";
+import { createSpaceBehaviorMock, updateSpaceBehaviorMock } from "@/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock";
 import { buildApplicationCreateActionParams, isApplicationActionCreateDraft } from "../utils/buildApplicationCreateActionParams";
 import { buildBasicOperatorCreateActionParams, isBasicOperatorActionCreateDraft } from "../utils/buildBasicOperatorCreateActionParams";
 import { buildLinkCreateActionParams, isLinkActionCreateDraft } from "../utils/buildLinkCreateActionParams";
@@ -368,7 +366,7 @@ export function useSpaceBehaviorWorkspace() {
   }
 
   /**
-   * @description 更新行为；属性值 / 关系实例 / 基础算子走 PUT /ontology/action，其余仅写本地 Mock。
+   * @description 更新行为；属性值 / 关系实例 / 基础算子 / 应用行为走 PUT /ontology/action，其余仅写本地 Mock。
    * @param behaviorId 行为 id。
    * @param draft 行为草稿。
    * @returns 更新结果。
@@ -376,12 +374,19 @@ export function useSpaceBehaviorWorkspace() {
   async function updateBehavior(behaviorId: string, draft: SpaceBehaviorDraft): Promise<{ ok: boolean; message: string; item?: SpaceBehaviorItem }> {
     actionLoading.value = true;
     try {
-      if (isPropertyValueActionCreateDraft(draft) || isLinkActionCreateDraft(draft) || isBasicOperatorActionCreateDraft(draft)) {
-        const params = isBasicOperatorActionCreateDraft(draft)
-          ? buildBasicOperatorCreateActionParams(draft)
-          : isLinkActionCreateDraft(draft)
-            ? buildLinkCreateActionParams(draft)
-            : buildPropertyValueCreateActionParams(draft);
+      if (
+        isPropertyValueActionCreateDraft(draft) ||
+        isLinkActionCreateDraft(draft) ||
+        isBasicOperatorActionCreateDraft(draft) ||
+        isApplicationActionCreateDraft(draft)
+      ) {
+        const params = isApplicationActionCreateDraft(draft)
+          ? buildApplicationCreateActionParams(draft)
+          : isBasicOperatorActionCreateDraft(draft)
+            ? buildBasicOperatorCreateActionParams(draft)
+            : isLinkActionCreateDraft(draft)
+              ? buildLinkCreateActionParams(draft)
+              : buildPropertyValueCreateActionParams(draft);
         if ("error" in params) {
           return { ok: false, message: params.error };
         }
@@ -405,18 +410,33 @@ export function useSpaceBehaviorWorkspace() {
   }
 
   /**
-   * @description 仅变更行为状态。
+   * @description 调用发布或撤销发布接口变更行为状态，成功后刷新列表。
    * @param behaviorId 行为 id。
    * @param draft 状态变更草稿。
-   * @returns 是否成功。
+   * @returns 是否成功及失败文案。
    */
-  function changeBehaviorStatus(behaviorId: string, draft: SpaceBehaviorStatusChangeDraft): boolean {
+  async function changeBehaviorStatus(behaviorId: string, draft: SpaceBehaviorStatusChangeDraft): Promise<{ ok: boolean; message: string }> {
+    if (actionLoading.value) return { ok: false, message: "" };
+    const behavior = behaviors.value.find((item) => item.id === behaviorId);
+    const actionApi = behavior?.behaviorApiName.trim() ?? "";
+    const numericSpaceId = Number(spaceId.value.trim());
+    if (!behavior || !actionApi || !Number.isFinite(numericSpaceId)) {
+      return { ok: false, message: "缺少空间 id 或行为 api，无法变更状态" };
+    }
+    if (draft.operation !== "publish" && draft.operation !== "draft") {
+      return { ok: false, message: "当前仅支持发布与撤销发布" };
+    }
     actionLoading.value = true;
     try {
-      const updated = applySpaceBehaviorStatusChangeMock(spaceId.value, behaviorId, draft);
-      if (!updated) return false;
-      void loadSpaceBehaviorList();
-      return true;
+      const params = { ontologySpaceId: numericSpaceId, actionApi };
+      const response = draft.operation === "publish" ? await putPublishOntologyActionInterface(params) : await putUnpublishOntologyActionInterface(params);
+      if (response.code !== 0 && response.code !== 200) {
+        return { ok: false, message: response.message || "状态变更失败" };
+      }
+      await loadSpaceBehaviorList();
+      return { ok: true, message: "" };
+    } catch (error) {
+      return { ok: false, message: error instanceof Error && error.message.trim() ? error.message : "状态变更失败" };
     } finally {
       actionLoading.value = false;
     }

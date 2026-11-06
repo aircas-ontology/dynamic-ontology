@@ -4,8 +4,8 @@ export interface TestOntologyActionParams {
   ontologySpaceId: string;
   /** 行为 api。 */
   actionApi: string;
-  /** 行为挂载侧实体主键。 */
-  entityPrimaryKey: string | number | boolean | Record<string, unknown>;
+  /** 行为挂载侧实体主键；属性值/关系实例等场景必填，基础函数算子可不传。 */
+  entityPrimaryKey?: string | number | boolean | Record<string, unknown>;
   /** 分组表行主键；属性值修改/删除必填。 */
   dataPrimaryKey?: string | number | boolean | Record<string, unknown>;
   /** 关系对端实体主键；实例关系行为必填。 */

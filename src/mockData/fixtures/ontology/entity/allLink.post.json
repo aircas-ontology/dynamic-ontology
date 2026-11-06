@@ -1,0 +1,28 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": [
+    {
+      "linkName": "搭载",
+      "linkType": "POSSESSION",
+      "ontologyFrom": "ea512d439cd34c6ebbcde6b692261ab5",
+      "ontologyTo": "c8adbff823c54653adc11c8fa1fa7c14",
+      "entityPrimaryKeyFrom": 4,
+      "entityPrimaryKeyTo": 2,
+      "entityNodeFrom": "835407",
+      "displayNameFrom": "歼-20",
+      "entityNodeTo": "835418",
+      "displayNameTo": "AIM-9X",
+      "startTime": "2026-11-03T16:00:00.000+00:00",
+      "endTime": "2026-11-10T16:00:00.000+00:00",
+      "visibilityWindows": [
+        {
+          "startTime": "2026-11-03T16:00:00.000+00:00",
+          "endTime": "2026-11-10T16:00:00.000+00:00"
+        }
+      ],
+      "status": "ENABLE"
+    }
+  ]
+}

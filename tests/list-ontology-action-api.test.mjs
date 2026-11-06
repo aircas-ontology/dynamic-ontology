@@ -40,6 +40,7 @@ test("list ontology action types and exports use the documented sample fields", 
   assert.match(typeSource, /pageNum\?: number/);
   assert.match(typeSource, /pageSize\?: number/);
   assert.match(typeSource, /interface ListOntologyActionRecord[\s\S]*actionApi: string[\s\S]*displayName: string/);
+  assert.match(typeSource, /updateTime\?: string \| null/);
   assert.match(typeSource, /interface ListOntologyActionData[\s\S]*records: ListOntologyActionRecord\[]/);
   assert.match(barrelSource, /ListOntologyActionData, ListOntologyActionParams, ListOntologyActionRecord[\s\S]*listOntologyActionType/);
   assert.match(apiBarrel, /getListOntologyActionInterface/);
@@ -51,6 +52,7 @@ test("list ontology action mock route and fixture are registered", () => {
   assert.match(routes, /"path": "\/ontology\/action\/list"/);
   assert.match(routes, /action\.list\.get\.json/);
   assert.match(fixture, /"actionApi": "act\.pv\.weapon\.add"/);
+  assert.match(fixture, /"updateTime": "2026-11-06 15:23:36"/);
   assert.match(fixture, /"total": 2/);
 });
 

@@ -30,6 +30,16 @@
     "file": "fixtures/ontology/action.test.post.json"
   },
   {
+    "method": "PUT",
+    "path": "/ontology/action/publish",
+    "file": "fixtures/ontology/action.publish.put.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/action/unpublish",
+    "file": "fixtures/ontology/action.unpublish.put.json"
+  },
+  {
     "method": "POST",
     "path": "/agent/chat/stream",
     "file": "fixtures/agent/chat.stream.post.json",
@@ -165,6 +175,11 @@
     "file": "fixtures/common/success.json"
   },
   {
+    "method": "GET",
+    "path": "/ontology/link",
+    "file": "fixtures/ontology/link.get.json"
+  },
+  {
     "method": "POST",
     "path": "/ontology/link",
     "file": "fixtures/common/success.json"
@@ -248,6 +263,11 @@
     "method": "POST",
     "path": "/ontology/entity/row_detail",
     "file": "fixtures/ontology/entity/rowDetail.post.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/entity/link_between",
+    "file": "fixtures/ontology/entity/allLink.post.json"
   },
   {
     "method": "GET",

@@ -37,10 +37,11 @@ import { mapOntologyFunctionListItem } from "@/utils/mapOntologyFunctionList";
 import {
   buildOntologyFunctionScriptTestInputRows,
   buildOntologyFunctionScriptTestRequest,
-  buildOntologyFunctionTestBindingKeys,
+  buildOntologyFunctionTestBindingRows,
   buildOntologyFunctionTestRequest,
   writeOntologyFunctionScriptTestParamValue,
   type OntologyFunctionScriptTestInputRow,
+  type OntologyFunctionTestBindingRow,
 } from "@/utils/mapOntologyFunctionTest";
 
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
@@ -55,8 +56,8 @@ function buildOntologyFunctionListQueryParams(input: {
   type: FunctionOperatorType | "";
   status: FunctionOperatorStatus | "";
   updatedRange: [string, string] | null;
-}): Pick<GetOntologyFunctionListParams, "displayName" | "type" | "publishStatus" | "startDate" | "endDate"> {
-  const params: Pick<GetOntologyFunctionListParams, "displayName" | "type" | "publishStatus" | "startDate" | "endDate"> = {};
+}): Pick<GetOntologyFunctionListParams, "displayName" | "types" | "publishStatus" | "startDate" | "endDate"> {
+  const params: Pick<GetOntologyFunctionListParams, "displayName" | "types" | "publishStatus" | "startDate" | "endDate"> = {};
   const displayName = input.keyword.trim();
   if (displayName) {
     params.displayName = displayName;
@@ -64,7 +65,7 @@ function buildOntologyFunctionListQueryParams(input: {
   if (input.type) {
     const apiType = mapFunctionOperatorTypeToApi(input.type);
     if (apiType) {
-      params.type = apiType;
+      params.types = apiType;
     }
   }
   if (input.status === "draft") {
@@ -134,7 +135,7 @@ export function useFunctionOperatorWorkspace() {
   const testDetailLoading = ref(false);
   const testObjectLoading = ref(false);
   const testPropertyLoading = ref(false);
-  const testBindingKeys = ref<string[]>([]);
+  const testBindingRows = ref<OntologyFunctionTestBindingRow[]>([]);
   const testObjectOptions = ref<SpaceRelationObjectOption[]>([]);
   const testPropertyOptions = ref<SpaceRelationObjectOption[]>([]);
   const testSelectedOntologyId = ref("");
@@ -868,7 +869,7 @@ export function useFunctionOperatorWorkspace() {
       functionApi,
       version,
       ontologyIdentifier: testSelectedOntologyId.value,
-      bindingKeys: testBindingKeys.value,
+      bindingKeys: testBindingRows.value.map((row) => row.paramName),
       propertyBindings: { ...testPropertyBindings },
     });
     testInput.value = `${JSON.stringify(request, null, 2)}\n`;
@@ -893,14 +894,14 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
-   * @description 清空属性绑定并按当前 bindingKeys 重建空选择。
+   * @description 清空属性绑定并按当前绑定行重建空选择。
    */
   function resetTestPropertyBindings(): void {
     for (const key of Object.keys(testPropertyBindings)) {
       delete testPropertyBindings[key];
     }
-    for (const key of testBindingKeys.value) {
-      testPropertyBindings[key] = "";
+    for (const row of testBindingRows.value) {
+      testPropertyBindings[row.paramName] = "";
     }
   }
 
@@ -995,7 +996,7 @@ export function useFunctionOperatorWorkspace() {
       return;
     }
     testingOperator.value = operator;
-    testBindingKeys.value = [];
+    testBindingRows.value = [];
     testSelectedOntologyId.value = "";
     testPropertyOptions.value = [];
     testObjectOptions.value = [];
@@ -1009,7 +1010,7 @@ export function useFunctionOperatorWorkspace() {
       if (response.code !== 200 || !response.data) {
         throw new Error(typeof response.message === "string" && response.message.trim() ? response.message : "函数详情查询失败");
       }
-      testBindingKeys.value = buildOntologyFunctionTestBindingKeys(response.data.params ?? []);
+      testBindingRows.value = buildOntologyFunctionTestBindingRows(response.data.params ?? []);
       resetTestPropertyBindings();
       refreshTestRequestPreview();
       await loadTestObjectOptions();
@@ -1107,9 +1108,9 @@ export function useFunctionOperatorWorkspace() {
           variableBindings[key] = value.trim();
         }
       }
-      for (const key of testBindingKeys.value) {
-        if (!variableBindings[key]) {
-          throw new Error(`请为参数「${key}」选择属性`);
+      for (const row of testBindingRows.value) {
+        if (!variableBindings[row.paramName]) {
+          throw new Error(`请为参数「${row.paramName}」选择属性`);
         }
       }
       payload = {
@@ -1249,7 +1250,7 @@ export function useFunctionOperatorWorkspace() {
     testDetailLoading,
     testObjectLoading,
     testPropertyLoading,
-    testBindingKeys,
+    testBindingRows,
     testObjectOptions,
     testPropertyOptions,
     testSelectedOntologyId,

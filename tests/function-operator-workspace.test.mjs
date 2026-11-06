@@ -257,7 +257,7 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(compositeWorkflowSource, /loadSpaceFunctionList/);
   assert.match(formSource, /form\.type === ["']composite["']/);
   assert.match(formSource, /loadSourceFunctionOptions/);
-  assert.match(formSource, /type:\s*apiType/);
+  assert.match(formSource, /types:\s*apiType/);
   assert.doesNotMatch(formSource, /excludeTypes:\s*["']BASIC_QUERY["']/);
   assert.match(compositeWorkflowSource, /filteredSpaceFunctionItems/);
   assert.match(compositeWorkflowSource, /useCompositeWorkflowCanvas/);
