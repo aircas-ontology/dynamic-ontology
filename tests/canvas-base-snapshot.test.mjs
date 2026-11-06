@@ -7,13 +7,14 @@ import { mapCanvasContentToConceptualModel } from "../src/views/OntologyConceptu
 import { removeRelationsConnectedToObject } from "../src/views/OntologyConceptualModelCreate/utils/removeRelationsConnectedToObject.ts";
 import { findInvalidConceptualAttribute } from "../src/views/OntologyConceptualModelCreate/utils/validateConceptualAttributes.ts";
 import { findInvalidCanvasModel } from "../src/views/OntologyConceptualModelCreate/utils/validateCanvasModel.ts";
+import { createCanvasAttributeBindingLookup } from "../src/views/OntologyConceptualModelCreate/utils/canvasAttributeBinding.ts";
 import {
   findConflictingConceptualAttributeKey,
   formatConceptualAttributeKeyConflictMessage,
 } from "../src/views/OntologyConceptualModelCreate/utils/groupConceptualAttributes.ts";
 
 /** @description 执行画布页面的真实加载及保存映射逻辑。 @param {Function} request 查询接口。 @returns {object} 页面状态和操作。 */
-function createCanvas(request) {
+function createCanvas(request, getDetails = async () => ({ code: 200, data: [{ uniqueIdentifier: "p1" }, { uniqueIdentifier: "p2" }] })) {
   const source = readFileSync(new URL("../src/views/OntologyConceptualModelCreate/index.vue", import.meta.url), "utf8");
   const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
   const route = { query: { spaceId: "114" } };
@@ -32,6 +33,8 @@ function createCanvas(request) {
       return { code: 200, data: { spaceId: 114 } };
     },
     getOntologySpaceCanvasContentInterface: request,
+    getOntologyPropertyDetailByOntologyIdInterface: getDetails,
+    createCanvasAttributeBindingLookup,
     mapCanvasContentToConceptualModel,
     removeRelationsConnectedToObject,
     findInvalidConceptualAttribute,
@@ -43,7 +46,7 @@ function createCanvas(request) {
     ...new Function(
       ...Object.keys(deps),
       ts.transpile(
-        `${script}\nreturn { loadConceptualModelCanvas, buildCanvasSpaceParams, saveConceptualModel, spaceApiName, objects, relations, addConnectedRelation, addObject, addAttribute, updateObject, updateAttribute, selected, deleteSelected, canvasLoadError };`,
+        `${script}\nreturn { loadConceptualModelCanvas, buildCanvasSpaceParams, saveConceptualModel, spaceApiName, objects, relations, addConnectedRelation, addObject, addAttribute, updateObject, updateAttribute, select, refreshSelectedAttributeBinding, bindingStatus, bindingError, selected, deleteSelected, canvasLoadError };`,
         { target: ts.ScriptTarget.ES2022 },
       ),
     )(...Object.values(deps)),
@@ -68,6 +71,109 @@ const content = () => ({
   links: [{ uniqueIdentifier: "r1", name: "停靠", apiName: "berth", fromOntologyApiName: "ship", toOntologyApiName: "port" }],
 });
 
+test("existing bound attributes lock protected edits while new attributes skip lookup", async () => {
+  let calls = 0;
+  const state = createCanvas(
+    async () => ({ code: 200, data: content() }),
+    async () => {
+      calls++;
+      return { code: 200, data: [{ uniqueIdentifier: "p1", datasourceId: "table", datasourceColumnName: "id" }] };
+    },
+  );
+  await state.loadConceptualModelCanvas();
+  const attribute = state.objects.value[0].attributes[0];
+  state.select({ kind: "attribute", id: attribute.id });
+  await state.refreshSelectedAttributeBinding();
+  assert.equal(state.bindingStatus.value, "bound");
+  state.updateAttribute("apiName", "changed");
+  assert.equal(attribute.apiName, "name");
+  state.updateAttribute("displayName", "新名称");
+  assert.equal(attribute.displayName, "新名称");
+  state.select({ kind: "object", id: state.objects.value[0].id });
+  state.addAttribute(state.objects.value[0].id);
+  assert.equal(state.bindingStatus.value, "unbound");
+  assert.equal(calls, 1);
+});
+
+test("binding lookup failure locks edits and retry can restore access", async () => {
+  let fail = true;
+  const state = createCanvas(
+    async () => ({ code: 200, data: content() }),
+    async () => {
+      if (fail) throw new Error("查询失败");
+      return { code: 200, data: [{ uniqueIdentifier: "p1" }] };
+    },
+  );
+  await state.loadConceptualModelCanvas();
+  const attribute = state.objects.value[0].attributes[0];
+  state.select({ kind: "attribute", id: attribute.id });
+  await state.refreshSelectedAttributeBinding();
+  assert.equal(state.bindingStatus.value, "error");
+  state.updateAttribute("displayName", "新名称");
+  assert.equal(attribute.displayName, "名称");
+  fail = false;
+  await state.refreshSelectedAttributeBinding();
+  assert.equal(state.bindingStatus.value, "unbound");
+});
+
+test("late binding responses do not lock a newly selected attribute", async () => {
+  let resolveDetails;
+  const state = createCanvas(
+    async () => ({ code: 200, data: content() }),
+    () =>
+      new Promise((resolve) => {
+        resolveDetails = resolve;
+      }),
+  );
+  await state.loadConceptualModelCanvas();
+  state.select({ kind: "attribute", id: state.objects.value[0].attributes[0].id });
+  state.select({ kind: "object", id: state.objects.value[0].id });
+  state.addAttribute(state.objects.value[0].id);
+  resolveDetails({ code: 200, data: [{ uniqueIdentifier: "p1", datasourceId: "table", datasourceColumnName: "id" }] });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(state.bindingStatus.value, "unbound");
+});
+
+test("saving rejects protected edits to an existing bound attribute", async () => {
+  const state = createCanvas(
+    async () => ({ code: 200, data: content() }),
+    async () => ({
+      code: 200,
+      data: [{ uniqueIdentifier: "p1", datasourceId: "table", datasourceColumnName: "id" }],
+    }),
+  );
+  await state.loadConceptualModelCanvas();
+  state.spaceApiName.value = "space";
+  const attribute = state.objects.value[0].attributes[0];
+  attribute.apiName = "changed";
+  await state.saveConceptualModel();
+  assert.equal(state.requests.length, 0);
+  assert.deepEqual(state.selected.value, { kind: "attribute", id: attribute.id });
+});
+
+test("saving permits bound attribute display-name edits and reports lookup failures", async () => {
+  let fail = true;
+  const state = createCanvas(
+    async () => ({ code: 200, data: content() }),
+    async () => {
+      if (fail) throw new Error("绑定查询失败");
+      return { code: 200, data: [{ uniqueIdentifier: "p1", datasourceId: "table", datasourceColumnName: "id" }] };
+    },
+  );
+  await state.loadConceptualModelCanvas();
+  state.spaceApiName.value = "space";
+  state.objects.value[0].attributes[0].displayName = "新名称";
+  await state.saveConceptualModel();
+  assert.equal(state.requests.length, 0);
+  assert.equal(state.bindingStatus.value, "error");
+  assert.match(state.bindingError.value, /绑定查询失败/);
+  fail = false;
+  await state.refreshSelectedAttributeBinding();
+  await state.saveConceptualModel();
+  assert.equal(state.requests.length, 1);
+  assert.equal(state.requests[0].ontologies[0].properties[0].displayName, "新名称");
+});
+
 test("invalid attribute blocks saving and selects the attribute; primary key fixes its fields", async () => {
   const state = createCanvas(async () => ({ code: 200, data: content() }));
   await state.loadConceptualModelCanvas();
@@ -78,6 +184,7 @@ test("invalid attribute blocks saving and selects the attribute; primary key fix
   assert.equal(state.requests.length, 0);
   assert.deepEqual(state.selected.value, { kind: "attribute", id: attribute.id });
   attribute.displayName = "名称";
+  await state.refreshSelectedAttributeBinding();
   state.updateAttribute("isPrimary", true);
   assert.equal(attribute.apiName, "id");
   assert.equal(attribute.dataType, "Int");

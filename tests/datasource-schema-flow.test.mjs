@@ -79,6 +79,30 @@ test("schema query uses current space and table query uses selected schema", asy
   assert.equal(wizard.tables.value.length, 0);
 });
 
+test("target table names start with source names and cannot be blank", async () => {
+  const wizard = createWizard({
+    getDatasourceTableListInterface: async () => ({ code: 200, data: [{ tableName: "ship", columnCount: 0 }] }),
+    getDatasourceTableColumnsInterface: async () => ({ code: 200, data: [{ tableName: "ship", columns: [] }] }),
+  });
+  wizard.schemaName.value = "public";
+  await wizard.nextStep();
+  assert.equal(wizard.tables.value[0].targetName, "ship");
+  wizard.selected.value = ["ship"];
+  wizard.primary.value = "ship";
+  wizard.tables.value[0].targetName = " ";
+  await wizard.nextStep();
+  assert.match(wizard.error.value, /入库表名/);
+  wizard.tables.value[0].targetName = "target_ship";
+  await wizard.nextStep();
+  wizard.step.value = 1;
+  await wizard.nextStep();
+  assert.equal(wizard.tables.value[0].name, "ship");
+  assert.equal(wizard.tables.value[0].targetName, "target_ship");
+  wizard.step.value = 0;
+  await wizard.nextStep();
+  assert.equal(wizard.tables.value[0].targetName, "target_ship");
+});
+
 test("schema failures provide feedback and pending queries cannot duplicate", async () => {
   let finish;
   let calls = 0;
@@ -142,15 +166,69 @@ test("columns and submission retain selected schema and edited field description
   wizard.primary.value = "ship";
   await wizard.nextStep();
   assert.equal(wizard.step.value, 2);
+  assert.equal(wizard.tables.value[0].fields[0].propertyName, "id");
+  wizard.tables.value[0].fields[0].propertyName = "object_id";
   wizard.tables.value[0].fields[0].description = "编辑说明";
   wizard.step.value = 1;
   await wizard.nextStep();
   assert.equal(wizard.tables.value[0].fields[0].description, "编辑说明");
+  assert.equal(wizard.tables.value[0].fields[0].propertyName, "object_id");
+  wizard.tables.value[0].fields[0].propertyName = " ";
+  await wizard.nextStep();
+  assert.match(wizard.error.value, /属性名/);
+  wizard.tables.value[0].fields[0].propertyName = "object_id";
   await wizard.nextStep();
   assert.equal(emitted.schemaName, "public");
   assert.deepEqual(objectInfo, { displayName: "舰船", categoryId: "3" });
   assert.equal(emitted.selectedTables[0].fields[0].description, "编辑说明");
   assert.equal(wizard.visible.value, false);
+});
+
+test("field metadata retains primary key flags for every table after reload", async () => {
+  const wizard = createWizard({
+    getDatasourceTableColumnsInterface: async () => ({
+      code: 200,
+      data: [
+        {
+          tableName: "ship",
+          columns: [
+            { columnName: "id", nativeType: "int", ontologyDataType: "Int", isPrimaryKey: true },
+            { columnName: "name", nativeType: "text", ontologyDataType: "String", isPrimaryKey: false },
+          ],
+        },
+        {
+          tableName: "detail",
+          columns: [
+            { columnName: "ship_id", nativeType: "int", ontologyDataType: "Int", isPrimaryKey: true },
+            { columnName: "seq", nativeType: "int", ontologyDataType: "Int", isPrimaryKey: true },
+            { columnName: "unknown", nativeType: "text", ontologyDataType: "String" },
+          ],
+        },
+      ],
+    }),
+  });
+  wizard.schemaName.value = "public";
+  wizard.step.value = 1;
+  wizard.tables.value = ["ship", "detail"].map((name) => ({ id: name, name, storageName: name, comment: "", fields: [] }));
+  wizard.selected.value = ["ship", "detail"];
+  wizard.primary.value = "ship";
+  await wizard.nextStep();
+  assert.deepEqual(
+    wizard.tables.value.map((table) => table.fields.map((field) => field.isPrimaryKey)),
+    [
+      [true, false],
+      [true, true, undefined],
+    ],
+  );
+  wizard.step.value = 1;
+  await wizard.nextStep();
+  assert.deepEqual(
+    wizard.tables.value.map((table) => table.fields.map((field) => field.isPrimaryKey)),
+    [
+      [true, false],
+      [true, true, undefined],
+    ],
+  );
 });
 
 test("datasource APIs send space/schema and comma-separated table names to documented endpoints", () => {

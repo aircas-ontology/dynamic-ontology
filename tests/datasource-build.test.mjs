@@ -82,6 +82,8 @@ test("datasource fields display as rows with editable descriptions", () => {
   assert.match(wizard, /:data="activeTable.fields"/);
   assert.match(wizard, /v-model="row.description"/);
   assert.match(wizard, /field.description/);
+  assert.match(wizard, /row\.isPrimaryKey === true/);
+  assert.match(wizard, /（主键）/);
 });
 
 test("datasource mock covers both supported database types and connection validation", () => {
@@ -98,4 +100,10 @@ test("datasource table APIName and description are editable and retained for sub
   assert.match(wizard, /v-model="row.comment"/);
   assert.doesNotMatch(wizard, /入库名/);
   assert.match(dialog, /draft.description = primaryTable\?\.comment/);
+});
+
+test("target table name remains data but is not shown in the table selector", () => {
+  const wizard = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/DatasourceBuildDialog.vue", import.meta.url), "utf8");
+  assert.doesNotMatch(wizard, /<el-table-column label="入库表名"/);
+  assert.match(wizard, /targetName: previousTables\.get\(table\.tableName\)\?\.targetName \?\? table\.tableName/);
 });

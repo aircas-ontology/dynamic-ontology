@@ -43,7 +43,7 @@ const selection = {
   schemaName: "public",
   primaryTableId: "ship",
   selectedTableIds: ["ship"],
-  selectedTables: [{ id: "ship", name: "ship", fields: [{ id: "id", name: "id" }] }],
+  selectedTables: [{ id: "ship", name: "ship", targetName: "ship", fields: [{ id: "id", name: "id", propertyName: "id" }] }],
   fieldIdsByTable: { ship: ["id"] },
   foreignKeys: {},
 };
@@ -94,11 +94,12 @@ test("datasource column displayName uses trimmed field description and falls bac
         {
           id: "demo_destroyer",
           name: "demo_destroyer",
+          targetName: "destroyer",
           storageName: "  aircraftApi  ",
           comment: "舰船表说明",
           fields: [
-            { id: "displacement", name: "displacement", description: "  排水量  " },
-            { id: "shipname", name: "shipname", description: "   " },
+            { id: "displacement", name: "displacement", propertyName: "weight", description: "  排水量  " },
+            { id: "shipname", name: "shipname", propertyName: "name", description: "   " },
             { id: "skipped", name: "skipped", description: "未选用" },
           ],
         },
@@ -109,10 +110,35 @@ test("datasource column displayName uses trimmed field description and falls bac
     draft,
   );
   assert.deepEqual(payload.tables[0].columns, [
-    { columnName: "displacement", displayName: "排水量", description: "排水量" },
-    { columnName: "shipname", displayName: "shipname", description: "" },
+    { sourceColumnName: "displacement", columnName: "weight", displayName: "排水量", description: "排水量" },
+    { sourceColumnName: "shipname", columnName: "name", displayName: "shipname", description: "" },
   ]);
+  assert.equal(payload.tables[0].sourceTableName, "demo_destroyer");
+  assert.equal(payload.tables[0].tableName, "destroyer");
   assert.equal(payload.description, "舰船表说明");
+});
+
+test("foreign keys reference edited target table and column names", async () => {
+  let payload;
+  const state = createActions(async (value) => {
+    payload = value;
+    return { code: 200, data: {} };
+  });
+  await state.actions.createOntologyObjectFromDatasource(
+    {
+      schemaName: "public",
+      primaryTableId: "p",
+      selectedTableIds: ["p", "c"],
+      selectedTables: [
+        { id: "p", name: "source_parent", targetName: "parent", fields: [{ id: "p1", name: "source_id", propertyName: "id" }] },
+        { id: "c", name: "source_child", targetName: "child", fields: [{ id: "c1", name: "source_parent_id", propertyName: "parent_id" }] },
+      ],
+      fieldIdsByTable: { p: ["p1"], c: ["c1"] },
+      foreignKeys: { c: { childFieldId: "c1", parentFieldId: "p1" } },
+    },
+    draft,
+  );
+  assert.deepEqual(payload.foreignKeys, [{ childTable: "child", childColumn: "parent_id", masterTable: "parent", masterColumn: "id" }]);
 });
 
 test("successful datasource creation refreshes once and blocks duplicate submission", async () => {

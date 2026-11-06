@@ -28,7 +28,7 @@
     <p v-if="canvasLoading" class="conceptual-model-create__save-error" role="status">正在加载空间画布...</p>
     <p v-else-if="canvasLoadError" class="conceptual-model-create__save-error" role="alert">{{ canvasLoadError }}</p>
     <p v-else-if="saveError" class="conceptual-model-create__save-error" role="alert">{{ saveError }}</p>
-    <div class="conceptual-model-create__workspace" :inert="canvasLoading || !!canvasLoadError">
+    <div class="conceptual-model-create__workspace" :inert="saving || canvasLoading || !!canvasLoadError">
       <aside class="conceptual-model-create__palette" aria-label="UML 组件">
         <span class="conceptual-model-create__eyebrow">UML COMPONENTS</span>
         <h2>UML 组件</h2>
@@ -93,19 +93,26 @@
           ><el-button type="primary" @click="addAttribute(selectedObject.id)">添加属性</el-button></template
         ><template v-else-if="selectedAttribute"
           ><h2>属性检查器</h2>
-          <small>所属对象：{{ selectedAttribute.owner }}</small
-          ><el-form label-position="top"
+          <small>所属对象：{{ selectedAttribute.owner }}</small>
+          <el-alert v-if="bindingStatus === 'loading'" title="正在查询数据源绑定状态" type="info" :closable="false" />
+          <el-alert v-else-if="bindingStatus === 'error'" :title="bindingError" type="error" :closable="false" />
+          <el-button v-if="bindingStatus === 'error'" size="small" @click="refreshSelectedAttributeBinding">重试</el-button>
+          <el-alert v-else-if="bindingStatus === 'bound'" title="该属性已绑定数据源，仅支持修改属性名称和描述" type="info" :closable="false" />
+          <el-form label-position="top"
             ><el-form-item label="属性名称" required :error="fieldError('attribute', selectedAttribute.id, 'displayName')"
-              ><el-input :model-value="selectedAttribute.displayName" @update:model-value="updateAttribute('displayName', $event)" /></el-form-item
+              ><el-input
+                :model-value="selectedAttribute.displayName"
+                :disabled="bindingStatus === 'loading' || bindingStatus === 'error'"
+                @update:model-value="updateAttribute('displayName', $event)" /></el-form-item
             ><el-form-item label="API" required :error="fieldError('attribute', selectedAttribute.id, 'apiName')"
               ><el-input
                 :model-value="selectedAttribute.apiName"
-                :disabled="selectedAttribute.isPrimary"
+                :disabled="selectedAttribute.isPrimary || bindingStatus !== 'unbound'"
                 @update:model-value="updateAttribute('apiName', $event)" /></el-form-item
             ><el-form-item label="数据类型" required :error="fieldError('attribute', selectedAttribute.id, 'dataType')"
               ><el-select
                 :model-value="selectedAttribute.dataType"
-                :disabled="selectedAttribute.isPrimary"
+                :disabled="selectedAttribute.isPrimary || bindingStatus !== 'unbound'"
                 @update:model-value="updateAttribute('dataType', $event)"
                 ><el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" /></el-select></el-form-item
             ><el-form-item required :error="fieldError('attribute', selectedAttribute.id, 'storageGroup')"
@@ -116,6 +123,7 @@
                     <el-icon><QuestionFilled /></el-icon></button></el-tooltip></template
               ><el-select
                 :model-value="selectedAttribute.storageGroup"
+                :disabled="bindingStatus !== 'unbound'"
                 filterable
                 allow-create
                 default-first-option
@@ -123,15 +131,28 @@
                 @change="registerStorageGroup"
                 ><el-option v-for="group in storageGroupOptions" :key="group" :label="group" :value="group" /></el-select></el-form-item
             ><el-form-item label="默认值" :error="fieldError('attribute', selectedAttribute.id, 'defaultValue')"
-              ><el-input :model-value="selectedAttribute.defaultValue" @update:model-value="updateAttribute('defaultValue', $event)" /></el-form-item
+              ><el-input
+                :model-value="selectedAttribute.defaultValue"
+                :disabled="bindingStatus !== 'unbound'"
+                @update:model-value="updateAttribute('defaultValue', $event)" /></el-form-item
             ><el-form-item label="属性描述"
               ><el-input
                 type="textarea"
                 :rows="2"
                 :model-value="selectedAttribute.description"
+                :disabled="bindingStatus === 'loading' || bindingStatus === 'error'"
                 @update:model-value="updateAttribute('description', $event)" /></el-form-item></el-form
-          ><el-checkbox :model-value="selectedAttribute.isPrimary" @update:model-value="updateAttribute('isPrimary', $event)">主键</el-checkbox
-          ><el-checkbox :model-value="selectedAttribute.isNameKey" @update:model-value="updateAttribute('isNameKey', $event)">名称键</el-checkbox></template
+          ><el-checkbox
+            :model-value="selectedAttribute.isPrimary"
+            :disabled="bindingStatus !== 'unbound'"
+            @update:model-value="updateAttribute('isPrimary', $event)"
+            >主键</el-checkbox
+          ><el-checkbox
+            :model-value="selectedAttribute.isNameKey"
+            :disabled="bindingStatus !== 'unbound'"
+            @update:model-value="updateAttribute('isNameKey', $event)"
+            >名称键</el-checkbox
+          ></template
         ><template v-else-if="selectedRelation"
           ><h2>关系检查器</h2>
           <small>拖动两端连到对象四边圆点，或在此选择源/目标</small
@@ -165,13 +186,14 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { QuestionFilled } from "@element-plus/icons-vue";
 import { useRoute, useRouter } from "vue-router";
-import { createOntologySpaceWithCanvasContentInterface, getOntologySpaceCanvasContentInterface } from "@/apis";
+import { createOntologySpaceWithCanvasContentInterface, getOntologySpaceCanvasContentInterface, getOntologyPropertyDetailByOntologyIdInterface } from "@/apis";
 import type { CanvasLink, CanvasOntology, CanvasProperty, CreateOntologySpaceWithCanvasContentParams } from "@/types";
 import ConceptualModelGraphCanvas from "./components/ConceptualModelGraphCanvas.vue";
 import { findConflictingConceptualAttributeKey, formatConceptualAttributeKeyConflictMessage } from "./utils/groupConceptualAttributes";
 import { removeRelationsConnectedToObject } from "./utils/removeRelationsConnectedToObject";
 import { mapCanvasContentToConceptualModel } from "./utils/mapCanvasContentToConceptualModel";
 import { findInvalidCanvasModel, type CanvasValidationError } from "./utils/validateCanvasModel";
+import { createCanvasAttributeBindingLookup } from "./utils/canvasAttributeBinding";
 type PaletteType = "object" | "attribute" | "relation";
 type Port = "top" | "right" | "bottom" | "left";
 type Selection = { kind: "object" | "attribute" | "relation"; id: number };
@@ -280,6 +302,44 @@ function initializeRouteSpaceContext() {
 initializeRouteSpaceContext();
 
 let canvasLoadRequestId = 0;
+let bindingRequestId = 0;
+const bindingStatus = ref<"unbound" | "bound" | "loading" | "error">("unbound");
+const bindingError = ref("");
+let initialAttributes = new Map<number, { ownerId: string; attribute: Attribute }>();
+let lookupAttributeBinding = createCanvasAttributeBindingLookup(fetchCanvasAttributeDetails);
+
+/** @description 查询对象的属性详情。 @param objectId 对象标识。 @returns 属性详情列表。 */
+async function fetchCanvasAttributeDetails(objectId: string) {
+  const response = await getOntologyPropertyDetailByOntologyIdInterface({ ontologyUniqueIdentifier: objectId });
+  if (response.code !== 200) throw new Error(response.message || "属性绑定状态查询失败");
+  return response.data;
+}
+
+/** @description 查询当前已有属性的绑定状态，丢弃选择变化后的过期结果。 */
+async function refreshSelectedAttributeBinding() {
+  const requestId = ++bindingRequestId;
+  const attribute = selectedAttribute.value;
+  const initial = attribute ? initialAttributes.get(attribute.id) : undefined;
+  bindingError.value = "";
+  if (!initial) {
+    bindingStatus.value = "unbound";
+    return;
+  }
+  if (!initial.ownerId || !initial.attribute.uniqueIdentifier?.trim()) {
+    bindingStatus.value = "error";
+    bindingError.value = "已有对象或属性缺少唯一标识，无法查询绑定状态";
+    return;
+  }
+  bindingStatus.value = "loading";
+  try {
+    const bound = await lookupAttributeBinding(initial.ownerId, initial.attribute.uniqueIdentifier);
+    if (requestId === bindingRequestId) bindingStatus.value = bound ? "bound" : "unbound";
+  } catch (cause) {
+    if (requestId !== bindingRequestId) return;
+    bindingStatus.value = "error";
+    bindingError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性绑定状态查询失败";
+  }
+}
 let initialCanvasContent: CreateOntologySpaceWithCanvasContentParams["base"];
 
 /**
@@ -289,6 +349,9 @@ async function loadConceptualModelCanvas() {
   const spaceId = routeSpaceId.value;
   if (spaceId === undefined) return;
   const requestId = ++canvasLoadRequestId;
+  bindingRequestId++;
+  initialAttributes.clear();
+  lookupAttributeBinding = createCanvasAttributeBindingLookup(fetchCanvasAttributeDetails);
   canvasLoading.value = true;
   canvasLoadError.value = "";
   initialCanvasContent = undefined;
@@ -304,6 +367,11 @@ async function loadConceptualModelCanvas() {
       throw new Error("画布关系引用了不存在的对象，无法完整回显。");
     }
     objects.value = mapped.objects;
+    initialAttributes = new Map(
+      mapped.objects.flatMap((object) =>
+        object.attributes.map((attribute) => [attribute.id, { ownerId: object.uniqueIdentifier?.trim() ?? "", attribute: { ...attribute } }] as const),
+      ),
+    );
     initialCanvasContent = structuredClone({ ontologies: response.data?.ontologies ?? [], links: response.data?.links ?? [] });
     relations.value = mapped.relations;
     sequence = mapped.nextSequence;
@@ -330,6 +398,7 @@ watch(
 
 onBeforeUnmount(() => {
   canvasLoadRequestId += 1;
+  bindingRequestId += 1;
 });
 /** @description 返回空间管理页。 */
 function goBack() {
@@ -338,6 +407,7 @@ function goBack() {
 /** @description 选择画布元素。 */
 function select(selection: Selection) {
   selected.value = selection;
+  void refreshSelectedAttributeBinding();
 }
 /** @description 开始组件拖拽。 */
 function startDrag(type: PaletteType, event: DragEvent) {
@@ -486,9 +556,16 @@ function updateObject(field: "apiName" | "displayName" | "description", value: s
 }
 /** @description 修改属性字段。 */
 function updateAttribute(field: keyof Attribute, value: string | boolean | number) {
+  if (saving.value) return;
   const owner = objects.value.find((item) => item.attributes.some((attr) => attr.id === selectedAttribute.value?.id));
   const attr = owner?.attributes.find((item) => item.id === selectedAttribute.value?.id);
   if (!owner || !attr) return;
+  if (
+    bindingStatus.value === "loading" ||
+    bindingStatus.value === "error" ||
+    (bindingStatus.value === "bound" && field !== "displayName" && field !== "description")
+  )
+    return;
   clearFieldError("attribute", attr.id, field);
   if (field === "isPrimary" || field === "isNameKey") {
     const enabled = value === true;
@@ -533,6 +610,8 @@ function updateRelation(field: keyof Relation, value: string | number | null) {
 /** @description 清除选中元素。 */
 function clearSelection() {
   selected.value = null;
+  bindingRequestId++;
+  bindingStatus.value = "unbound";
 }
 /** @description 删除选中元素。 */
 function deleteSelected() {
@@ -547,6 +626,8 @@ function deleteSelected() {
       object.attributes = object.attributes.filter((attr) => attr.id !== item.id);
     });
   selected.value = null;
+  bindingRequestId++;
+  bindingStatus.value = "unbound";
 }
 /** @description 缩小画布。 */
 function zoomOut() {
@@ -663,6 +744,49 @@ async function saveConceptualModel() {
   }
   saving.value = true;
   try {
+    const canvasRequestId = canvasLoadRequestId;
+    for (const object of objects.value) {
+      for (const attribute of object.attributes) {
+        const initial = initialAttributes.get(attribute.id);
+        if (!initial) continue;
+        const original = initial.attribute;
+        const changed =
+          attribute.displayName !== original.displayName ||
+          attribute.description !== original.description ||
+          attribute.apiName !== original.apiName ||
+          attribute.dataType !== original.dataType ||
+          attribute.storageGroup !== original.storageGroup ||
+          attribute.defaultValue !== original.defaultValue ||
+          attribute.isPrimary !== original.isPrimary ||
+          attribute.isNameKey !== original.isNameKey;
+        if (!changed) continue;
+        let bound: boolean;
+        try {
+          if (!initial.ownerId || !original.uniqueIdentifier?.trim()) throw new Error("已有对象或属性缺少唯一标识，无法查询绑定状态");
+          bound = await lookupAttributeBinding(initial.ownerId, original.uniqueIdentifier);
+        } catch (cause) {
+          if (canvasRequestId !== canvasLoadRequestId) return;
+          bindingRequestId++;
+          selected.value = { kind: "attribute", id: attribute.id };
+          bindingStatus.value = "error";
+          bindingError.value = cause instanceof Error && cause.message.trim() ? cause.message : "属性绑定状态查询失败";
+          throw new Error(bindingError.value);
+        }
+        if (canvasRequestId !== canvasLoadRequestId) return;
+        if (
+          bound &&
+          (attribute.apiName !== original.apiName ||
+            attribute.dataType !== original.dataType ||
+            attribute.storageGroup !== original.storageGroup ||
+            attribute.defaultValue !== original.defaultValue ||
+            attribute.isPrimary !== original.isPrimary ||
+            attribute.isNameKey !== original.isNameKey)
+        ) {
+          select({ kind: "attribute", id: attribute.id });
+          throw new Error(`属性“${attribute.displayName}”已绑定数据源，仅支持修改属性名称和描述`);
+        }
+      }
+    }
     const response = await createOntologySpaceWithCanvasContentInterface(buildCanvasSpaceParams());
     const spaceId = response.data?.spaceId ?? routeSpaceId.value;
     if (response.code !== 200 || !Number.isFinite(spaceId))
