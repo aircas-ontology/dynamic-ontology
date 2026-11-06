@@ -16,6 +16,7 @@
         <span v-if="countSuffix(tab.id)" class="workspace-type-tabs__count">{{ countSuffix(tab.id) }}</span>
       </button>
     </div>
+    <div class="workspace-type-tabs__actions"><slot name="actions" /></div>
   </nav>
 </template>
 
@@ -81,6 +82,12 @@ function countSuffix(tabId: ManagementWorkspaceTab): string {
   gap: 4px;
   min-width: 0;
   overflow-x: auto;
+  flex: 1;
+}
+
+.workspace-type-tabs__actions {
+  flex-shrink: 0;
+  margin-left: 12px;
 }
 
 .workspace-type-tabs__item {

@@ -7,6 +7,42 @@ import { workspaceRoutes } from "../src/router/modules/workspaceRoutes.ts";
 import { findSpaceById } from "../src/views/OntologySpaceManagementDetail/utils/spaceLookup.ts";
 import { tabFromRouteName, routeNameForTab } from "../src/views/OntologySpaceManagementDetail/utils/workspaceTabs.ts";
 import { useOntologySpaceDetailStore } from "../src/stores/useOntologySpaceDetailStore.ts";
+import ts from "typescript";
+import { computed, ref } from "vue";
+
+test("conceptual entry navigates with the currently loaded space and preserves query", () => {
+  const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/index.vue", import.meta.url), "utf8");
+  const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
+  const space = ref({ id: "42", displayName: "舰船", apiName: "ships" });
+  const status = ref("ready");
+  const destinations = [];
+  const route = { query: { from: "theme-space-management", userName: "user", spaceName: "旧名称" }, name: "OntologySpaceManagementDetailObject" };
+  const dependencies = {
+    computed,
+    useRoute: () => route,
+    useRouter: () => ({ push: (target) => destinations.push(target) }),
+    useSpaceWorkspace: () => ({ status, space, error: ref(""), spaceId: ref("42"), activeTab: ref("object"), availableTabs: ref([]), load: () => {} }),
+    useSpaceOverview: () => ({ data: ref(null), loading: ref(false) }),
+    useOnboardingGuide: () => ({ visible: ref(false), startId: ref(""), openOnboardingGuide: () => {} }),
+    ONBOARDING_GUIDE_ENTRY_IDS: {},
+    ONBOARDING_GUIDE_STEPS: [],
+    THEME_ONBOARDING_GUIDE_STEPS: [],
+  };
+  const state = new Function(...Object.keys(dependencies), ts.transpile(`${script}\nreturn { openConceptualModel };`, { target: ts.ScriptTarget.ES2022 }))(
+    ...Object.values(dependencies),
+  );
+  state.openConceptualModel();
+  assert.deepEqual(destinations[0], {
+    name: "OntologyConceptualModelCreate",
+    query: { from: "theme-space-management", userName: "user", spaceName: "舰船", spaceId: "42", spaceApiName: "ships" },
+  });
+  space.value = { id: "43", displayName: "飞机", apiName: "planes" };
+  state.openConceptualModel();
+  assert.equal(destinations[1].query.spaceId, "43");
+  status.value = "loading";
+  state.openConceptualModel();
+  assert.equal(destinations.length, 2);
+});
 
 test("space detail parent and child routes resolve under the workspace layout", () => {
   const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });

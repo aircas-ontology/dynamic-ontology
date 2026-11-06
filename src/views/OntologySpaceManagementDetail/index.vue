@@ -25,7 +25,13 @@
         :counts="spaceOverviewCounts"
         :counts-loading="spaceOverviewCountsLoading"
         @update:active-tab="openTab"
-      />
+      >
+        <template #actions>
+          <el-button v-if="status === 'ready' && space" type="primary" @click="openConceptualModel">
+            <el-icon><Connection /></el-icon>概念构建
+          </el-button>
+        </template>
+      </WorkspaceTypeTabs>
       <div class="space-management-detail__content">
         <router-view />
       </div>
@@ -37,7 +43,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { QuestionFilled } from "@element-plus/icons-vue";
+import { Connection, QuestionFilled } from "@element-plus/icons-vue";
 import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
 import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
 import AircasLoading from "@/components/AircasLoading.vue";
@@ -51,7 +57,7 @@ import { routeNameForTab } from "./utils/workspaceTabs";
 const router = useRouter();
 const route = useRoute();
 const isEmbedded = computed(() => typeof route.query.userName === "string" && route.query.userName.trim().length > 0);
-const { status, error, spaceId, activeTab, availableTabs, load } = useSpaceWorkspace();
+const { status, error, space, spaceId, activeTab, availableTabs, load } = useSpaceWorkspace();
 // 空间统计由布局层加载一次，供 tab 菜单后缀使用。
 const spaceOverview = useSpaceOverview(spaceId);
 const spaceOverviewCounts = computed(() => spaceOverview.data.value?.counts);
@@ -77,6 +83,16 @@ function openTab(tab: ManagementWorkspaceTab) {
     name: routeNameForTab(tab),
     params: { spaceId: spaceId.value },
     query: route.query,
+  });
+}
+
+/** @description 使用当前已加载空间进入概念构建画布。 */
+function openConceptualModel() {
+  const current = space.value;
+  if (status.value !== "ready" || !current) return;
+  void router.push({
+    name: "OntologyConceptualModelCreate",
+    query: { ...route.query, spaceId: current.id, spaceName: current.displayName, spaceApiName: current.apiName },
   });
 }
 </script>
