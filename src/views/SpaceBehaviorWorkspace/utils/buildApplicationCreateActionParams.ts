@@ -147,9 +147,6 @@ export function buildApplicationCreateActionParams(draft: SpaceBehaviorDraft): B
     return { error: "请选择关联函数算子" };
   }
   const ontologyLinkUniqIdentifier = draft.selectedRelationId.trim();
-  if (!ontologyLinkUniqIdentifier) {
-    return { error: "请选择一条绑定关系" };
-  }
 
   const mappingIns: CreateOntologyActionMappingIn[] = [];
   const inputRows = draft.applicationInputRows.filter((row) => !row.isObject);
@@ -178,7 +175,7 @@ export function buildApplicationCreateActionParams(draft: SpaceBehaviorDraft): B
     categoryId,
     actionKind: "APPLICATION",
     functionApi,
-    linkMapping: { ontologyLinkUniqIdentifier },
+    ...(ontologyLinkUniqIdentifier ? { linkMapping: { ontologyLinkUniqIdentifier } } : {}),
     mappingIns,
   };
 }

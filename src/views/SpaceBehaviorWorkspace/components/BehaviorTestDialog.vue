@@ -10,6 +10,18 @@
   >
     <p class="behavior-test-dialog__hint">{{ dialogHint }}</p>
 
+    <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
+      <el-input
+        class="behavior-test-dialog__result"
+        type="textarea"
+        :model-value="basicOperatorTestResultText"
+        :rows="10"
+        readonly
+        resize="vertical"
+        placeholder="开始测试后将在此展示接口返回 data"
+      />
+    </section>
+
     <template v-if="isRelationInstanceTest">
       <section class="behavior-test-dialog__section">
         <h4 class="behavior-test-dialog__section-title">关系两端对象</h4>
@@ -217,7 +229,7 @@ import {
   postGetOntologyEntityRowDetailInterface,
   postTestOntologyActionInterface,
 } from "@/apis";
-import type { OntologyEntityInfo, PostOntologyEntityAllLinkParams, SpaceBehaviorItem } from "@/types";
+import type { OntologyEntityInfo, PostOntologyEntityAllLinkParams, SpaceBehaviorItem, TestOntologyActionData } from "@/types";
 import BehaviorEntityLinkDataDialog from "./BehaviorEntityLinkDataDialog.vue";
 import BehaviorEntityRowDetailDialog from "./BehaviorEntityRowDetailDialog.vue";
 import { coerceBehaviorTestParamValue } from "../utils/coerceBehaviorTestParamValue";
@@ -277,6 +289,8 @@ let detailLoadToken = 0;
 
 const submitLoading = ref(false);
 const submitError = ref("");
+/** 基础函数算子测试成功后展示的接口 data 文本。 */
+const basicOperatorTestResultText = ref("");
 let submitToken = 0;
 
 const entityRowDetailVisible = ref(false);
@@ -564,6 +578,27 @@ function clearRelationTestState(): void {
 /**
  * @description 清空详情参数与提交态。
  */
+/**
+ * @description 将基础函数测试接口 data 格式化为只读文本。
+ * @param data 测试响应 data。
+ * @returns 展示文本。
+ */
+function formatBasicOperatorTestResultData(data: TestOntologyActionData): string {
+  if (data === null || data === undefined) return "null";
+  try {
+    return JSON.stringify(data, null, 2);
+  } catch {
+    return String(data);
+  }
+}
+
+/**
+ * @description 清空基础函数测试结果展示。
+ */
+function clearBasicOperatorTestResult(): void {
+  basicOperatorTestResultText.value = "";
+}
+
 function clearDetailParamState(): void {
   paramRows.value = [];
   resetParamValues([]);
@@ -1158,6 +1193,7 @@ async function submitBehaviorTest(): Promise<void> {
     }
     const requestToken = ++submitToken;
     submitLoading.value = true;
+    basicOperatorTestResultText.value = "";
     try {
       const response = await postTestOntologyActionInterface({
         ontologySpaceId,
@@ -1165,6 +1201,7 @@ async function submitBehaviorTest(): Promise<void> {
       });
       if (requestToken !== submitToken) return;
       if (response.code !== 200) throw new Error(response.message || "行为测试失败");
+      basicOperatorTestResultText.value = formatBasicOperatorTestResultData(response.data);
       const resultMessage = response.data?.message?.trim() || response.message || "行为测试成功";
       ElMessage.success(resultMessage);
     } catch (error) {
@@ -1269,6 +1306,7 @@ watch(
       clearDetailParamState();
       clearGroupDataRowState();
       clearRelationTestState();
+      clearBasicOperatorTestResult();
       entityPage.value = 1;
       entityPageSize.value = 10;
       return;
@@ -1280,6 +1318,7 @@ watch(
     clearGroupDataRowState();
     clearDetailParamState();
     clearRelationTestState();
+    clearBasicOperatorTestResult();
     if (isRelationInstanceTest.value) {
       void loadRelationTestContext();
       return;
@@ -1325,5 +1364,11 @@ watch(
   display: flex;
   justify-content: flex-end;
   margin-top: 12px;
+}
+.behavior-test-dialog__result {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

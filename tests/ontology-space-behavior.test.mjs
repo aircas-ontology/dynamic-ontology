@@ -161,6 +161,10 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /isAttributeValueTest/);
   assert.match(testDialogSource, /isRelationInstanceTest/);
   assert.match(testDialogSource, /确认后直接执行基础函数算子测试/);
+  assert.match(testDialogSource, /basicOperatorTestResultText/);
+  assert.match(testDialogSource, /formatBasicOperatorTestResultData/);
+  assert.match(testDialogSource, /type="textarea"/);
+  assert.match(testDialogSource, /readonly/);
   assert.match(testDialogSource, /v-else-if="!isBasicFunctionOperatorTest"/);
   assert.match(testDialogSource, /选择关系两端对象实例后执行关系实例测试/);
   assert.match(testDialogSource, /关系两端对象/);
@@ -449,7 +453,9 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /type="datetimerange"/);
   assert.match(formSource, /listSpaceBehaviorRelationTargetStatusOptions/);
   assert.match(formSource, /relationTargetStatusOptions/);
-  assert.match(formSource, /selectedRelationId: selectedRelationId\.value\.trim\(\)/);
+  assert.match(formSource, /selectedRelationId: isApplication/);
+  assert.match(formSource, /showApplicationRelationSection\.value/);
+  assert.match(formSource, /selectedRelationId\.value\.trim\(\)/);
   assert.match(formSource, /relationTargetStatus:/);
   assert.match(formSource, /relationVisibilityWindows:/);
   assert.match(formSource, /functionOperatorVersion:/);
@@ -525,11 +531,14 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /选择写入属性/);
   assert.match(formSource, /behavior-form-dialog__object-property-pickers/);
   assert.match(formSource, /绑定关系/);
+  assert.match(formSource, /showApplicationRelationSection/);
+  assert.match(formSource, /hasApplicationWritePropertyOutput/);
   assert.match(formSource, /selectApplicationRelationRow/);
   assert.match(formSource, /handleApplicationRelationRowClick/);
   assert.match(formSource, /formatApplicationRelationMapping/);
-  assert.match(formSource, /从当前空间关系中单选一条，可再次点击取消/);
+  assert.match(formSource, /可选；从当前空间关系中单选一条，可再次点击取消/);
   assert.match(formSource, /selectedRelationId\.value === nextId \? "" : nextId/);
+  assert.match(formSource, /watch\(showApplicationRelationSection/);
   assert.match(formSource, /@click\.stop="selectApplicationRelationRow\(row\.id\)"/);
   assert.match(formSource, /buildApplicationCreateActionParams/);
   assert.match(formSource, /applicationInputBindings/);
@@ -2062,7 +2071,11 @@ test("space behavior builds application createAction params with linkMapping and
     ]);
   }
 
-  assert.equal("error" in buildApplicationCreateActionParams({ ...baseDraft, selectedRelationId: " " }), true);
+  const withoutRelation = buildApplicationCreateActionParams({ ...baseDraft, selectedRelationId: " " });
+  assert.equal("error" in withoutRelation, false);
+  if (!("error" in withoutRelation)) {
+    assert.equal("linkMapping" in withoutRelation, false);
+  }
   assert.equal("error" in buildApplicationCreateActionParams({ ...baseDraft, functionOperatorId: "" }), true);
   assert.equal(
     "error" in

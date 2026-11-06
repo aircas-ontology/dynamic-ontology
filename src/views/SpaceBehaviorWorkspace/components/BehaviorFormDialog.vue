@@ -428,13 +428,13 @@
               </section>
             </template>
 
-            <section class="behavior-form-dialog__object-section">
+            <section v-if="showApplicationRelationSection" class="behavior-form-dialog__object-section">
               <div class="behavior-form-dialog__attribute-head">
                 <div class="behavior-form-dialog__attribute-title">
                   <span>绑定关系</span>
                   <el-tag size="small" effect="plain">{{ relationRows.length }}项</el-tag>
                 </div>
-                <span class="behavior-form-dialog__attribute-hint">从当前空间关系中单选一条，可再次点击取消</span>
+                <span class="behavior-form-dialog__attribute-hint">可选；从当前空间关系中单选一条，可再次点击取消</span>
               </div>
               <el-table
                 class="behavior-form-dialog__attribute-table"
@@ -953,6 +953,12 @@ const showBasicFunctionOperatorSection = computed(() => kind.value === "basic" &
 const showRelationLinkMappingSection = computed(
   () => showRelationInstanceSection.value && Boolean(selectedRelationId.value.trim()) && (basicAction.value === "create" || basicAction.value === "update"),
 );
+/** 是否存在写入对象属性的应用行为出参。 */
+const hasApplicationWritePropertyOutput = computed(() =>
+  Object.values(applicationOutputBindings.value).some((binding) => binding.outputMode === "WRITE_PROPERTY"),
+);
+/** 应用行为绑定关系：无 WRITE_PROPERTY 出参时展示，且非必选。 */
+const showApplicationRelationSection = computed(() => kind.value === "application" && !hasApplicationWritePropertyOutput.value);
 const relationTargetStatusOptions = computed(() => listSpaceBehaviorRelationTargetStatusOptions(basicAction.value));
 const attributeSelectionHint = computed(() => {
   if (basicAction.value === "create") return "不可选择 main 分组；选中同组任一属性将全选该组";
@@ -1602,7 +1608,7 @@ function buildBehaviorDraft(nextStatus: SpaceBehaviorStatus): SpaceBehaviorDraft
     selectedPropertyValues: buildSelectedPropertyValuesForDraft(),
     selectedPropertyApiNames: buildSelectedPropertyApiNamesForDraft(),
     storageGroup: storageGroup.value,
-    selectedRelationId: selectedRelationId.value.trim(),
+    selectedRelationId: isApplication ? (showApplicationRelationSection.value ? selectedRelationId.value.trim() : "") : selectedRelationId.value.trim(),
     relationTargetStatus: showRelationLinkMappingSection.value ? relationTargetStatus.value : "",
     relationVisibilityWindows: showRelationLinkMappingSection.value ? buildRelationVisibilityWindowsForDraft() : [],
     applicationInputRows: isApplication ? snapshotApplicationParamRows(applicationInputRows.value) : [],
@@ -1993,6 +1999,10 @@ function mapFunctionOperator(item: GetOntologyFunctionListItem): SpaceBehaviorOp
     outputParameters: [],
   };
 }
+
+watch(showApplicationRelationSection, (visible) => {
+  if (!visible) clearApplicationRelationSelection();
+});
 
 watch(
   () => props.modelValue,
