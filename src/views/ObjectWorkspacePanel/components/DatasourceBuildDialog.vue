@@ -46,7 +46,7 @@
               :value="String(row.id)"
               :disabled="!selected.includes(String(row.id))"
               @update:model-value="setPrimary(String($event), true)" /></template></el-table-column
-        ><el-table-column prop="name" label="表名" min-width="260" /><el-table-column label="APIName" min-width="220"
+        ><el-table-column prop="name" label="表名" min-width="200" /><el-table-column label="APIName" min-width="220"
           ><template #default="{ row }"><el-input v-model="row.storageName" placeholder="请输入 APIName" maxlength="64" /></template></el-table-column
         ><el-table-column label="说明" min-width="300"
           ><template #default="{ row }"><el-input v-model="row.comment" placeholder="请输入说明" :ariaLabel="`${row.name}说明`" /></template></el-table-column
@@ -86,7 +86,12 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column prop="name" label="属性名" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="name" label="字段名" min-width="180" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.name }}<span v-if="row.isPrimaryKey === true">（主键）</span></template>
+          </el-table-column>
+          <el-table-column label="属性名" min-width="180">
+            <template #default="{ row }"><el-input v-model="row.propertyName" placeholder="请输入属性名" :ariaLabel="`${row.name}属性名`" /></template>
+          </el-table-column>
           <el-table-column prop="dataType" label="数据类型" width="120" />
           <el-table-column label="说明" min-width="240">
             <template #default="{ row }"><el-input v-model="row.description" placeholder="请输入属性说明" :ariaLabel="`${row.name}属性说明`" /></template>
@@ -275,12 +280,16 @@ async function nextStep(): Promise<void> {
       const response = await getDatasourceTableListInterface({ spaceId: Number(props.spaceId), schemaName: schemaName.value });
       if (token !== generation) return;
       if (response.code !== 200) throw new Error(response.message || "数据表加载失败");
+      const previousTables = new Map(tables.value.map((table) => [table.name, table]));
       tables.value = response.data.map((table) => ({
         id: table.tableName,
         name: table.tableName,
-        storageName: table.tableName,
-        comment: table.tableComment || "",
-        fields: Array.from({ length: table.columnCount }, (_, index) => ({ id: `${table.tableName}-${index}`, name: "", dataType: "" })),
+        targetName: previousTables.get(table.tableName)?.targetName ?? table.tableName,
+        storageName: previousTables.get(table.tableName)?.storageName ?? table.tableName,
+        comment: previousTables.get(table.tableName)?.comment ?? table.tableComment ?? "",
+        fields:
+          previousTables.get(table.tableName)?.fields ??
+          Array.from({ length: table.columnCount }, (_, index) => ({ id: `${table.tableName}-${index}`, name: "", dataType: "" })),
       }));
       selected.value = [];
       primary.value = "";
@@ -294,6 +303,10 @@ async function nextStep(): Promise<void> {
       }
       if (selectedTables.value.some((table) => !table.storageName.trim())) {
         error.value = "请输入所选数据表的 APIName";
+        return;
+      }
+      if (selectedTables.value.some((table) => !(table.targetName ?? table.name).trim())) {
+        error.value = "请输入所选数据表的入库表名";
         return;
       }
       const response = await getDatasourceTableColumnsInterface({
@@ -310,7 +323,9 @@ async function nextStep(): Promise<void> {
         table.fields = (detail?.columns || []).map((field) => ({
           id: `${table.id}-${field.columnName}`,
           name: field.columnName,
+          propertyName: previousFields.get(`${table.id}-${field.columnName}`)?.propertyName ?? field.columnName,
           dataType: field.ontologyDataType || field.nativeType,
+          isPrimaryKey: field.isPrimaryKey,
           description: previousFields.get(`${table.id}-${field.columnName}`)?.description ?? field.description ?? "",
         }));
         fieldIdsByTable[table.id] =
@@ -323,6 +338,10 @@ async function nextStep(): Promise<void> {
       return;
     }
     for (const table of selectedTables.value) {
+      if ((fieldIdsByTable[table.id] ?? []).some((id) => !table.fields.find((field) => field.id === id)?.propertyName?.trim())) {
+        error.value = `请输入数据表「${table.name}」已选字段的属性名`;
+        return;
+      }
       if ((fieldIdsByTable[table.id] ?? []).some((id) => !table.fields.some((field) => field.id === id && isSupportedFieldType(field.dataType)))) {
         error.value = `数据表「${table.name}」包含不支持的数据类型，请重新选择字段`;
         return;

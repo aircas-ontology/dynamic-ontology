@@ -1,4 +1,5 @@
 export interface BuildObjectFromDatasourceSelectedColumn {
+  sourceColumnName: string;
   columnName: string;
   displayName?: string;
   /** 数据源字段说明。 */
@@ -6,6 +7,7 @@ export interface BuildObjectFromDatasourceSelectedColumn {
 }
 
 export interface BuildObjectFromDatasourceSelectedTable {
+  sourceTableName: string;
   tableName: string;
   master?: boolean;
   columns: BuildObjectFromDatasourceSelectedColumn[];

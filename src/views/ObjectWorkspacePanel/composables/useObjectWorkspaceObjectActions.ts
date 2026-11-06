@@ -176,22 +176,30 @@ export function useObjectWorkspaceObjectActions(options: {
       const table = tableById.get(tableId);
       const selectedFieldIds = new Set(selection.fieldIdsByTable[tableId] ?? []);
       return {
-        tableName: table?.name ?? tableId,
+        sourceTableName: table?.name ?? tableId,
+        tableName: table?.targetName?.trim() || table?.name || tableId,
         master: tableId === selection.primaryTableId,
         columns: (table?.fields ?? [])
           .filter((field) => selectedFieldIds.has(field.id))
-          .map((field) => ({ columnName: field.name, displayName: field.description?.trim() || field.name, description: field.description?.trim() ?? "" })),
+          .map((field) => ({
+            sourceColumnName: field.name,
+            columnName: field.propertyName?.trim() || field.name,
+            displayName: field.description?.trim() || field.name,
+            description: field.description?.trim() ?? "",
+          })),
       };
     });
     const foreignKeys: BuildObjectFromDatasourceForeignKey[] = Object.entries(selection.foreignKeys).map(([childTableId, relation]) => {
       const childTable = tableById.get(childTableId);
       const masterTable = tableById.get(selection.primaryTableId);
-      const childColumn = childTable?.fields.find((field) => field.id === relation.childFieldId)?.name ?? relation.childFieldId;
-      const masterColumn = masterTable?.fields.find((field) => field.id === relation.parentFieldId)?.name ?? relation.parentFieldId;
+      const childField = childTable?.fields.find((field) => field.id === relation.childFieldId);
+      const masterField = masterTable?.fields.find((field) => field.id === relation.parentFieldId);
+      const childColumn = childField?.propertyName?.trim() || childField?.name || relation.childFieldId;
+      const masterColumn = masterField?.propertyName?.trim() || masterField?.name || relation.parentFieldId;
       return {
-        childTable: childTable?.name ?? childTableId,
+        childTable: childTable?.targetName?.trim() || childTable?.name || childTableId,
         childColumn,
-        masterTable: masterTable?.name ?? selection.primaryTableId,
+        masterTable: masterTable?.targetName?.trim() || masterTable?.name || selection.primaryTableId,
         masterColumn,
       };
     });
