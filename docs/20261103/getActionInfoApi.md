@@ -28,7 +28,16 @@ GET /ontology/action?actionApi=<actionApi>&ontologySpaceId=<ontologySpaceId>
       "ontologyLinkUniqIdentifier": "4ed7c4da646f4006bec301815b61debb",
       "ontologyLinkFunctionParamExpression": null,
       "targetStatus": null,
-      "visibilityWindows": []
+      "visibilityWindows": [
+        {
+          "startTime": "2026-11-08T16:00:00.000+00:00",
+          "endTime": "2026-11-09T16:00:00.000+00:00"
+        },
+        {
+          "startTime": "2026-12-13T16:00:00.000+00:00",
+          "endTime": "2026-12-14T16:00:00.000+00:00"
+        }
+      ]
     },
     "mappingIns": [
       {

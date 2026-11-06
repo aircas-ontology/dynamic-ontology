@@ -1399,6 +1399,55 @@ test("space behavior maps action info detail into edit form state", () => {
   assert.equal(linkState.relationTargetStatus, "ENABLE");
   assert.deepEqual(linkState.relationVisibilityWindows, [{ startTime: 10, endTime: 20 }]);
 
+  const linkIsoWindowsState = mapOntologyActionInfoToFormState({
+    id: 22,
+    actionApi: "act.lk.strike.update",
+    displayName: "打击关系",
+    description: "",
+    ontologyUniqIdentifier: "onto-from",
+    categoryId: 14,
+    status: 1,
+    actionKind: "BASE",
+    subjectType: "LINK",
+    operation: "UPDATE",
+    storageGroup: null,
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: {
+      ontologyLinkUniqIdentifier: "link-iso",
+      targetStatus: "ENABLE",
+      visibilityWindows: [
+        {
+          startTime: "2026-11-08T16:00:00.000+00:00",
+          endTime: "2026-11-09T16:00:00.000+00:00",
+        },
+        {
+          startTime: "2026-12-13T16:00:00.000+00:00",
+          endTime: "2026-12-14T16:00:00.000+00:00",
+        },
+      ],
+    },
+    mappingIns: [],
+    functionParams: [],
+  });
+  assert.equal(linkIsoWindowsState.selectedRelationId, "link-iso");
+  assert.deepEqual(linkIsoWindowsState.relationVisibilityWindows, [
+    {
+      startTime: Date.parse("2026-11-08T16:00:00.000+00:00"),
+      endTime: Date.parse("2026-11-09T16:00:00.000+00:00"),
+    },
+    {
+      startTime: Date.parse("2026-12-13T16:00:00.000+00:00"),
+      endTime: Date.parse("2026-12-14T16:00:00.000+00:00"),
+    },
+  ]);
+  assert.match(readSource("../src/types/apis/getOntologyActionInfoType.ts"), /GetOntologyActionInfoVisibilityWindow/);
+  assert.match(readSource("../src/types/apis/getOntologyActionInfoType.ts"), /startTime: number \| string/);
+  assert.match(readSource("../src/views/SpaceBehaviorWorkspace/utils/mapOntologyActionInfoToFormState.ts"), /parseVisibilityWindowTimestamp/);
+  assert.match(readSource("../src/views/SpaceBehaviorWorkspace/utils/mapOntologyActionInfoToFormState.ts"), /Date\.parse/);
+  assert.match(readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue"), /Date\.parse\(trimmed\)/);
+
   const linkDisableState = mapOntologyActionInfoToFormState({
     id: 21,
     actionApi: "act.lk.carry.disable",
