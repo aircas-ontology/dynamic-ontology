@@ -54,3 +54,11 @@ test("object cards use the prototype inset background and image glow", () => {
   assert.match(source, /radial-gradient\(circle at 50% 40%, var\(--aircas-color-effect-primary-soft\), transparent 58%\)/);
   assert.match(source, /var\(--aircas-color-section-header\)/);
 });
+
+test("object table resolves rows through an indexed object lookup", () => {
+  const source = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue");
+  assert.match(source, /const objectIndex = computed\(\(\) =>/);
+  assert.match(source, /new Map<string, OntologyObjectItem>\(\)/);
+  assert.match(source, /objectIndex\.value\.get\(row\.id\)/);
+  assert.doesNotMatch(source, /section\.items\.find\(\(candidate\) => candidate\.id === row\.id\)/);
+});

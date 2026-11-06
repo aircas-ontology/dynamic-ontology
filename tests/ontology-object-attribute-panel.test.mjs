@@ -4,7 +4,8 @@ import test from "node:test";
 import * as vue from "vue";
 import { transpileModule, ModuleKind } from "typescript";
 import * as attributeHelpers from "../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts";
-import * as attributeValidation from "../src/views/OntologyObjectAttributePanel/utils/validateAttributeDefaultValue.ts";
+import * as attributeValidation from "../src/utils/validateAttributeDefaultValue.ts";
+import * as apiNameValidation from "../src/utils/validateApiName.ts";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { workspaceRoutes } from "../src/router/modules/workspaceRoutes.ts";
 
@@ -13,6 +14,18 @@ const readSource = (relativePath) => {
   assert.equal(existsSync(fileUrl), true, `missing file: ${relativePath}`);
   return readFileSync(fileUrl, "utf8");
 };
+
+test("storage group help is available in both attribute editors", () => {
+  for (const path of [
+    "../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue",
+    "../src/views/OntologyConceptualModelCreate/index.vue",
+  ]) {
+    const source = readSource(path);
+    assert.match(source, /支持输入分组名称回车后创建新的存储分组/);
+    assert.match(source, /aria-label="存储分组帮助"/);
+    assert.match(source, /filterable\s+allow-create\s+default-first-option/);
+  }
+});
 
 test("object attribute route resolves to the prototype attribute panel", () => {
   const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
@@ -290,7 +303,8 @@ function createAttributeEditor(updateProperty) {
     "element-plus": { ElMessage: { success() {}, error() {}, warning() {} }, ElMessageBox: {} },
     "@/apis": { updateOntologyPropertyInterface: updateProperty },
     "../utils/attributePanelHelpers": attributeHelpers,
-    "../utils/validateAttributeDefaultValue": attributeValidation,
+    "@/utils/validateAttributeDefaultValue": attributeValidation,
+    "@/utils/validateApiName": apiNameValidation,
   };
   const exports = {};
   new Function("require", "exports", outputText)((name) => {

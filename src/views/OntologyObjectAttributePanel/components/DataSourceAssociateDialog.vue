@@ -91,118 +91,128 @@
         </div>
       </header>
       <div class="mapping-layout" :class="{ 'mapping-layout--saving': loading }">
-        <div ref="workspaceRef" class="property-datasource-mapping-dialog__workspace" data-onboarding="associate-drag" @scroll="scheduleLineRefresh">
-          <div class="property-datasource-mapping-dialog__panels">
-            <aside class="property-datasource-mapping-dialog__source">
-              <template v-for="table in displayTables" :key="manualTableKey(table.databaseId, table.table.id)">
-                <div
-                  class="mind-node mind-node-table"
-                  :class="{
-                    'mind-node-has-maps':
-                      !isExpanded(tableNodeId(table.databaseId, table.table.id)) && parentMappedCount(tableNodeId(table.databaseId, table.table.id)) > 0,
-                  }"
-                >
-                  <button
-                    type="button"
-                    class="mind-node__toggle"
-                    :aria-label="isExpanded(tableNodeId(table.databaseId, table.table.id)) ? `收起 ${table.table.name}` : `展开 ${table.table.name}`"
-                    @click="toggleCollapse(tableNodeId(table.databaseId, table.table.id))"
+        <div class="property-datasource-mapping-dialog__workspace-container">
+          <div ref="workspaceRef" class="property-datasource-mapping-dialog__workspace" data-onboarding="associate-drag" @scroll="scheduleLineRefresh">
+            <div class="property-datasource-mapping-dialog__panels">
+              <aside class="property-datasource-mapping-dialog__source">
+                <template v-for="table in displayTables" :key="manualTableKey(table.databaseId, table.table.id)">
+                  <div
+                    class="mind-node mind-node-table"
+                    :class="{
+                      'mind-node-has-maps':
+                        !isExpanded(tableNodeId(table.databaseId, table.table.id)) && parentMappedCount(tableNodeId(table.databaseId, table.table.id)) > 0,
+                    }"
                   >
-                    {{ isExpanded(tableNodeId(table.databaseId, table.table.id)) ? "−" : "+" }}
-                  </button>
-                  <span class="mind-node__badge">表</span>
-                  <strong>{{ table.table.name }}</strong>
-                  <span
-                    v-if="!isExpanded(tableNodeId(table.databaseId, table.table.id)) && parentMappedCount(tableNodeId(table.databaseId, table.table.id)) > 0"
-                    class="mind-node__map-count"
-                  >
-                    {{ parentMappedCount(tableNodeId(table.databaseId, table.table.id)) }}
-                  </span>
-                  <span class="mapping-anchor mapping-anchor-parent" :id="parentAnchorId(table.databaseId, table.table.id)" aria-hidden="true" />
-                </div>
-
-                <div v-if="isExpanded(tableNodeId(table.databaseId, table.table.id))" class="mind-children-fields">
-                  <div class="field-list">
-                    <div class="field-list__header">
-                      <span>字段名称</span>
-                      <span>数据类型</span>
-                      <span class="field-list__anchor-col" aria-hidden="true" />
-                    </div>
-                    <div
-                      v-for="field in table.table.fields"
-                      :key="field.id"
-                      class="field-list__row"
-                      :class="{ 'field-list__row-mapped': isFieldMapped(table.databaseId, table.table.id, field.id) }"
+                    <button
+                      type="button"
+                      class="mind-node__toggle"
+                      :aria-label="isExpanded(tableNodeId(table.databaseId, table.table.id)) ? `收起 ${table.table.name}` : `展开 ${table.table.name}`"
+                      @click="toggleCollapse(tableNodeId(table.databaseId, table.table.id))"
                     >
-                      <span :title="`${field.name}${formatDatasourceKeyMarks({ isPrimary: field.isPrimary })}`">
-                        {{ field.name }}{{ formatDatasourceKeyMarks({ isPrimary: field.isPrimary }) }}
-                      </span>
-                      <span>{{ field.dataType || "—" }}</span>
-                      <button
-                        type="button"
-                        class="mapping-anchor mapping-anchor-source"
-                        :id="fieldAnchorId(table.databaseId, table.table.id, field.id)"
-                        :aria-label="`关联字段 ${field.name}`"
-                        @pointerdown.prevent="startDrag(table.databaseId, table.table.id, field.id, $event)"
-                      />
-                    </div>
-                    <div v-if="!table.table.fields.length" class="field-list__empty">暂无字段</div>
+                      {{ isExpanded(tableNodeId(table.databaseId, table.table.id)) ? "−" : "+" }}
+                    </button>
+                    <span class="mind-node__badge">表</span>
+                    <strong>{{ table.table.name }}</strong>
+                    <span
+                      v-if="!isExpanded(tableNodeId(table.databaseId, table.table.id)) && parentMappedCount(tableNodeId(table.databaseId, table.table.id)) > 0"
+                      class="mind-node__map-count"
+                    >
+                      {{ parentMappedCount(tableNodeId(table.databaseId, table.table.id)) }}
+                    </span>
+                    <span class="mapping-anchor mapping-anchor-parent" :id="parentAnchorId(table.databaseId, table.table.id)" aria-hidden="true" />
                   </div>
-                </div>
-              </template>
-            </aside>
 
-            <section class="property-datasource-mapping-dialog__target">
-              <div class="property-list">
-                <div class="property-list__header">
-                  <span class="property-list__anchor-col" aria-hidden="true" />
-                  <span>名称</span>
-                  <span>API 名称</span>
-                  <span>分类</span>
+                  <div v-if="isExpanded(tableNodeId(table.databaseId, table.table.id))" class="mind-children-fields">
+                    <div class="field-list">
+                      <div class="field-list__header">
+                        <span>字段名称</span>
+                        <span>数据类型</span>
+                        <span class="field-list__anchor-col" aria-hidden="true" />
+                      </div>
+                      <div
+                        v-for="field in table.table.fields"
+                        :key="field.id"
+                        class="field-list__row"
+                        :class="{ 'field-list__row-mapped': isFieldMapped(table.databaseId, table.table.id, field.id) }"
+                      >
+                        <span :title="`${field.name}${formatDatasourceKeyMarks({ isPrimary: field.isPrimary })}`">
+                          {{ field.name }}{{ formatDatasourceKeyMarks({ isPrimary: field.isPrimary }) }}
+                        </span>
+                        <span>{{ field.dataType || "—" }}</span>
+                        <button
+                          type="button"
+                          class="mapping-anchor mapping-anchor-source"
+                          :id="fieldAnchorId(table.databaseId, table.table.id, field.id)"
+                          :aria-label="`关联字段 ${field.name}`"
+                          @pointerdown.prevent="startDrag(table.databaseId, table.table.id, field.id, $event)"
+                        />
+                      </div>
+                      <div v-if="!table.table.fields.length" class="field-list__empty">暂无字段</div>
+                    </div>
+                  </div>
+                </template>
+              </aside>
+
+              <section class="property-datasource-mapping-dialog__target">
+                <div class="property-list">
+                  <div class="property-list__header">
+                    <span class="property-list__anchor-col" aria-hidden="true" />
+                    <span>名称</span>
+                    <span>API 名称</span>
+                    <span>分类</span>
+                  </div>
+                  <div
+                    v-for="property in properties"
+                    :key="property.id"
+                    class="property-list__row"
+                    :class="{ 'property-list__row-mapped': Boolean(draftBinds.get(property.id)) }"
+                    :id="propRowId(property.id)"
+                  >
+                    <button
+                      type="button"
+                      class="mapping-anchor mapping-anchor-target"
+                      :id="propAnchorId(property.id)"
+                      :aria-label="`关联属性 ${property.displayName}`"
+                    />
+                    <span :title="`${property.displayName}${formatDatasourceKeyMarks(property)}`">
+                      {{ property.displayName }}{{ formatDatasourceKeyMarks(property) }}
+                    </span>
+                    <span :title="property.apiName">{{ property.apiName }}</span>
+                    <span :title="property.categoryName">{{ property.categoryName }}</span>
+                  </div>
+                  <div v-if="!properties.length" class="property-list__empty">暂无属性</div>
                 </div>
-                <div
-                  v-for="property in properties"
-                  :key="property.id"
-                  class="property-list__row"
-                  :class="{ 'property-list__row-mapped': Boolean(draftBinds.get(property.id)) }"
-                  :id="propRowId(property.id)"
-                >
-                  <button
-                    type="button"
-                    class="mapping-anchor mapping-anchor-target"
-                    :id="propAnchorId(property.id)"
-                    :aria-label="`关联属性 ${property.displayName}`"
-                  />
-                  <span :title="`${property.displayName}${formatDatasourceKeyMarks(property)}`">
-                    {{ property.displayName }}{{ formatDatasourceKeyMarks(property) }}
-                  </span>
-                  <span :title="property.apiName">{{ property.apiName }}</span>
-                  <span :title="property.categoryName">{{ property.categoryName }}</span>
-                </div>
-                <div v-if="!properties.length" class="property-list__empty">暂无属性</div>
-              </div>
-            </section>
+              </section>
+            </div>
+
+            <svg class="property-datasource-mapping-dialog__svg" :width="svgSize.width" :height="svgSize.height">
+              <path
+                v-for="line in visibleLines"
+                :key="line.id"
+                class="mapping-line"
+                :class="{
+                  'mapping-line-active': selectedLineId === line.id || hoveredLineId === line.id,
+                  'mapping-line-dimmed': hoveredLineId !== '' && hoveredLineId !== line.id,
+                }"
+                :d="line.path"
+                :style="{ stroke: line.color }"
+                fill="none"
+                @click.stop="selectedLineId = line.id"
+                @dblclick.stop="removeBind(line.id)"
+                @mouseenter="hoveredLineId = line.id"
+                @mouseleave="hoveredLineId = ''"
+              />
+              <path v-if="dragPreviewPath" class="mapping-line mapping-line-preview" :d="dragPreviewPath" fill="none" />
+            </svg>
           </div>
-
-          <svg class="property-datasource-mapping-dialog__svg" :width="svgSize.width" :height="svgSize.height">
-            <path
-              v-for="line in visibleLines"
-              :key="line.id"
-              class="mapping-line"
-              :class="{
-                'mapping-line-active': selectedLineId === line.id || hoveredLineId === line.id,
-                'mapping-line-dimmed': hoveredLineId !== '' && hoveredLineId !== line.id,
-              }"
-              :d="line.path"
-              :style="{ stroke: line.color }"
-              fill="none"
-              @click.stop="selectedLineId = line.id"
-              @dblclick.stop="removeBind(line.id)"
-              @mouseenter="hoveredLineId = line.id"
-              @mouseleave="hoveredLineId = ''"
-            />
-            <path v-if="dragPreviewPath" class="mapping-line mapping-line-preview" :d="dragPreviewPath" fill="none" />
-          </svg>
+          <el-button
+            class="property-datasource-mapping-dialog__remove-all"
+            type="danger"
+            :disabled="loading || autoAssociateLoading || !mappedCount"
+            @click="removeAllBinds"
+          >
+            全部删除
+          </el-button>
         </div>
 
         <aside class="mapping-pending">
@@ -510,6 +520,19 @@ function removeBind(propertyId: string): void {
   next.set(propertyId, null);
   draftBinds.value = next;
   selectedLineId.value = "";
+  void nextTick(() => refreshLines());
+}
+
+/** @description 临时移除所有属性的当前数据源关联，保留已保存的基线供回退和提交。 */
+function removeAllBinds(): void {
+  if (loading.value || props.autoAssociateLoading || !mappedCount.value) return;
+  const next = new Map(draftBinds.value);
+  props.properties.forEach((property) => {
+    if (next.get(property.id)) next.set(property.id, null);
+  });
+  draftBinds.value = next;
+  selectedLineId.value = "";
+  hoveredLineId.value = "";
   void nextTick(() => refreshLines());
 }
 
@@ -1026,6 +1049,20 @@ onBeforeUnmount(() => {
   padding-top: 12px;
   color: var(--aircas-color-text-secondary);
   font-size: 13px;
+}
+
+.property-datasource-mapping-dialog__workspace-container {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.property-datasource-mapping-dialog__remove-all {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 4;
 }
 
 .property-datasource-mapping-dialog__workspace {

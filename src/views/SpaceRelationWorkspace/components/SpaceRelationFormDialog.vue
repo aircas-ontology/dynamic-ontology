@@ -58,6 +58,7 @@ import type {
   SpaceRelationObjectOption,
 } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
+import { validateApiName } from "@/utils/validateApiName";
 import { findRelationCategoryNode } from "../utils/relationOperations";
 
 const props = defineProps<{
@@ -141,6 +142,11 @@ function submitRelationForm() {
       return;
     }
   } else if (!trimmedName || !apiName.value.trim() || !src || !tgt) {
+    return;
+  }
+
+  if (!validateApiName(apiName.value)) {
+    ElMessage.warning("API 名称须以字母或下划线开头，且只能包含字母、数字和下划线");
     return;
   }
 

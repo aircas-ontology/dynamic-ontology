@@ -180,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { Connection, DataLine, Plus, Share, Ship } from "@element-plus/icons-vue";
 import type { OntologyObjectItem, OntologyObjectLocationTarget, OntologyObjectSection, OntologyObjectViewMode } from "@/types";
 
@@ -201,12 +201,18 @@ const activeCategoryId = ref("");
 const activeObjectId = ref("");
 let highlightTimer: number | undefined;
 
+const objectIndex = computed(() => {
+  const index = new Map<string, OntologyObjectItem>();
+  for (const section of props.sections) {
+    for (const item of section.items) index.set(item.id, item);
+  }
+  return index;
+});
+
 function objectRow(row: unknown): OntologyObjectItem {
-  if (row && typeof row === "object" && "id" in row) {
-    for (const section of props.sections) {
-      const item = section.items.find((candidate) => candidate.id === row.id);
-      if (item) return item;
-    }
+  if (row && typeof row === "object" && "id" in row && typeof row.id === "string") {
+    const item = objectIndex.value.get(row.id);
+    if (item) return item;
   }
   throw new Error("无效的对象数据行。");
 }

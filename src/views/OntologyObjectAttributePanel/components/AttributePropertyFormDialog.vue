@@ -34,7 +34,15 @@
             <el-option v-for="type in dataTypes" :key="type" :label="type" :value="type" />
           </el-select>
         </el-form-item>
-        <el-form-item label="存储分组" prop="storageGroup">
+        <el-form-item prop="storageGroup">
+          <template #label>
+            <span>存储分组</span>
+            <el-tooltip content="支持输入分组名称回车后创建新的存储分组" placement="top" :show-after="200">
+              <button type="button" class="el-button is-text is-circle" aria-label="存储分组帮助">
+                <el-icon><QuestionFilled /></el-icon>
+              </button>
+            </el-tooltip>
+          </template>
           <el-select v-model="draft.storageGroup" placeholder="请输入或选择存储分组" filterable allow-create default-first-option :disabled="datasourceLocked">
             <el-option v-for="group in storageGroups" :key="group.value" :label="group.label" :value="group.value" />
           </el-select>
@@ -81,6 +89,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { QuestionFilled } from "@element-plus/icons-vue";
 import type { FormInstance, FormRules } from "element-plus";
 import type { OntologyAttributeCategoryNode, OntologyAttributeDraft, OntologyAttributeStorageGroupOption } from "@/types";
 

@@ -163,6 +163,7 @@ import { MagicStick, UploadFilled, Plus, Upload, Grid } from "@element-plus/icon
 import type { UploadFile } from "element-plus";
 
 import { postUploadOntologyThumbnailInterface } from "@/apis";
+import { validateApiName } from "@/utils/validateApiName";
 import ontologyImportTemplate from "@/assets/pages/ontologyObjectCreate/ontologyImportTemplate.json";
 import type { OntologyConceptNode, OntologyObjectCreateDraft, OntologyObjectItem } from "@/types";
 import type { DatasourceBuildSelection } from "@/types";
@@ -393,7 +394,11 @@ function submitCreate() {
     return;
   }
   validationError.value = "";
-  apiNameError.value = draft.apiName.trim() ? "" : "请输入 API 名称。";
+  apiNameError.value = !draft.apiName.trim()
+    ? "请输入 API 名称。"
+    : !validateApiName(draft.apiName)
+      ? "API 名称须以字母或下划线开头，且只能包含字母、数字和下划线。"
+      : "";
   displayNameError.value = draft.displayName.trim() ? "" : "请输入显示名称。";
   categoryError.value = draft.categoryId ? "" : "请选择分类。";
   if (apiNameError.value || displayNameError.value || categoryError.value) return;
