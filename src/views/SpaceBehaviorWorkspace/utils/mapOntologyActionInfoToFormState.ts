@@ -7,6 +7,7 @@ import type {
   SpaceBehaviorStatus,
   SpaceBehaviorValueType,
 } from "@/types";
+import { mapApplicationActionInfoBindingSeeds, type SpaceBehaviorApplicationBindingSeed } from "./applyApplicationActionInfoBindings.ts";
 
 /** 行为详情映射后的表单回填状态。 */
 export interface SpaceBehaviorActionInfoFormState {
@@ -30,6 +31,8 @@ export interface SpaceBehaviorActionInfoFormState {
   relationVisibilityWindows: SpaceBehaviorRelationVisibilityWindow[];
   operatorParamBindings: Record<string, string>;
   operatorParamIds: Record<string, number>;
+  /** 应用行为详情 mappingIns 回填种子。 */
+  applicationBindingSeeds: SpaceBehaviorApplicationBindingSeed[];
   /** 本轮不支持远程编辑保存时的原因；空表示可保存。 */
   unsupportedEditReason: string;
 }
@@ -128,7 +131,7 @@ function mapRelationVisibilityWindows(windows: Array<{ startTime?: unknown; endT
 /**
  * @description 将行为详情接口 data 映射为编辑弹窗可回填状态。
  * @param data 行为详情。
- * @returns 表单状态；APPLICATION 等会带 unsupportedEditReason。
+ * @returns 表单状态；暂不支持编辑的类型会带 unsupportedEditReason。
  */
 export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData): SpaceBehaviorActionInfoFormState {
   const actionKind = typeof data.actionKind === "string" ? data.actionKind.trim() : "";
@@ -172,15 +175,17 @@ export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData
 
   const linkMapping = data.linkMapping;
   const selectedRelationId =
-    subjectType === "LINK" && typeof linkMapping?.ontologyLinkUniqIdentifier === "string" ? linkMapping.ontologyLinkUniqIdentifier.trim() : "";
+    (kind === "application" || subjectType === "LINK") && typeof linkMapping?.ontologyLinkUniqIdentifier === "string"
+      ? linkMapping.ontologyLinkUniqIdentifier.trim()
+      : "";
   const relationTargetStatus = subjectType === "LINK" ? mapRelationTargetStatus(linkMapping?.targetStatus) : "";
   const relationVisibilityWindows: SpaceBehaviorRelationVisibilityWindow[] =
     subjectType === "LINK" ? mapRelationVisibilityWindows(linkMapping?.visibilityWindows) : [];
 
+  const applicationBindingSeeds = kind === "application" ? mapApplicationActionInfoBindingSeeds(data.mappingIns, data.functionParams) : [];
+
   let unsupportedEditReason = "";
-  if (kind === "application") {
-    unsupportedEditReason = "应用行为编辑后续接入";
-  } else if (subjectType !== "PROPERTY_VALUE" && subjectType !== "LINK" && subjectType !== "BASIC_OPERATOR") {
+  if (kind !== "application" && subjectType !== "PROPERTY_VALUE" && subjectType !== "LINK" && subjectType !== "BASIC_OPERATOR") {
     unsupportedEditReason = "当前行为类型暂不支持编辑保存";
   }
 
@@ -205,6 +210,7 @@ export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData
     relationVisibilityWindows,
     operatorParamBindings,
     operatorParamIds,
+    applicationBindingSeeds,
     unsupportedEditReason,
   };
 }

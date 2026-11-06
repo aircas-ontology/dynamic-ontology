@@ -24,6 +24,8 @@ export interface ListOntologyActionRecord {
   categoryId: number;
   /** 1 启用，0 失效。 */
   status: number;
+  /** 更新时间；缺失时列表展示为 `-`。 */
+  updateTime?: string | null;
   actionKind: string;
   subjectType: string;
   operation: string;

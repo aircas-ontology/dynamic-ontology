@@ -1035,7 +1035,7 @@ async function loadSourceFunctionOptions(): Promise<void> {
   try {
     const response = await getOntologyFunctionListInterface({
       ontologySpaceId: props.spaceId,
-      type: apiType,
+      types: apiType,
       pageNum: 1,
       pageSize: 1000,
     });

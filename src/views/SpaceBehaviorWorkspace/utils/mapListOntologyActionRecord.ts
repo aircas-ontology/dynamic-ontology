@@ -103,6 +103,6 @@ export function mapListOntologyActionRecord(record: ListOntologyActionRecord): S
     statusLogs: [],
     inputParameters: [],
     outputParameters: [],
-    updatedAt: "-",
+    updatedAt: record.updateTime?.trim() || "-",
   };
 }

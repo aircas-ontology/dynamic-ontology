@@ -165,6 +165,7 @@ export type {
 export type { GetOntologyFunctionDetailData, GetOntologyFunctionDetailParamItem, GetOntologyFunctionDetailParams } from "./apis/getOntologyFunctionDetailType";
 export type { GetOntologyFunctionListData, GetOntologyFunctionListItem, GetOntologyFunctionListParams } from "./apis/getOntologyFunctionListType";
 export type { GetOntologyFunctionVersionsData, GetOntologyFunctionVersionsParams } from "./apis/getOntologyFunctionVersionsType";
+export type { GetOntologyLinkByUniqueIdentifierData, GetOntologyLinkByUniqueIdentifierParams } from "./apis/getOntologyLinkByUniqueIdentifierType";
 export type { GetOntologyMetaByObjectIdData, GetOntologyMetaByObjectIdParams } from "./apis/getOntologyMetaByObjectIdType";
 export type { GetOntologyMetaStatisticData, GetOntologyMetaStatisticParams, OntologyMetaStatisticVO } from "./apis/getOntologyMetaStatisticType";
 export type { GetOntologyObjectArrTypeTreeData, GetOntologyObjectArrTypeTreeParams } from "./apis/getOntologyObjectArrTypeTreeType";
@@ -243,6 +244,12 @@ export type {
   ParseOntologyFunctionParamsParams,
 } from "./apis/parseOntologyFunctionParamsType";
 export type {
+  PostOntologyEntityAllLinkData,
+  PostOntologyEntityAllLinkItem,
+  PostOntologyEntityAllLinkParams,
+  PostOntologyEntityAllLinkVisibilityWindow,
+} from "./apis/postOntologyEntityAllLinkType";
+export type {
   PostOntologyFunctionContainerRuntimeRestartData,
   PostOntologyFunctionContainerRuntimeRestartParams,
 } from "./apis/postOntologyFunctionContainerRuntimeRestartType";
@@ -260,6 +267,7 @@ export type {
   ProbeOntologyFunctionContainerInterfacesData,
   ProbeOntologyFunctionContainerInterfacesParams,
 } from "./apis/probeOntologyFunctionContainerInterfacesType";
+export type { PublishOntologyActionData, PublishOntologyActionParams } from "./apis/publishOntologyActionType";
 export type {
   StreamAgentChatData,
   StreamAgentChatEvent,
@@ -270,6 +278,7 @@ export type {
 } from "./apis/streamAgentChatType";
 export type { TestOntologyActionData, TestOntologyActionParams, TestOntologyActionResult } from "./apis/testOntologyActionType";
 export type { TestOntologyFunctionData, TestOntologyFunctionParameterItem, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
+export type { UnpublishOntologyActionData, UnpublishOntologyActionParams } from "./apis/unpublishOntologyActionType";
 export type { UpdateActionCategoryParams } from "./apis/updateActionCategoryType";
 export type { UpdateFunctionOperatorTemplateData, UpdateFunctionOperatorTemplateParams } from "./apis/updateFunctionOperatorTemplateType";
 export type { UpdateFunctionRateLimitTemplateData, UpdateFunctionRateLimitTemplateParams } from "./apis/updateFunctionRateLimitTemplateType";

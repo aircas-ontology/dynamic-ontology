@@ -7,6 +7,7 @@ import {
   buildOntologyFunctionScriptTestInputRowsFromParsed,
   buildOntologyFunctionScriptTestRequest,
   buildOntologyFunctionTestBindingKeys,
+  buildOntologyFunctionTestBindingRows,
   buildOntologyFunctionTestRequest,
   writeOntologyFunctionScriptTestParamValue,
 } from "../src/utils/mapOntologyFunctionTest.ts";
@@ -63,6 +64,33 @@ test("buildOntologyFunctionTestBindingKeys puts AGGREGATION first then FILTER na
     { paramId: 27, paramName: "target", paramType: "STRING", category: "INPUT", paramOrder: 3, description: "", paramRole: "AGGREGATION" },
   ]);
   assert.deepEqual(keys, ["target", "xingbie", "age"]);
+});
+
+test("buildOntologyFunctionTestBindingRows keeps order and maps paramType description", () => {
+  const rows = buildOntologyFunctionTestBindingRows([
+    {
+      paramId: 2293,
+      paramName: "mtype",
+      paramType: "STRING",
+      category: "INPUT",
+      paramOrder: 1,
+      description: "过滤条件",
+      paramRole: "FILTER",
+    },
+    {
+      paramId: 2294,
+      paramName: "amount",
+      paramType: "STRING",
+      category: "INPUT",
+      paramOrder: 2,
+      description: "聚合目标",
+      paramRole: "AGGREGATION",
+    },
+  ]);
+  assert.deepEqual(rows, [
+    { paramName: "amount", paramType: "STRING", description: "聚合目标" },
+    { paramName: "mtype", paramType: "STRING", description: "过滤条件" },
+  ]);
 });
 
 test("buildOntologyFunctionTestRequest assembles functionApi version ontologyIdentifier and bindings", () => {
@@ -238,7 +266,8 @@ test("function operator openTest loads detail and runTest shows output panel", (
   assert.match(workspace, /getOntologyFunctionDetailInterface/);
   assert.match(workspace, /testOntologyFunctionInterface/);
   assert.match(workspace, /async function openTest/);
-  assert.match(workspace, /buildOntologyFunctionTestBindingKeys/);
+  assert.match(workspace, /buildOntologyFunctionTestBindingRows/);
+  assert.match(workspace, /testBindingRows/);
   assert.match(workspace, /getOntologyCategoryTreeInterface/);
   assert.match(workspace, /getOntologyPropertyByOntologyIdInterface/);
   assert.match(workspace, /async function runTest/);
@@ -249,6 +278,9 @@ test("function operator openTest loads detail and runTest shows output panel", (
   assert.match(panel, /选择对象/);
   assert.match(panel, /输出结果/);
   assert.match(panel, /function-operator-test__io/);
+  assert.match(panel, /function-operator-test__param-meta/);
+  assert.match(panel, /类型：\{\{ row\.paramType \|\| "—" \}\}/);
+  assert.match(panel, /描述：\{\{ row\.description \|\| "—" \}\}/);
   assert.match(panel, /width="960px"/);
   assert.doesNotMatch(panel, /function-operator-panel__test-result/);
 });

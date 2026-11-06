@@ -10,7 +10,92 @@
   >
     <p class="behavior-test-dialog__hint">{{ dialogHint }}</p>
 
-    <section class="behavior-test-dialog__section">
+    <template v-if="isRelationInstanceTest">
+      <section class="behavior-test-dialog__section">
+        <h4 class="behavior-test-dialog__section-title">关系两端对象</h4>
+        <p v-if="relationContextLoading" class="behavior-test-dialog__state" role="status">正在加载关系信息…</p>
+        <p v-else-if="relationContextError" class="behavior-test-dialog__state" role="alert">{{ relationContextError }}</p>
+        <p v-else class="behavior-test-dialog__state" role="status">{{ ontologyNameFrom || "—" }} → {{ ontologyNameTo || "—" }}</p>
+      </section>
+
+      <section v-if="!relationContextLoading && !relationContextError" class="behavior-test-dialog__section">
+        <h4 class="behavior-test-dialog__section-title">选择 {{ ontologyNameFrom || "From" }} 实例</h4>
+        <p v-if="fromEntityLoading" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
+        <p v-else-if="fromEntityError" class="behavior-test-dialog__state" role="alert">{{ fromEntityError }}</p>
+        <template v-else>
+          <el-table
+            class="behavior-test-dialog__table"
+            :data="fromEntityRows"
+            row-key="rowKey"
+            size="small"
+            highlight-current-row
+            :empty-text="fromEntityRows.length ? undefined : '暂无实体实例'"
+            @row-click="handleFromEntityRowClick"
+          >
+            <el-table-column width="48" align="center">
+              <template #default="{ row }">
+                <el-radio :model-value="selectedFromEntityRowKey" :value="asEntityRow(row).rowKey" @change="selectFromEntityRow(asEntityRow(row))" />
+              </template>
+            </el-table-column>
+            <el-table-column prop="displayName" label="实体名称" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="primaryKeyLabel" label="实体主键" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="propertySummary" label="主属性摘要" min-width="200" show-overflow-tooltip />
+          </el-table>
+          <div class="behavior-test-dialog__pagination">
+            <el-pagination
+              background
+              layout="total, prev, pager, next, sizes"
+              :total="fromEntityTotal"
+              :current-page="fromEntityPage"
+              :page-size="fromEntityPageSize"
+              :page-sizes="[10, 20, 50]"
+              @current-change="changeFromEntityPage"
+              @size-change="changeFromEntityPageSize"
+            />
+          </div>
+        </template>
+      </section>
+
+      <section v-if="!relationContextLoading && !relationContextError" class="behavior-test-dialog__section">
+        <h4 class="behavior-test-dialog__section-title">选择 {{ ontologyNameTo || "To" }} 实例</h4>
+        <p v-if="toEntityLoading" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
+        <p v-else-if="toEntityError" class="behavior-test-dialog__state" role="alert">{{ toEntityError }}</p>
+        <template v-else>
+          <el-table
+            class="behavior-test-dialog__table"
+            :data="toEntityRows"
+            row-key="rowKey"
+            size="small"
+            highlight-current-row
+            :empty-text="toEntityRows.length ? undefined : '暂无实体实例'"
+            @row-click="handleToEntityRowClick"
+          >
+            <el-table-column width="48" align="center">
+              <template #default="{ row }">
+                <el-radio :model-value="selectedToEntityRowKey" :value="asEntityRow(row).rowKey" @change="selectToEntityRow(asEntityRow(row))" />
+              </template>
+            </el-table-column>
+            <el-table-column prop="displayName" label="实体名称" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="primaryKeyLabel" label="实体主键" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="propertySummary" label="主属性摘要" min-width="200" show-overflow-tooltip />
+          </el-table>
+          <div class="behavior-test-dialog__pagination">
+            <el-pagination
+              background
+              layout="total, prev, pager, next, sizes"
+              :total="toEntityTotal"
+              :current-page="toEntityPage"
+              :page-size="toEntityPageSize"
+              :page-sizes="[10, 20, 50]"
+              @current-change="changeToEntityPage"
+              @size-change="changeToEntityPageSize"
+            />
+          </div>
+        </template>
+      </section>
+    </template>
+
+    <section v-else-if="!isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
       <h4 class="behavior-test-dialog__section-title">选择实体实例</h4>
       <p v-if="entityLoading" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
       <p v-else-if="entityError" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
@@ -49,7 +134,7 @@
       </template>
     </section>
 
-    <section v-if="needsDataRowSelection" class="behavior-test-dialog__section">
+    <section v-if="isAttributeValueTest && needsDataRowSelection" class="behavior-test-dialog__section">
       <h4 class="behavior-test-dialog__section-title">选择数据行</h4>
       <p v-if="selectedEntityPrimaryKey === null" class="behavior-test-dialog__state" role="status">请先选择实体实例以加载行数据</p>
       <p v-else-if="groupRowLoading" class="behavior-test-dialog__state" role="status">正在加载实体行数据…</p>
@@ -80,7 +165,7 @@
       </el-table>
     </section>
 
-    <section v-if="!isDeleteTest" class="behavior-test-dialog__section">
+    <section v-if="isAttributeValueTest && !isDeleteTest" class="behavior-test-dialog__section">
       <h4 class="behavior-test-dialog__section-title">测试参数</h4>
       <p v-if="detailLoading" class="behavior-test-dialog__state" role="status">正在加载行为参数…</p>
       <p v-else-if="detailError" class="behavior-test-dialog__state" role="alert">{{ detailError }}</p>
@@ -100,12 +185,13 @@
       </el-table>
       <p v-else class="behavior-test-dialog__state" role="status">暂无外部输入参数</p>
     </section>
-    <p v-else-if="detailError" class="behavior-test-dialog__state" role="alert">{{ detailError }}</p>
+    <p v-else-if="isAttributeValueTest && detailError" class="behavior-test-dialog__state" role="alert">{{ detailError }}</p>
 
     <p v-if="submitError" class="behavior-test-dialog__state" role="alert">{{ submitError }}</p>
 
     <template #footer>
-      <el-button :disabled="submitLoading" @click="openEntityRowDetail">查看实例数据</el-button>
+      <el-button v-if="isRelationInstanceTest" :disabled="submitLoading" @click="openEntityLinkData">查看实例关系数据</el-button>
+      <el-button v-else-if="!isBasicFunctionOperatorTest" :disabled="submitLoading" @click="openEntityRowDetail">查看实例数据</el-button>
       <el-button :disabled="submitLoading" @click="emit('update:modelValue', false)">关闭</el-button>
       <el-button type="primary" :loading="submitLoading" @click="submitBehaviorTest">开始测试</el-button>
     </template>
@@ -113,22 +199,34 @@
 
   <BehaviorEntityRowDetailDialog
     v-model="entityRowDetailVisible"
-    :ontology-unique-identifier="behaviorOntologyUniqueIdentifier"
-    :entity-primary-key="selectedEntityPrimaryKey"
-    :entity-display-name="selectedEntityDisplayName"
+    :ontology-unique-identifier="detailOntologyUniqueIdentifier"
+    :entity-primary-key="detailEntityPrimaryKey"
+    :entity-display-name="detailEntityDisplayName"
   />
+
+  <BehaviorEntityLinkDataDialog v-model="entityLinkDataVisible" :query-params="entityLinkDataQueryParams" />
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { getOntologyActionInfoInterface, getOntologyEntitiesInterface, postGetOntologyEntityRowDetailInterface, postTestOntologyActionInterface } from "@/apis";
-import type { OntologyEntityInfo, SpaceBehaviorItem } from "@/types";
+import {
+  getOntologyActionInfoInterface,
+  getOntologyEntitiesInterface,
+  getOntologyLinkByUniqueIdentifierInterface,
+  postGetOntologyEntityRowDetailInterface,
+  postTestOntologyActionInterface,
+} from "@/apis";
+import type { OntologyEntityInfo, PostOntologyEntityAllLinkParams, SpaceBehaviorItem } from "@/types";
+import BehaviorEntityLinkDataDialog from "./BehaviorEntityLinkDataDialog.vue";
 import BehaviorEntityRowDetailDialog from "./BehaviorEntityRowDetailDialog.vue";
 import { coerceBehaviorTestParamValue } from "../utils/coerceBehaviorTestParamValue";
 import { mapOntologyEntityRowDetailToDataRows, type BehaviorTestEntityDataRow } from "../utils/mapOntologyEntityRowDetailToDataRows";
 import { mapOntologyActionInfoToViewState, type SpaceBehaviorActionInfoViewParamRow } from "../utils/mapOntologyActionInfoToViewState";
 import { isMainStorageGroup } from "../utils/resolveAttributeValueSelection";
+
+/** 关系实例测试挂载侧。 */
+type RelationMountSide = "from" | "to" | "";
 
 /** 测试弹窗实体表格行。 */
 interface BehaviorTestEntityRow {
@@ -182,6 +280,13 @@ const submitError = ref("");
 let submitToken = 0;
 
 const entityRowDetailVisible = ref(false);
+const entityLinkDataVisible = ref(false);
+const entityLinkDataQueryParams = ref<PostOntologyEntityAllLinkParams>({
+  ontologyUniqueIdentifierFrom: "",
+  entityPrimaryKeyFrom: "",
+  ontologyUniqueIdentifierTo: "",
+  entityPrimaryKeyTo: "",
+});
 
 const groupRowLoading = ref(false);
 const groupRowError = ref("");
@@ -189,19 +294,52 @@ const groupDataRows = ref<BehaviorTestEntityDataRow[]>([]);
 const selectedGroupDataRowKey = ref("");
 let groupRowLoadToken = 0;
 
+const relationContextLoading = ref(false);
+const relationContextError = ref("");
+const ontologyLinkUniqIdentifier = ref("");
+const ontologyNameFrom = ref("");
+const ontologyNameTo = ref("");
+const ontologyUniqueIdentifierFrom = ref("");
+const ontologyUniqueIdentifierTo = ref("");
+const relationMountSide = ref<RelationMountSide>("");
+let relationContextLoadToken = 0;
+
+const fromEntityLoading = ref(false);
+const fromEntityError = ref("");
+const fromEntityRows = ref<BehaviorTestEntityRow[]>([]);
+const fromEntityTotal = ref(0);
+const fromEntityPage = ref(1);
+const fromEntityPageSize = ref(10);
+const selectedFromEntityRowKey = ref("");
+let fromEntityLoadToken = 0;
+
+const toEntityLoading = ref(false);
+const toEntityError = ref("");
+const toEntityRows = ref<BehaviorTestEntityRow[]>([]);
+const toEntityTotal = ref(0);
+const toEntityPage = ref(1);
+const toEntityPageSize = ref(10);
+const selectedToEntityRowKey = ref("");
+let toEntityLoadToken = 0;
+
 const dialogTitle = computed(() => {
   const name = props.behavior?.displayName.trim() || "行为";
   return `测试行为 · ${name}`;
 });
 
-const isCreateTest = computed(() => props.behavior?.basicAction === "create");
-const isUpdateTest = computed(() => props.behavior?.basicAction === "update");
-const isDeleteTest = computed(() => props.behavior?.basicAction === "delete");
+const isBasicFunctionOperatorTest = computed(() => props.behavior?.valueType === "basicFunctionOperator");
+const isAttributeValueTest = computed(() => props.behavior?.valueType === "attributeValue");
+const isRelationInstanceTest = computed(() => props.behavior?.valueType === "relationInstance");
+const isCreateTest = computed(() => isAttributeValueTest.value && props.behavior?.basicAction === "create");
+const isUpdateTest = computed(() => isAttributeValueTest.value && props.behavior?.basicAction === "update");
+const isDeleteTest = computed(() => isAttributeValueTest.value && props.behavior?.basicAction === "delete");
 const needsDataRowSelection = computed(() => isUpdateTest.value || isDeleteTest.value);
 /** 属性值-编辑且存储分组为 main 时，数据行默认勾选且不可取消。 */
 const isMainGroupDataRowLocked = computed(() => isUpdateTest.value && isMainStorageGroup(resolvedStorageGroup.value));
 
 const dialogHint = computed(() => {
+  if (isRelationInstanceTest.value) return "选择关系两端对象实例后执行关系实例测试。";
+  if (isBasicFunctionOperatorTest.value) return "确认后直接执行基础函数算子测试。";
   if (isUpdateTest.value) return "选择实体实例与数据行，并填写外部输入参数，用于属性值-编辑测试。";
   if (isDeleteTest.value) return "选择实体实例与数据行，用于属性值-删除测试。";
   return "选择实体实例并填写外部输入参数，用于属性值-新增测试。";
@@ -218,6 +356,37 @@ const selectedEntityPrimaryKey = computed(() => {
 });
 
 const selectedEntityDisplayName = computed(() => selectedEntityRow.value?.displayName ?? "");
+
+const selectedFromEntityRow = computed(() => fromEntityRows.value.find((item) => item.rowKey === selectedFromEntityRowKey.value) ?? null);
+const selectedToEntityRow = computed(() => toEntityRows.value.find((item) => item.rowKey === selectedToEntityRowKey.value) ?? null);
+
+const selectedMountEntityRow = computed(() => {
+  if (relationMountSide.value === "from") return selectedFromEntityRow.value;
+  if (relationMountSide.value === "to") return selectedToEntityRow.value;
+  return null;
+});
+
+const selectedOppositeEntityRow = computed(() => {
+  if (relationMountSide.value === "from") return selectedToEntityRow.value;
+  if (relationMountSide.value === "to") return selectedFromEntityRow.value;
+  return null;
+});
+
+const detailOntologyUniqueIdentifier = computed(() => behaviorOntologyUniqueIdentifier.value);
+
+const detailEntityPrimaryKey = computed(() => {
+  if (isRelationInstanceTest.value) {
+    const primaryKey = selectedMountEntityRow.value?.primaryKey;
+    if (primaryKey === undefined || primaryKey === null || primaryKey === "") return null;
+    return primaryKey;
+  }
+  return selectedEntityPrimaryKey.value;
+});
+
+const detailEntityDisplayName = computed(() => {
+  if (isRelationInstanceTest.value) return selectedMountEntityRow.value?.displayName ?? "";
+  return selectedEntityDisplayName.value;
+});
 
 const selectedGroupDataRow = computed(() => groupDataRows.value.find((item) => item.rowKey === selectedGroupDataRowKey.value) ?? null);
 
@@ -365,6 +534,34 @@ function clearEntityListState(): void {
 }
 
 /**
+ * @description 清空关系实例测试上下文与双端实体列表。
+ */
+function clearRelationTestState(): void {
+  relationContextLoading.value = false;
+  relationContextError.value = "";
+  ontologyLinkUniqIdentifier.value = "";
+  ontologyNameFrom.value = "";
+  ontologyNameTo.value = "";
+  ontologyUniqueIdentifierFrom.value = "";
+  ontologyUniqueIdentifierTo.value = "";
+  relationMountSide.value = "";
+  fromEntityRows.value = [];
+  fromEntityTotal.value = 0;
+  fromEntityError.value = "";
+  fromEntityLoading.value = false;
+  fromEntityPage.value = 1;
+  fromEntityPageSize.value = 10;
+  selectedFromEntityRowKey.value = "";
+  toEntityRows.value = [];
+  toEntityTotal.value = 0;
+  toEntityError.value = "";
+  toEntityLoading.value = false;
+  toEntityPage.value = 1;
+  toEntityPageSize.value = 10;
+  selectedToEntityRowKey.value = "";
+}
+
+/**
  * @description 清空详情参数与提交态。
  */
 function clearDetailParamState(): void {
@@ -431,6 +628,38 @@ function selectEntityRow(row: BehaviorTestEntityRow): void {
  */
 function handleEntityRowClick(row: unknown): void {
   selectEntityRow(asEntityRow(row));
+}
+
+/**
+ * @description 单选关系 From 侧实体行。
+ * @param row 实体行。
+ */
+function selectFromEntityRow(row: BehaviorTestEntityRow): void {
+  selectedFromEntityRowKey.value = row.rowKey;
+}
+
+/**
+ * @description 点击 From 实体行时同步单选。
+ * @param row 表格行。
+ */
+function handleFromEntityRowClick(row: unknown): void {
+  selectFromEntityRow(asEntityRow(row));
+}
+
+/**
+ * @description 单选关系 To 侧实体行。
+ * @param row 实体行。
+ */
+function selectToEntityRow(row: BehaviorTestEntityRow): void {
+  selectedToEntityRowKey.value = row.rowKey;
+}
+
+/**
+ * @description 点击 To 实体行时同步单选。
+ * @param row 表格行。
+ */
+function handleToEntityRowClick(row: unknown): void {
+  selectToEntityRow(asEntityRow(row));
 }
 
 /**
@@ -573,6 +802,187 @@ function changeEntityPageSize(size: number): void {
 }
 
 /**
+ * @description 按对象标识分页加载关系 From 侧实体列表。
+ */
+async function loadFromEntityList(): Promise<void> {
+  const ontologyUniqueIdentifier = ontologyUniqueIdentifierFrom.value.trim();
+  if (!ontologyUniqueIdentifier) {
+    fromEntityRows.value = [];
+    fromEntityTotal.value = 0;
+    fromEntityError.value = "关系缺少 From 对象标识，无法加载实体列表";
+    return;
+  }
+  const requestToken = ++fromEntityLoadToken;
+  fromEntityLoading.value = true;
+  fromEntityError.value = "";
+  try {
+    const response = await getOntologyEntitiesInterface({
+      ontologyUniqueIdentifier,
+      pageNum: fromEntityPage.value,
+      pageSize: fromEntityPageSize.value,
+    });
+    if (requestToken !== fromEntityLoadToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "实体列表加载失败");
+    const records = Array.isArray(response.data.records) ? response.data.records : [];
+    fromEntityRows.value = records.map((item, index) => mapEntityRecordToRow(item, index));
+    fromEntityTotal.value = Number(response.data.total) || records.length;
+    if (selectedFromEntityRowKey.value && !fromEntityRows.value.some((item) => item.rowKey === selectedFromEntityRowKey.value)) {
+      selectedFromEntityRowKey.value = "";
+    }
+  } catch (error) {
+    if (requestToken !== fromEntityLoadToken) return;
+    fromEntityRows.value = [];
+    fromEntityTotal.value = 0;
+    fromEntityError.value = error instanceof Error ? error.message : "实体列表加载失败";
+  } finally {
+    if (requestToken === fromEntityLoadToken) fromEntityLoading.value = false;
+  }
+}
+
+/**
+ * @description 按对象标识分页加载关系 To 侧实体列表。
+ */
+async function loadToEntityList(): Promise<void> {
+  const ontologyUniqueIdentifier = ontologyUniqueIdentifierTo.value.trim();
+  if (!ontologyUniqueIdentifier) {
+    toEntityRows.value = [];
+    toEntityTotal.value = 0;
+    toEntityError.value = "关系缺少 To 对象标识，无法加载实体列表";
+    return;
+  }
+  const requestToken = ++toEntityLoadToken;
+  toEntityLoading.value = true;
+  toEntityError.value = "";
+  try {
+    const response = await getOntologyEntitiesInterface({
+      ontologyUniqueIdentifier,
+      pageNum: toEntityPage.value,
+      pageSize: toEntityPageSize.value,
+    });
+    if (requestToken !== toEntityLoadToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "实体列表加载失败");
+    const records = Array.isArray(response.data.records) ? response.data.records : [];
+    toEntityRows.value = records.map((item, index) => mapEntityRecordToRow(item, index));
+    toEntityTotal.value = Number(response.data.total) || records.length;
+    if (selectedToEntityRowKey.value && !toEntityRows.value.some((item) => item.rowKey === selectedToEntityRowKey.value)) {
+      selectedToEntityRowKey.value = "";
+    }
+  } catch (error) {
+    if (requestToken !== toEntityLoadToken) return;
+    toEntityRows.value = [];
+    toEntityTotal.value = 0;
+    toEntityError.value = error instanceof Error ? error.message : "实体列表加载失败";
+  } finally {
+    if (requestToken === toEntityLoadToken) toEntityLoading.value = false;
+  }
+}
+
+/**
+ * @description 切换 From 实体列表页码。
+ * @param page 页码。
+ */
+function changeFromEntityPage(page: number): void {
+  fromEntityPage.value = page;
+  void loadFromEntityList();
+}
+
+/**
+ * @description 切换 From 实体列表每页条数。
+ * @param size 每页条数。
+ */
+function changeFromEntityPageSize(size: number): void {
+  fromEntityPageSize.value = size;
+  fromEntityPage.value = 1;
+  void loadFromEntityList();
+}
+
+/**
+ * @description 切换 To 实体列表页码。
+ * @param page 页码。
+ */
+function changeToEntityPage(page: number): void {
+  toEntityPage.value = page;
+  void loadToEntityList();
+}
+
+/**
+ * @description 切换 To 实体列表每页条数。
+ * @param size 每页条数。
+ */
+function changeToEntityPageSize(size: number): void {
+  toEntityPageSize.value = size;
+  toEntityPage.value = 1;
+  void loadToEntityList();
+}
+
+/**
+ * @description 加载关系实例测试上下文：行为详情取 link id，再查关系两端并加载实体列表。
+ */
+async function loadRelationTestContext(): Promise<void> {
+  const actionApi = (props.behavior?.behaviorApiName ?? "").trim();
+  const ontologySpaceId = props.spaceId.trim();
+  const mountOntologyId = behaviorOntologyUniqueIdentifier.value;
+  if (!actionApi) {
+    clearRelationTestState();
+    relationContextError.value = "当前行为缺少 apiName，无法加载关系信息";
+    return;
+  }
+  if (!ontologySpaceId) {
+    clearRelationTestState();
+    relationContextError.value = "缺少对象空间 id，无法加载关系信息";
+    return;
+  }
+  const requestToken = ++relationContextLoadToken;
+  relationContextLoading.value = true;
+  relationContextError.value = "";
+  submitError.value = "";
+  try {
+    const detailResponse = await getOntologyActionInfoInterface({ actionApi, ontologySpaceId });
+    if (requestToken !== relationContextLoadToken) return;
+    if (detailResponse.code !== 200 || !detailResponse.data) throw new Error(detailResponse.message || "行为详情加载失败");
+    resolvedActionApi.value = (detailResponse.data.actionApi ?? "").trim() || actionApi;
+    const linkId = (detailResponse.data.linkMapping?.ontologyLinkUniqIdentifier ?? "").trim();
+    if (!linkId) throw new Error("行为未配置关系唯一标识，无法测试");
+    ontologyLinkUniqIdentifier.value = linkId;
+    const linkResponse = await getOntologyLinkByUniqueIdentifierInterface({ uniqueIdentifier: linkId });
+    if (requestToken !== relationContextLoadToken) return;
+    if (linkResponse.code !== 200 || !linkResponse.data) throw new Error(linkResponse.message || "关系详情加载失败");
+    const linkData = linkResponse.data;
+    ontologyNameFrom.value = (linkData.ontologyNameFrom ?? "").trim();
+    ontologyNameTo.value = (linkData.ontologyNameTo ?? "").trim();
+    ontologyUniqueIdentifierFrom.value = (linkData.ontologyUniqueIdentifierFrom ?? "").trim();
+    ontologyUniqueIdentifierTo.value = (linkData.ontologyUniqueIdentifierTo ?? "").trim();
+    if (mountOntologyId && mountOntologyId === ontologyUniqueIdentifierFrom.value) {
+      relationMountSide.value = "from";
+    } else if (mountOntologyId && mountOntologyId === ontologyUniqueIdentifierTo.value) {
+      relationMountSide.value = "to";
+    } else {
+      relationMountSide.value = "";
+      throw new Error("行为挂载对象与关系两端不匹配，无法确定挂载侧实例");
+    }
+    fromEntityPage.value = 1;
+    toEntityPage.value = 1;
+    selectedFromEntityRowKey.value = "";
+    selectedToEntityRowKey.value = "";
+    void loadFromEntityList();
+    void loadToEntityList();
+  } catch (error) {
+    if (requestToken !== relationContextLoadToken) return;
+    ontologyLinkUniqIdentifier.value = "";
+    ontologyNameFrom.value = "";
+    ontologyNameTo.value = "";
+    ontologyUniqueIdentifierFrom.value = "";
+    ontologyUniqueIdentifierTo.value = "";
+    relationMountSide.value = "";
+    fromEntityRows.value = [];
+    toEntityRows.value = [];
+    relationContextError.value = error instanceof Error ? error.message : "关系信息加载失败";
+  } finally {
+    if (requestToken === relationContextLoadToken) relationContextLoading.value = false;
+  }
+}
+
+/**
  * @description 按所选实体加载属性行详情并扁平为可选数据行。
  */
 async function loadEntityGroupDataRows(): Promise<void> {
@@ -628,15 +1038,44 @@ async function loadEntityGroupDataRows(): Promise<void> {
  * @description 打开所选实体的属性行详情弹框。
  */
 function openEntityRowDetail(): void {
-  if (selectedEntityPrimaryKey.value === null) {
+  if (detailEntityPrimaryKey.value === null) {
     ElMessage.warning("请先选择实体实例");
     return;
   }
-  if (!behaviorOntologyUniqueIdentifier.value) {
+  if (!detailOntologyUniqueIdentifier.value) {
     ElMessage.warning("当前行为缺少对象标识，无法查看实例数据");
     return;
   }
   entityRowDetailVisible.value = true;
+}
+
+/**
+ * @description 打开关系实例两侧实体的关联关系数据弹框，并组装 link_between 请求体。
+ */
+function openEntityLinkData(): void {
+  const fromId = ontologyUniqueIdentifierFrom.value.trim();
+  const toId = ontologyUniqueIdentifierTo.value.trim();
+  const fromRow = selectedFromEntityRow.value;
+  const toRow = selectedToEntityRow.value;
+  if (!fromRow || fromRow.primaryKey === "") {
+    ElMessage.warning(`请先选择 ${ontologyNameFrom.value || "From"} 实例`);
+    return;
+  }
+  if (!toRow || toRow.primaryKey === "") {
+    ElMessage.warning(`请先选择 ${ontologyNameTo.value || "To"} 实例`);
+    return;
+  }
+  if (!fromId || !toId) {
+    ElMessage.warning("关系两端对象标识缺失，无法查看实例关系数据");
+    return;
+  }
+  entityLinkDataQueryParams.value = {
+    ontologyUniqueIdentifierFrom: fromId,
+    entityPrimaryKeyFrom: fromRow.primaryKey,
+    ontologyUniqueIdentifierTo: toId,
+    entityPrimaryKeyTo: toRow.primaryKey,
+  };
+  entityLinkDataVisible.value = true;
 }
 
 /**
@@ -655,13 +1094,86 @@ function buildExternalParamsPayload(): { params: Record<string, unknown> } | { e
 }
 
 /**
- * @description 提交属性值新增/编辑/删除行为测试。
+ * @description 提交行为测试：属性值、基础函数算子或关系实例。
  */
 async function submitBehaviorTest(): Promise<void> {
   if (submitLoading.value) return;
   submitError.value = "";
-  if (!props.behavior || (!isCreateTest.value && !isUpdateTest.value && !isDeleteTest.value)) {
-    ElMessage.info("当前仅支持属性值-新增/编辑/删除测试");
+  if (
+    !props.behavior ||
+    (!isRelationInstanceTest.value && !isBasicFunctionOperatorTest.value && !isCreateTest.value && !isUpdateTest.value && !isDeleteTest.value)
+  ) {
+    ElMessage.info("当前仅支持属性值-新增/编辑/删除、基础函数算子或关系实例测试");
+    return;
+  }
+  if (isRelationInstanceTest.value) {
+    if (relationContextLoading.value || relationContextError.value) {
+      ElMessage.warning("请等待关系信息加载完成后再测试");
+      return;
+    }
+    const mountRow = selectedMountEntityRow.value;
+    const oppositeRow = selectedOppositeEntityRow.value;
+    if (!mountRow || mountRow.primaryKey === "") {
+      ElMessage.warning("请先选择挂载侧实体实例");
+      return;
+    }
+    if (!oppositeRow || oppositeRow.primaryKey === "") {
+      ElMessage.warning("请先选择对端实体实例");
+      return;
+    }
+    const actionApi = resolvedActionApi.value.trim() || (props.behavior.behaviorApiName ?? "").trim();
+    const ontologySpaceId = props.spaceId.trim();
+    if (!actionApi || !ontologySpaceId) {
+      submitError.value = "缺少行为 api 或对象空间 id，无法测试";
+      return;
+    }
+    const requestToken = ++submitToken;
+    submitLoading.value = true;
+    try {
+      const response = await postTestOntologyActionInterface({
+        ontologySpaceId,
+        actionApi,
+        entityPrimaryKey: mountRow.primaryKey,
+        linkEntityPrimaryKey: oppositeRow.primaryKey,
+      });
+      if (requestToken !== submitToken) return;
+      if (response.code !== 200) throw new Error(response.message || "行为测试失败");
+      const resultMessage = response.data?.message?.trim() || response.message || "行为测试成功";
+      ElMessage.success(resultMessage);
+    } catch (error) {
+      if (requestToken !== submitToken) return;
+      submitError.value = error instanceof Error ? error.message : "行为测试失败";
+      ElMessage.error(submitError.value);
+    } finally {
+      if (requestToken === submitToken) submitLoading.value = false;
+    }
+    return;
+  }
+  if (isBasicFunctionOperatorTest.value) {
+    const actionApi = (props.behavior.behaviorApiName ?? "").trim();
+    const ontologySpaceId = props.spaceId.trim();
+    if (!actionApi || !ontologySpaceId) {
+      submitError.value = "缺少行为 api 或对象空间 id，无法测试";
+      return;
+    }
+    const requestToken = ++submitToken;
+    submitLoading.value = true;
+    try {
+      const response = await postTestOntologyActionInterface({
+        ontologySpaceId,
+        actionApi,
+      });
+      if (requestToken !== submitToken) return;
+      if (response.code !== 200) throw new Error(response.message || "行为测试失败");
+      const resultMessage = response.data?.message?.trim() || response.message || "行为测试成功";
+      ElMessage.success(resultMessage);
+    } catch (error) {
+      if (requestToken !== submitToken) return;
+      submitError.value = error instanceof Error ? error.message : "行为测试失败";
+      ElMessage.error(submitError.value);
+    } finally {
+      if (requestToken === submitToken) submitLoading.value = false;
+    }
     return;
   }
   const selected = selectedEntityRow.value;
@@ -717,9 +1229,6 @@ async function submitBehaviorTest(): Promise<void> {
     if (response.code !== 200) throw new Error(response.message || "行为测试失败");
     const resultMessage = response.data?.message?.trim() || response.message || "行为测试成功";
     ElMessage.success(resultMessage);
-    if (response.data?.result?.trim()) {
-      ElMessage.info(response.data.result.trim());
-    }
   } catch (error) {
     if (requestToken !== submitToken) return;
     submitError.value = error instanceof Error ? error.message : "行为测试失败";
@@ -730,17 +1239,36 @@ async function submitBehaviorTest(): Promise<void> {
 }
 
 watch(
-  () => [props.modelValue, props.behavior?.id, props.behavior?.ontologyUniqIdentifier, props.spaceId, props.behavior?.basicAction] as const,
+  () =>
+    [
+      props.modelValue,
+      props.behavior?.id,
+      props.behavior?.ontologyUniqIdentifier,
+      props.spaceId,
+      props.behavior?.basicAction,
+      props.behavior?.valueType,
+    ] as const,
   ([visible]) => {
     if (!visible) {
       entityLoadToken += 1;
       detailLoadToken += 1;
       groupRowLoadToken += 1;
+      relationContextLoadToken += 1;
+      fromEntityLoadToken += 1;
+      toEntityLoadToken += 1;
       submitToken += 1;
       entityRowDetailVisible.value = false;
+      entityLinkDataVisible.value = false;
+      entityLinkDataQueryParams.value = {
+        ontologyUniqueIdentifierFrom: "",
+        entityPrimaryKeyFrom: "",
+        ontologyUniqueIdentifierTo: "",
+        entityPrimaryKeyTo: "",
+      };
       clearEntityListState();
       clearDetailParamState();
       clearGroupDataRowState();
+      clearRelationTestState();
       entityPage.value = 1;
       entityPageSize.value = 10;
       return;
@@ -750,8 +1278,19 @@ watch(
     selectedGroupDataRowKey.value = "";
     submitError.value = "";
     clearGroupDataRowState();
+    clearDetailParamState();
+    clearRelationTestState();
+    if (isRelationInstanceTest.value) {
+      void loadRelationTestContext();
+      return;
+    }
+    if (isBasicFunctionOperatorTest.value) {
+      return;
+    }
     void loadEntityList();
-    void loadBehaviorDetailParams();
+    if (isAttributeValueTest.value) {
+      void loadBehaviorDetailParams();
+    }
   },
 );
 </script>

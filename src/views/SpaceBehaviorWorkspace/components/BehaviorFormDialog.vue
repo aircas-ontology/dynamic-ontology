@@ -530,6 +530,7 @@ import {
 import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestBindingParamIds } from "@/utils/mapOntologyFunctionTest";
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
 import { mapOntologyRelationLinks } from "@/views/SpaceRelationWorkspace/utils/mapOntologyRelationCategoryTree";
+import { applyApplicationActionInfoBindings } from "../utils/applyApplicationActionInfoBindings.ts";
 import { buildApplicationCreateActionParams } from "../utils/buildApplicationCreateActionParams";
 import { flattenPropertyInfosFromCategoryTree } from "../utils/flattenPropertyInfosFromCategoryTree";
 import {
@@ -906,7 +907,9 @@ async function ensureApplicationPropertyOptions(ontologyUniqueIdentifier: string
       if (!value || options.has(value)) continue;
       const apiName = typeof item.apiName === "string" ? item.apiName.trim() : "";
       const displayName = typeof item.displayName === "string" ? item.displayName.trim() : "";
-      const label = displayName ? (apiName ? `${displayName}（${apiName}）` : displayName) : apiName || value;
+      const propertyType = typeof item.propertyType === "string" ? item.propertyType.trim() : "";
+      const nameLabel = displayName ? (apiName ? `${displayName}（${apiName}）` : displayName) : apiName || value;
+      const label = propertyType ? `${nameLabel} · ${propertyType}` : nameLabel;
       options.set(value, { value, label });
     }
     applicationPropertyOptionsByOntology.value = {
@@ -1681,7 +1684,9 @@ async function hydrateActionInfoSections(state: SpaceBehaviorActionInfoFormState
     }
     return;
   }
-  if (state.kind === "application" && state.functionOperatorId) {
+  if (state.kind === "application") {
+    selectedRelationId.value = state.selectedRelationId;
+    if (!state.functionOperatorId) return;
     const matched = operatorCatalog.value.find((item) => item.id === state.functionOperatorId);
     if (matched) {
       functionOperatorVersion.value = matched.version;
@@ -1690,6 +1695,26 @@ async function hydrateActionInfoSections(state: SpaceBehaviorActionInfoFormState
     if (functionOperatorVersion.value) {
       await loadApplicationOperatorDetail(state.functionOperatorId, functionOperatorVersion.value);
     }
+    if (!state.applicationBindingSeeds.length) return;
+    const applied = applyApplicationActionInfoBindings(state.applicationBindingSeeds, applicationInputRows.value, applicationOutputRows.value);
+    applicationInputBindings.value = {
+      ...applicationInputBindings.value,
+      ...applied.applicationInputBindings,
+    };
+    applicationOutputBindings.value = {
+      ...applicationOutputBindings.value,
+      ...applied.applicationOutputBindings,
+    };
+    const ontologyIds = new Set<string>();
+    for (const binding of Object.values(applied.applicationInputBindings)) {
+      const ontologyId = binding.ontologyUniqueIdentifier.trim();
+      if (ontologyId) ontologyIds.add(ontologyId);
+    }
+    for (const binding of Object.values(applied.applicationOutputBindings)) {
+      const ontologyId = binding.ontologyUniqueIdentifier.trim();
+      if (ontologyId) ontologyIds.add(ontologyId);
+    }
+    await Promise.all([...ontologyIds].map((ontologyId) => ensureApplicationPropertyOptions(ontologyId)));
   }
 }
 
@@ -1863,7 +1888,7 @@ async function loadOperatorCatalog(): Promise<void> {
     if (!Number.isInteger(numericSpaceId)) throw new Error("当前对象空间无效");
     const response = await getOntologyFunctionListInterface({
       ontologySpaceId: numericSpaceId,
-      ...(kind.value === "application" ? { excludeTypes: "BASIC_QUERY" } : { type: "BASIC_QUERY" as const }),
+      ...(kind.value === "application" ? { excludeTypes: "BASIC_QUERY" } : { types: "BASIC_QUERY" as const }),
       publishStatus: 1,
       pageNum: 1,
       pageSize: 100,

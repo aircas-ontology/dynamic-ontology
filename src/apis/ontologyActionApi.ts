@@ -10,8 +10,12 @@ import type {
   GetOntologyActionInfoParams,
   ListOntologyActionData,
   ListOntologyActionParams,
+  PublishOntologyActionData,
+  PublishOntologyActionParams,
   TestOntologyActionData,
   TestOntologyActionParams,
+  UnpublishOntologyActionData,
+  UnpublishOntologyActionParams,
 } from "@/types";
 import { request } from "@/utils/request";
 
@@ -115,6 +119,42 @@ export function getListOntologyActionInterface(params: ListOntologyActionParams)
   return request<ListOntologyActionData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action/list",
     method: "get",
+    params,
+  });
+}
+
+/**
+ * @description 发布本体行为。
+ *
+ * 请求方式：PUT `/ontology/action/publish`
+ *
+ * @param params 发布行为查询参数。
+ * @param params.ontologySpaceId 本体空间 id。
+ * @param params.actionApi 行为 api。
+ * @returns 标准 API 响应；成功时 data 为空数组。
+ */
+export function putPublishOntologyActionInterface(params: PublishOntologyActionParams): Promise<ApiResponse<PublishOntologyActionData>> {
+  return request<PublishOntologyActionData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action/publish",
+    method: "put",
+    params,
+  });
+}
+
+/**
+ * @description 撤销发布本体行为。
+ *
+ * 请求方式：PUT `/ontology/action/unpublish`
+ *
+ * @param params 撤销发布查询参数。
+ * @param params.ontologySpaceId 本体空间 id。
+ * @param params.actionApi 行为 api。
+ * @returns 标准 API 响应；成功时 data 为空数组。
+ */
+export function putUnpublishOntologyActionInterface(params: UnpublishOntologyActionParams): Promise<ApiResponse<UnpublishOntologyActionData>> {
+  return request<UnpublishOntologyActionData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action/unpublish",
+    method: "put",
     params,
   });
 }

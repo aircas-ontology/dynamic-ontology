@@ -242,15 +242,15 @@ function openBehaviorEdit(item: SpaceBehaviorItem): void {
 }
 
 /**
- * @description 打开行为测试弹窗；本轮仅支持基础行为-属性值，先加载实体列表。
+ * @description 打开行为测试弹窗；本轮支持属性值、基础函数算子与关系实例。
  * @param item 行为记录。
  */
 function openBehaviorTest(item: SpaceBehaviorItem): void {
-  if (item.kind !== "basic" || item.valueType !== "attributeValue") {
-    ElMessage.info("当前仅支持基础行为-属性值测试");
+  if (item.kind !== "basic" || (item.valueType !== "attributeValue" && item.valueType !== "basicFunctionOperator" && item.valueType !== "relationInstance")) {
+    ElMessage.info("当前仅支持基础行为-属性值/基础函数算子/关系实例测试");
     return;
   }
-  if (!item.ontologyUniqIdentifier.trim()) {
+  if (item.valueType !== "basicFunctionOperator" && !item.ontologyUniqIdentifier.trim()) {
     ElMessage.warning("当前行为缺少对象标识，无法加载实体列表");
     return;
   }
@@ -325,15 +325,15 @@ async function handleBehaviorSaveCopy(draft: SpaceBehaviorDraft): Promise<void> 
  * @description 确认行为状态变更。
  * @param draft 状态变更草稿。
  */
-function handleBehaviorStatusSubmit(draft: SpaceBehaviorStatusChangeDraft): void {
+async function handleBehaviorStatusSubmit(draft: SpaceBehaviorStatusChangeDraft): Promise<void> {
   if (!activeBehavior.value) return;
-  const ok = changeBehaviorStatus(activeBehavior.value.id, draft);
-  if (!ok) {
-    ElMessage.error("状态变更失败");
+  const result = await changeBehaviorStatus(activeBehavior.value.id, draft);
+  if (!result.ok) {
+    ElMessage.error(result.message || "状态变更失败");
     return;
   }
   behaviorStatusVisible.value = false;
-  ElMessage.success("状态已更新");
+  ElMessage.success(draft.operation === "publish" ? "发布成功" : "撤销发布成功");
 }
 
 /**

@@ -34,6 +34,7 @@ GET /ontology/action/list
         "ontologyUniqIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
         "categoryId": 14,
         "status": 1, //2 草稿，1 已发布
+        "updateTime": "2026-11-06 15:23:36",
         "actionKind": "BASE",
         "subjectType": "PROPERTY_VALUE",
         "operation": "CREATE",

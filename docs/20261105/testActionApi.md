@@ -29,14 +29,14 @@
 
 ### 5.1 请求体（`ActionTestParam`）
 
-| 字段名                 | 类型                  | 必填 | 说明                                                                                                                                                         |
-| ---------------------- | --------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ontologySpaceId`      | String                | 是   | 对象空间id                                                                                                                                                   |
-| `actionApi`            | String                | 是   | 行为 api                                                                                                                                                     |
-| `entityPrimaryKey`     | Object                | 是   | **行为挂载侧的实体主键**：你当前在哪个对象下操作行为，就传那个对象的实例主键。属性值行为用它定位实体、算子类行为用它取属性值、实例关系行为用它作为关系的一端 |
-| `dataPrimaryKey`       | Object                | 否   | 分组表行的主键：**属性值-修改/删除必填**（定位到具体一行数据）                                                                                               |
-| `linkEntityPrimaryKey` | Object                | 否   | **关系对端的实体主键**：**实例关系行为必填**。与 `entityPrimaryKey` 一起确定关系的两端                                                                       |
-| `params`               | Map\<String, Object\> | 否   | 来源为外部输入的参数取值（参数名 -> 值），固定值不在此传                                                                                                     |
+| 字段名                 | 类型              | 必填 | 说明                                                                                                                                                         |
+| ---------------------- | ----------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ontologySpaceId`      | String            | 是   | 对象空间id                                                                                                                                                   |
+| `actionApi`            | String            | 是   | 行为 api                                                                                                                                                     |
+| `entityPrimaryKey`     | Object            | 是   | **行为挂载侧的实体主键**：你当前在哪个对象下操作行为，就传那个对象的实例主键。属性值行为用它定位实体、算子类行为用它取属性值、实例关系行为用它作为关系的一端 |
+| `dataPrimaryKey`       | Object            | 否   | 分组表行的主键：**属性值-修改/删除必填**（定位到具体一行数据）                                                                                               |
+| `linkEntityPrimaryKey` | Object            | 否   | **关系对端的实体主键**：**实例关系行为必填**。与 `entityPrimaryKey` 一起确定关系的两端                                                                       |
+| `params`               | MapString, Object | 否   | 来源为外部输入的参数取值（参数名 -> 值），固定值不在此传                                                                                                     |
 
 ### 5.2 响应体（`ActionTestResultVO`）
 
@@ -123,6 +123,7 @@
 
 ```json
 {
+  "ontologySpaceId": "",
   "actionApi": "act.link.missile.add",
   "entityPrimaryKey": "2",
   "linkEntityPrimaryKey": "1"
@@ -161,11 +162,9 @@
 
 ```json
 {
+  "ontologySpaceId": "",
   "actionApi": "act.fn.rename",
-  "entityPrimaryKey": "1",
-  "params": {
-    "newName": "新名称"
-  }
+  "entityPrimaryKey": "1"
 }
 ```
 

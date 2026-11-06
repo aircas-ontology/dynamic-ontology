@@ -98,13 +98,13 @@ export function updateOntologyFunctionInterface(params: UpdateOntologyFunctionPa
  *
  * 请求方式：GET `/ontology/function/list`
  *
- * @param params 查询参数。
- * @param params.ontologySpaceId 对象空间 id（必填）。
+ * @param params 查询参数（扁平 query）。
+ * @param params.ontologySpaceId 可选对象空间 id。
  * @param params.pageNum 可选页码，从 1 开始，默认 1。
  * @param params.pageSize 可选每页条数，默认 10。
  * @param params.displayName 可选函数名称（模糊搜索）。
- * @param params.type 可选函数类型（CUSTOMIZE / EXTERNAL / BASIC_QUERY / COMPOSITE）。
- * @param params.excludeTypes 可选排除类型（如 BASIC_QUERY）；编排侧栏等场景用于排除基础函数。
+ * @param params.types 可选函数类型（CUSTOMIZE / EXTERNAL / BASIC_QUERY / COMPOSITE / CONTAINER，可多值）。
+ * @param params.excludeTypes 可选排除类型（如 BASIC_QUERY，可多值）；与 types 同时传时两者都生效。
  * @param params.publishStatus 可选发布状态（0 未发布，1 已发布）。
  * @param params.startDate 可选创建开始日期（yyyy-MM-dd）。
  * @param params.endDate 可选创建结束日期（yyyy-MM-dd）。

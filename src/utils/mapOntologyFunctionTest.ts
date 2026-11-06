@@ -15,6 +15,16 @@ export interface OntologyFunctionScriptTestInputRow {
   fields?: OntologyFunctionScriptTestInputRow[];
 }
 
+/** 基础函数测试弹框参数绑定行（含类型与描述展示）。 */
+export interface OntologyFunctionTestBindingRow {
+  /** 参数名，对应 variableBindings 键。 */
+  paramName: string;
+  /** 参数类型。 */
+  paramType: string;
+  /** 参数描述。 */
+  description: string;
+}
+
 /** 详情或解析参数树中用于生成测试入参的最小字段。 */
 interface OntologyFunctionScriptTestParamSourceItem {
   paramName: string;
@@ -25,27 +35,49 @@ interface OntologyFunctionScriptTestParamSourceItem {
 }
 
 /**
+ * @description 从详情 param 项读取展示用类型与描述。
+ * @param item 详情参数项。
+ * @returns 规范化后的类型与描述。
+ */
+function readOntologyFunctionTestBindingMeta(item: GetOntologyFunctionDetailParamItem): Pick<OntologyFunctionTestBindingRow, "paramType" | "description"> {
+  const paramType = typeof item.paramType === "string" ? item.paramType.trim() : "";
+  const description = typeof item.description === "string" ? item.description.trim() : "";
+  return { paramType, description };
+}
+
+/**
+ * @description 按详情 params 生成绑定行：AGGREGATION 置首，其余为 FILTER；附带 paramType / description。
+ * @param params 详情接口 params。
+ * @returns 有序绑定行列表。
+ */
+export function buildOntologyFunctionTestBindingRows(params: GetOntologyFunctionDetailParamItem[]): OntologyFunctionTestBindingRow[] {
+  const aggregationRows: OntologyFunctionTestBindingRow[] = [];
+  const filterRows: OntologyFunctionTestBindingRow[] = [];
+  for (const item of params) {
+    const paramName = typeof item.paramName === "string" ? item.paramName.trim() : "";
+    if (!paramName) {
+      continue;
+    }
+    const meta = readOntologyFunctionTestBindingMeta(item);
+    const row: OntologyFunctionTestBindingRow = { paramName, ...meta };
+    if (item.paramRole === "AGGREGATION") {
+      aggregationRows.push(row);
+      continue;
+    }
+    if (item.paramRole === "FILTER") {
+      filterRows.push(row);
+    }
+  }
+  return [...aggregationRows, ...filterRows];
+}
+
+/**
  * @description 按详情 params 生成 variableBindings 键：AGGREGATION 的 paramName 置首，其余为 FILTER 的 paramName。
  * @param params 详情接口 params。
  * @returns 有序键名列表。
  */
 export function buildOntologyFunctionTestBindingKeys(params: GetOntologyFunctionDetailParamItem[]): string[] {
-  const aggregationKeys: string[] = [];
-  const filterKeys: string[] = [];
-  for (const item of params) {
-    const name = typeof item.paramName === "string" ? item.paramName.trim() : "";
-    if (!name) {
-      continue;
-    }
-    if (item.paramRole === "AGGREGATION") {
-      aggregationKeys.push(name);
-      continue;
-    }
-    if (item.paramRole === "FILTER") {
-      filterKeys.push(name);
-    }
-  }
-  return [...aggregationKeys, ...filterKeys];
+  return buildOntologyFunctionTestBindingRows(params).map((row) => row.paramName);
 }
 
 /**

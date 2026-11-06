@@ -1,17 +1,22 @@
-/** 查询函数列表请求参数。 */
+/** 查询函数列表请求参数（扁平 query；对应文档 FunctionListQueryParam）。 */
 export interface GetOntologyFunctionListParams {
   /** 页码，从 1 开始，默认 1。 */
   pageNum?: number;
   /** 每页条数，默认 10。 */
   pageSize?: number;
-  /** 对象空间 id（必填）。 */
-  ontologySpaceId: number;
+  /** 对象空间 id。 */
+  ontologySpaceId?: number;
   /** 函数名称（模糊搜索）。 */
   displayName?: string;
-  /** 函数类型：CUSTOMIZE / EXTERNAL / BASIC_QUERY / COMPOSITE。 */
-  type?: string;
-  /** 排除的函数类型（如 BASIC_QUERY）；与 type 互斥使用场景由调用方约定。 */
-  excludeTypes?: string;
+  /**
+   * 函数类型（可多值）：CUSTOMIZE / EXTERNAL / BASIC_QUERY / COMPOSITE / CONTAINER。
+   * 传什么查什么；不传=全部类型。
+   */
+  types?: string | string[];
+  /**
+   * 排除的函数类型（可多值，如 BASIC_QUERY）；与 types 同时传时两者都生效。
+   */
+  excludeTypes?: string | string[];
   /** 发布状态：0 未发布，1 已发布。 */
   publishStatus?: number;
   /** 创建开始日期，格式 yyyy-MM-dd。 */
