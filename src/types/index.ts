@@ -147,6 +147,13 @@ export type {
 export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
 export type { GetOntologyEntitiesData, GetOntologyEntitiesParams, OntologyEntityInfo } from "./apis/getOntologyEntitiesType";
 export type {
+  GetOntologyEntityRowDetailPageData,
+  GetOntologyEntityRowDetailPageParams,
+  OntologyEntityRowDetailPageData,
+  OntologyEntityRowDetailPagePropertyInfo,
+  OntologyEntityRowDetailPageRecord,
+} from "./apis/getOntologyEntityRowDetailPageType";
+export type {
   GetOntologyEntityRowDetailData,
   GetOntologyEntityRowDetailParams,
   OntologyEntityRowDetailVO,
@@ -276,7 +283,12 @@ export type {
   StreamAgentChatSelectionOption,
   StreamAgentChatSelectionScenario,
 } from "./apis/streamAgentChatType";
-export type { TestOntologyActionData, TestOntologyActionParams, TestOntologyActionResult } from "./apis/testOntologyActionType";
+export type {
+  TestOntologyActionData,
+  TestOntologyActionEntityBinding,
+  TestOntologyActionParams,
+  TestOntologyActionResult,
+} from "./apis/testOntologyActionType";
 export type { TestOntologyFunctionData, TestOntologyFunctionParameterItem, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
 export type { UnpublishOntologyActionData, UnpublishOntologyActionParams } from "./apis/unpublishOntologyActionType";
 export type { UpdateActionCategoryParams } from "./apis/updateActionCategoryType";

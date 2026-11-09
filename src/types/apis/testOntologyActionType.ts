@@ -1,3 +1,11 @@
+/** 应用行为测试中单个对象的实例绑定。 */
+export interface TestOntologyActionEntityBinding {
+  /** 对象实例主键。 */
+  entityPrimaryKey: string | number | boolean | Record<string, unknown>;
+  /** 非 main 存储分组 → 数据行主键；main 或无需子表时省略。 */
+  dataPrimaryKeys?: Record<string, string | number | boolean | Record<string, unknown>>;
+}
+
 /** 行为测试请求体。 */
 export interface TestOntologyActionParams {
   /** 对象空间 id。 */
@@ -6,6 +14,19 @@ export interface TestOntologyActionParams {
   actionApi: string;
   /** 行为挂载侧实体主键；属性值/关系实例等场景必填，基础函数算子可不传。 */
   entityPrimaryKey?: string | number | boolean | Record<string, unknown>;
+  /**
+   * 关系两端实例主键：`from` / `to`。
+   * 应用行为仅在有 linkMapping 时传关系两端。
+   */
+  entityPrimaryKeys?: Record<string, string | number | boolean | Record<string, unknown>>;
+  /**
+   * 应用行为测试入参对象绑定：对象唯一标识 → 实例与可选子表行。
+   */
+  inputEntities?: Record<string, TestOntologyActionEntityBinding>;
+  /**
+   * 应用行为测试出参对象绑定：对象唯一标识 → 实例与可选子表行。
+   */
+  outputEntities?: Record<string, TestOntologyActionEntityBinding>;
   /** 分组表行主键；属性值修改/删除必填。 */
   dataPrimaryKey?: string | number | boolean | Record<string, unknown>;
   /** 关系对端实体主键；实例关系行为必填。 */

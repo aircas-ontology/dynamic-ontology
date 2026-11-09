@@ -121,6 +121,10 @@
             >
               <el-table-column type="selection" width="48" :selectable="isAttributeRowSelectable" />
               <el-table-column prop="displayName" label="属性" min-width="160" show-overflow-tooltip />
+              <el-table-column prop="description" label="属性描述" min-width="160" show-overflow-tooltip />
+              <el-table-column label="是否为主键" width="110">
+                <template #default="{ row }">{{ row.isPrimaryKey ? "是" : "否" }}</template>
+              </el-table-column>
               <el-table-column prop="propertyType" label="类型" width="120" show-overflow-tooltip />
               <el-table-column prop="storageGroup" label="存储分组" width="140" show-overflow-tooltip />
             </el-table>
@@ -2038,7 +2042,7 @@ watch(
       description.value = props.behavior.description;
       categoryId.value = props.behavior.categoryId;
       status.value = props.behavior.status;
-      basicAction.value = props.behavior.basicAction;
+      basicAction.value = props.behavior.basicAction || "create";
       clearApplicationRelationSelection();
       void loadOperatorCatalog();
       if (kind.value === "application") {

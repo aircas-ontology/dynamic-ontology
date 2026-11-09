@@ -63,7 +63,12 @@ import {
 } from "./datasourceConnectionApi";
 import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
 import { getOntologyApiDocsInterface } from "./ontologyDocApi";
-import { getOntologyEntitiesInterface, postGetOntologyEntityRowDetailInterface, postOntologyEntityAllLinkInterface } from "./ontologyEntityApi";
+import {
+  getOntologyEntitiesInterface,
+  postGetOntologyEntityRowDetailInterface,
+  postGetOntologyEntityRowDetailPageInterface,
+  postOntologyEntityAllLinkInterface,
+} from "./ontologyEntityApi";
 import { getOntologyInheritanceTreeInterface } from "./ontologyInheritanceTreeApi";
 import { postOntologyGlobalSearchInterface } from "./ontologySearchApi";
 import { createOntologySubspaceInterface } from "./ontologySubspaceApi";
@@ -186,6 +191,7 @@ export {
   getOntologyDatasourceTablesInterface,
   getOntologyEntitiesInterface,
   postGetOntologyEntityRowDetailInterface,
+  postGetOntologyEntityRowDetailPageInterface,
   postOntologyEntityAllLinkInterface,
   getOntologyInheritanceTreeInterface,
   getOntologyMetaStatisticInterface,

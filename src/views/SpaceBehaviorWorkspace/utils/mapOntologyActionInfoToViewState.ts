@@ -17,6 +17,8 @@ export interface SpaceBehaviorActionInfoViewParamRow {
   ontologyUniqueIdentifier: string;
   functionParamExpression: string;
   outputMode: string;
+  /** mappingIns.storageGroup；应用行为测试非 main 时需选子表行。 */
+  storageGroup: string;
   /** 绑定摘要文案。 */
   bindSummary: string;
 }
@@ -188,6 +190,7 @@ function mapMappingToViewRow(
     ontologyUniqueIdentifier: (item.ontologyUniqueIdentifier ?? "").trim(),
     functionParamExpression: (item.functionParamExpression ?? "").trim(),
     outputMode: (item.outputMode ?? "").trim(),
+    storageGroup: (item.storageGroup ?? "").trim(),
     bindSummary: buildBindSummary(item, category),
   };
 }

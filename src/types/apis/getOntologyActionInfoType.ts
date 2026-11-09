@@ -32,6 +32,8 @@ export interface GetOntologyActionInfoMappingIn {
   functionParamExpression?: string | null;
   /** 出参输出方式；部分详情响应会返回。 */
   outputMode?: CreateOntologyActionOutputMode | string | null;
+  /** 属性存储分组；应用行为测试非 main 时需选子表行。 */
+  storageGroup?: string | null;
 }
 
 /** 行为详情持续时段；详情接口可能返回毫秒数字或 ISO 时间字符串。 */

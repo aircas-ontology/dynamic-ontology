@@ -3,6 +3,8 @@ import type {
   GetOntologyEntitiesData,
   GetOntologyEntitiesParams,
   GetOntologyEntityRowDetailData,
+  GetOntologyEntityRowDetailPageData,
+  GetOntologyEntityRowDetailPageParams,
   GetOntologyEntityRowDetailParams,
   PostOntologyEntityAllLinkData,
   PostOntologyEntityAllLinkParams,
@@ -36,6 +38,30 @@ export function getOntologyEntitiesInterface(params: GetOntologyEntitiesParams):
 export function postGetOntologyEntityRowDetailInterface(params: GetOntologyEntityRowDetailParams): Promise<ApiResponse<GetOntologyEntityRowDetailData>> {
   return request<GetOntologyEntityRowDetailData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/entity/row_detail",
+    method: "post",
+    data: params,
+  });
+}
+
+/**
+ * @description 按实体主键与存储分组分页查询属性行。
+ *
+ * 请求方式：POST `/ontology/entity/row_detail/page`
+ *
+ * @param params 查询请求体。
+ * @param params.ontologyUniqueIdentifier 对象 id。
+ * @param params.entityPrimaryKey 实体主键值。
+ * @param params.sort 排序规则 ASC/DESC。
+ * @param params.storageGroup 属性存储分组名称。
+ * @param params.pageNum 分页号，默认 1。
+ * @param params.pageSize 每页条数，默认 10。
+ * @returns 标准 API 响应；data 为分页属性行数据或 null。
+ */
+export function postGetOntologyEntityRowDetailPageInterface(
+  params: GetOntologyEntityRowDetailPageParams,
+): Promise<ApiResponse<GetOntologyEntityRowDetailPageData>> {
+  return request<GetOntologyEntityRowDetailPageData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/entity/row_detail/page",
     method: "post",
     data: params,
   });

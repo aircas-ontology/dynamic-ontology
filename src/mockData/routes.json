@@ -266,6 +266,11 @@
   },
   {
     "method": "POST",
+    "path": "/ontology/entity/row_detail/page",
+    "file": "fixtures/ontology/entity/rowDetailPage.post.json"
+  },
+  {
+    "method": "POST",
     "path": "/ontology/entity/link_between",
     "file": "fixtures/ontology/entity/allLink.post.json"
   },

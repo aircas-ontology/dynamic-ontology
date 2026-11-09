@@ -1,4 +1,9 @@
-import type { OntologyEntityRowDetailVO, OntologyEntityRowPropertyGroupData } from "@/types";
+import type {
+  OntologyEntityRowDetailPageData,
+  OntologyEntityRowDetailPageRecord,
+  OntologyEntityRowDetailVO,
+  OntologyEntityRowPropertyGroupData,
+} from "@/types";
 
 /** 测试弹窗可选的实体属性数据行。 */
 export interface BehaviorTestEntityDataRow {
@@ -93,4 +98,90 @@ export function mapOntologyEntityRowDetailToDataRows(
     });
   });
   return rows;
+}
+
+/**
+ * @description 统计分页属性行的属性个数文案。
+ * @param row 分页属性行记录。
+ * @returns 属性个数（字符串）。
+ */
+function buildPageDataRowPropertyCount(row: OntologyEntityRowDetailPageRecord): string {
+  const props = Array.isArray(row.props) ? row.props : [];
+  return String(props.length);
+}
+
+/**
+ * @description 将属性行分页 records 映射为可单选的数据行列表。
+ * @param pageData 分页响应 data；为空时返回空列表。
+ * @param storageGroup 请求侧存储分组（响应该字段不返回）。
+ * @returns 数据行列表。
+ */
+export function mapOntologyEntityRowDetailPageToDataRows(
+  pageData: OntologyEntityRowDetailPageData | null | undefined,
+  storageGroup: string,
+): BehaviorTestEntityDataRow[] {
+  if (!pageData || !Array.isArray(pageData.records)) return [];
+  const normalizedStorageGroup = normalizeStorageGroupName(storageGroup) || "—";
+  const rows: BehaviorTestEntityDataRow[] = [];
+  pageData.records.forEach((item, rowIndex) => {
+    const dataPrimaryKey = resolveDataPrimaryKey(item.dataPrimaryKey);
+    if (dataPrimaryKey === null) return;
+    rows.push({
+      rowKey: `${normalizedStorageGroup}-${formatDataPrimaryKeyLabel(dataPrimaryKey)}-${rowIndex}`,
+      storageGroup: normalizedStorageGroup,
+      dataPrimaryKey,
+      dataPrimaryKeyLabel: formatDataPrimaryKeyLabel(dataPrimaryKey),
+      propertySummary: buildPageDataRowPropertyCount(item),
+    });
+  });
+  return rows;
+}
+
+/** page 响应适配为实例详情弹框所需上下文。 */
+export interface MapOntologyEntityRowDetailPageToViewDetailInput {
+  ontologyUniqueIdentifier: string;
+  entityPrimaryKey: string | number | boolean | Record<string, unknown>;
+  storageGroup: string;
+}
+
+/**
+ * @description 将属性行分页 data 适配为实例详情弹框使用的 VO。
+ * @param pageData 分页响应 data。
+ * @param input 对象标识、实体主键与存储分组。
+ * @returns 详情 VO；pageData 为空时返回 null。
+ */
+export function mapOntologyEntityRowDetailPageToViewDetail(
+  pageData: OntologyEntityRowDetailPageData | null | undefined,
+  input: MapOntologyEntityRowDetailPageToViewDetailInput,
+): OntologyEntityRowDetailVO | null {
+  if (!pageData) return null;
+  const storageGroup = normalizeStorageGroupName(input.storageGroup) || "—";
+  const records = Array.isArray(pageData.records) ? pageData.records : [];
+  const groupDataList = records.map((item) => {
+    const props = Array.isArray(item.props) ? item.props : [];
+    return {
+      dataPrimaryKey: item.dataPrimaryKey,
+      props: props.map((prop) => {
+        const propertyApiName = (prop.propertyApiName ?? "").trim();
+        const propertyDisplayName = (prop.propertyDisplayName ?? "").trim() || propertyApiName;
+        return {
+          propertyUniqIdentifier: (prop.propertyUniqIdentifier ?? "").trim(),
+          propertyApiName,
+          propertyDisplayName,
+          propertyValue: prop.propertyValue,
+          categoryId: prop.categoryId ?? null,
+        };
+      }),
+    };
+  });
+  return {
+    primaryKey: input.entityPrimaryKey,
+    ontologyUniqueIdentifier: input.ontologyUniqueIdentifier.trim(),
+    propertyGroups: [
+      {
+        storageGroup,
+        groupDataList,
+      },
+    ],
+  };
 }

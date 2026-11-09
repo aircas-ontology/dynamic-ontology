@@ -1,16 +1,262 @@
 <template>
-  <el-dialog
-    :model-value="modelValue"
-    :title="dialogTitle"
-    width="760px"
-    append-to-body
-    destroy-on-close
-    :close-on-click-modal="false"
-    @close="emit('update:modelValue', false)"
-  >
+  <el-dialog :model-value="modelValue" width="760px" append-to-body destroy-on-close :close-on-click-modal="false" @close="emit('update:modelValue', false)">
+    <template #header>
+      <div class="behavior-test-dialog__header">
+        <span class="behavior-test-dialog__title">{{ dialogTitle }}</span>
+        <el-tag v-if="behaviorCategoryLabel" size="small" effect="plain" type="info">{{ behaviorCategoryLabel }}</el-tag>
+        <el-tag v-if="behaviorBasicActionLabel" size="small" effect="plain">{{ behaviorBasicActionLabel }}</el-tag>
+      </div>
+    </template>
     <p class="behavior-test-dialog__hint">{{ dialogHint }}</p>
 
-    <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
+    <template v-if="isApplicationTest">
+      <section class="behavior-test-dialog__section">
+        <h4 class="behavior-test-dialog__section-title">测试入参</h4>
+        <p v-if="detailLoading" class="behavior-test-dialog__state" role="status">正在加载行为参数…</p>
+        <p v-else-if="detailError" class="behavior-test-dialog__state" role="alert">{{ detailError }}</p>
+        <el-table v-else-if="applicationInputRows.length" class="behavior-test-dialog__table" :data="applicationInputRows" row-key="rowKey" size="small">
+          <el-table-column prop="paramName" label="参数名" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="propertyDisplayName" label="展示名称" min-width="120" show-overflow-tooltip />
+          <el-table-column label="来源" width="100" show-overflow-tooltip>
+            <template #default="{ row }">{{ formatApplicationInputSourceTypeLabel(asApplicationInputRow(row).sourceType) }}</template>
+          </el-table-column>
+          <el-table-column prop="paramType" label="类型" width="100" show-overflow-tooltip />
+          <el-table-column label="参数值" min-width="260">
+            <template #default="{ row }">
+              <el-input
+                v-if="normalizeApplicationSourceType(asApplicationInputRow(row).sourceType) === 'EXTERNAL'"
+                :model-value="paramValues[asApplicationInputRow(row).paramName] ?? ''"
+                :placeholder="`请输入 ${asApplicationInputRow(row).propertyDisplayName || asApplicationInputRow(row).paramName}`"
+                clearable
+                @update:model-value="updateParamValue(asApplicationInputRow(row).paramName, $event)"
+              />
+              <span v-else-if="normalizeApplicationSourceType(asApplicationInputRow(row).sourceType) === 'FIXED'">{{
+                asApplicationInputRow(row).sourceConfig || "—"
+              }}</span>
+              <template v-else-if="normalizeApplicationSourceType(asApplicationInputRow(row).sourceType) === 'PROPERTY'">
+                <div class="behavior-test-dialog__param-value-stack">
+                  <el-select
+                    v-if="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)"
+                    class="behavior-test-dialog__entity-select"
+                    :model-value="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.selectedRowKey || ''"
+                    filterable
+                    clearable
+                    :loading="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.loading"
+                    :placeholder="`请选择 ${asApplicationInputRow(row).propertyDisplayName || asApplicationInputRow(row).paramName || '实例'}`"
+                    @update:model-value="
+                      (value) => updateApplicationOntologyEntitySelection(asApplicationInputRow(row).ontologyUniqueIdentifier, String(value ?? ''))
+                    "
+                  >
+                    <el-option
+                      v-for="option in listApplicationOntologySelectOptions(findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier))"
+                      :key="option.rowKey"
+                      :label="formatApplicationEntityOptionLabel(option)"
+                      :value="option.rowKey"
+                    />
+                    <template #footer>
+                      <div
+                        v-if="(findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.total ?? 0) > 0"
+                        class="behavior-test-dialog__select-footer"
+                        @mousedown.prevent
+                      >
+                        <el-pagination
+                          small
+                          layout="total, prev, pager, next"
+                          :total="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.total ?? 0"
+                          :current-page="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.page ?? 1"
+                          :page-size="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.pageSize ?? 10"
+                          @current-change="(page) => changeApplicationOntologyEntityPage(asApplicationInputRow(row).ontologyUniqueIdentifier, page)"
+                        />
+                      </div>
+                      <p
+                        v-else-if="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.error"
+                        class="behavior-test-dialog__select-footer-error"
+                        role="alert"
+                      >
+                        {{ findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.error }}
+                      </p>
+                    </template>
+                  </el-select>
+                  <span v-else class="behavior-test-dialog__state">缺少对象标识，无法选择实例</span>
+                  <el-select
+                    v-if="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))"
+                    class="behavior-test-dialog__entity-select"
+                    :model-value="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.selectedRowKey || ''"
+                    filterable
+                    clearable
+                    :disabled="!findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.selectedEntity"
+                    :loading="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.loading"
+                    :placeholder="
+                      findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.selectedEntity
+                        ? `请选择 ${findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.storageGroup || '分组'} 数据行`
+                        : '请先选择实例'
+                    "
+                    @update:model-value="
+                      (value) =>
+                        updateApplicationStorageGroupRowSelection(
+                          findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pickerKey || '',
+                          String(value ?? ''),
+                        )
+                    "
+                  >
+                    <el-option
+                      v-for="option in listApplicationStorageGroupSelectOptions(findApplicationStorageGroupPickerForRow(asApplicationInputRow(row)))"
+                      :key="option.rowKey"
+                      :label="formatApplicationStorageGroupOptionLabel(option)"
+                      :value="option.rowKey"
+                    />
+                    <template #footer>
+                      <div
+                        v-if="(findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.total ?? 0) > 0"
+                        class="behavior-test-dialog__select-footer"
+                        @mousedown.prevent
+                      >
+                        <el-pagination
+                          small
+                          layout="total, prev, pager, next"
+                          :total="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.total ?? 0"
+                          :current-page="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.page ?? 1"
+                          :page-size="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pageSize ?? 10"
+                          @current-change="
+                            (page) =>
+                              changeApplicationStorageGroupRowPage(findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pickerKey || '', page)
+                          "
+                        />
+                      </div>
+                      <p
+                        v-else-if="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.error"
+                        class="behavior-test-dialog__select-footer-error"
+                        role="alert"
+                      >
+                        {{ findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.error }}
+                      </p>
+                    </template>
+                  </el-select>
+                </div>
+              </template>
+              <span v-else>—</span>
+            </template>
+          </el-table-column>
+        </el-table>
+        <p v-else class="behavior-test-dialog__state" role="status">暂无输入参数</p>
+      </section>
+
+      <section v-if="!detailLoading && !detailError && applicationWritePropertyOutputRows.length" class="behavior-test-dialog__section">
+        <h4 class="behavior-test-dialog__section-title">写回属性出参</h4>
+        <el-table class="behavior-test-dialog__table" :data="applicationWritePropertyOutputRows" row-key="rowKey" size="small">
+          <el-table-column prop="paramName" label="参数名" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="propertyDisplayName" label="展示名称" min-width="120" show-overflow-tooltip />
+          <el-table-column label="输出方式" width="120" show-overflow-tooltip>
+            <template #default="{ row }">{{ formatApplicationOutputModeLabel(asApplicationInputRow(row).outputMode) }}</template>
+          </el-table-column>
+          <el-table-column label="参数值" min-width="260">
+            <template #default="{ row }">
+              <div class="behavior-test-dialog__param-value-stack">
+                <el-select
+                  v-if="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)"
+                  class="behavior-test-dialog__entity-select"
+                  :model-value="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.selectedRowKey || ''"
+                  filterable
+                  clearable
+                  :loading="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.loading"
+                  :placeholder="`请选择 ${asApplicationInputRow(row).propertyDisplayName || asApplicationInputRow(row).paramName || '实例'}`"
+                  @update:model-value="
+                    (value) => updateApplicationOntologyEntitySelection(asApplicationInputRow(row).ontologyUniqueIdentifier, String(value ?? ''))
+                  "
+                >
+                  <el-option
+                    v-for="option in listApplicationOntologySelectOptions(findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier))"
+                    :key="option.rowKey"
+                    :label="formatApplicationEntityOptionLabel(option)"
+                    :value="option.rowKey"
+                  />
+                  <template #footer>
+                    <div
+                      v-if="(findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.total ?? 0) > 0"
+                      class="behavior-test-dialog__select-footer"
+                      @mousedown.prevent
+                    >
+                      <el-pagination
+                        small
+                        layout="total, prev, pager, next"
+                        :total="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.total ?? 0"
+                        :current-page="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.page ?? 1"
+                        :page-size="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.pageSize ?? 10"
+                        @current-change="(page) => changeApplicationOntologyEntityPage(asApplicationInputRow(row).ontologyUniqueIdentifier, page)"
+                      />
+                    </div>
+                    <p
+                      v-else-if="findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.error"
+                      class="behavior-test-dialog__select-footer-error"
+                      role="alert"
+                    >
+                      {{ findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.error }}
+                    </p>
+                  </template>
+                </el-select>
+                <span v-else class="behavior-test-dialog__state">缺少对象标识，无法选择实例</span>
+                <el-select
+                  v-if="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))"
+                  class="behavior-test-dialog__entity-select"
+                  :model-value="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.selectedRowKey || ''"
+                  filterable
+                  clearable
+                  :disabled="!findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.selectedEntity"
+                  :loading="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.loading"
+                  :placeholder="
+                    findApplicationOntologyPicker(asApplicationInputRow(row).ontologyUniqueIdentifier)?.selectedEntity
+                      ? `请选择 ${findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.storageGroup || '分组'} 数据行`
+                      : '请先选择实例'
+                  "
+                  @update:model-value="
+                    (value) =>
+                      updateApplicationStorageGroupRowSelection(
+                        findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pickerKey || '',
+                        String(value ?? ''),
+                      )
+                  "
+                >
+                  <el-option
+                    v-for="option in listApplicationStorageGroupSelectOptions(findApplicationStorageGroupPickerForRow(asApplicationInputRow(row)))"
+                    :key="option.rowKey"
+                    :label="formatApplicationStorageGroupOptionLabel(option)"
+                    :value="option.rowKey"
+                  />
+                  <template #footer>
+                    <div
+                      v-if="(findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.total ?? 0) > 0"
+                      class="behavior-test-dialog__select-footer"
+                      @mousedown.prevent
+                    >
+                      <el-pagination
+                        small
+                        layout="total, prev, pager, next"
+                        :total="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.total ?? 0"
+                        :current-page="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.page ?? 1"
+                        :page-size="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pageSize ?? 10"
+                        @current-change="
+                          (page) =>
+                            changeApplicationStorageGroupRowPage(findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pickerKey || '', page)
+                        "
+                      />
+                    </div>
+                    <p
+                      v-else-if="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.error"
+                      class="behavior-test-dialog__select-footer-error"
+                      role="alert"
+                    >
+                      {{ findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.error }}
+                    </p>
+                  </template>
+                </el-select>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </section>
+    </template>
+
+    <section v-else-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
       <el-input
         class="behavior-test-dialog__result"
         type="textarea"
@@ -22,7 +268,7 @@
       />
     </section>
 
-    <template v-if="isRelationInstanceTest">
+    <template v-if="showRelationLinkForm">
       <section class="behavior-test-dialog__section">
         <h4 class="behavior-test-dialog__section-title">关系两端对象</h4>
         <p v-if="relationContextLoading" class="behavior-test-dialog__state" role="status">正在加载关系信息…</p>
@@ -107,7 +353,12 @@
       </section>
     </template>
 
-    <section v-else-if="!isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
+    <section v-if="isApplicationTest && applicationTestResultText" class="behavior-test-dialog__section">
+      <h4 class="behavior-test-dialog__section-title">测试结果</h4>
+      <el-input class="behavior-test-dialog__result" type="textarea" :model-value="applicationTestResultText" :rows="10" readonly resize="vertical" />
+    </section>
+
+    <section v-if="isAttributeValueTest" class="behavior-test-dialog__section">
       <h4 class="behavior-test-dialog__section-title">选择实体实例</h4>
       <p v-if="entityLoading" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
       <p v-else-if="entityError" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
@@ -173,47 +424,54 @@
         </el-table-column>
         <el-table-column prop="storageGroup" label="存储分组" min-width="120" show-overflow-tooltip />
         <el-table-column prop="dataPrimaryKeyLabel" label="数据行主键" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="propertySummary" label="属性摘要" min-width="220" show-overflow-tooltip />
+        <el-table-column prop="propertySummary" label="属性数量" min-width="220" show-overflow-tooltip />
       </el-table>
+      <div v-if="selectedEntityPrimaryKey !== null && !groupRowLoading && !groupRowError" class="behavior-test-dialog__pagination">
+        <el-pagination
+          background
+          layout="total, prev, pager, next, sizes"
+          :total="groupRowTotal"
+          :current-page="groupRowPage"
+          :page-size="groupRowPageSize"
+          :page-sizes="[10, 20, 50]"
+          @current-change="changeGroupDataRowPage"
+          @size-change="changeGroupDataRowPageSize"
+        />
+      </div>
     </section>
 
-    <section v-if="isAttributeValueTest && !isDeleteTest" class="behavior-test-dialog__section">
-      <h4 class="behavior-test-dialog__section-title">测试参数</h4>
-      <p v-if="detailLoading" class="behavior-test-dialog__state" role="status">正在加载行为参数…</p>
-      <p v-else-if="detailError" class="behavior-test-dialog__state" role="alert">{{ detailError }}</p>
-      <el-table v-else-if="paramRows.length" class="behavior-test-dialog__table" :data="paramRows" row-key="rowKey" size="small">
-        <el-table-column prop="propertyDisplayName" label="属性名称" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="propertyType" label="类型" width="120" show-overflow-tooltip />
-        <el-table-column label="参数值" min-width="220">
-          <template #default="{ row }">
-            <el-input
-              :model-value="paramValues[asParamRow(row).paramName] ?? ''"
-              :placeholder="`请输入 ${asParamRow(row).propertyDisplayName || asParamRow(row).paramName}`"
-              clearable
-              @update:model-value="updateParamValue(asParamRow(row).paramName, $event)"
-            />
-          </template>
-        </el-table-column>
-      </el-table>
-      <p v-else class="behavior-test-dialog__state" role="status">暂无外部输入参数</p>
-    </section>
-    <p v-else-if="isAttributeValueTest && detailError" class="behavior-test-dialog__state" role="alert">{{ detailError }}</p>
+    <p v-if="(isCreateTest || isUpdateTest) && detailError" class="behavior-test-dialog__state" role="alert">{{ detailError }}</p>
 
-    <p v-if="submitError" class="behavior-test-dialog__state" role="alert">{{ submitError }}</p>
+    <p v-if="submitError && !isUpdateTest && !isCreateTest" class="behavior-test-dialog__state" role="alert">{{ submitError }}</p>
 
     <template #footer>
-      <el-button v-if="isRelationInstanceTest" :disabled="submitLoading" @click="openEntityLinkData">查看实例关系数据</el-button>
-      <el-button v-else-if="!isBasicFunctionOperatorTest" :disabled="submitLoading" @click="openEntityRowDetail">查看实例数据</el-button>
+      <el-button v-if="showRelationLinkForm" :disabled="submitLoading" @click="openEntityLinkData">查看实例关系数据</el-button>
+      <el-button v-else-if="isAttributeValueTest" :disabled="submitLoading" @click="openEntityRowDetail">查看实例数据</el-button>
       <el-button :disabled="submitLoading" @click="emit('update:modelValue', false)">关闭</el-button>
-      <el-button type="primary" :loading="submitLoading" @click="submitBehaviorTest">开始测试</el-button>
+      <el-button v-if="!isUpdateTest && !isCreateTest" type="primary" :loading="submitLoading" @click="submitBehaviorTest">开始测试</el-button>
     </template>
   </el-dialog>
 
   <BehaviorEntityRowDetailDialog
+    ref="entityRowDetailDialogRef"
     v-model="entityRowDetailVisible"
     :ontology-unique-identifier="detailOntologyUniqueIdentifier"
     :entity-primary-key="detailEntityPrimaryKey"
     :entity-display-name="detailEntityDisplayName"
+    :external-detail="entityRowDetailFromPage"
+    :enable-update-test="isUpdateTest"
+    :enable-create-test="isCreateTest"
+    :selected-data-primary-key="selectedGroupDataRow?.dataPrimaryKey ?? null"
+    :param-rows="paramRows"
+    :param-values="paramValues"
+    :param-detail-loading="detailLoading"
+    :param-detail-error="detailError"
+    :submit-loading="submitLoading"
+    :submit-error="submitError"
+    @update-param-value="updateParamValue"
+    @start-test="submitBehaviorTest"
+    @detail-loaded="seedUpdateParamValuesFromDetail"
+    @reload-detail="reloadEntityRowDetailFromPage"
   />
 
   <BehaviorEntityLinkDataDialog v-model="entityLinkDataVisible" :query-params="entityLinkDataQueryParams" />
@@ -226,16 +484,38 @@ import {
   getOntologyActionInfoInterface,
   getOntologyEntitiesInterface,
   getOntologyLinkByUniqueIdentifierInterface,
-  postGetOntologyEntityRowDetailInterface,
+  postGetOntologyEntityRowDetailPageInterface,
   postTestOntologyActionInterface,
 } from "@/apis";
-import type { OntologyEntityInfo, PostOntologyEntityAllLinkParams, SpaceBehaviorItem, TestOntologyActionData } from "@/types";
+import {
+  SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
+  SPACE_BEHAVIOR_KIND_LABELS,
+  SPACE_BEHAVIOR_VALUE_TYPE_LABELS,
+  type OntologyEntityInfo,
+  type OntologyEntityRowDetailPageData,
+  type OntologyEntityRowDetailVO,
+  type PostOntologyEntityAllLinkParams,
+  type SpaceBehaviorItem,
+  type TestOntologyActionData,
+} from "@/types";
 import BehaviorEntityLinkDataDialog from "./BehaviorEntityLinkDataDialog.vue";
 import BehaviorEntityRowDetailDialog from "./BehaviorEntityRowDetailDialog.vue";
+import { buildApplicationTestRequestParams, type ApplicationTestEntityBindingSelection } from "../utils/buildApplicationTestRequestParams";
 import { coerceBehaviorTestParamValue } from "../utils/coerceBehaviorTestParamValue";
-import { mapOntologyEntityRowDetailToDataRows, type BehaviorTestEntityDataRow } from "../utils/mapOntologyEntityRowDetailToDataRows";
+import {
+  buildApplicationStorageGroupPickerKey,
+  collectApplicationPropertyOntologyPickers,
+  collectApplicationStorageGroupPickers,
+  formatApplicationInputSourceTypeLabel,
+  formatApplicationOutputModeLabel,
+} from "../utils/collectApplicationPropertyOntologyPickers";
+import {
+  mapOntologyEntityRowDetailPageToDataRows,
+  mapOntologyEntityRowDetailPageToViewDetail,
+  type BehaviorTestEntityDataRow,
+} from "../utils/mapOntologyEntityRowDetailToDataRows";
 import { mapOntologyActionInfoToViewState, type SpaceBehaviorActionInfoViewParamRow } from "../utils/mapOntologyActionInfoToViewState";
-import { isMainStorageGroup } from "../utils/resolveAttributeValueSelection";
+import { isMainStorageGroup, normalizeStorageGroup } from "../utils/resolveAttributeValueSelection";
 
 /** 关系实例测试挂载侧。 */
 type RelationMountSide = "from" | "to" | "";
@@ -262,6 +542,38 @@ interface BehaviorTestParamRow {
   propertyType: string;
 }
 
+/** 应用行为 PROPERTY 入参对应的对象实例选择器状态。 */
+interface ApplicationOntologyEntityPicker {
+  ontologyUniqueIdentifier: string;
+  label: string;
+  loading: boolean;
+  error: string;
+  rows: BehaviorTestEntityRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  selectedRowKey: string;
+  /** 已选实体；跨页保留，供下拉回显。 */
+  selectedEntity: BehaviorTestEntityRow | null;
+}
+
+/** 应用行为非 main 存储分组数据行选择器状态。 */
+interface ApplicationStorageGroupPicker {
+  pickerKey: string;
+  ontologyUniqueIdentifier: string;
+  storageGroup: string;
+  label: string;
+  loading: boolean;
+  error: string;
+  rows: BehaviorTestEntityDataRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  selectedRowKey: string;
+  /** 已选数据行；跨页保留，供下拉回显。 */
+  selectedDataRow: BehaviorTestEntityDataRow | null;
+}
+
 const props = defineProps<{
   modelValue: boolean;
   spaceId: string;
@@ -285,7 +597,24 @@ const paramRows = ref<BehaviorTestParamRow[]>([]);
 const paramValues = reactive<Record<string, string>>({});
 const resolvedActionApi = ref("");
 const resolvedStorageGroup = ref("");
+/** 行为详情顶层对象标识；应用测试组装 entityPrimaryKey 时使用。 */
+const resolvedOntologyUniqIdentifier = ref("");
 let detailLoadToken = 0;
+
+/** 应用行为测试 INPUT 行。 */
+const applicationInputRows = ref<SpaceBehaviorActionInfoViewParamRow[]>([]);
+/** 应用行为测试 WRITE_PROPERTY 出参行。 */
+const applicationWritePropertyOutputRows = ref<SpaceBehaviorActionInfoViewParamRow[]>([]);
+/** 应用行为 PROPERTY / WRITE_PROPERTY 对象实例选择器。 */
+const applicationOntologyPickers = ref<ApplicationOntologyEntityPicker[]>([]);
+const applicationOntologyLoadTokens: Record<string, number> = {};
+/** 应用行为非 main 存储分组数据行选择器。 */
+const applicationStorageGroupPickers = ref<ApplicationStorageGroupPicker[]>([]);
+const applicationStorageGroupLoadTokens: Record<string, number> = {};
+/** 应用行为详情是否配置了关系 linkMapping。 */
+const applicationHasLinkMapping = ref(false);
+/** 应用行为测试成功后展示的接口 data 文本。 */
+const applicationTestResultText = ref("");
 
 const submitLoading = ref(false);
 const submitError = ref("");
@@ -294,6 +623,8 @@ const basicOperatorTestResultText = ref("");
 let submitToken = 0;
 
 const entityRowDetailVisible = ref(false);
+/** 实例数据弹框引用，用于修改测试成功后刷新详情。 */
+const entityRowDetailDialogRef = ref<{ reloadEntityRowDetail: () => void } | null>(null);
 const entityLinkDataVisible = ref(false);
 const entityLinkDataQueryParams = ref<PostOntologyEntityAllLinkParams>({
   ontologyUniqueIdentifierFrom: "",
@@ -305,6 +636,10 @@ const entityLinkDataQueryParams = ref<PostOntologyEntityAllLinkParams>({
 const groupRowLoading = ref(false);
 const groupRowError = ref("");
 const groupDataRows = ref<BehaviorTestEntityDataRow[]>([]);
+const groupRowPageData = ref<OntologyEntityRowDetailPageData | null>(null);
+const groupRowTotal = ref(0);
+const groupRowPage = ref(1);
+const groupRowPageSize = ref(10);
 const selectedGroupDataRowKey = ref("");
 let groupRowLoadToken = 0;
 
@@ -341,22 +676,53 @@ const dialogTitle = computed(() => {
   return `测试行为 · ${name}`;
 });
 
-const isBasicFunctionOperatorTest = computed(() => props.behavior?.valueType === "basicFunctionOperator");
-const isAttributeValueTest = computed(() => props.behavior?.valueType === "attributeValue");
-const isRelationInstanceTest = computed(() => props.behavior?.valueType === "relationInstance");
+/**
+ * @description 格式化测试弹框行为类别标签；基础行为追加行为类型。
+ * @returns 类别文案；无行为时为空。
+ */
+const behaviorCategoryLabel = computed(() => {
+  const item = props.behavior;
+  if (!item) return "";
+  const kindLabel = SPACE_BEHAVIOR_KIND_LABELS[item.kind];
+  if (item.kind !== "basic") return kindLabel;
+  const valueTypeLabel = SPACE_BEHAVIOR_VALUE_TYPE_LABELS[item.valueType];
+  return valueTypeLabel ? `${kindLabel}-${valueTypeLabel}` : kindLabel;
+});
+
+/**
+ * @description 格式化测试弹框基础操作标签。
+ * @returns 操作文案；缺失时为空（不展示标签）。
+ */
+const behaviorBasicActionLabel = computed(() => {
+  const basicAction = props.behavior?.basicAction;
+  if (!basicAction) return "";
+  return SPACE_BEHAVIOR_BASIC_ACTION_LABELS[basicAction] || "";
+});
+
+const isApplicationTest = computed(() => props.behavior?.kind === "application");
+const isBasicFunctionOperatorTest = computed(() => !isApplicationTest.value && props.behavior?.valueType === "basicFunctionOperator");
+const isAttributeValueTest = computed(() => !isApplicationTest.value && props.behavior?.valueType === "attributeValue");
+const isRelationInstanceTest = computed(() => !isApplicationTest.value && props.behavior?.valueType === "relationInstance");
 const isCreateTest = computed(() => isAttributeValueTest.value && props.behavior?.basicAction === "create");
 const isUpdateTest = computed(() => isAttributeValueTest.value && props.behavior?.basicAction === "update");
 const isDeleteTest = computed(() => isAttributeValueTest.value && props.behavior?.basicAction === "delete");
 const needsDataRowSelection = computed(() => isUpdateTest.value || isDeleteTest.value);
 /** 属性值-编辑且存储分组为 main 时，数据行默认勾选且不可取消。 */
 const isMainGroupDataRowLocked = computed(() => isUpdateTest.value && isMainStorageGroup(resolvedStorageGroup.value));
+/** 关系实例测试，或应用行为配置了 linkMapping 时展示关系两端表单。 */
+const showRelationLinkForm = computed(() => isRelationInstanceTest.value || (isApplicationTest.value && applicationHasLinkMapping.value));
 
 const dialogHint = computed(() => {
+  if (isApplicationTest.value && applicationHasLinkMapping.value) {
+    return "填写入参并选择关系两端实例后开始测试。";
+  }
+  if (isApplicationTest.value) return "根据入参来源填写外部值或选择对象实例后开始测试。";
   if (isRelationInstanceTest.value) return "选择关系两端对象实例后执行关系实例测试。";
   if (isBasicFunctionOperatorTest.value) return "确认后直接执行基础函数算子测试。";
-  if (isUpdateTest.value) return "选择实体实例与数据行，并填写外部输入参数，用于属性值-编辑测试。";
+  if (isUpdateTest.value) return "选择实体实例与数据行后，在「查看实例数据」中填写测试参数并开始测试。";
+  if (isCreateTest.value) return "选择实体实例后，在「查看实例数据」中填写测试参数并开始测试。";
   if (isDeleteTest.value) return "选择实体实例与数据行，用于属性值-删除测试。";
-  return "选择实体实例并填写外部输入参数，用于属性值-新增测试。";
+  return "选择实体实例后开始测试。";
 });
 
 const behaviorOntologyUniqueIdentifier = computed(() => (props.behavior?.ontologyUniqIdentifier ?? "").trim());
@@ -403,6 +769,19 @@ const detailEntityDisplayName = computed(() => {
 });
 
 const selectedGroupDataRow = computed(() => groupDataRows.value.find((item) => item.rowKey === selectedGroupDataRowKey.value) ?? null);
+
+/** 由 page 缓存适配出的实例详情，供查看实例数据弹框使用。 */
+const entityRowDetailFromPage = computed(() => {
+  const entityPrimaryKey = detailEntityPrimaryKey.value;
+  const ontologyUniqueIdentifier = detailOntologyUniqueIdentifier.value;
+  const storageGroup = resolvedStorageGroup.value.trim();
+  if (entityPrimaryKey === null || !ontologyUniqueIdentifier || !storageGroup || !groupRowPageData.value) return null;
+  return mapOntologyEntityRowDetailPageToViewDetail(groupRowPageData.value, {
+    ontologyUniqueIdentifier,
+    entityPrimaryKey,
+    storageGroup,
+  });
+});
 
 /**
  * @description 将未知主键值格式化为表格文案。
@@ -537,6 +916,70 @@ function resetParamValues(rows: BehaviorTestParamRow[]): void {
 }
 
 /**
+ * @description 将属性值转为参数输入字符串。
+ * @param value 属性原值。
+ * @returns 字符串形式；空值返回空串。
+ */
+function formatPropertyValueForParam(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+/**
+ * @description 比较两个数据行主键是否同一行。
+ * @param left 左侧主键。
+ * @param right 右侧主键。
+ * @returns 相等时为 true。
+ */
+function isSameDataPrimaryKey(left: unknown, right: unknown): boolean {
+  if (left === null || left === undefined || left === "" || right === null || right === undefined || right === "") return false;
+  if (left === right) return true;
+  if (
+    (typeof left === "string" || typeof left === "number" || typeof left === "boolean") &&
+    (typeof right === "string" || typeof right === "number" || typeof right === "boolean")
+  ) {
+    return String(left) === String(right);
+  }
+  try {
+    return JSON.stringify(left) === JSON.stringify(right);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @description 按详情中选中数据行的原属性值回填 EXTERNAL 测试参数。
+ * @param detail 实例数据详情；为空时跳过。
+ */
+function seedUpdateParamValuesFromDetail(detail: OntologyEntityRowDetailVO | null): void {
+  if (!isUpdateTest.value || !detail) return;
+  const selectedKey = selectedGroupDataRow.value?.dataPrimaryKey;
+  if (selectedKey === null || selectedKey === undefined || selectedKey === "") return;
+
+  let selectedProps: { propertyApiName: string; propertyValue: unknown }[] | null = null;
+  for (const group of detail.propertyGroups ?? []) {
+    for (const row of group.groupDataList ?? []) {
+      if (isSameDataPrimaryKey(row.dataPrimaryKey, selectedKey)) {
+        selectedProps = Array.isArray(row.props) ? row.props : [];
+        break;
+      }
+    }
+    if (selectedProps) break;
+  }
+  if (!selectedProps) return;
+
+  const valueByApiName = new Map(selectedProps.map((item) => [(item.propertyApiName ?? "").trim(), formatPropertyValueForParam(item.propertyValue)]));
+  paramRows.value.forEach((row) => {
+    paramValues[row.paramName] = valueByApiName.get(row.paramName.trim()) ?? "";
+  });
+}
+
+/**
  * @description 清空实体列表与选中态。
  */
 function clearEntityListState(): void {
@@ -599,6 +1042,13 @@ function clearBasicOperatorTestResult(): void {
   basicOperatorTestResultText.value = "";
 }
 
+/**
+ * @description 清空应用行为测试结果展示。
+ */
+function clearApplicationTestResult(): void {
+  applicationTestResultText.value = "";
+}
+
 function clearDetailParamState(): void {
   paramRows.value = [];
   resetParamValues([]);
@@ -606,8 +1056,534 @@ function clearDetailParamState(): void {
   detailLoading.value = false;
   resolvedActionApi.value = "";
   resolvedStorageGroup.value = "";
+  resolvedOntologyUniqIdentifier.value = "";
   submitError.value = "";
   submitLoading.value = false;
+  clearApplicationTestFormState();
+  clearApplicationTestResult();
+}
+
+/**
+ * @description 清空应用行为测试入参、写回出参与对象实例选择器。
+ */
+function clearApplicationTestFormState(): void {
+  applicationInputRows.value = [];
+  applicationWritePropertyOutputRows.value = [];
+  applicationOntologyPickers.value = [];
+  applicationStorageGroupPickers.value = [];
+  applicationHasLinkMapping.value = false;
+  for (const key of Object.keys(applicationOntologyLoadTokens)) delete applicationOntologyLoadTokens[key];
+  for (const key of Object.keys(applicationStorageGroupLoadTokens)) delete applicationStorageGroupLoadTokens[key];
+}
+
+/**
+ * @description 从出参行过滤 WRITE_PROPERTY 写回属性行。
+ * @param outputRows 行为详情出参行。
+ * @returns WRITE_PROPERTY 行列表。
+ */
+function filterWritePropertyOutputRows(outputRows: SpaceBehaviorActionInfoViewParamRow[]): SpaceBehaviorActionInfoViewParamRow[] {
+  return outputRows.filter((row) => (row.outputMode ?? "").trim().toUpperCase() === "WRITE_PROPERTY");
+}
+
+/**
+ * @description 规范化应用入参 sourceType。
+ * @param sourceType 原始来源。
+ * @returns 大写来源；空为 "".
+ */
+function normalizeApplicationSourceType(sourceType: string): string {
+  return sourceType.trim().toUpperCase();
+}
+
+/**
+ * @description 将表格行收窄为应用行为 INPUT 行。
+ * @param row 表格行。
+ * @returns INPUT 行。
+ */
+function asApplicationInputRow(row: unknown): SpaceBehaviorActionInfoViewParamRow {
+  return row as SpaceBehaviorActionInfoViewParamRow;
+}
+
+/**
+ * @description 按对象标识查找应用行为实例选择器。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @returns 选择器；未找到为 null。
+ */
+function findApplicationOntologyPicker(ontologyUniqueIdentifier: string): ApplicationOntologyEntityPicker | null {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  if (!ontologyId) return null;
+  return applicationOntologyPickers.value.find((item) => item.ontologyUniqueIdentifier === ontologyId) ?? null;
+}
+
+/**
+ * @description 按选择器键查找非 main 存储分组数据行选择器。
+ * @param pickerKey ontology::storageGroup。
+ * @returns 选择器；未找到为 null。
+ */
+function findApplicationStorageGroupPicker(pickerKey: string): ApplicationStorageGroupPicker | null {
+  const key = pickerKey.trim();
+  if (!key) return null;
+  return applicationStorageGroupPickers.value.find((item) => item.pickerKey === key) ?? null;
+}
+
+/**
+ * @description 按参数行查找对应的非 main 存储分组数据行选择器。
+ * @param row 入参或写回出参行。
+ * @returns 选择器；main/空或不存在时为 null。
+ */
+function findApplicationStorageGroupPickerForRow(row: SpaceBehaviorActionInfoViewParamRow): ApplicationStorageGroupPicker | null {
+  const ontologyId = (row.ontologyUniqueIdentifier ?? "").trim();
+  const storageGroup = normalizeStorageGroup(row.storageGroup);
+  if (!ontologyId || !storageGroup || isMainStorageGroup(storageGroup)) return null;
+  return findApplicationStorageGroupPicker(buildApplicationStorageGroupPickerKey(ontologyId, storageGroup));
+}
+
+/**
+ * @description 更新指定存储分组数据行选择器的部分字段。
+ * @param pickerKey 选择器键。
+ * @param patch 部分字段。
+ */
+function patchApplicationStorageGroupPicker(pickerKey: string, patch: Partial<ApplicationStorageGroupPicker>): void {
+  const key = pickerKey.trim();
+  applicationStorageGroupPickers.value = applicationStorageGroupPickers.value.map((item) => (item.pickerKey === key ? { ...item, ...patch } : item));
+}
+
+/**
+ * @description 格式化存储分组数据行下拉选项文案。
+ * @param row 数据行。
+ * @returns 选项文案。
+ */
+function formatApplicationStorageGroupOptionLabel(row: BehaviorTestEntityDataRow): string {
+  const primaryKey = row.dataPrimaryKeyLabel.trim() || "—";
+  const summary = row.propertySummary.trim();
+  return summary && summary !== "—" ? `${primaryKey} · ${summary}` : primaryKey;
+}
+
+/**
+ * @description 组装存储分组数据行下拉选项；已选行不在当前页时前置保留以便回显。
+ * @param picker 存储分组选择器。
+ * @returns 选项列表。
+ */
+function listApplicationStorageGroupSelectOptions(picker: ApplicationStorageGroupPicker | null | undefined): BehaviorTestEntityDataRow[] {
+  if (!picker) return [];
+  const selected = picker.selectedDataRow;
+  if (!selected || !picker.selectedRowKey) return picker.rows;
+  if (picker.rows.some((item) => item.rowKey === selected.rowKey)) return picker.rows;
+  return [selected, ...picker.rows];
+}
+
+/**
+ * @description 清空指定对象下所有非 main 分组数据行选中态（保留列表缓存）。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ */
+function clearApplicationStorageGroupSelectionsForOntology(ontologyUniqueIdentifier: string): void {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  applicationStorageGroupPickers.value = applicationStorageGroupPickers.value.map((item) =>
+    item.ontologyUniqueIdentifier === ontologyId
+      ? { ...item, selectedRowKey: "", selectedDataRow: null, rows: [], total: 0, page: 1, error: "", loading: false }
+      : item,
+  );
+}
+
+/**
+ * @description 加载应用行为非 main 存储分组数据行分页列表。
+ * @param pickerKey 选择器键。
+ */
+async function loadApplicationStorageGroupDataRows(pickerKey: string): Promise<void> {
+  const key = pickerKey.trim();
+  const picker = findApplicationStorageGroupPicker(key);
+  if (!picker) return;
+  const ontologyPicker = findApplicationOntologyPicker(picker.ontologyUniqueIdentifier);
+  const selectedEntity = ontologyPicker?.selectedEntity ?? null;
+  if (!selectedEntity || selectedEntity.primaryKey === "") {
+    patchApplicationStorageGroupPicker(key, {
+      loading: false,
+      error: "",
+      rows: [],
+      total: 0,
+      selectedRowKey: "",
+      selectedDataRow: null,
+    });
+    return;
+  }
+  const requestToken = (applicationStorageGroupLoadTokens[key] ?? 0) + 1;
+  applicationStorageGroupLoadTokens[key] = requestToken;
+  patchApplicationStorageGroupPicker(key, { loading: true, error: "" });
+  try {
+    const response = await postGetOntologyEntityRowDetailPageInterface({
+      ontologyUniqueIdentifier: picker.ontologyUniqueIdentifier,
+      entityPrimaryKey: selectedEntity.primaryKey,
+      sort: "DESC",
+      storageGroup: picker.storageGroup,
+      pageNum: picker.page,
+      pageSize: picker.pageSize,
+    });
+    if (applicationStorageGroupLoadTokens[key] !== requestToken) return;
+    if (response.code !== 200) throw new Error(response.message || "实体行数据加载失败");
+    const pageData = response.data ?? null;
+    const rows = mapOntologyEntityRowDetailPageToDataRows(pageData, picker.storageGroup);
+    const selectedOnPage = picker.selectedRowKey ? (rows.find((item) => item.rowKey === picker.selectedRowKey) ?? null) : null;
+    patchApplicationStorageGroupPicker(key, {
+      loading: false,
+      error: "",
+      rows,
+      total: typeof pageData?.total === "number" ? pageData.total : 0,
+      selectedDataRow: selectedOnPage ?? picker.selectedDataRow,
+    });
+  } catch (error) {
+    if (applicationStorageGroupLoadTokens[key] !== requestToken) return;
+    patchApplicationStorageGroupPicker(key, {
+      loading: false,
+      error: error instanceof Error ? error.message : "实体行数据加载失败",
+      rows: [],
+      total: 0,
+    });
+  }
+}
+
+/**
+ * @description 切换应用行为存储分组数据行列表页码。
+ * @param pickerKey 选择器键。
+ * @param page 页码。
+ */
+function changeApplicationStorageGroupRowPage(pickerKey: string, page: number): void {
+  patchApplicationStorageGroupPicker(pickerKey, { page });
+  void loadApplicationStorageGroupDataRows(pickerKey);
+}
+
+/**
+ * @description 更新应用行为存储分组数据行下拉选中值。
+ * @param pickerKey 选择器键。
+ * @param selectedRowKey 选中行键；空串表示清空。
+ */
+function updateApplicationStorageGroupRowSelection(pickerKey: string, selectedRowKey: string): void {
+  const picker = findApplicationStorageGroupPicker(pickerKey);
+  if (!picker) return;
+  const nextKey = selectedRowKey.trim();
+  if (!nextKey) {
+    patchApplicationStorageGroupPicker(pickerKey, { selectedRowKey: "", selectedDataRow: null });
+    return;
+  }
+  const matched =
+    listApplicationStorageGroupSelectOptions(picker).find((item) => item.rowKey === nextKey) ?? picker.rows.find((item) => item.rowKey === nextKey) ?? null;
+  patchApplicationStorageGroupPicker(pickerKey, {
+    selectedRowKey: nextKey,
+    selectedDataRow: matched,
+  });
+}
+
+/**
+ * @description 按 PROPERTY / WRITE_PROPERTY 行组装对象绑定选择快照。
+ * @param rows 参数行。
+ * @param sideLabel 错误文案侧别名。
+ * @returns 选择列表或错误。
+ */
+function collectApplicationEntityBindingSelections(
+  rows: SpaceBehaviorActionInfoViewParamRow[],
+  sideLabel: string,
+): { ok: true; selections: ApplicationTestEntityBindingSelection[] } | { ok: false; error: string } {
+  const selections: ApplicationTestEntityBindingSelection[] = [];
+  for (const row of rows) {
+    const ontologyId = (row.ontologyUniqueIdentifier ?? "").trim();
+    if (!ontologyId) return { ok: false, error: `${sideLabel}缺少对象标识，无法测试` };
+    const ontologyPicker = findApplicationOntologyPicker(ontologyId);
+    if (!ontologyPicker) return { ok: false, error: `${sideLabel}缺少对象「${ontologyId}」实例选择器` };
+    if (ontologyPicker.loading) return { ok: false, error: "请等待对象实例列表加载完成后再测试" };
+    const selectedEntity = ontologyPicker.selectedEntity;
+    if (!selectedEntity || selectedEntity.primaryKey === "") {
+      return { ok: false, error: `请先选择「${ontologyPicker.label || ontologyId}」实例` };
+    }
+    const storageGroup = normalizeStorageGroup(row.storageGroup);
+    let dataPrimaryKey: ApplicationTestEntityBindingSelection["dataPrimaryKey"];
+    if (!isMainStorageGroup(storageGroup) && storageGroup) {
+      const storagePicker = findApplicationStorageGroupPicker(buildApplicationStorageGroupPickerKey(ontologyId, storageGroup));
+      if (!storagePicker) return { ok: false, error: `请先选择${sideLabel}对象「${ontologyId}」存储分组「${storageGroup}」的数据行` };
+      if (storagePicker.loading) return { ok: false, error: "请等待数据行列表加载完成后再测试" };
+      if (!storagePicker.selectedDataRow) {
+        return { ok: false, error: `请先选择${sideLabel}对象「${ontologyId}」存储分组「${storageGroup}」的数据行` };
+      }
+      dataPrimaryKey = storagePicker.selectedDataRow.dataPrimaryKey;
+    }
+    selections.push({
+      ontologyUniqueIdentifier: ontologyId,
+      entityPrimaryKey: selectedEntity.primaryKey,
+      storageGroup,
+      dataPrimaryKey,
+    });
+  }
+  return { ok: true, selections };
+}
+
+/**
+ * @description 更新指定对象实例选择器的部分字段。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @param patch 部分字段。
+ */
+function patchApplicationOntologyPicker(ontologyUniqueIdentifier: string, patch: Partial<ApplicationOntologyEntityPicker>): void {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  applicationOntologyPickers.value = applicationOntologyPickers.value.map((item) =>
+    item.ontologyUniqueIdentifier === ontologyId ? { ...item, ...patch } : item,
+  );
+}
+
+/**
+ * @description 格式化应用行为实例下拉选项文案。
+ * @param row 实体行。
+ * @returns 选项文案。
+ */
+function formatApplicationEntityOptionLabel(row: BehaviorTestEntityRow): string {
+  const name = row.displayName.trim() || "未命名实体";
+  const primaryKey = row.primaryKeyLabel.trim() || "—";
+  return `${name} · ${primaryKey}`;
+}
+
+/**
+ * @description 组装下拉选项；已选实体不在当前页时前置保留以便回显。
+ * @param picker 对象实例选择器。
+ * @returns 选项列表。
+ */
+function listApplicationOntologySelectOptions(picker: ApplicationOntologyEntityPicker | null | undefined): BehaviorTestEntityRow[] {
+  if (!picker) return [];
+  const selected = picker.selectedEntity;
+  if (!selected || !picker.selectedRowKey) return picker.rows;
+  if (picker.rows.some((item) => item.rowKey === selected.rowKey)) return picker.rows;
+  return [selected, ...picker.rows];
+}
+
+/**
+ * @description 加载应用行为 PROPERTY 对象下的实体分页列表。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ */
+async function loadApplicationOntologyEntityList(ontologyUniqueIdentifier: string): Promise<void> {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  const picker = findApplicationOntologyPicker(ontologyId);
+  if (!picker) return;
+  if (!ontologyId) {
+    patchApplicationOntologyPicker(ontologyId, {
+      loading: false,
+      error: "缺少对象标识，无法加载实体列表",
+      rows: [],
+      total: 0,
+    });
+    return;
+  }
+  const requestToken = (applicationOntologyLoadTokens[ontologyId] ?? 0) + 1;
+  applicationOntologyLoadTokens[ontologyId] = requestToken;
+  patchApplicationOntologyPicker(ontologyId, { loading: true, error: "" });
+  try {
+    const response = await getOntologyEntitiesInterface({
+      ontologyUniqueIdentifier: ontologyId,
+      pageNum: picker.page,
+      pageSize: picker.pageSize,
+    });
+    if (applicationOntologyLoadTokens[ontologyId] !== requestToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "实体列表加载失败");
+    const records = Array.isArray(response.data.records) ? response.data.records : [];
+    const rows = records.map((item, index) => mapEntityRecordToRow(item, index));
+    const selectedOnPage = picker.selectedRowKey ? (rows.find((item) => item.rowKey === picker.selectedRowKey) ?? null) : null;
+    patchApplicationOntologyPicker(ontologyId, {
+      loading: false,
+      error: "",
+      rows,
+      total: Number(response.data.total) || records.length,
+      selectedEntity: selectedOnPage ?? picker.selectedEntity,
+    });
+  } catch (error) {
+    if (applicationOntologyLoadTokens[ontologyId] !== requestToken) return;
+    patchApplicationOntologyPicker(ontologyId, {
+      loading: false,
+      error: error instanceof Error ? error.message : "实体列表加载失败",
+      rows: [],
+      total: 0,
+    });
+  }
+}
+
+/**
+ * @description 切换应用行为对象实例列表页码。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @param page 页码。
+ */
+function changeApplicationOntologyEntityPage(ontologyUniqueIdentifier: string, page: number): void {
+  patchApplicationOntologyPicker(ontologyUniqueIdentifier, { page });
+  void loadApplicationOntologyEntityList(ontologyUniqueIdentifier);
+}
+
+/**
+ * @description 更新应用行为对象实例下拉选中值；变更后重置并按需加载非 main 分组数据行。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @param selectedRowKey 选中行键；空串表示清空。
+ */
+function updateApplicationOntologyEntitySelection(ontologyUniqueIdentifier: string, selectedRowKey: string): void {
+  const picker = findApplicationOntologyPicker(ontologyUniqueIdentifier);
+  if (!picker) return;
+  const nextKey = selectedRowKey.trim();
+  if (!nextKey) {
+    patchApplicationOntologyPicker(ontologyUniqueIdentifier, { selectedRowKey: "", selectedEntity: null });
+    clearApplicationStorageGroupSelectionsForOntology(ontologyUniqueIdentifier);
+    return;
+  }
+  const matched =
+    listApplicationOntologySelectOptions(picker).find((item) => item.rowKey === nextKey) ?? picker.rows.find((item) => item.rowKey === nextKey) ?? null;
+  patchApplicationOntologyPicker(ontologyUniqueIdentifier, {
+    selectedRowKey: nextKey,
+    selectedEntity: matched,
+  });
+  clearApplicationStorageGroupSelectionsForOntology(ontologyUniqueIdentifier);
+  if (!matched) return;
+  for (const storagePicker of applicationStorageGroupPickers.value) {
+    if (storagePicker.ontologyUniqueIdentifier !== ontologyUniqueIdentifier.trim()) continue;
+    void loadApplicationStorageGroupDataRows(storagePicker.pickerKey);
+  }
+}
+
+/**
+ * @description 按关系唯一标识加载应用行为关系两端上下文（不强制挂载侧匹配）。
+ * @param linkId 关系唯一标识。
+ */
+async function loadApplicationLinkContext(linkId: string): Promise<void> {
+  const uniqueIdentifier = linkId.trim();
+  if (!uniqueIdentifier) {
+    applicationHasLinkMapping.value = false;
+    clearRelationTestState();
+    return;
+  }
+  const requestToken = ++relationContextLoadToken;
+  applicationHasLinkMapping.value = true;
+  relationContextLoading.value = true;
+  relationContextError.value = "";
+  try {
+    ontologyLinkUniqIdentifier.value = uniqueIdentifier;
+    const linkResponse = await getOntologyLinkByUniqueIdentifierInterface({ uniqueIdentifier });
+    if (requestToken !== relationContextLoadToken) return;
+    if (linkResponse.code !== 200 || !linkResponse.data) throw new Error(linkResponse.message || "关系详情加载失败");
+    const linkData = linkResponse.data;
+    ontologyNameFrom.value = (linkData.ontologyNameFrom ?? "").trim();
+    ontologyNameTo.value = (linkData.ontologyNameTo ?? "").trim();
+    ontologyUniqueIdentifierFrom.value = (linkData.ontologyUniqueIdentifierFrom ?? "").trim();
+    ontologyUniqueIdentifierTo.value = (linkData.ontologyUniqueIdentifierTo ?? "").trim();
+    const mountOntologyId = behaviorOntologyUniqueIdentifier.value;
+    if (mountOntologyId && mountOntologyId === ontologyUniqueIdentifierFrom.value) {
+      relationMountSide.value = "from";
+    } else if (mountOntologyId && mountOntologyId === ontologyUniqueIdentifierTo.value) {
+      relationMountSide.value = "to";
+    } else {
+      relationMountSide.value = "";
+    }
+    fromEntityPage.value = 1;
+    toEntityPage.value = 1;
+    selectedFromEntityRowKey.value = "";
+    selectedToEntityRowKey.value = "";
+    void loadFromEntityList();
+    void loadToEntityList();
+  } catch (error) {
+    if (requestToken !== relationContextLoadToken) return;
+    ontologyLinkUniqIdentifier.value = "";
+    ontologyNameFrom.value = "";
+    ontologyNameTo.value = "";
+    ontologyUniqueIdentifierFrom.value = "";
+    ontologyUniqueIdentifierTo.value = "";
+    relationMountSide.value = "";
+    fromEntityRows.value = [];
+    toEntityRows.value = [];
+    relationContextError.value = error instanceof Error ? error.message : "关系信息加载失败";
+  } finally {
+    if (requestToken === relationContextLoadToken) relationContextLoading.value = false;
+  }
+}
+
+/**
+ * @description 加载应用行为测试表单：详情 INPUT 行、PROPERTY 实例选择，以及可选关系两端。
+ */
+async function loadApplicationTestForm(): Promise<void> {
+  const actionApi = (props.behavior?.behaviorApiName ?? "").trim();
+  const ontologySpaceId = props.spaceId.trim();
+  if (!actionApi) {
+    clearDetailParamState();
+    detailError.value = "当前行为缺少 apiName，无法加载参数";
+    return;
+  }
+  if (!ontologySpaceId) {
+    clearDetailParamState();
+    detailError.value = "缺少对象空间 id，无法加载参数";
+    return;
+  }
+  const requestToken = ++detailLoadToken;
+  detailLoading.value = true;
+  detailError.value = "";
+  submitError.value = "";
+  applicationInputRows.value = [];
+  applicationWritePropertyOutputRows.value = [];
+  applicationOntologyPickers.value = [];
+  applicationStorageGroupPickers.value = [];
+  applicationHasLinkMapping.value = false;
+  clearRelationTestState();
+  try {
+    const response = await getOntologyActionInfoInterface({ actionApi, ontologySpaceId });
+    if (requestToken !== detailLoadToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "行为详情加载失败");
+    const viewState = mapOntologyActionInfoToViewState(response.data);
+    resolvedActionApi.value = viewState.actionApi || actionApi;
+    resolvedStorageGroup.value = viewState.storageGroup.trim();
+    resolvedOntologyUniqIdentifier.value = viewState.ontologyUniqIdentifier.trim();
+    applicationInputRows.value = viewState.inputRows;
+    const writePropertyOutputRows = filterWritePropertyOutputRows(viewState.outputRows);
+    applicationWritePropertyOutputRows.value = writePropertyOutputRows;
+    const externalRows = mapExternalParamRows(viewState.inputRows);
+    paramRows.value = externalRows;
+    resetParamValues(externalRows);
+    clearApplicationTestResult();
+    const pickerSeeds = collectApplicationPropertyOntologyPickers(viewState.inputRows, writePropertyOutputRows);
+    applicationOntologyPickers.value = pickerSeeds.map((seed) => ({
+      ontologyUniqueIdentifier: seed.ontologyUniqueIdentifier,
+      label: seed.label,
+      loading: false,
+      error: "",
+      rows: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+      selectedRowKey: "",
+      selectedEntity: null,
+    }));
+    const storageGroupSeeds = collectApplicationStorageGroupPickers(viewState.inputRows, writePropertyOutputRows);
+    applicationStorageGroupPickers.value = storageGroupSeeds.map((seed) => ({
+      pickerKey: seed.pickerKey,
+      ontologyUniqueIdentifier: seed.ontologyUniqueIdentifier,
+      storageGroup: seed.storageGroup,
+      label: seed.label,
+      loading: false,
+      error: "",
+      rows: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+      selectedRowKey: "",
+      selectedDataRow: null,
+    }));
+    for (const seed of pickerSeeds) {
+      void loadApplicationOntologyEntityList(seed.ontologyUniqueIdentifier);
+    }
+    const linkId = viewState.linkRelationId.trim();
+    if (linkId) {
+      void loadApplicationLinkContext(linkId);
+    }
+  } catch (error) {
+    if (requestToken !== detailLoadToken) return;
+    applicationInputRows.value = [];
+    applicationWritePropertyOutputRows.value = [];
+    applicationOntologyPickers.value = [];
+    applicationStorageGroupPickers.value = [];
+    applicationHasLinkMapping.value = false;
+    paramRows.value = [];
+    resetParamValues([]);
+    resolvedActionApi.value = "";
+    resolvedStorageGroup.value = "";
+    resolvedOntologyUniqIdentifier.value = "";
+    clearApplicationTestResult();
+    detailError.value = error instanceof Error ? error.message : "行为详情加载失败";
+  } finally {
+    if (requestToken === detailLoadToken) detailLoading.value = false;
+  }
 }
 
 /**
@@ -615,6 +1591,8 @@ function clearDetailParamState(): void {
  */
 function clearGroupDataRowState(): void {
   groupDataRows.value = [];
+  groupRowPageData.value = null;
+  groupRowTotal.value = 0;
   groupRowError.value = "";
   groupRowLoading.value = false;
   selectedGroupDataRowKey.value = "";
@@ -627,15 +1605,6 @@ function clearGroupDataRowState(): void {
  */
 function asEntityRow(row: unknown): BehaviorTestEntityRow {
   return row as BehaviorTestEntityRow;
-}
-
-/**
- * @description 将表格行收窄为测试参数行类型。
- * @param row 表格行。
- * @returns 参数行。
- */
-function asParamRow(row: unknown): BehaviorTestParamRow {
-  return row as BehaviorTestParamRow;
 }
 
 /**
@@ -654,7 +1623,8 @@ function asGroupDataRow(row: unknown): BehaviorTestEntityDataRow {
 function selectEntityRow(row: BehaviorTestEntityRow): void {
   selectedEntityRowKey.value = row.rowKey;
   selectedGroupDataRowKey.value = "";
-  if (needsDataRowSelection.value) void loadEntityGroupDataRows();
+  groupRowPage.value = 1;
+  if (isAttributeValueTest.value) void loadEntityGroupDataRows();
 }
 
 /**
@@ -704,6 +1674,19 @@ function applyLockedMainGroupDataRowSelection(): void {
   if (!isMainGroupDataRowLocked.value) return;
   const firstRow = groupDataRows.value[0];
   selectedGroupDataRowKey.value = firstRow ? firstRow.rowKey : "";
+}
+
+/**
+ * @description 按数据行主键在刷新后的列表中恢复选中；匹配不到则清空。
+ * @param dataPrimaryKey 刷新前选中的数据行主键。
+ */
+function restoreSelectedGroupDataRowByPrimaryKey(dataPrimaryKey: unknown): void {
+  if (dataPrimaryKey === null || dataPrimaryKey === undefined || dataPrimaryKey === "") {
+    selectedGroupDataRowKey.value = "";
+    return;
+  }
+  const matched = groupDataRows.value.find((item) => isSameDataPrimaryKey(item.dataPrimaryKey, dataPrimaryKey));
+  selectedGroupDataRowKey.value = matched ? matched.rowKey : "";
 }
 
 /**
@@ -1018,10 +2001,10 @@ async function loadRelationTestContext(): Promise<void> {
 }
 
 /**
- * @description 按所选实体加载属性行详情并扁平为可选数据行。
+ * @description 按所选实体分页加载指定存储分组的属性行（供选择数据行与查看实例数据复用）。
  */
 async function loadEntityGroupDataRows(): Promise<void> {
-  if (!needsDataRowSelection.value) {
+  if (!isAttributeValueTest.value) {
     clearGroupDataRowState();
     return;
   }
@@ -1045,23 +2028,34 @@ async function loadEntityGroupDataRows(): Promise<void> {
   const requestToken = ++groupRowLoadToken;
   groupRowLoading.value = true;
   groupRowError.value = "";
+  const previousSelectedDataPrimaryKey = selectedGroupDataRow.value?.dataPrimaryKey;
   try {
-    const response = await postGetOntologyEntityRowDetailInterface({
+    const response = await postGetOntologyEntityRowDetailPageInterface({
       ontologyUniqueIdentifier,
       entityPrimaryKey,
       sort: "DESC",
+      storageGroup,
+      pageNum: groupRowPage.value,
+      pageSize: groupRowPageSize.value,
     });
     if (requestToken !== groupRowLoadToken) return;
     if (response.code !== 200) throw new Error(response.message || "实体行数据加载失败");
-    groupDataRows.value = mapOntologyEntityRowDetailToDataRows(response.data, storageGroup);
-    if (isMainGroupDataRowLocked.value) {
-      applyLockedMainGroupDataRowSelection();
-    } else if (selectedGroupDataRowKey.value && !groupDataRows.value.some((item) => item.rowKey === selectedGroupDataRowKey.value)) {
-      selectedGroupDataRowKey.value = "";
+    const pageData = response.data ?? null;
+    groupRowPageData.value = pageData;
+    groupDataRows.value = mapOntologyEntityRowDetailPageToDataRows(pageData, storageGroup);
+    groupRowTotal.value = typeof pageData?.total === "number" ? pageData.total : 0;
+    if (needsDataRowSelection.value) {
+      if (isMainGroupDataRowLocked.value) {
+        applyLockedMainGroupDataRowSelection();
+      } else {
+        restoreSelectedGroupDataRowByPrimaryKey(previousSelectedDataPrimaryKey);
+      }
     }
   } catch (error) {
     if (requestToken !== groupRowLoadToken) return;
     groupDataRows.value = [];
+    groupRowPageData.value = null;
+    groupRowTotal.value = 0;
     selectedGroupDataRowKey.value = "";
     groupRowError.value = error instanceof Error ? error.message : "实体行数据加载失败";
   } finally {
@@ -1070,9 +2064,28 @@ async function loadEntityGroupDataRows(): Promise<void> {
 }
 
 /**
- * @description 打开所选实体的属性行详情弹框。
+ * @description 切换数据行分页页码。
+ * @param page 页码。
  */
-function openEntityRowDetail(): void {
+function changeGroupDataRowPage(page: number): void {
+  groupRowPage.value = page;
+  void loadEntityGroupDataRows();
+}
+
+/**
+ * @description 切换数据行分页每页条数并回到第一页。
+ * @param size 每页条数。
+ */
+function changeGroupDataRowPageSize(size: number): void {
+  groupRowPageSize.value = size;
+  groupRowPage.value = 1;
+  void loadEntityGroupDataRows();
+}
+
+/**
+ * @description 打开所选实体的属性行详情弹框（使用已缓存的 page 数据）。
+ */
+async function openEntityRowDetail(): Promise<void> {
   if (detailEntityPrimaryKey.value === null) {
     ElMessage.warning("请先选择实体实例");
     return;
@@ -1081,7 +2094,25 @@ function openEntityRowDetail(): void {
     ElMessage.warning("当前行为缺少对象标识，无法查看实例数据");
     return;
   }
+  if (!resolvedStorageGroup.value.trim()) {
+    ElMessage.warning("行为未配置存储分组，无法查看实例数据");
+    return;
+  }
+  if (!groupRowPageData.value) {
+    await loadEntityGroupDataRows();
+  }
+  if (!entityRowDetailFromPage.value) {
+    ElMessage.warning(groupRowError.value || "暂无实例数据，请先加载属性行");
+    return;
+  }
   entityRowDetailVisible.value = true;
+}
+
+/**
+ * @description 重新拉取 page 数据以刷新实例详情弹框。
+ */
+async function reloadEntityRowDetailFromPage(): Promise<void> {
+  await loadEntityGroupDataRows();
 }
 
 /**
@@ -1129,16 +2160,106 @@ function buildExternalParamsPayload(): { params: Record<string, unknown> } | { e
 }
 
 /**
- * @description 提交行为测试：属性值、基础函数算子或关系实例。
+ * @description 提交应用行为测试：组装 params / inputEntities / outputEntities / entityPrimaryKeys.from|to。
+ */
+async function submitApplicationBehaviorTest(): Promise<void> {
+  if (detailLoading.value || detailError.value) {
+    ElMessage.warning("请等待行为参数加载完成后再测试");
+    return;
+  }
+  if (applicationHasLinkMapping.value && (relationContextLoading.value || relationContextError.value)) {
+    ElMessage.warning("请等待关系信息加载完成后再测试");
+    return;
+  }
+  const propertyInputRows = applicationInputRows.value.filter((row) => normalizeApplicationSourceType(row.sourceType) === "PROPERTY");
+  const inputSelections = collectApplicationEntityBindingSelections(propertyInputRows, "入参");
+  if (!inputSelections.ok) {
+    submitError.value = inputSelections.error;
+    ElMessage.warning(inputSelections.error);
+    return;
+  }
+  const outputSelections = collectApplicationEntityBindingSelections(applicationWritePropertyOutputRows.value, "出参");
+  if (!outputSelections.ok) {
+    submitError.value = outputSelections.error;
+    ElMessage.warning(outputSelections.error);
+    return;
+  }
+  const selectedFrom = selectedFromEntityRow.value;
+  const selectedTo = selectedToEntityRow.value;
+  if (applicationHasLinkMapping.value) {
+    if (!selectedFrom || selectedFrom.primaryKey === "") {
+      ElMessage.warning("请先选择 From 侧实体实例");
+      return;
+    }
+    if (!selectedTo || selectedTo.primaryKey === "") {
+      ElMessage.warning("请先选择 To 侧实体实例");
+      return;
+    }
+  }
+  const paramsPayload = buildExternalParamsPayload();
+  if ("error" in paramsPayload) {
+    submitError.value = paramsPayload.error;
+    ElMessage.warning(paramsPayload.error);
+    return;
+  }
+  const actionApi = resolvedActionApi.value.trim() || (props.behavior?.behaviorApiName ?? "").trim();
+  const ontologySpaceId = props.spaceId.trim();
+  const built = buildApplicationTestRequestParams({
+    ontologySpaceId,
+    actionApi,
+    params: paramsPayload.params,
+    inputEntitySelections: inputSelections.selections,
+    outputEntitySelections: outputSelections.selections,
+    linkEntitySelection:
+      applicationHasLinkMapping.value && selectedFrom && selectedTo
+        ? {
+            ontologyUniqueIdentifierFrom: ontologyUniqueIdentifierFrom.value,
+            ontologyUniqueIdentifierTo: ontologyUniqueIdentifierTo.value,
+            primaryKeyFrom: selectedFrom.primaryKey,
+            primaryKeyTo: selectedTo.primaryKey,
+            mountSide: relationMountSide.value,
+          }
+        : null,
+  });
+  if (!built.ok) {
+    submitError.value = built.error;
+    ElMessage.warning(built.error);
+    return;
+  }
+  const requestToken = ++submitToken;
+  submitLoading.value = true;
+  applicationTestResultText.value = "";
+  try {
+    const response = await postTestOntologyActionInterface(built.request);
+    if (requestToken !== submitToken) return;
+    if (response.code !== 200) throw new Error(response.message || "行为测试失败");
+    applicationTestResultText.value = formatBasicOperatorTestResultData(response.data);
+    const resultMessage = response.data?.message?.trim() || response.message || "行为测试成功";
+    ElMessage.success(resultMessage);
+  } catch (error) {
+    if (requestToken !== submitToken) return;
+    submitError.value = error instanceof Error ? error.message : "行为测试失败";
+    ElMessage.error(submitError.value);
+  } finally {
+    if (requestToken === submitToken) submitLoading.value = false;
+  }
+}
+
+/**
+ * @description 提交行为测试：应用行为、属性值、基础函数算子或关系实例。
  */
 async function submitBehaviorTest(): Promise<void> {
   if (submitLoading.value) return;
   submitError.value = "";
+  if (isApplicationTest.value) {
+    await submitApplicationBehaviorTest();
+    return;
+  }
   if (
     !props.behavior ||
     (!isRelationInstanceTest.value && !isBasicFunctionOperatorTest.value && !isCreateTest.value && !isUpdateTest.value && !isDeleteTest.value)
   ) {
-    ElMessage.info("当前仅支持属性值-新增/编辑/删除、基础函数算子或关系实例测试");
+    ElMessage.info("当前仅支持应用行为、属性值-新增/编辑/删除、基础函数算子或关系实例测试");
     return;
   }
   if (isRelationInstanceTest.value) {
@@ -1266,6 +2387,10 @@ async function submitBehaviorTest(): Promise<void> {
     if (response.code !== 200) throw new Error(response.message || "行为测试失败");
     const resultMessage = response.data?.message?.trim() || response.message || "行为测试成功";
     ElMessage.success(resultMessage);
+    if (isUpdateTest.value) {
+      resetParamValues(paramRows.value);
+      await reloadEntityRowDetailFromPage();
+    }
   } catch (error) {
     if (requestToken !== submitToken) return;
     submitError.value = error instanceof Error ? error.message : "行为测试失败";
@@ -1284,6 +2409,7 @@ watch(
       props.spaceId,
       props.behavior?.basicAction,
       props.behavior?.valueType,
+      props.behavior?.kind,
     ] as const,
   ([visible]) => {
     if (!visible) {
@@ -1294,6 +2420,9 @@ watch(
       fromEntityLoadToken += 1;
       toEntityLoadToken += 1;
       submitToken += 1;
+      for (const key of Object.keys(applicationOntologyLoadTokens)) {
+        applicationOntologyLoadTokens[key] = (applicationOntologyLoadTokens[key] ?? 0) + 1;
+      }
       entityRowDetailVisible.value = false;
       entityLinkDataVisible.value = false;
       entityLinkDataQueryParams.value = {
@@ -1309,9 +2438,13 @@ watch(
       clearBasicOperatorTestResult();
       entityPage.value = 1;
       entityPageSize.value = 10;
+      groupRowPage.value = 1;
+      groupRowPageSize.value = 10;
       return;
     }
     entityPage.value = 1;
+    groupRowPage.value = 1;
+    groupRowPageSize.value = 10;
     selectedEntityRowKey.value = "";
     selectedGroupDataRowKey.value = "";
     submitError.value = "";
@@ -1319,6 +2452,10 @@ watch(
     clearDetailParamState();
     clearRelationTestState();
     clearBasicOperatorTestResult();
+    if (isApplicationTest.value) {
+      void loadApplicationTestForm();
+      return;
+    }
     if (isRelationInstanceTest.value) {
       void loadRelationTestContext();
       return;
@@ -1335,6 +2472,19 @@ watch(
 </script>
 
 <style scoped lang="scss">
+.behavior-test-dialog__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-right: 24px;
+}
+.behavior-test-dialog__title {
+  color: var(--aircas-color-text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
 .behavior-test-dialog__hint {
   margin: 0 0 12px;
   color: var(--aircas-color-text-secondary);
@@ -1364,6 +2514,27 @@ watch(
   display: flex;
   justify-content: flex-end;
   margin-top: 12px;
+}
+.behavior-test-dialog__param-value-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.behavior-test-dialog__entity-select {
+  width: 100%;
+}
+.behavior-test-dialog__select-footer {
+  display: flex;
+  justify-content: center;
+  padding: 4px 8px 8px;
+}
+.behavior-test-dialog__select-footer-error {
+  margin: 0;
+  padding: 4px 8px 8px;
+  color: var(--aircas-color-danger, #f56c6c);
+  font-size: 12px;
+  line-height: 1.5;
 }
 .behavior-test-dialog__result {
   width: 100%;

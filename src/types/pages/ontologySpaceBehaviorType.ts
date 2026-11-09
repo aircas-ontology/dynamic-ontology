@@ -118,7 +118,8 @@ export interface SpaceBehaviorItem {
   description: string;
   status: SpaceBehaviorStatus;
   version: string;
-  basicAction: SpaceBehaviorBasicAction;
+  /** 列表接口 operation 映射结果；缺失或未知时为空字符串。 */
+  basicAction: SpaceBehaviorBasicAction | "";
   objectName: string;
   /** 行为挂载对象唯一标识（列表 ontologyUniqIdentifier）。 */
   ontologyUniqIdentifier: string;

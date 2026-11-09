@@ -59,15 +59,17 @@ function mapSubjectTypeToValueType(subjectType: string): SpaceBehaviorValueType 
 }
 
 /**
- * @description 将接口 operation 映射为基础操作。
+ * @description 将接口 operation 映射为基础操作；缺失或未知值不回落为 create。
  * @param operation 接口操作。
- * @returns 工作区 basicAction。
+ * @returns 工作区 basicAction；缺失或未知时为空字符串。
  */
-function mapOperationToBasicAction(operation: string): SpaceBehaviorBasicAction {
-  if (operation === "UPDATE") return "update";
-  if (operation === "DELETE") return "delete";
-  if (operation === "QUERY") return "query";
-  return "create";
+function mapOperationToBasicAction(operation: string | null | undefined): SpaceBehaviorBasicAction | "" {
+  const normalized = (operation ?? "").trim().toUpperCase();
+  if (normalized === "CREATE") return "create";
+  if (normalized === "UPDATE") return "update";
+  if (normalized === "DELETE") return "delete";
+  if (normalized === "QUERY") return "query";
+  return "";
 }
 
 /**

@@ -46,7 +46,19 @@ import {
 import { mapOntologyActionInfoToFormState } from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyActionInfoToFormState.ts";
 import { mapOntologyActionInfoToViewState } from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyActionInfoToViewState.ts";
 import { coerceBehaviorTestParamValue } from "../src/views/SpaceBehaviorWorkspace/utils/coerceBehaviorTestParamValue.ts";
-import { mapOntologyEntityRowDetailToDataRows } from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyEntityRowDetailToDataRows.ts";
+import {
+  buildApplicationStorageGroupPickerKey,
+  collectApplicationPropertyOntologyPickers,
+  collectApplicationStorageGroupPickers,
+  formatApplicationInputSourceTypeLabel,
+  formatApplicationOutputModeLabel,
+} from "../src/views/SpaceBehaviorWorkspace/utils/collectApplicationPropertyOntologyPickers.ts";
+import { buildApplicationTestRequestParams } from "../src/views/SpaceBehaviorWorkspace/utils/buildApplicationTestRequestParams.ts";
+import {
+  mapOntologyEntityRowDetailPageToDataRows,
+  mapOntologyEntityRowDetailPageToViewDetail,
+  mapOntologyEntityRowDetailToDataRows,
+} from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyEntityRowDetailToDataRows.ts";
 
 const EMPTY_APPLICATION_DRAFT_FIELDS = {
   applicationInputRows: [],
@@ -131,6 +143,11 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(listSource, /functionOperatorName/);
   assert.match(listSource, /label="apiName"/);
   assert.match(listSource, /behaviorApiName/);
+  assert.match(listSource, /label="基础操作"/);
+  assert.match(listSource, /formatBasicActionLabel/);
+  assert.match(listSource, /SPACE_BEHAVIOR_BASIC_ACTION_LABELS/);
+  assert.match(listSource, /basicAction/);
+  assert.match(listSource, /return "-"/);
   assert.match(listSource, /label="状态"/);
   assert.match(listSource, /label="更新时间"/);
   assert.doesNotMatch(listSource, /label="类别"/);
@@ -143,7 +160,9 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(workspaceSource, /BehaviorTestDialog/);
   assert.match(workspaceSource, /:space-id="spaceId"/);
   assert.match(workspaceSource, /behaviorTestVisible/);
-  assert.match(workspaceSource, /当前仅支持基础行为-属性值\/基础函数算子\/关系实例测试/);
+  assert.match(workspaceSource, /当前仅支持应用行为，以及基础行为-属性值\/基础函数算子\/关系实例测试/);
+  assert.match(workspaceSource, /isApplicationTest/);
+  assert.match(workspaceSource, /kind === "application"/);
   assert.match(workspaceSource, /basicFunctionOperator/);
   assert.match(workspaceSource, /relationInstance/);
   assert.match(workspaceSource, /valueType !== "basicFunctionOperator"/);
@@ -160,12 +179,55 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /isBasicFunctionOperatorTest/);
   assert.match(testDialogSource, /isAttributeValueTest/);
   assert.match(testDialogSource, /isRelationInstanceTest/);
+  assert.match(testDialogSource, /isApplicationTest/);
+  assert.match(testDialogSource, /kind === "application"/);
+  assert.match(testDialogSource, /#header/);
+  assert.match(testDialogSource, /behaviorCategoryLabel/);
+  assert.match(testDialogSource, /behaviorBasicActionLabel/);
+  assert.match(testDialogSource, /SPACE_BEHAVIOR_KIND_LABELS/);
+  assert.match(testDialogSource, /SPACE_BEHAVIOR_BASIC_ACTION_LABELS/);
+  assert.match(testDialogSource, /loadApplicationTestForm/);
+  assert.match(testDialogSource, /loadApplicationLinkContext/);
+  assert.match(testDialogSource, /applicationHasLinkMapping/);
+  assert.match(testDialogSource, /showRelationLinkForm/);
+  assert.match(testDialogSource, /linkRelationId/);
+  assert.match(testDialogSource, /applicationInputRows/);
+  assert.match(testDialogSource, /applicationWritePropertyOutputRows/);
+  assert.match(testDialogSource, /写回属性出参/);
+  assert.match(testDialogSource, /WRITE_PROPERTY/);
+  assert.match(testDialogSource, /formatApplicationOutputModeLabel/);
+  assert.match(testDialogSource, /applicationOntologyPickers/);
+  assert.match(testDialogSource, /applicationStorageGroupPickers/);
+  assert.match(testDialogSource, /collectApplicationPropertyOntologyPickers/);
+  assert.match(testDialogSource, /collectApplicationStorageGroupPickers/);
+  assert.match(testDialogSource, /formatApplicationInputSourceTypeLabel/);
+  assert.match(testDialogSource, /behavior-test-dialog__entity-select/);
+  assert.match(testDialogSource, /updateApplicationOntologyEntitySelection/);
+  assert.match(testDialogSource, /listApplicationOntologySelectOptions/);
+  assert.match(testDialogSource, /loadApplicationStorageGroupDataRows/);
+  assert.match(testDialogSource, /updateApplicationStorageGroupRowSelection/);
+  assert.match(testDialogSource, /#footer/);
+  assert.doesNotMatch(testDialogSource, /选择实例 ·/);
+  assert.doesNotMatch(testDialogSource, /下方选择实例/);
+  assert.doesNotMatch(testDialogSource, /:disabled="isApplicationTest"/);
+  assert.doesNotMatch(testDialogSource, /应用行为测试提交尚未接入/);
+  assert.doesNotMatch(testDialogSource, /propertyEntitySelections/);
+  assert.doesNotMatch(testDialogSource, /topLevelOntologyUniqueIdentifier/);
+  assert.match(testDialogSource, /submitApplicationBehaviorTest/);
+  assert.match(testDialogSource, /buildApplicationTestRequestParams/);
+  assert.match(testDialogSource, /inputEntitySelections/);
+  assert.match(testDialogSource, /outputEntitySelections/);
+  assert.match(testDialogSource, /inputEntities/);
+  assert.match(testDialogSource, /outputEntities/);
+  assert.match(testDialogSource, /entityPrimaryKeys/);
+  assert.match(testDialogSource, /applicationTestResultText/);
+  assert.match(testDialogSource, /v-if="showRelationLinkForm"/);
   assert.match(testDialogSource, /确认后直接执行基础函数算子测试/);
   assert.match(testDialogSource, /basicOperatorTestResultText/);
   assert.match(testDialogSource, /formatBasicOperatorTestResultData/);
   assert.match(testDialogSource, /type="textarea"/);
   assert.match(testDialogSource, /readonly/);
-  assert.match(testDialogSource, /v-else-if="!isBasicFunctionOperatorTest"/);
+  assert.match(testDialogSource, /v-else-if="isAttributeValueTest"/);
   assert.match(testDialogSource, /选择关系两端对象实例后执行关系实例测试/);
   assert.match(testDialogSource, /关系两端对象/);
   assert.match(testDialogSource, /ontologyNameFrom/);
@@ -173,10 +235,19 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /ontologyLinkUniqIdentifier/);
   assert.match(testDialogSource, /linkEntityPrimaryKey/);
   assert.match(testDialogSource, /loadRelationTestContext/);
-  assert.match(testDialogSource, /v-if="isAttributeValueTest && !isDeleteTest"/);
+  assert.doesNotMatch(testDialogSource, /v-if="isAttributeValueTest && isCreateTest"/);
+  assert.match(testDialogSource, /v-if="!isUpdateTest && !isCreateTest"/);
+  assert.match(testDialogSource, /enable-update-test="isUpdateTest"/);
+  assert.match(testDialogSource, /enable-create-test="isCreateTest"/);
+  assert.match(testDialogSource, /selected-data-primary-key/);
+  assert.match(testDialogSource, /@start-test="submitBehaviorTest"/);
+  assert.match(testDialogSource, /@detail-loaded="seedUpdateParamValuesFromDetail"/);
+  assert.match(testDialogSource, /seedUpdateParamValuesFromDetail/);
+  assert.match(testDialogSource, /reloadEntityRowDetail/);
+  assert.match(testDialogSource, /在「查看实例数据」中填写测试参数并开始测试/);
+  assert.match(testDialogSource, /isCreateTest\.value/);
   assert.match(testDialogSource, /isAttributeValueTest\.value/);
   assert.match(testDialogSource, /sourceType === "EXTERNAL"/);
-  assert.match(testDialogSource, /label="属性名称"/);
   assert.match(testDialogSource, /propertyDisplayName/);
   assert.match(testDialogSource, /propertyType/);
   assert.match(testDialogSource, /coerceBehaviorTestParamValue/);
@@ -207,10 +278,15 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /isDeleteTest/);
   assert.match(testDialogSource, /needsDataRowSelection/);
   assert.match(testDialogSource, /选择数据行/);
-  assert.match(testDialogSource, /postGetOntologyEntityRowDetailInterface/);
-  assert.match(testDialogSource, /mapOntologyEntityRowDetailToDataRows/);
+  assert.match(testDialogSource, /postGetOntologyEntityRowDetailPageInterface/);
+  assert.match(testDialogSource, /mapOntologyEntityRowDetailPageToDataRows/);
+  assert.match(testDialogSource, /groupRowTotal/);
+  assert.match(testDialogSource, /groupRowPage/);
+  assert.match(testDialogSource, /groupRowPageSize/);
+  assert.match(testDialogSource, /changeGroupDataRowPage/);
+  assert.match(testDialogSource, /changeGroupDataRowPageSize/);
   assert.match(testDialogSource, /dataPrimaryKey/);
-  assert.match(testDialogSource, /当前仅支持属性值-新增\/编辑\/删除、基础函数算子或关系实例测试/);
+  assert.match(testDialogSource, /当前仅支持应用行为、属性值-新增\/编辑\/删除、基础函数算子或关系实例测试/);
   assert.match(testDialogSource, /属性值-删除测试/);
   assert.match(testDialogSource, /!isDeleteTest\.value/);
   assert.match(testDialogSource, /behaviorApiName/);
@@ -218,13 +294,44 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /开始测试/);
   assert.match(testDialogSource, /<el-pagination\b/);
   const entityRowDetailSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorEntityRowDetailDialog.vue");
-  assert.match(entityRowDetailSource, /postGetOntologyEntityRowDetailInterface/);
-  assert.match(entityRowDetailSource, /sort: "DESC"/);
+  assert.doesNotMatch(entityRowDetailSource, /postGetOntologyEntityRowDetailInterface/);
+  assert.match(entityRowDetailSource, /externalDetail/);
+  assert.match(entityRowDetailSource, /reload-detail/);
   assert.match(entityRowDetailSource, /propertyGroups/);
   assert.match(entityRowDetailSource, /dataPrimaryKey/);
   assert.match(entityRowDetailSource, /propertyDisplayName/);
+  assert.match(entityRowDetailSource, /enableUpdateTest/);
+  assert.match(entityRowDetailSource, /enableCreateTest/);
+  assert.match(entityRowDetailSource, /selectedDataPrimaryKey/);
+  assert.match(entityRowDetailSource, /behavior-entity-row-detail__create-params/);
+  assert.match(entityRowDetailSource, /enableCreateTest && paramRows\.length/);
+  assert.match(entityRowDetailSource, /resolveEditableParamName/);
+  assert.match(entityRowDetailSource, /label="属性值"/);
+  assert.match(entityRowDetailSource, /label="修改值"/);
+  assert.match(entityRowDetailSource, /label="属性名称"/);
+  assert.match(entityRowDetailSource, /label="类型"/);
+  assert.match(entityRowDetailSource, /label="参数值"/);
+  assert.match(entityRowDetailSource, /v-if="enableUpdateTest"/);
+  assert.match(entityRowDetailSource, /enableUpdateTest \|\| enableCreateTest/);
+  assert.match(entityRowDetailSource, /<el-input/);
+  assert.match(entityRowDetailSource, /detail-loaded/);
+  assert.match(entityRowDetailSource, /开始测试/);
+  assert.match(entityRowDetailSource, /start-test/);
+  assert.match(entityRowDetailSource, /reloadEntityRowDetail/);
+  assert.match(entityRowDetailSource, /defineExpose/);
+  assert.match(testDialogSource, /groupRowPageData/);
+  assert.match(testDialogSource, /entityRowDetailFromPage/);
+  assert.match(testDialogSource, /:external-detail="entityRowDetailFromPage"/);
+  assert.match(testDialogSource, /@reload-detail="reloadEntityRowDetailFromPage"/);
+  assert.match(testDialogSource, /mapOntologyEntityRowDetailPageToViewDetail/);
+  assert.doesNotMatch(testDialogSource, /postGetOntologyEntityRowDetailInterface/);
   const mapDataRowsSource = readSource("../src/views/SpaceBehaviorWorkspace/utils/mapOntologyEntityRowDetailToDataRows.ts");
   assert.match(mapDataRowsSource, /export function mapOntologyEntityRowDetailToDataRows/);
+  assert.match(mapDataRowsSource, /export function mapOntologyEntityRowDetailPageToDataRows/);
+  assert.match(mapDataRowsSource, /export function mapOntologyEntityRowDetailPageToViewDetail/);
+  assert.match(mapDataRowsSource, /buildPageDataRowPropertyCount/);
+  assert.match(mapDataRowsSource, /propertyValue/);
+  assert.match(mapDataRowsSource, /propertyDisplayName/);
   assert.match(mapDataRowsSource, /dataPrimaryKey/);
   assert.match(mapDataRowsSource, /storageGroup/);
   assert.match(mapDataRowsSource, /normalizeStorageGroupName/);
@@ -234,8 +341,13 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /isMainStorageGroup/);
   assert.match(testDialogSource, /isMainGroupDataRowLocked/);
   assert.match(testDialogSource, /applyLockedMainGroupDataRowSelection/);
+  assert.match(testDialogSource, /restoreSelectedGroupDataRowByPrimaryKey/);
+  assert.match(testDialogSource, /previousSelectedDataPrimaryKey/);
   assert.match(testDialogSource, /:disabled="isMainGroupDataRowLocked"/);
   assert.match(testDialogSource, /isUpdateTest\.value && isMainStorageGroup\(resolvedStorageGroup\.value\)/);
+  const ontologyEntityApiSource = readSource("../src/apis/ontologyEntityApi.ts");
+  assert.match(ontologyEntityApiSource, /postGetOntologyEntityRowDetailPageInterface/);
+  assert.match(ontologyEntityApiSource, /\/ontology\/entity\/row_detail\/page/);
   assert.match(listSource, /placeholder="行为状态"/);
   assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_OPTIONS/);
   assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_LABELS/);
@@ -291,6 +403,25 @@ test("space behavior maps listAction records to table rows with published draft 
   assert.equal(published.kind, "basic");
   assert.equal(published.valueType, "attributeValue");
   assert.equal(published.basicAction, "create");
+
+  const missingOperation = mapListOntologyActionRecord({
+    id: 11,
+    actionApi: "act.ap.demo",
+    displayName: "无操作行为",
+    description: "operation 缺失",
+    ontologyUniqIdentifier: "",
+    categoryId: 14,
+    status: 1,
+    updateTime: "2026-11-09 11:00:00",
+    actionKind: "APPLICATION",
+    subjectType: "BASIC_OPERATOR",
+    operation: "",
+    storageGroup: "",
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+  });
+  assert.equal(missingOperation.basicAction, "");
 
   const draft = mapListOntologyActionRecord({
     id: 2,
@@ -437,6 +568,11 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /basicAction\.value === ['"]create['"] \|\| basicAction\.value === ['"]update['"]/);
   assert.match(formSource, /对象信息/);
   assert.match(formSource, /属性选择/);
+  assert.match(formSource, /prop="displayName" label="属性"/);
+  assert.match(formSource, /prop="description" label="属性描述"/);
+  assert.match(formSource, /label="是否为主键"/);
+  assert.match(formSource, /row\.isPrimaryKey \? "是" : "否"/);
+  assert.match(formSource, /prop="propertyType" label="类型"/);
   assert.match(formSource, /关系选择/);
   assert.match(formSource, /从当前空间关系中单选一条/);
   assert.match(formSource, /函数基础算子/);
@@ -678,6 +814,486 @@ test("space behavior maps entity row detail into selectable data rows for update
   assert.equal(mainRows.length, 1);
   assert.equal(mainRows[0]?.dataPrimaryKey, "200");
   assert.deepEqual(mapOntologyEntityRowDetailToDataRows(null, "engine"), []);
+});
+
+test("space behavior maps entity row detail page records into selectable data rows", () => {
+  const rows = mapOntologyEntityRowDetailPageToDataRows(
+    {
+      records: [
+        {
+          dataPrimaryKey: 17,
+          props: [
+            { propertyApiName: "mount_count", propertyDisplayName: "挂载数量", propertyValue: 2 },
+            { propertyApiName: "weapon_name", propertyDisplayName: "武器名称", propertyValue: "b" },
+            { propertyApiName: "weapon_range", propertyDisplayName: "武器射程", propertyValue: 1 },
+          ],
+        },
+        {
+          dataPrimaryKey: "",
+          props: [{ propertyApiName: "skip", propertyValue: 1 }],
+        },
+      ],
+      total: 2,
+      size: 10,
+      current: 1,
+    },
+    "weapon",
+  );
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]?.storageGroup, "weapon");
+  assert.equal(rows[0]?.dataPrimaryKey, 17);
+  assert.equal(rows[0]?.dataPrimaryKeyLabel, "17");
+  assert.equal(rows[0]?.propertySummary, "3");
+  assert.deepEqual(mapOntologyEntityRowDetailPageToDataRows(null, "weapon"), []);
+  assert.deepEqual(mapOntologyEntityRowDetailPageToDataRows({ records: [], total: 0, size: 10, current: 1 }, ""), []);
+
+  const viewDetail = mapOntologyEntityRowDetailPageToViewDetail(
+    {
+      records: [
+        {
+          dataPrimaryKey: 17,
+          props: [
+            {
+              propertyUniqIdentifier: "p-count",
+              propertyApiName: "mount_count",
+              propertyDisplayName: "挂载数量",
+              propertyValue: 2,
+              categoryId: 709,
+            },
+            {
+              propertyApiName: "weapon_name",
+              propertyDisplayName: "武器名称",
+              propertyValue: "b",
+            },
+          ],
+        },
+      ],
+      total: 1,
+      size: 10,
+      current: 1,
+    },
+    {
+      ontologyUniqueIdentifier: "ont-a",
+      entityPrimaryKey: 1,
+      storageGroup: "weapon",
+    },
+  );
+  assert.equal(viewDetail?.ontologyUniqueIdentifier, "ont-a");
+  assert.equal(viewDetail?.primaryKey, 1);
+  assert.equal(viewDetail?.propertyGroups.length, 1);
+  assert.equal(viewDetail?.propertyGroups[0]?.storageGroup, "weapon");
+  assert.equal(viewDetail?.propertyGroups[0]?.groupDataList[0]?.dataPrimaryKey, 17);
+  assert.equal(viewDetail?.propertyGroups[0]?.groupDataList[0]?.props[0]?.propertyApiName, "mount_count");
+  assert.equal(viewDetail?.propertyGroups[0]?.groupDataList[0]?.props[0]?.propertyDisplayName, "挂载数量");
+  assert.equal(viewDetail?.propertyGroups[0]?.groupDataList[0]?.props[0]?.propertyValue, 2);
+  assert.equal(viewDetail?.propertyGroups[0]?.groupDataList[0]?.props[1]?.propertyDisplayName, "武器名称");
+  assert.equal(mapOntologyEntityRowDetailPageToViewDetail(null, { ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "weapon" }), null);
+});
+
+test("space behavior builds application test request params from form selections", () => {
+  const externalOnly = buildApplicationTestRequestParams({
+    ontologySpaceId: "156",
+    actionApi: "act.ap.demo",
+    params: { max_mach: 2.25 },
+    inputEntitySelections: [],
+    outputEntitySelections: [],
+    linkEntitySelection: null,
+  });
+  assert.equal(externalOnly.ok, true);
+  if (externalOnly.ok) {
+    assert.deepEqual(externalOnly.request, {
+      ontologySpaceId: "156",
+      actionApi: "act.ap.demo",
+      params: { max_mach: 2.25 },
+    });
+  }
+
+  const multiObject = buildApplicationTestRequestParams({
+    ontologySpaceId: "156",
+    actionApi: "act.ap.cross",
+    params: {},
+    inputEntitySelections: [
+      { ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "main" },
+      { ontologyUniqueIdentifier: "ont-b", entityPrimaryKey: 100, storageGroup: "" },
+    ],
+    outputEntitySelections: [],
+    linkEntitySelection: null,
+  });
+  assert.equal(multiObject.ok, true);
+  if (multiObject.ok) {
+    assert.deepEqual(multiObject.request.inputEntities, {
+      "ont-a": { entityPrimaryKey: 1 },
+      "ont-b": { entityPrimaryKey: 100 },
+    });
+    assert.equal(multiObject.request.outputEntities, undefined);
+    assert.equal(multiObject.request.entityPrimaryKey, undefined);
+    assert.equal(multiObject.request.entityPrimaryKeys, undefined);
+  }
+
+  const withDataRows = buildApplicationTestRequestParams({
+    ontologySpaceId: "156",
+    actionApi: "act.ap.groups",
+    params: {},
+    inputEntitySelections: [
+      { ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "weapon", dataPrimaryKey: 17 },
+      { ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "engine", dataPrimaryKey: 9 },
+    ],
+    outputEntitySelections: [{ ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "main" }],
+    linkEntitySelection: null,
+  });
+  assert.equal(withDataRows.ok, true);
+  if (withDataRows.ok) {
+    assert.deepEqual(withDataRows.request.inputEntities, {
+      "ont-a": { entityPrimaryKey: 1, dataPrimaryKeys: { weapon: 17, engine: 9 } },
+    });
+    assert.deepEqual(withDataRows.request.outputEntities, {
+      "ont-a": { entityPrimaryKey: 1 },
+    });
+  }
+
+  const withLink = buildApplicationTestRequestParams({
+    ontologySpaceId: "156",
+    actionApi: "act.ap.link",
+    params: { max_mach: 2.25 },
+    inputEntitySelections: [{ ontologyUniqueIdentifier: "ont-from", entityPrimaryKey: 1, storageGroup: "main" }],
+    outputEntitySelections: [],
+    linkEntitySelection: {
+      ontologyUniqueIdentifierFrom: "ont-from",
+      ontologyUniqueIdentifierTo: "ont-to",
+      primaryKeyFrom: 1,
+      primaryKeyTo: 20,
+      mountSide: "from",
+    },
+  });
+  assert.equal(withLink.ok, true);
+  if (withLink.ok) {
+    assert.equal(withLink.request.linkEntityPrimaryKey, undefined);
+    assert.deepEqual(withLink.request.entityPrimaryKeys, { from: 1, to: 20 });
+    assert.deepEqual(withLink.request.inputEntities, { "ont-from": { entityPrimaryKey: 1 } });
+    assert.equal(withLink.request.params?.max_mach, 2.25);
+  }
+
+  const missingProperty = buildApplicationTestRequestParams({
+    ontologySpaceId: "156",
+    actionApi: "act.ap.demo",
+    params: {},
+    inputEntitySelections: [{ ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: "", storageGroup: "main" }],
+    outputEntitySelections: [],
+    linkEntitySelection: null,
+  });
+  assert.equal(missingProperty.ok, false);
+
+  const missingDataRow = buildApplicationTestRequestParams({
+    ontologySpaceId: "156",
+    actionApi: "act.ap.demo",
+    params: {},
+    inputEntitySelections: [{ ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "weapon" }],
+    outputEntitySelections: [],
+    linkEntitySelection: null,
+  });
+  assert.equal(missingDataRow.ok, false);
+});
+
+test("space behavior collects application PROPERTY ontology pickers from INPUT rows", () => {
+  const pickers = collectApplicationPropertyOntologyPickers([
+    {
+      rowKey: "1",
+      paramName: "name",
+      paramPath: "",
+      paramType: "String",
+      propertyDisplayName: "飞机名称",
+      propertyType: "String",
+      description: "",
+      sourceType: "PROPERTY",
+      sourceConfig: "",
+      propertyUniqueIdentifier: "p1",
+      ontologyUniqueIdentifier: "ont-a",
+      functionParamExpression: "",
+      outputMode: "",
+      bindSummary: "",
+    },
+    {
+      rowKey: "2",
+      paramName: "max_mach",
+      paramPath: "",
+      paramType: "Double",
+      propertyDisplayName: "",
+      propertyType: "",
+      description: "",
+      sourceType: "EXTERNAL",
+      sourceConfig: "",
+      propertyUniqueIdentifier: "",
+      ontologyUniqueIdentifier: "",
+      functionParamExpression: "",
+      outputMode: "",
+      bindSummary: "",
+    },
+    {
+      rowKey: "3",
+      paramName: "range",
+      paramPath: "",
+      paramType: "Double",
+      propertyDisplayName: "航程",
+      propertyType: "Double",
+      description: "",
+      sourceType: "PROPERTY",
+      sourceConfig: "",
+      propertyUniqueIdentifier: "p2",
+      ontologyUniqueIdentifier: "ont-a",
+      functionParamExpression: "",
+      outputMode: "",
+      bindSummary: "",
+    },
+    {
+      rowKey: "4",
+      paramName: "engineName",
+      paramPath: "",
+      paramType: "String",
+      propertyDisplayName: "发动机",
+      propertyType: "String",
+      description: "",
+      sourceType: "property",
+      sourceConfig: "",
+      propertyUniqueIdentifier: "p3",
+      ontologyUniqueIdentifier: "ont-b",
+      functionParamExpression: "",
+      outputMode: "",
+      bindSummary: "",
+    },
+  ]);
+  assert.deepEqual(pickers, [
+    { ontologyUniqueIdentifier: "ont-a", label: "飞机名称" },
+    { ontologyUniqueIdentifier: "ont-b", label: "发动机" },
+  ]);
+  assert.equal(formatApplicationInputSourceTypeLabel("EXTERNAL"), "外部输入");
+  assert.equal(formatApplicationInputSourceTypeLabel("FIXED"), "固定值");
+  assert.equal(formatApplicationInputSourceTypeLabel("PROPERTY"), "对象属性");
+  assert.equal(formatApplicationInputSourceTypeLabel("OBJECT"), "对象");
+  assert.equal(formatApplicationInputSourceTypeLabel("LIST"), "列表");
+  assert.equal(formatApplicationInputSourceTypeLabel("CUSTOM"), "CUSTOM");
+  assert.equal(formatApplicationInputSourceTypeLabel("  "), "—");
+});
+
+test("space behavior merges WRITE_PROPERTY output ontologies into application pickers", () => {
+  const pickers = collectApplicationPropertyOntologyPickers(
+    [
+      {
+        rowKey: "in-1",
+        paramName: "name",
+        paramPath: "",
+        paramType: "String",
+        propertyDisplayName: "飞机名称",
+        propertyType: "String",
+        description: "",
+        sourceType: "PROPERTY",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p1",
+        ontologyUniqueIdentifier: "ont-a",
+        functionParamExpression: "",
+        outputMode: "",
+        bindSummary: "",
+      },
+    ],
+    [
+      {
+        rowKey: "out-1",
+        paramName: "greeting",
+        paramPath: "",
+        paramType: "String",
+        propertyDisplayName: "问候语",
+        propertyType: "String",
+        description: "",
+        sourceType: "—",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p-out",
+        ontologyUniqueIdentifier: "ont-a",
+        functionParamExpression: "$.data.greeting",
+        outputMode: "WRITE_PROPERTY",
+        bindSummary: "",
+      },
+      {
+        rowKey: "out-2",
+        paramName: "env_remark",
+        paramPath: "",
+        paramType: "String",
+        propertyDisplayName: "环境备注",
+        propertyType: "String",
+        description: "",
+        sourceType: "—",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p-env",
+        ontologyUniqueIdentifier: "ont-env",
+        functionParamExpression: "$.data.env_remark",
+        outputMode: "write_property",
+        bindSummary: "",
+      },
+      {
+        rowKey: "out-3",
+        paramName: "taskId",
+        paramPath: "",
+        paramType: "String",
+        propertyDisplayName: "",
+        propertyType: "",
+        description: "",
+        sourceType: "—",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "",
+        ontologyUniqueIdentifier: "ont-ignored",
+        functionParamExpression: "",
+        outputMode: "RESULT_ONLY",
+        bindSummary: "",
+      },
+      {
+        rowKey: "out-4",
+        paramName: "",
+        paramPath: "",
+        paramType: "String",
+        propertyDisplayName: "",
+        propertyType: "",
+        description: "",
+        sourceType: "—",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p-blank",
+        ontologyUniqueIdentifier: "ont-blank-label",
+        functionParamExpression: "$.data.x",
+        outputMode: "WRITE_PROPERTY",
+        bindSummary: "",
+      },
+      {
+        rowKey: "out-5",
+        paramName: "missing-onto",
+        paramPath: "",
+        paramType: "String",
+        propertyDisplayName: "无对象",
+        propertyType: "String",
+        description: "",
+        sourceType: "—",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p-missing",
+        ontologyUniqueIdentifier: "",
+        functionParamExpression: "$.data.y",
+        outputMode: "WRITE_PROPERTY",
+        bindSummary: "",
+      },
+    ],
+  );
+  assert.deepEqual(pickers, [
+    { ontologyUniqueIdentifier: "ont-a", label: "飞机名称" },
+    { ontologyUniqueIdentifier: "ont-env", label: "环境备注" },
+    { ontologyUniqueIdentifier: "ont-blank-label", label: "ont-blank-label" },
+  ]);
+  assert.equal(formatApplicationOutputModeLabel("WRITE_PROPERTY"), "写入对象属性");
+  assert.equal(formatApplicationOutputModeLabel("RESULT_ONLY"), "仅返回结果");
+  assert.equal(formatApplicationOutputModeLabel("OTHER"), "OTHER");
+  assert.equal(formatApplicationOutputModeLabel("  "), "—");
+});
+
+test("space behavior collects non-main storage group pickers for application PROPERTY bindings", () => {
+  const pickers = collectApplicationStorageGroupPickers(
+    [
+      {
+        rowKey: "1",
+        paramName: "mount",
+        paramPath: "",
+        paramType: "Integer",
+        propertyDisplayName: "挂载数量",
+        propertyType: "Integer",
+        description: "",
+        sourceType: "PROPERTY",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p1",
+        ontologyUniqueIdentifier: "ont-a",
+        functionParamExpression: "",
+        outputMode: "",
+        storageGroup: "weapon",
+        bindSummary: "",
+      },
+      {
+        rowKey: "2",
+        paramName: "name",
+        paramPath: "",
+        paramType: "String",
+        propertyDisplayName: "名称",
+        propertyType: "String",
+        description: "",
+        sourceType: "PROPERTY",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p2",
+        ontologyUniqueIdentifier: "ont-a",
+        functionParamExpression: "",
+        outputMode: "",
+        storageGroup: "main",
+        bindSummary: "",
+      },
+      {
+        rowKey: "3",
+        paramName: "dup",
+        paramPath: "",
+        paramType: "Integer",
+        propertyDisplayName: "挂载重复",
+        propertyType: "Integer",
+        description: "",
+        sourceType: "PROPERTY",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p3",
+        ontologyUniqueIdentifier: "ont-a",
+        functionParamExpression: "",
+        outputMode: "",
+        storageGroup: "weapon",
+        bindSummary: "",
+      },
+    ],
+    [
+      {
+        rowKey: "out-1",
+        paramName: "engine_note",
+        paramPath: "",
+        paramType: "String",
+        propertyDisplayName: "发动机备注",
+        propertyType: "String",
+        description: "",
+        sourceType: "—",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p-out",
+        ontologyUniqueIdentifier: "ont-a",
+        functionParamExpression: "$.data.note",
+        outputMode: "WRITE_PROPERTY",
+        storageGroup: "engine",
+        bindSummary: "",
+      },
+      {
+        rowKey: "out-2",
+        paramName: "ignored",
+        paramPath: "",
+        paramType: "String",
+        propertyDisplayName: "忽略",
+        propertyType: "String",
+        description: "",
+        sourceType: "—",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p-ignored",
+        ontologyUniqueIdentifier: "ont-b",
+        functionParamExpression: "$.data.x",
+        outputMode: "RESULT_ONLY",
+        storageGroup: "cabin",
+        bindSummary: "",
+      },
+    ],
+  );
+  assert.deepEqual(pickers, [
+    {
+      pickerKey: buildApplicationStorageGroupPickerKey("ont-a", "weapon"),
+      ontologyUniqueIdentifier: "ont-a",
+      storageGroup: "weapon",
+      label: "挂载数量 · weapon",
+    },
+    {
+      pickerKey: buildApplicationStorageGroupPickerKey("ont-a", "engine"),
+      ontologyUniqueIdentifier: "ont-a",
+      storageGroup: "engine",
+      label: "发动机备注 · engine",
+    },
+  ]);
 });
 
 test("space behavior coerces test param values by property type for backend params", () => {

@@ -242,15 +242,18 @@ function openBehaviorEdit(item: SpaceBehaviorItem): void {
 }
 
 /**
- * @description 打开行为测试弹窗；本轮支持属性值、基础函数算子与关系实例。
+ * @description 打开行为测试弹窗；支持应用行为，以及基础行为的属性值/基础函数算子/关系实例。
  * @param item 行为记录。
  */
 function openBehaviorTest(item: SpaceBehaviorItem): void {
-  if (item.kind !== "basic" || (item.valueType !== "attributeValue" && item.valueType !== "basicFunctionOperator" && item.valueType !== "relationInstance")) {
-    ElMessage.info("当前仅支持基础行为-属性值/基础函数算子/关系实例测试");
+  const isApplicationTest = item.kind === "application";
+  const isSupportedBasicTest =
+    item.kind === "basic" && (item.valueType === "attributeValue" || item.valueType === "basicFunctionOperator" || item.valueType === "relationInstance");
+  if (!isApplicationTest && !isSupportedBasicTest) {
+    ElMessage.info("当前仅支持应用行为，以及基础行为-属性值/基础函数算子/关系实例测试");
     return;
   }
-  if (item.valueType !== "basicFunctionOperator" && !item.ontologyUniqIdentifier.trim()) {
+  if (!isApplicationTest && item.valueType !== "basicFunctionOperator" && !item.ontologyUniqIdentifier.trim()) {
     ElMessage.warning("当前行为缺少对象标识，无法加载实体列表");
     return;
   }

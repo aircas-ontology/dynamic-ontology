@@ -35,6 +35,9 @@
         <el-table-column label="apiName" min-width="160" show-overflow-tooltip>
           <template #default="{ row }">{{ asBehavior(row).behaviorApiName }}</template>
         </el-table-column>
+        <el-table-column label="基础操作" width="100" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatBasicActionLabel(asBehavior(row).basicAction) }}</template>
+        </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
             <el-tag size="small" :type="statusTagType(asBehavior(row).status)">{{
@@ -88,7 +91,13 @@
 import { computed, nextTick } from "vue";
 import { ArrowDown, Plus } from "@element-plus/icons-vue";
 import type { SpaceBehaviorItem, SpaceBehaviorListStatus, SpaceBehaviorStatus } from "@/types";
-import { SPACE_BEHAVIOR_KIND_LABELS, SPACE_BEHAVIOR_LIST_STATUS_LABELS, SPACE_BEHAVIOR_LIST_STATUS_OPTIONS, SPACE_BEHAVIOR_VALUE_TYPE_LABELS } from "@/types";
+import {
+  SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
+  SPACE_BEHAVIOR_KIND_LABELS,
+  SPACE_BEHAVIOR_LIST_STATUS_LABELS,
+  SPACE_BEHAVIOR_LIST_STATUS_OPTIONS,
+  SPACE_BEHAVIOR_VALUE_TYPE_LABELS,
+} from "@/types";
 import { mapSpaceBehaviorItemToListStatus } from "../utils/mapListOntologyActionRecord";
 
 const props = defineProps<{
@@ -144,6 +153,16 @@ function formatBehaviorCategoryLabel(item: SpaceBehaviorItem): string {
   if (item.kind !== "basic") return kindLabel;
   const valueTypeLabel = SPACE_BEHAVIOR_VALUE_TYPE_LABELS[item.valueType];
   return valueTypeLabel ? `${kindLabel}-${valueTypeLabel}` : kindLabel;
+}
+
+/**
+ * @description 格式化列表基础操作展示；operation 缺失或未知时显示 -。
+ * @param basicAction 已映射的基础操作。
+ * @returns 展示文案。
+ */
+function formatBasicActionLabel(basicAction: SpaceBehaviorItem["basicAction"]): string {
+  if (!basicAction) return "-";
+  return SPACE_BEHAVIOR_BASIC_ACTION_LABELS[basicAction] || "-";
 }
 
 /**
