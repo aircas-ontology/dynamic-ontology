@@ -3,6 +3,9 @@
     <BehaviorCategoryPanel
       :tree-data="categoryTree"
       :selected-node-id="selectedCategoryId"
+      :can-create="!browseOnly"
+      :can-update="!browseOnly"
+      :can-delete="!browseOnly"
       @select-node="selectBehaviorCategory"
       @create="openCategoryCreate"
       @edit="openCategoryEdit"
@@ -24,6 +27,7 @@
         :page-size="pageSize"
         :keyword="keyword"
         :status-filter="statusFilter"
+        :browse-only="browseOnly"
         @update:keyword="keyword = $event"
         @update:status-filter="statusFilter = $event"
         @query="applyBehaviorFilters"
@@ -78,6 +82,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import type { SpaceBehaviorDraft, SpaceBehaviorItem, SpaceBehaviorStatusChangeDraft } from "@/types";
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
@@ -92,6 +97,9 @@ import BehaviorFormDialog from "./components/BehaviorFormDialog.vue";
 import BehaviorDetailDrawer from "./components/BehaviorDetailDrawer.vue";
 import BehaviorStatusDialog from "./components/BehaviorStatusDialog.vue";
 import BehaviorDeleteDialog from "./components/BehaviorDeleteDialog.vue";
+
+const route = useRoute();
+const browseOnly = computed(() => route.meta.browseOnly === true);
 
 const {
   status,
@@ -145,6 +153,7 @@ const categoryParentLabel = computed(() => findSpaceBehaviorCategoryNode(categor
  * @param parentId 父分类 id。
  */
 function openCategoryCreate(parentId: string): void {
+  if (browseOnly.value) return;
   categoryFormMode.value = "create";
   categoryParentId.value = parentId || ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
   categoryActionName.value = "";
@@ -156,6 +165,7 @@ function openCategoryCreate(parentId: string): void {
  * @param categoryId 分类 id。
  */
 function openCategoryEdit(categoryId: string): void {
+  if (browseOnly.value) return;
   const node = findSpaceBehaviorCategoryNode(categoryTree.value, categoryId);
   if (!node) return;
   categoryFormMode.value = "edit";
@@ -169,6 +179,7 @@ function openCategoryEdit(categoryId: string): void {
  * @param categoryId 分类 id。
  */
 function openCategoryDelete(categoryId: string): void {
+  if (browseOnly.value) return;
   const node = findSpaceBehaviorCategoryNode(categoryTree.value, categoryId);
   if (!node) return;
   categoryActionId.value = categoryId;
@@ -214,6 +225,7 @@ async function handleCategoryDelete(): Promise<void> {
  * @description 打开新建行为弹窗。
  */
 function openBehaviorCreate(): void {
+  if (browseOnly.value) return;
   behaviorFormMode.value = "create";
   activeBehavior.value = null;
   behaviorFormVisible.value = true;
@@ -233,6 +245,10 @@ function openBehaviorView(item: SpaceBehaviorItem): void {
  * @param item 行为记录。
  */
 function openBehaviorEdit(item: SpaceBehaviorItem): void {
+  if (browseOnly.value) {
+    openBehaviorView(item);
+    return;
+  }
   behaviorFormMode.value = "edit";
   activeBehavior.value = item;
   behaviorFormVisible.value = true;
@@ -243,6 +259,7 @@ function openBehaviorEdit(item: SpaceBehaviorItem): void {
  * @param item 行为记录。
  */
 function openBehaviorTest(item: SpaceBehaviorItem): void {
+  if (browseOnly.value) return;
   activeBehavior.value = item;
   ElMessage.info("行为测试功能后续接入");
 }
@@ -252,6 +269,7 @@ function openBehaviorTest(item: SpaceBehaviorItem): void {
  * @param item 行为记录。
  */
 function openBehaviorStatus(item: SpaceBehaviorItem): void {
+  if (browseOnly.value) return;
   activeBehavior.value = item;
   behaviorStatusVisible.value = true;
 }
@@ -261,6 +279,7 @@ function openBehaviorStatus(item: SpaceBehaviorItem): void {
  * @param item 行为记录。
  */
 function openBehaviorDelete(item: SpaceBehaviorItem): void {
+  if (browseOnly.value) return;
   activeBehavior.value = item;
   behaviorDeleteVisible.value = true;
 }

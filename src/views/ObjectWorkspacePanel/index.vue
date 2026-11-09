@@ -11,6 +11,7 @@
         :objects="inheritanceObjects"
         :space-name="spaceDisplayName"
         :selected-node-id="selectedNodeId"
+        :browse-only="browseOnly"
         @select="selectNode"
         @select-object="locateObjectFromTree"
         @create="openCategoryTreeCreateDialog"
@@ -22,59 +23,62 @@
         :sections="workspaceSections"
         :view-mode="viewMode"
         :location-target="locationTarget"
+        :browse-only="browseOnly"
         @update:view-mode="viewMode = $event"
         @locate-parent="locateParent"
         @action="handleAction"
       />
     </div>
-    <CategoryTreeCreateDialog
-      v-model="categoryTreeDialogVisible"
-      :submitting="categoryTreeSubmitting"
-      :error="categoryTreeError"
-      @submit="submitCreateOntologyCategoryTree"
-    />
-    <CategoryTreeChildDialog
-      v-model="categoryChildDialogVisible"
-      :submitting="categoryChildSubmitting"
-      :error="categoryChildError"
-      @submit="submitCreateOntologyCategoryChild"
-    />
-    <CategoryTreeRenameDialog
-      v-model="categoryRenameVisible"
-      :initial-name="categoryRenameName"
-      :submitting="categoryRenameSubmitting"
-      :error="categoryRenameError"
-      @submit="confirmRenameCategory"
-    />
-    <CategoryTreeDeleteDialog
-      v-model="categoryDeleteVisible"
-      :category-name="categoryDeleteName"
-      :submitting="categoryDeleteSubmitting"
-      :error="categoryDeleteError"
-      @confirm="confirmDeleteCategory"
-    />
-    <OntologyObjectCreateDialog
-      v-model="objectCreateVisible"
-      :space-id="spaceId"
-      :category-tree="workspaceTree"
-      :parent-options="parentOptions"
-      :submitting="objectCreateSubmitting"
-      :error="objectCreateError"
-      :editing-item="editingObject"
-      @submit-manual="createOntologyObject"
-      @submit-import="importOntologyObjects"
-      @submit-edit="updateOntologyObject"
-      @submit-datasource="createOntologyObjectFromDatasource"
-      @asset-created="load"
-      @open-llm="openOntologyLlmBuilder"
-    />
-    <OntologyObjectDeleteDialog
-      v-model="objectDeleteVisible"
-      :object-name="deletingObject?.displayName ?? ''"
-      :submitting="objectDeleteSubmitting"
-      :error="objectDeleteError"
-      @confirm="confirmDeleteOntologyObject"
-    />
+    <template v-if="!browseOnly">
+      <CategoryTreeCreateDialog
+        v-model="categoryTreeDialogVisible"
+        :submitting="categoryTreeSubmitting"
+        :error="categoryTreeError"
+        @submit="submitCreateOntologyCategoryTree"
+      />
+      <CategoryTreeChildDialog
+        v-model="categoryChildDialogVisible"
+        :submitting="categoryChildSubmitting"
+        :error="categoryChildError"
+        @submit="submitCreateOntologyCategoryChild"
+      />
+      <CategoryTreeRenameDialog
+        v-model="categoryRenameVisible"
+        :initial-name="categoryRenameName"
+        :submitting="categoryRenameSubmitting"
+        :error="categoryRenameError"
+        @submit="confirmRenameCategory"
+      />
+      <CategoryTreeDeleteDialog
+        v-model="categoryDeleteVisible"
+        :category-name="categoryDeleteName"
+        :submitting="categoryDeleteSubmitting"
+        :error="categoryDeleteError"
+        @confirm="confirmDeleteCategory"
+      />
+      <OntologyObjectCreateDialog
+        v-model="objectCreateVisible"
+        :space-id="spaceId"
+        :category-tree="workspaceTree"
+        :parent-options="parentOptions"
+        :submitting="objectCreateSubmitting"
+        :error="objectCreateError"
+        :editing-item="editingObject"
+        @submit-manual="createOntologyObject"
+        @submit-import="importOntologyObjects"
+        @submit-edit="updateOntologyObject"
+        @submit-datasource="createOntologyObjectFromDatasource"
+        @asset-created="load"
+        @open-llm="openOntologyLlmBuilder"
+      />
+      <OntologyObjectDeleteDialog
+        v-model="objectDeleteVisible"
+        :object-name="deletingObject?.displayName ?? ''"
+        :submitting="objectDeleteSubmitting"
+        :error="objectDeleteError"
+        @confirm="confirmDeleteOntologyObject"
+      />
+    </template>
     <OntologyObjectExportDialog
       v-model="objectExportVisible"
       :object-name="exportingObject?.displayName ?? ''"
@@ -110,6 +114,7 @@ import { makeCategoryLocationTarget, makeObjectLocationTarget } from "./utils/ob
 const route = useRoute();
 const router = useRouter();
 const spaceId = computed(() => String(route.params.spaceId || ""));
+const browseOnly = computed(() => route.meta.browseOnly === true);
 const detailStore = useOntologySpaceDetailStore();
 const { displayName: spaceDisplayName } = storeToRefs(detailStore);
 const { status, error, workspace, load } = useOntologyObjectWorkspace(spaceId);
@@ -232,6 +237,10 @@ function locateObjectFromTree(object: OntologyConceptObjectRef) {
  * @param item 当前对象。
  */
 function handleAction(action: string, item?: OntologyObjectItem) {
+  if (browseOnly.value && (action === "create" || action === "edit" || action === "delete")) {
+    ElMessage.warning("实体浏览模式下不支持该操作。");
+    return;
+  }
   if (action === "create") {
     openOntologyObjectCreateDialog();
     return;
@@ -250,10 +259,19 @@ function handleAction(action: string, item?: OntologyObjectItem) {
   }
   if (action === "view" && item) {
     const query: Record<string, string> = {};
-    if (spaceId.value) query.spaceId = spaceId.value;
     if (spaceDisplayName.value.trim()) query.spaceName = spaceDisplayName.value.trim();
-    if (route.query.from === "theme-space-management") query.from = "theme-space-management";
     if (item.displayName.trim()) query.objectName = item.displayName.trim();
+    // 实体浏览只读：进入对象画像；空间管理仍进对象详情（属性/关系/行为）
+    if (browseOnly.value) {
+      void router.push({
+        name: "EntityBrowsingObjectProfile",
+        params: { spaceId: spaceId.value, objectId: item.id },
+        query,
+      });
+      return;
+    }
+    if (spaceId.value) query.spaceId = spaceId.value;
+    if (route.query.from === "theme-space-management") query.from = "theme-space-management";
     void router.push({ name: "OntologyObjectDetail", params: { objectId: item.id }, query });
     return;
   }

@@ -4,9 +4,9 @@
       :tree-data="categoryPanelTreeData"
       :selected-node-id="selectedRelationCategoryId"
       :relations="categoryPanelRelations"
-      :can-create="true"
-      :can-update="true"
-      :can-delete="true"
+      :can-create="!browseOnly"
+      :can-update="!browseOnly"
+      :can-delete="!browseOnly"
       @select-node="selectRelationCategory"
       @edit-relation="openRelationFromTree"
       @create="openCategoryCreate"
@@ -47,7 +47,7 @@
             <el-radio-button :value="1">1跳</el-radio-button>
             <el-radio-button :value="2">2跳</el-radio-button>
           </el-radio-group>
-          <el-button :icon="Plus" data-onboarding="relation-create-open" @click="openRelationCreate">添加</el-button>
+          <el-button v-if="!browseOnly" :icon="Plus" data-onboarding="relation-create-open" @click="openRelationCreate">添加</el-button>
           <el-radio-group
             :model-value="relationViewMode"
             class="space-relation-workspace__view-switch"
@@ -99,6 +99,7 @@
           :items="visibleSpaceRelations"
           :seed-names="graphSeedNames"
           :max-hop="graphMaxHop"
+          :readonly="browseOnly"
           @edit="openRelationEdit"
           @delete="openRelationDelete"
         />
@@ -106,6 +107,7 @@
           v-else-if="relationViewMode === 'graph2d'"
           :items="visibleSpaceRelations"
           :seed-names="graphSeedNames"
+          :readonly="browseOnly"
           @edit="openRelationEdit"
           @delete="openRelationDelete"
         />
@@ -122,11 +124,14 @@
               <el-table-column prop="categoryName" label="类型" min-width="110" show-overflow-tooltip />
               <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
               <el-table-column prop="apiName" label="API 名称" min-width="140" show-overflow-tooltip />
-              <el-table-column label="操作" width="180" fixed="right">
+              <el-table-column label="操作" :width="browseOnly ? 100 : 180" fixed="right">
                 <template #default="scope">
                   <div class="space-relation-workspace__row-actions">
-                    <el-button size="small" @click="openRelationEdit(asRelation(scope.row))">编辑</el-button>
-                    <el-button type="danger" size="small" @click="openRelationDelete(asRelation(scope.row))">删除</el-button>
+                    <el-button v-if="browseOnly" size="small" @click="openRelationDetail(asRelation(scope.row))">查看</el-button>
+                    <template v-else>
+                      <el-button size="small" @click="openRelationEdit(asRelation(scope.row))">编辑</el-button>
+                      <el-button type="danger" size="small" @click="openRelationDelete(asRelation(scope.row))">删除</el-button>
+                    </template>
                   </div>
                 </template>
               </el-table-column>
@@ -174,6 +179,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Plus } from "@element-plus/icons-vue";
 import type { CreateOntologyLinkParams, OntologyRelationClass, RelationClassWritePayload, UpdateOntologyLinkParams } from "@/types";
@@ -197,6 +203,9 @@ import RelationDeleteDialog from "./components/RelationDeleteDialog.vue";
 import RelationGraph2dView from "./components/RelationGraph2dView.vue";
 import SpaceRelationFormDialog from "./components/SpaceRelationFormDialog.vue";
 import RelationDetailDialog from "./components/RelationDetailDialog.vue";
+
+const route = useRoute();
+const browseOnly = computed(() => route.meta.browseOnly === true);
 
 const {
   status,
@@ -290,6 +299,7 @@ function resetFilter() {
 }
 
 function openCategoryCreate(parentId: string) {
+  if (browseOnly.value) return;
   categoryFormMode.value = "create";
   categoryParentId.value = parentId;
   categoryParentLabel.value = parentId ? findRelationCategoryLabel(parentId) || "全部关系" : "根分类";
@@ -298,6 +308,7 @@ function openCategoryCreate(parentId: string) {
 }
 
 function openCategoryEdit(categoryId: string) {
+  if (browseOnly.value) return;
   categoryFormMode.value = "edit";
   categoryActionId.value = categoryId;
   categoryActionName.value = findRelationCategoryLabel(categoryId);
@@ -305,6 +316,7 @@ function openCategoryEdit(categoryId: string) {
 }
 
 function openCategoryDelete(categoryId: string) {
+  if (browseOnly.value) return;
   categoryActionId.value = categoryId;
   categoryActionName.value = findRelationCategoryLabel(categoryId);
   categoryDeleteVisible.value = true;
@@ -409,15 +421,29 @@ async function handleCategoryDelete() {
 }
 
 function openRelationCreate() {
+  if (browseOnly.value) return;
   relationFormMode.value = "create";
   activeRelation.value = null;
   relationFormVisible.value = true;
 }
 
 function openRelationEdit(item: OntologyRelationClass) {
+  if (browseOnly.value) {
+    openRelationDetail(item);
+    return;
+  }
   relationFormMode.value = "edit";
   activeRelation.value = item;
   relationFormVisible.value = true;
+}
+
+/**
+ * @description 打开只读关系详情弹窗。
+ * @param item 关系记录。
+ */
+function openRelationDetail(item: OntologyRelationClass) {
+  activeRelation.value = item;
+  relationDetailVisible.value = true;
 }
 
 /**
@@ -427,11 +453,11 @@ function openRelationEdit(item: OntologyRelationClass) {
 function openRelationFromTree(relationId: string) {
   const item = relations.value.find((relation) => relation.id === relationId);
   if (!item) return;
-  activeRelation.value = item;
-  relationDetailVisible.value = true;
+  openRelationDetail(item);
 }
 
 function openRelationDelete(item: OntologyRelationClass) {
+  if (browseOnly.value) return;
   activeRelation.value = item;
   relationDeleteVisible.value = true;
 }

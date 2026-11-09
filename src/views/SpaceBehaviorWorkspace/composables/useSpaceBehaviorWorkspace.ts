@@ -22,15 +22,17 @@ import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
 import {
   applySpaceBehaviorStatusChangeMock,
   createSpaceBehaviorMock,
+  querySpaceBehaviorWorkspaceMock,
   updateSpaceBehaviorMock,
 } from "@/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock";
+import { isUseMockEnabled } from "@/utils/isUseMockEnabled";
 import { buildApplicationCreateActionParams, isApplicationActionCreateDraft } from "../utils/buildApplicationCreateActionParams";
 import { buildBasicOperatorCreateActionParams, isBasicOperatorActionCreateDraft } from "../utils/buildBasicOperatorCreateActionParams";
 import { buildLinkCreateActionParams, isLinkActionCreateDraft } from "../utils/buildLinkCreateActionParams";
 import { buildPropertyValueCreateActionParams, isPropertyValueActionCreateDraft } from "../utils/buildPropertyValueCreateActionParams";
 import { mapActionCategoryTree } from "../utils/mapActionCategoryTree";
-import { mapListOntologyActionRecord, mapSpaceBehaviorListStatusToQuery } from "../utils/mapListOntologyActionRecord";
-import { findSpaceBehaviorCategoryNode } from "../utils/spaceBehaviorOperations";
+import { mapListOntologyActionRecord, mapSpaceBehaviorItemToListStatus, mapSpaceBehaviorListStatusToQuery } from "../utils/mapListOntologyActionRecord";
+import { filterSpaceBehaviorsByCategory, findSpaceBehaviorCategoryNode } from "../utils/spaceBehaviorOperations";
 
 /**
  * @description 读取路由空间 id。
@@ -63,6 +65,8 @@ function resolveListActionCategoryIdQuery(categoryId: string, tree: SpaceBehavio
 export function useSpaceBehaviorWorkspace() {
   const route = useRoute();
   const spaceId = computed(() => readSpaceId(route.params.spaceId));
+  /** 实体浏览只读态或全局 USE_MOCK：内网无行为接口时走本地写死样例。 */
+  const useLocalBehaviorMock = computed(() => isUseMockEnabled() || route.meta.browseOnly === true);
   const status = ref<SpaceBehaviorWorkspaceLoadStatus>("loading");
   const errorMessage = ref("");
   const categoryTree = ref<SpaceBehaviorCategoryNode[]>([]);
@@ -84,11 +88,51 @@ export function useSpaceBehaviorWorkspace() {
   const pagedBehaviors = computed(() => behaviors.value);
 
   /**
+   * @description 从本地写死样例填充分类树与分页列表（不依赖 Mock HTTP / 内网行为接口）。
+   * @param token 列表请求令牌。
+   */
+  function loadSpaceBehaviorListFromLocalMock(token: number): void {
+    const snapshot = querySpaceBehaviorWorkspaceMock(spaceId.value.trim() || "local");
+    categoryTree.value = snapshot.categoryTree;
+    if (!findSpaceBehaviorCategoryNode(categoryTree.value, selectedCategoryId.value)) {
+      selectedCategoryId.value = categoryTree.value[0]?.id ?? ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
+    }
+    const keywordValue = appliedKeyword.value.trim().toLowerCase();
+    let list = filterSpaceBehaviorsByCategory(snapshot.behaviors, snapshot.categoryTree, selectedCategoryId.value);
+    if (keywordValue) {
+      list = list.filter(
+        (item) =>
+          item.displayName.toLowerCase().includes(keywordValue) ||
+          item.functionOperatorName.toLowerCase().includes(keywordValue) ||
+          item.description.toLowerCase().includes(keywordValue),
+      );
+    }
+    if (appliedStatus.value) {
+      list = list.filter((item) => mapSpaceBehaviorItemToListStatus(item.status) === appliedStatus.value);
+    }
+    total.value = list.length;
+    const start = Math.max(0, (page.value - 1) * pageSize.value);
+    behaviors.value = list.slice(start, start + pageSize.value);
+    if (token !== listToken) return;
+    status.value = "ready";
+    errorMessage.value = "";
+  }
+
+  /**
    * @description 加载行为分类树。
    * @param token 工作区加载令牌；过期时中止写回。
    */
   async function loadActionCategoryTree(token: number): Promise<void> {
     const currentSpaceId = spaceId.value.trim();
+    if (useLocalBehaviorMock.value) {
+      const snapshot = querySpaceBehaviorWorkspaceMock(currentSpaceId || "local");
+      if (token !== workspaceToken) return;
+      categoryTree.value = snapshot.categoryTree;
+      if (!findSpaceBehaviorCategoryNode(categoryTree.value, selectedCategoryId.value)) {
+        selectedCategoryId.value = categoryTree.value[0]?.id ?? ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
+      }
+      return;
+    }
     const numericSpaceId = Number(currentSpaceId);
     if (!Number.isInteger(numericSpaceId)) {
       throw new Error("空间标识无效");
@@ -116,6 +160,16 @@ export function useSpaceBehaviorWorkspace() {
     if (markLoading) {
       status.value = "loading";
       errorMessage.value = "";
+    }
+    if (useLocalBehaviorMock.value) {
+      if (!currentSpaceId) {
+        behaviors.value = [];
+        total.value = 0;
+        status.value = "empty";
+        return;
+      }
+      loadSpaceBehaviorListFromLocalMock(token);
+      return;
     }
     if (!currentSpaceId || !Number.isInteger(numericSpaceId)) {
       behaviors.value = [];

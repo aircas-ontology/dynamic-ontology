@@ -78,6 +78,7 @@ test("mapper converts contract list items into page ontology space items", async
   assert.equal(mapped.metrics.relation, 0);
   assert.equal(mapped.metrics.rule, 7);
   assert.equal(mapped.metrics.source, 0);
+  assert.equal(mapped.metrics.entity, 0);
   assert.equal(mapped.createdTime, "2026-09-21 10:47:32");
   assert.equal(mapped.updatedTime, "2026-09-21 10:47:32");
   assert.equal(mapped.category, "");

@@ -13,6 +13,8 @@ export interface OntologySpaceMetrics {
   relation: number;
   rule: number;
   source: number;
+  /** 实体数量；列表接口暂无字段时由 Mock 或默认值填充。 */
+  entity: number;
 }
 
 export interface OntologySpaceItem extends OntologySpaceDraft {

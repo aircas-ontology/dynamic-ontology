@@ -3,8 +3,8 @@
     <HeaderBar v-if="!isEmbedded" />
     <div class="layout-workspace" :class="{ 'is-expanded': !collapsed, 'is-embedded': isEmbedded }">
       <NavigationMenu v-if="!isEmbedded" v-model:collapsed="collapsed" v-model:assistant-visible="assistantVisible" />
-      <section class="layout-content">
-        <BreadcrumbBar />
+      <section class="layout-content" :class="{ 'layout-content--no-breadcrumb': hideBreadcrumb }">
+        <BreadcrumbBar v-if="!hideBreadcrumb" />
         <main class="layout-page"><router-view /></main>
       </section>
       <AiAssistantDrawer v-if="!isEmbedded" v-model="assistantVisible" />
@@ -22,6 +22,9 @@ const collapsed = ref(true);
 const assistantVisible = ref(false);
 const route = useRoute();
 const isEmbedded = computed(() => !!route.query.userName);
+const hideBreadcrumb = computed(
+  () => route.matched.some((record) => record.name === "EntityBrowsing") || route.name === "EntityBrowsingObjectProfile",
+);
 </script>
 <style scoped lang="scss">
 .layout-shell {
@@ -58,6 +61,9 @@ const isEmbedded = computed(() => !!route.query.userName);
   grid-template-rows: 30px minmax(0, 1fr);
   overflow: hidden;
   background-color: var(--aircas-color-page-background);
+}
+.layout-content--no-breadcrumb {
+  grid-template-rows: minmax(0, 1fr);
 }
 .layout-page {
   min-width: 0;

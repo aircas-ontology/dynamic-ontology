@@ -13,8 +13,23 @@
       "actionCount": 0,
       "propertyCount": 7,
       "linkCount": 0,
+      "entityCount": 128,
       "createTime": "2026-09-21 10:47:32",
       "updateTime": "2026-09-21 10:47:32"
+    },
+    {
+      "iconUrl": "",
+      "displayName": "战场情报领域",
+      "apiName": "battlefield_intel",
+      "description": "实体浏览外网调试样例空间",
+      "spaceId": 23,
+      "ontologyCount": 4,
+      "actionCount": 2,
+      "propertyCount": 286,
+      "linkCount": 24,
+      "entityCount": 1038,
+      "createTime": "2026-10-29 16:43:14",
+      "updateTime": "2026-11-04 17:30:00"
     }
   ]
 }

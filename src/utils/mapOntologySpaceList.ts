@@ -19,6 +19,7 @@ export function mapOntologySpaceListItem(item: OntologySpaceListItem): OntologyS
       relation: item.linkCount,
       rule: item.propertyCount,
       source: 0,
+      entity: item.entityCount ?? 0,
     },
     createdTime: item.createTime,
     updatedTime: item.updateTime,

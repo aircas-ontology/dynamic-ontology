@@ -350,8 +350,8 @@ test("theme guide config defines theme chains and reuses object space steps", ()
   assert.match(source, /export const THEME_ONBOARDING_GUIDE_STEPS/);
   assert.match(source, /\.\.\.ONBOARDING_GUIDE_STEPS\.filter\(\(step\) => step\.page === "space-manage" \|\| step\.page === "object-detail"\)/);
   assert.match(source, /step\.chain === "新建对象" \? \{ \.\.\.step, chain: THEME_OBJECT_CHAIN_NAME \} : step/);
-  assert.match(source, /id: "theme-create-open"[\s\S]*?targetSelector: "\.welcome-panel__create"[\s\S]*?advanceOnTargetClick: true/);
-  assert.match(source, /id: "theme-create-select-space"[\s\S]*?enterTriggerSelector: "\.welcome-panel__create"/);
+  assert.match(source, /id: "theme-create-open"[\s\S]*?targetSelector: "\[data-onboarding='theme-create-open'\]"[\s\S]*?advanceOnTargetClick: true/);
+  assert.match(source, /id: "theme-create-select-space"[\s\S]*?enterTriggerSelector: "\[data-onboarding='theme-create-open'\]"/);
   assert.match(source, /id: "theme-create-confirm"[\s\S]*?advanceOnTargetClick: true[\s\S]*?exitClickSelector: "\[data-onboarding='theme-create-cancel'\]"/);
   assert.match(source, /id: "theme-subspace-create"[\s\S]*?targetSelector: "\[data-onboarding='subspace-create-create'\]"[\s\S]*?advanceOnTargetClick: true/);
   assert.match(source, /id: "theme-list-enter"[\s\S]*?targetSelector: "\[data-onboarding='theme-enter'\]"[\s\S]*?advanceOnTargetClick: true/);
@@ -364,7 +364,7 @@ test("theme list page wires the theme guide with a content top-right help button
   assert.match(source, /class="theme-space-management__help"/);
   assert.match(source, /aria-label="打开新手引导"/);
   assert.match(source, /@click="openOnboardingGuide\(\)"/);
-  assert.match(source, /\.theme-space-management__help \{\s*position: fixed;\s*top: 62px;\s*right: 18px;/);
+  assert.match(source, /\.theme-space-management__help \{\s*position: fixed;\s*top: 58px;\s*right: 18px;/);
   assert.match(source, /import \{ ONBOARDING_GUIDE_ENTRY_IDS, THEME_ONBOARDING_GUIDE_STEPS \} from "@\/views\/onboardingGuideSteps";/);
   assert.match(source, /steps: themeOnboardingGuideSteps,/);
   assert.match(source, /page: "theme-list"/);

@@ -10,7 +10,8 @@
     </el-input>
     <div class="behavior-category-panel__content">
       <div v-if="!treeData.length" class="behavior-category-panel__empty">
-        <el-button @click="emit('create', '')">添加行为分类</el-button>
+        <el-button v-if="canCreate" @click="emit('create', '')">添加行为分类</el-button>
+        <el-empty v-else description="暂无行为分类" :image-size="54" />
       </div>
       <el-tree
         v-else
@@ -37,8 +38,8 @@
                 <span class="behavior-category-panel__label">{{ data.label }}</span>
                 <em class="behavior-category-panel__count">{{ data.count }}</em>
               </span>
-              <span class="behavior-category-panel__actions" @click.stop>
-                <el-tooltip content="添加子分类" placement="top" :show-after="200">
+              <span v-if="canCreate || canUpdate || canDelete" class="behavior-category-panel__actions" @click.stop>
+                <el-tooltip v-if="canCreate" content="添加子分类" placement="top" :show-after="200">
                   <button
                     type="button"
                     class="behavior-category-panel__action behavior-category-panel__action--add"
@@ -48,7 +49,7 @@
                     <el-icon><Plus /></el-icon>
                   </button>
                 </el-tooltip>
-                <el-tooltip v-if="!isRootCategory(data.id)" content="编辑分类" placement="top" :show-after="200">
+                <el-tooltip v-if="canUpdate && !isRootCategory(data.id)" content="编辑分类" placement="top" :show-after="200">
                   <button
                     type="button"
                     class="behavior-category-panel__action behavior-category-panel__action--edit"
@@ -58,7 +59,7 @@
                     <el-icon><EditPen /></el-icon>
                   </button>
                 </el-tooltip>
-                <el-tooltip v-if="!isRootCategory(data.id)" content="删除分类" placement="top" :show-after="200">
+                <el-tooltip v-if="canDelete && !isRootCategory(data.id)" content="删除分类" placement="top" :show-after="200">
                   <button
                     type="button"
                     class="behavior-category-panel__action behavior-category-panel__action--danger"
@@ -90,10 +91,16 @@ const props = withDefaults(
   defineProps<{
     treeData?: SpaceBehaviorCategoryNode[];
     selectedNodeId?: string | null;
+    canCreate?: boolean;
+    canUpdate?: boolean;
+    canDelete?: boolean;
   }>(),
   {
     treeData: () => [],
     selectedNodeId: null,
+    canCreate: true,
+    canUpdate: true,
+    canDelete: true,
   },
 );
 

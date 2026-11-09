@@ -1,5 +1,21 @@
 {
   "code": 200,
-  "message": "操作成功",
-  "data": []
+  "message": "SUCCESS",
+  "data": [
+    {
+      "uniqueIdentifier": "8b4889e087134b67beeb7ac5ff9b29c8",
+      "displayName": "阿利·伯克级驱逐舰",
+      "childNodes": []
+    },
+    {
+      "uniqueIdentifier": "49c11f470fa542e7ac216bcfa380f3c1",
+      "displayName": "052D型驱逐舰",
+      "childNodes": []
+    },
+    {
+      "uniqueIdentifier": "280c39838bbf46ed8daf4e2444643f9",
+      "displayName": "人员",
+      "childNodes": []
+    }
+  ]
 }

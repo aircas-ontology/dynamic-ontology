@@ -25,6 +25,26 @@
     "file": "fixtures/ontology/action.list.get.json"
   },
   {
+    "method": "GET",
+    "path": "/ontology/action_category/tree",
+    "file": "fixtures/ontology/action_category/tree.get.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/action_category",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "PUT",
+    "path": "/ontology/action_category",
+    "file": "fixtures/common/success.json"
+  },
+  {
+    "method": "DELETE",
+    "path": "/ontology/action_category",
+    "file": "fixtures/common/success.json"
+  },
+  {
     "method": "POST",
     "path": "/agent/chat/stream",
     "file": "fixtures/agent/chat.stream.post.json",

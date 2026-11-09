@@ -144,7 +144,12 @@ export type {
   OntologyDatasourceColumnDescVO,
 } from "./apis/getOntologyDatasourceColumnsType";
 export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
-export type { GetOntologyEntitiesData, GetOntologyEntitiesParams, OntologyEntityInfo } from "./apis/getOntologyEntitiesType";
+export type {
+  GetOntologyEntitiesData,
+  GetOntologyEntitiesParams,
+  OntologyEntityInfo,
+  OntologyEntityPropertyItem,
+} from "./apis/getOntologyEntitiesType";
 export type {
   GetOntologyFunctionContainerRuntimeListData,
   GetOntologyFunctionContainerRuntimeListParams,
@@ -324,6 +329,32 @@ export type {
   ConceptualModelSelection,
 } from "./pages/ontologyConceptualModelCreateType";
 export type { DatasourceBuildSelection, DatasourceConnection, DatasourceDbType, DatasourceField, DatasourceTable } from "./pages/datasourceBuildType";
+export type {
+  EntityBrowsingObjectProfileAttrChild,
+  EntityBrowsingObjectProfileAttrGroup,
+  EntityBrowsingObjectProfileAttrItem,
+  EntityBrowsingObjectProfileBlock,
+  EntityBrowsingObjectProfileData,
+  EntityBrowsingObjectProfileImage,
+  EntityBrowsingObjectProfileRelationNode,
+  EntityBrowsingObjectProfileStatsBar,
+  EntityBrowsingObjectProfileStatsData,
+  EntityBrowsingObjectProfileStatsSlice,
+  EntityBrowsingObjectProfileStandardAttrRow,
+  EntityBrowsingObjectProfileStandardCategory,
+  EntityBrowsingObjectProfileStandardDetail,
+  EntityBrowsingObjectProfileStandardUsageData,
+  EntityBrowsingObjectProfileTab,
+  EntityBrowsingObjectProfileTocNode,
+} from "./pages/entityBrowsingObjectProfileType";
+export type {
+  EntityBrowseOverview,
+  EntityBrowseOverviewMockData,
+  EntityBrowseQualityCard,
+  EntityBrowseStatisticCard,
+  EntityBrowsingRouteName,
+  EntityBrowsingTab,
+} from "./pages/entityBrowsingType";
 export { BASIC_FILTER_LOGIC_OPTIONS, BASIC_FILTER_OP_OPTIONS, BASIC_FILTER_VALUE_TYPE_OPTIONS } from "./pages/ontologyFunctionOperatorBasicFilterType";
 export type {
   BasicFilterCondition,

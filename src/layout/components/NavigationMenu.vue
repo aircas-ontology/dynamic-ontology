@@ -12,10 +12,17 @@
         <span v-if="!collapsed">收起菜单</span>
       </button>
     </div>
-    <el-menu class="navigation-menu__list" :default-active="route.path" :collapse="collapsed" :collapse-transition="false" router>
+    <el-menu class="navigation-menu__list" :default-active="activeMenuIndex" :collapse="collapsed" :collapse-transition="false" router>
       <el-menu-item index="/workspace/ontology-space-management" :route="{ name: 'OntologySpaceManagement' }">
         <el-icon><Box /></el-icon>
         <template #title>对象空间管理</template>
+      </el-menu-item>
+      <el-menu-item
+        :index="`/workspace/entity-browsing/${entityBrowseSpaceId}/object`"
+        :route="{ name: 'EntityBrowsingObject', params: { spaceId: entityBrowseSpaceId } }"
+      >
+        <el-icon><View /></el-icon>
+        <template #title>实体浏览</template>
       </el-menu-item>
       <el-menu-item index="/workspace/theme-space-management" :route="{ name: 'ThemeSpaceManagement' }">
         <el-icon><Collection /></el-icon>
@@ -45,11 +52,29 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { useRoute } from "vue-router";
-import { Box, Collection, Document, Expand, Fold, Search } from "@element-plus/icons-vue";
+import { Box, Collection, Document, Expand, Fold, Search, View } from "@element-plus/icons-vue";
+import { ENTITY_BROWSING_DEFAULT_SPACE_ID } from "@/utils/entityBrowseConstants";
+
 const collapsed = defineModel<boolean>("collapsed", { default: true });
 const assistantVisible = defineModel<boolean>("assistantVisible", { default: false });
 const route = useRoute();
+const entityBrowseSpaceId = ENTITY_BROWSING_DEFAULT_SPACE_ID;
+
+/** @description 计算侧栏高亮项；实体浏览任意 spaceId 均高亮「实体浏览」菜单。 */
+const activeMenuIndex = computed(() => {
+  if (route.path.startsWith("/workspace/entity-browsing")) {
+    return `/workspace/entity-browsing/${entityBrowseSpaceId}/object`;
+  }
+  if (route.path.startsWith("/workspace/ontology-space-management")) {
+    return "/workspace/ontology-space-management";
+  }
+  if (route.path.startsWith("/workspace/theme-space-management")) {
+    return "/workspace/theme-space-management";
+  }
+  return route.path;
+});
 </script>
 
 <style scoped lang="scss">

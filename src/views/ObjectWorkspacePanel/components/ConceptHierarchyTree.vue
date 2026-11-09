@@ -12,7 +12,8 @@
       ></template>
     </el-input>
     <div v-if="mode === 'concept' && tree.length === 0" class="concept-hierarchy__empty">
-      <el-button type="primary" data-onboarding="object-tree-create" @click="emit('create')">添加分类树</el-button>
+      <el-button v-if="!browseOnly" type="primary" data-onboarding="object-tree-create" @click="emit('create')">添加分类树</el-button>
+      <span v-else>暂无概念层级</span>
     </div>
     <div v-else-if="mode === 'inheritance' && objects.length === 0" class="concept-hierarchy__empty">暂无对象继承关系</div>
     <el-tree
@@ -45,7 +46,7 @@
                 <span v-if="nodeCount(data)" class="concept-hierarchy__count">{{ nodeCount(data) }}</span>
               </span>
             </span>
-            <span v-if="data.kind === 'category'" class="concept-hierarchy__create-child-wrap" @click.stop>
+            <span v-if="!browseOnly && data.kind === 'category'" class="concept-hierarchy__create-child-wrap" @click.stop>
               <el-tooltip content="新建子分类" placement="top" :show-after="200">
                 <button
                   type="button"
@@ -118,12 +119,16 @@ interface ConceptObjectTreeNode {
 
 type ConceptTreeNode = ConceptCategoryTreeNode | ConceptObjectTreeNode | InheritanceSpaceTreeNode;
 
-const props = defineProps<{
-  tree: OntologyConceptNode[];
-  selectedNodeId: string;
-  objects: OntologyObjectItem[];
-  spaceName: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    tree: OntologyConceptNode[];
+    selectedNodeId: string;
+    objects: OntologyObjectItem[];
+    spaceName: string;
+    browseOnly?: boolean;
+  }>(),
+  { browseOnly: false },
+);
 
 const emit = defineEmits<{
   select: [node: OntologyConceptNode];
@@ -326,6 +331,8 @@ function openDeleteCategoryDialog(value: unknown) {
   overflow: hidden;
   border: 1px solid var(--aircas-color-effect-primary-border);
   border-radius: 8px;
+  color: var(--aircas-color-text-primary);
+  font-size: 16px;
   background:
     radial-gradient(circle at 12% 0, var(--aircas-color-effect-primary-soft), transparent 42%),
     linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
@@ -368,7 +375,7 @@ function openDeleteCategoryDialog(value: unknown) {
   color: var(--aircas-color-text-secondary);
   background: transparent;
   box-shadow: none;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -392,6 +399,10 @@ function openDeleteCategoryDialog(value: unknown) {
   margin-bottom: 8px;
 }
 
+.concept-hierarchy__search :deep(.el-input__inner) {
+  font-size: 16px;
+}
+
 .concept-hierarchy__empty {
   display: flex;
   min-height: 0;
@@ -410,9 +421,10 @@ function openDeleteCategoryDialog(value: unknown) {
 }
 
 .concept-hierarchy__tree :deep(.el-tree-node__content) {
-  min-height: 32px;
+  min-height: 36px;
   height: auto;
   padding: 4px 0;
+  font-size: 16px;
 }
 
 .concept-hierarchy__node {
@@ -440,8 +452,9 @@ function openDeleteCategoryDialog(value: unknown) {
 
 .concept-hierarchy__label {
   min-width: 0;
-  max-width: 140px;
+  max-width: 160px;
   overflow: hidden;
+  font-size: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -452,7 +465,7 @@ function openDeleteCategoryDialog(value: unknown) {
   border: 1px solid var(--aircas-color-border-light);
   border-radius: 999px;
   color: var(--aircas-color-text-secondary);
-  font-size: 11px;
+  font-size: 14px;
   text-align: center;
 }
 
@@ -478,7 +491,7 @@ function openDeleteCategoryDialog(value: unknown) {
 .concept-hierarchy__object-name {
   min-width: 0;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -3,35 +3,338 @@
   "message": "SUCCESS",
   "success": true,
   "data": {
-    "categoryId": 24,
-    "name": "全部",
+    "categoryId": 100,
+    "name": "全部关系",
     "children": [
       {
-        "categoryId": 26,
-        "name": "隶属关系",
-        "children": [
+        "categoryId": 101,
+        "name": "编制隶属",
+        "links": [
           {
-            "categoryId": 29,
-            "name": "附属"
+            "uniqueIdentifier": "rel-belongs-to-fleet",
+            "name": "隶属舰队",
+            "type": "OTHER",
+            "categoryId": 101,
+            "ontologyUniqueIdentifierFrom": "obj-ford",
+            "ontologyNameFrom": "福特级航空母舰(CVN)",
+            "ontologyUniqueIdentifierTo": "obj-csg",
+            "ontologyNameTo": "航母打击群",
+            "apiName": "belongsToFleet",
+            "description": "舰艇编制归属的舰队或打击群"
+          },
+          {
+            "uniqueIdentifier": "rel-has-air-wing",
+            "name": "编成舰载机联队",
+            "type": "OTHER",
+            "categoryId": 101,
+            "ontologyUniqueIdentifierFrom": "obj-ford",
+            "ontologyNameFrom": "福特级航空母舰(CVN)",
+            "ontologyUniqueIdentifierTo": "obj-airwing",
+            "ontologyNameTo": "舰载机联队",
+            "apiName": "hasAirWing",
+            "description": "航母编制内的舰载机联队配置"
+          },
+          {
+            "uniqueIdentifier": "rel-nimitz-belongs-fleet",
+            "name": "隶属舰队",
+            "type": "OTHER",
+            "categoryId": 101,
+            "ontologyUniqueIdentifierFrom": "obj-nimitz",
+            "ontologyNameFrom": "尼米兹级航空母舰(CVN)",
+            "ontologyUniqueIdentifierTo": "obj-csg",
+            "ontologyNameTo": "航母打击群",
+            "apiName": "nimitzBelongsToFleet",
+            "description": "尼米兹级编制归属的航母打击群"
+          },
+          {
+            "uniqueIdentifier": "rel-airwing-fighter",
+            "name": "配属舰载战斗机",
+            "type": "OTHER",
+            "categoryId": 101,
+            "ontologyUniqueIdentifierFrom": "obj-airwing",
+            "ontologyNameFrom": "舰载机联队",
+            "ontologyUniqueIdentifierTo": "obj-fighter",
+            "ontologyNameTo": "舰载战斗机",
+            "apiName": "airwingHasFighter",
+            "description": "舰载机联队下辖配属的舰载战斗机兵力"
+          },
+          {
+            "uniqueIdentifier": "rel-fighter-squadron",
+            "name": "编属舰载机中队",
+            "type": "OTHER",
+            "categoryId": 101,
+            "ontologyUniqueIdentifierFrom": "obj-fighter",
+            "ontologyNameFrom": "舰载战斗机",
+            "ontologyUniqueIdentifierTo": "obj-squadron",
+            "ontologyNameTo": "舰载机中队",
+            "apiName": "fighterHasSquadron",
+            "description": "舰载战斗机编属的舰载机中队"
+          },
+          {
+            "uniqueIdentifier": "rel-marine-meu",
+            "name": "编入陆战队远征分队",
+            "type": "OTHER",
+            "categoryId": 101,
+            "ontologyUniqueIdentifierFrom": "obj-marine",
+            "ontologyNameFrom": "海军陆战队",
+            "ontologyUniqueIdentifierTo": "obj-meu",
+            "ontologyNameTo": "陆战队远征分队",
+            "apiName": "marineHasMeu",
+            "description": "海军陆战队编入的陆战队远征分队"
           }
         ]
       },
       {
-        "categoryId": 30,
-        "name": "人员借调",
+        "categoryId": 102,
+        "name": "作战协同",
+        "children": [
+          {
+            "categoryId": 103,
+            "name": "指挥控制",
+            "links": [
+              {
+                "uniqueIdentifier": "rel-commands-escort",
+                "name": "指挥护航编队",
+                "type": "OTHER",
+                "categoryId": 103,
+                "ontologyUniqueIdentifierFrom": "obj-ford",
+                "ontologyNameFrom": "福特级航空母舰(CVN)",
+                "ontologyUniqueIdentifierTo": "obj-destroyer",
+                "ontologyNameTo": "驱逐舰",
+                "apiName": "commandsEscort",
+                "description": "航母对护航驱逐舰的战术指挥关系"
+              },
+              {
+                "uniqueIdentifier": "rel-receives-orders",
+                "name": "接受上级指令",
+                "type": "OTHER",
+                "categoryId": 103,
+                "ontologyUniqueIdentifierFrom": "obj-ford",
+                "ontologyNameFrom": "福特级航空母舰(CVN)",
+                "ontologyUniqueIdentifierTo": "obj-jtf",
+                "ontologyNameTo": "联合任务部队",
+                "apiName": "receivesOrdersFrom",
+                "description": "接受联合任务部队作战指令"
+              },
+              {
+                "uniqueIdentifier": "rel-nimitz-commands-burke",
+                "name": "指挥护航编队",
+                "type": "OTHER",
+                "categoryId": 103,
+                "ontologyUniqueIdentifierFrom": "obj-nimitz",
+                "ontologyNameFrom": "尼米兹级航空母舰(CVN)",
+                "ontologyUniqueIdentifierTo": "obj-burke",
+                "ontologyNameTo": "阿利·伯克级驱逐舰(DDG)",
+                "apiName": "nimitzCommandsBurke",
+                "description": "尼米兹级对伯克级驱逐舰的战术指挥关系"
+              },
+              {
+                "uniqueIdentifier": "rel-jtf-patrol-aircraft",
+                "name": "协同海上巡逻机",
+                "type": "OTHER",
+                "categoryId": 103,
+                "ontologyUniqueIdentifierFrom": "obj-jtf",
+                "ontologyNameFrom": "联合任务部队",
+                "ontologyUniqueIdentifierTo": "obj-patrol",
+                "ontologyNameTo": "海上巡逻机",
+                "apiName": "jtfCoordinatesPatrolAircraft",
+                "description": "联合任务部队指挥协同的海上巡逻侦察兵力"
+              }
+            ]
+          },
+          {
+            "categoryId": 104,
+            "name": "火力支援",
+            "links": [
+              {
+                "uniqueIdentifier": "rel-provides-air-cover",
+                "name": "提供空中掩护",
+                "type": "OTHER",
+                "categoryId": 104,
+                "ontologyUniqueIdentifierFrom": "obj-ford",
+                "ontologyNameFrom": "福特级航空母舰(CVN)",
+                "ontologyUniqueIdentifierTo": "obj-amphibious",
+                "ontologyNameTo": "两栖攻击舰",
+                "apiName": "providesAirCover",
+                "description": "为两栖编队提供舰载航空掩护"
+              },
+              {
+                "uniqueIdentifier": "rel-escorts-with",
+                "name": "协同护航",
+                "type": "OTHER",
+                "categoryId": 104,
+                "ontologyUniqueIdentifierFrom": "obj-ford",
+                "ontologyNameFrom": "福特级航空母舰(CVN)",
+                "ontologyUniqueIdentifierTo": "obj-cruiser",
+                "ontologyNameTo": "巡洋舰",
+                "apiName": "escortsWith",
+                "description": "与巡洋舰编队协同防空反导"
+              },
+              {
+                "uniqueIdentifier": "rel-burke-escorts-ford",
+                "name": "护航协同",
+                "type": "OTHER",
+                "categoryId": 104,
+                "ontologyUniqueIdentifierFrom": "obj-burke",
+                "ontologyNameFrom": "阿利·伯克级驱逐舰(DDG)",
+                "ontologyUniqueIdentifierTo": "obj-ford",
+                "ontologyNameTo": "福特级航空母舰(CVN)",
+                "apiName": "burkeEscortsFord",
+                "description": "伯克级驱逐舰对福特级航母的护航协同"
+              },
+              {
+                "uniqueIdentifier": "rel-burke-aa-coord",
+                "name": "防空协同",
+                "type": "OTHER",
+                "categoryId": 104,
+                "ontologyUniqueIdentifierFrom": "obj-burke",
+                "ontologyNameFrom": "阿利·伯克级驱逐舰(DDG)",
+                "ontologyUniqueIdentifierTo": "obj-cruiser",
+                "ontologyNameTo": "巡洋舰",
+                "apiName": "burkeAaCoordWithCruiser",
+                "description": "伯克级与巡洋舰协同防空反导"
+              },
+              {
+                "uniqueIdentifier": "rel-cruiser-escorts-ford",
+                "name": "护航支援",
+                "type": "OTHER",
+                "categoryId": 104,
+                "ontologyUniqueIdentifierFrom": "obj-cruiser",
+                "ontologyNameFrom": "巡洋舰",
+                "ontologyUniqueIdentifierTo": "obj-ford",
+                "ontologyNameTo": "福特级航空母舰(CVN)",
+                "apiName": "cruiserEscortsFord",
+                "description": "巡洋舰对福特级航母的护航支援"
+              },
+              {
+                "uniqueIdentifier": "rel-destroyer-submarine-escort",
+                "name": "核潜艇协同护航",
+                "type": "OTHER",
+                "categoryId": 104,
+                "ontologyUniqueIdentifierFrom": "obj-destroyer",
+                "ontologyNameFrom": "驱逐舰",
+                "ontologyUniqueIdentifierTo": "obj-submarine",
+                "ontologyNameTo": "攻击型核潜艇",
+                "apiName": "destroyerSubmarineEscort",
+                "description": "驱逐舰与攻击型核潜艇水下协同护航"
+              }
+            ]
+          }
+        ],
         "links": [
           {
-            "uniqueIdentifier": "f5dd661753f84476a652d120be86adb5",
-            "name": "借调",
+            "uniqueIdentifier": "rel-amphibious-carries-marine",
+            "name": "搭载海军陆战队",
             "type": "OTHER",
-            "ontologyUniqueIdentifierFrom": "27499ff6432c425ea152909c768d860e",
-            "ontologyNameFrom": "班级1",
-            "ontologyUniqueIdentifierTo": "86371f5599e243aca485edac2bde8b22",
-            "ontologyNameTo": "班级2",
-            "ontologyIconFrom": "",
-            "apiName": "jiediao",
-            "description": "班级1借调班级2 语文老师",
-            "categoryId": 30
+            "categoryId": 102,
+            "ontologyUniqueIdentifierFrom": "obj-amphibious",
+            "ontologyNameFrom": "两栖攻击舰",
+            "ontologyUniqueIdentifierTo": "obj-marine",
+            "ontologyNameTo": "海军陆战队",
+            "apiName": "amphibiousCarriesMarine",
+            "description": "两栖攻击舰投送搭载的海军陆战队兵力"
+          }
+        ]
+      },
+      {
+        "categoryId": 105,
+        "name": "部署保障",
+        "links": [
+          {
+            "uniqueIdentifier": "rel-homeported-at",
+            "name": "母港部署",
+            "type": "OTHER",
+            "categoryId": 105,
+            "ontologyUniqueIdentifierFrom": "obj-ford",
+            "ontologyNameFrom": "福特级航空母舰(CVN)",
+            "ontologyUniqueIdentifierTo": "obj-base",
+            "ontologyNameTo": "海军基地",
+            "apiName": "homeportedAt",
+            "description": "舰艇母港与基地保障关系"
+          },
+          {
+            "uniqueIdentifier": "rel-replenished-by",
+            "name": "接受补给",
+            "type": "OTHER",
+            "categoryId": 105,
+            "ontologyUniqueIdentifierFrom": "obj-ford",
+            "ontologyNameFrom": "福特级航空母舰(CVN)",
+            "ontologyUniqueIdentifierTo": "obj-replenishment",
+            "ontologyNameTo": "补给舰",
+            "apiName": "replenishedBy",
+            "description": "海上补给与油料弹药保障"
+          },
+          {
+            "uniqueIdentifier": "rel-burke-replenished",
+            "name": "接受补给",
+            "type": "OTHER",
+            "categoryId": 105,
+            "ontologyUniqueIdentifierFrom": "obj-burke",
+            "ontologyNameFrom": "阿利·伯克级驱逐舰(DDG)",
+            "ontologyUniqueIdentifierTo": "obj-replenishment",
+            "ontologyNameTo": "补给舰",
+            "apiName": "burkeReplenishedBy",
+            "description": "伯克级海上补给与油料弹药保障"
+          },
+          {
+            "uniqueIdentifier": "rel-burke-homeported",
+            "name": "母港部署",
+            "type": "OTHER",
+            "categoryId": 105,
+            "ontologyUniqueIdentifierFrom": "obj-burke",
+            "ontologyNameFrom": "阿利·伯克级驱逐舰(DDG)",
+            "ontologyUniqueIdentifierTo": "obj-base",
+            "ontologyNameTo": "海军基地",
+            "apiName": "burkeHomeportedAt",
+            "description": "伯克级母港与基地保障关系"
+          },
+          {
+            "uniqueIdentifier": "rel-nimitz-homeported",
+            "name": "母港部署",
+            "type": "OTHER",
+            "categoryId": 105,
+            "ontologyUniqueIdentifierFrom": "obj-nimitz",
+            "ontologyNameFrom": "尼米兹级航空母舰(CVN)",
+            "ontologyUniqueIdentifierTo": "obj-base",
+            "ontologyNameTo": "海军基地",
+            "apiName": "nimitzHomeportedAt",
+            "description": "尼米兹级母港与基地保障关系"
+          },
+          {
+            "uniqueIdentifier": "rel-base-shipyard",
+            "name": "驻泊海军造船厂",
+            "type": "OTHER",
+            "categoryId": 105,
+            "ontologyUniqueIdentifierFrom": "obj-base",
+            "ontologyNameFrom": "海军基地",
+            "ontologyUniqueIdentifierTo": "obj-shipyard",
+            "ontologyNameTo": "海军造船厂",
+            "apiName": "baseHasShipyard",
+            "description": "海军基地驻泊配套的海军造船厂"
+          },
+          {
+            "uniqueIdentifier": "rel-shipyard-repair-center",
+            "name": "下辖区域维修中心",
+            "type": "OTHER",
+            "categoryId": 105,
+            "ontologyUniqueIdentifierFrom": "obj-shipyard",
+            "ontologyNameFrom": "海军造船厂",
+            "ontologyUniqueIdentifierTo": "obj-repair",
+            "ontologyNameTo": "区域维修中心",
+            "apiName": "shipyardHasRepairCenter",
+            "description": "海军造船厂下辖的区域维修保障中心"
+          },
+          {
+            "uniqueIdentifier": "rel-patrol-air-base",
+            "name": "依托岸基航空兵基地",
+            "type": "OTHER",
+            "categoryId": 105,
+            "ontologyUniqueIdentifierFrom": "obj-patrol",
+            "ontologyNameFrom": "海上巡逻机",
+            "ontologyUniqueIdentifierTo": "obj-airbase",
+            "ontologyNameTo": "岸基航空兵基地",
+            "apiName": "patrolAircraftReliesAirBase",
+            "description": "海上巡逻机驻训依托的岸基航空兵基地"
           }
         ]
       }

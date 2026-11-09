@@ -9,6 +9,8 @@ export interface OntologySpaceListItem {
   actionCount: number;
   propertyCount: number;
   linkCount: number;
+  /** 实体数量；后端暂未返回时由 Mock 补齐。 */
+  entityCount?: number;
   createTime: string;
   updateTime: string;
 }

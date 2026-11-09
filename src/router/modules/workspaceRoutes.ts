@@ -104,6 +104,56 @@ export const workspaceRoutes: RouteRecordRaw[] = [
         ],
       },
       {
+        path: "entity-browsing",
+        // 与 src/utils/entityBrowseConstants.ts 中 ENTITY_BROWSING_DEFAULT_SPACE_ID 保持一致。
+        redirect: { name: "EntityBrowsingObject", params: { spaceId: "23" } },
+      },
+      {
+        // 独立全页画像，不嵌在 EntityBrowsing 的统计/Tab 壳内。
+        path: "entity-browsing/:spaceId/object/:objectId",
+        name: "EntityBrowsingObjectProfile",
+        component: () => import("@/views/EntityBrowsingObjectProfile/index.vue"),
+        meta: { title: "对象画像", browseOnly: true },
+      },
+      {
+        path: "entity-browsing/:spaceId",
+        name: "EntityBrowsing",
+        component: () => import("@/views/EntityBrowsing/index.vue"),
+        meta: { title: "实体浏览" },
+        redirect: { name: "EntityBrowsingObject" },
+        children: [
+          {
+            path: "object",
+            name: "EntityBrowsingObject",
+            component: () => import("@/views/ObjectWorkspacePanel/index.vue"),
+            meta: { title: "实体浏览", workspaceTab: "object", browseOnly: true },
+          },
+          {
+            path: "relation",
+            name: "EntityBrowsingRelation",
+            component: () => import("@/views/SpaceRelationWorkspace/index.vue"),
+            meta: { title: "实体浏览", workspaceTab: "relation", browseOnly: true },
+          },
+          {
+            path: "function-operator",
+            name: "EntityBrowsingFunctionOperator",
+            component: () => import("@/views/FunctionOperatorPanel/index.vue"),
+            meta: { title: "实体浏览", workspaceTab: "function-operator", browseOnly: true },
+          },
+          {
+            path: "behavior",
+            name: "EntityBrowsingBehavior",
+            component: () => import("@/views/EntityBrowsingBehavior/index.vue"),
+            meta: { title: "实体浏览", workspaceTab: "behavior", browseOnly: true },
+          },
+          {
+            path: "behavior-schedule",
+            name: "EntityBrowsingBehaviorSchedule",
+            redirect: { name: "EntityBrowsingObject" },
+          },
+        ],
+      },
+      {
         path: "full-text-search",
         name: "FullTextSearch",
         component: () => import("@/views/FullTextSearch/index.vue"),

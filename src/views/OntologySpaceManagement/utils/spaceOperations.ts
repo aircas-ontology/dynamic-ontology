@@ -51,7 +51,7 @@ export function saveSpace(spaces: OntologySpaceItem[], draft: OntologySpaceDraft
     category: "自定义",
     createdTime: "2026-09-15 12:00",
     updatedTime: "2026-09-15 12:00",
-    metrics: { ontology: 0, behavior: 0, relation: 0, rule: 0, source: 0 },
+    metrics: { ontology: 0, behavior: 0, relation: 0, rule: 0, source: 0, entity: 0 },
     isSubspace: false,
     parentSpaceDisplayName: "",
   };

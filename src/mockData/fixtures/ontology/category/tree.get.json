@@ -3,30 +3,108 @@
   "message": "查询成功",
   "success": true,
   "data": {
-    "categoryId": 1,
-    "name": "舰船",
-    "ontologyMetaInfos": [
-      {
-        "uniqueIdentifier": "d3e1b0c27f29452eb7cadd1f51eac535",
-        "createTime": "2026-09-17 11:15:13",
-        "updateTime": "2026-09-17 11:15:13",
-        "latestQueryTime": "2026-09-17 11:15:13",
-        "displayName": "舰船",
-        "description": "我方舰船",
-        "apiName": "ship",
-        "metaGroupId": [],
-        "spaceId": 1,
-        "ontologyCategoryId": 1,
-        "entityCount": 0,
-        "relationCount": 1,
-        "propertyCount": 4,
-        "actionCount": 0
-      }
-    ],
+    "categoryId": 2300,
+    "name": "全部",
+    "ontologyMetaInfos": [],
     "children": [
       {
-        "categoryId": 2,
-        "name": "航空母舰",
+        "categoryId": 2301,
+        "name": "舰船",
+        "ontologyMetaInfos": [],
+        "children": [
+          {
+            "categoryId": 2310,
+            "name": "驱逐舰",
+            "ontologyMetaInfos": [
+              {
+                "uniqueIdentifier": "8b4889e087134b67beeb7ac5ff9b29c8",
+                "createTime": "2026-10-29 16:43:14",
+                "updateTime": "2026-10-29 16:43:14",
+                "latestQueryTime": "2026-10-29 16:43:14",
+                "displayName": "阿利·伯克级驱逐舰",
+                "description": "实体浏览 Mock：阿利·伯克级（完整画像）",
+                "apiName": "arleigh_burke_class_destroyer",
+                "metaGroupId": [],
+                "spaceId": 23,
+                "ontologyCategoryId": 2310,
+                "entityCount": 12,
+                "relationCount": 0,
+                "propertyCount": 166,
+                "actionCount": 0,
+                "icon": "",
+                "parentOntologyDisplayName": "无"
+              },
+              {
+                "uniqueIdentifier": "49c11f470fa542e7ac216bcfa380f3c1",
+                "createTime": "2026-10-29 16:50:00",
+                "updateTime": "2026-10-29 16:50:00",
+                "latestQueryTime": "2026-10-29 16:50:00",
+                "displayName": "052D型驱逐舰",
+                "description": "实体浏览 Mock：052D（精简画像）",
+                "apiName": "type_052d_destroyer",
+                "metaGroupId": [],
+                "spaceId": 23,
+                "ontologyCategoryId": 2310,
+                "entityCount": 8,
+                "relationCount": 2,
+                "propertyCount": 120,
+                "actionCount": 1,
+                "icon": "",
+                "parentOntologyDisplayName": "无"
+              }
+            ],
+            "children": []
+          },
+          {
+            "categoryId": 2311,
+            "name": "航空母舰",
+            "ontologyMetaInfos": [
+              {
+                "uniqueIdentifier": "mock-carrier-ford-003",
+                "createTime": "2026-10-28 09:30:00",
+                "updateTime": "2026-10-28 09:30:00",
+                "latestQueryTime": "2026-10-28 09:30:00",
+                "displayName": "福特级航空母舰(CVN)",
+                "description": "实体浏览 Mock：福特级",
+                "apiName": "carrier_ford",
+                "metaGroupId": [],
+                "spaceId": 23,
+                "ontologyCategoryId": 2311,
+                "entityCount": 2,
+                "relationCount": 3,
+                "propertyCount": 72,
+                "actionCount": 2,
+                "icon": "",
+                "parentOntologyDisplayName": "无"
+              }
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "categoryId": 2302,
+        "name": "有生力量",
+        "ontologyMetaInfos": [
+          {
+            "uniqueIdentifier": "mock-combat-unit-004",
+            "createTime": "2026-10-27 11:20:00",
+            "updateTime": "2026-10-27 11:20:00",
+            "latestQueryTime": "2026-10-27 11:20:00",
+            "displayName": "作战部队机构",
+            "description": "实体浏览 Mock：部队机构",
+            "apiName": "combat_unit_org",
+            "metaGroupId": [],
+            "spaceId": 23,
+            "ontologyCategoryId": 2302,
+            "entityCount": 36,
+            "relationCount": 5,
+            "propertyCount": 28,
+            "actionCount": 1,
+            "icon": "",
+            "parentOntologyDisplayName": "无"
+          }
+        ],
         "children": []
       }
     ]

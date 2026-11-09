@@ -17,6 +17,8 @@ import type {
 } from "@/types";
 import { ROOT_RELATION_CATEGORY_ID } from "@/types";
 import { getOntologyCategoryTreeInterface, getOntologyRelationCategoryTreeInterface } from "@/apis";
+import { createOntologySpaceRelationWorkspaceData } from "@/mocks/ontologySpaceRelationMock/ontologySpaceRelationMock";
+import { isUseMockEnabled } from "@/utils/isUseMockEnabled";
 import { filterRelationsByHop } from "../utils/spaceRelationGraph";
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
 import { mapOntologyRelationCategoryTree, mapOntologyRelationLinks } from "../utils/mapOntologyRelationCategoryTree";
@@ -73,6 +75,10 @@ async function loadRelationObjectOptionsFromObjectTree(spaceId: string): Promise
 async function loadSpaceRelationWorkspaceFromApi(spaceId: string): Promise<SpaceRelationWorkspaceData> {
   const id = spaceId.trim();
   if (!id) return createEmptySpaceRelationWorkspaceData();
+  /** USE_MOCK 时用前端写死样例，内网无 Mock HTTP / 无关系接口也能展示。 */
+  if (isUseMockEnabled()) {
+    return createOntologySpaceRelationWorkspaceData();
+  }
   const params: OntologyRelationCategoryTreeParams = { spaceId: id };
   const [relationResponse, objectOptions] = await Promise.all([getOntologyRelationCategoryTreeInterface(params), loadRelationObjectOptionsFromObjectTree(id)]);
   if (relationResponse.code !== 200) throw new Error(relationResponse.message || "关系分类体系树查询失败");
@@ -92,6 +98,7 @@ export function useSpaceRelationWorkspace() {
   const errorMessage = ref("");
   const workspace = ref<SpaceRelationWorkspaceData | null>(null);
   const selectedRelationCategoryId = ref(ROOT_RELATION_CATEGORY_ID);
+  /** 实体浏览 / 空间管理详情进入时默认二维关系图。 */
   const relationViewMode = ref<RelationViewMode>("graph2d");
   const relationFilter = ref<SpaceRelationFilterState>({
     seedNames: [],

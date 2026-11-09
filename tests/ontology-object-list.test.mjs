@@ -13,7 +13,7 @@ test("object cards hide the parent ontology row when none is available", () => {
 
 test("object table operation column keeps all actions on one line", () => {
   const source = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue");
-  assert.match(source, /<el-table-column label="操作" width="300" fixed="right">/);
+  assert.match(source, /<el-table-column label="操作" :width="browseOnly \? 160 : 300" fixed="right">/);
   assert.match(source, /white-space:\s*nowrap/);
 });
 

@@ -3,11 +3,11 @@
   "message": "SUCCESS",
   "success": true,
   "data": {
-    "spaceId": 1,
-    "ontologyCount": 2,
-    "linkCount": 0,
+    "spaceId": 23,
+    "ontologyCount": 4,
+    "linkCount": 24,
     "functionCount": 2,
-    "actionCount": 0,
-    "actionSchedulingCount": 0
+    "actionCount": 2,
+    "actionSchedulingCount": 1
   }
 }

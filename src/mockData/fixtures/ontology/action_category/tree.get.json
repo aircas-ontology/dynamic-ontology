@@ -1,0 +1,35 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "success": true,
+  "data": {
+    "categoryId": 10,
+    "name": "基础操作",
+    "children": [
+      {
+        "categoryId": 11,
+        "name": "属性值行为",
+        "actionInfos": [
+          {
+            "actionApi": "cc",
+            "displayName": "cc",
+            "description": "ccc",
+            "ontologyUniqIdentifier": "246ef68e87524c33911b92af900700f9"
+          }
+        ]
+      },
+      {
+        "categoryId": 14,
+        "name": "武器属性",
+        "actionInfos": [
+          {
+            "actionApi": "act.pv.weapon.add",
+            "displayName": "武器行-新增",
+            "description": "属性值行为：向 weapon 分组新增一行",
+            "ontologyUniqIdentifier": "ea512d439cd34c6ebbcde6b692261ab5"
+          }
+        ]
+      }
+    ]
+  }
+}

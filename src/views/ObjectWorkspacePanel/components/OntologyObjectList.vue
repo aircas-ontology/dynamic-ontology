@@ -21,7 +21,7 @@
             <span class="ontology-object-list__visually-hidden">列表视图</span>
           </el-radio-button>
         </el-radio-group>
-        <el-button type="primary" data-onboarding="object-create-open" @click="emit('action', 'create')"
+        <el-button v-if="!browseOnly" type="primary" data-onboarding="object-create-open" @click="emit('action', 'create')"
           ><el-icon><Plus /></el-icon>新建对象</el-button
         >
       </div>
@@ -46,8 +46,15 @@
             v-for="item in section.items"
             :key="item.id"
             class="ontology-object-card"
-            :class="{ 'is-located': activeObjectId === item.id }"
+            :class="{ 'is-located': activeObjectId === item.id, 'ontology-object-card--clickable': browseOnly }"
             :data-object-id="item.id"
+            :data-onboarding="browseOnly ? 'object-detail-open' : undefined"
+            :role="browseOnly ? 'link' : undefined"
+            :tabindex="browseOnly ? 0 : undefined"
+            :aria-label="browseOnly ? `查看 ${item.displayName}` : undefined"
+            @click="browseOnly ? emit('action', 'view', item) : undefined"
+            @keydown.enter.prevent="browseOnly ? emit('action', 'view', item) : undefined"
+            @keydown.space.prevent="browseOnly ? emit('action', 'view', item) : undefined"
           >
             <div class="ontology-object-card__visual">
               <img v-if="item.iconUrl" :src="item.iconUrl" alt="" />
@@ -56,13 +63,13 @@
             <div class="ontology-object-card__body">
               <header class="ontology-object-card__title">
                 <strong :title="item.displayName">{{ item.displayName }}</strong>
-                <small :title="item.apiName">{{ item.apiName }}</small>
+                <small v-if="!browseOnly" :title="item.apiName">{{ item.apiName }}</small>
               </header>
               <button
                 v-if="item.parentDisplayName && item.parentDisplayName !== '无'"
                 class="ontology-object-card__parent"
                 type="button"
-                @click="emit('locateParent', item)"
+                @click.stop="emit('locateParent', item)"
               >
                 父对象：{{ item.parentDisplayName }}
               </button>
@@ -87,12 +94,11 @@
                   <dd>{{ item.metrics.behavior }}</dd>
                 </div>
               </dl>
-              <footer class="ontology-object-card__actions">
+              <footer v-if="!browseOnly" class="ontology-object-card__actions">
                 <el-button
                   class="ontology-object-action ontology-object-action--view aircas-button--gradient"
                   data-onboarding="object-detail-open"
-                  size="small"
-                  @click="emit('action', 'view', item)"
+                  @click.stop="emit('action', 'view', item)"
                 >
                   <svg class="ontology-object-action__icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
@@ -100,21 +106,21 @@
                   </svg>
                   详情
                 </el-button>
-                <el-button class="ontology-object-action ontology-object-action--edit" size="small" @click="emit('action', 'edit', item)">
+                <el-button class="ontology-object-action ontology-object-action--edit" @click.stop="emit('action', 'edit', item)">
                   <svg class="ontology-object-action__icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M4 20h4.5L19 9.5 14.5 5 4 15.5V20z" />
                     <path d="M12.5 7l4.5 4.5" />
                   </svg>
                   编辑
                 </el-button>
-                <el-button class="ontology-object-action ontology-object-action--export" size="small" @click="emit('action', 'export', item)">
+                <el-button class="ontology-object-action ontology-object-action--export" @click.stop="emit('action', 'export', item)">
                   <svg class="ontology-object-action__icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 4v10M8 10l4 4 4-4" />
                     <path d="M5 18h14" />
                   </svg>
                   导出
                 </el-button>
-                <el-button class="ontology-object-action ontology-object-action--delete" size="small" type="danger" @click="emit('action', 'delete', item)">
+                <el-button class="ontology-object-action ontology-object-action--delete" type="danger" @click.stop="emit('action', 'delete', item)">
                   <svg class="ontology-object-action__icon ontology-object-action__icon--filled" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M8.8 3.6h6.4l.9 2.4H20.2v2.2H3.8V6h4.1L8.8 3.6z" />
                     <path d="M6.6 9.2h10.8l-.95 10.5c-.12.95-.9 1.6-1.85 1.6H9.35c-.95 0-1.73-.65-1.85-1.6L6.6 9.2z" />
@@ -127,11 +133,20 @@
         </div>
 
         <div v-else class="ontology-object-section__table">
-          <el-table class="aircas-table--accent-header" :data="section.items" row-key="id" height="100%" stripe :row-class-name="objectRowClassName">
+          <el-table
+            class="aircas-table--accent-header"
+            :class="{ 'ontology-object-section__table--clickable': browseOnly }"
+            :data="section.items"
+            row-key="id"
+            height="100%"
+            stripe
+            :row-class-name="objectRowClassName"
+            @row-click="(row: unknown) => browseOnly && emit('action', 'view', objectRow(row))"
+          >
             <el-table-column label="对象名称" min-width="220">
               <template #default="{ row }"
                 ><strong>{{ objectRow(row).displayName }}</strong
-                ><small class="ontology-object-table__api">{{ objectRow(row).apiName }}</small></template
+                ><small v-if="!browseOnly" class="ontology-object-table__api">{{ objectRow(row).apiName }}</small></template
               >
             </el-table-column>
             <el-table-column prop="parentDisplayName" label="父对象" min-width="120" />
@@ -145,22 +160,21 @@
               ><template #default="{ row }">{{ objectRow(row).metrics.behavior }}</template></el-table-column
             >
             <el-table-column prop="createdAt" label="创建时间" width="170" />
-            <el-table-column label="操作" width="300" fixed="right">
+            <el-table-column v-if="!browseOnly" label="操作" width="300" fixed="right">
               <template #default="{ row }">
-                <el-button class="ontology-object-action ontology-object-action--view" size="small" @click="emit('action', 'view', objectRow(row))"
+                <el-button class="ontology-object-action ontology-object-action--view" @click.stop="emit('action', 'view', objectRow(row))"
                   >详情</el-button
                 >
-                <el-button class="ontology-object-action ontology-object-action--edit" size="small" @click="emit('action', 'edit', objectRow(row))"
+                <el-button class="ontology-object-action ontology-object-action--edit" @click.stop="emit('action', 'edit', objectRow(row))"
                   >编辑</el-button
                 >
-                <el-button class="ontology-object-action ontology-object-action--export" size="small" @click="emit('action', 'export', objectRow(row))"
+                <el-button class="ontology-object-action ontology-object-action--export" @click.stop="emit('action', 'export', objectRow(row))"
                   >导出</el-button
                 >
                 <el-button
                   class="ontology-object-action ontology-object-action--delete"
-                  size="small"
                   type="danger"
-                  @click="emit('action', 'delete', objectRow(row))"
+                  @click.stop="emit('action', 'delete', objectRow(row))"
                   >删除</el-button
                 >
               </template>
@@ -177,11 +191,15 @@ import { nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { Connection, DataLine, Plus, Share, Ship } from "@element-plus/icons-vue";
 import type { OntologyObjectItem, OntologyObjectLocationTarget, OntologyObjectSection, OntologyObjectViewMode } from "@/types";
 
-const props = defineProps<{
-  sections: OntologyObjectSection[];
-  viewMode: OntologyObjectViewMode;
-  locationTarget: OntologyObjectLocationTarget | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    sections: OntologyObjectSection[];
+    viewMode: OntologyObjectViewMode;
+    locationTarget: OntologyObjectLocationTarget | null;
+    browseOnly?: boolean;
+  }>(),
+  { browseOnly: false },
+);
 
 const emit = defineEmits<{
   "update:viewMode": [mode: OntologyObjectViewMode];
@@ -378,7 +396,7 @@ onBeforeUnmount(() => {
 .ontology-object-section__header h2 {
   margin: 0;
   color: var(--aircas-color-text-primary);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
 }
 .ontology-object-section__header span {
@@ -388,11 +406,11 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   background: var(--aircas-color-effect-primary-soft);
   color: var(--aircas-color-primary);
-  font-size: 12px;
+  font-size: 16px;
 }
 .ontology-object-section__cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
   gap: 8px;
   padding: 8px;
 }
@@ -400,6 +418,7 @@ onBeforeUnmount(() => {
   position: relative;
   display: grid;
   min-width: 0;
+  min-height: 148px;
   grid-template-columns: 96px minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--aircas-color-border);
@@ -410,6 +429,15 @@ onBeforeUnmount(() => {
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     background 0.2s ease;
+}
+
+.ontology-object-card--clickable {
+  cursor: pointer;
+}
+
+.ontology-object-card--clickable:focus-visible {
+  outline: 2px solid var(--aircas-color-primary);
+  outline-offset: 2px;
 }
 
 .ontology-object-card::before {
@@ -487,9 +515,10 @@ onBeforeUnmount(() => {
 .ontology-object-card__body {
   display: flex;
   min-width: 0;
-  padding: 10px;
+  padding: 14px 12px;
   flex-direction: column;
-  gap: 6px;
+  justify-content: center;
+  gap: 10px;
 }
 .ontology-object-card__title {
   display: flex;
@@ -505,10 +534,13 @@ onBeforeUnmount(() => {
 }
 .ontology-object-card__title strong {
   color: var(--aircas-color-text-primary);
-  font-size: 14px;
+  font-size: 16px;
+  letter-spacing: 0.06em;
 }
 .ontology-object-card__title small {
   color: var(--aircas-color-text-secondary);
+  font-size: 16px;
+  letter-spacing: 0.04em;
 }
 .ontology-object-card__parent {
   align-self: flex-start;
@@ -519,7 +551,7 @@ onBeforeUnmount(() => {
   background: transparent;
   color: var(--aircas-color-primary);
   font: inherit;
-  font-size: 12px;
+  font-size: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
@@ -531,12 +563,15 @@ onBeforeUnmount(() => {
 .ontology-object-card__body > p {
   margin: 0;
   color: var(--aircas-color-text-secondary);
-  font-size: 12px;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 .ontology-object-card dl {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
+  gap: 8px;
   text-align: center;
 }
 .ontology-object-card dt {
@@ -545,7 +580,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 4px;
   color: var(--aircas-color-text-secondary);
-  font-size: 12px;
+  font-size: 16px;
+  letter-spacing: 0.12em;
 }
 
 .ontology-object-card dl > div:nth-child(1) .el-icon {
@@ -562,34 +598,36 @@ onBeforeUnmount(() => {
 .ontology-object-card dd {
   margin: 4px 0 0;
   color: var(--aircas-color-text-primary);
+  font-size: 16px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .ontology-object-card__actions {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 4px;
+  gap: 8px;
   margin-top: 4px;
 }
+
 .ontology-object-card__actions .el-button {
   min-width: 0;
   margin: 0;
-  padding: 0 5px;
+  padding: 0 12px;
   overflow: hidden;
-  font-size: 11px;
+  font-size: 16px;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .ontology-object-card__actions .ontology-object-action.el-button {
-  height: 28px;
-  padding: 0 5px;
+  height: 32px;
+  padding: 0 12px;
 }
 
 .ontology-object-action__icon {
-  width: 12px;
-  height: 12px;
-  margin-right: 3px;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
   flex-shrink: 0;
   fill: none;
   stroke: currentColor;
@@ -609,7 +647,13 @@ onBeforeUnmount(() => {
   padding: 8px;
 }
 .ontology-object-section__table .el-button {
+  height: 32px;
+  font-size: 16px;
   white-space: nowrap;
+}
+
+.ontology-object-section__table--clickable :deep(.el-table__row) {
+  cursor: pointer;
 }
 /* 树节点定位高亮：表格行，细白边 + 柔和投影 */
 .ontology-object-section__table :deep(tr.is-located td.el-table__cell) {

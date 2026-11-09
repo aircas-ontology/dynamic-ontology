@@ -12,7 +12,7 @@
         </el-select>
         <el-button @click="emit('query')">查询</el-button>
         <el-button @click="emit('reset')">重置</el-button>
-        <el-button :icon="Plus" @click="emit('create')">新建行为</el-button>
+        <el-button v-if="!browseOnly" :icon="Plus" @click="emit('create')">新建行为</el-button>
       </div>
     </header>
 
@@ -45,23 +45,25 @@
         <el-table-column label="更新时间" width="160">
           <template #default="{ row }">{{ asBehavior(row).updatedAt }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" :width="browseOnly ? 100 : 280" fixed="right">
           <template #default="{ row }">
             <div class="behavior-list-panel__row-actions">
               <el-button size="small" @click="emit('view', asBehavior(row))">查看</el-button>
-              <el-button size="small" @click="emit('edit', asBehavior(row))">编辑</el-button>
-              <el-button size="small" @click="emit('test', asBehavior(row))">测试</el-button>
-              <el-dropdown trigger="click" @command="handleMoreCommand($event, asBehavior(row))">
-                <el-button size="small"
-                  >更多<el-icon><ArrowDown /></el-icon
-                ></el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item command="status">状态管理</el-dropdown-item>
-                    <el-dropdown-item command="delete">删除</el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+              <template v-if="!browseOnly">
+                <el-button size="small" @click="emit('edit', asBehavior(row))">编辑</el-button>
+                <el-button size="small" @click="emit('test', asBehavior(row))">测试</el-button>
+                <el-dropdown trigger="click" @command="handleMoreCommand($event, asBehavior(row))">
+                  <el-button size="small"
+                    >更多<el-icon><ArrowDown /></el-icon
+                  ></el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="status">状态管理</el-dropdown-item>
+                      <el-dropdown-item command="delete">删除</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </template>
             </div>
           </template>
         </el-table-column>
@@ -91,15 +93,19 @@ import type { SpaceBehaviorItem, SpaceBehaviorListStatus, SpaceBehaviorStatus } 
 import { SPACE_BEHAVIOR_KIND_LABELS, SPACE_BEHAVIOR_LIST_STATUS_LABELS, SPACE_BEHAVIOR_LIST_STATUS_OPTIONS, SPACE_BEHAVIOR_VALUE_TYPE_LABELS } from "@/types";
 import { mapSpaceBehaviorItemToListStatus } from "../utils/mapListOntologyActionRecord";
 
-const props = defineProps<{
-  categoryLabel: string;
-  items: SpaceBehaviorItem[];
-  total: number;
-  page: number;
-  pageSize: number;
-  keyword: string;
-  statusFilter: SpaceBehaviorListStatus | "";
-}>();
+const props = withDefaults(
+  defineProps<{
+    categoryLabel: string;
+    items: SpaceBehaviorItem[];
+    total: number;
+    page: number;
+    pageSize: number;
+    keyword: string;
+    statusFilter: SpaceBehaviorListStatus | "";
+    browseOnly?: boolean;
+  }>(),
+  { browseOnly: false },
+);
 
 const emit = defineEmits<{
   "update:keyword": [value: string];
