@@ -65,7 +65,10 @@ test("theme space management route and navigation item are registered below obje
   assert.equal(route.path, "/workspace/theme-space-management");
   assert.equal(route.meta.title, "主题管理");
   const navigationSource = readFileSync(new URL("../src/layout/components/NavigationMenu.vue", import.meta.url), "utf8");
-  assert.match(navigationSource, /对象空间管理[\s\S]*主题管理/);
+  assert.match(navigationSource, /对象空间浏览[\s\S]*对象空间管理[\s\S]*主题空间浏览[\s\S]*主题管理[\s\S]*全文检索[\s\S]*应用管理/);
+  assert.match(navigationSource, /<Monitor\s*\/>/);
+  assert.match(navigationSource, /<Files\s*\/>/);
+  assert.doesNotMatch(navigationSource, /<View\s*\/>/);
   assert.match(navigationSource, /name: 'ThemeSpaceManagement'/);
 });
 

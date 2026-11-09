@@ -19,6 +19,7 @@
           <el-button @click="resetEntityListFilter">重置</el-button>
           <el-button type="primary" @click="applyEntityListFilter">查询</el-button>
         </div>
+        <el-button type="primary" plain @click="openEntityListColumnConfig">配置</el-button>
       </header>
 
       <div v-if="status === 'loading'" class="object-profile-entity-list__state" role="status">
@@ -59,6 +60,13 @@
           />
         </footer>
       </template>
+
+      <ObjectProfileEntityListConfigDialog
+        v-model="configDialogVisible"
+        :columns="allColumns"
+        :selected-columns="visibleColumns"
+        @confirm="handleEntityListColumnConfigConfirm"
+      />
     </template>
   </section>
 </template>
@@ -69,6 +77,7 @@ import { ArrowLeft } from "@element-plus/icons-vue";
 import AircasLoading from "@/components/AircasLoading.vue";
 import { ENTITY_BROWSING_ENTITY_DETAIL_URL } from "@/utils/entityBrowseConstants";
 import { useObjectProfileEntityList, type ObjectProfileEntityRow } from "../composables/useObjectProfileEntityList";
+import ObjectProfileEntityListConfigDialog from "./ObjectProfileEntityListConfigDialog.vue";
 
 const props = defineProps<{
   objectId: string;
@@ -86,6 +95,7 @@ const detailEmbedded = ref(false);
 const {
   status,
   error,
+  allColumns,
   visibleColumns,
   filteredRows,
   total,
@@ -93,10 +103,21 @@ const {
   pageSize,
   filterField,
   filterValue,
+  configDialogVisible,
   loadObjectProfileEntityPage,
   applyEntityListFilter,
   resetEntityListFilter,
+  openEntityListColumnConfig,
+  applyEntityListColumnConfig,
 } = useObjectProfileEntityList(toRef(props, "objectId"));
+
+/**
+ * @description 应用列配置弹窗确认结果。
+ * @param columns 勾选后的可见列。
+ */
+function handleEntityListColumnConfigConfirm(columns: string[]): void {
+  applyEntityListColumnConfig(columns);
+}
 
 /**
  * @description 将表格默认行校验为实体列表行；结构不符时返回空行。
@@ -105,10 +126,15 @@ const {
  */
 function asEntityRow(row: unknown): ObjectProfileEntityRow {
   if (!row || typeof row !== "object") return { rowKey: "", cells: {}, detailItems: [] };
-  if (!("rowKey" in row) || typeof row.rowKey !== "string") {
+  const candidate = row as Partial<ObjectProfileEntityRow>;
+  if (typeof candidate.rowKey !== "string" || !candidate.cells || typeof candidate.cells !== "object") {
     return { rowKey: "", cells: {}, detailItems: [] };
   }
-  return filteredRows.value.find((candidate) => candidate.rowKey === row.rowKey) ?? { rowKey: "", cells: {}, detailItems: [] };
+  return {
+    rowKey: candidate.rowKey,
+    cells: candidate.cells,
+    detailItems: Array.isArray(candidate.detailItems) ? candidate.detailItems : [],
+  };
 }
 
 /**
@@ -197,6 +223,7 @@ function handleEntityListPageSizeChange(size: number): void {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 

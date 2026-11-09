@@ -18,7 +18,6 @@ import * as echarts from "echarts";
 import type { ECharts, EChartsOption } from "echarts";
 import { resolveEntityBrowsingObjectProfileStats } from "@/mocks/entityBrowsingObjectProfileMock/entityBrowsingObjectProfileStatsMock";
 import type { EntityBrowsingObjectProfileStatsBar, EntityBrowsingObjectProfileStatsSlice } from "@/types";
-import { useDocumentTheme } from "@/composables/shared/useDocumentTheme";
 
 const props = defineProps<{
   objectId: string;
@@ -42,8 +41,6 @@ const chartCards = computed(() => [
 const chartEls: Partial<Record<ChartId, HTMLElement>> = {};
 const charts = shallowRef<Partial<Record<ChartId, ECharts>>>({});
 let resizeObserver: ResizeObserver | null = null;
-let disposed = false;
-const { isDark } = useDocumentTheme();
 
 /**
  * @description 记录或移除统计图容器。
@@ -56,31 +53,33 @@ function setChartEl(id: ChartId, el: unknown): void {
 }
 
 /**
- * @description 读取当前主题的颜色。
+ * @description 读取主题颜色，缺失时回退到默认色。
  * @param varName 主题变量名。
+ * @param fallback 回退颜色。
  * @returns 返回解析后的颜色。
  */
-function readCssColor(varName: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+function readCssColor(varName: string, fallback: string): string {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  return value || fallback;
 }
 
 /**
- * @description 读取统计图使用的当前主题颜色。
+ * @description 读取统计图使用的主题颜色集合。
  * @returns 返回图表颜色集合。
  */
 function themeColors() {
   return {
-    text: readCssColor("--aircas-color-text-primary"),
-    muted: readCssColor("--aircas-color-text-secondary"),
-    border: readCssColor("--aircas-color-border"),
-    bar: readCssColor("--aircas-color-primary"),
+    text: readCssColor("--aircas-color-text-primary", "#e8f1f8"),
+    muted: readCssColor("--aircas-color-text-secondary", "#9eb6c8"),
+    border: readCssColor("--aircas-color-border", "#2a3d4f"),
+    bar: readCssColor("--aircas-color-primary", "#3ec6ff"),
     pie: [
-      readCssColor("--aircas-color-category-blue"),
-      readCssColor("--aircas-color-success"),
-      readCssColor("--aircas-color-warning"),
-      readCssColor("--aircas-color-danger"),
-      readCssColor("--aircas-color-primary"),
-      readCssColor("--aircas-color-category-purple"),
+      readCssColor("--aircas-color-category-blue", "#269cff"),
+      readCssColor("--aircas-color-success", "#3ecf8e"),
+      readCssColor("--aircas-color-warning", "#f0c14a"),
+      readCssColor("--aircas-color-danger", "#f06666"),
+      readCssColor("--aircas-color-primary", "#3ec6ff"),
+      readCssColor("--aircas-color-category-purple", "#9272ff"),
     ],
   };
 }
@@ -203,7 +202,6 @@ function resizeAll(): void {
 
 onMounted(async () => {
   await nextTick();
-  if (disposed) return;
   renderAll();
   resizeObserver = new ResizeObserver(() => resizeAll());
   for (const el of Object.values(chartEls)) {
@@ -217,10 +215,8 @@ watch(
     renderAll();
   },
 );
-watch(isDark, renderAll);
 
 onBeforeUnmount(() => {
-  disposed = true;
   resizeObserver?.disconnect();
   resizeObserver = null;
   for (const instance of Object.values(charts.value)) {

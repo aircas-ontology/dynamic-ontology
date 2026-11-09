@@ -1,6 +1,8 @@
-import { computed, onScopeDispose, ref, watch, type Ref } from "vue";
+import { computed, onUnmounted, ref, watch, type Ref } from "vue";
 import { getOntologyEntitiesInterface } from "@/apis";
-import type { ApiResponse, GetOntologyEntitiesData, GetOntologyEntitiesParams, OntologyEntityInfo, OntologySpaceDetailLoadStatus } from "@/types";
+import { createObjectProfileEntityListMockRecords } from "@/mocks/objectProfileEntityListMock/objectProfileEntityListMock";
+import type { OntologyEntityInfo, OntologySpaceDetailLoadStatus } from "@/types";
+import { isUseMockEnabled } from "@/utils/isUseMockEnabled";
 import {
   appendNewObjectProfileEntityColumns,
   collectObjectProfileEntityColumns,
@@ -16,15 +18,11 @@ import {
 export const OBJECT_PROFILE_ENTITY_LIST_PAGE_SIZE = 20;
 
 /**
- * @description 按对象 id 分页加载实体列表，支持当前页前端筛选、列显隐配置与过期响应丢弃。
+ * @description 按对象 id 分页加载实体列表；USE_MOCK 时暂用前端样例，关闭 Mock 后走真实实体列表接口，支持筛选、列显隐与过期响应丢弃。
  * @param objectId 对象唯一标识。
- * @param entityLoader 分页查询实体列表的接口函数，默认使用正式接口。
  * @returns 列表状态、分页、筛选、列配置与加载方法。
  */
-export function useObjectProfileEntityList(
-  objectId: Ref<string>,
-  entityLoader: (params: GetOntologyEntitiesParams) => Promise<ApiResponse<GetOntologyEntitiesData>> = getOntologyEntitiesInterface,
-) {
+export function useObjectProfileEntityList(objectId: Ref<string>) {
   const status = ref<OntologySpaceDetailLoadStatus>("loading");
   const error = ref("");
   const records = ref<OntologyEntityInfo[]>([]);
@@ -39,8 +37,6 @@ export function useObjectProfileEntityList(
   const configDialogVisible = ref(false);
   let generation = 0;
   let disposed = false;
-  let activeRequestKey = "";
-  let activeRequest: Promise<void> | null = null;
 
   const allColumns = computed(() => collectObjectProfileEntityColumns(records.value));
   const visibleColumns = computed(() => resolveObjectProfileEntityVisibleColumns(allColumns.value, visibleColumnSelection.value));
@@ -61,74 +57,57 @@ export function useObjectProfileEntityList(
    */
   async function loadObjectProfileEntityPage(nextPage = pageNum.value, nextPageSize = pageSize.value): Promise<void> {
     const id = objectId.value.trim();
-    const requestKey = `${id}:${nextPage}:${nextPageSize}`;
-    if (activeRequestKey === requestKey && activeRequest) return activeRequest;
-
     const request = ++generation;
-    const requestPromise = requestObjectProfileEntityPage(id, nextPage, nextPageSize, request);
-    activeRequestKey = requestKey;
-    activeRequest = requestPromise;
-    try {
-      await requestPromise;
-    } finally {
-      if (activeRequest === requestPromise) {
-        activeRequest = null;
-        activeRequestKey = "";
-      }
-    }
-  }
-
-  /**
-   * @description 请求实体列表并仅在请求仍属于当前对象时写入页面状态。
-   * @param id 请求时的对象唯一标识。
-   * @param nextPage 目标页码。
-   * @param nextPageSize 每页条数。
-   * @param request 当前请求序号。
-   * @returns 完成状态。
-   */
-  async function requestObjectProfileEntityPage(id: string, nextPage: number, nextPageSize: number, request: number): Promise<void> {
     status.value = "loading";
     error.value = "";
-    records.value = [];
-    total.value = 0;
 
     if (!id) {
-      if (canApplyObjectProfileEntityResponse(id, request)) {
-        status.value = "empty";
-        error.value = "缺少对象标识，无法加载实体列表。";
-      }
+      records.value = [];
+      total.value = 0;
+      status.value = "empty";
+      error.value = "缺少对象标识，无法加载实体列表。";
       return;
     }
 
     pageNum.value = nextPage;
     pageSize.value = nextPageSize;
 
-    try {
-      const response = await entityLoader({ ontologyUniqueIdentifier: id, pageNum: nextPage, pageSize: nextPageSize });
-      if (response.code !== 200) throw new Error(response.message || "实体列表加载失败，请重试。");
-      if (!canApplyObjectProfileEntityResponse(id, request)) return;
+    /** USE_MOCK 时用前端写死样例，内网无实体列表接口也能展示。 */
+    if (isUseMockEnabled()) {
+      if (disposed || request !== generation) return;
+      const nextRecords = createObjectProfileEntityListMockRecords();
+      records.value = nextRecords;
+      total.value = nextRecords.length;
+      status.value = nextRecords.length ? "ready" : "empty";
+      error.value = nextRecords.length ? "" : "暂无实例";
+      return;
+    }
 
+    try {
+      const response = await getOntologyEntitiesInterface({
+        ontologyUniqueIdentifier: id,
+        pageNum: nextPage,
+        pageSize: nextPageSize,
+      });
+      if (disposed || request !== generation) return;
+      if (response.code !== 200) {
+        throw new Error(response.message || "实体列表加载失败");
+      }
       const data = response.data;
       const nextRecords = Array.isArray(data?.records) ? data.records : [];
       records.value = nextRecords;
-      total.value = typeof data?.total === "number" && Number.isFinite(data.total) ? data.total : nextRecords.length;
+      total.value = Number(data?.total) || nextRecords.length;
+      pageNum.value = Number(data?.current) || nextPage;
+      pageSize.value = Number(data?.size) || nextPageSize;
       status.value = nextRecords.length ? "ready" : "empty";
       error.value = nextRecords.length ? "" : "暂无实例";
-    } catch (reason: unknown) {
-      if (!canApplyObjectProfileEntityResponse(id, request)) return;
+    } catch (cause) {
+      if (disposed || request !== generation) return;
+      records.value = [];
+      total.value = 0;
       status.value = "error";
-      error.value = reason instanceof Error && reason.message ? reason.message : "实体列表加载失败，请重试。";
+      error.value = cause instanceof Error && cause.message.trim() ? cause.message : "实体列表加载失败，请重试。";
     }
-  }
-
-  /**
-   * @description 判断异步结果是否仍可更新当前对象的列表状态。
-   * @param requestObjectId 请求发起时的对象标识。
-   * @param request 请求序号。
-   * @returns 是否允许写入状态。
-   */
-  function canApplyObjectProfileEntityResponse(requestObjectId: string, request: number): boolean {
-    return !disposed && request === generation && objectId.value.trim() === requestObjectId;
   }
 
   /**
@@ -197,7 +176,7 @@ export function useObjectProfileEntityList(
     writeObjectProfileEntityVisibleColumns(objectId.value, merged);
   });
 
-  onScopeDispose(() => {
+  onUnmounted(() => {
     disposed = true;
     generation += 1;
   });

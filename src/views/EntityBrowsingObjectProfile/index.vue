@@ -2,12 +2,12 @@
   <div class="entity-browsing-object-profile">
     <header class="entity-browsing-object-profile__header">
       <div class="entity-browsing-object-profile__identity">
-        <img v-if="profile.sideImage" class="entity-browsing-object-profile__icon" :src="profile.sideImage" :alt="profile.displayName" />
+        <img class="entity-browsing-object-profile__icon" :src="profile.sideImage" :alt="profile.displayName" />
         <h1>{{ profile.displayName }}</h1>
       </div>
       <nav class="entity-browsing-object-profile__tabs" aria-label="对象画像分区">
         <button
-          v-for="tab in visibleProfileTabs"
+          v-for="tab in profileTabs"
           :key="tab.id"
           type="button"
           class="entity-browsing-object-profile__tab"
@@ -26,14 +26,7 @@
     </header>
 
     <div class="entity-browsing-object-profile__content">
-      <ObjectProfileOverview v-if="activeTab === 'basic-info'" :profile="profile" :object-id="objectId" @open-entity-detail="openEntityDetailFromCards" />
-      <ObjectProfileEntityList
-        v-else-if="activeTab === 'entity-list'"
-        :object-id="objectId"
-        :auto-open-detail="pendingOpenEntityDetail"
-        @detail-auto-opened="pendingOpenEntityDetail = false"
-        @close-detail="onEntityListCloseDetail"
-      />
+      <ObjectProfileEntityList v-if="activeTab === 'entity-list'" :object-id="objectId" />
       <ObjectProfileStandardUsage v-else-if="activeTab === 'standard-usage'" :object-id="objectId" />
       <div v-else class="entity-browsing-object-profile__placeholder" role="status">内容待配置</div>
     </div>
@@ -45,30 +38,22 @@ import { computed, ref, watch } from "vue";
 import { ArrowLeft } from "@element-plus/icons-vue";
 import { useRoute, useRouter } from "vue-router";
 import { resolveEntityBrowsingObjectProfile } from "@/mocks/entityBrowsingObjectProfileMock/entityBrowsingObjectProfileMock";
-import { ENTITY_BROWSING_DEFAULT_SPACE_ID, isEntityBrowsingLiteProfileObjectId } from "@/utils/entityBrowseConstants";
-import ObjectProfileOverview from "./components/ObjectProfileOverview.vue";
+import { ENTITY_BROWSING_DEFAULT_SPACE_ID } from "@/utils/entityBrowseConstants";
 import ObjectProfileEntityList from "./components/ObjectProfileEntityList.vue";
 import ObjectProfileStandardUsage from "./components/ObjectProfileStandardUsage.vue";
 import type { EntityBrowsingObjectProfileTab } from "@/types";
 
-/** 完整画像：仅基本信息（统计合入基本信息下方）。 */
-const fullProfileTabs: ReadonlyArray<{ id: EntityBrowsingObjectProfileTab; label: string }> = [{ id: "basic-info", label: "基本信息" }];
-
-/** 精简画像：实体列表 + 标准应用情况（对应 id：052D型驱逐舰）。 */
-const liteProfileTabs: ReadonlyArray<{ id: EntityBrowsingObjectProfileTab; label: string }> = [
+/** 空间浏览对象详情：实体列表 + 标准应用情况（不按 objectId 限制）。 */
+const profileTabs: ReadonlyArray<{ id: EntityBrowsingObjectProfileTab; label: string }> = [
   { id: "entity-list", label: "实体列表" },
   { id: "standard-usage", label: "标准应用情况" },
 ];
 
 const route = useRoute();
 const router = useRouter();
-const activeTab = ref<EntityBrowsingObjectProfileTab>("basic-info");
-const pendingOpenEntityDetail = ref(false);
+const activeTab = ref<EntityBrowsingObjectProfileTab>("entity-list");
 
 const objectId = computed(() => (typeof route.params.objectId === "string" ? route.params.objectId.trim() : ""));
-
-const isLiteProfile = computed(() => isEntityBrowsingLiteProfileObjectId(objectId.value));
-const visibleProfileTabs = computed(() => (isLiteProfile.value ? liteProfileTabs : fullProfileTabs));
 
 const objectNameFallback = computed(() => {
   const fromQuery = route.query.objectName;
@@ -78,28 +63,10 @@ const objectNameFallback = computed(() => {
 const profile = computed(() => resolveEntityBrowsingObjectProfile(objectId.value, objectNameFallback.value));
 
 /**
- * @description 按当前画像模式重置默认 Tab。
+ * @description 切换对象时重置为实体列表 Tab。
  */
 function resetActiveTab(): void {
-  activeTab.value = isLiteProfile.value ? "entity-list" : "basic-info";
-  pendingOpenEntityDetail.value = false;
-}
-
-/**
- * @description 基本信息卡片点击：切到实体列表并打开与列表「详情」相同的嵌入页。
- */
-function openEntityDetailFromCards(): void {
-  pendingOpenEntityDetail.value = true;
   activeTab.value = "entity-list";
-}
-
-/**
- * @description 完整画像无「实体列表」Tab 时，关闭嵌入详情后回到基本信息。
- */
-function onEntityListCloseDetail(): void {
-  if (!isLiteProfile.value) {
-    activeTab.value = "basic-info";
-  }
 }
 
 /**

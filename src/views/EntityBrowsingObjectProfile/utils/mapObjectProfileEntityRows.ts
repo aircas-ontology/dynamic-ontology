@@ -1,4 +1,4 @@
-import type { OntologyEntityInfo } from "@/types";
+import type { OntologyEntityInfo, OntologyEntityPropertyItem } from "@/types";
 
 /** 实体列表表格行。 */
 export interface ObjectProfileEntityRow {
@@ -43,7 +43,7 @@ function formatEntityCellValue(value: unknown): string {
  */
 function resolveEntityPropertyItem(item: unknown): { label: string; value: unknown } | null {
   if (!isRecord(item)) return null;
-  const typed = item;
+  const typed = item as OntologyEntityPropertyItem;
   const displayName = typeof typed.propertyDisplayName === "string" ? typed.propertyDisplayName.trim() : "";
   const name = typeof typed.propertyName === "string" ? typed.propertyName.trim() : "";
   const apiName = typeof typed.propertyApiName === "string" ? typed.propertyApiName.trim() : "";

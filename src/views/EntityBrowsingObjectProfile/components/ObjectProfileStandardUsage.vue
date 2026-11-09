@@ -135,7 +135,7 @@
 import { computed, nextTick, ref, watch } from "vue";
 import type { ElTree } from "element-plus";
 import { resolveEntityBrowsingObjectProfileStandardUsage } from "@/mocks/entityBrowsingObjectProfileMock/entityBrowsingObjectProfileStandardUsageMock";
-import type { EntityBrowsingObjectProfileStandardDetail } from "@/types";
+import type { EntityBrowsingObjectProfileStandardAttrRow, EntityBrowsingObjectProfileStandardDetail } from "@/types";
 
 const props = defineProps<{
   objectId: string;
@@ -203,13 +203,11 @@ function handleCategoryClick(node: unknown): void {
 }
 
 /**
- * @description 查找选中属性并打开标准详情。
+ * @description 打开属性行对应的标准详情弹窗。
  * @param row 所选属性行。
  */
 function openStandardDetail(row: unknown): void {
-  if (!row || typeof row !== "object" || !("id" in row)) return;
-  const typed = data.value.rows.find((item) => item.id === row.id);
-  if (!typed) return;
+  const typed = row as EntityBrowsingObjectProfileStandardAttrRow;
   if (!typed.standardDetail) return;
   activeDetail.value = typed.standardDetail;
   activeRowName.value = typed.name;

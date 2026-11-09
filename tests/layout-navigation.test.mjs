@@ -23,6 +23,14 @@ test("menu includes full text search entry with named route", () => {
   assert.match(source, /name:\s*['"]FullTextSearch['"]/);
 });
 
+test("browse menus use distinct icons and precede management entries", () => {
+  const source = readFileSync(new URL("../src/layout/components/NavigationMenu.vue", import.meta.url), "utf8");
+  assert.match(source, /ontology-space-browse[\s\S]*ontology-space-management[\s\S]*theme-space-browse[\s\S]*theme-space-management/);
+  assert.match(source, /Monitor/);
+  assert.match(source, /Files/);
+  assert.doesNotMatch(source, /\bView\b/);
+});
+
 test("breadcrumb shows a location pin and current page without a home crumb", () => {
   const source = readFileSync(new URL("../src/layout/components/BreadcrumbBar.vue", import.meta.url), "utf8");
   assert.match(source, /<Location/);
