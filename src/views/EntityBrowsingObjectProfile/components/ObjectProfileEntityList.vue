@@ -12,7 +12,7 @@
     <template v-else>
       <header class="object-profile-entity-list__toolbar">
         <div class="object-profile-entity-list__filters">
-          <el-select v-model="filterField" clearable placeholder="筛选字段" class="object-profile-entity-list__field">
+          <el-select v-model="filterField" filterable clearable placeholder="筛选字段" class="object-profile-entity-list__field">
             <el-option v-for="column in visibleColumns" :key="column" :label="column" :value="column" />
           </el-select>
           <el-input v-model="filterValue" clearable placeholder="请输入筛选值" class="object-profile-entity-list__value" />

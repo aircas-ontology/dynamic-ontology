@@ -1,6 +1,15 @@
 <template>
   <div class="space-card-grid">
-    <article v-for="space in spaces" :key="space.id" class="space-card">
+    <article
+      v-for="space in spaces"
+      :key="space.id"
+      class="space-card"
+      :class="{ 'is-clickable': browseOnly }"
+      :role="browseOnly ? 'button' : undefined"
+      :tabindex="browseOnly ? 0 : undefined"
+      @click="openBrowseSpace(space, $event)"
+      @keydown.enter.prevent="openBrowseSpaceFromKeyboard(space, $event)"
+    >
       <header class="space-card__name">
         <span class="space-card__logo">
           <img v-if="space.iconUrl" :src="space.iconUrl" alt="" />
@@ -51,7 +60,7 @@
             <span class="space-card__meta-value">{{ space.updatedTime }}</span>
           </div>
         </div>
-        <SpaceActions :gradient="true" :browse-only="browseOnly" :space="space" @action="emit('action', $event, space)" />
+        <SpaceActions :gradient="true" v-if="!browseOnly" :browse-only="browseOnly" :space="space" @action="emit('action', $event, space)" />
       </footer>
     </article>
   </div>
@@ -62,8 +71,32 @@ import { Box, Connection, DataLine, Operation, Tickets } from "@element-plus/ico
 import type { OntologySpaceAction, OntologySpaceItem } from "@/types";
 import SpaceActions from "./SpaceActions.vue";
 
-defineProps<{ browseOnly?: boolean; spaces: OntologySpaceItem[] }>();
+const props = defineProps<{ browseOnly?: boolean; spaces: OntologySpaceItem[] }>();
 const emit = defineEmits<{ action: [action: OntologySpaceAction, space: OntologySpaceItem] }>();
+
+/**
+ * @description 浏览态点击空间卡片进入空间，并忽略卡片内按钮点击。
+ * @param space 当前空间。
+ * @param event 卡片点击事件。
+ */
+function openBrowseSpace(space: OntologySpaceItem, event: MouseEvent): void {
+  if (!props.browseOnly) return;
+  const target = event.target;
+  if (target instanceof Element && target.closest("button, a, .el-button")) return;
+  emit("action", "enter", space);
+}
+
+/**
+ * @description 浏览态通过键盘在空间卡片上进入空间。
+ * @param space 当前空间。
+ * @param event 键盘事件。
+ */
+function openBrowseSpaceFromKeyboard(space: OntologySpaceItem, event: KeyboardEvent): void {
+  if (!props.browseOnly) return;
+  const target = event.target;
+  if (target instanceof Element && target.closest("button, a, .el-button")) return;
+  emit("action", "enter", space);
+}
 </script>
 
 <style scoped lang="scss">
@@ -87,6 +120,9 @@ const emit = defineEmits<{ action: [action: OntologySpaceAction, space: Ontology
   background: linear-gradient(160deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
+.space-card.is-clickable {
+  cursor: pointer;
+}
 .space-card {
   display: flex;
   min-width: 0;

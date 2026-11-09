@@ -70,7 +70,7 @@ async function renderWorkspace(file, state) {
 }
 
 for (const viewMode of ["card", "table"]) {
-  test(`object ${viewMode} browsing exposes detail without management actions`, async () => {
+  test(`object ${viewMode} browsing opens detail by clicking the item and hides the detail button`, async () => {
     const row = { id: "object-1", displayName: "对象", apiName: "object", metrics: { attribute: 1, relation: 0, behavior: 0 } };
     const state = {
       browseOnly: true,
@@ -83,9 +83,10 @@ for (const viewMode of ["card", "table"]) {
       objectRow: (value) => value,
     };
     const browse = await renderWorkspace("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue", state);
-    assert.match(browse, /详情/);
+    assert.doesNotMatch(browse, /详情/);
     assert.doesNotMatch(browse, /新建对象|编辑|删除|导出/);
     const management = await renderWorkspace("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue", { ...state, browseOnly: false });
+    assert.match(management, /详情/);
     assert.match(management, /新建对象/);
     assert.match(management, /编辑/);
     assert.match(management, /删除/);

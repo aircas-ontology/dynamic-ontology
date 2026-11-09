@@ -28,4 +28,6 @@ const DOMAIN_CONFIG = {
 
   MOCK_SERVER_URL: "http://127.0.0.1:37003", // Mock HTTP 服务，与 npm run dev 一起启动
   USE_MOCK: false, // true=走 Mock；false=走上面的真实 LOGIN / ONTOLOGY 地址
+
+  SHOW_STANDARD_CONTENT: true, // false 时隐藏韧性标准应用数、属性填充率、标准应用情况
 };

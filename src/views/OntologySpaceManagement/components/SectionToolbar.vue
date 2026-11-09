@@ -45,7 +45,7 @@ const props = withDefaults(defineProps<{ browseOnly?: boolean; title?: string; s
  * @returns 带视图前缀的工具栏说明文案。
  */
 function resolveToolbarDescription(mode: OntologyViewMode): string {
-  if (props.browseOnly) return `以${mode === "card" ? "卡片" : "表格"}视图浏览全部${props.spaceLabel}，支持搜索、排序、导出与进入空间`;
+  if (props.browseOnly) return `以${mode === "card" ? "卡片" : "表格"}视图浏览全部${props.spaceLabel}，支持搜索、排序与进入空间`;
   if (mode === "card") {
     return `以卡片视图管理全部${props.spaceLabel}，支持搜索、排序与运维操作`;
   }

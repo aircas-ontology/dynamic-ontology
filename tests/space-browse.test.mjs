@@ -41,11 +41,9 @@ async function renderSpaceActions(browseOnly) {
   return renderToString(app);
 }
 
-test("browse actions retain entry and export, and omit edit, more, and delete", async () => {
+test("browse actions omit entry, and management keeps entry without app display", async () => {
   const browse = await renderSpaceActions(true);
-  assert.match(browse, /进入/);
-  assert.match(browse, /导出/);
-  assert.doesNotMatch(browse, /编辑|更多|删除|应用展示/);
+  assert.doesNotMatch(browse, /进入|导出|编辑|更多|删除|应用展示/);
   const management = await renderSpaceActions(false);
   assert.match(management, /进入/);
   assert.match(management, /编辑/);
@@ -81,7 +79,7 @@ async function renderPageTemplate(file, context) {
 }
 
 for (const viewMode of ["card", "table"]) {
-  test(`theme ${viewMode} browsing keeps entry, export, and unavailable app display`, async () => {
+  test(`theme ${viewMode} browsing opens the space from the item and keeps unavailable app display`, async () => {
     const space = { id: "one", displayName: "示例主题", apiName: "demo", metrics: {} };
     const context = {
       browseOnly: true,
@@ -92,11 +90,12 @@ for (const viewMode of ["card", "table"]) {
       asThemeSpace: (row) => row,
     };
     const html = await renderPageTemplate("../src/views/ThemeSpaceManagement/index.vue", context);
-    assert.match(html, /进入/);
-    assert.match(html, /导出/);
+    assert.doesNotMatch(html, /进入/);
+    assert.doesNotMatch(html, /导出/);
     assert.match(html, /应用展示/);
     assert.doesNotMatch(html, /新建空间|编辑|更多|打开新手引导/);
     const management = await renderPageTemplate("../src/views/ThemeSpaceManagement/index.vue", { ...context, browseOnly: false });
+    assert.match(management, /进入/);
     assert.match(management, /编辑/);
     assert.match(management, /更多/);
     assert.match(management, /新建空间/);
@@ -104,7 +103,20 @@ for (const viewMode of ["card", "table"]) {
   });
 }
 
-test("browse descriptions mention export and theme app display stays unavailable", () => {
+test("browse space lists open from the card or row and hide the entry button", () => {
+  const card = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SpaceCardGrid.vue", import.meta.url), "utf8");
+  const table = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SpaceTableView.vue", import.meta.url), "utf8");
+  const theme = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(card, /openBrowseSpace\(space, \$event\)/);
+  assert.match(card, /<SpaceActions :gradient="true"[\s\S]*v-if="!browseOnly"/);
+  assert.match(table, /@row-click="openBrowseSpaceFromRow"/);
+  assert.match(table, /<el-table-column v-if="!browseOnly" label="操作"/);
+  assert.match(theme, /openBrowseThemeSpace\(space, \$event\)/);
+  assert.match(theme, /@row-click="openBrowseThemeFromRow"/);
+  assert.match(theme, /<el-button v-if="!browseOnly"[^>]*data-onboarding="theme-enter"/);
+});
+
+test("browse descriptions omit export and theme app display stays unavailable", () => {
   const theme = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
   const ontology = readFileSync(new URL("../src/views/OntologySpaceManagement/index.vue", import.meta.url), "utf8");
   const welcome = readFileSync(new URL("../src/views/OntologySpaceManagement/components/WelcomePanel.vue", import.meta.url), "utf8");
@@ -114,8 +126,18 @@ test("browse descriptions mention export and theme app display stays unavailable
   assert.doesNotMatch(theme, /<el-dialog v-if="!browseOnly" v-model="exportDialogVisible"/);
   assert.match(ontology, /<SpaceCommandDialogs[\s\S]*v-model:export-visible="exportVisible"/);
   assert.doesNotMatch(ontology, /<SpaceCommandDialogs\s+v-if="!browseOnly"/);
-  assert.match(welcome, /支持搜索、排序、导出与进入空间/);
-  assert.match(toolbar, /支持搜索、排序、导出与进入空间/);
+  assert.match(welcome, /支持搜索、排序与进入空间/);
+  assert.match(toolbar, /支持搜索、排序与进入空间/);
+  assert.doesNotMatch(welcome, /支持搜索、排序、导出与进入空间/);
+  assert.doesNotMatch(toolbar, /支持搜索、排序、导出与进入空间/);
+});
+
+test("object browsing opens detail from the card or row and hides the detail button", () => {
+  const list = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/OntologyObjectList.vue", import.meta.url), "utf8");
+  assert.match(list, /openBrowseObjectDetail\(item, \$event\)/);
+  assert.match(list, /@row-click="openBrowseObjectFromRow"/);
+  assert.match(list, /<footer v-if="!browseOnly"/);
+  assert.match(list, /<el-table-column v-if="!browseOnly" label="操作"/);
 });
 
 test("object browsing hides creation and guide, and passes browsing mode to the collection", async () => {

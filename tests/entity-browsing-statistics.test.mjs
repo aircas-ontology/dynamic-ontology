@@ -109,6 +109,7 @@ test("quality values stay visible while real counts are loading or fail", async 
       { id: "resilience", label: "韧性标准应用数", displayValue: "102" },
       { id: "attributeFill", label: "属性填充率", displayValue: "63%" },
     ],
+    showStandardContent: true,
   };
   for (const flags of [
     { loading: true, failed: false },
@@ -121,6 +122,10 @@ test("quality values stay visible while real counts are loading or fail", async 
   }
   const html = await renderToString(Vue.createSSRApp({ render: () => render({ ...state, loading: false, failed: false }, []) }));
   assert.match(html, />4</);
+  const hidden = await renderToString(Vue.createSSRApp({ render: () => render({ ...state, loading: false, failed: false, showStandardContent: false }, []) }));
+  assert.doesNotMatch(hidden, /韧性标准应用数|属性填充率|102|63%/);
+  assert.match(hidden, /对象数量/);
+  assert.match(hidden, /entity-browse-overview--statistics-only/);
 });
 
 test("duplicate loads are suppressed, stale results and results after disposal are ignored", async () => {

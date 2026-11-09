@@ -28,7 +28,16 @@
       <div v-else-if="themeSpacesError" class="theme-space-management__empty">{{ themeSpacesError }}</div>
       <div v-else-if="!filteredSpaces.length" class="theme-space-management__empty">暂无主题，请调整搜索条件</div>
       <div v-else-if="viewMode === 'card'" class="theme-space-management__grid">
-        <article v-for="space in pagedSpaces" :key="space.id" class="theme-space-card">
+        <article
+          v-for="space in pagedSpaces"
+          :key="space.id"
+          class="theme-space-card"
+          :class="{ 'is-clickable': browseOnly }"
+          :role="browseOnly ? 'button' : undefined"
+          :tabindex="browseOnly ? 0 : undefined"
+          @click="openBrowseThemeSpace(space, $event)"
+          @keydown.enter.prevent="openBrowseThemeFromKeyboard(space, $event)"
+        >
           <div class="theme-space-card__name">
             <span class="theme-space-card__icon"
               ><img v-if="space.iconUrl" :src="space.iconUrl" :alt="`${space.displayName}主题图片`" /><el-icon v-else :size="22"><Box /></el-icon
@@ -71,8 +80,7 @@
               ><span>更新：{{ space.updatedTime }}</span>
             </div>
             <div class="theme-space-actions">
-              <el-button type="primary" plain size="small" data-onboarding="theme-enter" @click="enterThemeSpace(space)">→ 进入</el-button
-              ><el-button v-if="browseOnly" type="primary" plain size="small" @click="openThemeSpaceExportDialog(space)">导出</el-button
+              <el-button v-if="!browseOnly" type="primary" plain size="small" data-onboarding="theme-enter" @click="enterThemeSpace(space)">→ 进入</el-button
               ><el-button v-if="browseOnly" type="primary" plain size="small" @click="notifyUnavailable('应用展示')">应用展示</el-button
               ><el-button v-if="!browseOnly" type="primary" plain size="small" @click="openEditThemeSpaceDialog(space)">✎ 编辑</el-button
               ><el-dropdown v-if="!browseOnly" trigger="click" @command="(command) => handleThemeSpaceCommand(command, space)"
@@ -89,7 +97,15 @@
           </footer>
         </article>
       </div>
-      <el-table v-else class="theme-space-table" :data="pagedSpaces" stripe row-key="id">
+      <el-table
+        v-else
+        class="theme-space-table"
+        :class="{ 'is-clickable': browseOnly }"
+        :data="pagedSpaces"
+        stripe
+        row-key="id"
+        @row-click="openBrowseThemeFromRow"
+      >
         <el-table-column label="空间名称" min-width="280"
           ><template #default="{ row }"
             ><div class="theme-space-table__name">
@@ -118,11 +134,11 @@
         >
         <el-table-column prop="createdTime" label="创建时间" width="180" />
         <el-table-column prop="updatedTime" label="更新时间" width="180" />
-        <el-table-column label="操作" :width="browseOnly ? 280 : 230" fixed="right"
+        <el-table-column label="操作" :width="browseOnly ? 120 : 230" fixed="right"
           ><template #default="{ row }"
             ><div class="theme-space-actions">
-              <el-button type="primary" plain size="small" data-onboarding="theme-enter" @click="enterThemeSpace(asThemeSpace(row))">→ 进入</el-button
-              ><el-button v-if="browseOnly" type="primary" plain size="small" @click="openThemeSpaceExportDialog(asThemeSpace(row))">导出</el-button
+              <el-button v-if="!browseOnly" type="primary" plain size="small" data-onboarding="theme-enter" @click="enterThemeSpace(asThemeSpace(row))"
+                >→ 进入</el-button
               ><el-button v-if="browseOnly" type="primary" plain size="small" @click="notifyUnavailable('应用展示')">应用展示</el-button
               ><el-button v-if="!browseOnly" type="primary" plain size="small" @click="openEditThemeSpaceDialog(asThemeSpace(row))">✎ 编辑</el-button
               ><el-dropdown v-if="!browseOnly" trigger="click" @command="(command) => handleThemeSpaceCommand(command, asThemeSpace(row))"
@@ -439,6 +455,43 @@ function confirmCreateThemeSpace(): void {
     },
   });
 }
+/**
+ * @description 浏览态点击主题卡片进入空间，并忽略卡片内按钮点击。
+ * @param space 当前主题。
+ * @param event 卡片点击事件。
+ */
+function openBrowseThemeSpace(space: OntologySpaceItem, event: MouseEvent): void {
+  if (!props.browseOnly) return;
+  const target = event.target;
+  if (target instanceof Element && target.closest("button, a, .el-button")) return;
+  enterThemeSpace(space);
+}
+
+/**
+ * @description 浏览态通过键盘在主题卡片上进入空间。
+ * @param space 当前主题。
+ * @param event 键盘事件。
+ */
+function openBrowseThemeFromKeyboard(space: OntologySpaceItem, event: KeyboardEvent): void {
+  if (!props.browseOnly) return;
+  const target = event.target;
+  if (target instanceof Element && target.closest("button, a, .el-button")) return;
+  enterThemeSpace(space);
+}
+
+/**
+ * @description 浏览态点击主题表格行进入空间，并忽略行内按钮点击。
+ * @param row 表格行数据。
+ * @param _column 当前列，行点击时不使用。
+ * @param event 行点击事件。
+ */
+function openBrowseThemeFromRow(row: unknown, _column: unknown, event: Event): void {
+  if (!props.browseOnly) return;
+  const target = event.target;
+  if (target instanceof Element && target.closest("button, a, .el-button")) return;
+  enterThemeSpace(asThemeSpace(row));
+}
+
 /** @description 进入主题对应的空间内管理页，携带空间名与来源标识供面包屑展示。 @param space 目标主题。 */
 function enterThemeSpace(space: OntologySpaceItem): void {
   void router.push({
@@ -756,6 +809,12 @@ watch([keyword, order, pageSize], () => {
   margin-top: 4px;
   color: var(--aircas-color-text-secondary);
   font-size: 12px;
+}
+.theme-space-card.is-clickable {
+  cursor: pointer;
+}
+.theme-space-table.is-clickable :deep(.el-table__body tr) {
+  cursor: pointer;
 }
 .theme-space-card {
   display: flex;

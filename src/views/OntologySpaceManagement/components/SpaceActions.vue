@@ -1,6 +1,7 @@
 <template>
   <div class="space-actions">
     <el-button
+      v-if="!browseOnly"
       data-onboarding="space-enter"
       :class="{ 'aircas-button--gradient': gradient }"
       type="primary"
@@ -11,7 +12,6 @@
     >
       进入
     </el-button>
-    <el-button v-if="browseOnly" type="primary" plain size="small" @click="$emit('action', 'export', space)">导出</el-button>
     <el-button v-if="!browseOnly" type="primary" plain size="small" :icon="Edit" @click="$emit('action', 'edit', space)"> 编辑 </el-button>
     <el-dropdown v-if="!browseOnly" trigger="click" @command="command">
       <el-button type="primary" plain size="small">

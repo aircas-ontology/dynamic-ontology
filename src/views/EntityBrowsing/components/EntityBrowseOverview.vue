@@ -1,5 +1,5 @@
 <template>
-  <section class="entity-browse-overview" aria-label="实体浏览概览">
+  <section class="entity-browse-overview" :class="{ 'entity-browse-overview--statistics-only': !showStandardContent }" aria-label="实体浏览概览">
     <div class="entity-browse-overview__group" aria-label="统计信息">
       <div class="entity-browse-overview__stats" :aria-busy="loading">
         <article v-for="stat in statistics" :key="stat.id" class="entity-browse-meter" :class="`entity-browse-meter--${stat.id}`">
@@ -8,7 +8,7 @@
         </article>
       </div>
     </div>
-    <div class="entity-browse-overview__group" aria-label="质量情况">
+    <div v-if="showStandardContent" class="entity-browse-overview__group" aria-label="质量情况">
       <div class="entity-browse-overview__stats" :aria-busy="loading">
         <article v-for="item in quality" :key="item.id" class="entity-browse-meter" :class="`entity-browse-meter--${item.id}`">
           <h3>{{ item.label }}</h3>
@@ -21,6 +21,9 @@
 
 <script setup lang="ts">
 import type { EntityBrowseQualityCard, EntityBrowseStatisticCard } from "@/types";
+import { isStandardContentVisible } from "@/utils/isStandardContentVisible";
+
+const showStandardContent = isStandardContentVisible();
 
 defineProps<{
   statistics: EntityBrowseStatisticCard[];
@@ -36,6 +39,10 @@ defineProps<{
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 8px;
   min-width: 0;
+}
+
+.entity-browse-overview--statistics-only {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .entity-browse-overview__group {

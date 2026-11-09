@@ -15,6 +15,8 @@ declare global {
     readonly MOCK_SERVER_URL?: string;
     /** 为 true 时将登录与对象管理请求改写到 MOCK_SERVER_URL。 */
     readonly USE_MOCK?: boolean;
+    /** 为 false 时隐藏韧性标准应用数、属性填充率与标准应用情况；未配置时保持展示。 */
+    readonly SHOW_STANDARD_CONTENT?: boolean;
   }
 
   interface SystemConfig {

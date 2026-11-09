@@ -11,6 +11,7 @@ export interface ObjectProfileEntityRow {
 }
 
 const RESERVED_KEYS = new Set(["id", "entityPrimaryKey", "ontologyUniqueIdentifier", "properties"]);
+const HIDDEN_ENTITY_LIST_COLUMNS = new Set(["ontologyName", "primaryKey", "displayName"]);
 
 const COLUMN_CONFIG_STORAGE_PREFIX = "entity-browsing-object-profile-entity-list-columns:";
 
@@ -64,16 +65,19 @@ function collectEntityPropertyMap(record: OntologyEntityInfo): Record<string, un
   if (Array.isArray(properties)) {
     for (const item of properties) {
       const resolved = resolveEntityPropertyItem(item);
-      if (!resolved) continue;
+      if (!resolved || HIDDEN_ENTITY_LIST_COLUMNS.has(resolved.label)) continue;
       if (resolved.label in merged) continue;
       merged[resolved.label] = resolved.value;
     }
   } else if (isRecord(properties)) {
-    Object.assign(merged, properties);
+    for (const [key, value] of Object.entries(properties)) {
+      if (HIDDEN_ENTITY_LIST_COLUMNS.has(key)) continue;
+      merged[key] = value;
+    }
   }
 
   for (const [key, value] of Object.entries(record)) {
-    if (RESERVED_KEYS.has(key)) continue;
+    if (RESERVED_KEYS.has(key) || HIDDEN_ENTITY_LIST_COLUMNS.has(key)) continue;
     if (key in merged) continue;
     merged[key] = value;
   }

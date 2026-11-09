@@ -219,10 +219,12 @@ export function conceptualEdgeAttrs() {
 /**
  * @description 关系边标签。
  * @param text 标签文案。
+ * @param distance 标签沿边距离，默认居中。
  * @returns X6 标签配置。
  */
-export function conceptualEdgeLabel(text: string) {
+export function conceptualEdgeLabel(text: string, distance = 0.5) {
   return {
+    position: distance,
     attrs: {
       label: {
         text,

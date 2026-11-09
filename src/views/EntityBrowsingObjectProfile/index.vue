@@ -27,7 +27,7 @@
 
     <div class="entity-browsing-object-profile__content">
       <ObjectProfileEntityList v-if="activeTab === 'entity-list'" :object-id="objectId" />
-      <ObjectProfileStandardUsage v-else-if="activeTab === 'standard-usage'" :object-id="objectId" />
+      <ObjectProfileStandardUsage v-else-if="showStandardContent && activeTab === 'standard-usage'" :object-id="objectId" />
       <div v-else class="entity-browsing-object-profile__placeholder" role="status">内容待配置</div>
     </div>
   </div>
@@ -39,15 +39,19 @@ import { ArrowLeft } from "@element-plus/icons-vue";
 import { useRoute, useRouter } from "vue-router";
 import { resolveEntityBrowsingObjectProfile } from "@/mocks/entityBrowsingObjectProfileMock/entityBrowsingObjectProfileMock";
 import { ENTITY_BROWSING_DEFAULT_SPACE_ID } from "@/utils/entityBrowseConstants";
+import { isStandardContentVisible } from "@/utils/isStandardContentVisible";
 import ObjectProfileEntityList from "./components/ObjectProfileEntityList.vue";
 import ObjectProfileStandardUsage from "./components/ObjectProfileStandardUsage.vue";
 import type { EntityBrowsingObjectProfileTab } from "@/types";
 
-/** 空间浏览对象详情：实体列表 + 标准应用情况（不按 objectId 限制）。 */
-const profileTabs: ReadonlyArray<{ id: EntityBrowsingObjectProfileTab; label: string }> = [
-  { id: "entity-list", label: "实体列表" },
-  { id: "standard-usage", label: "标准应用情况" },
-];
+const showStandardContent = isStandardContentVisible();
+
+/** 空间浏览对象详情：实体列表；标准应用情况仅在运行时开关打开时展示。 */
+const profileTabs = computed<ReadonlyArray<{ id: EntityBrowsingObjectProfileTab; label: string }>>(() => {
+  const tabs: Array<{ id: EntityBrowsingObjectProfileTab; label: string }> = [{ id: "entity-list", label: "实体列表" }];
+  if (showStandardContent) tabs.push({ id: "standard-usage", label: "标准应用情况" });
+  return tabs;
+});
 
 const route = useRoute();
 const router = useRouter();

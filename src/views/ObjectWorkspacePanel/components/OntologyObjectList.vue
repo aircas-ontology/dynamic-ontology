@@ -46,8 +46,12 @@
             v-for="item in section.items"
             :key="item.id"
             class="ontology-object-card"
-            :class="{ 'is-located': activeObjectId === item.id }"
+            :class="{ 'is-located': activeObjectId === item.id, 'is-clickable': browseOnly }"
             :data-object-id="item.id"
+            :role="browseOnly ? 'button' : undefined"
+            :tabindex="browseOnly ? 0 : undefined"
+            @click="openBrowseObjectDetail(item, $event)"
+            @keydown.enter.prevent="openBrowseObjectFromKeyboard(item)"
           >
             <div class="ontology-object-card__visual">
               <img v-if="item.iconUrl" :src="item.iconUrl" alt="" />
@@ -87,7 +91,7 @@
                   <dd>{{ item.metrics.behavior }}</dd>
                 </div>
               </dl>
-              <footer class="ontology-object-card__actions">
+              <footer v-if="!browseOnly" class="ontology-object-card__actions">
                 <el-button
                   class="ontology-object-action ontology-object-action--view aircas-button--gradient"
                   data-onboarding="object-detail-open"
@@ -137,7 +141,7 @@
           </article>
         </div>
 
-        <div v-else class="ontology-object-section__table">
+        <div v-else class="ontology-object-section__table" :class="{ 'is-clickable': browseOnly }">
           <el-table
             class="aircas-table--accent-header"
             :data="section.items"
@@ -145,6 +149,7 @@
             max-height="min(420px, 48vh)"
             stripe
             :row-class-name="objectRowClassName"
+            @row-click="openBrowseObjectFromRow"
           >
             <el-table-column label="对象名称" min-width="220">
               <template #default="{ row }"
@@ -163,7 +168,7 @@
               ><template #default="{ row }">{{ objectRow(row).metrics.behavior }}</template></el-table-column
             >
             <el-table-column prop="createdAt" label="创建时间" width="170" />
-            <el-table-column label="操作" width="300" fixed="right">
+            <el-table-column v-if="!browseOnly" label="操作" width="300" fixed="right">
               <template #default="{ row }">
                 <el-button class="ontology-object-action ontology-object-action--view" size="small" @click="emit('action', 'view', objectRow(row))"
                   >详情</el-button
@@ -246,6 +251,36 @@ function objectRow(row: unknown): OntologyObjectItem {
 function objectRowClassName({ row }: { row: unknown }): string {
   const item = row as { id?: unknown };
   return typeof item?.id === "string" && item.id === activeObjectId.value ? "is-located" : "";
+}
+
+/**
+ * @description 浏览态点击对象卡片进入详情，并忽略卡片内按钮点击。
+ * @param item 当前对象。
+ * @param event 卡片点击事件。
+ */
+function openBrowseObjectDetail(item: OntologyObjectItem, event: MouseEvent): void {
+  if (!props.browseOnly) return;
+  const target = event.target;
+  if (target instanceof Element && target.closest("button, a, .el-button")) return;
+  emit("action", "view", item);
+}
+
+/**
+ * @description 浏览态通过键盘在对象卡片上进入详情。
+ * @param item 当前对象。
+ */
+function openBrowseObjectFromKeyboard(item: OntologyObjectItem): void {
+  if (!props.browseOnly) return;
+  emit("action", "view", item);
+}
+
+/**
+ * @description 浏览态点击对象表格行进入详情。
+ * @param row 表格行数据。
+ */
+function openBrowseObjectFromRow(row: unknown): void {
+  if (!props.browseOnly) return;
+  emit("action", "view", objectRow(row));
 }
 
 function categoryAnchorId(categoryId: string) {
@@ -429,6 +464,9 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 8px;
   padding: 8px;
+}
+.ontology-object-card.is-clickable {
+  cursor: pointer;
 }
 .ontology-object-card {
   position: relative;
@@ -639,6 +677,9 @@ onBeforeUnmount(() => {
 
 .ontology-object-section__table {
   padding: 8px;
+}
+.ontology-object-section__table.is-clickable :deep(.el-table__body tr) {
+  cursor: pointer;
 }
 .ontology-object-section__table .el-button {
   white-space: nowrap;

@@ -1,5 +1,13 @@
 <template>
-  <el-table class="aircas-table--accent-header space-table-view" height="100%" :data="spaces" stripe row-key="id">
+  <el-table
+    class="aircas-table--accent-header space-table-view"
+    :class="{ 'is-clickable': browseOnly }"
+    height="100%"
+    :data="spaces"
+    stripe
+    row-key="id"
+    @row-click="openBrowseSpaceFromRow"
+  >
     <el-table-column label="空间名称" min-width="280">
       <template #default="{ row }">
         <div class="space-table-view__name">
@@ -31,7 +39,7 @@
     </el-table-column>
     <el-table-column prop="createdTime" label="创建时间" width="180" />
     <el-table-column prop="updatedTime" label="更新时间" width="180" />
-    <el-table-column label="操作" width="230" fixed="right">
+    <el-table-column v-if="!browseOnly" label="操作" width="230" fixed="right">
       <template #default="{ row }">
         <SpaceActions :browse-only="browseOnly" :space="spaceRow(row)" @action="emit('action', $event, spaceRow(row))" />
       </template>
@@ -48,6 +56,19 @@ const props = defineProps<{ browseOnly?: boolean; spaces: OntologySpaceItem[] }>
 const emit = defineEmits<{ action: [action: OntologySpaceAction, space: OntologySpaceItem] }>();
 
 /**
+ * @description 浏览态点击空间表格行进入空间，并忽略行内按钮点击。
+ * @param row 表格行数据。
+ * @param _column 当前列，行点击时不使用。
+ * @param event 行点击事件。
+ */
+function openBrowseSpaceFromRow(row: unknown, _column: unknown, event: Event): void {
+  if (!props.browseOnly) return;
+  const target = event.target;
+  if (target instanceof Element && target.closest("button, a, .el-button")) return;
+  emit("action", "enter", spaceRow(row));
+}
+
+/**
  * @description 将表格行还原为页面空间模型，找不到对应 id 时视为无效行。
  * @param row 表格当前行。
  * @returns 匹配到的对象空间项。
@@ -62,6 +83,9 @@ function spaceRow(row: unknown): OntologySpaceItem {
 </script>
 
 <style scoped lang="scss">
+.space-table-view.is-clickable :deep(.el-table__body tr) {
+  cursor: pointer;
+}
 .space-table-view {
   flex: 1;
   min-height: 320px;

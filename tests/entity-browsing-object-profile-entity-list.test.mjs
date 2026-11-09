@@ -61,12 +61,14 @@ test("mapObjectProfileEntityRows flattens OpenAPI properties array", () => {
   ];
 
   const columns = collectObjectProfileEntityColumns(records);
-  assert.deepEqual(columns, ["舰船名称", "所属国家", "在役状态", "ontologyName", "primaryKey", "displayName"]);
+  assert.deepEqual(columns, ["舰船名称", "所属国家", "在役状态"]);
 
   const rows = mapObjectProfileEntityRows(records);
   assert.equal(rows[0].cells["舰船名称"], "杜威号");
   assert.equal(rows[0].cells["所属国家"], "美国");
-  assert.equal(rows[0].cells["displayName"], "杜威号 (DDG-105)");
+  assert.equal(rows[0].cells["ontologyName"], undefined);
+  assert.equal(rows[0].cells["primaryKey"], undefined);
+  assert.equal(rows[0].cells["displayName"], undefined);
 });
 
 test("mapObjectProfileEntityRows prefers propertyDisplayName for column headers", () => {
@@ -145,12 +147,15 @@ test("object profile entity list tab mounts API list component", () => {
   assert.match(page, /ObjectProfileStandardUsage/);
   assert.match(page, /id: ['"]entity-list['"]/);
   assert.match(page, /id: ['"]standard-usage['"]/);
+  assert.match(page, /isStandardContentVisible/);
+  assert.match(page, /showStandardContent && activeTab === ['"]standard-usage['"]/);
   assert.match(page, /activeTab === ['"]entity-list['"]/);
   assert.match(page, /activeTab\.value = ['"]entity-list['"]/);
   assert.doesNotMatch(page, /ObjectProfileOverview/);
   assert.doesNotMatch(page, /basic-info/);
   assert.doesNotMatch(page, /isEntityBrowsingLiteProfileObjectId/);
   assert.doesNotMatch(constants, /isEntityBrowsingLiteProfileObjectId/);
+  assert.match(list, /filterable/);
   assert.match(list, /筛选字段/);
   assert.match(list, /筛选值/);
   assert.match(list, /getOntologyEntitiesInterface|useObjectProfileEntityList/);
