@@ -13,9 +13,17 @@
       </button>
     </div>
     <el-menu class="navigation-menu__list" :default-active="route.path" :collapse="collapsed" :collapse-transition="false" router>
+      <el-menu-item index="/workspace/ontology-space-browse" :route="{ name: 'OntologySpaceBrowse' }">
+        <el-icon><Monitor /></el-icon>
+        <template #title>对象空间浏览</template>
+      </el-menu-item>
       <el-menu-item index="/workspace/ontology-space-management" :route="{ name: 'OntologySpaceManagement' }">
         <el-icon><Box /></el-icon>
         <template #title>对象空间管理</template>
+      </el-menu-item>
+      <el-menu-item index="/workspace/theme-space-browse" :route="{ name: 'ThemeSpaceBrowse' }">
+        <el-icon><Files /></el-icon>
+        <template #title>主题空间浏览</template>
       </el-menu-item>
       <el-menu-item index="/workspace/theme-space-management" :route="{ name: 'ThemeSpaceManagement' }">
         <el-icon><Collection /></el-icon>
@@ -46,7 +54,7 @@
 
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import { Box, Collection, Document, Expand, Fold, Search } from "@element-plus/icons-vue";
+import { Box, Collection, Document, Expand, Files, Fold, Monitor, Search } from "@element-plus/icons-vue";
 const collapsed = defineModel<boolean>("collapsed", { default: true });
 const assistantVisible = defineModel<boolean>("assistantVisible", { default: false });
 const route = useRoute();

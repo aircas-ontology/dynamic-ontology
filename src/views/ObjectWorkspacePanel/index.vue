@@ -7,6 +7,7 @@
     </div>
     <div v-else class="object-workspace-panel__layout">
       <ConceptHierarchyTree
+        :browse-only="browseOnly"
         :tree="workspaceTree"
         :objects="inheritanceObjects"
         :space-name="spaceDisplayName"
@@ -20,6 +21,7 @@
         @delete="openCategoryDeleteDialog"
       />
       <OntologyObjectList
+        :browse-only="browseOnly"
         :sections="workspaceSections"
         :view-mode="viewMode"
         :location-target="locationTarget"
@@ -110,6 +112,7 @@ import { useOntologySpaceDetailStore } from "@/stores/useOntologySpaceDetailStor
 import { makeCategoryLocationTarget, makeObjectLocationTarget } from "./utils/objectWorkspace";
 
 const route = useRoute();
+const browseOnly = computed(() => route.meta.browseOnly === true);
 const router = useRouter();
 const spaceId = computed(() => String(route.params.spaceId || ""));
 const detailStore = useOntologySpaceDetailStore();
@@ -236,6 +239,7 @@ function locateObjectFromTree(object: OntologyConceptObjectRef) {
  * @param item 当前对象。
  */
 function handleAction(action: string, item?: OntologyObjectItem) {
+  if (browseOnly.value && action !== "view") return;
   if (action === "create") {
     openOntologyObjectCreateDialog();
     return;
@@ -258,6 +262,10 @@ function handleAction(action: string, item?: OntologyObjectItem) {
     if (spaceDisplayName.value.trim()) query.spaceName = spaceDisplayName.value.trim();
     if (route.query.from === "theme-space-management") query.from = "theme-space-management";
     if (item.displayName.trim()) query.objectName = item.displayName.trim();
+    if (browseOnly.value) {
+      void router.push({ name: "EntityBrowsingObjectProfile", params: { spaceId: spaceId.value, objectId: item.id }, query: { ...route.query, ...query } });
+      return;
+    }
     void router.push({ name: "OntologyObjectDetail", params: { objectId: item.id }, query });
     return;
   }

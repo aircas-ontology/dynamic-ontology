@@ -4,7 +4,10 @@ import test from "node:test";
 import ts from "typescript";
 import { conceptualObjectHeight } from "../src/views/OntologyConceptualModelCreate/utils/groupConceptualAttributes.ts";
 import { mapCanvasContentToConceptualModel } from "../src/views/OntologyConceptualModelCreate/utils/mapCanvasContentToConceptualModel.ts";
-import { calculateParallelRelationVertices } from "../src/views/OntologyConceptualModelCreate/utils/layoutConceptualModelContent.ts";
+import {
+  calculateParallelRelationLayouts,
+  calculateParallelRelationVertices,
+} from "../src/views/OntologyConceptualModelCreate/utils/layoutConceptualModelContent.ts";
 
 const ontology = (name, count = 0) => ({
   apiName: name,
@@ -80,6 +83,36 @@ test("parallel and reversed relationships receive distinct paths and update afte
   assert.equal(calculateParallelRelationVertices(moved, mapped.relations.slice(0, 1)).size, 0);
 });
 
+test("parallel relationships share facing ports and stagger edge labels", () => {
+  const mapped = mapCanvasContentToConceptualModel({
+    ontologies: [ontology("a"), ontology("b")],
+    links: [link("a", "b", "one"), link("a", "b", "two"), link("a", "b", "three")],
+  });
+  const layouts = calculateParallelRelationLayouts(mapped.objects, mapped.relations);
+  assert.equal(layouts.size, 3);
+  const items = mapped.relations.map((relation) => layouts.get(relation.id));
+  assert.ok(items.every((item) => item));
+  assert.equal(new Set(items.map((item) => `${item.sourcePort}->${item.targetPort}`)).size, 1);
+  assert.equal(new Set(items.map((item) => item.labelDistance)).size, 3);
+  assert.equal(new Set(items.map((item) => JSON.stringify(item.vertices))).size, 3);
+  const reversed = calculateParallelRelationLayouts(mapped.objects, [
+    { id: 1, sourceId: mapped.objects[1].id, targetId: mapped.objects[0].id },
+    { id: 2, sourceId: mapped.objects[1].id, targetId: mapped.objects[0].id },
+  ]);
+  const forwardPort = items[0].sourcePort;
+  const reversePort = reversed.get(1)?.sourcePort;
+  assert.ok(forwardPort);
+  assert.ok(reversePort);
+  assert.notEqual(forwardPort, reversePort);
+});
+
+test("graph canvas uses smooth connectors only for parallel relationships", () => {
+  const source = readFileSync(new URL("../src/views/OntologyConceptualModelCreate/components/ConceptualModelGraphCanvas.vue", import.meta.url), "utf8");
+  assert.match(source, /const connectorName = layout \? ["']smooth["'] : ["']normal["']/);
+  assert.match(source, /existing\.setConnector\(connectorName\)/);
+  assert.match(source, /connector: \{ name: connectorName \}/);
+});
+
 test("empty, missing endpoint and self-referencing relations do not crash layout", () => {
   assert.deepEqual(mapCanvasContentToConceptualModel(undefined), { objects: [], relations: [], nextSequence: 0 });
   const mapped = mapCanvasContentToConceptualModel({ ontologies: [ontology("a")], links: [link("missing", "a"), link("a", "a")] });
@@ -125,6 +158,7 @@ test("graph sync applies distinct paths and refreshes them after an object moves
         id: config.id,
         isNode: () => false,
         isEdge: () => true,
+        connector: config.connector?.name ?? "normal",
         getSourceCellId: () => config.source.cell,
         getTargetCellId: () => config.target.cell,
         getSourcePortId: () => config.source.port,
@@ -132,6 +166,15 @@ test("graph sync applies distinct paths and refreshes them after an object moves
         getVertices: () => config.vertices,
         setVertices: (value) => {
           config.vertices = value;
+        },
+        setConnector: (name) => {
+          edge.connector = name;
+        },
+        setSource: (value) => {
+          config.source = value;
+        },
+        setTarget: (value) => {
+          config.target = value;
         },
         setLabels: () => {},
         setAttrs: () => {},
@@ -150,7 +193,7 @@ test("graph sync applies distinct paths and refreshes them after an object moves
     watch: () => {},
     onMounted: () => {},
     onBeforeUnmount: () => {},
-    calculateParallelRelationVertices,
+    calculateParallelRelationLayouts,
     conceptualObjectHeight,
     CONCEPTUAL_OBJECT_WIDTH: 240,
     CONCEPTUAL_OBJECT_SHAPE: "object",
@@ -163,7 +206,7 @@ test("graph sync applies distinct paths and refreshes them after an object moves
       port: end === "source" ? relation.sourcePort : relation.targetPort,
     }),
     conceptualEdgeAttrs: () => ({}),
-    conceptualEdgeLabel: () => ({}),
+    conceptualEdgeLabel: (_text, distance = 0.5) => ({ position: distance }),
     applyRelationEdgeTools: () => {},
   };
   const canvas = new Function(...Object.keys(deps), code)(...Object.values(deps));
@@ -172,6 +215,8 @@ test("graph sync applies distinct paths and refreshes them after an object moves
   const first = cells.get(`rel-${mapped.relations[0].id}`);
   const second = cells.get(`rel-${mapped.relations[1].id}`);
   assert.notDeepEqual(first.getVertices(), second.getVertices());
+  assert.equal(first.connector, "smooth");
+  assert.equal(second.connector, "smooth");
   const before = first.getVertices();
   mapped.objects[0].x += 100;
   canvas.syncGraph();

@@ -12,7 +12,7 @@
       ></template>
     </el-input>
     <div v-if="mode === 'concept' && tree.length === 0" class="concept-hierarchy__empty">
-      <el-button type="primary" data-onboarding="object-tree-create" @click="emit('create')">添加分类树</el-button>
+      <el-button v-if="!browseOnly" type="primary" data-onboarding="object-tree-create" @click="emit('create')">添加分类树</el-button>
     </div>
     <div v-else-if="mode === 'inheritance' && objects.length === 0" class="concept-hierarchy__empty">暂无对象继承关系</div>
     <el-tree
@@ -33,7 +33,7 @@
         <span v-if="isObjectNode(data)" class="concept-hierarchy__object-row">
           <span class="concept-hierarchy__object-dot" aria-hidden="true" />
           <span class="concept-hierarchy__object-name" :title="data.label">{{ data.label }}</span>
-          <span v-if="mode === 'inheritance'" class="concept-hierarchy__create-child-wrap" @click.stop>
+          <span v-if="!browseOnly && mode === 'inheritance'" class="concept-hierarchy__create-child-wrap" @click.stop>
             <el-tooltip content="新建继承对象" placement="top" :show-after="200">
               <button type="button" class="concept-hierarchy__create-child" aria-label="新建继承对象" @click="openInheritedObjectDialog(data)">
                 <el-icon><Plus /></el-icon>
@@ -52,7 +52,7 @@
                 <span v-if="nodeCount(data)" class="concept-hierarchy__count">{{ nodeCount(data) }}</span>
               </span>
             </span>
-            <span v-if="data.kind === 'category'" class="concept-hierarchy__create-child-wrap" @click.stop>
+            <span v-if="!browseOnly && data.kind === 'category'" class="concept-hierarchy__create-child-wrap" @click.stop>
               <el-tooltip content="新建子分类" placement="top" :show-after="200">
                 <button
                   type="button"
@@ -126,6 +126,7 @@ interface ConceptObjectTreeNode {
 type ConceptTreeNode = ConceptCategoryTreeNode | ConceptObjectTreeNode | InheritanceSpaceTreeNode;
 
 const props = defineProps<{
+  browseOnly?: boolean;
   tree: OntologyConceptNode[];
   selectedNodeId: string;
   objects: OntologyObjectItem[];

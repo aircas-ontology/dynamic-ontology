@@ -90,7 +90,7 @@ test("space behavior route mounts the behavior workspace instead of the empty pa
   assert.match(String(route.matched.at(-1)?.components?.default), /SpaceBehaviorWorkspace/);
 
   const routeSource = readSource("../src/router/modules/workspaceRoutes.ts");
-  const behaviorBlock = routeSource.match(/path:\s*"behavior"[\s\S]*?workspaceTab:\s*"behavior"/);
+  const behaviorBlock = routeSource.match(/name:\s*"OntologySpaceManagementDetailBehavior"[\s\S]*?workspaceTab:\s*"behavior"/);
   assert.ok(behaviorBlock, "behavior route block missing");
   assert.match(behaviorBlock[0], /SpaceBehaviorWorkspace\/index\.vue/);
   assert.doesNotMatch(behaviorBlock[0], /emptyWorkspacePanel/);

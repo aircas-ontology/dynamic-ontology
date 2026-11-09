@@ -21,7 +21,7 @@
             <span class="ontology-object-list__visually-hidden">列表视图</span>
           </el-radio-button>
         </el-radio-group>
-        <el-button type="primary" data-onboarding="object-create-open" @click="emit('action', 'create')"
+        <el-button v-if="!browseOnly" type="primary" data-onboarding="object-create-open" @click="emit('action', 'create')"
           ><el-icon><Plus /></el-icon>新建对象</el-button
         >
       </div>
@@ -46,8 +46,12 @@
             v-for="item in section.items"
             :key="item.id"
             class="ontology-object-card"
-            :class="{ 'is-located': activeObjectId === item.id }"
+            :class="{ 'is-located': activeObjectId === item.id, 'is-clickable': browseOnly }"
             :data-object-id="item.id"
+            :role="browseOnly ? 'button' : undefined"
+            :tabindex="browseOnly ? 0 : undefined"
+            @click="openBrowseObjectDetail(item, $event)"
+            @keydown.enter.prevent="openBrowseObjectFromKeyboard(item)"
           >
             <div class="ontology-object-card__visual">
               <img v-if="item.iconUrl" :src="item.iconUrl" alt="" />
@@ -87,7 +91,7 @@
                   <dd>{{ item.metrics.behavior }}</dd>
                 </div>
               </dl>
-              <footer class="ontology-object-card__actions">
+              <footer v-if="!browseOnly" class="ontology-object-card__actions">
                 <el-button
                   class="ontology-object-action ontology-object-action--view aircas-button--gradient"
                   data-onboarding="object-detail-open"
@@ -100,21 +104,32 @@
                   </svg>
                   详情
                 </el-button>
-                <el-button class="ontology-object-action ontology-object-action--edit" size="small" @click="emit('action', 'edit', item)">
+                <el-button v-if="!browseOnly" class="ontology-object-action ontology-object-action--edit" size="small" @click="emit('action', 'edit', item)">
                   <svg class="ontology-object-action__icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M4 20h4.5L19 9.5 14.5 5 4 15.5V20z" />
                     <path d="M12.5 7l4.5 4.5" />
                   </svg>
                   编辑
                 </el-button>
-                <el-button class="ontology-object-action ontology-object-action--export" size="small" @click="emit('action', 'export', item)">
+                <el-button
+                  v-if="!browseOnly"
+                  class="ontology-object-action ontology-object-action--export"
+                  size="small"
+                  @click="emit('action', 'export', item)"
+                >
                   <svg class="ontology-object-action__icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 4v10M8 10l4 4 4-4" />
                     <path d="M5 18h14" />
                   </svg>
                   导出
                 </el-button>
-                <el-button class="ontology-object-action ontology-object-action--delete" size="small" type="danger" @click="emit('action', 'delete', item)">
+                <el-button
+                  v-if="!browseOnly"
+                  class="ontology-object-action ontology-object-action--delete"
+                  size="small"
+                  type="danger"
+                  @click="emit('action', 'delete', item)"
+                >
                   <svg class="ontology-object-action__icon ontology-object-action__icon--filled" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M8.8 3.6h6.4l.9 2.4H20.2v2.2H3.8V6h4.1L8.8 3.6z" />
                     <path d="M6.6 9.2h10.8l-.95 10.5c-.12.95-.9 1.6-1.85 1.6H9.35c-.95 0-1.73-.65-1.85-1.6L6.6 9.2z" />
@@ -126,7 +141,7 @@
           </article>
         </div>
 
-        <div v-else class="ontology-object-section__table">
+        <div v-else class="ontology-object-section__table" :class="{ 'is-clickable': browseOnly }">
           <el-table
             class="aircas-table--accent-header"
             :data="section.items"
@@ -134,6 +149,7 @@
             max-height="min(420px, 48vh)"
             stripe
             :row-class-name="objectRowClassName"
+            @row-click="openBrowseObjectFromRow"
           >
             <el-table-column label="对象名称" min-width="220">
               <template #default="{ row }"
@@ -152,18 +168,27 @@
               ><template #default="{ row }">{{ objectRow(row).metrics.behavior }}</template></el-table-column
             >
             <el-table-column prop="createdAt" label="创建时间" width="170" />
-            <el-table-column label="操作" width="300" fixed="right">
+            <el-table-column v-if="!browseOnly" label="操作" width="300" fixed="right">
               <template #default="{ row }">
                 <el-button class="ontology-object-action ontology-object-action--view" size="small" @click="emit('action', 'view', objectRow(row))"
                   >详情</el-button
                 >
-                <el-button class="ontology-object-action ontology-object-action--edit" size="small" @click="emit('action', 'edit', objectRow(row))"
+                <el-button
+                  v-if="!browseOnly"
+                  class="ontology-object-action ontology-object-action--edit"
+                  size="small"
+                  @click="emit('action', 'edit', objectRow(row))"
                   >编辑</el-button
                 >
-                <el-button class="ontology-object-action ontology-object-action--export" size="small" @click="emit('action', 'export', objectRow(row))"
+                <el-button
+                  v-if="!browseOnly"
+                  class="ontology-object-action ontology-object-action--export"
+                  size="small"
+                  @click="emit('action', 'export', objectRow(row))"
                   >导出</el-button
                 >
                 <el-button
+                  v-if="!browseOnly"
                   class="ontology-object-action ontology-object-action--delete"
                   size="small"
                   type="danger"
@@ -185,6 +210,7 @@ import { Connection, DataLine, Plus, Share, Ship } from "@element-plus/icons-vue
 import type { OntologyObjectItem, OntologyObjectLocationTarget, OntologyObjectSection, OntologyObjectViewMode } from "@/types";
 
 const props = defineProps<{
+  browseOnly?: boolean;
   sections: OntologyObjectSection[];
   viewMode: OntologyObjectViewMode;
   locationTarget: OntologyObjectLocationTarget | null;
@@ -225,6 +251,36 @@ function objectRow(row: unknown): OntologyObjectItem {
 function objectRowClassName({ row }: { row: unknown }): string {
   const item = row as { id?: unknown };
   return typeof item?.id === "string" && item.id === activeObjectId.value ? "is-located" : "";
+}
+
+/**
+ * @description 浏览态点击对象卡片进入详情，并忽略卡片内按钮点击。
+ * @param item 当前对象。
+ * @param event 卡片点击事件。
+ */
+function openBrowseObjectDetail(item: OntologyObjectItem, event: MouseEvent): void {
+  if (!props.browseOnly) return;
+  const target = event.target;
+  if (target instanceof Element && target.closest("button, a, .el-button")) return;
+  emit("action", "view", item);
+}
+
+/**
+ * @description 浏览态通过键盘在对象卡片上进入详情。
+ * @param item 当前对象。
+ */
+function openBrowseObjectFromKeyboard(item: OntologyObjectItem): void {
+  if (!props.browseOnly) return;
+  emit("action", "view", item);
+}
+
+/**
+ * @description 浏览态点击对象表格行进入详情。
+ * @param row 表格行数据。
+ */
+function openBrowseObjectFromRow(row: unknown): void {
+  if (!props.browseOnly) return;
+  emit("action", "view", objectRow(row));
 }
 
 function categoryAnchorId(categoryId: string) {
@@ -408,6 +464,9 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 8px;
   padding: 8px;
+}
+.ontology-object-card.is-clickable {
+  cursor: pointer;
 }
 .ontology-object-card {
   position: relative;
@@ -618,6 +677,9 @@ onBeforeUnmount(() => {
 
 .ontology-object-section__table {
   padding: 8px;
+}
+.ontology-object-section__table.is-clickable :deep(.el-table__body tr) {
+  cursor: pointer;
 }
 .ontology-object-section__table .el-button {
   white-space: nowrap;

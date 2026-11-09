@@ -26,9 +26,9 @@
         </div>
 
         <div class="function-operator-panel__filter-actions">
-          <el-button @click="runtimeTemplateVisible = true">运行配置模板</el-button>
-          <el-button @click="runtimePanelVisible = true">运行配置</el-button>
-          <el-button type="primary" @click="openCreate">新建函数</el-button>
+          <el-button v-if="!browseOnly" @click="runtimeTemplateVisible = true">运行配置模板</el-button>
+          <el-button v-if="!browseOnly" @click="runtimePanelVisible = true">运行配置</el-button>
+          <el-button v-if="!browseOnly" type="primary" @click="openCreate">新建函数</el-button>
           <el-button type="primary" @click="applyFilters">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
         </div>
@@ -87,11 +87,11 @@
           </div>
           <div class="function-operator-card__actions" @click.stop>
             <el-button type="primary" text size="small" @click="openTest(operator)">测试</el-button>
-            <el-button v-if="operator.status !== 'published'" text size="small" @click="openEdit(operator)">编辑</el-button>
-            <el-button type="warning" text size="small" @click="togglePublish(operator)">
+            <el-button v-if="!browseOnly && operator.status !== 'published'" text size="small" @click="openEdit(operator)">编辑</el-button>
+            <el-button v-if="!browseOnly" type="warning" text size="small" @click="togglePublish(operator)">
               {{ operator.status === "published" ? "下线" : "发布" }}
             </el-button>
-            <el-button type="danger" text size="small" @click="openDeleteOperator(operator)">删除</el-button>
+            <el-button v-if="!browseOnly" type="danger" text size="small" @click="openDeleteOperator(operator)">删除</el-button>
           </div>
         </article>
       </div>
@@ -118,12 +118,14 @@
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="160" />
         <el-table-column prop="updatedAt" label="最后更新" width="160" />
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="操作" :width="browseOnly ? 100 : 260" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click.stop="openTest(asOperator(row))">测试</el-button>
-            <el-button v-if="asOperator(row).status !== 'published'" link @click.stop="openEdit(asOperator(row))">编辑</el-button>
-            <el-button link @click.stop="togglePublish(asOperator(row))">{{ asOperator(row).status === "published" ? "下线" : "发布" }}</el-button>
-            <el-button link type="danger" @click.stop="openDeleteOperator(asOperator(row))">删除</el-button>
+            <el-button v-if="!browseOnly && asOperator(row).status !== 'published'" link @click.stop="openEdit(asOperator(row))">编辑</el-button>
+            <el-button v-if="!browseOnly" link @click.stop="togglePublish(asOperator(row))">{{
+              asOperator(row).status === "published" ? "下线" : "发布"
+            }}</el-button>
+            <el-button v-if="!browseOnly" link type="danger" @click.stop="openDeleteOperator(asOperator(row))">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -143,6 +145,7 @@
     </template>
 
     <FunctionOperatorDetailDrawer
+      :browse-only="browseOnly"
       v-model="detailVisible"
       :operator="selectedOperator"
       :loading="detailLoading"
@@ -254,7 +257,8 @@ import {
 } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { useRoute } from "vue-router";
 
 import { useFunctionOperatorWorkspace } from "./composables/useFunctionOperatorWorkspace";
 import FunctionOperatorContainerRuntimePanel from "./components/FunctionOperatorContainerRuntimePanel.vue";
@@ -265,6 +269,8 @@ import FunctionOperatorFormDialog from "./components/FunctionOperatorFormDialog.
 import FunctionOperatorScriptTestDialog from "./components/FunctionOperatorScriptTestDialog.vue";
 
 const runtimePanelVisible = ref(false);
+const route = useRoute();
+const browseOnly = computed(() => route.meta.browseOnly === true);
 const runtimeTemplateVisible = ref(false);
 
 const {

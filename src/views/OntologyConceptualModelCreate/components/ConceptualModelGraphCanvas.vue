@@ -41,7 +41,7 @@ import {
   type ConceptualModelGraphRelation,
   type ConceptualModelGraphSelection,
 } from "../utils/conceptualModelGraph";
-import { calculateParallelRelationVertices } from "../utils/layoutConceptualModelContent";
+import { calculateParallelRelationLayouts } from "../utils/layoutConceptualModelContent";
 
 const props = defineProps<{
   objects: ConceptualModelGraphObject[];
@@ -185,14 +185,23 @@ function syncGraph(): void {
       const relationId = parseConceptualRelationCellId(edge.id);
       if (relationId === null || !relationIds.has(relationId)) graph?.removeEdge(edge.id);
     });
-    const parallelVertices = calculateParallelRelationVertices(props.objects, props.relations);
+    const parallelLayouts = calculateParallelRelationLayouts(props.objects, props.relations);
     props.relations.forEach((relation) => {
-      const source = relationTerminal(relation, "source", objectIds);
-      const target = relationTerminal(relation, "target", objectIds);
+      const layout = parallelLayouts.get(relation.id);
+      const source =
+        layout && relation.sourceId !== null && objectIds.has(relation.sourceId)
+          ? { cell: conceptualObjectCellId(relation.sourceId), port: layout.sourcePort }
+          : relationTerminal(relation, "source", objectIds);
+      const target =
+        layout && relation.targetId !== null && objectIds.has(relation.targetId)
+          ? { cell: conceptualObjectCellId(relation.targetId), port: layout.targetPort }
+          : relationTerminal(relation, "target", objectIds);
       const cellId = conceptualRelationCellId(relation.id);
       const existing = graph?.getCellById(cellId);
       const labelText = relation.displayName || relation.apiName || "关系";
-      const vertices = parallelVertices.get(relation.id) ?? [];
+      const vertices = layout?.vertices ?? [];
+      const labelDistance = layout?.labelDistance ?? 0.5;
+      const connectorName = layout ? "smooth" : "normal";
       if (existing?.isEdge()) {
         if (!sameTerminal(existing, "source", source)) existing.setSource(source);
         if (!sameTerminal(existing, "target", target)) existing.setTarget(target);
@@ -203,7 +212,8 @@ function syncGraph(): void {
         ) {
           existing.setVertices(vertices);
         }
-        existing.setLabels([conceptualEdgeLabel(labelText)]);
+        existing.setConnector(connectorName);
+        existing.setLabels([conceptualEdgeLabel(labelText, labelDistance)]);
         existing.setAttrs(conceptualEdgeAttrs());
         existing.setZIndex(4);
         applyRelationEdgeTools(existing, true);
@@ -215,9 +225,9 @@ function syncGraph(): void {
         target,
         vertices,
         router: { name: "normal" },
-        connector: { name: "normal" },
+        connector: { name: connectorName },
         attrs: conceptualEdgeAttrs(),
-        labels: [conceptualEdgeLabel(labelText)],
+        labels: [conceptualEdgeLabel(labelText, labelDistance)],
         zIndex: 4,
       });
       if (edge) applyRelationEdgeTools(edge, true);

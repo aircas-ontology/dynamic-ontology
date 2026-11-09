@@ -1,8 +1,8 @@
 <template>
   <section class="space-collection" aria-label="对象空间列表">
-    <el-empty v-if="!spaces.length" description="暂无对象空间，请创建空间或调整搜索条件" />
-    <SpaceTableView v-else-if="viewMode === 'table'" :spaces="spaces" @action="forward" />
-    <SpaceCardGrid v-else :spaces="spaces" @action="forward" />
+    <el-empty v-if="!spaces.length" :description="browseOnly ? '暂无对象空间，请调整搜索条件' : '暂无对象空间，请创建空间或调整搜索条件'" />
+    <SpaceTableView :browse-only="browseOnly" v-else-if="viewMode === 'table'" :spaces="spaces" @action="forward" />
+    <SpaceCardGrid :browse-only="browseOnly" v-else :spaces="spaces" @action="forward" />
     <footer v-if="total" class="space-collection__pagination">
       <span>共 {{ total }} 条</span>
       <el-pagination
@@ -25,6 +25,7 @@ import SpaceCardGrid from "./SpaceCardGrid.vue";
 import SpaceTableView from "./SpaceTableView.vue";
 
 defineProps<{
+  browseOnly?: boolean;
   spaces: OntologySpaceItem[];
   viewMode: OntologyViewMode;
   total: number;
@@ -38,6 +39,11 @@ const emit = defineEmits<{
   "update:pageSize": [value: number];
 }>();
 
+/**
+ * @description 转发当前空间列表操作。
+ * @param action 空间操作。
+ * @param space 目标空间。
+ */
 function forward(action: OntologySpaceAction, space: OntologySpaceItem) {
   emit("action", action, space);
 }

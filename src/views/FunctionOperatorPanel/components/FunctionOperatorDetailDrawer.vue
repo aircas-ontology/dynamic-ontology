@@ -55,9 +55,9 @@
         </template>
 
         <div class="function-operator-detail__actions">
-          <el-button v-if="operator.status !== 'published'" type="primary" @click="emitEdit">编辑</el-button>
-          <el-button type="warning" @click="emitTogglePublish">{{ operator.status === "published" ? "下线" : "发布" }}</el-button>
-          <el-button type="danger" @click="emitDelete">删除</el-button>
+          <el-button v-if="!browseOnly && operator.status !== 'published'" type="primary" @click="emitEdit">编辑</el-button>
+          <el-button v-if="!browseOnly" type="warning" @click="emitTogglePublish">{{ operator.status === "published" ? "下线" : "发布" }}</el-button>
+          <el-button v-if="!browseOnly" type="danger" @click="emitDelete">删除</el-button>
           <el-button type="primary" plain @click="emitTest">测试</el-button>
         </div>
 
@@ -86,6 +86,7 @@ import FunctionOperatorScriptParamTree from "./FunctionOperatorScriptParamTree.v
 import { mapOperatorParametersToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
 
 const props = defineProps<{
+  browseOnly?: boolean;
   modelValue: boolean;
   operator: FunctionOperator | null;
   loading?: boolean;

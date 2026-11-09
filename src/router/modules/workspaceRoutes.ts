@@ -8,6 +8,20 @@ export const workspaceRoutes: RouteRecordRaw[] = [
     meta: { title: "首页" },
     children: [
       {
+        path: "ontology-space-browse",
+        name: "OntologySpaceBrowse",
+        component: () => import("@/views/OntologySpaceManagement/index.vue"),
+        props: { browseOnly: true },
+        meta: { title: "对象空间浏览" },
+      },
+      {
+        path: "theme-space-browse",
+        name: "ThemeSpaceBrowse",
+        component: () => import("@/views/ThemeSpaceManagement/index.vue"),
+        props: { browseOnly: true },
+        meta: { title: "主题空间浏览" },
+      },
+      {
         path: "ontology-space-management",
         name: "OntologySpaceManagement",
         component: () => import("@/views/OntologySpaceManagement/index.vue"),
@@ -18,6 +32,46 @@ export const workspaceRoutes: RouteRecordRaw[] = [
         name: "ThemeSpaceManagement",
         component: () => import("@/views/ThemeSpaceManagement/index.vue"),
         meta: { title: "主题管理" },
+      },
+      {
+        path: "entity-browsing/:spaceId/object/:objectId",
+        name: "EntityBrowsingObjectProfile",
+        component: () => import("@/views/EntityBrowsingObjectProfile/index.vue"),
+        meta: { title: "对象画像", browseOnly: true },
+      },
+      {
+        path: "entity-browsing/:spaceId",
+        name: "EntityBrowsing",
+        component: () => import("@/views/EntityBrowsing/index.vue"),
+        redirect: { name: "EntityBrowsingObject" },
+        meta: { title: "空间浏览", browseOnly: true },
+        children: [
+          {
+            path: "object",
+            name: "EntityBrowsingObject",
+            component: () => import("@/views/ObjectWorkspacePanel/index.vue"),
+            meta: { title: "空间浏览", workspaceTab: "object", browseOnly: true },
+          },
+          {
+            path: "relation",
+            name: "EntityBrowsingRelation",
+            component: () => import("@/views/SpaceRelationWorkspace/index.vue"),
+            meta: { title: "空间浏览", workspaceTab: "relation", browseOnly: true },
+          },
+          {
+            path: "function-operator",
+            name: "EntityBrowsingFunctionOperator",
+            component: () => import("@/views/FunctionOperatorPanel/index.vue"),
+            meta: { title: "空间浏览", workspaceTab: "function-operator", browseOnly: true },
+          },
+          {
+            path: "behavior",
+            name: "EntityBrowsingBehavior",
+            component: () => import("@/views/EntityBrowsingBehavior/index.vue"),
+            meta: { title: "空间浏览", workspaceTab: "behavior", browseOnly: true },
+          },
+          { path: "behavior-schedule", name: "EntityBrowsingBehaviorSchedule", redirect: { name: "EntityBrowsingObject" } },
+        ],
       },
       {
         path: "ontology-space-management/conceptual-model-create",
