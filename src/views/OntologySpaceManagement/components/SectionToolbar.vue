@@ -37,7 +37,7 @@ import type { OntologySpaceSortOrder, OntologyViewMode } from "@/types";
 const keyword = defineModel<string>("keyword", { required: true });
 const order = defineModel<OntologySpaceSortOrder>("order", { required: true });
 const viewMode = defineModel<OntologyViewMode>("viewMode", { required: true });
-const props = withDefaults(defineProps<{ title?: string; spaceLabel?: string }>(), { title: "对象空间管理", spaceLabel: "对象空间" });
+const props = withDefaults(defineProps<{ browseOnly?: boolean; title?: string; spaceLabel?: string }>(), { title: "对象空间管理", spaceLabel: "对象空间" });
 
 /**
  * @description 按当前视图模式生成工具栏说明，区分表格与卡片管理语义。
@@ -45,6 +45,7 @@ const props = withDefaults(defineProps<{ title?: string; spaceLabel?: string }>(
  * @returns 带视图前缀的工具栏说明文案。
  */
 function resolveToolbarDescription(mode: OntologyViewMode): string {
+  if (props.browseOnly) return `以${mode === "card" ? "卡片" : "表格"}视图浏览全部${props.spaceLabel}，支持搜索、排序、导出与进入空间`;
   if (mode === "card") {
     return `以卡片视图管理全部${props.spaceLabel}，支持搜索、排序与运维操作`;
   }

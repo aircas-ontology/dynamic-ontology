@@ -11,6 +11,7 @@ interface SpaceManagementActionOptions {
   saveOntologySpace: (draft: OntologySpaceDraft, id?: string) => void;
   removeOntologySpace: (id: string) => void;
   loadOntologySpaces: () => Promise<void> | void;
+  browseOnly: () => boolean;
 }
 
 /**
@@ -55,7 +56,15 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
     activeSpace.value = space;
     resetOntologySpaceCommandState();
     if (action === "enter") {
-      void router.push({ name: "OntologySpaceManagementDetailObject", params: { spaceId: space.id } });
+      void router.push(
+        options.browseOnly()
+          ? {
+              name: "EntityBrowsingObject",
+              params: { spaceId: space.id },
+              query: { spaceName: space.displayName, spaceType: "0", from: "ontology-space-browse" },
+            }
+          : { name: "OntologySpaceManagementDetailObject", params: { spaceId: space.id } },
+      );
     } else if (action === "edit") {
       openOntologySpaceForm(space);
     } else if (action === "delete") {

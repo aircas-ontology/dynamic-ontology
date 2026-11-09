@@ -90,7 +90,7 @@ test("theme space create dialog confirms into the subspace create flow with rout
 test("theme space cards and table rows enter the space management detail with route context", () => {
   const source = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
   assert.match(source, /function enterThemeSpace/);
-  assert.match(source, /name: "OntologySpaceManagementDetailObject"/);
+  assert.match(source, /name: props\.browseOnly \? "EntityBrowsingObject" : "OntologySpaceManagementDetailObject"/);
   assert.match(source, /from: "theme-space-management"/);
   assert.doesNotMatch(source, /notifyUnavailable\('进入主题'\)/);
   assert.doesNotMatch(source, /进入主题功能暂未接入/);
@@ -184,7 +184,7 @@ test("embedded object space management hides the create space button", () => {
   const welcomeSource = readFileSync(new URL("../src/views/OntologySpaceManagement/components/WelcomePanel.vue", import.meta.url), "utf8");
   assert.match(pageSource, /useRoute/);
   assert.match(pageSource, /route\.query\.userName/);
-  assert.match(pageSource, /:show-create="!isEmbedded"/);
+  assert.match(pageSource, /:show-create="!isEmbedded && !browseOnly"/);
   assert.match(welcomeSource, /v-if="showCreate"/);
   assert.match(welcomeSource, /withDefaults\(defineProps/);
 });

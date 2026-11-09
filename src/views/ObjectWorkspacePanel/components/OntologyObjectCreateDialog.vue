@@ -3,7 +3,7 @@
     <template #header>
       <span>{{ editingItem ? "编辑对象" : "新建对象" }}</span>
     </template>
-    <div v-if="!editingItem" class="ontology-object-create-dialog__modes" role="tablist" aria-label="创建方式">
+    <div v-if="!editingItem && !lockInheritedParent" class="ontology-object-create-dialog__modes" role="tablist" aria-label="创建方式">
       <button
         v-for="mode in modes"
         :key="mode.value"
@@ -61,7 +61,7 @@
         </el-form-item>
         <div class="ontology-object-create-dialog__grid">
           <el-form-item v-if="!editingItem" label="继承对象">
-            <el-select v-model="draft.parentId" clearable filterable placeholder="可选" :disabled="submitting">
+            <el-select v-model="draft.parentId" :clearable="!lockInheritedParent" filterable placeholder="可选" :disabled="submitting || lockInheritedParent">
               <el-option v-for="item in parentOptions" :key="item.id" :label="`${item.displayName} (${item.apiName})`" :value="item.id" />
             </el-select>
           </el-form-item>
@@ -208,6 +208,8 @@ const modes = [
   { value: "asset" as const, label: "资产构建", hint: "从资产模型配置", icon: Grid },
 ];
 const createMode = ref<CreateMode>("manual");
+/** @description 继承树入口打开时锁定为手动创建，并禁止修改继承对象。 */
+const lockInheritedParent = computed(() => Boolean(props.initialParentId) && !props.editingItem);
 const datasourceVisible = ref(false);
 const assetVisible = ref(false);
 const draft = reactive<OntologyObjectCreateDraft>({ apiName: "", displayName: "", description: "", iconUrl: "", categoryId: "", parentId: undefined });
@@ -269,10 +271,11 @@ watch([visible, () => props.editingItem], ([opened, editingItem]) => {
 });
 
 /**
- * @description 切换创建模式并清理上次表单校验提示。
+ * @description 切换创建模式并清理上次表单校验提示；继承树锁定时保持手动创建。
  * @param mode 目标创建模式。
  */
 function selectCreateMode(mode: CreateMode) {
+  if (lockInheritedParent.value && mode !== "manual") return;
   createMode.value = mode;
   categoryError.value = "";
   validationError.value = "";

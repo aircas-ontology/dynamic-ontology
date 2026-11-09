@@ -145,7 +145,7 @@ export type {
   OntologyDatasourceColumnDescVO,
 } from "./apis/getOntologyDatasourceColumnsType";
 export type { GetOntologyDatasourceTablesData, GetOntologyDatasourceTablesParams, OntologyDatasourceTableVO } from "./apis/getOntologyDatasourceTablesType";
-export type { GetOntologyEntitiesData, GetOntologyEntitiesParams, OntologyEntityInfo } from "./apis/getOntologyEntitiesType";
+export type { GetOntologyEntitiesData, GetOntologyEntitiesParams, OntologyEntityInfo, OntologyEntityPropertyItem } from "./apis/getOntologyEntitiesType";
 export type {
   GetOntologyEntityRowDetailData,
   GetOntologyEntityRowDetailParams,
@@ -311,6 +311,78 @@ export type {
   AssetModelTreeNode,
   AssetObjectPropertyDraft,
 } from "./pages/assetModelBuilderType";
+export type { DatasourceBuildSelection, DatasourceConnection, DatasourceDbType, DatasourceField, DatasourceTable } from "./pages/datasourceBuildType";
+export type {
+  BehaviorBuildMethod,
+  BehaviorImplementationMode,
+  BehaviorOntologyScope,
+  BehaviorServiceStatus,
+  PowerBehaviorCategory,
+  PowerBehaviorCategoryId,
+  PowerBehaviorCategorySummary,
+  PowerBehaviorGroup,
+  PowerBehaviorGroupId,
+  PowerBehaviorGroupSummary,
+  PowerBehaviorInstance,
+  PowerExecutionDataSet,
+  PowerExecutionFilterOptions,
+  PowerExecutionRecord,
+  PowerExecutionRecordDetail,
+  PowerExecutionStatistics,
+  PowerExecutionStatus,
+  PowerExecutionStatusFilter,
+  PowerExecutionTimeRange,
+  PowerExecutionTrigger,
+} from "./pages/entityBrowsingBehaviorType";
+export type {
+  CallTestFailureScenario,
+  CallTestFunctionProfile,
+  CallTestHealthStatus,
+  CallTestHistoricalPoint,
+  CallTestHistoryBaseline,
+  CallTestHistoryComparison,
+  CallTestInput,
+  CallTestInputSource,
+  CallTestLogEntry,
+  CallTestLogLevel,
+  CallTestMetrics,
+  CallTestRunResult,
+  CallTestRunStatus,
+  CallTestServiceCheckResult,
+  CallTestServiceStatus,
+  CallTestStep,
+  CallTestStepId,
+  CallTestStepStatus,
+  CallTestSummary,
+  CallTestTrajectoryPoint,
+  CallTestValidationResult,
+} from "./pages/entityBrowsingCallTestType";
+export type {
+  EntityBrowsingObjectProfileAttrChild,
+  EntityBrowsingObjectProfileAttrGroup,
+  EntityBrowsingObjectProfileAttrItem,
+  EntityBrowsingObjectProfileBlock,
+  EntityBrowsingObjectProfileData,
+  EntityBrowsingObjectProfileImage,
+  EntityBrowsingObjectProfileRelationNode,
+  EntityBrowsingObjectProfileStandardAttrRow,
+  EntityBrowsingObjectProfileStandardCategory,
+  EntityBrowsingObjectProfileStandardDetail,
+  EntityBrowsingObjectProfileStandardUsageData,
+  EntityBrowsingObjectProfileStatsBar,
+  EntityBrowsingObjectProfileStatsData,
+  EntityBrowsingObjectProfileStatsSlice,
+  EntityBrowsingObjectProfileTab,
+  EntityBrowsingObjectProfileTocNode,
+} from "./pages/entityBrowsingObjectProfileType";
+export type {
+  EntityBrowseOverview,
+  EntityBrowseOverviewMockData,
+  EntityBrowseQualityCard,
+  EntityBrowseStatisticCard,
+  EntityBrowsingRouteName,
+  EntityBrowsingTab,
+} from "./pages/entityBrowsingType";
 export { COMPOSITE_WORKFLOW_DND_MIME } from "./pages/ontologyCompositeWorkflowType";
 export type {
   CompositeWorkflowBranchConfig,
@@ -342,8 +414,9 @@ export type {
   ConceptualModelSelectedAttribute,
   ConceptualModelSelection,
 } from "./pages/ontologyConceptualModelCreateType";
-export type { DatasourceBuildSelection, DatasourceConnection, DatasourceDbType, DatasourceField, DatasourceTable } from "./pages/datasourceBuildType";
+
 export { BASIC_FILTER_LOGIC_OPTIONS, BASIC_FILTER_OP_OPTIONS, BASIC_FILTER_VALUE_TYPE_OPTIONS } from "./pages/ontologyFunctionOperatorBasicFilterType";
+
 export type {
   BasicFilterCondition,
   BasicFilterDocument,

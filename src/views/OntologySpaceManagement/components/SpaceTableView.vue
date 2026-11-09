@@ -33,7 +33,7 @@
     <el-table-column prop="updatedTime" label="更新时间" width="180" />
     <el-table-column label="操作" width="230" fixed="right">
       <template #default="{ row }">
-        <SpaceActions :space="spaceRow(row)" @action="emit('action', $event, spaceRow(row))" />
+        <SpaceActions :browse-only="browseOnly" :space="spaceRow(row)" @action="emit('action', $event, spaceRow(row))" />
       </template>
     </el-table-column>
   </el-table>
@@ -44,7 +44,7 @@ import { Box } from "@element-plus/icons-vue";
 import type { OntologySpaceAction, OntologySpaceItem } from "@/types";
 import SpaceActions from "./SpaceActions.vue";
 
-const props = defineProps<{ spaces: OntologySpaceItem[] }>();
+const props = defineProps<{ browseOnly?: boolean; spaces: OntologySpaceItem[] }>();
 const emit = defineEmits<{ action: [action: OntologySpaceAction, space: OntologySpaceItem] }>();
 
 /**

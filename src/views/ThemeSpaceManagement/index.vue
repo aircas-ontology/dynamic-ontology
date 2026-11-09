@@ -1,6 +1,7 @@
 <template>
   <div class="theme-space-management">
     <button
+      v-if="!browseOnly"
       :class="{ 'is-embedded': isEmbedded }"
       class="theme-space-management__help"
       type="button"
@@ -11,10 +12,17 @@
       <el-icon><QuestionFilled /></el-icon>
     </button>
     <section class="theme-space-management__overview">
-      <WelcomePanel space-label="主题" @create="openCreateThemeSpaceDialog()" />
+      <WelcomePanel :show-create="!browseOnly" :browse-only="browseOnly" space-label="主题" @create="openCreateThemeSpaceDialog()" />
       <div class="theme-space-management__stats"><StatCard v-for="stat in stats" :key="stat.id" :stat="stat" /></div>
     </section>
-    <SectionToolbar title="主题管理" space-label="主题" v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
+    <SectionToolbar
+      :browse-only="browseOnly"
+      :title="browseOnly ? '主题空间浏览' : '主题管理'"
+      space-label="主题"
+      v-model:keyword="keyword"
+      v-model:order="order"
+      v-model:view-mode="viewMode"
+    />
     <section class="theme-space-management__list" aria-label="主题列表">
       <div v-if="themeSpacesLoading" class="theme-space-management__empty">正在加载主题…</div>
       <div v-else-if="themeSpacesError" class="theme-space-management__empty">{{ themeSpacesError }}</div>
@@ -62,10 +70,12 @@
               <span>创建：{{ space.createdTime }}</span
               ><span>更新：{{ space.updatedTime }}</span>
             </div>
-            <div>
+            <div class="theme-space-actions">
               <el-button type="primary" plain size="small" data-onboarding="theme-enter" @click="enterThemeSpace(space)">→ 进入</el-button
-              ><el-button type="primary" plain size="small" @click="openEditThemeSpaceDialog(space)">✎ 编辑</el-button
-              ><el-dropdown trigger="click" @command="(command) => handleThemeSpaceCommand(command, space)"
+              ><el-button v-if="browseOnly" type="primary" plain size="small" @click="openThemeSpaceExportDialog(space)">导出</el-button
+              ><el-button v-if="browseOnly" type="primary" plain size="small" @click="notifyUnavailable('应用展示')">应用展示</el-button
+              ><el-button v-if="!browseOnly" type="primary" plain size="small" @click="openEditThemeSpaceDialog(space)">✎ 编辑</el-button
+              ><el-dropdown v-if="!browseOnly" trigger="click" @command="(command) => handleThemeSpaceCommand(command, space)"
                 ><el-button type="primary" plain size="small"
                   >更多<el-icon><ArrowDown /></el-icon></el-button
                 ><template #dropdown
@@ -108,20 +118,24 @@
         >
         <el-table-column prop="createdTime" label="创建时间" width="180" />
         <el-table-column prop="updatedTime" label="更新时间" width="180" />
-        <el-table-column label="操作" width="230" fixed="right"
+        <el-table-column label="操作" :width="browseOnly ? 280 : 230" fixed="right"
           ><template #default="{ row }"
-            ><el-button type="primary" plain size="small" data-onboarding="theme-enter" @click="enterThemeSpace(asThemeSpace(row))">→ 进入</el-button
-            ><el-button type="primary" plain size="small" @click="openEditThemeSpaceDialog(asThemeSpace(row))">✎ 编辑</el-button
-            ><el-dropdown trigger="click" @command="(command) => handleThemeSpaceCommand(command, asThemeSpace(row))"
-              ><el-button type="primary" plain size="small"
-                >更多<el-icon><ArrowDown /></el-icon></el-button
-              ><template #dropdown
-                ><el-dropdown-menu
-                  ><el-dropdown-item command="导出主题">导出</el-dropdown-item
-                  ><el-dropdown-item command="删除主题" divided>删除</el-dropdown-item></el-dropdown-menu
-                ></template
-              ></el-dropdown
-            ></template
+            ><div class="theme-space-actions">
+              <el-button type="primary" plain size="small" data-onboarding="theme-enter" @click="enterThemeSpace(asThemeSpace(row))">→ 进入</el-button
+              ><el-button v-if="browseOnly" type="primary" plain size="small" @click="openThemeSpaceExportDialog(asThemeSpace(row))">导出</el-button
+              ><el-button v-if="browseOnly" type="primary" plain size="small" @click="notifyUnavailable('应用展示')">应用展示</el-button
+              ><el-button v-if="!browseOnly" type="primary" plain size="small" @click="openEditThemeSpaceDialog(asThemeSpace(row))">✎ 编辑</el-button
+              ><el-dropdown v-if="!browseOnly" trigger="click" @command="(command) => handleThemeSpaceCommand(command, asThemeSpace(row))"
+                ><el-button type="primary" plain size="small"
+                  >更多<el-icon><ArrowDown /></el-icon></el-button
+                ><template #dropdown
+                  ><el-dropdown-menu
+                    ><el-dropdown-item command="导出主题">导出</el-dropdown-item
+                    ><el-dropdown-item command="删除主题" divided>删除</el-dropdown-item></el-dropdown-menu
+                  ></template
+                ></el-dropdown
+              >
+            </div></template
           ></el-table-column
         >
       </el-table>
@@ -138,7 +152,7 @@
         />
       </footer>
     </section>
-    <el-dialog v-model="createDialogVisible" title="新建主题" width="420px">
+    <el-dialog v-if="!browseOnly" v-model="createDialogVisible" title="新建主题" width="420px">
       <el-form label-position="top"
         ><el-form-item label="选择对象空间" data-onboarding="theme-create-space-select"
           ><el-select v-model="selectedObjectSpace" placeholder="请选择对象空间" :loading="objectSpacesLoading" style="width: 100%"
@@ -149,7 +163,7 @@
         ><el-button type="primary" data-onboarding="theme-create-confirm" @click="confirmCreateThemeSpace">确认</el-button></template
       >
     </el-dialog>
-    <el-dialog v-model="editDialogVisible" title="编辑主题" width="min(640px, 94vw)"
+    <el-dialog v-if="!browseOnly" v-model="editDialogVisible" title="编辑主题" width="min(640px, 94vw)"
       ><el-form label-position="top"
         ><el-form-item label="API 名称（必填）" :error="editApiNameError"><el-input v-model="editDraft.apiName" disabled /></el-form-item
         ><el-form-item label="空间名称（必填）" :error="editDisplayNameError"><el-input v-model="editDraft.displayName" maxlength="64" /></el-form-item
@@ -181,7 +195,7 @@
         ><el-button type="primary" :loading="editBusy" @click="confirmEditThemeSpace">确定</el-button></template
       ></el-dialog
     >
-    <el-dialog v-model="deleteDialogVisible" title="删除主题" width="min(460px, 94vw)" :close-on-click-modal="false">
+    <el-dialog v-if="!browseOnly" v-model="deleteDialogVisible" title="删除主题" width="min(460px, 94vw)" :close-on-click-modal="false">
       <p>确认删除「{{ deleteSpace?.displayName }}」主题数据？</p>
       <p v-if="deleteError" class="theme-space-management__error" role="alert">{{ deleteError }}</p>
       <template #footer
@@ -198,7 +212,7 @@
         ><el-button type="primary" :loading="exportBusy" @click="confirmExportThemeSpace">导出</el-button></template
       ></el-dialog
     >
-    <OnboardingGuideOverlay v-model="guideVisible" :steps="themeOnboardingGuideSteps" :start-id="guideStartId" />
+    <OnboardingGuideOverlay v-if="!browseOnly" v-model="guideVisible" :steps="themeOnboardingGuideSteps" :start-id="guideStartId" />
   </div>
 </template>
 <script setup lang="ts">
@@ -227,6 +241,7 @@ import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuide
 import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
 import { ONBOARDING_GUIDE_ENTRY_IDS, THEME_ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
 import type { OntologySpaceSummary } from "@/types";
+const props = withDefaults(defineProps<{ browseOnly?: boolean }>(), { browseOnly: false });
 const themeOnboardingGuideSteps = THEME_ONBOARDING_GUIDE_STEPS;
 const {
   visible: guideVisible,
@@ -283,6 +298,16 @@ const stats = computed<OntologySpaceSummary[]>(() => [
 function notifyUnavailable(action: string): void {
   ElMessage.info(`${action}功能暂未接入`);
 }
+/**
+ * @description 打开主题导出弹窗，并恢复默认导出类型。
+ * @param space 待导出的主题。
+ */
+function openThemeSpaceExportDialog(space: OntologySpaceItem): void {
+  exportSpace.value = space;
+  exportType.value = "INSTANCE";
+  exportError.value = "";
+  exportDialogVisible.value = true;
+}
 /** @description 处理主题更多菜单命令。 @param command 菜单命令。 @param space 当前主题。 */
 function handleThemeSpaceCommand(command: unknown, space: OntologySpaceItem): void {
   if (command === "删除主题") {
@@ -292,10 +317,7 @@ function handleThemeSpaceCommand(command: unknown, space: OntologySpaceItem): vo
     return;
   }
   if (command === "导出主题") {
-    exportSpace.value = space;
-    exportType.value = "INSTANCE";
-    exportError.value = "";
-    exportDialogVisible.value = true;
+    openThemeSpaceExportDialog(space);
     return;
   }
   notifyUnavailable(String(command));
@@ -420,9 +442,11 @@ function confirmCreateThemeSpace(): void {
 /** @description 进入主题对应的空间内管理页，携带空间名与来源标识供面包屑展示。 @param space 目标主题。 */
 function enterThemeSpace(space: OntologySpaceItem): void {
   void router.push({
-    name: "OntologySpaceManagementDetailObject",
+    name: props.browseOnly ? "EntityBrowsingObject" : "OntologySpaceManagementDetailObject",
     params: { spaceId: space.id },
-    query: { spaceName: space.displayName, from: "theme-space-management" },
+    query: props.browseOnly
+      ? { spaceName: space.displayName, spaceType: "1", from: "theme-space-browse" }
+      : { spaceName: space.displayName, from: "theme-space-management" },
   });
 }
 /**
@@ -880,9 +904,14 @@ watch([keyword, order, pageSize], () => {
 .theme-space-card footer {
   margin-top: auto;
 }
-.theme-space-card footer > div:last-child {
+.theme-space-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+}
+
+.theme-space-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 .theme-edit-preview {
   display: flex;

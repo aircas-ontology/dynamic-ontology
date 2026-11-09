@@ -10,8 +10,16 @@ export interface OntologyEntityInfo {
   id?: number | string;
   entityPrimaryKey?: number | string;
   ontologyUniqueIdentifier?: string;
-  properties?: Record<string, unknown>;
+  properties?: Record<string, unknown> | OntologyEntityPropertyItem[];
   [propertyName: string]: unknown;
+}
+
+/** 实体实例的动态属性项。 */
+export interface OntologyEntityPropertyItem {
+  propertyApiName?: string;
+  propertyDisplayName?: string;
+  propertyName?: string;
+  propertyValue?: unknown;
 }
 
 /** 对象实体实例分页数据。 */

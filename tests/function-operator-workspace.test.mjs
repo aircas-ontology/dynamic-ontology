@@ -108,6 +108,18 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(formSource, /FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS/);
   assert.doesNotMatch(formSource, /v-for="item in FUNCTION_OPERATOR_TYPE_OPTIONS"/);
   {
+    const detailSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorDetailDrawer.vue");
+    assert.match(panelSource, /class="function-operator-card__actions"[\s\S]*@click="openTest\(operator\)">测试<\/el-button>/);
+    assert.doesNotMatch(panelSource, /v-if="!browseOnly"[^\n]*class="function-operator-card__actions"/);
+    assert.match(panelSource, /label="操作"[\s\S]*@click\.stop="openTest\(asOperator\(row\)\)">测试<\/el-button>/);
+    assert.doesNotMatch(panelSource, /el-table-column v-if="!browseOnly" label="操作"/);
+    assert.match(panelSource, /v-if="!browseOnly && operator\.status !== ['"]published['"]"[^\n]*@click="openEdit\(operator\)"/);
+    assert.match(panelSource, /v-if="!browseOnly && asOperator\(row\)\.status !== ['"]published['"]"[^\n]*@click\.stop="openEdit\(asOperator\(row\)\)"/);
+    assert.match(detailSource, /<el-button type="primary" plain @click="emitTest">测试<\/el-button>/);
+    assert.match(detailSource, /v-if="!browseOnly && operator\.status !== ['"]published['"]"[^\n]*@click="emitEdit"/);
+    assert.doesNotMatch(detailSource, /v-if="!browseOnly"[^\n]*class="function-operator-detail__actions"/);
+  }
+  {
     const typeSource = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
     assert.match(typeSource, /FUNCTION_OPERATOR_COMPOSITE_PUBLIC\s*=\s*false/);
     assert.match(typeSource, /FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS/);
@@ -116,8 +128,8 @@ test("function operator panel wires workspace composable and basic form", () => 
   }
   assert.match(panelSource, /FunctionOperatorFormDialog/);
   assert.match(panelSource, /FunctionOperatorDetailDrawer/);
-  assert.match(panelSource, /v-if="operator\.status !== ['"]published['"]"[\s\S]*openEdit\(operator\)/);
-  assert.match(panelSource, /v-if="asOperator\(row\)\.status !== ['"]published['"]"[\s\S]*openEdit\(asOperator\(row\)\)/);
+  assert.match(panelSource, /v-if="!browseOnly && operator\.status !== ['"]published['"]"[\s\S]*openEdit\(operator\)/);
+  assert.match(panelSource, /v-if="!browseOnly && asOperator\(row\)\.status !== ['"]published['"]"[\s\S]*openEdit\(asOperator\(row\)\)/);
   const workspaceSource = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
   assert.match(workspaceSource, /operator\.status === ['"]published['"]/);
   assert.match(workspaceSource, /已发布函数不可编辑/);

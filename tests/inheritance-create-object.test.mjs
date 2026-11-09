@@ -77,26 +77,44 @@ test("dialog opens manually with inherited category and resets on ordinary reope
   const scope = effectScope();
   try {
     const state = scope.run(() =>
-      new Function(...Object.keys(deps), ts.transpile(`${script}\nreturn { draft, createMode };`, { target: ts.ScriptTarget.ES2022 }))(...Object.values(deps)),
+      new Function(
+        ...Object.keys(deps),
+        ts.transpile(`${script}\nreturn { draft, createMode, lockInheritedParent, selectCreateMode };`, { target: ts.ScriptTarget.ES2022 }),
+      )(...Object.values(deps)),
     );
     visible.value = true;
     await nextTick();
     assert.equal(state.createMode.value, "manual");
+    assert.equal(state.lockInheritedParent.value, true);
     assert.equal(state.draft.parentId, "ship");
     assert.equal(state.draft.categoryId, "7");
+    state.selectCreateMode("import");
+    assert.equal(state.createMode.value, "manual");
     visible.value = false;
     await nextTick();
     props.initialParentId = undefined;
     visible.value = true;
     await nextTick();
+    assert.equal(state.lockInheritedParent.value, false);
     assert.equal(state.draft.parentId, undefined);
     assert.equal(state.draft.categoryId, "3");
+    state.selectCreateMode("import");
+    assert.equal(state.createMode.value, "import");
     props.initialParentId = "ship";
     props.editingItem = { categoryId: "9", displayName: "编辑" };
     await nextTick();
+    assert.equal(state.lockInheritedParent.value, false);
     assert.equal(state.draft.parentId, undefined);
     assert.equal(state.draft.categoryId, "9");
   } finally {
     scope.stop();
   }
+});
+
+test("inherited create dialog template locks modes and parent select", () => {
+  const source = readFileSync(new URL("../src/views/ObjectWorkspacePanel/components/OntologyObjectCreateDialog.vue", import.meta.url), "utf8");
+  assert.match(source, /v-if="!editingItem && !lockInheritedParent"/);
+  assert.match(source, /:clearable="!lockInheritedParent"/);
+  assert.match(source, /:disabled="submitting \|\| lockInheritedParent"/);
+  assert.match(source, /lockInheritedParent = computed\(\(\) => Boolean\(props\.initialParentId\) && !props\.editingItem\)/);
 });

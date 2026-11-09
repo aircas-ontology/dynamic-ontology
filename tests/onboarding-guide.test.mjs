@@ -250,7 +250,7 @@ test("onboarding guide wires three pages to the unified config with page scope a
   assert.match(spaceSource, /isEmbedded\.value \? ONBOARDING_GUIDE_EMBEDDED_ENTRY_IDS\["space-list"\] : ONBOARDING_GUIDE_ENTRY_IDS\["space-list"\]/);
   assert.match(spaceSource, /chain !== CHAIN_CREATE_SPACE/);
   assert.match(spaceSource, /@click="openOnboardingGuide\(\)"/);
-  assert.match(spaceSource, /<OnboardingGuideOverlay v-model="guideVisible" :steps="onboardingGuideSteps" :start-id="guideStartId" \/>/);
+  assert.match(spaceSource, /<OnboardingGuideOverlay v-if="!browseOnly" v-model="guideVisible" :steps="onboardingGuideSteps" :start-id="guideStartId" \/>/);
   assert.doesNotMatch(spaceSource, /id: "create-space"/);
 
   const detailSource = readSource("../src/views/OntologySpaceManagementDetail/index.vue");

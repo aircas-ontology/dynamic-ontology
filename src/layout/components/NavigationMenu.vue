@@ -21,6 +21,14 @@
         <el-icon><Collection /></el-icon>
         <template #title>主题管理</template>
       </el-menu-item>
+      <el-menu-item index="/workspace/ontology-space-browse" :route="{ name: 'OntologySpaceBrowse' }">
+        <el-icon><View /></el-icon>
+        <template #title>对象空间浏览</template>
+      </el-menu-item>
+      <el-menu-item index="/workspace/theme-space-browse" :route="{ name: 'ThemeSpaceBrowse' }">
+        <el-icon><View /></el-icon>
+        <template #title>主题空间浏览</template>
+      </el-menu-item>
       <el-menu-item index="/workspace/full-text-search" :route="{ name: 'FullTextSearch' }">
         <el-icon><Search /></el-icon>
         <template #title>全文检索</template>
@@ -46,7 +54,7 @@
 
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import { Box, Collection, Document, Expand, Fold, Search } from "@element-plus/icons-vue";
+import { Box, Collection, Document, Expand, Fold, Search, View } from "@element-plus/icons-vue";
 const collapsed = defineModel<boolean>("collapsed", { default: true });
 const assistantVisible = defineModel<boolean>("assistantVisible", { default: false });
 const route = useRoute();

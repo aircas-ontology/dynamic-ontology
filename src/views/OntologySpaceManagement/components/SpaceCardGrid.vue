@@ -51,7 +51,7 @@
             <span class="space-card__meta-value">{{ space.updatedTime }}</span>
           </div>
         </div>
-        <SpaceActions :gradient="true" :space="space" @action="emit('action', $event, space)" />
+        <SpaceActions :gradient="true" :browse-only="browseOnly" :space="space" @action="emit('action', $event, space)" />
       </footer>
     </article>
   </div>
@@ -62,7 +62,7 @@ import { Box, Connection, DataLine, Operation, Tickets } from "@element-plus/ico
 import type { OntologySpaceAction, OntologySpaceItem } from "@/types";
 import SpaceActions from "./SpaceActions.vue";
 
-defineProps<{ spaces: OntologySpaceItem[] }>();
+defineProps<{ browseOnly?: boolean; spaces: OntologySpaceItem[] }>();
 const emit = defineEmits<{ action: [action: OntologySpaceAction, space: OntologySpaceItem] }>();
 </script>
 

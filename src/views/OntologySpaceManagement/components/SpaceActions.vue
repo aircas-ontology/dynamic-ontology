@@ -11,8 +11,9 @@
     >
       进入
     </el-button>
-    <el-button type="primary" plain size="small" :icon="Edit" @click="$emit('action', 'edit', space)"> 编辑 </el-button>
-    <el-dropdown trigger="click" @command="command">
+    <el-button v-if="browseOnly" type="primary" plain size="small" @click="$emit('action', 'export', space)">导出</el-button>
+    <el-button v-if="!browseOnly" type="primary" plain size="small" :icon="Edit" @click="$emit('action', 'edit', space)"> 编辑 </el-button>
+    <el-dropdown v-if="!browseOnly" trigger="click" @command="command">
       <el-button type="primary" plain size="small">
         更多
         <el-icon>
@@ -32,7 +33,7 @@
 <script setup lang="ts">
 import { ArrowDown, Edit, Right } from "@element-plus/icons-vue";
 import type { OntologySpaceAction, OntologySpaceItem } from "@/types";
-const props = defineProps<{ space: OntologySpaceItem; gradient?: boolean }>();
+const props = defineProps<{ space: OntologySpaceItem; browseOnly?: boolean; gradient?: boolean }>();
 const emit = defineEmits<{ action: [action: OntologySpaceAction, space: OntologySpaceItem] }>();
 /**
  * @description 将下拉命令转成空间运维动作。

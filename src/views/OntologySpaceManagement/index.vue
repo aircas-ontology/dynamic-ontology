@@ -1,6 +1,7 @@
 <template>
   <div class="ontology-space-management">
     <button
+      v-if="!browseOnly"
       :class="{ 'is-embedded': isEmbedded }"
       class="ontology-space-management__help"
       type="button"
@@ -11,13 +12,19 @@
       <el-icon><QuestionFilled /></el-icon>
     </button>
     <section class="ontology-space-management__overview">
-      <WelcomePanel :show-create="!isEmbedded" @create="openOntologySpaceForm()" />
+      <WelcomePanel :show-create="!isEmbedded && !browseOnly" :browse-only="browseOnly" @create="openOntologySpaceForm()" />
       <div class="ontology-space-management__stats" :aria-busy="overviewStatus === 'loading'">
         <StatCard v-for="stat in summaryStats" :key="stat.id" :stat="stat" />
       </div>
     </section>
     <p v-if="overviewError" class="ontology-space-management__overview-error" role="alert">{{ overviewError }}</p>
-    <SectionToolbar v-model:keyword="keyword" v-model:order="order" v-model:view-mode="viewMode" />
+    <SectionToolbar
+      :browse-only="browseOnly"
+      :title="browseOnly ? '对象空间浏览' : '对象空间管理'"
+      v-model:keyword="keyword"
+      v-model:order="order"
+      v-model:view-mode="viewMode"
+    />
     <div v-if="status === 'loading'" class="ontology-space-management__state" role="status"><AircasLoading>正在加载对象空间…</AircasLoading></div>
     <div v-else-if="status === 'error'" class="ontology-space-management__state" role="alert">
       <span>{{ error }}</span
@@ -25,6 +32,7 @@
     </div>
     <SpaceCollection
       v-else
+      :browse-only="browseOnly"
       :spaces="result.items"
       :total="result.total"
       :page="result.page"
@@ -34,6 +42,7 @@
       @action="handleOntologySpaceAction"
     />
     <SpaceFormDialog
+      v-if="!browseOnly"
       v-model="formVisible"
       :space="activeSpace"
       :external-error="actionError"
@@ -49,7 +58,7 @@
       @confirm-delete="confirmDeleteOntologySpace"
       @confirm-export="confirmExportOntologySpace"
     />
-    <OnboardingGuideOverlay v-model="guideVisible" :steps="onboardingGuideSteps" :start-id="guideStartId" />
+    <OnboardingGuideOverlay v-if="!browseOnly" v-model="guideVisible" :steps="onboardingGuideSteps" :start-id="guideStartId" />
   </div>
 </template>
 
@@ -69,6 +78,8 @@ import StatCard from "./components/StatCard.vue";
 import WelcomePanel from "./components/WelcomePanel.vue";
 import { useSpaceManagement } from "./composables/useSpaceManagement";
 import { useSpaceManagementActions } from "./composables/useSpaceManagementActions";
+
+const props = withDefaults(defineProps<{ browseOnly?: boolean }>(), { browseOnly: false });
 
 const {
   keyword,
@@ -100,7 +111,7 @@ const {
   confirmDeleteOntologySpace,
   confirmExportOntologySpace,
   completeOntologySpaceImport,
-} = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace, loadOntologySpaces });
+} = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace, loadOntologySpaces, browseOnly: () => props.browseOnly });
 const route = useRoute();
 const isEmbedded = computed(() => typeof route.query.userName === "string" && route.query.userName.trim().length > 0);
 const onboardingGuideSteps = computed(() =>
