@@ -4,6 +4,8 @@ export interface FunctionPublishParams {
   functionApi: string;
   /** 版本号，格式 x.y.z。 */
   version: string;
+  /** 空间 id。 */
+  spaceId: string;
 }
 
 /** 发布函数响应 data（无业务载荷）。 */

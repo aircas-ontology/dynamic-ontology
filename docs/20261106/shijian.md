@@ -98,3 +98,67 @@ params参数还是传递外部参数信息
 inputEntities是测试入参，<c91b7d43-5e28-4a06-9f31-82d4b0c7e659>是本体唯一值，entityPrimaryKey是实例key,如果mappingIns.storageGroup（mappingIns.storageGroup是行为详情接口中新增加返回的字段）=main则不需要传递dataPrimaryKeys对象，如果mappingIns.storageGroup！==main 则调用/ontology/entity/row_detail/page 接口（storageGroup参数值为mappingIns.storageGroup）获取子表的实例，weapon_load为分组名称，11是分组的实例key
 
 outputEntities是测试出参和inputEntities 值获取逻辑一致
+
+应用行为的参数又又变了，格式如下
+{
+"ontologySpaceId":156,
+"actionApi":"testFull",
+"entityPrimaryKeys":{"from":1,"to":3},
+"inputParams":{
+"speed":{"entityPrimaryKey":5}
+},
+"outputParams":{
+"price":{"entityPrimaryKey":2},
+"duty":{
+"entityPrimaryKey":3,
+"dataPrimaryKeys":{"duty_log":12}
+}
+,
+"params":{
+"threshold":300
+}
+}
+}
+这次为了解决参数来自同一个本体时的传参问题，区别是speed，price，duty为参数名，之前是本体唯一值，因为参数名不可能相同，所以不会有重名的了，然后改inputEntities为inputParams，outputEntities为outputParams。其他参数与之前一致
+
+应用行为测试的参数又又又变了，格式如下
+{
+"ontologySpaceId":"156",
+"actionApi":"yyy",
+"inputParams":{
+"name":[
+{
+"entityPrimaryKey": 11,
+},
+{
+"entityPrimaryKey": 12,
+},
+],
+"max_mach": [
+{
+"entityPrimaryKey": 101,
+"dataPrimaryKeys": {
+"duty_log": 11
+}
+},
+{
+"entityPrimaryKey": 102,
+"dataPrimaryKeys": {
+"duty_log": 12,
+}
+}
+]
+},
+"outputParams":{
+"price":{"entityPrimaryKey":2},
+"duty":{
+"entityPrimaryKey":3,
+"dataPrimaryKeys":{"duty_log":12}
+}
+}
+"entityPrimaryKeys":{
+"from":[1,2],
+"to":[11,12]
+}
+}
+修改内容测试入参改为可以多选，前端界面也要同步修改，不同参数的多选个数可以不同，绑定关系的实例也可以多选，并且两端实例个数也可以不一样

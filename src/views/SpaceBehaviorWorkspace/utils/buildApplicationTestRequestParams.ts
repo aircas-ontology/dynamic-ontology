@@ -1,8 +1,10 @@
 import type { TestOntologyActionEntityBinding, TestOntologyActionParams } from "@/types";
 import { isMainStorageGroup, normalizeStorageGroup } from "./resolveAttributeValueSelection.ts";
 
-/** 应用行为测试单个对象绑定选择快照。 */
-export interface ApplicationTestEntityBindingSelection {
+/** 应用行为测试单个参数绑定选择快照。 */
+export interface ApplicationTestParamBindingSelection {
+  /** mappingIns.parameterName。 */
+  paramName: string;
   ontologyUniqueIdentifier: string;
   entityPrimaryKey: string | number | boolean | Record<string, unknown>;
   /** mappingIns.storageGroup；main 或空不传 dataPrimaryKeys。 */
@@ -11,12 +13,12 @@ export interface ApplicationTestEntityBindingSelection {
   dataPrimaryKey?: string | number | boolean | Record<string, unknown> | null;
 }
 
-/** 应用行为测试关系两端快照。 */
+/** 应用行为测试关系两端快照（多选）。 */
 export interface ApplicationTestLinkEntitySelection {
   ontologyUniqueIdentifierFrom: string;
   ontologyUniqueIdentifierTo: string;
-  primaryKeyFrom: string | number | boolean | Record<string, unknown>;
-  primaryKeyTo: string | number | boolean | Record<string, unknown>;
+  primaryKeysFrom: Array<string | number | boolean | Record<string, unknown>>;
+  primaryKeysTo: Array<string | number | boolean | Record<string, unknown>>;
   /** 挂载侧：from / to；未知时约定 From 为本端、To 为对端。 */
   mountSide: "from" | "to" | "";
 }
@@ -27,10 +29,10 @@ export interface BuildApplicationTestRequestParamsInput {
   actionApi: string;
   /** EXTERNAL 入参已转换取值。 */
   params: Record<string, unknown>;
-  /** INPUT PROPERTY 对象绑定。 */
-  inputEntitySelections: ApplicationTestEntityBindingSelection[];
-  /** OUTPUT WRITE_PROPERTY 对象绑定。 */
-  outputEntitySelections: ApplicationTestEntityBindingSelection[];
+  /** INPUT PROPERTY 参数绑定（同名可多条）。 */
+  inputParamSelections: ApplicationTestParamBindingSelection[];
+  /** OUTPUT WRITE_PROPERTY 参数绑定（每参数一条）。 */
+  outputParamSelections: ApplicationTestParamBindingSelection[];
   /** 有 linkMapping 且两端已选时传入；否则 null。 */
   linkEntitySelection: ApplicationTestLinkEntitySelection | null;
 }
@@ -59,47 +61,74 @@ function hasUsablePrimaryKey(value: unknown): boolean {
 }
 
 /**
- * @description 将绑定选择列表聚合为 ontology → entityBinding。
- * @param selections 选择快照。
+ * @description 将单条选择快照转为实体绑定对象。
+ * @param selection 选择快照。
  * @param sideLabel 错误文案侧别名。
+ * @returns 绑定对象或错误。
+ */
+function mapSelectionToEntityBinding(
+  selection: ApplicationTestParamBindingSelection,
+  sideLabel: string,
+): { ok: true; binding: TestOntologyActionEntityBinding } | { ok: false; error: string } {
+  const paramName = selection.paramName.trim();
+  if (!paramName) return { ok: false, error: `${sideLabel}缺少参数名，无法测试` };
+  if (!hasUsablePrimaryKey(selection.entityPrimaryKey)) {
+    return { ok: false, error: `请先选择${sideLabel}参数「${paramName}」的实例` };
+  }
+  const storageGroup = normalizeStorageGroup(selection.storageGroup);
+  const next: TestOntologyActionEntityBinding = { entityPrimaryKey: selection.entityPrimaryKey };
+  if (!isMainStorageGroup(storageGroup) && storageGroup) {
+    if (!hasUsablePrimaryKey(selection.dataPrimaryKey)) {
+      return { ok: false, error: `请先选择${sideLabel}参数「${paramName}」存储分组「${storageGroup}」的数据行` };
+    }
+    next.dataPrimaryKeys = {
+      [storageGroup]: selection.dataPrimaryKey as string | number | boolean | Record<string, unknown>,
+    };
+  }
+  return { ok: true, binding: next };
+}
+
+/**
+ * @description 将入参选择列表组装为 paramName → 绑定数组。
+ * @param selections 选择快照（同名可多条）。
  * @returns 成功时返回 map；失败时返回 error。
  */
-function aggregateEntityBindings(
-  selections: ApplicationTestEntityBindingSelection[],
-  sideLabel: string,
+function buildInputParamBindings(
+  selections: ApplicationTestParamBindingSelection[],
+): { ok: true; bindings: Record<string, TestOntologyActionEntityBinding[]> } | { ok: false; error: string } {
+  const bindings: Record<string, TestOntologyActionEntityBinding[]> = {};
+  for (const selection of selections) {
+    const mapped = mapSelectionToEntityBinding(selection, "入参");
+    if (!mapped.ok) return mapped;
+    const paramName = selection.paramName.trim();
+    const list = bindings[paramName] ?? [];
+    list.push(mapped.binding);
+    bindings[paramName] = list;
+  }
+  return { ok: true, bindings };
+}
+
+/**
+ * @description 将出参选择列表组装为 paramName → 单个绑定。
+ * @param selections 选择快照。
+ * @returns 成功时返回 map；失败时返回 error。
+ */
+function buildOutputParamBindings(
+  selections: ApplicationTestParamBindingSelection[],
 ): { ok: true; bindings: Record<string, TestOntologyActionEntityBinding> } | { ok: false; error: string } {
   const bindings: Record<string, TestOntologyActionEntityBinding> = {};
   for (const selection of selections) {
-    const ontologyId = selection.ontologyUniqueIdentifier.trim();
-    if (!ontologyId) return { ok: false, error: `${sideLabel}缺少对象标识，无法测试` };
-    if (!hasUsablePrimaryKey(selection.entityPrimaryKey)) {
-      return { ok: false, error: `请先选择${sideLabel}对象「${ontologyId}」的实例` };
-    }
-    const storageGroup = normalizeStorageGroup(selection.storageGroup);
-    const existing = bindings[ontologyId];
-    if (existing && existing.entityPrimaryKey !== selection.entityPrimaryKey) {
-      return { ok: false, error: `${sideLabel}对象「${ontologyId}」选中了多个不同实例，无法测试` };
-    }
-    const next: TestOntologyActionEntityBinding = existing
-      ? { ...existing, dataPrimaryKeys: existing.dataPrimaryKeys ? { ...existing.dataPrimaryKeys } : undefined }
-      : { entityPrimaryKey: selection.entityPrimaryKey };
-    if (!isMainStorageGroup(storageGroup) && storageGroup) {
-      if (!hasUsablePrimaryKey(selection.dataPrimaryKey)) {
-        return { ok: false, error: `请先选择${sideLabel}对象「${ontologyId}」存储分组「${storageGroup}」的数据行` };
-      }
-      next.dataPrimaryKeys = {
-        ...(next.dataPrimaryKeys ?? {}),
-        [storageGroup]: selection.dataPrimaryKey as string | number | boolean | Record<string, unknown>,
-      };
-    }
-    bindings[ontologyId] = next;
+    const mapped = mapSelectionToEntityBinding(selection, "出参");
+    if (!mapped.ok) return mapped;
+    const paramName = selection.paramName.trim();
+    bindings[paramName] = mapped.binding;
   }
   return { ok: true, bindings };
 }
 
 /**
  * @description 按文档规则组装应用行为测试请求体。
- * inputEntities / outputEntities 承载对象实例；关系仅写入 entityPrimaryKeys.from/to。
+ * inputParams 为绑定数组；outputParams 为单绑定；关系写入 entityPrimaryKeys.from/to 数组。
  * @param input 表单快照。
  * @returns 请求体或错误信息。
  */
@@ -109,10 +138,10 @@ export function buildApplicationTestRequestParams(input: BuildApplicationTestReq
   if (!ontologySpaceId) return { ok: false, error: "缺少对象空间 id，无法测试" };
   if (!actionApi) return { ok: false, error: "缺少行为 api，无法测试" };
 
-  const inputAggregated = aggregateEntityBindings(input.inputEntitySelections, "入参");
-  if (!inputAggregated.ok) return inputAggregated;
-  const outputAggregated = aggregateEntityBindings(input.outputEntitySelections, "出参");
-  if (!outputAggregated.ok) return outputAggregated;
+  const inputBuilt = buildInputParamBindings(input.inputParamSelections);
+  if (!inputBuilt.ok) return inputBuilt;
+  const outputBuilt = buildOutputParamBindings(input.outputParamSelections);
+  if (!outputBuilt.ok) return outputBuilt;
 
   const request: TestOntologyActionParams = {
     ontologySpaceId,
@@ -123,20 +152,22 @@ export function buildApplicationTestRequestParams(input: BuildApplicationTestReq
     request.params = { ...input.params };
   }
 
-  if (Object.keys(inputAggregated.bindings).length) {
-    request.inputEntities = inputAggregated.bindings;
+  if (Object.keys(inputBuilt.bindings).length) {
+    request.inputParams = inputBuilt.bindings;
   }
-  if (Object.keys(outputAggregated.bindings).length) {
-    request.outputEntities = outputAggregated.bindings;
+  if (Object.keys(outputBuilt.bindings).length) {
+    request.outputParams = outputBuilt.bindings;
   }
 
   const link = input.linkEntitySelection;
   if (link) {
-    if (!hasUsablePrimaryKey(link.primaryKeyFrom)) return { ok: false, error: "请先选择 From 侧实体实例" };
-    if (!hasUsablePrimaryKey(link.primaryKeyTo)) return { ok: false, error: "请先选择 To 侧实体实例" };
+    const fromKeys = link.primaryKeysFrom.filter((item) => hasUsablePrimaryKey(item));
+    const toKeys = link.primaryKeysTo.filter((item) => hasUsablePrimaryKey(item));
+    if (fromKeys.length === 0) return { ok: false, error: "请先选择 From 侧实体实例" };
+    if (toKeys.length === 0) return { ok: false, error: "请先选择 To 侧实体实例" };
     request.entityPrimaryKeys = {
-      from: link.primaryKeyFrom,
-      to: link.primaryKeyTo,
+      from: fromKeys,
+      to: toKeys,
     };
   }
 

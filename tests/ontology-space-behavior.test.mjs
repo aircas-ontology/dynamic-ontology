@@ -206,6 +206,24 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /listApplicationOntologySelectOptions/);
   assert.match(testDialogSource, /loadApplicationStorageGroupDataRows/);
   assert.match(testDialogSource, /updateApplicationStorageGroupRowSelection/);
+  assert.match(testDialogSource, /selectionMode:\s*inputPropertyParamNames\.has\(seed\.paramName\)\s*\?\s*["']multiple["']\s*:\s*["']single["']/);
+  assert.match(testDialogSource, /selectedRowKeys/);
+  assert.match(testDialogSource, /selectedEntities/);
+  assert.match(testDialogSource, /entitySlots/);
+  assert.match(testDialogSource, /selectedRowKeys\[0\]/);
+  assert.doesNotMatch(testDialogSource, /collapse-tags/);
+  assert.match(testDialogSource, /applicationInputBindingRecords/);
+  assert.match(testDialogSource, /addApplicationInputBindingRecords/);
+  assert.match(testDialogSource, /removeApplicationInputBindingRecord/);
+  assert.match(testDialogSource, /listApplicationInputBindingRecords/);
+  assert.match(testDialogSource, /behavior-test-dialog__binding-records/);
+  assert.match(testDialogSource, />添加</);
+  assert.match(testDialogSource, /请先添加/);
+  assert.match(testDialogSource, /\.slice\(0,\s*1\)/);
+  assert.match(testDialogSource, /toggleFromEntityRow/);
+  assert.match(testDialogSource, /toggleToEntityRow/);
+  assert.match(testDialogSource, /primaryKeysFrom/);
+  assert.match(testDialogSource, /primaryKeysTo/);
   assert.match(testDialogSource, /#footer/);
   assert.doesNotMatch(testDialogSource, /选择实例 ·/);
   assert.doesNotMatch(testDialogSource, /下方选择实例/);
@@ -215,11 +233,14 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.doesNotMatch(testDialogSource, /topLevelOntologyUniqueIdentifier/);
   assert.match(testDialogSource, /submitApplicationBehaviorTest/);
   assert.match(testDialogSource, /buildApplicationTestRequestParams/);
-  assert.match(testDialogSource, /inputEntitySelections/);
-  assert.match(testDialogSource, /outputEntitySelections/);
-  assert.match(testDialogSource, /inputEntities/);
-  assert.match(testDialogSource, /outputEntities/);
+  assert.match(testDialogSource, /inputParamSelections/);
+  assert.match(testDialogSource, /outputParamSelections/);
+  assert.match(testDialogSource, /inputParams/);
+  assert.match(testDialogSource, /outputParams/);
+  assert.doesNotMatch(testDialogSource, /inputEntities/);
+  assert.doesNotMatch(testDialogSource, /outputEntities/);
   assert.match(testDialogSource, /entityPrimaryKeys/);
+  assert.match(testDialogSource, /findApplicationOntologyPicker\(asApplicationInputRow\(row\)\.paramName/);
   assert.match(testDialogSource, /applicationTestResultText/);
   assert.match(testDialogSource, /v-if="showRelationLinkForm"/);
   assert.match(testDialogSource, /确认后直接执行基础函数算子测试/);
@@ -667,8 +688,8 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /选择写入属性/);
   assert.match(formSource, /behavior-form-dialog__object-property-pickers/);
   assert.match(formSource, /绑定关系/);
-  assert.match(formSource, /showApplicationRelationSection/);
-  assert.match(formSource, /hasApplicationWritePropertyOutput/);
+  assert.match(formSource, /showApplicationRelationSection = computed\(\(\) => kind\.value === ["']application["']\)/);
+  assert.doesNotMatch(formSource, /hasApplicationWritePropertyOutput/);
   assert.match(formSource, /selectApplicationRelationRow/);
   assert.match(formSource, /handleApplicationRelationRowClick/);
   assert.match(formSource, /formatApplicationRelationMapping/);
@@ -895,8 +916,8 @@ test("space behavior builds application test request params from form selections
     ontologySpaceId: "156",
     actionApi: "act.ap.demo",
     params: { max_mach: 2.25 },
-    inputEntitySelections: [],
-    outputEntitySelections: [],
+    inputParamSelections: [],
+    outputParamSelections: [],
     linkEntitySelection: null,
   });
   assert.equal(externalOnly.ok, true);
@@ -908,46 +929,54 @@ test("space behavior builds application test request params from form selections
     });
   }
 
-  const multiObject = buildApplicationTestRequestParams({
+  const multiParamSameOntology = buildApplicationTestRequestParams({
     ontologySpaceId: "156",
     actionApi: "act.ap.cross",
     params: {},
-    inputEntitySelections: [
-      { ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "main" },
-      { ontologyUniqueIdentifier: "ont-b", entityPrimaryKey: 100, storageGroup: "" },
+    inputParamSelections: [
+      { paramName: "name", ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "main" },
+      { paramName: "name", ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 2, storageGroup: "main" },
+      { paramName: "max_mach", ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 3, storageGroup: "" },
     ],
-    outputEntitySelections: [],
+    outputParamSelections: [],
     linkEntitySelection: null,
   });
-  assert.equal(multiObject.ok, true);
-  if (multiObject.ok) {
-    assert.deepEqual(multiObject.request.inputEntities, {
-      "ont-a": { entityPrimaryKey: 1 },
-      "ont-b": { entityPrimaryKey: 100 },
+  assert.equal(multiParamSameOntology.ok, true);
+  if (multiParamSameOntology.ok) {
+    assert.deepEqual(multiParamSameOntology.request.inputParams, {
+      name: [{ entityPrimaryKey: 1 }, { entityPrimaryKey: 2 }],
+      max_mach: [{ entityPrimaryKey: 3 }],
     });
-    assert.equal(multiObject.request.outputEntities, undefined);
-    assert.equal(multiObject.request.entityPrimaryKey, undefined);
-    assert.equal(multiObject.request.entityPrimaryKeys, undefined);
+    assert.equal(multiParamSameOntology.request.outputParams, undefined);
+    assert.equal(multiParamSameOntology.request.inputEntities, undefined);
+    assert.equal(multiParamSameOntology.request.outputEntities, undefined);
+    assert.equal(multiParamSameOntology.request.entityPrimaryKey, undefined);
+    assert.equal(multiParamSameOntology.request.entityPrimaryKeys, undefined);
   }
 
   const withDataRows = buildApplicationTestRequestParams({
     ontologySpaceId: "156",
     actionApi: "act.ap.groups",
     params: {},
-    inputEntitySelections: [
-      { ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "weapon", dataPrimaryKey: 17 },
-      { ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "engine", dataPrimaryKey: 9 },
+    inputParamSelections: [
+      { paramName: "mount", ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 101, storageGroup: "weapon", dataPrimaryKey: 11 },
+      { paramName: "mount", ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 102, storageGroup: "weapon", dataPrimaryKey: 12 },
+      { paramName: "engine", ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 2, storageGroup: "engine", dataPrimaryKey: 9 },
     ],
-    outputEntitySelections: [{ ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "main" }],
+    outputParamSelections: [{ paramName: "price", ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "main" }],
     linkEntitySelection: null,
   });
   assert.equal(withDataRows.ok, true);
   if (withDataRows.ok) {
-    assert.deepEqual(withDataRows.request.inputEntities, {
-      "ont-a": { entityPrimaryKey: 1, dataPrimaryKeys: { weapon: 17, engine: 9 } },
+    assert.deepEqual(withDataRows.request.inputParams, {
+      mount: [
+        { entityPrimaryKey: 101, dataPrimaryKeys: { weapon: 11 } },
+        { entityPrimaryKey: 102, dataPrimaryKeys: { weapon: 12 } },
+      ],
+      engine: [{ entityPrimaryKey: 2, dataPrimaryKeys: { engine: 9 } }],
     });
-    assert.deepEqual(withDataRows.request.outputEntities, {
-      "ont-a": { entityPrimaryKey: 1 },
+    assert.deepEqual(withDataRows.request.outputParams, {
+      price: { entityPrimaryKey: 1 },
     });
   }
 
@@ -955,21 +984,21 @@ test("space behavior builds application test request params from form selections
     ontologySpaceId: "156",
     actionApi: "act.ap.link",
     params: { max_mach: 2.25 },
-    inputEntitySelections: [{ ontologyUniqueIdentifier: "ont-from", entityPrimaryKey: 1, storageGroup: "main" }],
-    outputEntitySelections: [],
+    inputParamSelections: [{ paramName: "speed", ontologyUniqueIdentifier: "ont-from", entityPrimaryKey: 1, storageGroup: "main" }],
+    outputParamSelections: [],
     linkEntitySelection: {
       ontologyUniqueIdentifierFrom: "ont-from",
       ontologyUniqueIdentifierTo: "ont-to",
-      primaryKeyFrom: 1,
-      primaryKeyTo: 20,
+      primaryKeysFrom: [1, 2],
+      primaryKeysTo: [11, 12],
       mountSide: "from",
     },
   });
   assert.equal(withLink.ok, true);
   if (withLink.ok) {
     assert.equal(withLink.request.linkEntityPrimaryKey, undefined);
-    assert.deepEqual(withLink.request.entityPrimaryKeys, { from: 1, to: 20 });
-    assert.deepEqual(withLink.request.inputEntities, { "ont-from": { entityPrimaryKey: 1 } });
+    assert.deepEqual(withLink.request.entityPrimaryKeys, { from: [1, 2], to: [11, 12] });
+    assert.deepEqual(withLink.request.inputParams, { speed: [{ entityPrimaryKey: 1 }] });
     assert.equal(withLink.request.params?.max_mach, 2.25);
   }
 
@@ -977,8 +1006,8 @@ test("space behavior builds application test request params from form selections
     ontologySpaceId: "156",
     actionApi: "act.ap.demo",
     params: {},
-    inputEntitySelections: [{ ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: "", storageGroup: "main" }],
-    outputEntitySelections: [],
+    inputParamSelections: [{ paramName: "name", ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: "", storageGroup: "main" }],
+    outputParamSelections: [],
     linkEntitySelection: null,
   });
   assert.equal(missingProperty.ok, false);
@@ -987,11 +1016,21 @@ test("space behavior builds application test request params from form selections
     ontologySpaceId: "156",
     actionApi: "act.ap.demo",
     params: {},
-    inputEntitySelections: [{ ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "weapon" }],
-    outputEntitySelections: [],
+    inputParamSelections: [{ paramName: "mount", ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "weapon" }],
+    outputParamSelections: [],
     linkEntitySelection: null,
   });
   assert.equal(missingDataRow.ok, false);
+
+  const missingParamName = buildApplicationTestRequestParams({
+    ontologySpaceId: "156",
+    actionApi: "act.ap.demo",
+    params: {},
+    inputParamSelections: [{ paramName: "", ontologyUniqueIdentifier: "ont-a", entityPrimaryKey: 1, storageGroup: "main" }],
+    outputParamSelections: [],
+    linkEntitySelection: null,
+  });
+  assert.equal(missingParamName.ok, false);
 });
 
 test("space behavior collects application PROPERTY ontology pickers from INPUT rows", () => {
@@ -1062,8 +1101,9 @@ test("space behavior collects application PROPERTY ontology pickers from INPUT r
     },
   ]);
   assert.deepEqual(pickers, [
-    { ontologyUniqueIdentifier: "ont-a", label: "飞机名称" },
-    { ontologyUniqueIdentifier: "ont-b", label: "发动机" },
+    { pickerKey: "name", paramName: "name", ontologyUniqueIdentifier: "ont-a", label: "飞机名称" },
+    { pickerKey: "range", paramName: "range", ontologyUniqueIdentifier: "ont-a", label: "航程" },
+    { pickerKey: "engineName", paramName: "engineName", ontologyUniqueIdentifier: "ont-b", label: "发动机" },
   ]);
   assert.equal(formatApplicationInputSourceTypeLabel("EXTERNAL"), "外部输入");
   assert.equal(formatApplicationInputSourceTypeLabel("FIXED"), "固定值");
@@ -1178,9 +1218,9 @@ test("space behavior merges WRITE_PROPERTY output ontologies into application pi
     ],
   );
   assert.deepEqual(pickers, [
-    { ontologyUniqueIdentifier: "ont-a", label: "飞机名称" },
-    { ontologyUniqueIdentifier: "ont-env", label: "环境备注" },
-    { ontologyUniqueIdentifier: "ont-blank-label", label: "ont-blank-label" },
+    { pickerKey: "name", paramName: "name", ontologyUniqueIdentifier: "ont-a", label: "飞机名称" },
+    { pickerKey: "greeting", paramName: "greeting", ontologyUniqueIdentifier: "ont-a", label: "问候语" },
+    { pickerKey: "env_remark", paramName: "env_remark", ontologyUniqueIdentifier: "ont-env", label: "环境备注" },
   ]);
   assert.equal(formatApplicationOutputModeLabel("WRITE_PROPERTY"), "写入对象属性");
   assert.equal(formatApplicationOutputModeLabel("RESULT_ONLY"), "仅返回结果");
@@ -1282,13 +1322,22 @@ test("space behavior collects non-main storage group pickers for application PRO
   );
   assert.deepEqual(pickers, [
     {
-      pickerKey: buildApplicationStorageGroupPickerKey("ont-a", "weapon"),
+      pickerKey: buildApplicationStorageGroupPickerKey("mount", "weapon"),
+      paramName: "mount",
       ontologyUniqueIdentifier: "ont-a",
       storageGroup: "weapon",
       label: "挂载数量 · weapon",
     },
     {
-      pickerKey: buildApplicationStorageGroupPickerKey("ont-a", "engine"),
+      pickerKey: buildApplicationStorageGroupPickerKey("dup", "weapon"),
+      paramName: "dup",
+      ontologyUniqueIdentifier: "ont-a",
+      storageGroup: "weapon",
+      label: "挂载重复 · weapon",
+    },
+    {
+      pickerKey: buildApplicationStorageGroupPickerKey("engine_note", "engine"),
+      paramName: "engine_note",
       ontologyUniqueIdentifier: "ont-a",
       storageGroup: "engine",
       label: "发动机备注 · engine",
@@ -2715,14 +2764,33 @@ test("space behavior builds application createAction params with linkMapping and
       }),
     true,
   );
-  assert.equal(
-    "error" in
-      buildApplicationCreateActionParams({
-        ...baseDraft,
-        applicationInputRows: baseDraft.applicationInputRows.filter((row) => row.isObject),
-      }),
-    true,
-  );
+  const objectOnlyInputs = buildApplicationCreateActionParams({
+    ...baseDraft,
+    applicationInputRows: baseDraft.applicationInputRows.filter((row) => row.isObject),
+    applicationInputBindings: {},
+  });
+  assert.equal("error" in objectOnlyInputs, false);
+  if (!("error" in objectOnlyInputs)) {
+    assert.equal(
+      objectOnlyInputs.mappingIns.some((item) => item.category === "INPUT"),
+      false,
+    );
+  }
+
+  const noInputsOnlyOutputs = buildApplicationCreateActionParams({
+    ...baseDraft,
+    applicationInputRows: [],
+    applicationInputBindings: {},
+  });
+  assert.equal("error" in noInputsOnlyOutputs, false);
+  if (!("error" in noInputsOnlyOutputs)) {
+    assert.deepEqual(
+      noInputsOnlyOutputs.mappingIns.filter((item) => item.category === "INPUT"),
+      [],
+    );
+    assert.equal(noInputsOnlyOutputs.mappingIns.length, 2);
+  }
+
   assert.equal("error" in buildApplicationCreateActionParams({ ...baseDraft, categoryId: "root" }), true);
   assert.equal("error" in buildApplicationCreateActionParams({ ...baseDraft, behaviorApiName: "" }), true);
   assert.equal("error" in buildApplicationCreateActionParams({ ...baseDraft, displayName: " " }), true);

@@ -163,7 +163,7 @@ export function buildApplicationCreateActionParams(draft: SpaceBehaviorDraft): B
     mappingIns.push(mapped);
   }
 
-  if (!mappingIns.some((item) => item.category === "INPUT")) {
+  if (inputRows.length > 0 && !mappingIns.some((item) => item.category === "INPUT")) {
     return { error: "请至少配置一条入参绑定" };
   }
 

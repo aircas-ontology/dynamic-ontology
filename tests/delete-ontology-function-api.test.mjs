@@ -18,6 +18,7 @@ test("delete ontology function types expose functionApi version and null data", 
   assert.match(source, /export interface DeleteOntologyFunctionParams/);
   assert.match(source, /functionApi: string/);
   assert.match(source, /version: string/);
+  assert.match(source, /spaceId: string/);
   assert.match(source, /export type DeleteOntologyFunctionData = null/);
   const barrel = readSource("../src/types/index.ts");
   assert.match(barrel, /DeleteOntologyFunctionData/);
@@ -30,6 +31,7 @@ test("delete ontology function api deletes with functionApi and version query", 
   assert.match(source, /deleteOntologyFunctionInterface/);
   assert.match(source, /DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/function\/delete"/);
   assert.match(source, /method: "delete"/);
+  assert.match(source, /params\.spaceId/);
   const deleteFn = source.match(/export function deleteOntologyFunctionInterface[\s\S]*?\n\}/);
   assert.ok(deleteFn, "missing deleteOntologyFunctionInterface implementation");
   assert.match(deleteFn[0], /\bparams,/);
@@ -44,7 +46,7 @@ test("function operator workspace removeOperator calls delete api for card and t
   const workspace = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
   const panel = readSource("../src/views/FunctionOperatorPanel/index.vue");
   const dialog = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorDeleteDialog.vue");
-  assert.match(workspace, /deleteOntologyFunctionInterface\(\{ functionApi, version \}\)/);
+  assert.match(workspace, /deleteOntologyFunctionInterface\(\{ functionApi, version, spaceId: String\(spaceId\.value\) \}\)/);
   assert.match(workspace, /缺少函数版本，无法删除/);
   assert.match(workspace, /openDeleteOperator/);
   assert.match(workspace, /confirmDeleteOperator/);

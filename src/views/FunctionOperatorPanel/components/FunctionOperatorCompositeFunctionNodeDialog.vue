@@ -75,6 +75,8 @@ import FunctionOperatorScriptParamTree from "./FunctionOperatorScriptParamTree.v
 
 const props = defineProps<{
   modelValue: boolean;
+  /** 当前对象空间 id。 */
+  spaceId: number;
   context: CompositeWorkflowFunctionNodeEditContext | null;
 }>();
 
@@ -140,6 +142,7 @@ async function loadFunctionDetail(): Promise<void> {
     const response = await getOntologyFunctionDetailInterface({
       functionApi: context.functionApi,
       version: context.version,
+      spaceId: String(props.spaceId),
     });
     if (requestId !== detailGeneration) {
       return;

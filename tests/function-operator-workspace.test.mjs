@@ -155,7 +155,7 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(formSource, /onSourceVersionChange/);
   assert.match(formSource, /getOntologyFunctionDetailInterface/);
   assert.match(formSource, /mapOntologyFunctionDetailToDraft/);
-  assert.match(formSource, /getOntologyFunctionDetailInterface\(\{\s*functionApi,\s*version,?\s*\}\)/);
+  assert.match(formSource, /getOntologyFunctionDetailInterface\(\{\s*functionApi,\s*version,\s*spaceId:/);
   assert.match(formSource, /isSourceTemplateLocked/);
   assert.match(formSource, /form\.functionApi\s*=\s*draft\.functionApi/);
   assert.match(formSource, /clearValidate\(\[\s*["']name["']\s*,\s*["']functionApi["']\s*\]\)/);

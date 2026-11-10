@@ -957,12 +957,8 @@ const showBasicFunctionOperatorSection = computed(() => kind.value === "basic" &
 const showRelationLinkMappingSection = computed(
   () => showRelationInstanceSection.value && Boolean(selectedRelationId.value.trim()) && (basicAction.value === "create" || basicAction.value === "update"),
 );
-/** 是否存在写入对象属性的应用行为出参。 */
-const hasApplicationWritePropertyOutput = computed(() =>
-  Object.values(applicationOutputBindings.value).some((binding) => binding.outputMode === "WRITE_PROPERTY"),
-);
-/** 应用行为绑定关系：无 WRITE_PROPERTY 出参时展示，且非必选。 */
-const showApplicationRelationSection = computed(() => kind.value === "application" && !hasApplicationWritePropertyOutput.value);
+/** 应用行为始终展示绑定关系，且非必选（含出参为 WRITE_PROPERTY 时）。 */
+const showApplicationRelationSection = computed(() => kind.value === "application");
 const relationTargetStatusOptions = computed(() => listSpaceBehaviorRelationTargetStatusOptions(basicAction.value));
 const attributeSelectionHint = computed(() => {
   if (basicAction.value === "create") return "不可选择 main 分组；选中同组任一属性将全选该组";
@@ -1243,7 +1239,7 @@ async function loadOperatorDetailBindings(functionApi: string, version: string):
   operatorParamBindings.value = {};
   operatorParamIds.value = {};
   try {
-    const response = await getOntologyFunctionDetailInterface({ functionApi, version });
+    const response = await getOntologyFunctionDetailInterface({ functionApi, version, spaceId: props.spaceId.trim() });
     if (requestToken !== operatorDetailToken) return;
     if (response.code !== 200 || !response.data) throw new Error(response.message || "函数详情加载失败");
     const params = response.data.params ?? [];
@@ -1384,7 +1380,7 @@ async function loadApplicationOperatorDetail(functionApi: string, version: strin
   applicationInputRows.value = [];
   applicationOutputRows.value = [];
   try {
-    const response = await getOntologyFunctionDetailInterface({ functionApi, version });
+    const response = await getOntologyFunctionDetailInterface({ functionApi, version, spaceId: props.spaceId.trim() });
     if (requestToken !== applicationDetailToken) return;
     if (response.code !== 200 || !response.data) throw new Error(response.message || "函数详情加载失败");
     const params = response.data.params ?? [];

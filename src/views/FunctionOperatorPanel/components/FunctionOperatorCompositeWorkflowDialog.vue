@@ -117,7 +117,12 @@
       </aside>
     </div>
 
-    <FunctionOperatorCompositeFunctionNodeDialog v-model="functionNodeDialogVisible" :context="functionNodeEdit" @confirm="onFunctionNodeConfirm" />
+    <FunctionOperatorCompositeFunctionNodeDialog
+      v-model="functionNodeDialogVisible"
+      :space-id="spaceId"
+      :context="functionNodeEdit"
+      @confirm="onFunctionNodeConfirm"
+    />
     <FunctionOperatorCompositeLogicNodeDialog v-model="logicNodeDialogVisible" :context="logicNodeEdit" @confirm="applyLogicNodeEdit" />
     <FunctionOperatorCompositeTransformNodeDialog v-model="transformNodeDialogVisible" :context="transformNodeEdit" @confirm="applyTransformNodeEdit" />
     <FunctionOperatorCompositeEndpointNodeDialog v-model="endpointNodeDialogVisible" :context="endpointNodeEdit" @confirm="onEndpointNodeConfirm" />
@@ -484,6 +489,7 @@ async function runTest(): Promise<void> {
   const request = buildOntologyFunctionScriptTestRequest({
     functionApi,
     version,
+    ontologySpaceId: props.spaceId,
     rows: testInputRows.value,
   });
   testing.value = true;

@@ -286,6 +286,7 @@ export type {
 export type {
   TestOntologyActionData,
   TestOntologyActionEntityBinding,
+  TestOntologyActionLinkEntityPrimaryKeys,
   TestOntologyActionParams,
   TestOntologyActionResult,
 } from "./apis/testOntologyActionType";

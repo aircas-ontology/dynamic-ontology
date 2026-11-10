@@ -1,17 +1,21 @@
 import type { SpaceBehaviorActionInfoViewParamRow } from "./mapOntologyActionInfoToViewState";
 import { isMainStorageGroup, normalizeStorageGroup } from "./resolveAttributeValueSelection.ts";
 
-/** 应用行为测试中 PROPERTY / WRITE_PROPERTY 对应的对象实例选择器种子。 */
+/** 应用行为测试中 PROPERTY / WRITE_PROPERTY 对应的对象实例选择器种子（按参数独立）。 */
 export interface ApplicationPropertyOntologyPickerSeed {
+  /** 选择器键：参数名。 */
+  pickerKey: string;
+  paramName: string;
   ontologyUniqueIdentifier: string;
-  /** 展示标签：优先首个属性 displayName，否则参数名或对象标识。 */
+  /** 展示标签：优先属性 displayName，否则参数名或对象标识。 */
   label: string;
 }
 
-/** 应用行为测试非 main 存储分组的数据行选择器种子。 */
+/** 应用行为测试非 main 存储分组的数据行选择器种子（按参数独立）。 */
 export interface ApplicationStorageGroupPickerSeed {
-  /** ontologyUniqueIdentifier::storageGroup */
+  /** paramName::storageGroup */
   pickerKey: string;
+  paramName: string;
   ontologyUniqueIdentifier: string;
   storageGroup: string;
   /** 展示标签。 */
@@ -19,48 +23,50 @@ export interface ApplicationStorageGroupPickerSeed {
 }
 
 /**
- * @description 向选择器列表追加对象种子（按 ontologyUniqueIdentifier 去重）。
- * @param seen 已收录对象标识集合。
+ * @description 向选择器列表追加参数级对象种子（按参数名去重）。
+ * @param seen 已收录参数名集合。
  * @param result 选择器种子列表。
  * @param row 参数行。
  */
 function pushOntologyPickerSeed(seen: Set<string>, result: ApplicationPropertyOntologyPickerSeed[], row: SpaceBehaviorActionInfoViewParamRow): void {
+  const paramName = (row.paramName ?? "").trim();
   const ontologyUniqueIdentifier = (row.ontologyUniqueIdentifier ?? "").trim();
-  if (!ontologyUniqueIdentifier || seen.has(ontologyUniqueIdentifier)) return;
-  seen.add(ontologyUniqueIdentifier);
-  const label = (row.propertyDisplayName ?? "").trim() || (row.paramName ?? "").trim() || ontologyUniqueIdentifier;
-  result.push({ ontologyUniqueIdentifier, label });
+  if (!paramName || !ontologyUniqueIdentifier || seen.has(paramName)) return;
+  seen.add(paramName);
+  const label = (row.propertyDisplayName ?? "").trim() || paramName || ontologyUniqueIdentifier;
+  result.push({ pickerKey: paramName, paramName, ontologyUniqueIdentifier, label });
 }
 
 /**
- * @description 组装非 main 存储分组选择器键。
- * @param ontologyUniqueIdentifier 对象标识。
+ * @description 组装非 main 存储分组选择器键（按参数名）。
+ * @param paramName 参数名。
  * @param storageGroup 存储分组。
  * @returns 选择器键。
  */
-export function buildApplicationStorageGroupPickerKey(ontologyUniqueIdentifier: string, storageGroup: string): string {
-  return `${ontologyUniqueIdentifier.trim()}::${normalizeStorageGroup(storageGroup)}`;
+export function buildApplicationStorageGroupPickerKey(paramName: string, storageGroup: string): string {
+  return `${paramName.trim()}::${normalizeStorageGroup(storageGroup)}`;
 }
 
 /**
- * @description 向非 main 分组选择器追加种子（按 ontology + storageGroup 去重）。
+ * @description 向非 main 分组选择器追加种子（按参数名 + storageGroup 去重）。
  * @param seen 已收录键集合。
  * @param result 种子列表。
  * @param row 参数行。
  */
 function pushStorageGroupPickerSeed(seen: Set<string>, result: ApplicationStorageGroupPickerSeed[], row: SpaceBehaviorActionInfoViewParamRow): void {
+  const paramName = (row.paramName ?? "").trim();
   const ontologyUniqueIdentifier = (row.ontologyUniqueIdentifier ?? "").trim();
   const storageGroup = normalizeStorageGroup(row.storageGroup);
-  if (!ontologyUniqueIdentifier || !storageGroup || isMainStorageGroup(storageGroup)) return;
-  const pickerKey = buildApplicationStorageGroupPickerKey(ontologyUniqueIdentifier, storageGroup);
+  if (!paramName || !ontologyUniqueIdentifier || !storageGroup || isMainStorageGroup(storageGroup)) return;
+  const pickerKey = buildApplicationStorageGroupPickerKey(paramName, storageGroup);
   if (seen.has(pickerKey)) return;
   seen.add(pickerKey);
-  const label = `${(row.propertyDisplayName ?? "").trim() || (row.paramName ?? "").trim() || ontologyUniqueIdentifier} · ${storageGroup}`.trim();
-  result.push({ pickerKey, ontologyUniqueIdentifier, storageGroup, label });
+  const label = `${(row.propertyDisplayName ?? "").trim() || paramName || ontologyUniqueIdentifier} · ${storageGroup}`.trim();
+  result.push({ pickerKey, paramName, ontologyUniqueIdentifier, storageGroup, label });
 }
 
 /**
- * @description 从 INPUT PROPERTY 与 OUTPUT WRITE_PROPERTY 行按对象标识去重，收集实例选择器。
+ * @description 从 INPUT PROPERTY 与 OUTPUT WRITE_PROPERTY 行按参数名收集实例选择器。
  * @param inputRows 行为详情 INPUT 行。
  * @param writePropertyOutputRows WRITE_PROPERTY 出参行；缺省为空。
  * @returns 选择器种子列表（保持首次出现顺序）。
@@ -83,7 +89,7 @@ export function collectApplicationPropertyOntologyPickers(
 }
 
 /**
- * @description 从 INPUT PROPERTY 与 OUTPUT WRITE_PROPERTY 收集非 main 存储分组数据行选择器。
+ * @description 从 INPUT PROPERTY 与 OUTPUT WRITE_PROPERTY 按参数收集非 main 存储分组数据行选择器。
  * @param inputRows 行为详情 INPUT 行。
  * @param writePropertyOutputRows WRITE_PROPERTY 出参行；缺省为空。
  * @returns 分组选择器种子列表。

@@ -7,6 +7,8 @@ export interface GetOntologyFunctionDetailParams {
   functionApi: string;
   /** 版本号。 */
   version: string;
+  /** 空间 id。 */
+  spaceId: string;
 }
 
 /** 函数详情参数项。 */

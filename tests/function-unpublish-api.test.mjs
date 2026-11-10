@@ -18,6 +18,7 @@ test("function unpublish types expose functionApi version and null data", () => 
   assert.match(source, /export interface FunctionUnpublishParams/);
   assert.match(source, /functionApi: string/);
   assert.match(source, /version: string/);
+  assert.match(source, /spaceId: string/);
   assert.match(source, /export type FunctionUnpublishData = null/);
   const barrel = readSource("../src/types/index.ts");
   assert.match(barrel, /FunctionUnpublishData/);
@@ -30,6 +31,7 @@ test("function unpublish api posts functionApi and version to unpublish uri", ()
   assert.match(source, /postOntologyFunctionUnpublishInterface/);
   assert.match(source, /DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/function\/unpublish"/);
   assert.match(source, /method: "post"/);
+  assert.match(source, /params\.spaceId/);
   const unpublishFn = source.match(/export function postOntologyFunctionUnpublishInterface[\s\S]*?\n\}/);
   assert.ok(unpublishFn, "missing postOntologyFunctionUnpublishInterface implementation");
   assert.match(unpublishFn[0], /\bparams(?::\s*params)?,/);
@@ -45,7 +47,7 @@ test("function operator workspace unpublish calls real api", () => {
   assert.match(workspace, /postOntologyFunctionUnpublishInterface/);
   assert.match(workspace, /const functionApi = operator\.functionApi\.trim\(\)/);
   assert.match(workspace, /const version = operator\.version\.trim\(\)/);
-  assert.match(workspace, /postOntologyFunctionUnpublishInterface\(\{\s*functionApi,\s*version,?\s*\}\)/);
+  assert.match(workspace, /postOntologyFunctionUnpublishInterface\(\{\s*functionApi,\s*version,\s*spaceId: String\(spaceId\.value\)\s*\}\)/);
   assert.match(workspace, /下线成功/);
   assert.match(workspace, /status === ["']published["']/);
   assert.match(panel, /togglePublish\(operator\)/);

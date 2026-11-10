@@ -28,6 +28,7 @@ mocks与types文件名自行语义化命名
   {
     "functionApi": "a",
     "version": "",
+    "ontologySpaceId": "",
     "ontologyIdentifier": "",
     "type":"",
     "code":"",
@@ -43,6 +44,7 @@ mocks与types文件名自行语义化命名
 
 - `functionApi`：【string，必填】 函数api
 - `version`：【string，必填】 版本号（必填，格式 x.y.z）
+- `ontologySpaceId`：【string，必填】 对象空间id
 - `ontologyIdentifier`：【string，必填】 本体唯一值
 - `type`：【string，非必填】 未创建函数时的草稿测试必填
 - `code`：【string，非必填】 脚本源码（CUSTOMIZE 草稿测试必填）

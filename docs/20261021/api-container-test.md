@@ -145,22 +145,22 @@
   "description": "常驻 httpbin 容器算子端到端测试",
   "ontologySpaceId": 1,
   "type": "",
-  "version":"",
-  "containerConfig":{
-  "image": {
-    "fileName": "go-httpbin.tar",
-    "path": "/app/container-images/d19ef4ec-0a3b-4faf-b7cc-97f47c00d474go-httpbin.tar",
-    "size": 5573632,
-    "architecture": "unknown",
-    "repoTags": []
-  },
-  "interfaceDoc": {
-    "fileName": "httpbin.json",
-    "path": "/app/interface-docs/f4a96fb9-7cc9-4f4e-b1a7-d466c5cd52f2-httpbin.json",
-    "format": "openapi3"
-  },
-  "runCommand": "docker run -p 18080:8080 --name httpbin-ctr-18080 mccutchen/go-httpbin:latest",
-  "selectedInterfaces": [/* 接口 3 的 data 数组，原样拷贝 */]
+  "version": "",
+  "containerConfig": {
+    "image": {
+      "fileName": "go-httpbin.tar",
+      "path": "/app/container-images/d19ef4ec-0a3b-4faf-b7cc-97f47c00d474go-httpbin.tar",
+      "size": 5573632,
+      "architecture": "unknown",
+      "repoTags": []
+    },
+    "interfaceDoc": {
+      "fileName": "httpbin.json",
+      "path": "/app/interface-docs/f4a96fb9-7cc9-4f4e-b1a7-d466c5cd52f2-httpbin.json",
+      "format": "openapi3"
+    },
+    "runCommand": "docker run -p 18080:8080 --name httpbin-ctr-18080 mccutchen/go-httpbin:latest",
+    "selectedInterfaces": [/* 接口 3 的 data 数组，原样拷贝 */]
   }
 }
 ```
@@ -293,6 +293,7 @@
 {
   "functionApi": "httpbin_POST_post",
   "version": "1.0.0",
+  "ontologySpaceId": "",
   "parameters": [
     { "paramName": "title", "paramValue": "hello" },
     { "paramName": "content", "paramValue": "world" }

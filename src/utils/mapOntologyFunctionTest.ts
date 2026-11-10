@@ -206,6 +206,7 @@ function mapScriptTestRowsToParameters(rows: OntologyFunctionScriptTestInputRow[
  * @param options 组装选项。
  * @param options.functionApi 函数 API 名称。
  * @param options.version 函数版本号。
+ * @param options.ontologySpaceId 对象空间 id。
  * @param options.ontologyIdentifier 所选本体唯一标识。
  * @param options.bindingKeys 有序绑定键。
  * @param options.propertyBindings 键到属性 apiName 的映射。
@@ -216,6 +217,7 @@ function mapScriptTestRowsToParameters(rows: OntologyFunctionScriptTestInputRow[
 export function buildOntologyFunctionTestRequest(options: {
   functionApi: string;
   version: string;
+  ontologySpaceId: number;
   ontologyIdentifier: string;
   bindingKeys: string[];
   propertyBindings: Record<string, string>;
@@ -232,6 +234,7 @@ export function buildOntologyFunctionTestRequest(options: {
   return {
     functionApi: options.functionApi.trim(),
     version: options.version.trim(),
+    ontologySpaceId: options.ontologySpaceId,
     ontologyIdentifier: options.ontologyIdentifier.trim(),
     variableBindings,
     pageNum: options.pageNum ?? 1,
@@ -240,22 +243,25 @@ export function buildOntologyFunctionTestRequest(options: {
 }
 
 /**
- * @description 组装脚本函数测试请求体：functionApi、version 与 parameters。
+ * @description 组装脚本函数测试请求体：functionApi、version、ontologySpaceId 与 parameters。
  * @param options 组装选项。
  * @param options.functionApi 函数 API 名称。
  * @param options.version 函数版本号。
+ * @param options.ontologySpaceId 对象空间 id。
  * @param options.rows 表单入参行。
  * @returns 测试接口请求参数。
  */
 export function buildOntologyFunctionScriptTestRequest(options: {
   functionApi: string;
   version: string;
+  ontologySpaceId: number;
   rows: OntologyFunctionScriptTestInputRow[];
 }): TestOntologyFunctionParams {
   const parameters = mapScriptTestRowsToParameters(options.rows);
   return {
     functionApi: options.functionApi.trim(),
     version: options.version.trim(),
+    ontologySpaceId: options.ontologySpaceId,
     parameters,
   };
 }

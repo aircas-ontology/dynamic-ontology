@@ -310,6 +310,7 @@ async function runScriptIdeTest(): Promise<void> {
   const payload = buildOntologyFunctionScriptTestRequest({
     functionApi,
     version,
+    ontologySpaceId: props.spaceId,
     rows: ideTestInputRows.value,
   });
   testing.value = true;

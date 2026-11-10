@@ -28,11 +28,13 @@ mocks与types文件名自行语义化命名
 
 - ```
     "functionApi": "",
-    "version": ""
+    "version": "",
+    "spaceId": ""
   ```
 
 - `functionApi`：【string，必填】 函数api名称
 - `version`：【string，必填】 版本号（必填，格式 x.y.z）
+- `spaceId`：【string，必填】 空间id
 
 ## 输出参数
 

@@ -126,6 +126,7 @@ export function getOntologyFunctionListInterface(params: GetOntologyFunctionList
  * @param params 查询参数。
  * @param params.functionApi 函数 API 名称。
  * @param params.version 版本号。
+ * @param params.spaceId 空间 id。
  * @returns 标准 API 响应，data 为函数详情。
  */
 export function getOntologyFunctionDetailInterface(params: GetOntologyFunctionDetailParams): Promise<ApiResponse<GetOntologyFunctionDetailData>> {
@@ -139,10 +140,11 @@ export function getOntologyFunctionDetailInterface(params: GetOntologyFunctionDe
 /**
  * @description 根据函数 API 名称查询版本号列表。
  *
- * 请求方式：GET `/ontology/function/versions`（`functionApi` 以 query string 传递）。
+ * 请求方式：GET `/ontology/function/versions`（`functionApi`、`spaceId` 以 query string 传递）。
  *
  * @param params 查询参数。
  * @param params.functionApi 函数 API 名称。
+ * @param params.spaceId 空间 id。
  * @returns 标准 API 响应，data 为版本号字符串数组。
  */
 export function getOntologyFunctionVersionsInterface(params: GetOntologyFunctionVersionsParams): Promise<ApiResponse<GetOntologyFunctionVersionsData>> {
@@ -156,11 +158,12 @@ export function getOntologyFunctionVersionsInterface(params: GetOntologyFunction
 /**
  * @description 按函数 API 名称和版本删除函数算子。
  *
- * 请求方式：DELETE `/ontology/function/delete`（`functionApi`、`version` 以 query 传递）。
+ * 请求方式：DELETE `/ontology/function/delete`（`functionApi`、`version`、`spaceId` 以 query 传递）。
  *
  * @param params 删除参数。
  * @param params.functionApi 函数 API 名称。
  * @param params.version 版本号，格式 x.y.z。
+ * @param params.spaceId 空间 id。
  * @returns 标准 API 响应；成功时 data 为 null。
  */
 export function deleteOntologyFunctionInterface(params: DeleteOntologyFunctionParams): Promise<ApiResponse<DeleteOntologyFunctionData>> {
@@ -178,6 +181,7 @@ export function deleteOntologyFunctionInterface(params: DeleteOntologyFunctionPa
  *
  * @param params 测试参数。
  * @param params.functionApi 函数 API 名称。
+ * @param params.ontologySpaceId 对象空间 id。
  * @param params.ontologyIdentifier 对象唯一标识。
  * @param params.variableBindings 查询参数绑定对象。
  * @param params.pageNum 可选页码，默认 1。
@@ -213,11 +217,12 @@ export function postParseOntologyFunctionParamsInterface(params: ParseOntologyFu
 /**
  * @description 发布函数算子。
  *
- * 请求方式：POST `/ontology/function/publish`（`functionApi`、`version` 以 query string 传递）。
+ * 请求方式：POST `/ontology/function/publish`（`functionApi`、`version`、`spaceId` 以 query string 传递）。
  *
  * @param params 发布参数（query）。
  * @param params.functionApi 函数 API 名称。
  * @param params.version 版本号，格式 x.y.z。
+ * @param params.spaceId 空间 id。
  * @returns 标准 API 响应；成功时 data 为 null。
  */
 export function postOntologyFunctionPublishInterface(params: FunctionPublishParams): Promise<ApiResponse<FunctionPublishData>> {
@@ -231,11 +236,12 @@ export function postOntologyFunctionPublishInterface(params: FunctionPublishPara
 /**
  * @description 下线已发布的函数算子。
  *
- * 请求方式：POST `/ontology/function/unpublish`（`functionApi`、`version` 以 query string 传递）。
+ * 请求方式：POST `/ontology/function/unpublish`（`functionApi`、`version`、`spaceId` 以 query string 传递）。
  *
  * @param params 下线参数（query）。
  * @param params.functionApi 函数 API 名称。
  * @param params.version 版本号，格式 x.y.z。
+ * @param params.spaceId 空间 id。
  * @returns 标准 API 响应；成功时 data 为 null。
  */
 export function postOntologyFunctionUnpublishInterface(params: FunctionUnpublishParams): Promise<ApiResponse<FunctionUnpublishData>> {

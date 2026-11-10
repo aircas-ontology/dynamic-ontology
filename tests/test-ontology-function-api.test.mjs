@@ -28,6 +28,7 @@ test("test ontology function types expose documented request fields and null dat
   assert.match(source, /export interface TestOntologyFunctionParams/);
   assert.match(source, /functionApi: string/);
   assert.match(source, /version: string/);
+  assert.match(source, /ontologySpaceId: number/);
   assert.match(source, /ontologyIdentifier\?: string/);
   assert.match(source, /variableBindings\?: Record<string, string>/);
   assert.match(source, /parameters\?: TestOntologyFunctionParameterItem\[\]/);
@@ -50,6 +51,7 @@ test("test ontology function types expose documented request fields and null dat
 test("test ontology function api posts to ontology function test endpoint", () => {
   const source = readSource("../src/apis/functionApi.ts");
   assert.match(source, /testOntologyFunctionInterface/);
+  assert.match(source, /params\.ontologySpaceId 对象空间 id/);
   assert.match(source, /DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/function\/test"/);
   assert.match(source, /method: "post"/);
   assert.match(source, /data: params/);
@@ -97,12 +99,14 @@ test("buildOntologyFunctionTestRequest assembles functionApi version ontologyIde
   const request = buildOntologyFunctionTestRequest({
     functionApi: "ss",
     version: "1.0.0",
+    ontologySpaceId: 46,
     ontologyIdentifier: "ont-1",
     bindingKeys: ["target", "age"],
     propertyBindings: { target: "prop_a", age: "prop_b" },
   });
   assert.equal(request.functionApi, "ss");
   assert.equal(request.version, "1.0.0");
+  assert.equal(request.ontologySpaceId, 46);
   assert.equal(request.ontologyIdentifier, "ont-1");
   assert.deepEqual(request.variableBindings, { target: "prop_a", age: "prop_b" });
   assert.equal(request.pageNum, 1);
@@ -169,6 +173,7 @@ test("buildOntologyFunctionScriptTestRequest keeps nested fields and leaf values
   const request = buildOntologyFunctionScriptTestRequest({
     functionApi: "smoke.hello.ts",
     version: "1.0.0",
+    ontologySpaceId: 12,
     rows: [
       {
         paramName: "input",
@@ -195,11 +200,13 @@ test("buildOntologyFunctionScriptTestRequest assembles functionApi version and p
   const request = buildOntologyFunctionScriptTestRequest({
     functionApi: "smoke.hello.py",
     version: "1.0.0",
+    ontologySpaceId: 7,
     rows: [{ paramName: "name", paramType: "STRING", paramValue: "foundry" }],
   });
   assert.deepEqual(request, {
     functionApi: "smoke.hello.py",
     version: "1.0.0",
+    ontologySpaceId: 7,
     parameters: [{ paramName: "name", paramValue: "foundry" }],
   });
 });
@@ -252,6 +259,7 @@ test("function operator script ide test uses param tree and list-style request",
   assert.match(scriptIdeSource, /FunctionOperatorScriptTestParamTree/);
   assert.match(scriptIdeSource, /buildOntologyFunctionScriptTestInputRowsFromParsed/);
   assert.match(scriptIdeSource, /buildOntologyFunctionScriptTestRequest/);
+  assert.match(scriptIdeSource, /ontologySpaceId:\s*props\.spaceId/);
   assert.match(scriptIdeSource, /testOntologyFunctionInterface/);
   assert.match(scriptIdeSource, /async function runScriptIdeTest/);
   assert.match(scriptIdeSource, /refreshIdeTestInputRows/);
@@ -267,6 +275,7 @@ test("function operator openTest loads detail and runTest shows output panel", (
   assert.match(workspace, /testOntologyFunctionInterface/);
   assert.match(workspace, /async function openTest/);
   assert.match(workspace, /buildOntologyFunctionTestBindingRows/);
+  assert.match(workspace, /ontologySpaceId:\s*spaceId\.value/);
   assert.match(workspace, /testBindingRows/);
   assert.match(workspace, /getOntologyCategoryTreeInterface/);
   assert.match(workspace, /getOntologyPropertyByOntologyIdInterface/);
@@ -307,6 +316,7 @@ test("function operator script test uses dedicated dialog and parameters body", 
   assert.match(workspace, /async function runScriptTest/);
   assert.match(workspace, /buildOntologyFunctionScriptTestInputRows/);
   assert.match(workspace, /buildOntologyFunctionScriptTestRequest/);
+  assert.match(workspace, /ontologySpaceId:\s*spaceId\.value/);
   assert.match(workspace, /updateScriptTestParamValue/);
   assert.match(dialog, /脚本函数测试/);
   assert.match(dialog, /执行结果/);

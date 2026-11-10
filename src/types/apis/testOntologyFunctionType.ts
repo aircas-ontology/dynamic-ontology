@@ -14,6 +14,8 @@ export interface TestOntologyFunctionParams {
   functionApi: string;
   /** 版本号，格式 x.y.z。 */
   version: string;
+  /** 对象空间 id。 */
+  ontologySpaceId: number;
   /** 本体唯一标识；BASIC_QUERY 必填，CUSTOMIZE 可不传。 */
   ontologyIdentifier?: string;
   /** 查询参数绑定：键为详情 params.paramName，值为属性 apiName；BASIC_QUERY 使用。 */

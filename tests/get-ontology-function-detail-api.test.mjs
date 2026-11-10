@@ -25,6 +25,7 @@ test("get ontology function detail types expose documented fields", () => {
   assert.match(source, /export interface GetOntologyFunctionDetailParams/);
   assert.match(source, /functionApi: string/);
   assert.match(source, /version: string/);
+  assert.match(source, /spaceId: string/);
   assert.match(source, /export interface GetOntologyFunctionDetailData/);
   assert.match(source, /displayName: string/);
   assert.match(source, /description: string/);
@@ -58,8 +59,19 @@ test("get ontology function detail api gets detail by functionApi query", () => 
   assert.match(source, /method: "get"/);
   assert.match(source, /params/);
   assert.match(source, /params\.version/);
+  assert.match(source, /params\.spaceId/);
   const barrel = readSource("../src/apis/index.ts");
   assert.match(barrel, /getOntologyFunctionDetailInterface/);
+  const workspaceSource = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
+  assert.match(workspaceSource, /getOntologyFunctionDetailInterface\(\{ functionApi, version, spaceId:/);
+  const formSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue");
+  assert.match(formSource, /getOntologyFunctionDetailInterface\(\{ functionApi, version, spaceId:/);
+  const behaviorFormSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
+  assert.match(behaviorFormSource, /getOntologyFunctionDetailInterface\(\{ functionApi, version, spaceId:/);
+  const compositeNodeSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeFunctionNodeDialog.vue");
+  assert.match(compositeNodeSource, /spaceId: String\(props\.spaceId\)/);
+  const compositeDialogSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorCompositeWorkflowDialog.vue");
+  assert.match(compositeDialogSource, /:space-id="spaceId"/);
 });
 
 test("mapOntologyFunctionQueryConfigToBasicFilter maps dataType to valueType", () => {
@@ -246,7 +258,7 @@ test("function operator openEdit fetches detail before opening form", () => {
   assert.match(workspace, /async function openEdit/);
   assert.match(workspace, /formDraft\.value\s*=/);
   assert.match(workspace, /formVisible\.value\s*=\s*true/);
-  assert.match(workspace, /getOntologyFunctionDetailInterface\(\{\s*functionApi,\s*version,?\s*\}\)/);
+  assert.match(workspace, /getOntologyFunctionDetailInterface\(\{\s*functionApi,\s*version,\s*spaceId:/);
   assert.match(workspace, /缺少函数版本/);
   assert.match(workspace, /mapOntologyFunctionDetailToDraft\([\s\S]*operator\.version/);
   const openEditBlock = workspace.slice(workspace.indexOf("async function openEdit"), workspace.indexOf("async function saveOperator"));

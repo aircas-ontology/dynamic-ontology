@@ -17,6 +17,7 @@ test("function versions types expose functionApi query and string array data", (
   const source = readSource("../src/types/apis/getOntologyFunctionVersionsType.ts");
   assert.match(source, /export interface GetOntologyFunctionVersionsParams/);
   assert.match(source, /functionApi: string/);
+  assert.match(source, /spaceId: string/);
   assert.match(source, /export type GetOntologyFunctionVersionsData = string\[\]/);
   const barrel = readSource("../src/types/index.ts");
   assert.match(barrel, /GetOntologyFunctionVersionsData/);
@@ -29,6 +30,7 @@ test("function versions api gets functionApi as query params", () => {
   assert.match(source, /getOntologyFunctionVersionsInterface/);
   assert.match(source, /DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/function\/versions"/);
   assert.match(source, /method: "get"/);
+  assert.match(source, /params\.spaceId/);
   const versionsFn = source.match(/export function getOntologyFunctionVersionsInterface[\s\S]*?\n\}/);
   assert.ok(versionsFn, "missing getOntologyFunctionVersionsInterface implementation");
   assert.match(versionsFn[0], /\bparams(?::\s*params)?,/);
@@ -36,6 +38,10 @@ test("function versions api gets functionApi as query params", () => {
   const barrel = readSource("../src/apis/index.ts");
   assert.match(barrel, /getOntologyFunctionVersionsInterface/);
   assert.match(barrel, /from "\.\/functionApi"/);
+  const workspace = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
+  assert.match(workspace, /getOntologyFunctionVersionsInterface\(\{\s*functionApi,\s*spaceId: String\(spaceId\.value\)\s*\}\)/);
+  const formSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue");
+  assert.match(formSource, /getOntologyFunctionVersionsInterface\(\{\s*functionApi,\s*spaceId: String\(props\.spaceId\)\s*\}\)/);
 });
 
 test("mockData routes cover function versions contract", () => {

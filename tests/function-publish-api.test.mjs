@@ -18,6 +18,7 @@ test("function publish types expose functionApi version and null data", () => {
   assert.match(source, /export interface FunctionPublishParams/);
   assert.match(source, /functionApi: string/);
   assert.match(source, /version: string/);
+  assert.match(source, /spaceId: string/);
   assert.match(source, /export type FunctionPublishData = null/);
   const barrel = readSource("../src/types/index.ts");
   assert.match(barrel, /FunctionPublishData/);
@@ -30,6 +31,7 @@ test("function publish api posts functionApi and version to publish uri", () => 
   assert.match(source, /postOntologyFunctionPublishInterface/);
   assert.match(source, /DOMAIN_CONFIG\.ONTOLOGYMANAGE_URL \+ "\/ontology\/function\/publish"/);
   assert.match(source, /method: "post"/);
+  assert.match(source, /params\.spaceId/);
   const publishFn = source.match(/export function postOntologyFunctionPublishInterface[\s\S]*?\n\}/);
   assert.ok(publishFn, "missing postOntologyFunctionPublishInterface implementation");
   assert.match(publishFn[0], /\bparams(?::\s*params)?,/);
@@ -44,8 +46,8 @@ test("function operator workspace publish and unpublish both call real apis", ()
   const panel = readSource("../src/views/FunctionOperatorPanel/index.vue");
   assert.match(workspace, /postOntologyFunctionPublishInterface/);
   assert.match(workspace, /postOntologyFunctionUnpublishInterface/);
-  assert.match(workspace, /postOntologyFunctionPublishInterface\(\{\s*functionApi,\s*version,?\s*\}\)/);
-  assert.match(workspace, /postOntologyFunctionUnpublishInterface\(\{\s*functionApi,\s*version,?\s*\}\)/);
+  assert.match(workspace, /postOntologyFunctionPublishInterface\(\{\s*functionApi,\s*version,\s*spaceId: String\(spaceId\.value\)\s*\}\)/);
+  assert.match(workspace, /postOntologyFunctionUnpublishInterface\(\{\s*functionApi,\s*version,\s*spaceId: String\(spaceId\.value\)\s*\}\)/);
   assert.match(workspace, /发布成功/);
   assert.doesNotMatch(workspace, /setFunctionOperatorStatusMock/);
   assert.match(panel, /togglePublish\(operator\)/);
