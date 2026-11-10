@@ -52,5 +52,6 @@ export interface DeleteOntologyCategoryTreeParams {
 export interface UpdateOntologyCategoryNameParams {
   spaceId: number;
   categoryId: number;
+  parentId: number;
   name: string;
 }

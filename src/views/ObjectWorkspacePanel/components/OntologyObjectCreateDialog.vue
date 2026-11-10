@@ -1,5 +1,13 @@
 <template>
-  <el-dialog v-model="visible" class="ontology-object-create-dialog" title="新建对象" width="min(860px, 94vw)" append-to-body destroy-on-close>
+  <el-dialog
+    v-model="visible"
+    class="ontology-object-create-dialog"
+    title="新建对象"
+    width="min(860px, 94vw)"
+    :close-on-click-modal="false"
+    append-to-body
+    destroy-on-close
+  >
     <template #header>
       <span>{{ editingItem ? "编辑对象" : "新建对象" }}</span>
     </template>

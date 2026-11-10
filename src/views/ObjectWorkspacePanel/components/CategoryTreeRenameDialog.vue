@@ -1,6 +1,18 @@
 <template>
-  <el-dialog v-model="visible" title="修改分类名称" width="min(480px, 94vw)" append-to-body destroy-on-close>
+  <el-dialog v-model="visible" title="编辑分类" width="min(480px, 94vw)" append-to-body destroy-on-close>
     <el-form label-position="top">
+      <el-form-item label="父分类" required>
+        <el-tree-select
+          v-model="parentId"
+          :data="parentOptions"
+          node-key="id"
+          check-strictly
+          :render-after-expand="false"
+          :disabled="submitting"
+          placeholder="请选择父分类"
+          style="width: 100%"
+        />
+      </el-form-item>
       <el-form-item label="分类名称" required>
         <el-input v-model="categoryName" maxlength="64" ariaLabel="分类名称" placeholder="请输入分类名称" :disabled="submitting" />
       </el-form-item>
@@ -17,12 +29,22 @@
 import { ref, watch } from "vue";
 
 const visible = defineModel<boolean>({ required: true });
-const props = defineProps<{ initialName: string; submitting: boolean; error: string }>();
-const emit = defineEmits<{ submit: [name: string] }>();
+const props = defineProps<{
+  initialName: string;
+  initialParentId: string;
+  parentOptions: Array<{ id: string; label: string }>;
+  submitting: boolean;
+  error: string;
+}>();
+const emit = defineEmits<{ submit: [name: string, parentId: string] }>();
 const categoryName = ref("");
+const parentId = ref("");
 
 watch(visible, (opened) => {
-  if (opened) categoryName.value = props.initialName;
+  if (opened) {
+    categoryName.value = props.initialName;
+    parentId.value = props.initialParentId;
+  }
 });
 
 /**
@@ -30,8 +52,8 @@ watch(visible, (opened) => {
  */
 function confirmRenameCategory() {
   const name = categoryName.value.trim();
-  if (!name || props.submitting) return;
-  emit("submit", name);
+  if (!name || !parentId.value || props.submitting) return;
+  emit("submit", name, parentId.value);
 }
 </script>
 

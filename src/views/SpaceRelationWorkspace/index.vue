@@ -148,6 +148,8 @@
       :mode="categoryFormMode"
       :parent-label="categoryParentLabel"
       :initial-name="categoryFormMode === 'edit' ? categoryActionName : ''"
+      :parent-id="categoryParentId"
+      :parent-options="relationCategoryParentOptions"
       @submit="handleCategorySubmit"
     />
     <RelationCategoryDeleteDialog
@@ -242,6 +244,21 @@ const categoryActionId = ref("");
 const categoryParentId = ref(ROOT_RELATION_CATEGORY_ID);
 const categoryParentLabel = ref("全部关系");
 const categoryActionName = ref("");
+const relationCategoryParentOptions = computed(() => {
+  const ids = new Set<string>();
+  const collect = (node: (typeof relationCategoryTree.value)[number]) => {
+    ids.add(node.id);
+    node.children.forEach(collect);
+  };
+  const current = findRelationCategoryNode(relationCategoryTree.value, categoryActionId.value);
+  if (current) collect(current);
+  const flatten = (nodes: typeof relationCategoryTree.value): Array<{ id: string; label: string }> =>
+    nodes.flatMap((node) => [{ id: node.id, label: node.label }, ...flatten(node.children)]);
+  return [
+    { id: ROOT_RELATION_CATEGORY_ID, label: "根分类" },
+    ...flatten(relationCategoryTree.value).filter((item) => !ids.has(item.id) && item.id !== ROOT_RELATION_CATEGORY_ID),
+  ];
+});
 const relationFormVisible = ref(false);
 const relationFormMode = ref<"create" | "edit">("create");
 const relationDeleteVisible = ref(false);
@@ -310,6 +327,7 @@ function openCategoryEdit(categoryId: string) {
   categoryFormMode.value = "edit";
   categoryActionId.value = categoryId;
   categoryActionName.value = findRelationCategoryLabel(categoryId);
+  categoryParentId.value = findParentCategoryId(relationCategoryTree.value, categoryId);
   categoryFormVisible.value = true;
 }
 
@@ -323,7 +341,16 @@ function openCategoryDelete(categoryId: string) {
  * @description 创建或修改关系分类名称：创建走 POST，修改走 PUT；成功后刷新分类树。
  * @param name 分类名称。
  */
-async function handleCategorySubmit(name: string) {
+function findParentCategoryId(nodes: typeof relationCategoryTree.value, id: string, parent = ROOT_RELATION_CATEGORY_ID): string {
+  for (const node of nodes) {
+    if (node.id === id) return parent;
+    const found = findParentCategoryId(node.children, id, node.id);
+    if (found) return found;
+  }
+  return "";
+}
+
+async function handleCategorySubmit(name: string, parentId: string) {
   const space = spaceId.value;
   const numericSpaceId = Number(space);
 
@@ -340,6 +367,7 @@ async function handleCategorySubmit(name: string) {
       const response = await putUpdateOntologyRelationCategoryNameInterface({
         spaceId: numericSpaceId,
         categoryId: numericCategoryId,
+        parentId: Number(parentId) || 0,
         name,
       });
       if (response.code !== 200) {

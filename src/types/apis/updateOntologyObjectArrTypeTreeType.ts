@@ -2,5 +2,6 @@
 export interface UpdateOntologyObjectArrTypeTreeParams {
   ontologyIdentifier: string;
   categoryId: number;
+  parentId: number;
   name: string;
 }

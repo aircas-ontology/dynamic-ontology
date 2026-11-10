@@ -8,8 +8,14 @@
     @update:model-value="$emit('update:visible', $event)"
   >
     <el-form label-position="top">
-      <el-form-item label="父分类">
-        <el-input :model-value="parentName" readonly ariaLabel="父分类" />
+      <el-form-item label="父分类" required>
+        <el-tree-select
+          :model-value="parentId"
+          style="width: 100%"
+          :disabled="submitting"
+          placeholder="请选择父分类"
+          @update:model-value="$emit('update:parent-id', $event)"
+        />
       </el-form-item>
       <el-form-item label="分类名称" required>
         <el-input
@@ -34,6 +40,8 @@
 defineProps<{
   visible: boolean;
   parentName: string;
+  parentId: string;
+  parentOptions: Array<{ id: string; label: string }>;
   name: string;
   submitting: boolean;
   error: string;
@@ -42,6 +50,7 @@ defineProps<{
 defineEmits<{
   "update:visible": [value: boolean];
   "update:name": [value: string];
+  "update:parent-id": [value: string];
   confirm: [];
 }>();
 </script>

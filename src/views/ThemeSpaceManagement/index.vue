@@ -498,7 +498,12 @@ function enterThemeSpace(space: OntologySpaceItem): void {
     name: props.browseOnly ? "EntityBrowsingObject" : "OntologySpaceManagementDetailObject",
     params: { spaceId: space.id },
     query: props.browseOnly
-      ? { spaceName: space.displayName, spaceType: "1", from: "theme-space-browse" }
+      ? {
+          spaceName: space.displayName,
+          spaceType: "1",
+          from: "theme-space-browse",
+          ...(isEmbedded.value ? { userName: String(route.query.userName).trim() } : {}),
+        }
       : { spaceName: space.displayName, from: "theme-space-management" },
   });
 }

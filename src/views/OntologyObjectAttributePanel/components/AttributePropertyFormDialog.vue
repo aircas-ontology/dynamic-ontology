@@ -2,6 +2,7 @@
   <el-dialog
     :title="editingAttributeId === null ? '添加属性' : '编辑属性'"
     width="min(760px, 94vw)"
+    :close-on-click-modal="false"
     append-to-body
     destroy-on-close
     :model-value="visible"

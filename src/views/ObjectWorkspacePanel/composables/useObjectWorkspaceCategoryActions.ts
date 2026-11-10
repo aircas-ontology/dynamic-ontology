@@ -1,6 +1,7 @@
 import { ref, type Ref } from "vue";
 import { ElMessage } from "element-plus";
 import { deleteOntologyCategoryTreeInterface, postCreateOntologyCategoryTreeInterface, putUpdateOntologyCategoryNameInterface } from "@/apis";
+import type { OntologyConceptNode } from "@/types";
 
 /**
  * @description 对象工作区分类树弹窗交互：创建主分类、子分类、改名与删除。
@@ -8,7 +9,7 @@ import { deleteOntologyCategoryTreeInterface, postCreateOntologyCategoryTreeInte
  * @param options.load 成功后刷新分类树与对象列表
  * @returns 分类弹窗状态与操作方法
  */
-export function useObjectWorkspaceCategoryActions(options: { spaceId: Ref<string>; load: () => Promise<void> }) {
+export function useObjectWorkspaceCategoryActions(options: { spaceId: Ref<string>; load: () => Promise<void>; tree: Ref<OntologyConceptNode[]> }) {
   const { spaceId, load } = options;
   const categoryTreeDialogVisible = ref(false);
   const categoryChildDialogVisible = ref(false);
@@ -20,6 +21,8 @@ export function useObjectWorkspaceCategoryActions(options: { spaceId: Ref<string
   const categoryRenameError = ref("");
   const categoryRenameId = ref("");
   const categoryRenameName = ref("");
+  const categoryRenameParentId = ref("");
+  const categoryParentOptions = ref<Array<{ id: string; label: string }>>([]);
   const categoryDeleteVisible = ref(false);
   const categoryDeleteSubmitting = ref(false);
   const categoryDeleteError = ref("");
@@ -53,6 +56,26 @@ export function useObjectWorkspaceCategoryActions(options: { spaceId: Ref<string
     categoryRenameError.value = "";
     categoryRenameId.value = categoryId;
     categoryRenameName.value = name;
+    const descendants = new Set<string>();
+    const collect = (node: OntologyConceptNode) => {
+      descendants.add(node.id);
+      node.children.forEach(collect);
+    };
+    const flatten = (nodes: OntologyConceptNode[]): Array<{ id: string; label: string }> =>
+      nodes.flatMap((node) => [{ id: node.id, label: node.label }, ...flatten(node.children)]);
+    const findParent = (nodes: OntologyConceptNode[], parent = ""): string => {
+      for (const node of nodes) {
+        if (node.id === categoryId) {
+          collect(node);
+          return parent || "0";
+        }
+        const found = findParent(node.children, node.id);
+        if (found) return found;
+      }
+      return "";
+    };
+    categoryRenameParentId.value = findParent(options.tree.value);
+    categoryParentOptions.value = [{ id: "0", label: "根分类" }, ...flatten(options.tree.value).filter((item) => !descendants.has(item.id))];
     categoryRenameVisible.value = true;
   }
 
@@ -60,12 +83,13 @@ export function useObjectWorkspaceCategoryActions(options: { spaceId: Ref<string
    * @description 以当前空间 id、分类 id 和新名称调用修改分类名称接口；成功后关闭弹框并重新加载分类树。
    * @param name 填写后的分类名称。
    */
-  async function confirmRenameCategory(name: string) {
+  async function confirmRenameCategory(name: string, parentId: string) {
     if (categoryRenameSubmitting.value) return;
     const space = spaceId.value.trim();
     const numericSpaceId = Number(space);
     const numericCategoryId = Number(categoryRenameId.value);
-    if (!space || !Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId)) {
+    const numericParentId = Number(parentId);
+    if (!space || !Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId) || !Number.isInteger(numericParentId)) {
       categoryRenameError.value = "缺少空间或分类 id，无法修改分类名称。";
       return;
     }
@@ -75,6 +99,7 @@ export function useObjectWorkspaceCategoryActions(options: { spaceId: Ref<string
       const response = await putUpdateOntologyCategoryNameInterface({
         spaceId: numericSpaceId,
         categoryId: numericCategoryId,
+        parentId: numericParentId,
         name,
       });
       if (response.code !== 200) {
@@ -208,6 +233,8 @@ export function useObjectWorkspaceCategoryActions(options: { spaceId: Ref<string
     categoryRenameSubmitting,
     categoryRenameError,
     categoryRenameName,
+    categoryRenameParentId,
+    categoryParentOptions,
     categoryDeleteVisible,
     categoryDeleteSubmitting,
     categoryDeleteError,

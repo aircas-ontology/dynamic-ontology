@@ -45,6 +45,8 @@
     <CategoryTreeRenameDialog
       v-model="categoryRenameVisible"
       :initial-name="categoryRenameName"
+      :initial-parent-id="categoryRenameParentId"
+      :parent-options="categoryParentOptions"
       :submitting="categoryRenameSubmitting"
       :error="categoryRenameError"
       @submit="confirmRenameCategory"
@@ -122,7 +124,7 @@ const workspaceTree = computed(() => workspace.value?.tree ?? []);
 const workspaceSections = computed(() => workspace.value?.sections ?? []);
 const workspaceObjects = computed(() => workspaceSections.value.flatMap((section) => section.items));
 const inheritanceObjects = computed(() => workspace.value?.inheritanceObjects ?? workspaceObjects.value);
-const categoryActions = useObjectWorkspaceCategoryActions({ spaceId, load });
+const categoryActions = useObjectWorkspaceCategoryActions({ spaceId, load, tree: workspaceTree });
 const objectActions = useObjectWorkspaceObjectActions({ spaceId, workspace, load, onOpenLlmBuilder: openOntologyLlmBuilderPage });
 const {
   categoryTreeDialogVisible,
@@ -133,6 +135,8 @@ const {
   categoryRenameSubmitting,
   categoryRenameError,
   categoryRenameName,
+  categoryRenameParentId,
+  categoryParentOptions,
   categoryDeleteVisible,
   categoryDeleteSubmitting,
   categoryDeleteError,

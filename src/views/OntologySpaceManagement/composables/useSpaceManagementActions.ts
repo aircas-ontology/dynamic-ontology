@@ -12,6 +12,7 @@ interface SpaceManagementActionOptions {
   removeOntologySpace: (id: string) => void;
   loadOntologySpaces: () => Promise<void> | void;
   browseOnly: () => boolean;
+  embeddedUserName: () => string;
 }
 
 /**
@@ -61,7 +62,12 @@ export function useSpaceManagementActions(options: SpaceManagementActionOptions)
           ? {
               name: "EntityBrowsingObject",
               params: { spaceId: space.id },
-              query: { spaceName: space.displayName, spaceType: "0", from: "ontology-space-browse" },
+              query: {
+                spaceName: space.displayName,
+                spaceType: "0",
+                from: "ontology-space-browse",
+                ...(options.embeddedUserName() ? { userName: options.embeddedUserName() } : {}),
+              },
             }
           : { name: "OntologySpaceManagementDetailObject", params: { spaceId: space.id } },
       );

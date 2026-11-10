@@ -42,6 +42,7 @@ export interface CreateOntologyRelationCategoryTreeParams {
 export interface UpdateOntologyRelationCategoryNameParams {
   spaceId: number;
   categoryId: number;
+  parentId: number;
   name: string;
 }
 

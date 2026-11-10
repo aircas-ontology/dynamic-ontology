@@ -43,11 +43,14 @@
     <AttributeCategoryEditDialog
       :visible="categoryEditDialogVisible"
       :parent-name="categoryParentName"
+      :parent-id="categoryEditParentId"
+      :parent-options="categoryEditParentOptions"
       :name="categoryEditName"
       :submitting="categoryEditSubmitting"
       :error="categoryEditError"
       @update:visible="categoryEditDialogVisible = $event"
       @update:name="categoryEditName = $event"
+      @update:parent-id="categoryEditParentId = $event"
       @confirm="saveCategoryEdit"
     />
     <AttributePropertyFormDialog
@@ -201,6 +204,8 @@ const {
   categoryEditSubmitting,
   categoryEditError,
   categoryEditName,
+  categoryEditParentId,
+  categoryEditParentOptions,
   categoryName,
   categoryParentName,
   selectedCategoryName,
