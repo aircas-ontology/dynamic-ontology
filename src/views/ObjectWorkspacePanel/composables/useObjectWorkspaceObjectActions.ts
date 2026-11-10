@@ -102,10 +102,16 @@ export function useObjectWorkspaceObjectActions(options: {
    */
   async function importOntologyObjects(file: File) {
     if (objectCreateSubmitting.value) return;
+    const currentSpaceId = spaceId.value.trim();
+    const numericSpaceId = Number(currentSpaceId);
+    if (!currentSpaceId || !Number.isSafeInteger(numericSpaceId) || numericSpaceId <= 0) {
+      objectCreateError.value = "缺少有效的空间 id，无法导入对象。";
+      return;
+    }
     objectCreateSubmitting.value = true;
     objectCreateError.value = "";
     try {
-      const response = await postImportOntologiesInterface({ file });
+      const response = await postImportOntologiesInterface({ file, spaceId: numericSpaceId });
       if (response.code !== 200) throw new Error(response.message || "导入失败，请重试。");
       objectCreateVisible.value = false;
       ElMessage.success("导入成功");
@@ -335,6 +341,34 @@ export function useObjectWorkspaceObjectActions(options: {
     }
   }
 
+  /** @description 批量导出选中的对象，使用逗号拼接唯一标识调用导出接口。 @param identifiers 对象唯一标识列表。 */
+  async function exportOntologyObjects(identifiers: string[]) {
+    const uniqueIdentifier = identifiers
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .join(",");
+    if (!uniqueIdentifier || objectExporting.value) {
+      ElMessage.warning("请先选择对象");
+      return;
+    }
+    objectExporting.value = true;
+    try {
+      const file = await getExportOntologyInterface({ uniqueIdentifier, exportType: "SCHEMA" });
+      const fileName = resolveExportOntologyFileName({
+        contentDisposition: file.contentDisposition,
+        contentType: file.contentType,
+        apiName: "ontology-batch",
+        uniqueIdentifier,
+      });
+      downloadOntologyFile(fileName, file.blob);
+      ElMessage.success("批量导出文件已生成");
+    } catch (cause) {
+      ElMessage.error(cause instanceof Error ? cause.message : "批量导出失败，请重试。");
+    } finally {
+      objectExporting.value = false;
+    }
+  }
+
   /** @description 保留原型的大模型构建入口，在当前项目尚未接入流程时给出明确反馈。 */
   function openOntologyLlmBuilder() {
     objectCreateVisible.value = false;
@@ -372,6 +406,7 @@ export function useObjectWorkspaceObjectActions(options: {
     confirmDeleteOntologyObject,
     openOntologyObjectExportDialog,
     confirmExportOntologyObject,
+    exportOntologyObjects,
     openOntologyLlmBuilder,
   };
 }

@@ -28,6 +28,7 @@
         @update:view-mode="viewMode = $event"
         @locate-parent="locateParent"
         @action="handleAction"
+        @batch-export="exportSelectedObjects"
       />
     </div>
     <CategoryTreeCreateDialog
@@ -183,6 +184,11 @@ const {
 const selectedNodeId = ref("");
 const viewMode = ref<OntologyObjectViewMode>("card");
 const locationTarget = ref<OntologyObjectLocationTarget | null>(null);
+
+/** @description 导出对象列表中勾选的对象。 @param identifiers 对象唯一标识列表。 */
+async function exportSelectedObjects(identifiers: string[]) {
+  await objectActions.exportOntologyObjects(identifiers);
+}
 let locationRequestId = 0;
 
 /**

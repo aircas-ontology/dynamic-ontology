@@ -152,11 +152,13 @@ export function updateOntologyObjectInterface(params: UpdateOntologyObjectParams
  *
  * @param params 请求参数。
  * @param params.file 导入文件，必填。
+ * @param params.spaceId 目标对象空间 id，必填。
  * @returns 标准 API 响应，data 未声明具体业务字段。
  */
 export function postImportOntologiesInterface(params: ImportOntologiesParams): Promise<ApiResponse<ImportOntologiesData>> {
   const formData = new FormData();
   formData.append("file", params.file);
+  formData.append("spaceId", String(params.spaceId));
   return request<ImportOntologiesData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/meta/import",
     method: "post",
