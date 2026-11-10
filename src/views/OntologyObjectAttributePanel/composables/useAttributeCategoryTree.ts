@@ -8,7 +8,8 @@ import {
   updateOntologyObjectArrTypeTreeInterface,
 } from "@/apis";
 import type { OntologyAttributeCategoryNode, OntologyAttributeTreeNode } from "@/types";
-import { filterCategoryNode, findCategory, findCategoryParent, mapCategoryTreeNode } from "../utils/attributePanelHelpers";
+import { filterCategoryNode, findCategory, findCategoryParent, isCategoryNode, mapCategoryTreeNode } from "../utils/attributePanelHelpers";
+import { buildCategoryParentTree, type CategoryParentOption } from "@/utils/categoryParentTree";
 
 /**
  * @description 属性分类树状态与交互：加载分类、搜索过滤、创建/编辑/删除分类弹窗。
@@ -34,6 +35,8 @@ export function useAttributeCategoryTree(options: { selectedCategoryId: Ref<stri
   const categoryEditError = ref("");
   const categoryEditId = ref("");
   const categoryEditName = ref("");
+  const categoryEditParentId = ref("");
+  const categoryEditParentOptions = ref<CategoryParentOption[]>([]);
   const categoryName = ref("");
   const categoryParentId = ref("all");
   const categoryParentName = ref("无");
@@ -87,7 +90,13 @@ export function useAttributeCategoryTree(options: { selectedCategoryId: Ref<stri
   function openCategoryEdit(data: OntologyAttributeCategoryNode) {
     categoryEditId.value = data.id;
     categoryEditName.value = data.label;
-    categoryParentName.value = findCategoryParent(categories.value, data.id)?.label ?? "无";
+    const parent = findCategoryParent(categories.value, data.id);
+    categoryEditParentId.value = parent?.id ?? "0";
+    const toCategories = (nodes: OntologyAttributeCategoryNode[]): CategoryParentOption[] =>
+      nodes.map((node) => ({ id: node.id, label: node.label, children: toCategories(node.children?.filter(isCategoryNode) ?? []) }));
+    const tree = buildCategoryParentTree(toCategories(categories.value), data.id);
+    categoryEditParentOptions.value = tree.length ? tree : [{ id: "0", label: "根分类", children: [] }];
+    categoryParentName.value = parent?.label ?? "根分类";
     categoryEditError.value = "";
     categoryEditDialogVisible.value = true;
   }
@@ -101,14 +110,15 @@ export function useAttributeCategoryTree(options: { selectedCategoryId: Ref<stri
     }
     const ontologyIdentifier = String(route.params.objectId || "").trim();
     const categoryId = Number(categoryEditId.value);
-    if (!ontologyIdentifier || !Number.isFinite(categoryId)) {
+    const parentId = Number(categoryEditParentId.value);
+    if (!ontologyIdentifier || !Number.isFinite(categoryId) || !Number.isFinite(parentId)) {
       categoryEditError.value = "缺少分类标识，无法编辑分类。";
       return;
     }
     categoryEditSubmitting.value = true;
     categoryEditError.value = "";
     try {
-      const response = await updateOntologyObjectArrTypeTreeInterface({ ontologyIdentifier, categoryId, name });
+      const response = await updateOntologyObjectArrTypeTreeInterface({ ontologyIdentifier, categoryId, parentId, name });
       if (response.code !== 200) throw new Error(response.message || "属性分类编辑失败");
       categoryEditDialogVisible.value = false;
       ElMessage.success("属性分类编辑成功");
@@ -208,6 +218,8 @@ export function useAttributeCategoryTree(options: { selectedCategoryId: Ref<stri
     categoryEditSubmitting,
     categoryEditError,
     categoryEditName,
+    categoryEditParentId,
+    categoryEditParentOptions,
     categoryName,
     categoryParentName,
     selectedCategoryName,

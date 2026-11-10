@@ -3,6 +3,7 @@
     :model-value="modelValue"
     :title="mode === 'create' ? '添加关系' : '编辑关系'"
     width="560px"
+    :close-on-click-modal="false"
     append-to-body
     destroy-on-close
     @close="emit('update:modelValue', false)"

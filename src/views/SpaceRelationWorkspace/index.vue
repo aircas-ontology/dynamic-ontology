@@ -148,6 +148,8 @@
       :mode="categoryFormMode"
       :parent-label="categoryParentLabel"
       :initial-name="categoryFormMode === 'edit' ? categoryActionName : ''"
+      :parent-id="categoryParentId"
+      :parent-options="relationCategoryParentOptions"
       @submit="handleCategorySubmit"
     />
     <RelationCategoryDeleteDialog
@@ -195,6 +197,7 @@ import {
 import AircasLoading from "@/components/AircasLoading.vue";
 import { useSpaceRelationWorkspace } from "./composables/useSpaceRelationWorkspace";
 import { collectCategoryIds, findRelationCategoryNode } from "./utils/relationOperations";
+import { buildCategoryParentTree } from "@/utils/categoryParentTree";
 import RelationCategoryPanel from "./components/RelationCategoryPanel.vue";
 import RelationGraphView from "./components/RelationGraphView.vue";
 import RelationCategoryFormDialog from "./components/RelationCategoryFormDialog.vue";
@@ -242,6 +245,11 @@ const categoryActionId = ref("");
 const categoryParentId = ref(ROOT_RELATION_CATEGORY_ID);
 const categoryParentLabel = ref("全部关系");
 const categoryActionName = ref("");
+const relationCategoryParentOptions = computed(() => {
+  const excludedId = categoryFormMode.value === "edit" ? categoryActionId.value : "";
+  const tree = buildCategoryParentTree(relationCategoryTree.value, excludedId);
+  return tree.length || categoryFormMode.value === "edit" ? tree : [{ id: ROOT_RELATION_CATEGORY_ID, label: "根分类", children: [] }];
+});
 const relationFormVisible = ref(false);
 const relationFormMode = ref<"create" | "edit">("create");
 const relationDeleteVisible = ref(false);
@@ -300,7 +308,7 @@ function resetFilter() {
 
 function openCategoryCreate(parentId: string) {
   categoryFormMode.value = "create";
-  categoryParentId.value = parentId;
+  categoryParentId.value = parentId || ROOT_RELATION_CATEGORY_ID;
   categoryParentLabel.value = parentId ? findRelationCategoryLabel(parentId) || "全部关系" : "根分类";
   categoryActionName.value = "";
   categoryFormVisible.value = true;
@@ -310,6 +318,7 @@ function openCategoryEdit(categoryId: string) {
   categoryFormMode.value = "edit";
   categoryActionId.value = categoryId;
   categoryActionName.value = findRelationCategoryLabel(categoryId);
+  categoryParentId.value = findParentCategoryId(relationCategoryTree.value, categoryId);
   categoryFormVisible.value = true;
 }
 
@@ -323,7 +332,16 @@ function openCategoryDelete(categoryId: string) {
  * @description 创建或修改关系分类名称：创建走 POST，修改走 PUT；成功后刷新分类树。
  * @param name 分类名称。
  */
-async function handleCategorySubmit(name: string) {
+function findParentCategoryId(nodes: typeof relationCategoryTree.value, id: string, parent = ROOT_RELATION_CATEGORY_ID): string {
+  for (const node of nodes) {
+    if (node.id === id) return parent;
+    const found = findParentCategoryId(node.children, id, node.id);
+    if (found) return found;
+  }
+  return "";
+}
+
+async function handleCategorySubmit(name: string, parentId: string) {
   const space = spaceId.value;
   const numericSpaceId = Number(space);
 
@@ -340,6 +358,7 @@ async function handleCategorySubmit(name: string) {
       const response = await putUpdateOntologyRelationCategoryNameInterface({
         spaceId: numericSpaceId,
         categoryId: numericCategoryId,
+        parentId: Number(parentId) || 0,
         name,
       });
       if (response.code !== 200) {
@@ -357,7 +376,7 @@ async function handleCategorySubmit(name: string) {
     return;
   }
 
-  const numericParentId = categoryParentId.value.trim() === "" ? 0 : Number(categoryParentId.value);
+  const numericParentId = parentId === ROOT_RELATION_CATEGORY_ID ? 0 : Number(parentId);
   if (!space || !Number.isInteger(numericSpaceId) || !Number.isInteger(numericParentId)) {
     ElMessage.error("缺少空间或父分类 id，无法创建关系分类。");
     categoryFormRef.value?.setLoading(false);

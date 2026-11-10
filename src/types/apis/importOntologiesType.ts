@@ -2,6 +2,8 @@
 export interface ImportOntologiesParams {
   /** 导入文件，必填。文档类型为 string / binary，未提供字段说明。 */
   file: File;
+  /** 目标对象空间 id。 */
+  spaceId: number;
 }
 
 /** 批量导入创建对象的响应 data。在线 schema 为空，未声明具体字段。 */

@@ -8,8 +8,18 @@
     @close="emit('update:modelValue', false)"
   >
     <el-form label-position="top">
-      <el-form-item v-if="mode === 'create'" label="父分类">
-        <el-input :model-value="parentLabel" disabled />
+      <el-form-item label="父分类" required>
+        <el-tree-select
+          v-model="parentId"
+          :data="parentOptions"
+          node-key="id"
+          :props="{ label: 'label', children: 'children' }"
+          check-strictly
+          :render-after-expand="false"
+          :disabled="loading"
+          placeholder="请选择父分类"
+          style="width: 100%"
+        />
       </el-form-item>
       <el-form-item label="分类名称" required>
         <el-input v-model="name" maxlength="64" placeholder="请输入分类名称" />
@@ -29,10 +39,13 @@ const props = defineProps<{
   modelValue: boolean;
   mode: "create" | "edit";
   parentLabel: string;
+  parentId: string;
+  parentOptions: Array<{ id: string; label: string }>;
   initialName: string;
 }>();
-const emit = defineEmits<{ "update:modelValue": [value: boolean]; submit: [name: string] }>();
+const emit = defineEmits<{ "update:modelValue": [value: boolean]; submit: [name: string, parentId: string] }>();
 const name = ref("");
+const parentId = ref("");
 const loading = ref(false);
 
 watch(
@@ -40,6 +53,7 @@ watch(
   (visible) => {
     if (!visible) return;
     name.value = props.initialName;
+    parentId.value = props.parentId;
     loading.value = false;
   },
 );
@@ -51,7 +65,8 @@ function submitCategoryForm() {
   const trimmed = name.value.trim();
   if (!trimmed) return;
   loading.value = true;
-  emit("submit", trimmed);
+  if (!parentId.value) return;
+  emit("submit", trimmed, parentId.value);
 }
 
 defineExpose({

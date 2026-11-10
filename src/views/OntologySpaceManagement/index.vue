@@ -80,6 +80,8 @@ import { useSpaceManagement } from "./composables/useSpaceManagement";
 import { useSpaceManagementActions } from "./composables/useSpaceManagementActions";
 
 const props = withDefaults(defineProps<{ browseOnly?: boolean }>(), { browseOnly: false });
+const route = useRoute();
+const embeddedUserName = computed(() => (typeof route.query.userName === "string" ? route.query.userName.trim() : ""));
 
 const {
   keyword,
@@ -111,8 +113,14 @@ const {
   confirmDeleteOntologySpace,
   confirmExportOntologySpace,
   completeOntologySpaceImport,
-} = useSpaceManagementActions({ keyword, saveOntologySpace, removeOntologySpace, loadOntologySpaces, browseOnly: () => props.browseOnly });
-const route = useRoute();
+} = useSpaceManagementActions({
+  keyword,
+  saveOntologySpace,
+  removeOntologySpace,
+  loadOntologySpaces,
+  browseOnly: () => props.browseOnly,
+  embeddedUserName: () => embeddedUserName.value,
+});
 const isEmbedded = computed(() => typeof route.query.userName === "string" && route.query.userName.trim().length > 0);
 const onboardingGuideSteps = computed(() =>
   isEmbedded.value ? ONBOARDING_GUIDE_STEPS.filter((step) => step.chain !== CHAIN_CREATE_SPACE) : ONBOARDING_GUIDE_STEPS,

@@ -28,6 +28,7 @@
         @update:view-mode="viewMode = $event"
         @locate-parent="locateParent"
         @action="handleAction"
+        @batch-export="exportSelectedObjects"
       />
     </div>
     <CategoryTreeCreateDialog
@@ -45,6 +46,8 @@
     <CategoryTreeRenameDialog
       v-model="categoryRenameVisible"
       :initial-name="categoryRenameName"
+      :initial-parent-id="categoryRenameParentId"
+      :parent-options="categoryParentOptions"
       :submitting="categoryRenameSubmitting"
       :error="categoryRenameError"
       @submit="confirmRenameCategory"
@@ -122,7 +125,7 @@ const workspaceTree = computed(() => workspace.value?.tree ?? []);
 const workspaceSections = computed(() => workspace.value?.sections ?? []);
 const workspaceObjects = computed(() => workspaceSections.value.flatMap((section) => section.items));
 const inheritanceObjects = computed(() => workspace.value?.inheritanceObjects ?? workspaceObjects.value);
-const categoryActions = useObjectWorkspaceCategoryActions({ spaceId, load });
+const categoryActions = useObjectWorkspaceCategoryActions({ spaceId, load, tree: workspaceTree });
 const objectActions = useObjectWorkspaceObjectActions({ spaceId, workspace, load, onOpenLlmBuilder: openOntologyLlmBuilderPage });
 const {
   categoryTreeDialogVisible,
@@ -133,6 +136,8 @@ const {
   categoryRenameSubmitting,
   categoryRenameError,
   categoryRenameName,
+  categoryRenameParentId,
+  categoryParentOptions,
   categoryDeleteVisible,
   categoryDeleteSubmitting,
   categoryDeleteError,
@@ -179,6 +184,11 @@ const {
 const selectedNodeId = ref("");
 const viewMode = ref<OntologyObjectViewMode>("card");
 const locationTarget = ref<OntologyObjectLocationTarget | null>(null);
+
+/** @description 导出对象列表中勾选的对象。 @param identifiers 对象唯一标识列表。 */
+async function exportSelectedObjects(identifiers: string[]) {
+  await objectActions.exportOntologyObjects(identifiers);
+}
 let locationRequestId = 0;
 
 /**

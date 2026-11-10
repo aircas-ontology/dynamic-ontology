@@ -183,7 +183,7 @@ test("relation workspace create category posts api then reloads and does not sen
   const panelSource = readSource("../src/views/SpaceRelationWorkspace/index.vue");
   assert.match(panelSource, /postCreateOntologyRelationCategoryTreeInterface/);
   assert.match(panelSource, /parentId:\s*numericParentId/);
-  assert.match(panelSource, /categoryParentId\.value\.trim\(\) === "" \? 0 : Number\(categoryParentId\.value\)/);
+  assert.match(panelSource, /parentId === ROOT_RELATION_CATEGORY_ID \? 0 : Number\(parentId\)/);
   assert.match(panelSource, /loadSpaceRelationWorkspace/);
   assert.match(panelSource, /postCreateOntologyRelationCategoryTreeInterface\(\{\s*spaceId:\s*numericSpaceId,\s*parentId:\s*numericParentId,\s*name,\s*\}\)/);
 });

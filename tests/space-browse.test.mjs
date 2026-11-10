@@ -116,6 +116,15 @@ test("browse space lists open from the card or row and hide the entry button", (
   assert.match(theme, /<el-button v-if="!browseOnly"[^>]*data-onboarding="theme-enter"/);
 });
 
+test("browse routes preserve embedded userName when entering a space", () => {
+  const ontology = readFileSync(new URL("../src/views/OntologySpaceManagement/composables/useSpaceManagementActions.ts", import.meta.url), "utf8");
+  const theme = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
+  assert.match(ontology, /embeddedUserName/);
+  assert.match(ontology, /userName: options\.embeddedUserName\(\)/);
+  assert.match(theme, /isEmbedded\.value \? \{ userName: String\(route\.query\.userName\)\.trim\(\) \}/);
+  assert.match(theme, /const isEmbedded = computed\(\(\) => typeof route\.query\.userName/);
+});
+
 test("browse descriptions omit export and theme app display stays unavailable", () => {
   const theme = readFileSync(new URL("../src/views/ThemeSpaceManagement/index.vue", import.meta.url), "utf8");
   const ontology = readFileSync(new URL("../src/views/OntologySpaceManagement/index.vue", import.meta.url), "utf8");

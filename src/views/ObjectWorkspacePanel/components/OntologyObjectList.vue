@@ -24,6 +24,7 @@
         <el-button v-if="!browseOnly" type="primary" data-onboarding="object-create-open" @click="emit('action', 'create')"
           ><el-icon><Plus /></el-icon>新建对象</el-button
         >
+        <el-button v-if="!browseOnly" :disabled="selectedObjectIds.length === 0" @click="emit('batch-export', selectedObjectIds)">批量导出</el-button>
       </div>
     </header>
 
@@ -53,6 +54,12 @@
             @click="openBrowseObjectDetail(item, $event)"
             @keydown.enter.prevent="openBrowseObjectFromKeyboard(item)"
           >
+            <el-checkbox
+              v-if="!browseOnly"
+              class="ontology-object-card__select"
+              :model-value="selectedObjectIds.includes(item.id)"
+              @change="toggleObjectSelection(item.id)"
+            />
             <div class="ontology-object-card__visual">
               <img v-if="item.iconUrl" :src="item.iconUrl" alt="" />
               <el-icon v-else><Ship /></el-icon>
@@ -150,7 +157,9 @@
             stripe
             :row-class-name="objectRowClassName"
             @row-click="openBrowseObjectFromRow"
+            @selection-change="updateTableSelection"
           >
+            <el-table-column v-if="!browseOnly" type="selection" width="48" />
             <el-table-column label="对象名称" min-width="220">
               <template #default="{ row }"
                 ><strong>{{ objectRow(row).displayName }}</strong
@@ -219,12 +228,14 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:viewMode": [mode: OntologyObjectViewMode];
   action: [action: string, item?: OntologyObjectItem];
+  "batch-export": [uniqueIdentifiers: string[]];
   locateParent: [item: OntologyObjectItem];
 }>();
 
 const scrollContainer = ref<HTMLElement | null>(null);
 const activeCategoryId = ref("");
 const activeObjectId = ref("");
+const selectedObjectIds = ref<string[]>([]);
 let highlightTimer: number | undefined;
 
 const objectIndex = computed(() => {
@@ -241,6 +252,16 @@ function objectRow(row: unknown): OntologyObjectItem {
     if (item) return item;
   }
   throw new Error("无效的对象数据行。");
+}
+
+/** @description 切换对象批量导出选择状态。 @param id 对象唯一标识。 */
+function toggleObjectSelection(id: string) {
+  selectedObjectIds.value = selectedObjectIds.value.includes(id) ? selectedObjectIds.value.filter((item) => item !== id) : [...selectedObjectIds.value, id];
+}
+
+/** @description 同步表格复选框选择的对象。 @param rows 当前选中的表格行。 */
+function updateTableSelection(rows: unknown[]) {
+  selectedObjectIds.value = rows.map((row) => objectRow(row).id).filter(Boolean);
 }
 
 /**
@@ -482,6 +503,20 @@ onBeforeUnmount(() => {
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     background 0.2s ease;
+}
+
+.ontology-object-card__select {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  margin: 0;
+  line-height: 1;
+}
+
+.ontology-object-card__select :deep(.el-checkbox__inner) {
+  border-color: var(--aircas-color-primary);
+  background-color: var(--aircas-color-card-background);
 }
 
 .ontology-object-card::before {
