@@ -2,6 +2,7 @@ import { ref, type Ref } from "vue";
 import { ElMessage } from "element-plus";
 import { deleteOntologyCategoryTreeInterface, postCreateOntologyCategoryTreeInterface, putUpdateOntologyCategoryNameInterface } from "@/apis";
 import type { OntologyConceptNode } from "@/types";
+import { buildCategoryParentTree, type CategoryParentOption } from "@/utils/categoryParentTree";
 
 /**
  * @description 对象工作区分类树弹窗交互：创建主分类、子分类、改名与删除。
@@ -22,7 +23,7 @@ export function useObjectWorkspaceCategoryActions(options: { spaceId: Ref<string
   const categoryRenameId = ref("");
   const categoryRenameName = ref("");
   const categoryRenameParentId = ref("");
-  const categoryParentOptions = ref<Array<{ id: string; label: string }>>([]);
+  const categoryParentOptions = ref<CategoryParentOption[]>([]);
   const categoryDeleteVisible = ref(false);
   const categoryDeleteSubmitting = ref(false);
   const categoryDeleteError = ref("");
@@ -56,17 +57,9 @@ export function useObjectWorkspaceCategoryActions(options: { spaceId: Ref<string
     categoryRenameError.value = "";
     categoryRenameId.value = categoryId;
     categoryRenameName.value = name;
-    const descendants = new Set<string>();
-    const collect = (node: OntologyConceptNode) => {
-      descendants.add(node.id);
-      node.children.forEach(collect);
-    };
-    const flatten = (nodes: OntologyConceptNode[]): Array<{ id: string; label: string }> =>
-      nodes.flatMap((node) => [{ id: node.id, label: node.label }, ...flatten(node.children)]);
     const findParent = (nodes: OntologyConceptNode[], parent = ""): string => {
       for (const node of nodes) {
         if (node.id === categoryId) {
-          collect(node);
           return parent || "0";
         }
         const found = findParent(node.children, node.id);
@@ -75,7 +68,7 @@ export function useObjectWorkspaceCategoryActions(options: { spaceId: Ref<string
       return "";
     };
     categoryRenameParentId.value = findParent(options.tree.value);
-    categoryParentOptions.value = [{ id: "0", label: "根分类" }, ...flatten(options.tree.value).filter((item) => !descendants.has(item.id))];
+    categoryParentOptions.value = buildCategoryParentTree(options.tree.value, categoryId);
     categoryRenameVisible.value = true;
   }
 

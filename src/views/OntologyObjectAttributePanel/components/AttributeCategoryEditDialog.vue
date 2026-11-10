@@ -10,11 +10,15 @@
     <el-form label-position="top">
       <el-form-item label="父分类" required>
         <el-tree-select
-          :model-value="parentId"
+          v-model="selectedParentId"
+          :data="parentOptions"
+          node-key="id"
+          :props="{ label: 'label', children: 'children' }"
+          check-strictly
+          :render-after-expand="false"
           style="width: 100%"
           :disabled="submitting"
           placeholder="请选择父分类"
-          @update:model-value="$emit('update:parent-id', $event)"
         />
       </el-form-item>
       <el-form-item label="分类名称" required>
@@ -37,7 +41,9 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from "vue";
+
+const props = defineProps<{
   visible: boolean;
   parentName: string;
   parentId: string;
@@ -47,12 +53,17 @@ defineProps<{
   error: string;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   "update:visible": [value: boolean];
   "update:name": [value: string];
   "update:parent-id": [value: string];
   confirm: [];
 }>();
+
+const selectedParentId = computed({
+  get: () => props.parentId,
+  set: (value: string) => emit("update:parent-id", value),
+});
 </script>
 
 <style scoped lang="scss">

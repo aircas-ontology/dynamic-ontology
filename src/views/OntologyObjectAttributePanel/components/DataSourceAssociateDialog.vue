@@ -80,6 +80,7 @@
         </div>
         <p v-if="tableError || fieldError" class="mapping-toolbar__error" role="alert">{{ tableError || fieldError }}</p>
         <div class="mapping-toolbar__actions">
+          <el-button type="danger" :disabled="loading || autoAssociateLoading || !mappedCount" @click="removeAllBinds">全部删除</el-button>
           <el-button
             data-onboarding="associate-auto"
             :loading="autoAssociateLoading"
@@ -205,14 +206,6 @@
               <path v-if="dragPreviewPath" class="mapping-line mapping-line-preview" :d="dragPreviewPath" fill="none" />
             </svg>
           </div>
-          <el-button
-            class="property-datasource-mapping-dialog__remove-all"
-            type="danger"
-            :disabled="loading || autoAssociateLoading || !mappedCount"
-            @click="removeAllBinds"
-          >
-            全部删除
-          </el-button>
         </div>
 
         <aside class="mapping-pending">
@@ -1056,13 +1049,6 @@ onBeforeUnmount(() => {
   display: flex;
   min-width: 0;
   min-height: 0;
-}
-
-.property-datasource-mapping-dialog__remove-all {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  z-index: 4;
 }
 
 .property-datasource-mapping-dialog__workspace {

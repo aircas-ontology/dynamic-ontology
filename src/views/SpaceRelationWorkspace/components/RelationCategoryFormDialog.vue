@@ -13,6 +13,7 @@
           v-model="parentId"
           :data="parentOptions"
           node-key="id"
+          :props="{ label: 'label', children: 'children' }"
           check-strictly
           :render-after-expand="false"
           :disabled="loading"

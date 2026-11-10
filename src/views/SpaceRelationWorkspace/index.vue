@@ -197,6 +197,7 @@ import {
 import AircasLoading from "@/components/AircasLoading.vue";
 import { useSpaceRelationWorkspace } from "./composables/useSpaceRelationWorkspace";
 import { collectCategoryIds, findRelationCategoryNode } from "./utils/relationOperations";
+import { buildCategoryParentTree } from "@/utils/categoryParentTree";
 import RelationCategoryPanel from "./components/RelationCategoryPanel.vue";
 import RelationGraphView from "./components/RelationGraphView.vue";
 import RelationCategoryFormDialog from "./components/RelationCategoryFormDialog.vue";
@@ -245,19 +246,9 @@ const categoryParentId = ref(ROOT_RELATION_CATEGORY_ID);
 const categoryParentLabel = ref("全部关系");
 const categoryActionName = ref("");
 const relationCategoryParentOptions = computed(() => {
-  const ids = new Set<string>();
-  const collect = (node: (typeof relationCategoryTree.value)[number]) => {
-    ids.add(node.id);
-    node.children.forEach(collect);
-  };
-  const current = findRelationCategoryNode(relationCategoryTree.value, categoryActionId.value);
-  if (current) collect(current);
-  const flatten = (nodes: typeof relationCategoryTree.value): Array<{ id: string; label: string }> =>
-    nodes.flatMap((node) => [{ id: node.id, label: node.label }, ...flatten(node.children)]);
-  return [
-    { id: ROOT_RELATION_CATEGORY_ID, label: "根分类" },
-    ...flatten(relationCategoryTree.value).filter((item) => !ids.has(item.id) && item.id !== ROOT_RELATION_CATEGORY_ID),
-  ];
+  const excludedId = categoryFormMode.value === "edit" ? categoryActionId.value : "";
+  const tree = buildCategoryParentTree(relationCategoryTree.value, excludedId);
+  return tree.length || categoryFormMode.value === "edit" ? tree : [{ id: ROOT_RELATION_CATEGORY_ID, label: "根分类", children: [] }];
 });
 const relationFormVisible = ref(false);
 const relationFormMode = ref<"create" | "edit">("create");
@@ -317,7 +308,7 @@ function resetFilter() {
 
 function openCategoryCreate(parentId: string) {
   categoryFormMode.value = "create";
-  categoryParentId.value = parentId;
+  categoryParentId.value = parentId || ROOT_RELATION_CATEGORY_ID;
   categoryParentLabel.value = parentId ? findRelationCategoryLabel(parentId) || "全部关系" : "根分类";
   categoryActionName.value = "";
   categoryFormVisible.value = true;
@@ -385,7 +376,7 @@ async function handleCategorySubmit(name: string, parentId: string) {
     return;
   }
 
-  const numericParentId = categoryParentId.value.trim() === "" ? 0 : Number(categoryParentId.value);
+  const numericParentId = parentId === ROOT_RELATION_CATEGORY_ID ? 0 : Number(parentId);
   if (!space || !Number.isInteger(numericSpaceId) || !Number.isInteger(numericParentId)) {
     ElMessage.error("缺少空间或父分类 id，无法创建关系分类。");
     categoryFormRef.value?.setLoading(false);

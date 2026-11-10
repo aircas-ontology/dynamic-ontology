@@ -9,6 +9,7 @@ import {
 } from "@/apis";
 import type { OntologyAttributeCategoryNode, OntologyAttributeTreeNode } from "@/types";
 import { filterCategoryNode, findCategory, findCategoryParent, isCategoryNode, mapCategoryTreeNode } from "../utils/attributePanelHelpers";
+import { buildCategoryParentTree, type CategoryParentOption } from "@/utils/categoryParentTree";
 
 /**
  * @description 属性分类树状态与交互：加载分类、搜索过滤、创建/编辑/删除分类弹窗。
@@ -35,7 +36,7 @@ export function useAttributeCategoryTree(options: { selectedCategoryId: Ref<stri
   const categoryEditId = ref("");
   const categoryEditName = ref("");
   const categoryEditParentId = ref("");
-  const categoryEditParentOptions = ref<Array<{ id: string; label: string }>>([]);
+  const categoryEditParentOptions = ref<CategoryParentOption[]>([]);
   const categoryName = ref("");
   const categoryParentId = ref("all");
   const categoryParentName = ref("无");
@@ -91,19 +92,10 @@ export function useAttributeCategoryTree(options: { selectedCategoryId: Ref<stri
     categoryEditName.value = data.label;
     const parent = findCategoryParent(categories.value, data.id);
     categoryEditParentId.value = parent?.id ?? "0";
-    const descendants = new Set<string>();
-    const collect = (node: OntologyAttributeCategoryNode) => {
-      descendants.add(node.id);
-      (node.children?.filter(isCategoryNode) ?? []).forEach(collect);
-    };
-    const flatten = (nodes: OntologyAttributeCategoryNode[]): Array<{ id: string; label: string }> =>
-      nodes.flatMap((node) => [{ id: node.id, label: node.label }, ...flatten(node.children?.filter(isCategoryNode) ?? [])]);
-    const current = findCategory(categories.value, data.id);
-    if (current) collect(current);
-    categoryEditParentOptions.value = [
-      { id: "0", label: "根分类" },
-      ...flatten(categories.value).filter((item) => !descendants.has(item.id) && item.id !== "0"),
-    ];
+    const toCategories = (nodes: OntologyAttributeCategoryNode[]): CategoryParentOption[] =>
+      nodes.map((node) => ({ id: node.id, label: node.label, children: toCategories(node.children?.filter(isCategoryNode) ?? []) }));
+    const tree = buildCategoryParentTree(toCategories(categories.value), data.id);
+    categoryEditParentOptions.value = tree.length ? tree : [{ id: "0", label: "根分类", children: [] }];
     categoryParentName.value = parent?.label ?? "根分类";
     categoryEditError.value = "";
     categoryEditDialogVisible.value = true;
