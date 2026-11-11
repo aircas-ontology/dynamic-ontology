@@ -89,23 +89,19 @@ export function collectApplicationPropertyOntologyPickers(
 }
 
 /**
- * @description 从 INPUT PROPERTY 与 OUTPUT WRITE_PROPERTY 按参数收集非 main 存储分组数据行选择器。
+ * @description 从 INPUT PROPERTY 按参数收集非 main 存储分组数据行选择器（写回出参仅选实例，不收集）。
  * @param inputRows 行为详情 INPUT 行。
- * @param writePropertyOutputRows WRITE_PROPERTY 出参行；缺省为空。
+ * @param _writePropertyOutputRows 保留参数位以兼容既有调用；写回出参不再生成数据行选择器。
  * @returns 分组选择器种子列表。
  */
 export function collectApplicationStorageGroupPickers(
   inputRows: SpaceBehaviorActionInfoViewParamRow[],
-  writePropertyOutputRows: SpaceBehaviorActionInfoViewParamRow[] = [],
+  _writePropertyOutputRows: SpaceBehaviorActionInfoViewParamRow[] = [],
 ): ApplicationStorageGroupPickerSeed[] {
   const seen = new Set<string>();
   const result: ApplicationStorageGroupPickerSeed[] = [];
   for (const row of inputRows) {
     if ((row.sourceType ?? "").trim().toUpperCase() !== "PROPERTY") continue;
-    pushStorageGroupPickerSeed(seen, result, row);
-  }
-  for (const row of writePropertyOutputRows) {
-    if ((row.outputMode ?? "").trim().toUpperCase() !== "WRITE_PROPERTY") continue;
     pushStorageGroupPickerSeed(seen, result, row);
   }
   return result;

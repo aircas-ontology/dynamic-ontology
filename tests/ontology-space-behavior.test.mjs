@@ -193,6 +193,8 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /linkRelationId/);
   assert.match(testDialogSource, /applicationInputRows/);
   assert.match(testDialogSource, /applicationWritePropertyOutputRows/);
+  assert.match(testDialogSource, /isOutputSide/);
+  assert.match(testDialogSource, /写回出参仅选实例/);
   assert.match(testDialogSource, /写回属性出参/);
   assert.match(testDialogSource, /WRITE_PROPERTY/);
   assert.match(testDialogSource, /formatApplicationOutputModeLabel/);
@@ -217,8 +219,20 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /removeApplicationInputBindingRecord/);
   assert.match(testDialogSource, /listApplicationInputBindingRecords/);
   assert.match(testDialogSource, /behavior-test-dialog__binding-records/);
+  assert.match(testDialogSource, /behavior-test-dialog__binding-records-hint/);
+  assert.match(testDialogSource, /behavior-test-dialog__binding-records-list/);
+  assert.match(testDialogSource, /behavior-test-dialog__param-draft-group/);
+  assert.match(testDialogSource, /behavior-test-dialog__param-draft-actions/);
+  assert.match(testDialogSource, /formatApplicationInputBindingRecordsHint/);
+  assert.match(testDialogSource, /当前选择参数：\$\{count\}/);
+  assert.match(testDialogSource, /当前未选择参数/);
+  assert.doesNotMatch(testDialogSource, /formatApplicationInputDraftSelectionHint/);
+  assert.doesNotMatch(testDialogSource, /behavior-test-dialog__param-draft-hint/);
   assert.match(testDialogSource, />添加</);
   assert.match(testDialogSource, /请先添加/);
+  assert.match(testDialogSource, /placeholder="请先选择上一级表单"/);
+  assert.match(testDialogSource, /disabled\s*\n\s*placeholder="请先选择上一级表单"/);
+  assert.doesNotMatch(testDialogSource, /behavior-test-dialog__param-draft-row/);
   assert.match(testDialogSource, /\.slice\(0,\s*1\)/);
   assert.match(testDialogSource, /toggleFromEntityRow/);
   assert.match(testDialogSource, /toggleToEntityRow/);
@@ -1334,13 +1348,6 @@ test("space behavior collects non-main storage group pickers for application PRO
       ontologyUniqueIdentifier: "ont-a",
       storageGroup: "weapon",
       label: "挂载重复 · weapon",
-    },
-    {
-      pickerKey: buildApplicationStorageGroupPickerKey("engine_note", "engine"),
-      paramName: "engine_note",
-      ontologyUniqueIdentifier: "ont-a",
-      storageGroup: "engine",
-      label: "发动机备注 · engine",
     },
   ]);
 });

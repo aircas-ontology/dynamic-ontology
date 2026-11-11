@@ -35,7 +35,7 @@
               }}</span>
               <template v-else-if="normalizeApplicationSourceType(asApplicationInputRow(row).sourceType) === 'PROPERTY'">
                 <div class="behavior-test-dialog__param-value-stack">
-                  <div v-if="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)" class="behavior-test-dialog__param-draft-row">
+                  <div v-if="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)" class="behavior-test-dialog__param-draft-group">
                     <el-select
                       class="behavior-test-dialog__entity-select"
                       :model-value="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.selectedRowKeys[0] || ''"
@@ -77,78 +77,90 @@
                         </p>
                       </template>
                     </el-select>
-                    <el-button type="primary" plain @click="addApplicationInputBindingRecords(asApplicationInputRow(row).paramName)">添加</el-button>
+                    <template v-if="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))">
+                      <div
+                        v-for="slot in findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.entitySlots || []"
+                        :key="slot.entityRowKey"
+                        class="behavior-test-dialog__entity-data-slot"
+                      >
+                        <span class="behavior-test-dialog__entity-data-slot-label">{{ slot.entityDisplayName }}</span>
+                        <el-select
+                          class="behavior-test-dialog__entity-select"
+                          :model-value="slot.selectedRowKey || ''"
+                          filterable
+                          clearable
+                          :loading="slot.loading"
+                          :placeholder="`请选择 ${findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.storageGroup || '分组'} 数据行`"
+                          @update:model-value="
+                            (value) =>
+                              updateApplicationStorageGroupRowSelection(
+                                findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pickerKey || '',
+                                slot.entityRowKey,
+                                String(value ?? ''),
+                              )
+                          "
+                        >
+                          <el-option
+                            v-for="option in listApplicationStorageGroupSlotOptions(slot)"
+                            :key="option.rowKey"
+                            :label="formatApplicationStorageGroupOptionLabel(option)"
+                            :value="option.rowKey"
+                          />
+                          <template #footer>
+                            <div v-if="slot.total > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
+                              <el-pagination
+                                small
+                                layout="total, prev, pager, next"
+                                :total="slot.total"
+                                :current-page="slot.page"
+                                :page-size="slot.pageSize"
+                                @current-change="
+                                  (page) =>
+                                    changeApplicationStorageGroupRowPage(
+                                      findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pickerKey || '',
+                                      slot.entityRowKey,
+                                      page,
+                                    )
+                                "
+                              />
+                            </div>
+                            <p v-else-if="slot.error" class="behavior-test-dialog__select-footer-error" role="alert">{{ slot.error }}</p>
+                          </template>
+                        </el-select>
+                      </div>
+                      <el-select
+                        v-if="!(findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.entitySlots || []).length"
+                        class="behavior-test-dialog__entity-select"
+                        model-value=""
+                        disabled
+                        placeholder="请先选择上一级表单"
+                      />
+                    </template>
+                    <div class="behavior-test-dialog__param-draft-actions">
+                      <el-button type="primary" plain @click="addApplicationInputBindingRecords(asApplicationInputRow(row).paramName)">添加</el-button>
+                    </div>
                   </div>
                   <span v-else class="behavior-test-dialog__state">缺少对象标识，无法选择实例</span>
-                  <template v-if="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))">
-                    <div
-                      v-for="slot in findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.entitySlots || []"
-                      :key="slot.entityRowKey"
-                      class="behavior-test-dialog__entity-data-slot"
+                  <div class="behavior-test-dialog__binding-records">
+                    <p class="behavior-test-dialog__binding-records-hint" role="status">
+                      {{ formatApplicationInputBindingRecordsHint(asApplicationInputRow(row).paramName) }}
+                    </p>
+                    <ul
+                      v-if="listApplicationInputBindingRecords(asApplicationInputRow(row).paramName).length"
+                      class="behavior-test-dialog__binding-records-list"
                     >
-                      <span class="behavior-test-dialog__entity-data-slot-label">{{ slot.entityDisplayName }}</span>
-                      <el-select
-                        class="behavior-test-dialog__entity-select"
-                        :model-value="slot.selectedRowKey || ''"
-                        filterable
-                        clearable
-                        :loading="slot.loading"
-                        :placeholder="`请选择 ${findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.storageGroup || '分组'} 数据行`"
-                        @update:model-value="
-                          (value) =>
-                            updateApplicationStorageGroupRowSelection(
-                              findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pickerKey || '',
-                              slot.entityRowKey,
-                              String(value ?? ''),
-                            )
-                        "
+                      <li
+                        v-for="record in listApplicationInputBindingRecords(asApplicationInputRow(row).paramName)"
+                        :key="record.recordKey"
+                        class="behavior-test-dialog__binding-record"
                       >
-                        <el-option
-                          v-for="option in listApplicationStorageGroupSlotOptions(slot)"
-                          :key="option.rowKey"
-                          :label="formatApplicationStorageGroupOptionLabel(option)"
-                          :value="option.rowKey"
-                        />
-                        <template #footer>
-                          <div v-if="slot.total > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
-                            <el-pagination
-                              small
-                              layout="total, prev, pager, next"
-                              :total="slot.total"
-                              :current-page="slot.page"
-                              :page-size="slot.pageSize"
-                              @current-change="
-                                (page) =>
-                                  changeApplicationStorageGroupRowPage(
-                                    findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pickerKey || '',
-                                    slot.entityRowKey,
-                                    page,
-                                  )
-                              "
-                            />
-                          </div>
-                          <p v-else-if="slot.error" class="behavior-test-dialog__select-footer-error" role="alert">{{ slot.error }}</p>
-                        </template>
-                      </el-select>
-                    </div>
-                    <span
-                      v-if="!(findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.entitySlots || []).length"
-                      class="behavior-test-dialog__state"
-                      >请先选择上一级表单</span
-                    >
-                  </template>
-                  <ul v-if="listApplicationInputBindingRecords(asApplicationInputRow(row).paramName).length" class="behavior-test-dialog__binding-records">
-                    <li
-                      v-for="record in listApplicationInputBindingRecords(asApplicationInputRow(row).paramName)"
-                      :key="record.recordKey"
-                      class="behavior-test-dialog__binding-record"
-                    >
-                      <span class="behavior-test-dialog__binding-record-label">{{ formatApplicationInputBindingRecordLabel(record) }}</span>
-                      <el-button link type="danger" @click="removeApplicationInputBindingRecord(asApplicationInputRow(row).paramName, record.recordKey)"
-                        >删除</el-button
-                      >
-                    </li>
-                  </ul>
+                        <span class="behavior-test-dialog__binding-record-label">{{ formatApplicationInputBindingRecordLabel(record) }}</span>
+                        <el-button link type="danger" @click="removeApplicationInputBindingRecord(asApplicationInputRow(row).paramName, record.recordKey)"
+                          >删除</el-button
+                        >
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </template>
               <span v-else>—</span>
@@ -210,62 +222,6 @@
                   </template>
                 </el-select>
                 <span v-else class="behavior-test-dialog__state">缺少对象标识，无法选择实例</span>
-                <template v-if="findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))">
-                  <div
-                    v-for="slot in findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.entitySlots || []"
-                    :key="slot.entityRowKey"
-                    class="behavior-test-dialog__entity-data-slot"
-                  >
-                    <el-select
-                      class="behavior-test-dialog__entity-select"
-                      :model-value="slot.selectedRowKey || ''"
-                      filterable
-                      clearable
-                      :loading="slot.loading"
-                      :placeholder="`请选择 ${findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.storageGroup || '分组'} 数据行`"
-                      @update:model-value="
-                        (value) =>
-                          updateApplicationStorageGroupRowSelection(
-                            findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pickerKey || '',
-                            slot.entityRowKey,
-                            String(value ?? ''),
-                          )
-                      "
-                    >
-                      <el-option
-                        v-for="option in listApplicationStorageGroupSlotOptions(slot)"
-                        :key="option.rowKey"
-                        :label="formatApplicationStorageGroupOptionLabel(option)"
-                        :value="option.rowKey"
-                      />
-                      <template #footer>
-                        <div v-if="slot.total > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
-                          <el-pagination
-                            small
-                            layout="total, prev, pager, next"
-                            :total="slot.total"
-                            :current-page="slot.page"
-                            :page-size="slot.pageSize"
-                            @current-change="
-                              (page) =>
-                                changeApplicationStorageGroupRowPage(
-                                  findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.pickerKey || '',
-                                  slot.entityRowKey,
-                                  page,
-                                )
-                            "
-                          />
-                        </div>
-                        <p v-else-if="slot.error" class="behavior-test-dialog__select-footer-error" role="alert">{{ slot.error }}</p>
-                      </template>
-                    </el-select>
-                  </div>
-                  <span
-                    v-if="!(findApplicationStorageGroupPickerForRow(asApplicationInputRow(row))?.entitySlots || []).length"
-                    class="behavior-test-dialog__state"
-                    >请先选择上一级表单</span
-                  >
-                </template>
               </div>
             </template>
           </el-table-column>
@@ -1305,6 +1261,17 @@ function formatApplicationInputBindingRecordLabel(record: ApplicationInputBindin
 }
 
 /**
+ * @description 格式化入参已添加绑定数量提示。
+ * @param paramName 参数名。
+ * @returns 提示文案。
+ */
+function formatApplicationInputBindingRecordsHint(paramName: string): string {
+  const count = listApplicationInputBindingRecords(paramName).length;
+  if (count === 0) return "当前未选择参数";
+  return `当前选择参数：${count}个`;
+}
+
+/**
  * @description 清空入参参数草稿选择（多选下拉与非 main 数据行槽）。
  * @param paramName 参数名。
  */
@@ -1579,8 +1546,10 @@ function collectApplicationParamBindingSelections(
     const ontologyPicker = findApplicationOntologyPicker(paramName);
     if (!ontologyPicker) return { ok: false, error: `${sideLabel}缺少参数「${paramName}」实例选择器` };
     if (ontologyPicker.loading) return { ok: false, error: "请等待对象实例列表加载完成后再测试" };
-    const storageGroup = normalizeStorageGroup(row.storageGroup);
-    const needsDataRow = !isMainStorageGroup(storageGroup) && Boolean(storageGroup);
+    /** 写回出参仅选实例，不绑定非 main 数据行。 */
+    const isOutputSide = sideLabel === "出参";
+    const storageGroup = isOutputSide ? "" : normalizeStorageGroup(row.storageGroup);
+    const needsDataRow = !isOutputSide && !isMainStorageGroup(storageGroup) && Boolean(storageGroup);
 
     if (ontologyPicker.selectionMode === "multiple") {
       const records = listApplicationInputBindingRecords(paramName);
@@ -2883,15 +2852,19 @@ watch(
   gap: 8px;
   width: 100%;
 }
-.behavior-test-dialog__param-draft-row {
+.behavior-test-dialog__param-draft-group {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 8px;
   width: 100%;
+  padding: 8px;
+  border: 1px solid var(--aircas-color-border-light);
+  border-radius: 4px;
+  box-sizing: border-box;
 }
-.behavior-test-dialog__param-draft-row .behavior-test-dialog__entity-select {
-  flex: 1;
-  min-width: 0;
+.behavior-test-dialog__param-draft-actions {
+  display: flex;
+  justify-content: flex-start;
 }
 .behavior-test-dialog__entity-data-slot {
   display: flex;
@@ -2905,6 +2878,18 @@ watch(
   line-height: 1.4;
 }
 .behavior-test-dialog__binding-records {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.behavior-test-dialog__binding-records-hint {
+  margin: 0;
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.behavior-test-dialog__binding-records-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
