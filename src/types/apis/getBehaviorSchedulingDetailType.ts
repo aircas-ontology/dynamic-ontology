@@ -5,11 +5,15 @@ export interface GetBehaviorSchedulingDetailParams {
 }
 /** 周期任务详情。 */
 export interface BehaviorSchedulingTaskDetail {
+  /** 兼容历史记录，读取时校验枚举并安全降级。 */
+  periodType?: string | null;
   taskCronExpression?: string;
   entityJson?: string;
 }
 /** 调度详情响应。 */
 export interface GetBehaviorSchedulingDetailData {
+  /** 优先读取的周期类型。 */
+  periodType?: string | null;
   id: number;
   ontologyName?: string;
   ontologyIdentifier: string;

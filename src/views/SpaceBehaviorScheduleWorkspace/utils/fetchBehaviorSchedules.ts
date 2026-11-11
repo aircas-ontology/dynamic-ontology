@@ -12,7 +12,7 @@ function mapBehaviorSchedulingRecord(record: ListBehaviorSchedulingRecord): Beha
     behaviorActionApi: record.actionApi,
     description: record.description,
     status: record.status,
-    createdAt: "-",
+    createdAt: record.createTime?.trim() ? record.createTime : "-",
     detailsAvailable: false,
     periodKind: "Cron",
     weekdays: [],

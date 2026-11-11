@@ -1,5 +1,11 @@
-import type { BehaviorScheduleDraft, CreateBehaviorScheduleParams, TestOntologyActionParams } from "@/types";
+import type { BehaviorScheduleDraft, BehaviorSchedulePeriodKind, CreateBehaviorScheduleParams, TestOntologyActionParams } from "@/types";
 
+const schedulePeriodTypes: Record<BehaviorSchedulePeriodKind, CreateBehaviorScheduleParams["task"]["periodType"]> = {
+  每天: "DAILY",
+  每周: "WEEKLY",
+  每月: "MONTHLY",
+  Cron: "CRON",
+};
 const weekdayNames: Record<string, string> = { 周一: "MON", 周二: "TUE", 周三: "WED", 周四: "THU", 周五: "FRI", 周六: "SAT", 周日: "SUN" };
 const unixWeekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
@@ -58,13 +64,12 @@ function normalizeScheduleCron(expression: string): string {
   return fields.join(" ");
 }
 
-/** @description 将已校验行为参数与周期配置组装为创建请求，不包含界面快照。 @param draft 调度草稿。 @param ontologyIdentifier 挂载本体标识。 @param behaviorRequest 完整行为执行参数。 @returns 创建参数或可展示错误。 */
+/** @description 将已校验行为参数与周期配置组装为创建请求，不包含界面快照。 @param draft 调度草稿。 @param ontologyIdentifier 挂载本体标识，空值时省略并由后端推导。 @param behaviorRequest 完整行为执行参数。 @returns 创建参数或可展示错误。 */
 export function buildBehaviorScheduleCreateParams(
   draft: BehaviorScheduleDraft,
   ontologyIdentifier: string,
   behaviorRequest: TestOntologyActionParams,
 ): { ok: true; request: CreateBehaviorScheduleParams } | { ok: false; error: string } {
-  if (!ontologyIdentifier.trim()) return { ok: false, error: "行为缺少所属本体标识，请重新选择行为" };
   if (!draft.name.trim() || !draft.behaviorActionApi || draft.behaviorActionApi !== behaviorRequest.actionApi)
     return { ok: false, error: "调度名称或行为参数不匹配" };
   let cron = "";
@@ -86,12 +91,12 @@ export function buildBehaviorScheduleCreateParams(
   return {
     ok: true,
     request: {
-      ontologyIdentifier: ontologyIdentifier.trim(),
+      ...(ontologyIdentifier.trim() ? { ontologyIdentifier: ontologyIdentifier.trim() } : {}),
       actionApi: draft.behaviorActionApi,
       name: draft.name.trim(),
       description: draft.description,
       type: "TASK",
-      task: { taskCronExpression: cron, entityJson: JSON.stringify(behaviorRequest) },
+      task: { periodType: schedulePeriodTypes[draft.periodKind], taskCronExpression: cron, entityJson: JSON.stringify(behaviorRequest) },
     },
   };
 }

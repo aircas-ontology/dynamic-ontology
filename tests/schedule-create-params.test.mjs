@@ -24,7 +24,7 @@ test("schedule creates exact envelope and serializes complete behavior request",
     name: "schedule",
     description: "description",
     type: "TASK",
-    task: { taskCronExpression: "30 3 8 * * ? *", entityJson: JSON.stringify(request) },
+    task: { periodType: "DAILY", taskCronExpression: "30 3 8 * * ? *", entityJson: JSON.stringify(request) },
   });
 });
 
@@ -39,6 +39,7 @@ test("schedule converts daily weekly monthly and manual cron", () => {
     const result = buildBehaviorScheduleCreateParams({ ...draft, ...values }, "ontology", request);
     assert.equal(result.ok, true);
     assert.equal(result.request.task.taskCronExpression, expected);
+    assert.equal(result.request.task.periodType, { 每天: "DAILY", 每周: "WEEKLY", 每月: "MONTHLY", Cron: "CRON" }[values.periodKind]);
   }
 });
 
@@ -52,7 +53,7 @@ test("schedule blocks invalid context and cycle without creating payload", () =>
   ]) {
     assert.equal(buildBehaviorScheduleCreateParams({ ...draft, ...values }, "ontology", request).ok, false);
   }
-  assert.equal(buildBehaviorScheduleCreateParams(draft, "", request).ok, false);
+
   assert.equal(buildBehaviorScheduleCreateParams(draft, "ontology", { ...request, actionApi: "other" }).ok, false);
 });
 
@@ -90,4 +91,14 @@ test("manual cron preserves Quartz specials and translates Unix weekday numberin
   }
   assert.equal(buildBehaviorScheduleCreateParams({ ...draft, executeTime: "bad" }, "ontology", request).ok, false);
   assert.equal(buildBehaviorScheduleCreateParams({ ...draft, name: " " }, "ontology", request).ok, false);
+});
+
+test("schedule omits empty ontology identifiers and trims provided identifiers", () => {
+  for (const identifier of ["", "   "]) {
+    const result = buildBehaviorScheduleCreateParams(draft, identifier, request);
+    assert.equal(result.ok, true);
+    assert.equal(Object.hasOwn(result.request, "ontologyIdentifier"), false);
+    assert.deepEqual(JSON.parse(result.request.task.entityJson), request);
+  }
+  assert.equal(buildBehaviorScheduleCreateParams(draft, " ontology ", request).request.ontologyIdentifier, "ontology");
 });

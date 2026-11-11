@@ -104,3 +104,17 @@ test("schedule list rejects invalid pagination and allows empty out-of-range pag
     { records: [], total: 2 },
   );
 });
+
+test("schedule creation time uses createTime and falls back only for absent values", async () => {
+  for (const [createTime, expected] of [
+    ["2026-11-11 19:00:00", "2026-11-11 19:00:00"],
+    ["2026-11-11T11:00:00Z", "2026-11-11T11:00:00Z"],
+    [undefined, "-"],
+    [null, "-"],
+    ["", "-"],
+    ["   ", "-"],
+  ]) {
+    const result = await fetchBehaviorSchedules(async () => ({ code: 200, data: { records: [{ ...record, createTime }], total: 1, size: 10, current: 1 } }));
+    assert.equal(result.records[0].createdAt, expected);
+  }
+});

@@ -28,6 +28,7 @@ export type {
   BuildObjectFromDatasourceSelectedTable,
 } from "./apis/buildObjectFromDatasourceType";
 export type { BuildOntologyAssetData, BuildOntologyAssetParams, BuildOntologyAssetProperty } from "./apis/buildOntologyAssetType";
+export type { ChangeBehaviorSchedulingStatusParams } from "./apis/changeBehaviorSchedulingStatusType";
 export type { ActionCategoryNode, CreateActionCategoryParams } from "./apis/createActionCategoryType";
 export type { CreateBehaviorScheduleParams, CreateBehaviorScheduleTask } from "./apis/createBehaviorScheduleType";
 export type { CreateFunctionOperatorTemplateData, CreateFunctionOperatorTemplateParams } from "./apis/createFunctionOperatorTemplateType";
@@ -114,6 +115,7 @@ export type {
   ListDatasourceTablesParams,
 } from "./apis/datasourceConnectionType";
 export type { DeleteActionCategoryParams } from "./apis/deleteActionCategoryType";
+export type { DeleteBehaviorSchedulingParams } from "./apis/deleteBehaviorSchedulingType";
 export type { DeleteFunctionOperatorTemplateParams } from "./apis/deleteFunctionOperatorTemplateType";
 export type { DeleteFunctionRateLimitTemplateParams } from "./apis/deleteFunctionRateLimitTemplateType";
 export type { DeleteOntologyActionData, DeleteOntologyActionParams } from "./apis/deleteOntologyActionType";
@@ -133,6 +135,11 @@ export type { FunctionPublishData, FunctionPublishParams } from "./apis/function
 export type { FunctionUnpublishData, FunctionUnpublishParams } from "./apis/functionUnpublishType";
 export type { ActionCategoryActionInfo, ActionCategoryVO, GetActionCategoryTreeParams } from "./apis/getActionCategoryTreeType";
 export type { BehaviorSchedulingTaskDetail, GetBehaviorSchedulingDetailData, GetBehaviorSchedulingDetailParams } from "./apis/getBehaviorSchedulingDetailType";
+export type {
+  BehaviorSchedulingResultRecord,
+  GetBehaviorSchedulingResultData,
+  GetBehaviorSchedulingResultParams,
+} from "./apis/getBehaviorSchedulingResultType";
 export type {
   GetOntologyActionInfoData,
   GetOntologyActionInfoFunctionParam,
@@ -296,6 +303,7 @@ export type {
 export type { TestOntologyFunctionData, TestOntologyFunctionParameterItem, TestOntologyFunctionParams } from "./apis/testOntologyFunctionType";
 export type { UnpublishOntologyActionData, UnpublishOntologyActionParams } from "./apis/unpublishOntologyActionType";
 export type { UpdateActionCategoryParams } from "./apis/updateActionCategoryType";
+export type { UpdateBehaviorSchedulingParams } from "./apis/updateBehaviorSchedulingType";
 export type { UpdateFunctionOperatorTemplateData, UpdateFunctionOperatorTemplateParams } from "./apis/updateFunctionOperatorTemplateType";
 export type { UpdateFunctionRateLimitTemplateData, UpdateFunctionRateLimitTemplateParams } from "./apis/updateFunctionRateLimitTemplateType";
 export type { UpdateOntologyFunctionData, UpdateOntologyFunctionParams } from "./apis/updateOntologyFunctionType";

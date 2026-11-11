@@ -85,29 +85,15 @@ test("create dialog switches rule and period fields including weekly monthly cro
   assert.match(typeSource, /08:00:00/);
 });
 
-test("workspace opens invocation log dialog with prototype columns and status tags", () => {
+test("workspace opens real invocation logs with execution fields and pagination", () => {
   const workspaceSource = readSource("../src/views/SpaceBehaviorScheduleWorkspace/index.vue");
   const dialogSource = readSource("../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleInvocationLogDialog.vue");
-  const typeSource = readSource("../src/types/pages/ontologySpaceBehaviorScheduleType.ts");
-  const typesIndex = readSource("../src/types/index.ts");
-
-  assert.match(workspaceSource, /openInvocationLogDialog/);
-  assert.match(workspaceSource, /BehaviorScheduleInvocationLogDialog/);
-  assert.doesNotMatch(workspaceSource, /showPendingMessage\('调用日志'\)/);
-  assert.match(workspaceSource, /2026-09-03 08:12:16/);
-  assert.match(dialogSource, /class="aircas-dialog/);
-  assert.match(dialogSource, /aircas-table/);
-  assert.match(dialogSource, /aircas-tag/);
-  assert.match(dialogSource, /aircas-button/);
-  assert.match(dialogSource, /调用日志/);
-  assert.match(dialogSource, /调用名称/);
-  assert.match(dialogSource, /调用时间/);
-  assert.match(dialogSource, /调用状态/);
-  assert.match(dialogSource, /关闭/);
+  assert.match(workspaceSource, /getBehaviorSchedulingResultInterface/);
+  assert.doesNotMatch(workspaceSource, /createMockInvocationLogs/);
+  for (const label of ["触发时间", "完成时间", "执行状态", "日志消息", "请求参数", "执行结果", "关闭"]) assert.ok(dialogSource.includes(label));
+  assert.match(dialogSource, /type="expand"/);
+  assert.match(dialogSource, /el-pagination/);
   assert.match(dialogSource, /close-on-click-modal/);
-  assert.match(typeSource, /BehaviorScheduleInvocationLog/);
-  assert.match(typeSource, /BehaviorScheduleInvocationStatus/);
-  assert.match(typesIndex, /BehaviorScheduleInvocationLog/);
 });
 
 test("workspace opens delete confirm dialog and removes the pending delete message", () => {

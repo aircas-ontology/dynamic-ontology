@@ -16,6 +16,8 @@ export interface ListBehaviorSchedulingRecord {
   actionApi: string;
   actionName: string;
   schedulingName: string;
+  /** 接口返回的创建时间，按原值展示。 */
+  createTime?: string | null;
   description: string;
   type: "TASK" | "RULE";
   status: "START" | "STOP";

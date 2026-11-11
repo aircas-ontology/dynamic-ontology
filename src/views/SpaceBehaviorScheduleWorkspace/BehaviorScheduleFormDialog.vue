@@ -402,7 +402,7 @@ function submitCreateScheduleForm() {
     draft.behaviorParameters = result.snapshot;
     draft.behaviorId = selectedBehaviorOption.value?.id ?? draft.behaviorId;
     draft.savedEntityJson = "";
-    if (props.mode === "create") {
+    {
       const option = selectedBehaviorOption.value;
       const assembled = buildBehaviorScheduleCreateParams(
         draft,
@@ -414,7 +414,7 @@ function submitCreateScheduleForm() {
         return;
       }
       createRequest = assembled.request;
-      console.log("行为调度创建参数", createRequest);
+      if (props.mode === "create") console.log("行为调度创建参数", createRequest);
     }
   }
   emit(

@@ -465,7 +465,14 @@ test("schedule edit and view restore snapshots and never mutate the saved record
       context.form.submitCreateScheduleForm();
       assert.equal(context.form.draft.behaviorId, "1");
       assert.equal(context.events.length, 0);
-    } else context.form.parameterConfig.updateParamValue("amount", "9");
+    } else {
+      context.form.parameterConfig.updateParamValue("amount", "9");
+      context.form.draft.periodKind = "Cron";
+      context.form.draft.cronExpression = "0 0 9 * * ? *";
+      context.form.submitCreateScheduleForm();
+      assert.equal(context.events[0][2].task.taskCronExpression, "0 0 9 * * ? *");
+      assert.equal(JSON.parse(context.events[0][2].task.entityJson).params.amount, 9);
+    }
     assert.equal(saved.behaviorParameters.values.amount, "8");
     context.scope.stop();
   }
@@ -545,7 +552,7 @@ test("new schedule with no external parameters logs its valid request", async ()
   scope.stop();
 });
 
-test("new schedule blocks malformed cron and missing ontology before logging or emitting", async () => {
+test("new schedule blocks malformed cron but allows an omitted ontology identifier", async () => {
   const { form, props, events, logs, scope } = createScheduleFormHarness(null, "create", []);
   props.modelValue = true;
   await settleForm();
@@ -560,9 +567,10 @@ test("new schedule blocks malformed cron and missing ontology before logging or 
   form.draft.periodKind = "每天";
   props.behaviorOptions[0].ontologyUniqIdentifier = "";
   form.submitCreateScheduleForm();
-  assert.match(form.validationError.value, /本体标识/);
-  assert.equal(events.length, 0);
-  assert.equal(logs.length, 0);
+  assert.equal(form.validationError.value, "");
+  assert.equal(events.length, 1);
+  assert.equal(logs.length, 1);
+  assert.equal(Object.hasOwn(events[0][2], "ontologyIdentifier"), false);
   scope.stop();
 });
 
