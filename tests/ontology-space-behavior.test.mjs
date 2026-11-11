@@ -261,8 +261,16 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /findApplicationOntologyPicker\(asApplicationInputRow\(row\)\.paramName/);
   assert.match(testDialogSource, /applicationTestResultText/);
   assert.match(testDialogSource, /v-if="showRelationLinkForm"/);
-  assert.match(testDialogSource, /确认后直接执行基础函数算子测试/);
+  assert.match(testDialogSource, /选择实体实例（可选）/);
+  assert.match(testDialogSource, /updateBasicOperatorEntitySelection/);
+  assert.match(testDialogSource, /listBasicOperatorEntitySelectOptions/);
+  assert.match(testDialogSource, /formatBasicOperatorEntityOptionLabel/);
+  assert.match(testDialogSource, /v-if="dialogHint"/);
+  assert.match(testDialogSource, /selectedPrimaryKey === null \? \{\} : \{ entityPrimaryKey: selectedPrimaryKey \}/);
   assert.match(testDialogSource, /basicOperatorTestResultText/);
+  assert.doesNotMatch(testDialogSource, /可选择实体实例后开始基础函数算子测试/);
+  assert.doesNotMatch(testDialogSource, /确认后直接执行基础函数算子测试/);
+  assert.doesNotMatch(testDialogSource, /isAttributeValueTest \|\| isBasicFunctionOperatorTest/);
   assert.match(testDialogSource, /formatBasicOperatorTestResultData/);
   assert.match(testDialogSource, /type="textarea"/);
   assert.match(testDialogSource, /readonly/);
