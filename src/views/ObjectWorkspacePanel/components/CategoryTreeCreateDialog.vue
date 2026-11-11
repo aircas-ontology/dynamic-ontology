@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="添加分类树" width="min(480px, 94vw)" append-to-body destroy-on-close>
+  <el-dialog v-model="visible" title="添加分类树" width="min(480px, 94vw)" append-to-body destroy-on-close :close-on-click-modal="false">
     <el-form label-position="top">
       <el-form-item label="主分类名称" required>
         <el-input v-model="categoryName" maxlength="64" ariaLabel="主分类名称" placeholder="请输入主分类名称" :disabled="submitting" />

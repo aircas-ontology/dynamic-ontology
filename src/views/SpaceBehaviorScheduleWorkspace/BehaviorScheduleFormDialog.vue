@@ -72,42 +72,22 @@
       </section>
 
       <template v-if="draft.strategy === '周期调度'">
-        <el-form-item label="关联对象">
-          <el-select
-            v-model="draft.target"
-            class="aircas-select"
-            popper-class="aircas-select-popper"
-            placeholder="请选择关联对象"
-            style="width: 100%"
-            :disabled="formDisabled"
-            @change="clearScheduleInstance"
-          >
-            <el-option v-for="item in objectOptions" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="实例">
-          <el-select
-            v-model="draft.instance"
-            class="aircas-select"
-            popper-class="aircas-select-popper"
-            placeholder="请先选择关联对象"
-            style="width: 100%"
-            :disabled="formDisabled || !draft.target"
-          >
-            <el-option v-for="item in visibleInstanceOptions" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="行为">
           <el-select
             v-model="draft.behavior"
             class="aircas-select"
             popper-class="aircas-select-popper"
             placeholder="请选择行为"
+            :loading="behaviorLoading"
+            :no-data-text="behaviorError || '当前空间暂无非基础行为'"
             style="width: 100%"
             :disabled="formDisabled"
           >
             <el-option v-for="item in behaviorOptions" :key="item" :label="item" :value="item" />
           </el-select>
+          <p v-if="behaviorError" role="alert" class="behavior-schedule-form-dialog__error">
+            {{ behaviorError }} <el-button link @click="emit('retry-behaviors')">重试</el-button>
+          </p>
         </el-form-item>
       </template>
 
@@ -156,15 +136,16 @@ const props = defineProps<{
   modelValue: boolean;
   mode: BehaviorScheduleFormMode;
   initialDraft: BehaviorScheduleDraft | null;
-  objectOptions: readonly string[];
-  instancesByTarget: Readonly<Record<string, readonly string[]>>;
   behaviorOptions: readonly string[];
+  behaviorLoading: boolean;
+  behaviorError: string;
   submitting: boolean;
 }>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
   confirm: [draft: BehaviorScheduleDraft];
+  "retry-behaviors": [];
 }>();
 
 const draft = reactive<BehaviorScheduleDraft>(createEmptyScheduleDraft());
@@ -178,8 +159,6 @@ const dialogTitle = computed(() => {
   return "新建调度";
 });
 const closeButtonLabel = computed(() => (props.mode === "view" ? "关闭" : "取消"));
-
-const visibleInstanceOptions = computed(() => props.instancesByTarget[draft.target] ?? []);
 
 watch(
   () => props.modelValue,
@@ -263,11 +242,6 @@ function setScheduleWeekdays(value: string | number | boolean | Array<string | n
 /**
  * @description 用户切换关联对象时清空已选实例；回填草稿时跳过，避免冲掉回显实例。
  */
-function clearScheduleInstance() {
-  if (hydratingScheduleDraft.value) return;
-  draft.instance = "";
-}
-
 /**
  * @description 打开规则配置全屏画布；查看模式忽略。
  */
@@ -296,7 +270,6 @@ function readCreateScheduleFormError(value: BehaviorScheduleDraft): string {
   if (value.periodKind === "每月" && value.monthDay === null) return "请选择每月执行日期";
   if (value.periodKind === "Cron" && !value.cronExpression.trim()) return "请输入 Cron 表达式";
   if (value.periodKind !== "Cron" && !value.executeTime) return "请选择执行时间";
-  if (!value.target) return "请选择关联对象";
   if (!value.behavior) return "请选择行为";
   return "";
 }

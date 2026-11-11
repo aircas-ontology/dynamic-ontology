@@ -24,7 +24,8 @@
         <el-button v-if="!browseOnly" type="primary" data-onboarding="object-create-open" @click="emit('action', 'create')"
           ><el-icon><Plus /></el-icon>新建对象</el-button
         >
-        <el-button v-if="!browseOnly" :disabled="selectedObjectIds.length === 0" @click="emit('batch-export', selectedObjectIds)">批量导出</el-button>
+        <el-button v-if="!browseOnly" @click="handleBatchExport">批量导出</el-button>
+        <el-button v-if="!browseOnly && isBatchExportMode" @click="exitBatchExportMode">退出选择</el-button>
       </div>
     </header>
 
@@ -40,6 +41,15 @@
           <i aria-hidden="true"></i>
           <h2>{{ section.name }}</h2>
           <span>{{ section.items.length }} 个对象</span>
+          <el-button
+            v-if="!browseOnly && isBatchExportMode"
+            link
+            size="small"
+            :disabled="section.items.length === 0"
+            @click="toggleSectionSelection(section.items)"
+          >
+            {{ isSectionSelected(section.items) ? "取消全选" : "全选" }}
+          </el-button>
         </header>
 
         <div v-if="viewMode === 'card'" class="ontology-object-section__cards">
@@ -55,7 +65,7 @@
             @keydown.enter.prevent="openBrowseObjectFromKeyboard(item)"
           >
             <el-checkbox
-              v-if="!browseOnly"
+              v-if="!browseOnly && isBatchExportMode"
               class="ontology-object-card__select"
               :model-value="selectedObjectIds.includes(item.id)"
               @change="toggleObjectSelection(item.id)"
@@ -157,9 +167,10 @@
             stripe
             :row-class-name="objectRowClassName"
             @row-click="openBrowseObjectFromRow"
-            @selection-change="updateTableSelection"
+            :ref="(instance) => setTableRef(section.categoryId, instance)"
+            @selection-change="updateTableSelection(section.items, $event)"
           >
-            <el-table-column v-if="!browseOnly" type="selection" width="48" />
+            <el-table-column v-if="!browseOnly && isBatchExportMode" type="selection" width="48" />
             <el-table-column label="对象名称" min-width="220">
               <template #default="{ row }"
                 ><strong>{{ objectRow(row).displayName }}</strong
@@ -216,6 +227,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { Connection, DataLine, Plus, Share, Ship } from "@element-plus/icons-vue";
+import type { TableInstance } from "element-plus";
 import type { OntologyObjectItem, OntologyObjectLocationTarget, OntologyObjectSection, OntologyObjectViewMode } from "@/types";
 
 const props = defineProps<{
@@ -236,7 +248,9 @@ const scrollContainer = ref<HTMLElement | null>(null);
 const activeCategoryId = ref("");
 const activeObjectId = ref("");
 const selectedObjectIds = ref<string[]>([]);
+const isBatchExportMode = ref(false);
 let highlightTimer: number | undefined;
+const tableRefs = new Map<string, TableInstance>();
 
 const objectIndex = computed(() => {
   const index = new Map<string, OntologyObjectItem>();
@@ -257,11 +271,68 @@ function objectRow(row: unknown): OntologyObjectItem {
 /** @description 切换对象批量导出选择状态。 @param id 对象唯一标识。 */
 function toggleObjectSelection(id: string) {
   selectedObjectIds.value = selectedObjectIds.value.includes(id) ? selectedObjectIds.value.filter((item) => item !== id) : [...selectedObjectIds.value, id];
+  void nextTick(syncTableSelections);
+}
+
+/** @description 进入选择模式或导出当前选中的对象。 */
+function handleBatchExport() {
+  if (!isBatchExportMode.value) {
+    isBatchExportMode.value = true;
+    return;
+  }
+  if (!selectedObjectIds.value.length) return;
+  emit("batch-export", [...selectedObjectIds.value]);
+  selectedObjectIds.value = [];
+  isBatchExportMode.value = false;
+}
+
+/** @description 退出批量导出选择模式并清空当前选中对象。 */
+function exitBatchExportMode() {
+  selectedObjectIds.value = [];
+  isBatchExportMode.value = false;
+  void nextTick(syncTableSelections);
+}
+
+/** @description 判断分类内对象是否全部被选中。 @param items 分类对象。 */
+function isSectionSelected(items: OntologyObjectItem[]): boolean {
+  return items.length > 0 && items.every((item) => selectedObjectIds.value.includes(item.id));
+}
+
+/** @description 切换分类内对象的全选状态。 @param items 分类对象。 */
+function toggleSectionSelection(items: OntologyObjectItem[]) {
+  const ids = items.map((item) => item.id);
+  if (isSectionSelected(items)) {
+    selectedObjectIds.value = selectedObjectIds.value.filter((id) => !ids.includes(id));
+  } else {
+    selectedObjectIds.value = Array.from(new Set([...selectedObjectIds.value, ...ids]));
+  }
+  void nextTick(syncTableSelections);
+}
+
+/** @description 保存分类对应的表格实例，用于同步外部选择状态。 @param categoryId 分类标识。 @param instance 表格实例。 */
+function setTableRef(categoryId: string, instance: TableInstance | null) {
+  if (instance) tableRefs.set(categoryId, instance);
+  else tableRefs.delete(categoryId);
+}
+
+/** @description 将统一选中状态同步到当前已渲染的所有表格。 */
+function syncTableSelections() {
+  const selectedIds = new Set(selectedObjectIds.value);
+  for (const section of props.sections) {
+    const table = tableRefs.get(section.categoryId);
+    if (!table) continue;
+    table.clearSelection();
+    for (const item of section.items) {
+      if (selectedIds.has(item.id)) table.toggleRowSelection(item, true);
+    }
+  }
 }
 
 /** @description 同步表格复选框选择的对象。 @param rows 当前选中的表格行。 */
-function updateTableSelection(rows: unknown[]) {
-  selectedObjectIds.value = rows.map((row) => objectRow(row).id).filter(Boolean);
+function updateTableSelection(sectionItems: OntologyObjectItem[], rows: unknown[]) {
+  const sectionIds = new Set(sectionItems.map((item) => item.id));
+  const selectedInSection = rows.map((row) => objectRow(row).id).filter(Boolean);
+  selectedObjectIds.value = [...selectedObjectIds.value.filter((id) => !sectionIds.has(id)), ...selectedInSection];
 }
 
 /**
@@ -348,6 +419,15 @@ async function locateObjectElement(section: HTMLElement, objectId: string) {
 watch(
   () => props.locationTarget?.requestId,
   () => void locateCategory(props.locationTarget),
+);
+watch([() => props.viewMode, () => isBatchExportMode.value], () => void nextTick(syncTableSelections));
+watch(
+  () => props.sections,
+  (sections) => {
+    const validIds = new Set(sections.flatMap((section) => section.items.map((item) => item.id)));
+    selectedObjectIds.value = selectedObjectIds.value.filter((id) => validIds.has(id));
+  },
+  { deep: true },
 );
 onBeforeUnmount(() => {
   if (highlightTimer) window.clearTimeout(highlightTimer);

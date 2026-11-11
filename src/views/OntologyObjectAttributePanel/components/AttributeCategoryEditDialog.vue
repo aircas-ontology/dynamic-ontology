@@ -4,6 +4,7 @@
     width="min(480px, 94vw)"
     append-to-body
     destroy-on-close
+    :close-on-click-modal="false"
     :model-value="visible"
     @update:model-value="$emit('update:visible', $event)"
   >

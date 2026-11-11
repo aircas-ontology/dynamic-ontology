@@ -78,6 +78,22 @@ function readOntologyExportResponseHeader(headers: AxiosResponse["headers"], nam
   return typeof raw === "string" ? raw : "";
 }
 
+/** @description 从导出接口的 Blob 响应中提取后端提示信息。 @param blob 接口返回内容。 @returns 后端响应对象及提示信息。 */
+async function readOntologyExportBlobResponse(blob: Blob): Promise<{ code?: number; success?: boolean; message: string }> {
+  try {
+    const payload: unknown = JSON.parse(await blob.text());
+    if (typeof payload !== "object" || payload === null) return { message: "" };
+    const record = payload as Record<string, unknown>;
+    return {
+      code: typeof record.code === "number" ? record.code : undefined,
+      success: typeof record.success === "boolean" ? record.success : undefined,
+      message: typeof record.message === "string" ? record.message.trim() : "",
+    };
+  } catch {
+    return { message: "" };
+  }
+}
+
 /**
  * @description 按 exportType 导出单个对象。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
  *
@@ -98,6 +114,12 @@ export async function getExportOntologyInterface(params: ExportOntologyParams): 
   });
   if (!(response.data instanceof Blob)) {
     throw new RequestError("导出失败，请重试。");
+  }
+  if (!response.headers["content-disposition"] && response.headers["content-type"]?.includes("application/json")) {
+    const result = await readOntologyExportBlobResponse(response.data);
+    if (result.success === false || (result.code !== undefined && result.code !== 200)) {
+      throw new RequestError(result.message || "导出失败，请重试。");
+    }
   }
   return {
     blob: response.data,

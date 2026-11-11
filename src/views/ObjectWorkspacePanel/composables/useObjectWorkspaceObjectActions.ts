@@ -114,7 +114,7 @@ export function useObjectWorkspaceObjectActions(options: {
       const response = await postImportOntologiesInterface({ file, spaceId: numericSpaceId });
       if (response.code !== 200) throw new Error(response.message || "导入失败，请重试。");
       objectCreateVisible.value = false;
-      ElMessage.success("导入成功");
+      ElMessage.success(response.message?.trim() || "导入成功");
       await load();
     } catch (cause) {
       objectCreateError.value = cause instanceof Error && cause.message.trim() ? cause.message : "导入失败，请重试。";

@@ -5,6 +5,7 @@
     width="520px"
     append-to-body
     destroy-on-close
+    :close-on-click-modal="false"
     @close="emit('update:modelValue', false)"
   >
     <el-form label-position="top">

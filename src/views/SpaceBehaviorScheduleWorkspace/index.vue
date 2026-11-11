@@ -56,9 +56,10 @@
       v-model="formVisible"
       :mode="formMode"
       :initial-draft="formDraft"
-      :object-options="objectOptions"
-      :instances-by-target="instancesByTarget"
       :behavior-options="behaviorOptions"
+      :behavior-loading="behaviorLoading"
+      :behavior-error="behaviorError"
+      @retry-behaviors="fetchBehaviorOptions"
       :submitting="createStatus === 'submitting'"
       @confirm="submitScheduleForm"
     />
@@ -73,7 +74,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import { getListOntologyActionInterface } from "@/apis";
+import { fetchScheduleBehaviorOptions } from "@/views/SpaceBehaviorScheduleWorkspace/utils/fetchScheduleBehaviorOptions";
 import { Plus, Search } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
@@ -185,14 +189,45 @@ const deletingScheduleId = ref("");
 const deletingScheduleName = ref("");
 const deleteStatus = ref<BehaviorScheduleCommandStatus>("idle");
 const strategies: BehaviorScheduleStrategy[] = ["规则调度", "周期调度"];
-const objectOptions = computed(() => [...new Set(schedules.value.map((item) => item.target))].filter(Boolean));
-const behaviorOptions = computed(() => [...new Set(schedules.value.map((item) => item.behavior))].filter(Boolean));
-const instancesByTarget = computed(() => {
-  const options: Record<string, string[]> = {};
-  for (const target of objectOptions.value) {
-    options[target] = [`${target} 实例-1`, `${target} 实例-2`];
+const route = useRoute();
+const behaviorOptions = ref<string[]>([]);
+const behaviorLoading = ref(false);
+const behaviorError = ref("");
+let behaviorRequest = 0;
+
+/** @description 获取当前空间全部非基础行为，阻止重复请求及过期响应覆盖。 */
+async function fetchBehaviorOptions() {
+  if (behaviorLoading.value) return;
+  const requestId = ++behaviorRequest;
+  const spaceId = Number(route.params.spaceId);
+  behaviorOptions.value = [];
+  behaviorError.value = "";
+  if (!Number.isSafeInteger(spaceId) || spaceId <= 0) {
+    behaviorError.value = "空间标识无效";
+    return;
   }
-  return options;
+  behaviorLoading.value = true;
+  try {
+    const options = await fetchScheduleBehaviorOptions(spaceId, getListOntologyActionInterface);
+    if (requestId === behaviorRequest) behaviorOptions.value = options;
+  } catch (cause) {
+    if (requestId === behaviorRequest) behaviorError.value = cause instanceof Error ? cause.message : "行为列表加载失败";
+  } finally {
+    if (requestId === behaviorRequest) behaviorLoading.value = false;
+  }
+}
+
+watch(
+  () => route.params.spaceId,
+  () => {
+    behaviorRequest += 1;
+    behaviorLoading.value = false;
+    void fetchBehaviorOptions();
+  },
+  { immediate: true },
+);
+onBeforeUnmount(() => {
+  behaviorRequest += 1;
 });
 const filteredSchedules = computed(() =>
   schedules.value.filter(

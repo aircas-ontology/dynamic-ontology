@@ -1,5 +1,13 @@
 <template>
-  <el-dialog :model-value="modelValue" title="删除分类确认" width="440px" append-to-body destroy-on-close @close="emit('update:modelValue', false)">
+  <el-dialog
+    :model-value="modelValue"
+    title="删除分类确认"
+    width="440px"
+    append-to-body
+    destroy-on-close
+    :close-on-click-modal="false"
+    @close="emit('update:modelValue', false)"
+  >
     <p v-if="blocked" class="behavior-confirm-dialog__warn">分类「{{ categoryName }}」下仍有子分类或行为，无法删除。请先移除相关内容后再试。</p>
     <p v-else>确认删除分类「{{ categoryName }}」吗？此操作不可恢复。</p>
     <template #footer>

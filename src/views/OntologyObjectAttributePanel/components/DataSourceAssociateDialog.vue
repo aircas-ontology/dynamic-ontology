@@ -237,9 +237,12 @@
           </div>
           <div class="mapping-pending__footer">
             <span>已关联 {{ mappedCount }} / {{ properties.length }}</span>
-            <el-button type="primary" data-onboarding="associate-submit" :loading="loading" :disabled="!pendingOperations.length" @click="handleConfirm">
-              提交
-            </el-button>
+            <div class="mapping-pending__footer-actions">
+              <el-button type="warning" :disabled="loading || !pendingOperations.length" @click="undoAllOperations">全部撤销</el-button>
+              <el-button type="primary" data-onboarding="associate-submit" :loading="loading" :disabled="!pendingOperations.length" @click="handleConfirm">
+                提交
+              </el-button>
+            </div>
           </div>
         </aside>
       </div>
@@ -768,6 +771,15 @@ function removeSelectedLine(): void {
   void nextTick(() => refreshLines());
 }
 
+/** @description 撤销当前弹窗内全部未提交的数据源关联操作。 */
+function undoAllOperations(): void {
+  if (loading.value || !pendingOperations.value.length) return;
+  draftBinds.value = new Map(savedBinds.value);
+  selectedLineId.value = "";
+  hoveredLineId.value = "";
+  void nextTick(() => refreshLines());
+}
+
 function handleKeydown(event: KeyboardEvent): void {
   if (!props.modelValue || loading.value) return;
   if (event.key !== "Delete" && event.key !== "Backspace") return;
@@ -1042,6 +1054,10 @@ onBeforeUnmount(() => {
   padding-top: 12px;
   color: var(--aircas-color-text-secondary);
   font-size: 13px;
+}
+.mapping-pending__footer-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .property-datasource-mapping-dialog__workspace-container {

@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="删除分类" width="min(440px, 94vw)" append-to-body destroy-on-close>
+  <el-dialog v-model="visible" title="删除分类" width="min(440px, 94vw)" append-to-body destroy-on-close :close-on-click-modal="false">
     <p>确认删除分类「{{ categoryName }}」吗？此操作不可恢复。</p>
     <p v-if="error" class="category-tree-delete-dialog__error" role="alert">{{ error }}</p>
     <template #footer>

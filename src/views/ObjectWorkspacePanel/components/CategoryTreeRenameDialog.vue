@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="编辑分类" width="min(480px, 94vw)" append-to-body destroy-on-close>
+  <el-dialog v-model="visible" title="编辑分类" width="min(480px, 94vw)" append-to-body destroy-on-close :close-on-click-modal="false">
     <el-form label-position="top">
       <el-form-item label="父分类" required>
         <el-tree-select
