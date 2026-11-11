@@ -305,6 +305,19 @@ export type { UploadOntologyFunctionContainerDocData, UploadOntologyFunctionCont
 export type { UploadOntologyFunctionContainerImageData, UploadOntologyFunctionContainerImageParams } from "./apis/uploadOntologyFunctionContainerImageType";
 export type { UploadOntologyThumbnailData, UploadOntologyThumbnailParams } from "./apis/uploadOntologyThumbnailType";
 export type { LoginCredentials } from "./auth/credentialsType";
+export type {
+  ApplicationInputBindingRecord,
+  ApplicationOntologyEntityPicker,
+  ApplicationStorageGroupEntitySlot,
+  ApplicationStorageGroupPicker,
+  BehaviorParameterSnapshot,
+  BehaviorTestEntityDataRow,
+  BehaviorTestEntityRow,
+  BehaviorTestParamRow,
+  RelationMountSide,
+  ScheduleBehaviorOption,
+  SpaceBehaviorActionInfoViewParamRow,
+} from "./behavior/behaviorParameterType";
 export type { MapConfig } from "./map/configType";
 export type {
   ApiDocsEndpointDetail,

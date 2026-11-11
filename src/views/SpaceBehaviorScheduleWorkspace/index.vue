@@ -56,6 +56,7 @@
       v-model="formVisible"
       :mode="formMode"
       :initial-draft="formDraft"
+      :space-id="scheduleSpaceId"
       :behavior-options="behaviorOptions"
       :behavior-loading="behaviorLoading"
       :behavior-error="behaviorError"
@@ -74,6 +75,8 @@
 </template>
 
 <script setup lang="ts">
+import type { ScheduleBehaviorOption } from "@/types";
+import { cloneBehaviorParameterSnapshot } from "@/utils/behaviorParameters/cloneBehaviorParameterSnapshot";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { getListOntologyActionInterface } from "@/apis";
@@ -190,7 +193,8 @@ const deletingScheduleName = ref("");
 const deleteStatus = ref<BehaviorScheduleCommandStatus>("idle");
 const strategies: BehaviorScheduleStrategy[] = ["规则调度", "周期调度"];
 const route = useRoute();
-const behaviorOptions = ref<string[]>([]);
+const scheduleSpaceId = computed(() => String(route.params.spaceId ?? ""));
+const behaviorOptions = ref<ScheduleBehaviorOption[]>([]);
 const behaviorLoading = ref(false);
 const behaviorError = ref("");
 let behaviorRequest = 0;
@@ -378,6 +382,9 @@ function mapScheduleRecordToDraft(record: BehaviorScheduleRecord): BehaviorSched
     target: record.target,
     instance: record.instance,
     behavior: record.behavior,
+    behaviorId: record.behaviorId,
+    behaviorActionApi: record.behaviorActionApi,
+    behaviorParameters: record.behaviorParameters ? cloneBehaviorParameterSnapshot(record.behaviorParameters) : null,
     description: record.description,
     ruleFlow: record.ruleFlow ? cloneScheduleRuleFlow(record.ruleFlow) : null,
   };

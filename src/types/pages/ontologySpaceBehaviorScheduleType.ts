@@ -1,3 +1,5 @@
+import type { BehaviorParameterSnapshot } from "../behavior/behaviorParameterType";
+
 /** 行为调度策略。 */
 export type BehaviorScheduleStrategy = "规则调度" | "周期调度";
 
@@ -55,6 +57,12 @@ export interface BehaviorScheduleDraft {
   instance: string;
   /** 关联行为。 */
   behavior: string;
+  /** 关联行为稳定标识，兼容尚未配置参数的历史记录。 */
+  behaviorId?: string;
+  /** 执行使用的行为 API。 */
+  behaviorActionApi?: string;
+  /** 已校验的参数与选择快照。 */
+  behaviorParameters?: BehaviorParameterSnapshot | null;
   /** 调度描述。 */
   description: string;
   /** 规则调度画布文档；未配置时为空。 */

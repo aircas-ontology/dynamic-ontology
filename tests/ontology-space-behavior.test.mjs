@@ -167,7 +167,11 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(workspaceSource, /relationInstance/);
   assert.match(workspaceSource, /valueType !== "basicFunctionOperator"/);
   assert.match(workspaceSource, /当前行为缺少对象标识，无法加载实体列表/);
-  const testDialogSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorTestDialog.vue");
+  const testDialogSource = [
+    readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorTestDialog.vue"),
+    readSource("../src/components/BehaviorParameterConfig/BehaviorParameterConfig.vue"),
+    readSource("../src/composables/behavior/useBehaviorParameters.ts"),
+  ].join("\n");
   assert.match(testDialogSource, /getOntologyEntitiesInterface/);
   assert.match(testDialogSource, /getOntologyActionInfoInterface/);
   assert.match(testDialogSource, /getOntologyLinkByUniqueIdentifierInterface/);
@@ -361,7 +365,7 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /@reload-detail="reloadEntityRowDetailFromPage"/);
   assert.match(testDialogSource, /mapOntologyEntityRowDetailPageToViewDetail/);
   assert.doesNotMatch(testDialogSource, /postGetOntologyEntityRowDetailInterface/);
-  const mapDataRowsSource = readSource("../src/views/SpaceBehaviorWorkspace/utils/mapOntologyEntityRowDetailToDataRows.ts");
+  const mapDataRowsSource = readSource("../src/utils/behaviorParameters/mapOntologyEntityRowDetailToDataRows.ts");
   assert.match(mapDataRowsSource, /export function mapOntologyEntityRowDetailToDataRows/);
   assert.match(mapDataRowsSource, /export function mapOntologyEntityRowDetailPageToDataRows/);
   assert.match(mapDataRowsSource, /export function mapOntologyEntityRowDetailPageToViewDetail/);

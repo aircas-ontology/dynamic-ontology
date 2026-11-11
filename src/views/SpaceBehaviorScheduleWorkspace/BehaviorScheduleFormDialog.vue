@@ -3,7 +3,7 @@
     :model-value="modelValue"
     class="aircas-dialog behavior-schedule-form-dialog"
     :title="dialogTitle"
-    width="min(640px, 94vw)"
+    :width="mode === 'create' ? 'min(960px, 94vw)' : 'min(640px, 94vw)'"
     append-to-body
     destroy-on-close
     :close-on-click-modal="false"
@@ -74,7 +74,8 @@
       <template v-if="draft.strategy === '周期调度'">
         <el-form-item label="行为">
           <el-select
-            v-model="draft.behavior"
+            :model-value="draft.behaviorId ?? ''"
+            @update:model-value="selectScheduleBehavior"
             class="aircas-select"
             popper-class="aircas-select-popper"
             placeholder="请选择行为"
@@ -83,11 +84,15 @@
             style="width: 100%"
             :disabled="formDisabled"
           >
-            <el-option v-for="item in behaviorOptions" :key="item" :label="item" :value="item" />
+            <el-option v-if="draft.behavior && !draft.behaviorId" :label="draft.behavior" value="" disabled />
+            <el-option v-for="item in behaviorOptions" :key="item.id" :label="`${item.displayName} (${item.actionApi})`" :value="item.id" />
           </el-select>
           <p v-if="behaviorError" role="alert" class="behavior-schedule-form-dialog__error">
             {{ behaviorError }} <el-button link @click="emit('retry-behaviors')">重试</el-button>
           </p>
+        </el-form-item>
+        <el-form-item v-if="draft.behaviorActionApi" label="行为参数">
+          <BehaviorParameterConfig :controller="parameterConfig" :readonly="formDisabled" />
         </el-form-item>
       </template>
 
@@ -117,6 +122,16 @@
 </template>
 
 <script setup lang="ts">
+import BehaviorParameterConfig from "@/components/BehaviorParameterConfig/BehaviorParameterConfig.vue";
+import { useBehaviorParameters } from "@/composables/behavior/useBehaviorParameters";
+import { cloneBehaviorParameterSnapshot } from "@/utils/behaviorParameters/cloneBehaviorParameterSnapshot";
+import {
+  getOntologyActionInfoInterface,
+  getOntologyEntitiesInterface,
+  getOntologyLinkByUniqueIdentifierInterface,
+  postGetOntologyEntityRowDetailPageInterface,
+} from "@/apis";
+import type { ScheduleBehaviorOption } from "@/types";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { Close, Plus } from "@element-plus/icons-vue";
 
@@ -134,9 +149,10 @@ import BehaviorScheduleRuleConfigDialog from "./BehaviorScheduleRuleConfigDialog
 
 const props = defineProps<{
   modelValue: boolean;
+  spaceId: string;
   mode: BehaviorScheduleFormMode;
   initialDraft: BehaviorScheduleDraft | null;
-  behaviorOptions: readonly string[];
+  behaviorOptions: readonly ScheduleBehaviorOption[];
   behaviorLoading: boolean;
   behaviorError: string;
   submitting: boolean;
@@ -149,6 +165,32 @@ const emit = defineEmits<{
 }>();
 
 const draft = reactive<BehaviorScheduleDraft>(createEmptyScheduleDraft());
+const parameterContext = reactive({
+  /** @description 提供当前空间，保持参数加载上下文随页面更新。 @returns 空间标识。 */
+  get spaceId() {
+    return props.spaceId;
+  },
+  /** @description 将调度选择转换为共用参数配置上下文。 @returns 当前行为或空值。 */
+  get behavior() {
+    if (!draft.behaviorActionApi) return null;
+    const option = props.behaviorOptions.find((item) => item.id === draft.behaviorId);
+    return {
+      id: draft.behaviorId ?? "",
+      kind: "application" as const,
+      valueType: "attributeValue" as const,
+      basicAction: "" as const,
+      behaviorApiName: draft.behaviorActionApi,
+      ontologyUniqIdentifier: option?.ontologyUniqIdentifier ?? "",
+    };
+  },
+});
+const parameterConfig = useBehaviorParameters(parameterContext, {
+  getOntologyActionInfoInterface,
+  getOntologyEntitiesInterface,
+  getOntologyLinkByUniqueIdentifierInterface,
+  postGetOntologyEntityRowDetailPageInterface,
+});
+let parameterSession = 0;
 const validationError = ref("");
 const hydratingScheduleDraft = ref(false);
 const ruleConfigVisible = ref(false);
@@ -163,16 +205,47 @@ const closeButtonLabel = computed(() => (props.mode === "view" ? "关闭" : "取
 watch(
   () => props.modelValue,
   (visible) => {
-    if (!visible) return;
+    if (!visible) {
+      parameterSession += 1;
+      parameterConfig.cancelParameterRequests();
+      parameterConfig.clearDetailParamState();
+      parameterConfig.clearRelationTestState();
+      return;
+    }
     validationError.value = "";
     hydratingScheduleDraft.value = true;
     Object.assign(draft, cloneScheduleDraft(props.mode === "create" ? null : props.initialDraft));
+    void initializeScheduleParameters();
     void nextTick(() => {
       hydratingScheduleDraft.value = false;
     });
   },
   { immediate: true },
 );
+
+/** @description 按稳定标识切换调度行为，并丢弃旧行为参数。 @param value 行为标识。 */
+function selectScheduleBehavior(value: string | number | boolean | undefined): void {
+  if (formDisabled.value) return;
+  const option = props.behaviorOptions.find((item) => item.id === value);
+  if (!option || option.id === draft.behaviorId) return;
+  draft.behaviorId = option.id;
+  draft.behavior = option.displayName;
+  draft.behaviorActionApi = option.actionApi;
+  draft.behaviorParameters = null;
+  void initializeScheduleParameters();
+}
+/** @description 加载参数并恢复相同行为的配置，关闭或切换时忽略过期会话。 */
+async function initializeScheduleParameters(): Promise<void> {
+  const session = ++parameterSession;
+  parameterConfig.cancelParameterRequests();
+  parameterConfig.clearDetailParamState();
+  parameterConfig.clearRelationTestState();
+  if (!props.modelValue || !draft.behaviorActionApi) return;
+  const snapshot = draft.behaviorParameters;
+  await parameterConfig.loadApplicationTestForm();
+  if (session !== parameterSession || !props.modelValue) return;
+  if (snapshot && !parameterConfig.restoreParameterSnapshot(snapshot)) validationError.value = "已保存参数与当前行为不匹配，请重新配置";
+}
 
 /**
  * @description 生成空白新建调度草稿。
@@ -190,6 +263,9 @@ function createEmptyScheduleDraft(): BehaviorScheduleDraft {
     target: "",
     instance: "",
     behavior: "",
+    behaviorId: "",
+    behaviorActionApi: "",
+    behaviorParameters: null,
     description: "",
     ruleFlow: null,
   };
@@ -204,6 +280,7 @@ function cloneScheduleDraft(value: BehaviorScheduleDraft | null): BehaviorSchedu
   if (!value) return createEmptyScheduleDraft();
   return {
     ...value,
+    behaviorParameters: value.behaviorParameters ? cloneBehaviorParameterSnapshot(value.behaviorParameters) : null,
     weekdays: [...value.weekdays],
     ruleFlow: value.ruleFlow ? cloneScheduleRuleFlow(value.ruleFlow) : null,
   };
@@ -275,15 +352,32 @@ function readCreateScheduleFormError(value: BehaviorScheduleDraft): string {
 }
 
 /**
- * @description 校验通过后向父组件提交调度草稿，查看模式或提交中忽略。
+ * @description 校验调度草稿及行为参数，新建周期调度输出参数后提交；查看模式或提交中忽略。
  */
 function submitCreateScheduleForm() {
   if (props.mode === "view" || props.submitting) return;
   const error = readCreateScheduleFormError(draft);
   validationError.value = error;
   if (error) return;
+  if (draft.strategy === "周期调度") {
+    if (props.mode === "create") {
+      const unfilledParam = parameterConfig.paramRows.value.find((row) => !(parameterConfig.paramValues[row.paramName] ?? "").trim());
+      if (unfilledParam) {
+        validationError.value = `请填写行为参数「${unfilledParam.propertyDisplayName || unfilledParam.paramName}」`;
+        return;
+      }
+    }
+    const result = parameterConfig.createParameterSnapshot();
+    if (!result.ok) {
+      validationError.value = result.error;
+      return;
+    }
+    draft.behaviorParameters = result.snapshot;
+    if (props.mode === "create") console.log("行为调度参数", result.snapshot.request);
+  }
   emit("confirm", {
     ...draft,
+    behaviorParameters: draft.behaviorParameters ? cloneBehaviorParameterSnapshot(draft.behaviorParameters) : null,
     weekdays: [...draft.weekdays],
     ruleFlow: draft.ruleFlow ? cloneScheduleRuleFlow(draft.ruleFlow) : null,
   });

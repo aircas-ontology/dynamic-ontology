@@ -14,13 +14,16 @@ test("loads every page with 1000 records and excludes base behaviors", async () 
           query.pageNum === 1
             ? [
                 { actionKind: "BASE", displayName: "base" },
-                { actionKind: "APPLICATION", displayName: "app" },
+                { id: 1, actionKind: "APPLICATION", displayName: "app", actionApi: "app", ontologyUniqIdentifier: "ship" },
               ]
-            : [{ actionKind: "APPLICATION", displayName: "second" }],
+            : [{ id: 2, actionKind: "APPLICATION", displayName: "app", actionApi: "second", ontologyUniqIdentifier: "ship" }],
       },
     };
   });
-  assert.deepEqual(result, ["app", "second"]);
+  assert.deepEqual(result, [
+    { id: "1", displayName: "app", actionApi: "app", ontologyUniqIdentifier: "ship" },
+    { id: "2", displayName: "app", actionApi: "second", ontologyUniqIdentifier: "ship" },
+  ]);
   assert.deepEqual(queries, [
     { ontologySpaceId: 23, pageNum: 1, pageSize: 1000 },
     { ontologySpaceId: 23, pageNum: 2, pageSize: 1000 },
