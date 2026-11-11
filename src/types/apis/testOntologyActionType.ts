@@ -20,7 +20,10 @@ export interface TestOntologyActionParams {
   ontologySpaceId: string;
   /** 行为 api。 */
   actionApi: string;
-  /** 行为挂载侧实体主键；属性值/关系实例等场景必填，基础函数算子可不传。 */
+  /**
+   * 行为挂载侧实体主键。
+   * 属性值/关系实例等场景必填；基础函数算子测试可选，未选实例时不传。
+   */
   entityPrimaryKey?: string | number | boolean | Record<string, unknown>;
   /**
    * 关系两端实例主键：`from` / `to` 均为数组。

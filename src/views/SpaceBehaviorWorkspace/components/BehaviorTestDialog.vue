@@ -7,11 +7,54 @@
         <el-tag v-if="behaviorBasicActionLabel" size="small" effect="plain">{{ behaviorBasicActionLabel }}</el-tag>
       </div>
     </template>
-    <p class="behavior-test-dialog__hint">{{ dialogHint }}</p>
+    <p v-if="dialogHint" class="behavior-test-dialog__hint">{{ dialogHint }}</p>
 
     <BehaviorParameterConfig v-if="isApplicationTest" :controller="parameterConfig" :readonly="submitLoading" />
 
-    <section v-else-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
+    <BehaviorParameterConfig v-if="!isApplicationTest && showRelationLinkForm" :controller="parameterConfig" :readonly="submitLoading" />
+
+    <section v-if="isApplicationTest && applicationTestResultText" class="behavior-test-dialog__section">
+      <h4 class="behavior-test-dialog__section-title">测试结果</h4>
+      <el-input class="behavior-test-dialog__result" type="textarea" :model-value="applicationTestResultText" :rows="10" readonly resize="vertical" />
+    </section>
+
+    <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
+      <h4 class="behavior-test-dialog__section-title">选择实体实例（可选）</h4>
+      <p v-if="entityLoading && !entityRows.length" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
+      <p v-else-if="entityError && !entityRows.length" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
+      <el-select
+        v-else
+        class="behavior-test-dialog__entity-select"
+        :model-value="selectedEntityRowKey"
+        filterable
+        clearable
+        :loading="entityLoading"
+        placeholder="请选择实体实例"
+        @update:model-value="updateBasicOperatorEntitySelection"
+      >
+        <el-option
+          v-for="option in listBasicOperatorEntitySelectOptions()"
+          :key="option.rowKey"
+          :label="formatBasicOperatorEntityOptionLabel(option)"
+          :value="option.rowKey"
+        />
+        <template #footer>
+          <div v-if="entityTotal > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
+            <el-pagination
+              small
+              layout="total, prev, pager, next"
+              :total="entityTotal"
+              :current-page="entityPage"
+              :page-size="entityPageSize"
+              @current-change="changeEntityPage"
+            />
+          </div>
+          <p v-else-if="entityError" class="behavior-test-dialog__select-footer-error" role="alert">{{ entityError }}</p>
+        </template>
+      </el-select>
+    </section>
+
+    <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
       <el-input
         class="behavior-test-dialog__result"
         type="textarea"
@@ -21,13 +64,6 @@
         resize="vertical"
         placeholder="开始测试后将在此展示接口返回 data"
       />
-    </section>
-
-    <BehaviorParameterConfig v-if="!isApplicationTest && showRelationLinkForm" :controller="parameterConfig" :readonly="submitLoading" />
-
-    <section v-if="isApplicationTest && applicationTestResultText" class="behavior-test-dialog__section">
-      <h4 class="behavior-test-dialog__section-title">测试结果</h4>
-      <el-input class="behavior-test-dialog__result" type="textarea" :model-value="applicationTestResultText" :rows="10" readonly resize="vertical" />
     </section>
 
     <section v-if="isAttributeValueTest" class="behavior-test-dialog__section">
@@ -312,14 +348,22 @@ const dialogHint = computed(() => {
   }
   if (isApplicationTest.value) return "根据入参来源填写外部值或选择对象实例后开始测试。";
   if (isRelationInstanceTest.value) return "选择关系两端对象实例后执行关系实例测试。";
-  if (isBasicFunctionOperatorTest.value) return "确认后直接执行基础函数算子测试。";
+  if (isBasicFunctionOperatorTest.value) return "";
   if (isUpdateTest.value) return "选择实体实例与数据行后，在「查看实例数据」中填写测试参数并开始测试。";
   if (isCreateTest.value) return "选择实体实例后，在「查看实例数据」中填写测试参数并开始测试。";
   if (isDeleteTest.value) return "选择实体实例与数据行，用于属性值-删除测试。";
   return "选择实体实例后开始测试。";
 });
 
-const selectedEntityRow = computed(() => entityRows.value.find((item) => item.rowKey === selectedEntityRowKey.value) ?? null);
+/** 基础算子下拉跨页保留的已选实体。 */
+const selectedEntitySnapshot = ref<BehaviorTestEntityRow | null>(null);
+
+const selectedEntityRow = computed(() => {
+  const onPage = entityRows.value.find((item) => item.rowKey === selectedEntityRowKey.value) ?? null;
+  if (onPage) return onPage;
+  if (selectedEntitySnapshot.value?.rowKey === selectedEntityRowKey.value) return selectedEntitySnapshot.value;
+  return null;
+});
 
 const selectedEntityPrimaryKey = computed(() => {
   const primaryKey = selectedEntityRow.value?.primaryKey;
@@ -445,6 +489,44 @@ function clearEntityListState(): void {
   entityError.value = "";
   entityLoading.value = false;
   selectedEntityRowKey.value = "";
+  selectedEntitySnapshot.value = null;
+}
+
+/**
+ * @description 格式化基础算子实体下拉选项（仅实体名称）。
+ * @param row 实体行。
+ * @returns 选项文案。
+ */
+function formatBasicOperatorEntityOptionLabel(row: BehaviorTestEntityRow): string {
+  return row.displayName.trim() || "未命名实体";
+}
+
+/**
+ * @description 组装基础算子实体下拉选项；已选不在当前页时前置保留。
+ * @returns 选项列表。
+ */
+function listBasicOperatorEntitySelectOptions(): BehaviorTestEntityRow[] {
+  const selected = selectedEntityRow.value;
+  if (!selected || !selectedEntityRowKey.value) return entityRows.value;
+  if (entityRows.value.some((item) => item.rowKey === selected.rowKey)) return entityRows.value;
+  return [selected, ...entityRows.value];
+}
+
+/**
+ * @description 更新基础算子实体下拉选中值。
+ * @param selectedRowKey 选中行键；空串表示清空。
+ */
+function updateBasicOperatorEntitySelection(selectedRowKey: string | number | null | undefined): void {
+  const nextKey = String(selectedRowKey ?? "").trim();
+  if (!nextKey) {
+    selectedEntityRowKey.value = "";
+    selectedEntitySnapshot.value = null;
+    return;
+  }
+  const matched =
+    listBasicOperatorEntitySelectOptions().find((item) => item.rowKey === nextKey) ?? entityRows.value.find((item) => item.rowKey === nextKey) ?? null;
+  selectedEntityRowKey.value = nextKey;
+  selectedEntitySnapshot.value = matched;
 }
 
 /**
@@ -500,11 +582,12 @@ function asGroupDataRow(row: unknown): BehaviorTestEntityDataRow {
 }
 
 /**
- * @description 单选实体行；编辑测试时触发加载数据行。
+ * @description 单选实体行；属性值编辑测试时触发加载数据行。
  * @param row 实体行。
  */
 function selectEntityRow(row: BehaviorTestEntityRow): void {
   selectedEntityRowKey.value = row.rowKey;
+  selectedEntitySnapshot.value = row;
   selectedGroupDataRowKey.value = "";
   groupRowPage.value = 1;
   if (isAttributeValueTest.value) void loadEntityGroupDataRows();
@@ -582,16 +665,22 @@ async function loadEntityList(): Promise<void> {
     const records = Array.isArray(response.data.records) ? response.data.records : [];
     entityRows.value = records.map((item, index) => mapEntityRecordToRow(item, index));
     entityTotal.value = Number(response.data.total) || records.length;
-    if (selectedEntityRowKey.value && !entityRows.value.some((item) => item.rowKey === selectedEntityRowKey.value)) {
-      selectedEntityRowKey.value = "";
-      clearGroupDataRowState();
+    if (selectedEntityRowKey.value) {
+      const onPage = entityRows.value.find((item) => item.rowKey === selectedEntityRowKey.value) ?? null;
+      if (onPage) {
+        selectedEntitySnapshot.value = onPage;
+      } else if (!isBasicFunctionOperatorTest.value) {
+        selectedEntityRowKey.value = "";
+        selectedEntitySnapshot.value = null;
+        clearGroupDataRowState();
+      }
     }
   } catch (error) {
     if (requestToken !== entityLoadToken) return;
     entityRows.value = [];
     entityTotal.value = 0;
     entityError.value = error instanceof Error ? error.message : "实体列表加载失败";
-    clearGroupDataRowState();
+    if (!isBasicFunctionOperatorTest.value) clearGroupDataRowState();
   } finally {
     if (requestToken === entityLoadToken) entityLoading.value = false;
   }
@@ -905,9 +994,11 @@ async function submitBehaviorTest(): Promise<void> {
     submitLoading.value = true;
     basicOperatorTestResultText.value = "";
     try {
+      const selectedPrimaryKey = selectedEntityPrimaryKey.value;
       const response = await postTestOntologyActionInterface({
         ontologySpaceId,
         actionApi,
+        ...(selectedPrimaryKey === null ? {} : { entityPrimaryKey: selectedPrimaryKey }),
       });
       if (requestToken !== submitToken) return;
       if (response.code !== 200) throw new Error(response.message || "行为测试失败");
@@ -1048,6 +1139,7 @@ watch(
     groupRowPage.value = 1;
     groupRowPageSize.value = 10;
     selectedEntityRowKey.value = "";
+    selectedEntitySnapshot.value = null;
     selectedGroupDataRowKey.value = "";
     submitError.value = "";
     clearApplicationTestResult();
@@ -1064,6 +1156,7 @@ watch(
       return;
     }
     if (isBasicFunctionOperatorTest.value) {
+      void loadEntityList();
       return;
     }
     void loadEntityList();
