@@ -423,7 +423,7 @@
     <p v-if="submitError && !isUpdateTest && !isCreateTest" class="behavior-test-dialog__state" role="alert">{{ submitError }}</p>
 
     <template #footer>
-      <el-button v-if="showRelationLinkForm" :disabled="submitLoading" @click="openEntityLinkData">查看实例关系数据</el-button>
+      <el-button v-if="isRelationInstanceTest" :disabled="submitLoading" @click="openEntityLinkData">查看实例关系数据</el-button>
       <el-button v-else-if="isAttributeValueTest" :disabled="submitLoading" @click="openEntityRowDetail">查看实例数据</el-button>
       <el-button :disabled="submitLoading" @click="emit('update:modelValue', false)">关闭</el-button>
       <el-button v-if="!isUpdateTest && !isCreateTest" type="primary" :loading="submitLoading" @click="submitBehaviorTest">开始测试</el-button>

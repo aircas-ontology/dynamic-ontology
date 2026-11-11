@@ -287,8 +287,9 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /propertyType/);
   assert.match(testDialogSource, /coerceBehaviorTestParamValue/);
   assert.match(testDialogSource, /查看实例数据/);
-  assert.match(testDialogSource, /查看实例关系数据/);
+  assert.match(testDialogSource, /v-if="isRelationInstanceTest"[^>]*>查看实例关系数据/);
   assert.match(testDialogSource, /openEntityLinkData/);
+  assert.doesNotMatch(testDialogSource, /v-if="showRelationLinkForm"[^>]*>查看实例关系数据/);
   assert.match(testDialogSource, /BehaviorEntityLinkDataDialog/);
   assert.match(testDialogSource, /entityLinkDataQueryParams/);
   assert.match(testDialogSource, /ontologyUniqueIdentifierFrom:/);
