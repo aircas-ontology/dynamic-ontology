@@ -29,6 +29,7 @@ export type {
 } from "./apis/buildObjectFromDatasourceType";
 export type { BuildOntologyAssetData, BuildOntologyAssetParams, BuildOntologyAssetProperty } from "./apis/buildOntologyAssetType";
 export type { ActionCategoryNode, CreateActionCategoryParams } from "./apis/createActionCategoryType";
+export type { CreateBehaviorScheduleParams, CreateBehaviorScheduleTask } from "./apis/createBehaviorScheduleType";
 export type { CreateFunctionOperatorTemplateData, CreateFunctionOperatorTemplateParams } from "./apis/createFunctionOperatorTemplateType";
 export type { CreateFunctionRateLimitTemplateData, CreateFunctionRateLimitTemplateParams } from "./apis/createFunctionRateLimitTemplateType";
 export type {
@@ -131,6 +132,7 @@ export type { FunctionOperatorTemplateLanguage, FunctionOperatorTemplateParams, 
 export type { FunctionPublishData, FunctionPublishParams } from "./apis/functionPublishType";
 export type { FunctionUnpublishData, FunctionUnpublishParams } from "./apis/functionUnpublishType";
 export type { ActionCategoryActionInfo, ActionCategoryVO, GetActionCategoryTreeParams } from "./apis/getActionCategoryTreeType";
+export type { BehaviorSchedulingTaskDetail, GetBehaviorSchedulingDetailData, GetBehaviorSchedulingDetailParams } from "./apis/getBehaviorSchedulingDetailType";
 export type {
   GetOntologyActionInfoData,
   GetOntologyActionInfoFunctionParam,
@@ -193,6 +195,7 @@ export type { GetOntologySpaceCanvasContentData, GetOntologySpaceCanvasContentPa
 export type { GetOntologySpaceStatisticData, GetOntologySpaceStatisticParams, OntologySpaceStatisticVO } from "./apis/getOntologySpaceStatisticType";
 export type { ImportOntologiesData, ImportOntologiesParams } from "./apis/importOntologiesType";
 export type { ImportOntologySpaceData, ImportOntologySpaceParams } from "./apis/importOntologySpaceType";
+export type { ListBehaviorSchedulingData, ListBehaviorSchedulingParams, ListBehaviorSchedulingRecord } from "./apis/listBehaviorSchedulingType";
 export type { ListFunctionOperatorTemplateData, ListFunctionOperatorTemplateParams } from "./apis/listFunctionOperatorTemplateType";
 export type {
   ListFunctionRateLimitTemplateData,

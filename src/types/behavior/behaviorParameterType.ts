@@ -43,6 +43,8 @@ export interface BehaviorTestEntityRow {
   ontologyName: string;
   propertySummary: string;
   primaryKey: string | number;
+  /** 从已保存执行参数回填的原始主键，避免复杂主键被展示字符串替代。 */
+  savedPrimaryKey?: TestOntologyActionParams["entityPrimaryKey"];
   raw: OntologyEntityInfo;
 }
 

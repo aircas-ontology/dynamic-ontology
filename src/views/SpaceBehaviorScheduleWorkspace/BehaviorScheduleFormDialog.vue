@@ -3,7 +3,7 @@
     :model-value="modelValue"
     class="aircas-dialog behavior-schedule-form-dialog"
     :title="dialogTitle"
-    :width="mode === 'create' ? 'min(960px, 94vw)' : 'min(640px, 94vw)'"
+    width="min(960px, 94vw)"
     append-to-body
     destroy-on-close
     :close-on-click-modal="false"
@@ -57,7 +57,7 @@
         </el-form-item>
         <el-form-item v-if="draft.periodKind === 'Cron'" label="Cron 表达式" required>
           <el-input v-model="draft.cronExpression" class="aircas-input" placeholder="例如：0 8 * * *（每天 08:00）" :disabled="formDisabled" />
-          <p class="behavior-schedule-form-dialog__hint">标准 5 段：分 时 日 月 周；兼容 6 段（含秒）</p>
+          <p class="behavior-schedule-form-dialog__hint">支持标准 5 段或 Quartz 6 / 7 段，提交时统一为 Quartz 7 段；日期与星期不可同时约束</p>
         </el-form-item>
         <el-form-item v-else label="执行时间" required>
           <el-time-picker
@@ -74,26 +74,33 @@
       <template v-if="draft.strategy === '周期调度'">
         <el-form-item label="行为">
           <el-select
-            :model-value="draft.behaviorId ?? ''"
+            :model-value="selectedBehaviorValue"
+            filterable
             @update:model-value="selectScheduleBehavior"
             class="aircas-select"
             popper-class="aircas-select-popper"
             placeholder="请选择行为"
             :loading="behaviorLoading"
-            :no-data-text="behaviorError || '当前空间暂无非基础行为'"
+            :no-data-text="behaviorError || '当前空间暂无已发布的非基础行为'"
             style="width: 100%"
             :disabled="formDisabled"
           >
-            <el-option v-if="draft.behavior && !draft.behaviorId" :label="draft.behavior" value="" disabled />
+            <el-option
+              v-if="draft.behaviorActionApi && !selectedBehaviorOption"
+              :label="`${draft.behavior || draft.behaviorActionApi} (${draft.behaviorActionApi})`"
+              :value="selectedBehaviorValue"
+              disabled
+            />
             <el-option v-for="item in behaviorOptions" :key="item.id" :label="`${item.displayName} (${item.actionApi})`" :value="item.id" />
           </el-select>
           <p v-if="behaviorError" role="alert" class="behavior-schedule-form-dialog__error">
             {{ behaviorError }} <el-button link @click="emit('retry-behaviors')">重试</el-button>
           </p>
         </el-form-item>
-        <el-form-item v-if="draft.behaviorActionApi" label="行为参数">
-          <BehaviorParameterConfig :controller="parameterConfig" :readonly="formDisabled" />
-        </el-form-item>
+        <section class="behavior-schedule-form-dialog__parameters" aria-label="行为参数">
+          <h3 class="behavior-schedule-form-dialog__parameters-title">行为参数</h3>
+          <BehaviorParameterConfig v-if="draft.behaviorActionApi" :controller="parameterConfig" :readonly="formDisabled" />
+        </section>
       </template>
 
       <el-form-item label="描述">
@@ -108,6 +115,7 @@
         />
       </el-form-item>
     </el-form>
+    <el-button v-if="parameterRestoreError" link @click="initializeScheduleParameters">重新加载行为参数</el-button>
     <p v-if="validationError" class="behavior-schedule-form-dialog__error" role="alert">{{ validationError }}</p>
     <template #footer>
       <el-button class="aircas-button aircas-button--tone-ghost" :disabled="submitting" :icon="Close" @click="emit('update:modelValue', false)">{{
@@ -131,7 +139,9 @@ import {
   getOntologyLinkByUniqueIdentifierInterface,
   postGetOntologyEntityRowDetailPageInterface,
 } from "@/apis";
-import type { ScheduleBehaviorOption } from "@/types";
+import type { CreateBehaviorScheduleParams, ScheduleBehaviorOption } from "@/types";
+import { restoreScheduleBehaviorParameters } from "./utils/restoreScheduleBehaviorParameters";
+import { buildBehaviorScheduleCreateParams } from "./utils/buildBehaviorScheduleCreateParams";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { Close, Plus } from "@element-plus/icons-vue";
 
@@ -160,11 +170,16 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
-  confirm: [draft: BehaviorScheduleDraft];
+  confirm: [draft: BehaviorScheduleDraft, request?: CreateBehaviorScheduleParams];
   "retry-behaviors": [];
 }>();
 
 const draft = reactive<BehaviorScheduleDraft>(createEmptyScheduleDraft());
+const selectedBehaviorOption = computed(() =>
+  props.behaviorOptions.find((item) => (draft.behaviorActionApi ? item.actionApi === draft.behaviorActionApi : item.id === draft.behaviorId)),
+);
+const selectedBehaviorValue = computed(() => selectedBehaviorOption.value?.id ?? (draft.behaviorActionApi ? `saved:${draft.behaviorActionApi}` : ""));
+const parameterRestoreError = ref("");
 const parameterContext = reactive({
   /** @description 提供当前空间，保持参数加载上下文随页面更新。 @returns 空间标识。 */
   get spaceId() {
@@ -173,14 +188,14 @@ const parameterContext = reactive({
   /** @description 将调度选择转换为共用参数配置上下文。 @returns 当前行为或空值。 */
   get behavior() {
     if (!draft.behaviorActionApi) return null;
-    const option = props.behaviorOptions.find((item) => item.id === draft.behaviorId);
+    const option = selectedBehaviorOption.value;
     return {
       id: draft.behaviorId ?? "",
       kind: "application" as const,
       valueType: "attributeValue" as const,
       basicAction: "" as const,
       behaviorApiName: draft.behaviorActionApi,
-      ontologyUniqIdentifier: option?.ontologyUniqIdentifier ?? "",
+      ontologyUniqIdentifier: option?.ontologyUniqIdentifier || draft.behaviorOntologyIdentifier || "",
     };
   },
 });
@@ -227,11 +242,13 @@ watch(
 function selectScheduleBehavior(value: string | number | boolean | undefined): void {
   if (formDisabled.value) return;
   const option = props.behaviorOptions.find((item) => item.id === value);
-  if (!option || option.id === draft.behaviorId) return;
+  if (!option || option.actionApi === draft.behaviorActionApi) return;
   draft.behaviorId = option.id;
   draft.behavior = option.displayName;
   draft.behaviorActionApi = option.actionApi;
+  draft.behaviorOntologyIdentifier = option.ontologyUniqIdentifier;
   draft.behaviorParameters = null;
+  draft.savedEntityJson = "";
   void initializeScheduleParameters();
 }
 /** @description 加载参数并恢复相同行为的配置，关闭或切换时忽略过期会话。 */
@@ -240,11 +257,18 @@ async function initializeScheduleParameters(): Promise<void> {
   parameterConfig.cancelParameterRequests();
   parameterConfig.clearDetailParamState();
   parameterConfig.clearRelationTestState();
+  parameterRestoreError.value = "";
+  validationError.value = "";
   if (!props.modelValue || !draft.behaviorActionApi) return;
   const snapshot = draft.behaviorParameters;
+  const savedJson = draft.savedEntityJson;
   await parameterConfig.loadApplicationTestForm();
   if (session !== parameterSession || !props.modelValue) return;
-  if (snapshot && !parameterConfig.restoreParameterSnapshot(snapshot)) validationError.value = "已保存参数与当前行为不匹配，请重新配置";
+  if (parameterConfig.detailError.value) parameterRestoreError.value = parameterConfig.detailError.value;
+  else if (snapshot) {
+    if (!parameterConfig.restoreParameterSnapshot(snapshot)) parameterRestoreError.value = "已保存参数与当前行为不匹配，请重新配置";
+  } else if (savedJson) parameterRestoreError.value = restoreScheduleBehaviorParameters(parameterConfig, savedJson, props.spaceId, draft.behaviorActionApi);
+  validationError.value = parameterRestoreError.value;
 }
 
 /**
@@ -266,6 +290,8 @@ function createEmptyScheduleDraft(): BehaviorScheduleDraft {
     behaviorId: "",
     behaviorActionApi: "",
     behaviorParameters: null,
+    savedEntityJson: "",
+    behaviorOntologyIdentifier: "",
     description: "",
     ruleFlow: null,
   };
@@ -356,9 +382,10 @@ function readCreateScheduleFormError(value: BehaviorScheduleDraft): string {
  */
 function submitCreateScheduleForm() {
   if (props.mode === "view" || props.submitting) return;
-  const error = readCreateScheduleFormError(draft);
+  const error = parameterRestoreError.value || readCreateScheduleFormError(draft);
   validationError.value = error;
   if (error) return;
+  let createRequest: CreateBehaviorScheduleParams | undefined;
   if (draft.strategy === "周期调度") {
     if (props.mode === "create") {
       const unfilledParam = parameterConfig.paramRows.value.find((row) => !(parameterConfig.paramValues[row.paramName] ?? "").trim());
@@ -373,14 +400,33 @@ function submitCreateScheduleForm() {
       return;
     }
     draft.behaviorParameters = result.snapshot;
-    if (props.mode === "create") console.log("行为调度参数", result.snapshot.request);
+    draft.behaviorId = selectedBehaviorOption.value?.id ?? draft.behaviorId;
+    draft.savedEntityJson = "";
+    if (props.mode === "create") {
+      const option = selectedBehaviorOption.value;
+      const assembled = buildBehaviorScheduleCreateParams(
+        draft,
+        parameterConfig.resolvedOntologyUniqIdentifier.value.trim() || option?.ontologyUniqIdentifier || "",
+        result.snapshot.request,
+      );
+      if (!assembled.ok) {
+        validationError.value = assembled.error;
+        return;
+      }
+      createRequest = assembled.request;
+      console.log("行为调度创建参数", createRequest);
+    }
   }
-  emit("confirm", {
-    ...draft,
-    behaviorParameters: draft.behaviorParameters ? cloneBehaviorParameterSnapshot(draft.behaviorParameters) : null,
-    weekdays: [...draft.weekdays],
-    ruleFlow: draft.ruleFlow ? cloneScheduleRuleFlow(draft.ruleFlow) : null,
-  });
+  emit(
+    "confirm",
+    {
+      ...draft,
+      behaviorParameters: draft.behaviorParameters ? cloneBehaviorParameterSnapshot(draft.behaviorParameters) : null,
+      weekdays: [...draft.weekdays],
+      ruleFlow: draft.ruleFlow ? cloneScheduleRuleFlow(draft.ruleFlow) : null,
+    },
+    createRequest,
+  );
 }
 </script>
 
@@ -404,6 +450,25 @@ function submitCreateScheduleForm() {
 
 .behavior-schedule-form-dialog__period-title {
   margin: 0 0 4px;
+  color: var(--aircas-color-title);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.behavior-schedule-form-dialog__parameters {
+  width: 100%;
+  min-width: 0;
+  margin: 4px 0 16px;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+  background: var(--aircas-color-panel-background-deep);
+  box-sizing: border-box;
+}
+
+.behavior-schedule-form-dialog__parameters-title {
+  margin: 0 0 12px;
   color: var(--aircas-color-title);
   font-size: 16px;
   font-weight: 700;

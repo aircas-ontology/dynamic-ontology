@@ -30,7 +30,11 @@ function cloneEntityBinding(binding: TestOntologyActionEntityBinding): TestOntol
 
 /** @description 复制实体展示行及原始数据，避免草稿和选项共享引用。 @param row 实体行。 @returns 独立实体行。 */
 function cloneEntityRow(row: BehaviorTestEntityRow): BehaviorTestEntityRow {
-  return { ...row, raw: structuredClone(toRaw(row.raw)) };
+  return {
+    ...row,
+    ...(row.savedPrimaryKey !== undefined ? { savedPrimaryKey: clonePrimaryKey(row.savedPrimaryKey) } : {}),
+    raw: structuredClone(toRaw(row.raw)),
+  };
 }
 
 /** @description 深拷贝参数配置数据，并清除不会持久化的请求状态。 @param snapshot 参数配置。 @returns 独立配置。 */

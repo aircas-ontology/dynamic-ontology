@@ -7,8 +7,11 @@ import {
 } from "./actionCategoryApi";
 import {
   deleteOntologyActionInterface,
+  getListBehaviorSchedulingInterface,
+  getBehaviorSchedulingDetailInterface,
   getListOntologyActionInterface,
   getOntologyActionInfoInterface,
+  postCreateBehaviorScheduleInterface,
   postCreateOntologyActionInterface,
   postTestOntologyActionInterface,
   putEditOntologyActionInterface,
@@ -148,8 +151,11 @@ export {
   createActionCategoryInterface,
   deleteActionCategoryInterface,
   deleteOntologyActionInterface,
+  getListBehaviorSchedulingInterface,
+  getBehaviorSchedulingDetailInterface,
   getListOntologyActionInterface,
   getOntologyActionInfoInterface,
+  postCreateBehaviorScheduleInterface,
   postCreateOntologyActionInterface,
   postTestOntologyActionInterface,
   putEditOntologyActionInterface,

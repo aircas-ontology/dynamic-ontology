@@ -37,6 +37,10 @@ export const DEFAULT_BEHAVIOR_SCHEDULE_EXECUTE_TIME = "08:00:00";
 
 /** 新建调度表单草稿。 */
 export interface BehaviorScheduleDraft {
+  /** 接口保存的原始行为执行参数 JSON。 */
+  savedEntityJson?: string;
+  /** 详情行为所属对象标识，列表不可用时仍可加载参数。 */
+  behaviorOntologyIdentifier?: string;
   /** 调度名称。 */
   name: string;
   /** 调度策略。 */
@@ -75,6 +79,12 @@ export type BehaviorScheduleRecord = BehaviorScheduleDraft & {
   id: string;
   /** 创建时间展示文案。 */
   createdAt: string;
+  /** 列表接口记录不包含详情配置时为 false。 */
+  detailsAvailable?: boolean;
+  /** 真实调度运行状态。 */
+  status?: "START" | "STOP";
+  /** 关联对象标识。 */
+  ontologyIdentifier?: string;
 };
 
 /** 调度调用日志记录。 */

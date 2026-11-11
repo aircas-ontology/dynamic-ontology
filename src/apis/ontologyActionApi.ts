@@ -1,5 +1,8 @@
 import type {
   ApiResponse,
+  GetBehaviorSchedulingDetailData,
+  GetBehaviorSchedulingDetailParams,
+  CreateBehaviorScheduleParams,
   CreateOntologyActionData,
   CreateOntologyActionParams,
   DeleteOntologyActionData,
@@ -8,6 +11,8 @@ import type {
   EditOntologyActionParams,
   GetOntologyActionInfoData,
   GetOntologyActionInfoParams,
+  ListBehaviorSchedulingData,
+  ListBehaviorSchedulingParams,
   ListOntologyActionData,
   ListOntologyActionParams,
   PublishOntologyActionData,
@@ -18,6 +23,38 @@ import type {
   UnpublishOntologyActionParams,
 } from "@/types";
 import { request } from "@/utils/request";
+
+/** @description 查询行为调度详情。GET `/ontology/action/scheduling/detail`。 @param params 调度 id 和类型。 @returns 调度详情。 */
+export function getBehaviorSchedulingDetailInterface(params: GetBehaviorSchedulingDetailParams): Promise<ApiResponse<GetBehaviorSchedulingDetailData>> {
+  return request<GetBehaviorSchedulingDetailData>({ url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action/scheduling/detail", method: "get", params });
+}
+
+/**
+ * @description 分页查询行为调度列表。GET `/ontology/action/scheduling/list`。
+ * @param params 分页查询参数，仅 pageNum、pageSize，无空间筛选参数。
+ * @returns 标准响应，data 包含调度 records、total、size、current，不包含执行配置详情。
+ */
+export function getListBehaviorSchedulingInterface(params: ListBehaviorSchedulingParams): Promise<ApiResponse<ListBehaviorSchedulingData>> {
+  return request<ListBehaviorSchedulingData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action/scheduling/list",
+    method: "get",
+    params,
+  });
+}
+
+/**
+ * @description 使用统一对象管理服务保存周期行为调度。
+ * 请求方式：POST `/ontology/action/scheduling`。
+ * @param params 已校验的调度创建参数，task.entityJson 为完整行为参数 JSON 字符串。
+ * @returns 标准响应；保存结果 data 尚未约定，调用方使用 code、success 和 message。
+ */
+export function postCreateBehaviorScheduleInterface(params: CreateBehaviorScheduleParams): Promise<ApiResponse<unknown>> {
+  return request<unknown>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action/scheduling",
+    method: "post",
+    data: params,
+  });
+}
 
 /**
  * @description 测试本体行为定义是否可用；草稿行为可测，会真实落库。
