@@ -154,17 +154,55 @@ function createBindingContext(link = false) {
   });
 }
 
+test("same paramName input and WRITE_PROPERTY load distinct ontologyUniqueIdentifier entity lists", async () => {
+  const ontologyQueries = [];
+  const { state, scope } = createContext({
+    getOntologyActionInfoInterface: async () => ({
+      code: 200,
+      data: {
+        actionApi: "app",
+        mappingIns: [
+          { parameterName: "longitude", category: "INPUT", sourceType: "PROPERTY", ontologyUniqueIdentifier: "ont-input", storageGroup: "main" },
+          {
+            parameterName: "longitude",
+            category: "OUTPUT",
+            outputMode: "WRITE_PROPERTY",
+            ontologyUniqueIdentifier: "ont-output",
+            propertyDisplayName: "经度",
+          },
+        ],
+      },
+    }),
+    getOntologyEntitiesInterface: async (query) => {
+      ontologyQueries.push(query.ontologyUniqueIdentifier);
+      return {
+        code: 200,
+        data: {
+          records: [{ entityPrimaryKey: ontologyQueries.length, displayName: query.ontologyUniqueIdentifier }],
+          total: 1,
+        },
+      };
+    },
+  });
+  await state.loadApplicationTestForm();
+  assert.deepEqual(new Set(ontologyQueries), new Set(["ont-input", "ont-output"]));
+  assert.equal(state.findApplicationOntologyPicker("longitude", "input")?.ontologyUniqueIdentifier, "ont-input");
+  assert.equal(state.findApplicationOntologyPicker("longitude", "output")?.ontologyUniqueIdentifier, "ont-output");
+  assert.equal(state.findApplicationOntologyPicker("longitude"), null);
+  scope.stop();
+});
+
 test("input records remain multiple, output stays single and external values are coerced", async () => {
   const { state, scope } = createBindingContext();
   await state.loadApplicationTestForm();
   state.updateParamValue("amount", "abc");
   assert.equal(state.createParameterSnapshot().ok, false);
   for (const key of ["1", "2"]) {
-    state.updateApplicationOntologyEntitySelection("ships", key);
+    state.updateApplicationOntologyEntitySelection("ships", key, "input");
     state.addApplicationInputBindingRecords("ships");
   }
-  state.updateApplicationOntologyEntitySelection("result", ["1", "2"]);
-  assert.equal(state.findApplicationOntologyPicker("result").selectedEntities.length, 1);
+  state.updateApplicationOntologyEntitySelection("result", ["1", "2"], "output");
+  assert.equal(state.findApplicationOntologyPicker("result", "output").selectedEntities.length, 1);
   state.updateParamValue("amount", "7");
   const result = state.createParameterSnapshot();
   assert.equal(result.ok, true);
@@ -200,8 +238,8 @@ test("saved execution request restores property bindings, outputs, external valu
     state.listApplicationInputBindingRecords("ships").map((row) => row.entityPrimaryKey),
     [1, 9],
   );
-  assert.deepEqual(state.findApplicationOntologyPicker("ships").selectedRowKeys, ["1", "9"]);
-  assert.deepEqual(state.findApplicationOntologyPicker("result").selectedRowKeys, ["2"]);
+  assert.deepEqual(state.findApplicationOntologyPicker("ships", "input").selectedRowKeys, ["1", "9"]);
+  assert.deepEqual(state.findApplicationOntologyPicker("result", "output").selectedRowKeys, ["2"]);
   assert.deepEqual(state.selectedFromEntityRowKeys.value, ["1", "9"]);
   assert.deepEqual(state.selectedToEntityRowKeys.value, ["2"]);
   const built = state.createParameterSnapshot();
@@ -253,9 +291,9 @@ test("relation endpoints preserve multiple selections and restore across configu
   const { state, scope } = createBindingContext(true);
   await state.loadApplicationTestForm();
   state.updateParamValue("amount", "7");
-  state.updateApplicationOntologyEntitySelection("ships", "1");
+  state.updateApplicationOntologyEntitySelection("ships", "1", "input");
   state.addApplicationInputBindingRecords("ships");
-  state.updateApplicationOntologyEntitySelection("result", "2");
+  state.updateApplicationOntologyEntitySelection("result", "2", "output");
   assert.equal(state.createParameterSnapshot().ok, false);
   state.fromEntityRows.value.forEach(state.toggleFromEntityRow);
   state.toEntityRows.value.forEach(state.toggleToEntityRow);
@@ -296,7 +334,7 @@ test("duplicate pending detail loads share one query and empty or failed child l
   assert.equal(calls, 1);
   finish({ code: 200, data: createActionDetail() });
   await first;
-  assert.equal(state.findApplicationOntologyPicker("ships").rows.length, 0);
+  assert.equal(state.findApplicationOntologyPicker("ships", "input").rows.length, 0);
   assert.equal(state.createParameterSnapshot().ok, false);
   scope.stop();
 });
@@ -306,7 +344,7 @@ test("rich binding primary keys are cloned without retaining reactive references
   await state.loadApplicationTestForm();
   state.updateParamValue("amount", "1");
   state.applicationInputBindingRecords.value.ships = [{ recordKey: "rich", entityPrimaryKey: { nested: { id: 1 } }, entityDisplayName: "rich" }];
-  state.updateApplicationOntologyEntitySelection("result", "1");
+  state.updateApplicationOntologyEntitySelection("result", "1", "output");
   const result = state.createParameterSnapshot();
   assert.equal(result.ok, true);
   state.applicationInputBindingRecords.value.ships[0].entityPrimaryKey.nested.id = 9;
@@ -324,8 +362,8 @@ test("non-main input stores entity and data-row bindings and survives snapshot r
   });
   await state.loadApplicationTestForm();
   state.updateParamValue("amount", "3");
-  state.updateApplicationOntologyEntitySelection("result", "1");
-  state.updateApplicationOntologyEntitySelection("ships", "1");
+  state.updateApplicationOntologyEntitySelection("result", "1", "output");
+  state.updateApplicationOntologyEntitySelection("ships", "1", "input");
   await settleForm();
   const picker = state.applicationStorageGroupPickers.value[0];
   const slot = picker.entitySlots[0];

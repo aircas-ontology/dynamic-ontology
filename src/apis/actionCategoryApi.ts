@@ -36,8 +36,8 @@ export function createActionCategoryInterface(params: CreateActionCategoryParams
 }
 
 /**
- * @description 修改行为分类名称。
- * @param params 行为分类修改参数。
+ * @description 修改行为分类名称，并可调整父分类。
+ * @param params 行为分类修改参数；可选 parentId 表示新父节点。
  * @returns 标准 API 响应。
  */
 export function updateActionCategoryInterface(params: UpdateActionCategoryParams): Promise<ApiResponse<unknown>> {

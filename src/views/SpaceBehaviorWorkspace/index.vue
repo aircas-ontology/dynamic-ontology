@@ -43,7 +43,8 @@
       ref="categoryFormRef"
       v-model="categoryFormVisible"
       :mode="categoryFormMode"
-      :parent-label="categoryParentLabel"
+      :parent-id="categoryParentId"
+      :parent-options="behaviorCategoryParentOptions"
       :initial-name="categoryFormMode === 'edit' ? categoryActionName : ''"
       @submit="handleCategorySubmit"
     />
@@ -59,6 +60,7 @@
       v-model="behaviorFormVisible"
       :mode="behaviorFormMode"
       :space-id="spaceId"
+      :locked-ontology-id="ontologyId"
       :category-tree="categoryTree"
       :default-category-id="selectedCategoryId || ROOT_SPACE_BEHAVIOR_CATEGORY_ID"
       :behavior="activeBehavior"
@@ -83,8 +85,9 @@ import { ElMessage } from "element-plus";
 import type { SpaceBehaviorDraft, SpaceBehaviorItem, SpaceBehaviorStatusChangeDraft } from "@/types";
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
+import { buildCategoryParentTree, type CategoryParentOption } from "@/utils/categoryParentTree";
 import { useSpaceBehaviorWorkspace } from "./composables/useSpaceBehaviorWorkspace";
-import { findSpaceBehaviorCategoryNode } from "./utils/spaceBehaviorOperations";
+import { findSpaceBehaviorCategoryNode, findSpaceBehaviorCategoryParentId, omitActionLeavesFromCategoryTree } from "./utils/spaceBehaviorOperations";
 import BehaviorCategoryPanel from "./components/BehaviorCategoryPanel.vue";
 import BehaviorListPanel from "./components/BehaviorListPanel.vue";
 import BehaviorCategoryFormDialog from "./components/BehaviorCategoryFormDialog.vue";
@@ -98,6 +101,7 @@ import BehaviorDeleteDialog from "./components/BehaviorDeleteDialog.vue";
 const {
   status,
   spaceId,
+  ontologyId,
   errorMessage,
   categoryTree,
   selectedCategoryId,
@@ -141,7 +145,24 @@ const behaviorStatusVisible = ref(false);
 const behaviorDeleteVisible = ref(false);
 const activeBehavior = ref<SpaceBehaviorItem | null>(null);
 
-const categoryParentLabel = computed(() => findSpaceBehaviorCategoryNode(categoryTree.value, categoryParentId.value)?.label ?? "行为分类");
+/**
+ * @description 将行为分类树裁剪为父分类选择器节点（去掉行为叶子）。
+ * @param nodes 分类树。
+ * @returns 父分类选项树。
+ */
+function mapBehaviorCategoryParentOptions(nodes: ReturnType<typeof omitActionLeavesFromCategoryTree>): CategoryParentOption[] {
+  return nodes.map((node) => ({
+    id: node.id,
+    label: node.label,
+    children: mapBehaviorCategoryParentOptions(node.children),
+  }));
+}
+
+const behaviorCategoryParentOptions = computed(() => {
+  const excludedId = categoryFormMode.value === "edit" ? categoryActionId.value : "";
+  const tree = buildCategoryParentTree(mapBehaviorCategoryParentOptions(omitActionLeavesFromCategoryTree(categoryTree.value)), excludedId);
+  return tree.length || categoryFormMode.value === "edit" ? tree : [{ id: ROOT_SPACE_BEHAVIOR_CATEGORY_ID, label: "根分类", children: [] }];
+});
 
 /**
  * @description 打开新建子分类弹窗。
@@ -164,6 +185,7 @@ function openCategoryEdit(categoryId: string): void {
   categoryFormMode.value = "edit";
   categoryActionId.value = categoryId;
   categoryActionName.value = node.label;
+  categoryParentId.value = findSpaceBehaviorCategoryParentId(categoryTree.value, categoryId) || ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
   categoryFormVisible.value = true;
 }
 
@@ -182,14 +204,13 @@ function openCategoryDelete(categoryId: string): void {
 }
 
 /**
- * @description 提交分类新建或重命名。
+ * @description 提交分类新建或重命名（可调整父分类）。
  * @param name 分类名称。
+ * @param parentId 父分类 id。
  */
-async function handleCategorySubmit(name: string): Promise<void> {
+async function handleCategorySubmit(name: string, parentId: string): Promise<void> {
   const ok =
-    categoryFormMode.value === "create"
-      ? await createBehaviorCategory(categoryParentId.value, name)
-      : await renameBehaviorCategory(categoryActionId.value, name);
+    categoryFormMode.value === "create" ? await createBehaviorCategory(parentId, name) : await renameBehaviorCategory(categoryActionId.value, name, parentId);
   categoryFormRef.value?.setLoading(false);
   if (!ok) {
     ElMessage.error("分类保存失败");
@@ -232,10 +253,14 @@ function openBehaviorView(item: SpaceBehaviorItem): void {
 }
 
 /**
- * @description 打开编辑行为弹窗。
+ * @description 打开编辑行为弹窗；已发布行为不允许编辑。
  * @param item 行为记录。
  */
 function openBehaviorEdit(item: SpaceBehaviorItem): void {
+  if (item.status === "published") {
+    ElMessage.warning("已发布行为不可编辑，请先改为草稿后再操作");
+    return;
+  }
   behaviorFormMode.value = "edit";
   activeBehavior.value = item;
   behaviorFormVisible.value = true;
@@ -271,10 +296,14 @@ function openBehaviorStatus(item: SpaceBehaviorItem): void {
 }
 
 /**
- * @description 打开删除行为确认弹窗。
+ * @description 打开删除行为确认弹窗；已发布行为不允许删除。
  * @param item 行为记录。
  */
 function openBehaviorDelete(item: SpaceBehaviorItem): void {
+  if (item.status === "published") {
+    ElMessage.warning("已发布行为不可删除，请先改为草稿后再操作");
+    return;
+  }
   activeBehavior.value = item;
   behaviorDeleteVisible.value = true;
 }

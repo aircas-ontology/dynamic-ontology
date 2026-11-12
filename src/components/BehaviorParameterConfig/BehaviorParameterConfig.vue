@@ -28,45 +28,45 @@
               }}</span>
               <template v-else-if="normalizeApplicationSourceType(asApplicationInputRow(row).sourceType) === 'PROPERTY'">
                 <div class="behavior-test-dialog__param-value-stack">
-                  <div v-if="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)" class="behavior-test-dialog__param-draft-group">
+                  <div v-if="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'input')" class="behavior-test-dialog__param-draft-group">
                     <el-select
                       class="behavior-test-dialog__entity-select"
-                      :model-value="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.selectedRowKeys[0] || ''"
+                      :model-value="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'input')?.selectedRowKeys[0] || ''"
                       filterable
                       clearable
-                      :loading="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.loading"
+                      :loading="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'input')?.loading"
                       :placeholder="`请选择 ${asApplicationInputRow(row).propertyDisplayName || asApplicationInputRow(row).paramName || '实例'}`"
                       @update:model-value="
-                        (value) => updateApplicationOntologyEntitySelection(asApplicationInputRow(row).paramName, value ? [String(value)] : [])
+                        (value) => updateApplicationOntologyEntitySelection(asApplicationInputRow(row).paramName, value ? [String(value)] : [], 'input')
                       "
                     >
                       <el-option
-                        v-for="option in listApplicationOntologySelectOptions(findApplicationOntologyPicker(asApplicationInputRow(row).paramName))"
+                        v-for="option in listApplicationOntologySelectOptions(findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'input'))"
                         :key="option.rowKey"
                         :label="formatApplicationEntityOptionLabel(option)"
                         :value="option.rowKey"
                       />
                       <template #footer>
                         <div
-                          v-if="(findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.total ?? 0) > 0"
+                          v-if="(findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'input')?.total ?? 0) > 0"
                           class="behavior-test-dialog__select-footer"
                           @mousedown.prevent
                         >
                           <el-pagination
                             small
                             layout="total, prev, pager, next"
-                            :total="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.total ?? 0"
-                            :current-page="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.page ?? 1"
-                            :page-size="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.pageSize ?? 10"
-                            @current-change="(page) => changeApplicationOntologyEntityPage(asApplicationInputRow(row).paramName, page)"
+                            :total="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'input')?.total ?? 0"
+                            :current-page="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'input')?.page ?? 1"
+                            :page-size="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'input')?.pageSize ?? 10"
+                            @current-change="(page) => changeApplicationOntologyEntityPage(asApplicationInputRow(row).paramName, page, 'input')"
                           />
                         </div>
                         <p
-                          v-else-if="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.error"
+                          v-else-if="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'input')?.error"
                           class="behavior-test-dialog__select-footer-error"
                           role="alert"
                         >
-                          {{ findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.error }}
+                          {{ findApplicationOntologyPicker(asApplicationInputRow(row).paramName, "input")?.error }}
                         </p>
                       </template>
                     </el-select>
@@ -175,42 +175,44 @@
             <template #default="{ row }">
               <div class="behavior-test-dialog__param-value-stack">
                 <el-select
-                  v-if="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)"
+                  v-if="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'output')"
                   class="behavior-test-dialog__entity-select"
-                  :model-value="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.selectedRowKeys[0] || ''"
+                  :model-value="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'output')?.selectedRowKeys[0] || ''"
                   filterable
                   clearable
-                  :loading="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.loading"
+                  :loading="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'output')?.loading"
                   :placeholder="`请选择 ${asApplicationInputRow(row).propertyDisplayName || asApplicationInputRow(row).paramName || '实例'}`"
-                  @update:model-value="(value) => updateApplicationOntologyEntitySelection(asApplicationInputRow(row).paramName, value ? [String(value)] : [])"
+                  @update:model-value="
+                    (value) => updateApplicationOntologyEntitySelection(asApplicationInputRow(row).paramName, value ? [String(value)] : [], 'output')
+                  "
                 >
                   <el-option
-                    v-for="option in listApplicationOntologySelectOptions(findApplicationOntologyPicker(asApplicationInputRow(row).paramName))"
+                    v-for="option in listApplicationOntologySelectOptions(findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'output'))"
                     :key="option.rowKey"
                     :label="formatApplicationEntityOptionLabel(option)"
                     :value="option.rowKey"
                   />
                   <template #footer>
                     <div
-                      v-if="(findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.total ?? 0) > 0"
+                      v-if="(findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'output')?.total ?? 0) > 0"
                       class="behavior-test-dialog__select-footer"
                       @mousedown.prevent
                     >
                       <el-pagination
                         small
                         layout="total, prev, pager, next"
-                        :total="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.total ?? 0"
-                        :current-page="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.page ?? 1"
-                        :page-size="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.pageSize ?? 10"
-                        @current-change="(page) => changeApplicationOntologyEntityPage(asApplicationInputRow(row).paramName, page)"
+                        :total="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'output')?.total ?? 0"
+                        :current-page="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'output')?.page ?? 1"
+                        :page-size="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'output')?.pageSize ?? 10"
+                        @current-change="(page) => changeApplicationOntologyEntityPage(asApplicationInputRow(row).paramName, page, 'output')"
                       />
                     </div>
                     <p
-                      v-else-if="findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.error"
+                      v-else-if="findApplicationOntologyPicker(asApplicationInputRow(row).paramName, 'output')?.error"
                       class="behavior-test-dialog__select-footer-error"
                       role="alert"
                     >
-                      {{ findApplicationOntologyPicker(asApplicationInputRow(row).paramName)?.error }}
+                      {{ findApplicationOntologyPicker(asApplicationInputRow(row).paramName, "output")?.error }}
                     </p>
                   </template>
                 </el-select>

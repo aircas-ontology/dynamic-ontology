@@ -126,6 +126,8 @@ test("quality values stay visible while real counts are loading or fail", async 
   assert.doesNotMatch(hidden, /韧性标准应用数|属性填充率|102|63%/);
   assert.match(hidden, /对象数量/);
   assert.match(hidden, /entity-browse-overview--statistics-only/);
+  assert.doesNotMatch(source, /entity-browse-overview__group/);
+  assert.match(source, /grid-template-columns:\s*repeat\(5,/);
 });
 
 test("duplicate loads are suppressed, stale results and results after disposal are ignored", async () => {

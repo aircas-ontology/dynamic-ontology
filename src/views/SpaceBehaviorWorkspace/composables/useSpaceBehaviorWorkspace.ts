@@ -28,16 +28,8 @@ import { buildLinkCreateActionParams, isLinkActionCreateDraft } from "../utils/b
 import { buildPropertyValueCreateActionParams, isPropertyValueActionCreateDraft } from "../utils/buildPropertyValueCreateActionParams";
 import { mapActionCategoryTree } from "../utils/mapActionCategoryTree";
 import { mapListOntologyActionRecord, mapSpaceBehaviorListStatusToQuery } from "../utils/mapListOntologyActionRecord";
+import { resolveBehaviorOntologyId, resolveBehaviorSpaceId } from "../utils/resolveBehaviorRouteContext";
 import { findSpaceBehaviorCategoryNode } from "../utils/spaceBehaviorOperations";
-
-/**
- * @description 读取路由空间 id。
- * @param value 路由参数。
- * @returns 空间 id 文本。
- */
-function readSpaceId(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
 
 /**
  * @description 将选中分类解析为列表查询 categoryId；根分类或不合法 id 时不传。
@@ -60,7 +52,8 @@ function resolveListActionCategoryIdQuery(categoryId: string, tree: SpaceBehavio
  */
 export function useSpaceBehaviorWorkspace() {
   const route = useRoute();
-  const spaceId = computed(() => readSpaceId(route.params.spaceId));
+  const spaceId = computed(() => resolveBehaviorSpaceId(route));
+  const ontologyId = computed(() => resolveBehaviorOntologyId(route));
   const status = ref<SpaceBehaviorWorkspaceLoadStatus>("loading");
   const errorMessage = ref("");
   const categoryTree = ref<SpaceBehaviorCategoryNode[]>([]);
@@ -126,10 +119,12 @@ export function useSpaceBehaviorWorkspace() {
       const keywordValue = appliedKeyword.value.trim();
       const statusQuery = mapSpaceBehaviorListStatusToQuery(appliedStatus.value);
       const categoryIdQuery = resolveListActionCategoryIdQuery(selectedCategoryId.value, categoryTree.value);
+      const ontologyIdValue = ontologyId.value.trim();
       const response = await getListOntologyActionInterface({
         ontologySpaceId: numericSpaceId,
         pageNum: page.value,
         pageSize: pageSize.value,
+        ...(ontologyIdValue ? { ontologyId: ontologyId.value } : {}),
         ...(categoryIdQuery === undefined ? {} : { categoryId: categoryIdQuery }),
         ...(keywordValue ? { keyword: keywordValue } : {}),
         ...(statusQuery === undefined ? {} : { status: statusQuery }),
@@ -262,20 +257,29 @@ export function useSpaceBehaviorWorkspace() {
   }
 
   /**
-   * @description 重命名行为分类。
+   * @description 修改行为分类名称，并可调整父分类。
    * @param categoryId 分类 id。
    * @param label 新名称。
+   * @param parentId 父分类 id；根为 behavior-root / 空。
    * @returns 是否成功。
    */
-  async function renameBehaviorCategory(categoryId: string, label: string): Promise<boolean> {
+  async function renameBehaviorCategory(categoryId: string, label: string, parentId: string | number): Promise<boolean> {
     if (actionLoading.value) return false;
     actionLoading.value = true;
     try {
       const numericSpaceId = Number(spaceId.value);
       const numericCategoryId = Number(categoryId);
+      const parentIdText = String(parentId ?? "").trim();
+      const numericParentId = parentIdText === ROOT_SPACE_BEHAVIOR_CATEGORY_ID || !parentIdText ? 0 : Number(parentIdText);
       const name = label.trim();
-      if (!Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId) || !name) return false;
-      const response = await updateActionCategoryInterface({ spaceId: numericSpaceId, categoryId: numericCategoryId, name });
+      if (!Number.isInteger(numericSpaceId) || !Number.isInteger(numericCategoryId) || !Number.isInteger(numericParentId) || !name) return false;
+      if (numericParentId === numericCategoryId) return false;
+      const response = await updateActionCategoryInterface({
+        spaceId: numericSpaceId,
+        categoryId: numericCategoryId,
+        name,
+        parentId: numericParentId,
+      });
       if (response.code !== 0 && response.code !== 200) return false;
       await loadSpaceBehaviorWorkspace();
       return true;
@@ -477,12 +481,17 @@ export function useSpaceBehaviorWorkspace() {
     page.value = 1;
     void loadSpaceBehaviorWorkspace();
   });
+  watch(ontologyId, () => {
+    page.value = 1;
+    void loadSpaceBehaviorList();
+  });
   onMounted(() => {
     void loadSpaceBehaviorWorkspace();
   });
 
   return {
     spaceId,
+    ontologyId,
     status,
     errorMessage,
     categoryTree,

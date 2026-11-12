@@ -45,7 +45,7 @@
           <el-table :data="filteredRows" row-key="rowKey" height="100%" class="object-profile-entity-list__table" empty-text="无匹配实体">
             <el-table-column label="操作" width="88" fixed="left">
               <template #default="{ row }">
-                <el-button link type="primary" @click="openEntityDetail(asEntityRow(row))">详情</el-button>
+                <el-button link type="primary" :loading="detailOpening" :disabled="detailOpening" @click="openEntityDetail(asEntityRow(row))">详情</el-button>
               </template>
             </el-table-column>
             <el-table-column v-for="column in visibleColumns" :key="column" :label="column" min-width="120" show-overflow-tooltip>
@@ -82,6 +82,7 @@
 <script setup lang="ts">
 import { onScopeDispose, ref, toRef, watch } from "vue";
 import { ArrowLeft } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 import { getOntologyInstanceUrlListInterface } from "@/apis";
 import AircasLoading from "@/components/AircasLoading.vue";
 import { ENTITY_BROWSING_ENTITY_DETAIL_URL } from "@/utils/entityBrowseConstants";
@@ -103,6 +104,7 @@ const emit = defineEmits<{
 }>();
 
 const detailEmbedded = ref(false);
+const detailOpening = ref(false);
 const detailStatus = ref<"idle" | "loading" | "ready" | "error">("idle");
 const detailError = ref("");
 const detailUrl = ref("");
@@ -185,52 +187,57 @@ function pickOntologyInstanceUrl(items: Array<{ url?: string }> | null | undefin
 }
 
 /**
- * @description 按当前行请求实例详情 URL 并写入嵌入态。
+ * @description 查询实例详情 URL；成功返回地址，失败抛错。过期请求返回 null。
  * @param row 实体行；为空时仅按对象 id 查询。
+ * @param requestToken 本次请求令牌。
+ * @returns 详情 URL；过期时为 null。
  */
-async function loadEntityDetailUrl(row: ObjectProfileEntityRow | null): Promise<void> {
-  const requestToken = ++detailLoadToken;
-  detailStatus.value = "loading";
-  detailError.value = "";
-  detailUrl.value = "";
-  detailRequestRow.value = row;
-
+async function fetchEntityDetailUrl(row: ObjectProfileEntityRow | null, requestToken: number): Promise<string | null> {
   const spaceId = parseObjectProfileSpaceId(props.spaceId);
   if (spaceId === null) {
-    detailStatus.value = "error";
-    detailError.value = "缺少有效对象空间 id，无法加载实体详情。";
-    return;
+    throw new Error("缺少有效对象空间 id，无法加载实体详情。");
   }
 
   const objectId = (row?.ontologyUniqueIdentifier || props.objectId).trim();
   const instanceId = (row?.instanceId ?? "").trim();
   if (!objectId) {
-    detailStatus.value = "error";
-    detailError.value = "缺少对象标识，无法加载实体详情。";
-    return;
+    throw new Error("缺少对象标识，无法加载实体详情。");
   }
 
   if (isUseMockEnabled()) {
-    if (requestToken !== detailLoadToken) return;
-    detailUrl.value = ENTITY_BROWSING_ENTITY_DETAIL_URL;
-    detailStatus.value = "ready";
-    return;
+    if (requestToken !== detailLoadToken) return null;
+    return ENTITY_BROWSING_ENTITY_DETAIL_URL;
   }
 
+  const response = await getOntologyInstanceUrlListInterface({
+    spaceId,
+    objectId,
+    ...(instanceId ? { instanceId } : {}),
+  });
+  if (requestToken !== detailLoadToken) return null;
+  if (response.code !== 200) {
+    throw new Error(response.message || "实体详情地址加载失败");
+  }
+  const url = pickOntologyInstanceUrl(response.data);
+  if (!url) {
+    throw new Error("未返回实体详情地址");
+  }
+  return url;
+}
+
+/**
+ * @description 在已嵌入详情区内重新加载 URL（用于重试）。
+ * @param row 实体行。
+ */
+async function reloadEmbeddedEntityDetailUrl(row: ObjectProfileEntityRow | null): Promise<void> {
+  const requestToken = ++detailLoadToken;
+  detailStatus.value = "loading";
+  detailError.value = "";
+  detailUrl.value = "";
+  detailRequestRow.value = row;
   try {
-    const response = await getOntologyInstanceUrlListInterface({
-      spaceId,
-      objectId,
-      ...(instanceId ? { instanceId } : {}),
-    });
-    if (requestToken !== detailLoadToken) return;
-    if (response.code !== 200) {
-      throw new Error(response.message || "实体详情地址加载失败");
-    }
-    const url = pickOntologyInstanceUrl(response.data);
-    if (!url) {
-      throw new Error("未返回实体详情地址");
-    }
+    const url = await fetchEntityDetailUrl(row, requestToken);
+    if (requestToken !== detailLoadToken || url === null) return;
     detailUrl.value = url;
     detailStatus.value = "ready";
   } catch (cause) {
@@ -242,19 +249,43 @@ async function loadEntityDetailUrl(row: ObjectProfileEntityRow | null): Promise<
 }
 
 /**
- * @description 打开实体详情嵌入区并按行加载 iframe 地址。
+ * @description 先查询详情 URL，有地址后再进入嵌入页；无地址则留在列表并提示。
  * @param row 当前表格行。
+ * @returns 是否成功进入详情嵌入。
  */
-function openEntityDetail(row?: ObjectProfileEntityRow): void {
-  detailEmbedded.value = true;
-  void loadEntityDetailUrl(row ? asEntityRow(row) : null);
+async function openEntityDetail(row?: ObjectProfileEntityRow): Promise<boolean> {
+  if (detailOpening.value) return false;
+  const requestRow = row ? asEntityRow(row) : null;
+  const requestToken = ++detailLoadToken;
+  detailOpening.value = true;
+  detailRequestRow.value = requestRow;
+  try {
+    const url = await fetchEntityDetailUrl(requestRow, requestToken);
+    if (requestToken !== detailLoadToken || url === null) return false;
+    detailUrl.value = url;
+    detailError.value = "";
+    detailStatus.value = "ready";
+    detailEmbedded.value = true;
+    return true;
+  } catch (cause) {
+    if (requestToken !== detailLoadToken) return false;
+    detailEmbedded.value = false;
+    detailUrl.value = "";
+    detailStatus.value = "idle";
+    detailError.value = "";
+    const message = cause instanceof Error && cause.message.trim() ? cause.message : "实体详情地址加载失败，请重试。";
+    ElMessage.error(message);
+    return false;
+  } finally {
+    if (requestToken === detailLoadToken) detailOpening.value = false;
+  }
 }
 
 /**
- * @description 重试当前详情 URL 请求。
+ * @description 重试当前详情 URL 请求（仅嵌入态）。
  */
 function retryEntityDetailUrl(): void {
-  void loadEntityDetailUrl(detailRequestRow.value);
+  void reloadEmbeddedEntityDetailUrl(detailRequestRow.value);
 }
 
 /**
@@ -262,6 +293,7 @@ function retryEntityDetailUrl(): void {
  */
 function closeEntityDetail(): void {
   detailLoadToken += 1;
+  detailOpening.value = false;
   detailEmbedded.value = false;
   detailStatus.value = "idle";
   detailError.value = "";
@@ -272,10 +304,10 @@ function closeEntityDetail(): void {
 
 watch(
   () => props.autoOpenDetail,
-  (shouldOpen) => {
+  async (shouldOpen) => {
     if (!shouldOpen) return;
-    openEntityDetail();
-    emit("detail-auto-opened");
+    const opened = await openEntityDetail();
+    if (opened) emit("detail-auto-opened");
   },
   { immediate: true },
 );
@@ -329,6 +361,7 @@ function handleEntityListPageSizeChange(size: number): void {
   display: flex;
   flex-shrink: 0;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .object-profile-entity-list__embed {

@@ -59,9 +59,9 @@ export interface BehaviorTestParamRow {
   propertyType: string;
 }
 
-/** 应用行为 PROPERTY / WRITE_PROPERTY 对象实例选择器状态（按参数名独立）。 */
+/** 应用行为 PROPERTY / WRITE_PROPERTY 对象实例选择器状态（按侧别 + 参数名独立）。 */
 export interface ApplicationOntologyEntityPicker {
-  /** 选择器键：参数名。 */
+  /** 选择器键：`input::paramName` 或 `output::paramName`。 */
   pickerKey: string;
   paramName: string;
   ontologyUniqueIdentifier: string;

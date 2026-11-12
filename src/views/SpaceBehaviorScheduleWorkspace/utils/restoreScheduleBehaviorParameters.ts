@@ -135,7 +135,10 @@ export function restoreScheduleBehaviorParameters(
     }
   }
   for (const picker of controller.applicationStorageGroupPickers.value) {
-    const selected = snapshot.ontologyPickers.find((item) => item.paramName === picker.paramName)?.selectedEntities ?? [];
+    const selected =
+      snapshot.ontologyPickers.find(
+        (item) => item.pickerKey === `input::${picker.paramName}` || (item.paramName === picker.paramName && item.selectionMode === "multiple"),
+      )?.selectedEntities ?? [];
     const bindings = request.inputParams?.[picker.paramName] ?? [];
     snapshot.storagePickers.push({
       ...picker,

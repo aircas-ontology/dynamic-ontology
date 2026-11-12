@@ -9,8 +9,19 @@
     @close="emit('update:modelValue', false)"
   >
     <el-form label-position="top">
-      <el-form-item v-if="mode === 'create'" label="父分类">
-        <el-input :model-value="parentLabel" disabled />
+      <el-form-item label="父分类" required :error="parentError">
+        <el-tree-select
+          v-model="parentId"
+          :data="parentOptions"
+          node-key="id"
+          :props="{ label: 'label', children: 'children' }"
+          check-strictly
+          :render-after-expand="false"
+          :disabled="loading"
+          placeholder="请选择父分类"
+          style="width: 100%"
+          @change="clearParentError"
+        />
       </el-form-item>
       <el-form-item label="分类名称" required :error="nameError">
         <el-input v-model="name" maxlength="64" placeholder="请输入分类名称" @input="clearNameError" />
@@ -25,16 +36,20 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import type { CategoryParentOption } from "@/utils/categoryParentTree";
 
 const props = defineProps<{
   modelValue: boolean;
   mode: "create" | "edit";
-  parentLabel: string;
+  parentId: string;
+  parentOptions: CategoryParentOption[];
   initialName: string;
 }>();
-const emit = defineEmits<{ "update:modelValue": [value: boolean]; submit: [name: string] }>();
+const emit = defineEmits<{ "update:modelValue": [value: boolean]; submit: [name: string, parentId: string] }>();
 const name = ref("");
+const parentId = ref("");
 const nameError = ref("");
+const parentError = ref("");
 const loading = ref(false);
 
 watch(
@@ -42,23 +57,31 @@ watch(
   (visible) => {
     if (!visible) return;
     name.value = props.initialName;
+    parentId.value = props.parentId;
     nameError.value = "";
+    parentError.value = "";
     loading.value = false;
   },
 );
 
 /**
- * @description 校验分类名称后向父组件提交新建或编辑请求。
+ * @description 校验父分类与名称后向父组件提交新建或编辑请求。
  */
 function submitCategoryForm(): void {
   const trimmed = name.value.trim();
+  const nextParentId = parentId.value.trim();
+  if (!nextParentId) {
+    parentError.value = "请选择父分类";
+    return;
+  }
   if (!trimmed) {
     nameError.value = "请输入分类名称";
     return;
   }
   nameError.value = "";
+  parentError.value = "";
   loading.value = true;
-  emit("submit", trimmed);
+  emit("submit", trimmed, nextParentId);
 }
 
 /**
@@ -66,6 +89,13 @@ function submitCategoryForm(): void {
  */
 function clearNameError(): void {
   if (name.value.trim()) nameError.value = "";
+}
+
+/**
+ * @description 清除父分类校验提示。
+ */
+function clearParentError(): void {
+  if (parentId.value.trim()) parentError.value = "";
 }
 
 defineExpose({

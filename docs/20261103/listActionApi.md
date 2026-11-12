@@ -13,6 +13,7 @@ GET /ontology/action/list
 | 参数              | 类型    | 必填   | 说明                             |
 | ----------------- | ------- | ------ | -------------------------------- |
 | `ontologySpaceId` | Integer | **是** | 本体空间 id                      |
+| `ontologyId`      | string  | 否     | 对象唯一标符                     |
 | `categoryId`      | Integer | 否     | 行为分类id                       |
 | `keyword`         | String  | 否     | 关键词：行为名称、算子 api、描述 |
 | `status`          | Integer | 否     | 状态：1 启用，0 失效             |

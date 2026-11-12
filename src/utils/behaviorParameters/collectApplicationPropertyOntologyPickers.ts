@@ -1,10 +1,15 @@
 import type { SpaceBehaviorActionInfoViewParamRow } from "@/types";
 import { isMainStorageGroup, normalizeStorageGroup } from "./resolveAttributeValueSelection.ts";
 
-/** 应用行为测试中 PROPERTY / WRITE_PROPERTY 对应的对象实例选择器种子（按参数独立）。 */
+/** 应用行为实例选择器侧别：入参 PROPERTY / 写回 WRITE_PROPERTY。 */
+export type ApplicationOntologyPickerSide = "input" | "output";
+
+/** 应用行为测试中 PROPERTY / WRITE_PROPERTY 对应的对象实例选择器种子（按侧别 + 参数独立）。 */
 export interface ApplicationPropertyOntologyPickerSeed {
-  /** 选择器键：参数名。 */
+  /** 选择器键：`input::paramName` 或 `output::paramName`。 */
   pickerKey: string;
+  /** 侧别。 */
+  side: ApplicationOntologyPickerSide;
   paramName: string;
   ontologyUniqueIdentifier: string;
   /** 展示标签：优先属性 displayName，否则参数名或对象标识。 */
@@ -23,18 +28,36 @@ export interface ApplicationStorageGroupPickerSeed {
 }
 
 /**
- * @description 向选择器列表追加参数级对象种子（按参数名去重）。
- * @param seen 已收录参数名集合。
+ * @description 组装应用行为对象实例选择器键（区分入参 / 写回出参）。
+ * @param side 侧别。
+ * @param paramName 参数名。
+ * @returns 选择器键。
+ */
+export function buildApplicationOntologyPickerKey(side: ApplicationOntologyPickerSide, paramName: string): string {
+  return `${side}::${paramName.trim()}`;
+}
+
+/**
+ * @description 向选择器列表追加参数级对象种子（按侧别 + 参数名去重）。
+ * @param seen 已收录选择器键集合。
  * @param result 选择器种子列表。
+ * @param side 侧别。
  * @param row 参数行。
  */
-function pushOntologyPickerSeed(seen: Set<string>, result: ApplicationPropertyOntologyPickerSeed[], row: SpaceBehaviorActionInfoViewParamRow): void {
+function pushOntologyPickerSeed(
+  seen: Set<string>,
+  result: ApplicationPropertyOntologyPickerSeed[],
+  side: ApplicationOntologyPickerSide,
+  row: SpaceBehaviorActionInfoViewParamRow,
+): void {
   const paramName = (row.paramName ?? "").trim();
   const ontologyUniqueIdentifier = (row.ontologyUniqueIdentifier ?? "").trim();
-  if (!paramName || !ontologyUniqueIdentifier || seen.has(paramName)) return;
-  seen.add(paramName);
+  if (!paramName || !ontologyUniqueIdentifier) return;
+  const pickerKey = buildApplicationOntologyPickerKey(side, paramName);
+  if (seen.has(pickerKey)) return;
+  seen.add(pickerKey);
   const label = (row.propertyDisplayName ?? "").trim() || paramName || ontologyUniqueIdentifier;
-  result.push({ pickerKey: paramName, paramName, ontologyUniqueIdentifier, label });
+  result.push({ pickerKey, side, paramName, ontologyUniqueIdentifier, label });
 }
 
 /**
@@ -66,7 +89,7 @@ function pushStorageGroupPickerSeed(seen: Set<string>, result: ApplicationStorag
 }
 
 /**
- * @description 从 INPUT PROPERTY 与 OUTPUT WRITE_PROPERTY 行按参数名收集实例选择器。
+ * @description 从 INPUT PROPERTY 与 OUTPUT WRITE_PROPERTY 行按侧别 + 参数名收集实例选择器。
  * @param inputRows 行为详情 INPUT 行。
  * @param writePropertyOutputRows WRITE_PROPERTY 出参行；缺省为空。
  * @returns 选择器种子列表（保持首次出现顺序）。
@@ -79,11 +102,11 @@ export function collectApplicationPropertyOntologyPickers(
   const result: ApplicationPropertyOntologyPickerSeed[] = [];
   for (const row of inputRows) {
     if ((row.sourceType ?? "").trim().toUpperCase() !== "PROPERTY") continue;
-    pushOntologyPickerSeed(seen, result, row);
+    pushOntologyPickerSeed(seen, result, "input", row);
   }
   for (const row of writePropertyOutputRows) {
     if ((row.outputMode ?? "").trim().toUpperCase() !== "WRITE_PROPERTY") continue;
-    pushOntologyPickerSeed(seen, result, row);
+    pushOntologyPickerSeed(seen, result, "output", row);
   }
   return result;
 }

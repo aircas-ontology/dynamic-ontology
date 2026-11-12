@@ -2,6 +2,8 @@
 export interface ListOntologyActionParams {
   /** 本体空间 id（必填）。 */
   ontologySpaceId: number;
+  /** 对象唯一标识；对象详情行为页传入以限定该对象下的行为。 */
+  ontologyId?: string;
   /** 行为分类 id；不传则查全空间。 */
   categoryId?: number;
   /** 关键词：行为名称、算子 api、描述。 */

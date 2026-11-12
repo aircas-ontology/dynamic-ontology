@@ -20,11 +20,13 @@ import { cloneBehaviorParameterSnapshot } from "@/utils/behaviorParameters/clone
 import { buildApplicationTestRequestParams, type ApplicationTestParamBindingSelection } from "@/utils/behaviorParameters/buildApplicationTestRequestParams";
 import { coerceBehaviorTestParamValue } from "@/utils/behaviorParameters/coerceBehaviorTestParamValue";
 import {
+  buildApplicationOntologyPickerKey,
   buildApplicationStorageGroupPickerKey,
   collectApplicationPropertyOntologyPickers,
   collectApplicationStorageGroupPickers,
   formatApplicationInputSourceTypeLabel,
   formatApplicationOutputModeLabel,
+  type ApplicationOntologyPickerSide,
 } from "@/utils/behaviorParameters/collectApplicationPropertyOntologyPickers";
 import { mapOntologyEntityRowDetailPageToDataRows } from "@/utils/behaviorParameters/mapOntologyEntityRowDetailToDataRows";
 import { mapOntologyActionInfoToViewState } from "@/utils/behaviorParameters/mapOntologyActionInfoToViewState";
@@ -386,14 +388,22 @@ export function useBehaviorParameters(
   }
 
   /**
-   * @description 按参数名查找应用行为实例选择器。
-   * @param paramName 参数名。
-   * @returns 选择器；未找到为 null。
+   * @description 按参数名与侧别查找应用行为实例选择器。
+   * @param paramName 参数名；也可直接传完整 pickerKey。
+   * @param side 侧别；省略时仅在唯一匹配或完整 pickerKey 时返回。
+   * @returns 选择器；未找到或同名多侧歧义时为 null。
    */
-  function findApplicationOntologyPicker(paramName: string): ApplicationOntologyEntityPicker | null {
+  function findApplicationOntologyPicker(paramName: string, side?: ApplicationOntologyPickerSide): ApplicationOntologyEntityPicker | null {
     const key = paramName.trim();
     if (!key) return null;
-    return applicationOntologyPickers.value.find((item) => item.pickerKey === key || item.paramName === key) ?? null;
+    if (side) {
+      const pickerKey = buildApplicationOntologyPickerKey(side, key);
+      return applicationOntologyPickers.value.find((item) => item.pickerKey === pickerKey) ?? null;
+    }
+    const byPickerKey = applicationOntologyPickers.value.find((item) => item.pickerKey === key);
+    if (byPickerKey) return byPickerKey;
+    const byParamName = applicationOntologyPickers.value.filter((item) => item.paramName === key);
+    return byParamName.length === 1 ? (byParamName[0] ?? null) : null;
   }
 
   /**
@@ -534,7 +544,7 @@ export function useBehaviorParameters(
    */
   function clearApplicationInputParamDraft(paramName: string): void {
     const key = paramName.trim();
-    patchApplicationOntologyPicker(key, { selectedRowKeys: [], selectedEntities: [] });
+    patchApplicationOntologyPicker(key, { selectedRowKeys: [], selectedEntities: [] }, "input");
     clearApplicationStorageGroupSelectionsForParam(key);
   }
 
@@ -545,7 +555,7 @@ export function useBehaviorParameters(
   function addApplicationInputBindingRecords(paramName: string): void {
     configurationError.value = "";
     const key = paramName.trim();
-    const picker = findApplicationOntologyPicker(key);
+    const picker = findApplicationOntologyPicker(key, "input");
     if (!picker || picker.selectionMode !== "multiple") return;
     if (picker.loading) {
       reportParameterError("请等待对象实例列表加载完成后再添加");
@@ -643,7 +653,7 @@ export function useBehaviorParameters(
    */
   function syncApplicationStorageGroupSlotsForParam(paramName: string): void {
     const key = paramName.trim();
-    const ontologyPicker = findApplicationOntologyPicker(key);
+    const ontologyPicker = findApplicationOntologyPicker(key, "input");
     const entities = ontologyPicker?.selectedEntities ?? [];
     for (const storagePicker of applicationStorageGroupPickers.value) {
       if (storagePicker.paramName !== key) continue;
@@ -796,16 +806,17 @@ export function useBehaviorParameters(
     sideLabel: string,
   ): { ok: true; selections: ApplicationTestParamBindingSelection[] } | { ok: false; error: string } {
     const selections: ApplicationTestParamBindingSelection[] = [];
+    /** 写回出参仅选实例，不绑定非 main 数据行。 */
+    const isOutputSide = sideLabel === "出参";
+    const pickerSide: ApplicationOntologyPickerSide = isOutputSide ? "output" : "input";
     for (const row of rows) {
       const paramName = (row.paramName ?? "").trim();
       if (!paramName) return { ok: false, error: `${sideLabel}缺少参数名，无法测试` };
       const ontologyId = (row.ontologyUniqueIdentifier ?? "").trim();
       if (!ontologyId) return { ok: false, error: `${sideLabel}参数「${paramName}」缺少对象标识，无法测试` };
-      const ontologyPicker = findApplicationOntologyPicker(paramName);
+      const ontologyPicker = findApplicationOntologyPicker(paramName, pickerSide);
       if (!ontologyPicker) return { ok: false, error: `${sideLabel}缺少参数「${paramName}」实例选择器` };
       if (ontologyPicker.loading) return { ok: false, error: "请等待对象实例列表加载完成后再测试" };
-      /** 写回出参仅选实例，不绑定非 main 数据行。 */
-      const isOutputSide = sideLabel === "出参";
       const storageGroup = isOutputSide ? "" : normalizeStorageGroup(row.storageGroup);
       const needsDataRow = !isOutputSide && !isMainStorageGroup(storageGroup) && Boolean(storageGroup);
 
@@ -873,14 +884,15 @@ export function useBehaviorParameters(
 
   /**
    * @description 更新指定参数实例选择器的部分字段。
-   * @param paramName 参数名。
+   * @param paramName 参数名或完整 pickerKey。
    * @param patch 部分字段。
+   * @param side 侧别；与 findApplicationOntologyPicker 一致。
    */
-  function patchApplicationOntologyPicker(paramName: string, patch: Partial<ApplicationOntologyEntityPicker>): void {
-    const key = paramName.trim();
-    applicationOntologyPickers.value = applicationOntologyPickers.value.map((item) =>
-      item.pickerKey === key || item.paramName === key ? { ...item, ...patch } : item,
-    );
+  function patchApplicationOntologyPicker(paramName: string, patch: Partial<ApplicationOntologyEntityPicker>, side?: ApplicationOntologyPickerSide): void {
+    const picker = findApplicationOntologyPicker(paramName, side);
+    if (!picker) return;
+    const pickerKey = picker.pickerKey;
+    applicationOntologyPickers.value = applicationOntologyPickers.value.map((item) => (item.pickerKey === pickerKey ? { ...item, ...patch } : item));
   }
 
   /**
@@ -904,16 +916,17 @@ export function useBehaviorParameters(
   }
 
   /**
-   * @description 加载应用行为 PROPERTY 参数对应对象的实体分页列表。
-   * @param paramName 参数名。
+   * @description 加载应用行为 PROPERTY / WRITE_PROPERTY 参数对应对象的实体分页列表。
+   * @param paramName 参数名或完整 pickerKey。
+   * @param side 侧别。
    */
-  async function loadApplicationOntologyEntityList(paramName: string): Promise<void> {
-    const key = paramName.trim();
-    const picker = findApplicationOntologyPicker(key);
+  async function loadApplicationOntologyEntityList(paramName: string, side?: ApplicationOntologyPickerSide): Promise<void> {
+    const picker = findApplicationOntologyPicker(paramName, side);
     if (!picker) return;
+    const tokenKey = picker.pickerKey;
     const ontologyId = picker.ontologyUniqueIdentifier.trim();
     if (!ontologyId) {
-      patchApplicationOntologyPicker(key, {
+      patchApplicationOntologyPicker(tokenKey, {
         loading: false,
         error: "缺少对象标识，无法加载实体列表",
         rows: [],
@@ -921,16 +934,16 @@ export function useBehaviorParameters(
       });
       return;
     }
-    const requestToken = (applicationOntologyLoadTokens[key] ?? 0) + 1;
-    applicationOntologyLoadTokens[key] = requestToken;
-    patchApplicationOntologyPicker(key, { loading: true, error: "" });
+    const requestToken = (applicationOntologyLoadTokens[tokenKey] ?? 0) + 1;
+    applicationOntologyLoadTokens[tokenKey] = requestToken;
+    patchApplicationOntologyPicker(tokenKey, { loading: true, error: "" });
     try {
       const response = await getOntologyEntitiesInterface({
         ontologyUniqueIdentifier: ontologyId,
         pageNum: picker.page,
         pageSize: picker.pageSize,
       });
-      if (applicationOntologyLoadTokens[key] !== requestToken) return;
+      if (applicationOntologyLoadTokens[tokenKey] !== requestToken) return;
       if (response.code !== 200 || !response.data) throw new Error(response.message || "实体列表加载失败");
       const records = Array.isArray(response.data.records) ? response.data.records : [];
       const rows = records.map((item, index) => mapEntityRecordToRow(item, index));
@@ -939,7 +952,7 @@ export function useBehaviorParameters(
         if (picker.selectedRowKeys.includes(row.rowKey)) previousByKey.set(row.rowKey, row);
       }
       const selectedEntities = picker.selectedRowKeys.map((rowKey) => previousByKey.get(rowKey)).filter((item): item is BehaviorTestEntityRow => Boolean(item));
-      patchApplicationOntologyPicker(key, {
+      patchApplicationOntologyPicker(tokenKey, {
         loading: false,
         error: "",
         rows,
@@ -947,8 +960,8 @@ export function useBehaviorParameters(
         selectedEntities,
       });
     } catch (error) {
-      if (applicationOntologyLoadTokens[key] !== requestToken) return;
-      patchApplicationOntologyPicker(key, {
+      if (applicationOntologyLoadTokens[tokenKey] !== requestToken) return;
+      patchApplicationOntologyPicker(tokenKey, {
         loading: false,
         error: error instanceof Error ? error.message : "实体列表加载失败",
         rows: [],
@@ -959,21 +972,27 @@ export function useBehaviorParameters(
 
   /**
    * @description 切换应用行为参数实例列表页码。
-   * @param paramName 参数名。
+   * @param paramName 参数名或完整 pickerKey。
    * @param page 页码。
+   * @param side 侧别。
    */
-  function changeApplicationOntologyEntityPage(paramName: string, page: number): void {
-    patchApplicationOntologyPicker(paramName, { page });
-    void loadApplicationOntologyEntityList(paramName);
+  function changeApplicationOntologyEntityPage(paramName: string, page: number, side?: ApplicationOntologyPickerSide): void {
+    patchApplicationOntologyPicker(paramName, { page }, side);
+    void loadApplicationOntologyEntityList(paramName, side);
   }
 
   /**
    * @description 更新应用行为参数实例下拉选中值；草稿始终最多 1 个，变更后同步非 main 分组数据行槽位。
-   * @param paramName 参数名。
+   * @param paramName 参数名或完整 pickerKey。
    * @param selectedRowKeys 选中行键列表；空数组表示清空。
+   * @param side 侧别。
    */
-  function updateApplicationOntologyEntitySelection(paramName: string, selectedRowKeys: string[] | string | null | undefined): void {
-    const picker = findApplicationOntologyPicker(paramName);
+  function updateApplicationOntologyEntitySelection(
+    paramName: string,
+    selectedRowKeys: string[] | string | null | undefined,
+    side?: ApplicationOntologyPickerSide,
+  ): void {
+    const picker = findApplicationOntologyPicker(paramName, side);
     if (!picker) return;
     const rawKeys = Array.isArray(selectedRowKeys) ? selectedRowKeys : selectedRowKeys ? [String(selectedRowKeys)] : [];
     const nextKeys = rawKeys
@@ -981,19 +1000,23 @@ export function useBehaviorParameters(
       .filter(Boolean)
       .slice(0, 1);
     if (nextKeys.length === 0) {
-      patchApplicationOntologyPicker(paramName, { selectedRowKeys: [], selectedEntities: [] });
-      clearApplicationStorageGroupSelectionsForParam(paramName);
+      patchApplicationOntologyPicker(paramName, { selectedRowKeys: [], selectedEntities: [] }, side);
+      if (picker.selectionMode === "multiple") clearApplicationStorageGroupSelectionsForParam(picker.paramName);
       return;
     }
     const optionByKey = new Map(listApplicationOntologySelectOptions(picker).map((item) => [item.rowKey, item]));
     for (const row of picker.rows) optionByKey.set(row.rowKey, row);
     for (const entity of picker.selectedEntities) optionByKey.set(entity.rowKey, entity);
     const selectedEntities = nextKeys.map((key) => optionByKey.get(key)).filter((item): item is BehaviorTestEntityRow => Boolean(item));
-    patchApplicationOntologyPicker(paramName, {
-      selectedRowKeys: nextKeys,
-      selectedEntities,
-    });
-    syncApplicationStorageGroupSlotsForParam(paramName);
+    patchApplicationOntologyPicker(
+      paramName,
+      {
+        selectedRowKeys: nextKeys,
+        selectedEntities,
+      },
+      side,
+    );
+    if (picker.selectionMode === "multiple") syncApplicationStorageGroupSlotsForParam(picker.paramName);
   }
 
   /**
@@ -1096,19 +1119,13 @@ export function useBehaviorParameters(
       const externalRows = mapExternalParamRows(viewState.inputRows);
       paramRows.value = externalRows;
       resetParamValues(externalRows);
-      const inputPropertyParamNames = new Set(
-        viewState.inputRows
-          .filter((item) => (item.sourceType ?? "").trim().toUpperCase() === "PROPERTY")
-          .map((item) => (item.paramName ?? "").trim())
-          .filter(Boolean),
-      );
       const pickerSeeds = collectApplicationPropertyOntologyPickers(viewState.inputRows, writePropertyOutputRows);
       applicationOntologyPickers.value = pickerSeeds.map((seed) => ({
         pickerKey: seed.pickerKey,
         paramName: seed.paramName,
         ontologyUniqueIdentifier: seed.ontologyUniqueIdentifier,
         label: seed.label,
-        selectionMode: inputPropertyParamNames.has(seed.paramName) ? "multiple" : "single",
+        selectionMode: seed.side === "input" ? "multiple" : "single",
         loading: false,
         error: "",
         rows: [],
@@ -1127,7 +1144,7 @@ export function useBehaviorParameters(
         label: seed.label,
         entitySlots: [],
       }));
-      await Promise.all(pickerSeeds.map((seed) => loadApplicationOntologyEntityList(seed.paramName)));
+      await Promise.all(pickerSeeds.map((seed) => loadApplicationOntologyEntityList(seed.paramName, seed.side)));
       if (requestToken !== detailLoadToken.value) return;
       const linkId = viewState.linkRelationId.trim();
       if (linkId) {

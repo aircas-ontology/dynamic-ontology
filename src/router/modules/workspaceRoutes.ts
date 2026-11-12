@@ -152,7 +152,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
           {
             path: "behavior",
             name: "OntologyObjectDetailBehavior",
-            component: () => import("@/views/ObjectBehaviorWorkspace/index.vue"),
+            component: () => import("@/views/SpaceBehaviorWorkspace/index.vue"),
             meta: { title: "对象详情", objectDetailTab: "behavior" },
           },
         ],

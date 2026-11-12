@@ -12,6 +12,7 @@ import {
 } from "../src/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock.ts";
 import {
   collectSpaceBehaviorCategoryIds,
+  findSpaceBehaviorCategoryParentId,
   flattenSpaceBehaviorParameterRows,
   listAvailableSpaceBehaviorStatusOperations,
   omitActionLeavesFromCategoryTree,
@@ -22,6 +23,7 @@ import {
   mapSpaceBehaviorItemToListStatus,
   mapSpaceBehaviorListStatusToQuery,
 } from "../src/views/SpaceBehaviorWorkspace/utils/mapListOntologyActionRecord.ts";
+import { resolveBehaviorOntologyId, resolveBehaviorSpaceId } from "../src/views/SpaceBehaviorWorkspace/utils/resolveBehaviorRouteContext.ts";
 import { flattenPropertyInfosFromCategoryTree } from "../src/views/SpaceBehaviorWorkspace/utils/flattenPropertyInfosFromCategoryTree.ts";
 import { isAttributeValueRowSelectable, resolveAttributeValueSelection } from "../src/views/SpaceBehaviorWorkspace/utils/resolveAttributeValueSelection.ts";
 import { sortPropertyInfosByStorageGroup } from "../src/views/SpaceBehaviorWorkspace/utils/sortPropertyInfosByStorageGroup.ts";
@@ -96,29 +98,51 @@ test("space behavior route mounts the behavior workspace instead of the empty pa
   assert.doesNotMatch(behaviorBlock[0], /emptyWorkspacePanel/);
 });
 
-test("object behavior route mounts its independent behavior workspace", () => {
+test("object behavior route reuses space behavior workspace with ontologyId", () => {
   const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
   const route = router.resolve({ name: "OntologyObjectDetailBehavior", params: { objectId: "carrier-1" }, query: { spaceId: "46" } });
   assert.equal(route.path, "/workspace/ontology-object/carrier-1/behavior");
-  assert.match(String(route.matched.at(-1)?.components?.default), /ObjectBehaviorWorkspace/);
+  assert.match(String(route.matched.at(-1)?.components?.default), /SpaceBehaviorWorkspace/);
 
   const routeSource = readSource("../src/router/modules/workspaceRoutes.ts");
   const objectBehaviorBlock = routeSource.match(/name:\s*"OntologyObjectDetailBehavior"[\s\S]*?objectDetailTab:\s*"behavior"/)?.[0] ?? "";
-  assert.match(objectBehaviorBlock, /ObjectBehaviorWorkspace\/index\.vue/);
-  assert.doesNotMatch(objectBehaviorBlock, /SpaceBehaviorWorkspace|emptyWorkspacePanel/);
+  assert.match(objectBehaviorBlock, /SpaceBehaviorWorkspace\/index\.vue/);
+  assert.doesNotMatch(objectBehaviorBlock, /ObjectBehaviorWorkspace|emptyWorkspacePanel/);
 
-  const workspaceSource = readSource("../src/views/ObjectBehaviorWorkspace/index.vue");
-  const composableSource = readSource("../src/views/ObjectBehaviorWorkspace/composables/useObjectBehaviorWorkspace.ts");
-  assert.match(workspaceSource, /ObjectBehaviorCategoryPanel/);
-  assert.match(workspaceSource, /ObjectBehaviorListPanel/);
-  assert.match(workspaceSource, /ObjectBehaviorFormDialog/);
-  assert.match(workspaceSource, /ObjectBehaviorDetailDrawer/);
-  assert.match(workspaceSource, /ObjectBehaviorStatusDialog/);
-  assert.match(workspaceSource, /ObjectBehaviorDeleteDialog/);
-  assert.match(workspaceSource, /grid-template-columns:\s*360px minmax\(0, 1fr\)/);
-  assert.doesNotMatch(workspaceSource, /OntologySpaceManagementDetail\/behaviorComponents/);
-  assert.match(composableSource, /route\.query\.spaceId/);
-  assert.doesNotMatch(composableSource, /useSpaceBehaviorWorkspace|spaceBehaviorOperations/);
+  const typeSource = readSource("../src/types/apis/listOntologyActionType.ts");
+  assert.match(typeSource, /ontologyId\?: string/);
+
+  const routeContextSource = readSource("../src/views/SpaceBehaviorWorkspace/utils/resolveBehaviorRouteContext.ts");
+  assert.match(routeContextSource, /export function resolveBehaviorSpaceId/);
+  assert.match(routeContextSource, /export function resolveBehaviorOntologyId/);
+  assert.match(routeContextSource, /route\.params\.spaceId/);
+  assert.match(routeContextSource, /route\.query\.spaceId/);
+  assert.match(routeContextSource, /route\.params\.objectId/);
+
+  const composableSource = readSource("../src/views/SpaceBehaviorWorkspace/composables/useSpaceBehaviorWorkspace.ts");
+  assert.match(composableSource, /resolveBehaviorSpaceId\(route\)/);
+  assert.match(composableSource, /resolveBehaviorOntologyId\(route\)/);
+  assert.match(composableSource, /ontologyId:\s*ontologyId\.value/);
+  assert.match(composableSource, /watch\(\s*ontologyId/);
+
+  const workspaceSource = readSource("../src/views/SpaceBehaviorWorkspace/index.vue");
+  assert.match(workspaceSource, /:locked-ontology-id="ontologyId"/);
+
+  const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
+  assert.match(formSource, /lockedOntologyId\?:/);
+  assert.match(formSource, /isOntologySelectorLocked/);
+  assert.match(formSource, /applyLockedOntologyIdentifier/);
+
+  assert.equal(existsSync(new URL("../src/views/ObjectBehaviorWorkspace/index.vue", import.meta.url)), false);
+});
+
+test("behavior route context resolves spaceId and ontologyId from params or query", () => {
+  assert.equal(resolveBehaviorSpaceId({ params: { spaceId: "46" }, query: {} }), "46");
+  assert.equal(resolveBehaviorSpaceId({ params: {}, query: { spaceId: " 99 " } }), "99");
+  assert.equal(resolveBehaviorSpaceId({ params: { spaceId: "46" }, query: { spaceId: "99" } }), "46");
+  assert.equal(resolveBehaviorSpaceId({ params: {}, query: {} }), "");
+  assert.equal(resolveBehaviorOntologyId({ params: { objectId: " carrier-1 " }, query: {} }), "carrier-1");
+  assert.equal(resolveBehaviorOntologyId({ params: {}, query: {} }), "");
 });
 
 test("space behavior workspace uses shared tree and relation table surfaces", () => {
@@ -212,7 +236,9 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /listApplicationOntologySelectOptions/);
   assert.match(testDialogSource, /loadApplicationStorageGroupDataRows/);
   assert.match(testDialogSource, /updateApplicationStorageGroupRowSelection/);
-  assert.match(testDialogSource, /selectionMode:\s*inputPropertyParamNames\.has\(seed\.paramName\)\s*\?\s*["']multiple["']\s*:\s*["']single["']/);
+  assert.match(testDialogSource, /selectionMode:\s*seed\.side === ["']input["']\s*\?\s*["']multiple["']\s*:\s*["']single["']/);
+  assert.match(testDialogSource, /buildApplicationOntologyPickerKey/);
+  assert.match(testDialogSource, /loadApplicationOntologyEntityList\(seed\.paramName,\s*seed\.side\)/);
   assert.match(testDialogSource, /selectedRowKeys/);
   assert.match(testDialogSource, /selectedEntities/);
   assert.match(testDialogSource, /entitySlots/);
@@ -258,7 +284,8 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.doesNotMatch(testDialogSource, /inputEntities/);
   assert.doesNotMatch(testDialogSource, /outputEntities/);
   assert.match(testDialogSource, /entityPrimaryKeys/);
-  assert.match(testDialogSource, /findApplicationOntologyPicker\(asApplicationInputRow\(row\)\.paramName/);
+  assert.match(testDialogSource, /findApplicationOntologyPicker\(asApplicationInputRow\(row\)\.paramName,\s*['"]input['"]\)/);
+  assert.match(testDialogSource, /findApplicationOntologyPicker\(asApplicationInputRow\(row\)\.paramName,\s*['"]output['"]\)/);
   assert.match(testDialogSource, /applicationTestResultText/);
   assert.match(testDialogSource, /v-if="showRelationLinkForm"/);
   assert.match(testDialogSource, /选择实体实例（可选）/);
@@ -563,6 +590,9 @@ test("space behavior maps actionInfos into category counts and displayName leave
 
   assert.throws(() => mapActionCategoryTree({ name: "缺 id" }), /缺少节点 id 或名称/);
   assert.throws(() => mapActionCategoryTree({ categoryId: 1, name: "  " }), /缺少节点 id 或名称/);
+  assert.equal(findSpaceBehaviorCategoryParentId(tree, "5"), ROOT_SPACE_BEHAVIOR_CATEGORY_ID);
+  assert.equal(findSpaceBehaviorCategoryParentId(tree, "11"), "5");
+  assert.equal(findSpaceBehaviorCategoryParentId(tree, "missing"), "");
 });
 
 test("space behavior crud dialogs follow prototype create view edit and delete surfaces", () => {
@@ -742,9 +772,13 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(typeSource, /SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_OPTIONS/);
   assert.match(typeSource, /label: "仅返回结果"/);
   assert.match(typeSource, /label: "写入对象属性"/);
-  assert.match(formSource, /构建行为树/);
-  assert.match(formSource, /行为树构建后续接入/);
+  assert.doesNotMatch(formSource, /构建行为树/);
+  assert.doesNotMatch(formSource, /behavior-form-dialog__tree-panel/);
+  assert.match(formSource, /行为树编排/);
+  assert.match(formSource, /行为树编排后续接入/);
+  assert.match(formSource, /openBehaviorTreeOrchestration/);
   assert.match(formSource, /保存行为/);
+  assert.match(formSource, /kind === ['"]behaviorTree['"][\s\S]*行为树编排|行为树编排[\s\S]*kind === ['"]behaviorTree['"]/);
   assert.match(formSource, /min\(1120px, 94vw\)/);
   assert.doesNotMatch(formSource, /基本信息 \/ 输入参数 \/ 输出参数/);
   assert.doesNotMatch(formSource, /变更信息/);
@@ -1128,9 +1162,9 @@ test("space behavior collects application PROPERTY ontology pickers from INPUT r
     },
   ]);
   assert.deepEqual(pickers, [
-    { pickerKey: "name", paramName: "name", ontologyUniqueIdentifier: "ont-a", label: "飞机名称" },
-    { pickerKey: "range", paramName: "range", ontologyUniqueIdentifier: "ont-a", label: "航程" },
-    { pickerKey: "engineName", paramName: "engineName", ontologyUniqueIdentifier: "ont-b", label: "发动机" },
+    { pickerKey: "input::name", side: "input", paramName: "name", ontologyUniqueIdentifier: "ont-a", label: "飞机名称" },
+    { pickerKey: "input::range", side: "input", paramName: "range", ontologyUniqueIdentifier: "ont-a", label: "航程" },
+    { pickerKey: "input::engineName", side: "input", paramName: "engineName", ontologyUniqueIdentifier: "ont-b", label: "发动机" },
   ]);
   assert.equal(formatApplicationInputSourceTypeLabel("EXTERNAL"), "外部输入");
   assert.equal(formatApplicationInputSourceTypeLabel("FIXED"), "固定值");
@@ -1245,14 +1279,59 @@ test("space behavior merges WRITE_PROPERTY output ontologies into application pi
     ],
   );
   assert.deepEqual(pickers, [
-    { pickerKey: "name", paramName: "name", ontologyUniqueIdentifier: "ont-a", label: "飞机名称" },
-    { pickerKey: "greeting", paramName: "greeting", ontologyUniqueIdentifier: "ont-a", label: "问候语" },
-    { pickerKey: "env_remark", paramName: "env_remark", ontologyUniqueIdentifier: "ont-env", label: "环境备注" },
+    { pickerKey: "input::name", side: "input", paramName: "name", ontologyUniqueIdentifier: "ont-a", label: "飞机名称" },
+    { pickerKey: "output::greeting", side: "output", paramName: "greeting", ontologyUniqueIdentifier: "ont-a", label: "问候语" },
+    { pickerKey: "output::env_remark", side: "output", paramName: "env_remark", ontologyUniqueIdentifier: "ont-env", label: "环境备注" },
   ]);
   assert.equal(formatApplicationOutputModeLabel("WRITE_PROPERTY"), "写入对象属性");
   assert.equal(formatApplicationOutputModeLabel("RESULT_ONLY"), "仅返回结果");
   assert.equal(formatApplicationOutputModeLabel("OTHER"), "OTHER");
   assert.equal(formatApplicationOutputModeLabel("  "), "—");
+});
+
+test("space behavior keeps separate pickers when input and WRITE_PROPERTY share paramName", () => {
+  const pickers = collectApplicationPropertyOntologyPickers(
+    [
+      {
+        rowKey: "in-1",
+        paramName: "longitude",
+        paramPath: "",
+        paramType: "Long",
+        propertyDisplayName: "标识",
+        propertyType: "Long",
+        description: "",
+        sourceType: "PROPERTY",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p-in",
+        ontologyUniqueIdentifier: "ont-input",
+        functionParamExpression: "",
+        outputMode: "",
+        bindSummary: "",
+      },
+    ],
+    [
+      {
+        rowKey: "out-1",
+        paramName: "longitude",
+        paramPath: "",
+        paramType: "Decimal",
+        propertyDisplayName: "经度",
+        propertyType: "Decimal",
+        description: "",
+        sourceType: "—",
+        sourceConfig: "",
+        propertyUniqueIdentifier: "p-out",
+        ontologyUniqueIdentifier: "ont-output",
+        functionParamExpression: "$.data.longitude",
+        outputMode: "WRITE_PROPERTY",
+        bindSummary: "",
+      },
+    ],
+  );
+  assert.deepEqual(pickers, [
+    { pickerKey: "input::longitude", side: "input", paramName: "longitude", ontologyUniqueIdentifier: "ont-input", label: "标识" },
+    { pickerKey: "output::longitude", side: "output", paramName: "longitude", ontologyUniqueIdentifier: "ont-output", label: "经度" },
+  ]);
 });
 
 test("space behavior collects non-main storage group pickers for application PROPERTY bindings", () => {
@@ -1574,11 +1653,22 @@ test("space behavior maps action info detail into view drawer state", () => {
   assert.equal(edgeView.outputRows[1]?.bindSummary, "仅返回结果");
 });
 
-test("space behavior category form validates the required name before submit", () => {
+test("space behavior category form validates parent and name before submit", () => {
   const source = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorCategoryFormDialog.vue");
+  const pageSource = readSource("../src/views/SpaceBehaviorWorkspace/index.vue");
+  const workspaceSource = readSource("../src/views/SpaceBehaviorWorkspace/composables/useSpaceBehaviorWorkspace.ts");
+  const typeSource = readSource("../src/types/apis/updateActionCategoryType.ts");
+  assert.match(source, /el-tree-select/);
   assert.match(source, /:error="nameError"/);
+  assert.match(source, /:error="parentError"/);
   assert.match(source, /nameError\.value = "请输入分类名称"/);
-  assert.match(source, /if \(!trimmed\) \{[\s\S]*return;/);
+  assert.match(source, /parentError\.value = "请选择父分类"/);
+  assert.match(source, /emit\("submit", trimmed, nextParentId\)/);
+  assert.match(pageSource, /buildCategoryParentTree/);
+  assert.match(pageSource, /findSpaceBehaviorCategoryParentId/);
+  assert.match(pageSource, /renameBehaviorCategory\(categoryActionId\.value, name, parentId\)/);
+  assert.match(workspaceSource, /parentId: numericParentId/);
+  assert.match(typeSource, /parentId\?: number/);
 });
 
 test("space behavior status dialog submits change directly without confirm step", () => {
@@ -1613,6 +1703,20 @@ test("space behavior edit and status dialogs stay open despite reactive clone an
   assert.match(deleteSource, /:close-on-click-modal="false"/);
   assert.match(listSource, /nextTick/);
   assert.match(listSource, /void nextTick/);
+});
+
+test("space behavior published status blocks edit and delete actions", () => {
+  const listSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorListPanel.vue");
+  const pageSource = readSource("../src/views/SpaceBehaviorWorkspace/index.vue");
+  const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
+  assert.match(listSource, /function canMutateBehavior/);
+  assert.match(listSource, /item\.status !== ["']published["']/);
+  assert.match(listSource, /:disabled="!canMutateBehavior\(asBehavior\(row\)\)"/);
+  assert.match(listSource, /command="delete" :disabled="!canMutateBehavior\(asBehavior\(row\)\)"/);
+  assert.match(pageSource, /已发布行为不可编辑/);
+  assert.match(pageSource, /已发布行为不可删除/);
+  assert.match(pageSource, /item\.status === ["']published["']/);
+  assert.match(formSource, /status === ["']published["'] \|\| props\.behavior\?\.status === ["']disabled["']/);
 });
 
 test("space behavior operator selection writes operator id and name without structuredClone", () => {

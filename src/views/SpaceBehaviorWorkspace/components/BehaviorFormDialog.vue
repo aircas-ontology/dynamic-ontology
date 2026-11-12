@@ -13,55 +13,44 @@
     <el-alert v-if="detailLoading" title="正在加载行为详情…" type="info" show-icon :closable="false" />
     <el-alert v-else-if="detailError" :title="detailError" type="error" show-icon :closable="false" />
     <el-alert v-else-if="unsupportedEditReason" :title="unsupportedEditReason" type="warning" show-icon :closable="false" />
-    <el-alert v-if="readonly" title="已失效行为为只读" type="warning" show-icon :closable="false" />
+    <el-alert v-if="readonly" title="已发布或已失效行为为只读" type="warning" show-icon :closable="false" />
 
     <el-form class="behavior-form-dialog__form" label-position="top" :disabled="readonly">
       <section class="behavior-form-dialog__section">
         <h3>基本信息</h3>
 
-        <template v-if="kind === 'behaviorTree'">
+        <div class="behavior-form-dialog__grid">
           <el-form-item label="类别" required>
             <el-select v-model="kind" placeholder="选择类别" style="width: 100%" @change="handleKindChange">
               <el-option v-for="item in SPACE_BEHAVIOR_KIND_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
-          <div class="behavior-form-dialog__tree-panel">
-            <el-button :disabled="readonly" @click="openBehaviorTreeBuilder">构建行为树</el-button>
-          </div>
-        </template>
-
-        <template v-else>
-          <div class="behavior-form-dialog__grid">
-            <el-form-item label="类别" required>
-              <el-select v-model="kind" placeholder="选择类别" style="width: 100%" @change="handleKindChange">
-                <el-option v-for="item in SPACE_BEHAVIOR_KIND_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="行为名称" required>
-              <el-input v-model="displayName" maxlength="64" show-word-limit placeholder="输入行为名称" />
-            </el-form-item>
-            <el-form-item label="行为api名称" required>
-              <el-input v-model="behaviorApiName" maxlength="64" show-word-limit placeholder="例如：act.pv.weapon.add" :disabled="mode === 'edit'" />
-            </el-form-item>
-            <el-form-item label="行为分类" required>
-              <el-tree-select
-                v-model="categoryId"
-                :data="categorySelectTree"
-                check-strictly
-                default-expand-all
-                :render-after-expand="false"
-                filterable
-                node-key="id"
-                :props="{ label: 'label', children: 'children' }"
-                placeholder="选择行为分类"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </div>
-          <el-form-item label="行为描述">
-            <el-input v-model="description" type="textarea" :rows="3" maxlength="240" show-word-limit placeholder="说明业务目的、执行场景与预期结果" />
+          <el-form-item label="行为名称" required>
+            <el-input v-model="displayName" maxlength="64" show-word-limit placeholder="输入行为名称" />
           </el-form-item>
+          <el-form-item label="行为api名称" required>
+            <el-input v-model="behaviorApiName" maxlength="64" show-word-limit placeholder="例如：act.pv.weapon.add" :disabled="mode === 'edit'" />
+          </el-form-item>
+          <el-form-item label="行为分类" required>
+            <el-tree-select
+              v-model="categoryId"
+              :data="categorySelectTree"
+              check-strictly
+              default-expand-all
+              :render-after-expand="false"
+              filterable
+              node-key="id"
+              :props="{ label: 'label', children: 'children' }"
+              placeholder="选择行为分类"
+              style="width: 100%"
+            />
+          </el-form-item>
+        </div>
+        <el-form-item label="行为描述">
+          <el-input v-model="description" type="textarea" :rows="3" maxlength="240" show-word-limit placeholder="说明业务目的、执行场景与预期结果" />
+        </el-form-item>
 
+        <template v-if="kind !== 'behaviorTree'">
           <div v-if="kind === 'basic'" class="behavior-form-dialog__grid">
             <el-form-item label="行为类型" required>
               <el-select v-model="valueType" placeholder="选择行为类型" style="width: 100%" @change="handleValueTypeChange">
@@ -94,9 +83,9 @@
               <el-select
                 :model-value="ontologyIdentifier"
                 filterable
-                clearable
+                :clearable="!isOntologySelectorLocked"
                 :loading="objectLoading"
-                :disabled="objectLoading || objectError !== ''"
+                :disabled="isOntologySelectorLocked || objectLoading || objectError !== ''"
                 :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
                 style="width: 100%"
                 @change="handleOntologyChange"
@@ -192,9 +181,9 @@
                 <el-select
                   :model-value="ontologyIdentifier"
                   filterable
-                  clearable
+                  :clearable="!isOntologySelectorLocked"
                   :loading="objectLoading"
-                  :disabled="objectLoading || objectError !== ''"
+                  :disabled="isOntologySelectorLocked || objectLoading || objectError !== ''"
                   :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
                   style="width: 100%"
                   @change="handleOperatorOntologyChange"
@@ -286,7 +275,7 @@
                             :model-value="readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier"
                             filterable
                             :loading="objectLoading"
-                            :disabled="objectLoading || objectError !== ''"
+                            :disabled="isOntologySelectorLocked || objectLoading || objectError !== ''"
                             :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
                             style="width: 100%"
                             @change="(value) => updateApplicationInputOntologyId(row.rowKey, value)"
@@ -394,7 +383,7 @@
                             :model-value="readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier"
                             filterable
                             :loading="objectLoading"
-                            :disabled="objectLoading || objectError !== ''"
+                            :disabled="isOntologySelectorLocked || objectLoading || objectError !== ''"
                             :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
                             style="width: 100%"
                             @change="(value) => updateApplicationOutputOntologyId(row.rowKey, value)"
@@ -478,7 +467,15 @@
     <template #footer>
       <el-button @click="emit('update:modelValue', false)">{{ readonly ? "关闭" : "取消" }}</el-button>
       <el-button
-        v-if="!readonly && kind !== 'behaviorTree'"
+        v-if="!readonly && kind === 'behaviorTree'"
+        :disabled="detailLoading || Boolean(detailError) || Boolean(unsupportedEditReason)"
+        type="primary"
+        @click="openBehaviorTreeOrchestration"
+      >
+        行为树编排
+      </el-button>
+      <el-button
+        v-else-if="!readonly"
         :loading="submitLoading || detailLoading"
         :disabled="detailLoading || Boolean(detailError) || Boolean(unsupportedEditReason)"
         @click="submitBehaviorForm('save')"
@@ -558,6 +555,8 @@ const props = defineProps<{
   modelValue: boolean;
   mode: "create" | "edit";
   spaceId: string;
+  /** 对象详情创建时锁定的对象唯一标识；空串表示不锁定。 */
+  lockedOntologyId?: string;
   categoryTree: SpaceBehaviorCategoryNode[];
   defaultCategoryId: string;
   behavior: SpaceBehaviorItem | null;
@@ -570,6 +569,18 @@ const emit = defineEmits<{
 
 /** 分类选择器仅展示分类节点，不展示行为叶子。 */
 const categorySelectTree = computed(() => omitActionLeavesFromCategoryTree(props.categoryTree));
+
+/**
+ * @description 读取创建态下锁定的对象唯一标识。
+ * @returns 去空白后的锁定 id；非创建或未锁定时为空串。
+ */
+function resolveLockedOntologyId(): string {
+  if (props.mode !== "create") return "";
+  return (props.lockedOntologyId ?? "").trim();
+}
+
+/** 创建态且传入 lockedOntologyId 时锁定对象选择器。 */
+const isOntologySelectorLocked = computed(() => Boolean(resolveLockedOntologyId()));
 
 const operatorCatalog = ref<SpaceBehaviorOperatorOption[]>([]);
 const operatorLoading = ref(false);
@@ -623,9 +634,10 @@ let applicationDetailToken = 0;
  * @returns 默认绑定。
  */
 function createDefaultApplicationInputBinding(): SpaceBehaviorApplicationInputBinding {
+  const lockedOntologyId = resolveLockedOntologyId();
   return {
     sourceType: "PROPERTY",
-    ontologyUniqueIdentifier: "",
+    ontologyUniqueIdentifier: lockedOntologyId,
     propertyUniqueIdentifier: "",
     fixedValue: "",
     enableDefaultValue: false,
@@ -647,10 +659,16 @@ function readApplicationInputBinding(rowKey: string): SpaceBehaviorApplicationIn
  * @param rows 入参扁平行。
  */
 function syncApplicationInputBindings(rows: ApplicationFunctionParamRow[]): void {
+  const lockedOntologyId = resolveLockedOntologyId();
   const next: Record<string, SpaceBehaviorApplicationInputBinding> = {};
   for (const row of rows) {
     if (row.isObject) continue;
-    next[row.rowKey] = applicationInputBindings.value[row.rowKey] ?? createDefaultApplicationInputBinding();
+    const binding = applicationInputBindings.value[row.rowKey] ?? createDefaultApplicationInputBinding();
+    if (lockedOntologyId && binding.sourceType === "PROPERTY" && !binding.ontologyUniqueIdentifier.trim()) {
+      binding.ontologyUniqueIdentifier = lockedOntologyId;
+    }
+    next[row.rowKey] = binding;
+    if (binding.ontologyUniqueIdentifier.trim()) void ensureApplicationPropertyOptions(binding.ontologyUniqueIdentifier);
   }
   applicationInputBindings.value = next;
 }
@@ -678,14 +696,17 @@ function patchApplicationInputBinding(rowKey: string, patch: Partial<SpaceBehavi
 function updateApplicationInputSourceType(rowKey: string, value: string | number | boolean | undefined): void {
   if (value !== "PROPERTY" && value !== "FIXED" && value !== "EXTERNAL") return;
   const sourceType = value as SpaceBehaviorApplicationInputSourceType;
+  const lockedOntologyId = resolveLockedOntologyId();
+  const ontologyUniqueIdentifier = sourceType === "PROPERTY" ? lockedOntologyId : "";
   patchApplicationInputBinding(rowKey, {
     sourceType,
-    ontologyUniqueIdentifier: "",
+    ontologyUniqueIdentifier,
     propertyUniqueIdentifier: "",
     fixedValue: "",
     enableDefaultValue: false,
     defaultValue: "",
   });
+  if (ontologyUniqueIdentifier) void ensureApplicationPropertyOptions(ontologyUniqueIdentifier);
 }
 
 /**
@@ -802,11 +823,14 @@ function patchApplicationOutputBinding(rowKey: string, patch: Partial<SpaceBehav
 function updateApplicationOutputMode(rowKey: string, value: string | number | boolean | undefined): void {
   if (value !== "RESULT_ONLY" && value !== "WRITE_PROPERTY") return;
   const outputMode = value as SpaceBehaviorApplicationOutputMode;
+  const lockedOntologyId = resolveLockedOntologyId();
+  const ontologyUniqueIdentifier = outputMode === "WRITE_PROPERTY" ? lockedOntologyId : "";
   patchApplicationOutputBinding(rowKey, {
     outputMode,
-    ontologyUniqueIdentifier: "",
+    ontologyUniqueIdentifier,
     propertyUniqueIdentifier: "",
   });
+  if (ontologyUniqueIdentifier) void ensureApplicationPropertyOptions(ontologyUniqueIdentifier);
 }
 
 /**
@@ -950,7 +974,7 @@ const detailError = ref("");
 const unsupportedEditReason = ref("");
 let detailLoadToken = 0;
 const dialogTitle = computed(() => (props.mode === "edit" ? "编辑行为" : "创建行为"));
-const readonly = computed(() => props.mode === "edit" && props.behavior?.status === "disabled");
+const readonly = computed(() => props.mode === "edit" && (props.behavior?.status === "published" || props.behavior?.status === "disabled"));
 const showAttributeValueObjectSection = computed(() => kind.value === "basic" && valueType.value === "attributeValue");
 const showRelationInstanceSection = computed(() => kind.value === "basic" && valueType.value === "relationInstance");
 const showBasicFunctionOperatorSection = computed(() => kind.value === "basic" && valueType.value === "basicFunctionOperator");
@@ -978,6 +1002,18 @@ function clearObjectInfoSelection(): void {
   attributeError.value = "";
   attributeLoadToken += 1;
   attributeLoading.value = false;
+}
+
+/**
+ * @description 创建态下将主对象选择锁定为 lockedOntologyId，并预加载属性选项。
+ */
+function applyLockedOntologyIdentifier(): void {
+  const lockedId = resolveLockedOntologyId();
+  if (!lockedId) return;
+  ontologyIdentifier.value = lockedId;
+  void loadAttributeRows(lockedId);
+  void loadOperatorPropertyOptions(lockedId);
+  void ensureApplicationPropertyOptions(lockedId);
 }
 
 /**
@@ -1340,6 +1376,9 @@ function handleValueTypeChange(value: string | number | boolean | undefined): vo
     clearObjectInfoSelection();
     clearSelectedOperator();
   }
+  if (value === "attributeValue" || value === "basicFunctionOperator") {
+    applyLockedOntologyIdentifier();
+  }
 }
 
 /**
@@ -1426,12 +1465,14 @@ function handleBasicFunctionOperatorChange(value: string | number | boolean | un
     clearSelectedOperator();
     ontologyIdentifier.value = "";
     operatorPropertyOptions.value = [];
+    applyLockedOntologyIdentifier();
     return;
   }
   applySelectedOperator(value);
   ontologyIdentifier.value = "";
   operatorPropertyOptions.value = [];
   operatorPropertyError.value = "";
+  applyLockedOntologyIdentifier();
   void loadOperatorDetailBindings(functionOperatorId.value, functionOperatorVersion.value);
 }
 
@@ -1560,10 +1601,15 @@ function handleAttributeSelectionChange(selection: OntologyPropertyInfo[]): void
 }
 
 /**
- * @description 行为树构建入口占位；后续接入真实构建流程。
+ * @description 行为树编排入口占位；校验基础字段后提示后续接入。
  */
-function openBehaviorTreeBuilder(): void {
-  ElMessage.info("行为树构建后续接入");
+function openBehaviorTreeOrchestration(): void {
+  if (readonly.value) return;
+  if (!displayName.value.trim() || !behaviorApiName.value.trim() || !categoryId.value) {
+    ElMessage.warning("请完整填写行为名称、行为api名称和行为分类");
+    return;
+  }
+  ElMessage.info("行为树编排后续接入");
 }
 
 /**
@@ -2058,6 +2104,7 @@ watch(
     status.value = "draft";
     basicAction.value = "create";
     clearSelectedOperator();
+    applyLockedOntologyIdentifier();
     void loadOperatorCatalog();
   },
 );
@@ -2191,15 +2238,6 @@ defineExpose({
 .behavior-form-dialog__visibility-picker {
   flex: 1;
   min-width: 0;
-}
-
-.behavior-form-dialog__tree-panel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 220px;
-  margin-top: 8px;
-  border-top: 1px solid var(--aircas-color-border);
 }
 
 @media (max-width: 900px) {

@@ -1,20 +1,16 @@
 <template>
   <section class="entity-browse-overview" :class="{ 'entity-browse-overview--statistics-only': !showStandardContent }" aria-label="实体浏览概览">
-    <div class="entity-browse-overview__group" aria-label="统计信息">
-      <div class="entity-browse-overview__stats" :aria-busy="loading">
-        <article v-for="stat in statistics" :key="stat.id" class="entity-browse-meter" :class="`entity-browse-meter--${stat.id}`">
-          <h3>{{ stat.label }}</h3>
-          <strong>{{ loading || failed ? "—" : stat.value.toLocaleString("zh-CN") }}</strong>
-        </article>
-      </div>
-    </div>
-    <div v-if="showStandardContent" class="entity-browse-overview__group" aria-label="质量情况">
-      <div class="entity-browse-overview__stats" :aria-busy="loading">
+    <div class="entity-browse-overview__stats" :aria-busy="loading">
+      <article v-for="stat in statistics" :key="stat.id" class="entity-browse-meter" :class="`entity-browse-meter--${stat.id}`">
+        <h3>{{ stat.label }}</h3>
+        <strong>{{ loading || failed ? "—" : stat.value.toLocaleString("zh-CN") }}</strong>
+      </article>
+      <template v-if="showStandardContent">
         <article v-for="item in quality" :key="item.id" class="entity-browse-meter" :class="`entity-browse-meter--${item.id}`">
           <h3>{{ item.label }}</h3>
           <strong>{{ item.displayValue }}</strong>
         </article>
-      </div>
+      </template>
     </div>
   </section>
 </template>
@@ -35,36 +31,18 @@ defineProps<{
 
 <style scoped lang="scss">
 .entity-browse-overview {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: 8px;
   min-width: 0;
-}
-
-.entity-browse-overview--statistics-only {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.entity-browse-overview__group {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  padding: 12px;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
-  box-shadow: inset 0 0 20px var(--aircas-color-effect-page-glow);
-}
-
-:root:not(.dark) .entity-browse-overview__group {
-  background: linear-gradient(135deg, var(--aircas-color-card-background), var(--aircas-color-panel-background-deep));
 }
 
 .entity-browse-overview__stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   min-width: 0;
+}
+
+.entity-browse-overview--statistics-only .entity-browse-overview__stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .entity-browse-meter {
@@ -126,8 +104,9 @@ defineProps<{
 }
 
 @media (max-width: 1100px) {
-  .entity-browse-overview {
-    grid-template-columns: minmax(0, 1fr);
+  .entity-browse-overview__stats,
+  .entity-browse-overview--statistics-only .entity-browse-overview__stats {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 }
 </style>

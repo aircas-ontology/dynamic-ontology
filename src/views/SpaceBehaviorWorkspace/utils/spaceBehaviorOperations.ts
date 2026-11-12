@@ -51,6 +51,26 @@ export function findSpaceBehaviorCategoryNode(nodes: SpaceBehaviorCategoryNode[]
 }
 
 /**
+ * @description 在分类树中查找指定分类的父节点 id。
+ * @param nodes 分类树。
+ * @param categoryId 分类 id。
+ * @param parent 当前层父节点 id；根默认为 behavior-root。
+ * @returns 父分类 id；未找到时为空串。
+ */
+export function findSpaceBehaviorCategoryParentId(
+  nodes: SpaceBehaviorCategoryNode[],
+  categoryId: string,
+  parent: string = ROOT_SPACE_BEHAVIOR_CATEGORY_ID,
+): string {
+  for (const node of nodes) {
+    if (node.id === categoryId) return parent;
+    const found = findSpaceBehaviorCategoryParentId(node.children, categoryId, node.id);
+    if (found) return found;
+  }
+  return "";
+}
+
+/**
  * @description 按分类及其子树筛选行为；根分类或空 id 返回全部。
  * @param behaviors 行为列表。
  * @param categoryTree 分类树。

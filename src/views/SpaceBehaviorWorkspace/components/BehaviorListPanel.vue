@@ -52,7 +52,7 @@
           <template #default="{ row }">
             <div class="behavior-list-panel__row-actions">
               <el-button size="small" @click="emit('view', asBehavior(row))">查看</el-button>
-              <el-button size="small" @click="emit('edit', asBehavior(row))">编辑</el-button>
+              <el-button size="small" :disabled="!canMutateBehavior(asBehavior(row))" @click="emit('edit', asBehavior(row))">编辑</el-button>
               <el-button size="small" @click="emit('test', asBehavior(row))">测试</el-button>
               <el-dropdown trigger="click" @command="handleMoreCommand($event, asBehavior(row))">
                 <el-button size="small"
@@ -61,7 +61,7 @@
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item command="status">状态管理</el-dropdown-item>
-                    <el-dropdown-item command="delete">删除</el-dropdown-item>
+                    <el-dropdown-item command="delete" :disabled="!canMutateBehavior(asBehavior(row))">删除</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -175,6 +175,15 @@ function statusTagType(status: SpaceBehaviorStatus): "success" | "warning" {
 }
 
 /**
+ * @description 已发布行为不允许编辑或删除。
+ * @param item 行为记录。
+ * @returns 是否允许变更。
+ */
+function canMutateBehavior(item: SpaceBehaviorItem): boolean {
+  return item.status !== "published";
+}
+
+/**
  * @description 处理行内更多菜单；等下拉关闭后再打开弹窗，避免点击穿透立刻关掉弹层。
  * @param command 菜单命令。
  * @param item 当前行为。
@@ -182,7 +191,10 @@ function statusTagType(status: SpaceBehaviorStatus): "success" | "warning" {
 function handleMoreCommand(command: string, item: SpaceBehaviorItem): void {
   void nextTick(() => {
     if (command === "status") emit("status", item);
-    if (command === "delete") emit("delete", item);
+    if (command === "delete") {
+      if (!canMutateBehavior(item)) return;
+      emit("delete", item);
+    }
   });
 }
 </script>
