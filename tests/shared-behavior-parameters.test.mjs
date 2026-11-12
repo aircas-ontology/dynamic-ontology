@@ -3,8 +3,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { createRequire, registerHooks } from "node:module";
 import test from "node:test";
 import { effectScope, nextTick, reactive } from "vue";
+import * as Vue from "vue";
 import { compileScript, parse } from "@vue/compiler-sfc";
+import { baseParse, compile } from "@vue/compiler-dom";
+import { renderToString } from "vue/server-renderer";
 import { ModuleKind, transpileModule } from "typescript";
+import { buildBehaviorScheduleCreateParams } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/buildBehaviorScheduleCreateParams.ts";
 import * as scheduleTypes from "../src/types/pages/ontologySpaceBehaviorScheduleType.ts";
 
 registerHooks({
@@ -20,6 +24,7 @@ registerHooks({
 
 const { useBehaviorParameters } = await import("../src/composables/behavior/useBehaviorParameters.ts");
 const { cloneBehaviorParameterSnapshot } = await import("../src/utils/behaviorParameters/cloneBehaviorParameterSnapshot.ts");
+const { restoreScheduleBehaviorParameters } = await import("../src/views/SpaceBehaviorScheduleWorkspace/utils/restoreScheduleBehaviorParameters.ts");
 
 /** @description 创建隔离的参数配置测试上下文。 @param overrides 接口覆盖。 @returns 状态、作用域与调用记录。 */
 function createContext(overrides = {}) {
@@ -178,6 +183,72 @@ test("input records remain multiple, output stays single and external values are
   scope.stop();
 });
 
+test("saved execution request restores property bindings, outputs, external values and link endpoints", async () => {
+  const { state, scope } = createBindingContext(true);
+  await state.loadApplicationTestForm();
+  const request = {
+    ontologySpaceId: 23,
+    actionApi: "app",
+    params: { amount: 0 },
+    inputParams: { ships: [{ entityPrimaryKey: 1 }, { entityPrimaryKey: 9 }] },
+    outputParams: { result: { entityPrimaryKey: 2 } },
+    entityPrimaryKeys: { from: [1, 9], to: [2] },
+  };
+  assert.equal(restoreScheduleBehaviorParameters(state, JSON.stringify(request), "23", "app"), "");
+  assert.equal(state.paramValues.amount, "0");
+  assert.deepEqual(
+    state.listApplicationInputBindingRecords("ships").map((row) => row.entityPrimaryKey),
+    [1, 9],
+  );
+  assert.deepEqual(state.findApplicationOntologyPicker("ships").selectedRowKeys, ["1", "9"]);
+  assert.deepEqual(state.findApplicationOntologyPicker("result").selectedRowKeys, ["2"]);
+  assert.deepEqual(state.selectedFromEntityRowKeys.value, ["1", "9"]);
+  assert.deepEqual(state.selectedToEntityRowKeys.value, ["2"]);
+  const built = state.createParameterSnapshot();
+  assert.equal(built.ok, true);
+  assert.deepEqual(built.snapshot.request.inputParams, request.inputParams);
+  assert.deepEqual(built.snapshot.request.outputParams, request.outputParams);
+  assert.deepEqual(built.snapshot.request.entityPrimaryKeys, request.entityPrimaryKeys);
+  scope.stop();
+});
+
+test("saved request restores non-main rich keys and cross-page output selections without changing types", async () => {
+  const detail = createActionDetail();
+  detail.mappingIns.find((row) => row.parameterName === "ships").storageGroup = "events";
+  const { state, scope } = createContext({ getOntologyActionInfoInterface: async () => ({ code: 200, data: detail }) });
+  await state.loadApplicationTestForm();
+  const input = { entityPrimaryKey: { id: 1 }, dataPrimaryKeys: { events: { row: 2 } } };
+  const output = { entityPrimaryKey: { id: 9 } };
+  const request = { ontologySpaceId: "23", actionApi: "app", params: { amount: 3 }, inputParams: { ships: [input] }, outputParams: { result: output } };
+  assert.equal(restoreScheduleBehaviorParameters(state, JSON.stringify(request), "23", "app"), "");
+  const built = state.createParameterSnapshot();
+  assert.equal(built.ok, true);
+  assert.deepEqual(built.snapshot.request.inputParams.ships, [input]);
+  assert.deepEqual(built.snapshot.request.outputParams.result, output);
+  assert.equal(state.applicationStorageGroupPickers.value[0].entitySlots[0].selectedDataRow.dataPrimaryKey.row, 2);
+  scope.stop();
+});
+
+test("invalid saved requests fail explicitly without changing parameter state", async () => {
+  const { state, scope } = createBindingContext();
+  await state.loadApplicationTestForm();
+  state.updateParamValue("amount", "7");
+  for (const value of [
+    "bad",
+    "null",
+    "[]",
+    '{"actionApi":"other"}',
+    '{"ontologySpaceId":"other","actionApi":"app"}',
+    '{"actionApi":"app","inputParams":{"ships":[{}]}}',
+    '{"actionApi":"app","outputParams":{"result":[]}}',
+    '{"actionApi":"app","entityPrimaryKeys":{"from":[],"to":[null]}}',
+  ]) {
+    assert.notEqual(restoreScheduleBehaviorParameters(state, value, "23", "app"), "");
+    assert.equal(state.paramValues.amount, "7");
+  }
+  scope.stop();
+});
+
 test("relation endpoints preserve multiple selections and restore across configuration sessions", async () => {
   const { state, scope } = createBindingContext(true);
   await state.loadApplicationTestForm();
@@ -307,6 +378,8 @@ function createScheduleFormHarness(
     if (id === "@/types") return scheduleTypes;
     if (id.includes("useBehaviorParameters")) return { useBehaviorParameters };
     if (id.includes("cloneBehaviorParameterSnapshot")) return { cloneBehaviorParameterSnapshot };
+    if (id.includes("restoreScheduleBehaviorParameters")) return { restoreScheduleBehaviorParameters };
+    if (id.includes("buildBehaviorScheduleCreateParams")) return { buildBehaviorScheduleCreateParams };
     if (id.includes("scheduleRuleFlowFactory")) return { cloneScheduleRuleFlow: structuredClone };
     if (id === "@element-plus/icons-vue") return { Close: {}, Plus: {} };
     return modules(id);
@@ -392,7 +465,14 @@ test("schedule edit and view restore snapshots and never mutate the saved record
       context.form.submitCreateScheduleForm();
       assert.equal(context.form.draft.behaviorId, "1");
       assert.equal(context.events.length, 0);
-    } else context.form.parameterConfig.updateParamValue("amount", "9");
+    } else {
+      context.form.parameterConfig.updateParamValue("amount", "9");
+      context.form.draft.periodKind = "Cron";
+      context.form.draft.cronExpression = "0 0 9 * * ? *";
+      context.form.submitCreateScheduleForm();
+      assert.equal(context.events[0][2].task.taskCronExpression, "0 0 9 * * ? *");
+      assert.equal(JSON.parse(context.events[0][2].task.entityJson).params.amount, 9);
+    }
     assert.equal(saved.behaviorParameters.values.amount, "8");
     context.scope.stop();
   }
@@ -419,7 +499,9 @@ test("new schedule rejects empty and whitespace external text before logging or 
   form.submitCreateScheduleForm();
   assert.equal(events.length, 1);
   assert.equal(logs.length, 1);
-  assert.deepEqual(logs[0], ["行为调度参数", { ontologySpaceId: "23", actionApi: "app", params: { message: "hello" } }]);
+  assert.equal(logs[0][0], "行为调度创建参数");
+  assert.deepEqual(JSON.parse(logs[0][1].task.entityJson), { ontologySpaceId: "23", actionApi: "app", params: { message: "hello" } });
+  assert.deepEqual(events[0][2], logs[0][1]);
   scope.stop();
 });
 
@@ -449,10 +531,10 @@ test("new schedule logs valid zero and false, blocks invalid values and respects
   assert.equal(logs.length, 0);
   props.mode = "create";
   form.submitCreateScheduleForm();
-  assert.deepEqual(logs[0][1].params, { amount: 0, enabled: false });
+  assert.deepEqual(JSON.parse(logs[0][1].task.entityJson).params, { amount: 0, enabled: false });
   assert.equal(events.length, 1);
   form.parameterConfig.updateParamValue("amount", "9");
-  assert.equal(logs[0][1].params.amount, 0);
+  assert.equal(JSON.parse(logs[0][1].task.entityJson).params.amount, 0);
   scope.stop();
 });
 
@@ -466,6 +548,127 @@ test("new schedule with no external parameters logs its valid request", async ()
   await settleForm();
   form.submitCreateScheduleForm();
   assert.equal(events.length, 1);
-  assert.deepEqual(logs[0], ["行为调度参数", { ontologySpaceId: "23", actionApi: "app" }]);
+  assert.deepEqual(JSON.parse(logs[0][1].task.entityJson), { ontologySpaceId: "23", actionApi: "app" });
   scope.stop();
+});
+
+test("new schedule blocks malformed cron but allows an omitted ontology identifier", async () => {
+  const { form, props, events, logs, scope } = createScheduleFormHarness(null, "create", []);
+  props.modelValue = true;
+  await settleForm();
+  form.draft.name = "invalid schedule";
+  form.draft.strategy = "周期调度";
+  form.selectScheduleBehavior("1");
+  await settleForm();
+  form.draft.periodKind = "Cron";
+  form.draft.cronExpression = "bad";
+  form.submitCreateScheduleForm();
+  assert.match(form.validationError.value, /Cron/);
+  form.draft.periodKind = "每天";
+  props.behaviorOptions[0].ontologyUniqIdentifier = "";
+  form.submitCreateScheduleForm();
+  assert.equal(form.validationError.value, "");
+  assert.equal(events.length, 1);
+  assert.equal(logs.length, 1);
+  assert.equal(Object.hasOwn(events[0][2], "ontologyIdentifier"), false);
+  scope.stop();
+});
+
+test("schedule parameter panel stays visible while its content follows the selected behavior", async () => {
+  const source = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue", import.meta.url), "utf8");
+  const { descriptor } = parse(source);
+  const template = baseParse(descriptor.template.content);
+  /** @description 定位参数模块的模板节点。 @param {object} node 模板节点。 @returns {object|undefined} 参数模块节点。 */
+  function findParameterPanel(node) {
+    if (node.props?.some((prop) => ["label", "aria-label"].includes(prop.name) && prop.value?.content === "行为参数")) return node;
+    for (const child of node.children ?? []) {
+      const found = findParameterPanel(child);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  const panel = findParameterPanel(template);
+  assert.ok(panel);
+  const { code } = compile(panel.loc.source);
+  const renderPanel = new Function("Vue", code)(Vue);
+  const draft = reactive({ behaviorActionApi: "" });
+  /** @description 渲染真实参数模块，替换内部业务组件为可观察的占位节点。 @returns {Promise<string>} 模块 HTML。 */
+  async function renderParameterPanel() {
+    const app = Vue.createSSRApp({ render: () => renderPanel({ draft, parameterConfig: {}, formDisabled: false }, []) });
+    app.component("el-form-item", {
+      setup:
+        (props, { slots }) =>
+        () =>
+          Vue.h("div", slots.default?.()),
+    });
+    app.component("BehaviorParameterConfig", { render: () => Vue.h("div", { "data-parameter-content": "true" }) });
+    return renderToString(app);
+  }
+  const emptyPanel = await renderParameterPanel();
+  assert.match(emptyPanel, /behavior-schedule-form-dialog__parameters/);
+  assert.match(emptyPanel, /行为参数/);
+  assert.doesNotMatch(emptyPanel, /data-parameter-content/);
+  draft.behaviorActionApi = "app";
+  assert.match(await renderParameterPanel(), /data-parameter-content/);
+  draft.behaviorActionApi = "";
+  const clearedPanel = await renderParameterPanel();
+  assert.match(clearedPanel, /behavior-schedule-form-dialog__parameters/);
+  assert.doesNotMatch(clearedPanel, /data-parameter-content/);
+});
+
+test("schedule remote detail hydrates API selection and zero parameter after options retry", async () => {
+  const seed = createScheduleFormHarness();
+  const saved = {
+    ...seed.form.createEmptyScheduleDraft(),
+    name: "saved",
+    strategy: "周期调度",
+    behavior: "已保存行为",
+    behaviorActionApi: "app",
+    savedEntityJson: JSON.stringify({ ontologySpaceId: "23", actionApi: "app", params: { amount: 0 } }),
+  };
+  seed.scope.stop();
+  for (const mode of ["view", "edit"]) {
+    const context = createScheduleFormHarness(saved, mode);
+    context.props.behaviorOptions = [];
+    context.props.modelValue = true;
+    await settleForm();
+    assert.equal(context.form.parameterConfig.paramValues.amount, "0");
+    assert.equal(context.form.selectedBehaviorValue.value, "saved:app");
+    context.form.parameterConfig.updateParamValue("amount", "7");
+    context.props.behaviorOptions = [{ id: "1", actionApi: "app", displayName: "行为", ontologyUniqIdentifier: "ship" }];
+    await settleForm();
+    assert.equal(context.form.selectedBehaviorValue.value, "1");
+    assert.equal(context.form.parameterConfig.paramValues.amount, "7");
+    context.props.modelValue = false;
+    await settleForm();
+    context.props.mode = "create";
+    context.props.modelValue = true;
+    await settleForm();
+    assert.equal(context.form.draft.savedEntityJson, "");
+    context.scope.stop();
+  }
+});
+
+test("schedule malformed saved parameters block confirmation and recover on retry", async () => {
+  const context = createScheduleFormHarness(null, "edit");
+  context.props.initialDraft = {
+    ...context.form.createEmptyScheduleDraft(),
+    name: "saved",
+    strategy: "周期调度",
+    behavior: "行为",
+    behaviorActionApi: "app",
+    savedEntityJson: "{",
+  };
+  context.props.modelValue = true;
+  await settleForm();
+  assert.match(context.form.validationError.value, /JSON/);
+  context.form.submitCreateScheduleForm();
+  assert.equal(context.events.length, 0);
+  context.form.draft.savedEntityJson = JSON.stringify({ actionApi: "app", params: { amount: 4 } });
+  await context.form.initializeScheduleParameters();
+  assert.equal(context.form.validationError.value, "");
+  assert.equal(context.form.parameterConfig.paramValues.amount, "4");
+  context.form.submitCreateScheduleForm();
+  assert.equal(context.events[0][1].behaviorParameters.request.params.amount, 4);
+  context.scope.stop();
 });

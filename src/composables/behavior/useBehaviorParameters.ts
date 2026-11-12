@@ -155,7 +155,7 @@ export function useBehaviorParameters(
   const selectedFromEntityRows = computed(() => {
     const byKey = new Map(selectedFromEntities.value.map((item) => [item.rowKey, item]));
     for (const row of fromEntityRows.value) {
-      if (selectedFromEntityRowKeys.value.includes(row.rowKey)) byKey.set(row.rowKey, row);
+      if (selectedFromEntityRowKeys.value.includes(row.rowKey)) byKey.set(row.rowKey, { ...row, savedPrimaryKey: byKey.get(row.rowKey)?.savedPrimaryKey });
     }
     return selectedFromEntityRowKeys.value.map((key) => byKey.get(key)).filter((item): item is BehaviorTestEntityRow => Boolean(item));
   });
@@ -163,7 +163,7 @@ export function useBehaviorParameters(
   const selectedToEntityRows = computed(() => {
     const byKey = new Map(selectedToEntities.value.map((item) => [item.rowKey, item]));
     for (const row of toEntityRows.value) {
-      if (selectedToEntityRowKeys.value.includes(row.rowKey)) byKey.set(row.rowKey, row);
+      if (selectedToEntityRowKeys.value.includes(row.rowKey)) byKey.set(row.rowKey, { ...row, savedPrimaryKey: byKey.get(row.rowKey)?.savedPrimaryKey });
     }
     return selectedToEntityRowKeys.value.map((key) => byKey.get(key)).filter((item): item is BehaviorTestEntityRow => Boolean(item));
   });
@@ -594,14 +594,14 @@ export function useBehaviorParameters(
         dataPrimaryKey = slot.selectedDataRow.dataPrimaryKey;
         dataPrimaryKeyLabel = slot.selectedDataRow.dataPrimaryKeyLabel.trim();
       }
-      const recordKey = buildApplicationInputBindingRecordKey(entity.primaryKey, dataPrimaryKey);
+      const recordKey = buildApplicationInputBindingRecordKey(entity.savedPrimaryKey ?? entity.primaryKey, dataPrimaryKey);
       if (existingKeys.has(recordKey) || pending.some((item) => item.recordKey === recordKey)) {
         skippedDuplicate += 1;
         continue;
       }
       pending.push({
         recordKey,
-        entityPrimaryKey: entity.primaryKey,
+        entityPrimaryKey: entity.savedPrimaryKey ?? entity.primaryKey,
         entityDisplayName: entity.displayName.trim() || "未命名实体",
         dataPrimaryKey,
         dataPrimaryKeyLabel,
@@ -653,13 +653,13 @@ export function useBehaviorParameters(
         if (existing) {
           return {
             ...existing,
-            entityPrimaryKey: entity.primaryKey,
+            entityPrimaryKey: entity.savedPrimaryKey ?? entity.primaryKey,
             entityDisplayName: entity.displayName.trim() || "未命名实体",
           };
         }
         return {
           entityRowKey: entity.rowKey,
-          entityPrimaryKey: entity.primaryKey,
+          entityPrimaryKey: entity.savedPrimaryKey ?? entity.primaryKey,
           entityDisplayName: entity.displayName.trim() || "未命名实体",
           loading: false,
           error: "",
@@ -862,7 +862,7 @@ export function useBehaviorParameters(
         selections.push({
           paramName,
           ontologyUniqueIdentifier: ontologyId,
-          entityPrimaryKey: selectedEntity.primaryKey,
+          entityPrimaryKey: selectedEntity.savedPrimaryKey ?? selectedEntity.primaryKey,
           storageGroup,
           dataPrimaryKey,
         });
@@ -1452,8 +1452,8 @@ export function useBehaviorParameters(
         ? {
             ontologyUniqueIdentifierFrom: ontologyUniqueIdentifierFrom.value,
             ontologyUniqueIdentifierTo: ontologyUniqueIdentifierTo.value,
-            primaryKeysFrom: selectedFromEntityRows.value.map((item) => item.primaryKey),
-            primaryKeysTo: selectedToEntityRows.value.map((item) => item.primaryKey),
+            primaryKeysFrom: selectedFromEntityRows.value.map((item) => item.savedPrimaryKey ?? item.primaryKey),
+            primaryKeysTo: selectedToEntityRows.value.map((item) => item.savedPrimaryKey ?? item.primaryKey),
             mountSide: relationMountSide.value,
           }
         : null,

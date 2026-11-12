@@ -23,7 +23,17 @@
     </div>
 
     <div class="behavior-schedule-workspace__table-wrap">
-      <el-table :data="filteredSchedules" class="aircas-table aircas-table--flat behavior-schedule-workspace__table" height="100%" stripe>
+      <p v-if="scheduleListLoading" role="status">正在加载调度列表…</p>
+      <div v-if="scheduleListError" role="alert">
+        {{ scheduleListError }} <el-button :disabled="scheduleListLoading" @click="fetchScheduleList()">重试</el-button>
+      </div>
+      <el-table
+        v-else-if="!scheduleListLoading"
+        :data="filteredSchedules"
+        class="aircas-table aircas-table--flat behavior-schedule-workspace__table"
+        height="100%"
+        stripe
+      >
         <el-table-column label="调度名称" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="behavior-schedule-workspace__name">{{ row.name }}</span>
@@ -37,12 +47,42 @@
         <el-table-column prop="target" label="关联对象" min-width="140" show-overflow-tooltip />
         <el-table-column prop="behavior" label="行为" min-width="140" show-overflow-tooltip />
         <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+        <el-table-column label="状态" width="130">
+          <template #default="{ row }">
+            <el-switch
+              style="--el-switch-off-color: var(--aircas-color-danger)"
+              :model-value="row.status"
+              active-value="START"
+              inactive-value="STOP"
+              active-text="启用"
+              inactive-text="停止"
+              inline-prompt
+              :width="60"
+              ariaLabel="调度启停状态"
+              :loading="pendingScheduleStatusIds.includes(row.id)"
+              :disabled="(row.status !== 'START' && row.status !== 'STOP') || pendingScheduleStatusIds.includes(row.id)"
+              @change="toggleScheduleStatus(row)"
+            />
+          </template>
+        </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="160" />
         <el-table-column label="操作" width="300">
           <template #default="{ row }">
             <div class="behavior-schedule-workspace__row-actions">
-              <el-button class="aircas-button aircas-button--tone-ghost" size="small" @click="openViewScheduleDialog(row)">查看</el-button>
-              <el-button class="aircas-button aircas-button--tone-secondary" size="small" @click="openEditScheduleDialog(row)">编辑</el-button>
+              <el-button
+                class="aircas-button aircas-button--tone-ghost"
+                size="small"
+                :disabled="createStatus === 'submitting'"
+                @click="openViewScheduleDialog(row)"
+                >查看</el-button
+              >
+              <el-button
+                class="aircas-button aircas-button--tone-secondary"
+                size="small"
+                :disabled="createStatus === 'submitting'"
+                @click="openEditScheduleDialog(row)"
+                >编辑</el-button
+              >
               <el-button class="aircas-button aircas-button--tone-ghost" size="small" @click="openInvocationLogDialog(row)">调用日志</el-button>
               <el-button class="aircas-button aircas-button--tone-danger" type="danger" size="small" @click="openDeleteScheduleDialog(row)">删除</el-button>
             </div>
@@ -51,6 +91,18 @@
         <template #empty><el-empty description="暂无调度" :image-size="72" /></template>
       </el-table>
     </div>
+
+    <el-pagination
+      class="behavior-schedule-workspace__pagination"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :current-page="schedulePage"
+      :page-size="schedulePageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      :total="scheduleTotal"
+      @update:current-page="changeSchedulePage"
+      @update:page-size="changeSchedulePageSize"
+    />
 
     <BehaviorScheduleFormDialog
       v-model="formVisible"
@@ -64,7 +116,19 @@
       :submitting="createStatus === 'submitting'"
       @confirm="submitScheduleForm"
     />
-    <BehaviorScheduleInvocationLogDialog v-model="logVisible" :schedule-name="logScheduleName" :logs="invocationLogs" />
+    <BehaviorScheduleInvocationLogDialog
+      v-model="logVisible"
+      :schedule-name="logScheduleName"
+      :logs="invocationLogs"
+      :loading="logLoading"
+      :error="logError"
+      :page="logPage"
+      :page-size="logPageSize"
+      :total="logTotal"
+      @retry="fetchInvocationLogs()"
+      @change-page="changeInvocationLogPage"
+      @change-page-size="changeInvocationLogPageSize"
+    />
     <BehaviorScheduleDeleteDialog
       v-model="deleteVisible"
       :schedule-name="deletingScheduleName"
@@ -75,22 +139,32 @@
 </template>
 
 <script setup lang="ts">
-import type { ScheduleBehaviorOption } from "@/types";
+import type { CreateBehaviorScheduleParams, ListBehaviorSchedulingParams, ScheduleBehaviorOption } from "@/types";
 import { cloneBehaviorParameterSnapshot } from "@/utils/behaviorParameters/cloneBehaviorParameterSnapshot";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { getListOntologyActionInterface } from "@/apis";
+import {
+  deleteBehaviorSchedulingInterface,
+  getBehaviorSchedulingDetailInterface,
+  getBehaviorSchedulingResultInterface,
+  getListBehaviorSchedulingInterface,
+  getListOntologyActionInterface,
+  putUpdateBehaviorSchedulingInterface,
+  postStartBehaviorSchedulingInterface,
+  postStopBehaviorSchedulingInterface,
+  postCreateBehaviorScheduleInterface,
+} from "@/apis";
+import { restoreSchedulePeriod } from "./utils/restoreSchedulePeriod";
+import { fetchBehaviorSchedules } from "./utils/fetchBehaviorSchedules";
 import { fetchScheduleBehaviorOptions } from "@/views/SpaceBehaviorScheduleWorkspace/utils/fetchScheduleBehaviorOptions";
 import { Plus, Search } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
 import {
-  BEHAVIOR_SCHEDULE_INVOCATION_STATUSES,
-  DEFAULT_BEHAVIOR_SCHEDULE_EXECUTE_TIME,
   type BehaviorScheduleCommandStatus,
   type BehaviorScheduleDraft,
   type BehaviorScheduleFormMode,
-  type BehaviorScheduleInvocationLog,
+  type BehaviorSchedulingResultRecord,
   type BehaviorScheduleRecord,
   type BehaviorScheduleStrategy,
 } from "@/types";
@@ -100,79 +174,7 @@ import BehaviorScheduleDeleteDialog from "./BehaviorScheduleDeleteDialog.vue";
 import BehaviorScheduleFormDialog from "./BehaviorScheduleFormDialog.vue";
 import BehaviorScheduleInvocationLogDialog from "./BehaviorScheduleInvocationLogDialog.vue";
 
-const initialSchedules: BehaviorScheduleRecord[] = [
-  createMockScheduleRecord({
-    id: "schedule-1",
-    name: "舰艇威胁响应调度",
-    strategy: "规则调度",
-    target: "驱逐舰 DDG-105",
-    behavior: "威胁响应行为树",
-    description: "检测到高威胁目标时触发响应策略",
-    createdAt: "2026-08-12 09:30",
-  }),
-  createMockScheduleRecord({
-    id: "schedule-2",
-    name: "巡逻航线周期刷新",
-    strategy: "周期调度",
-    target: "驱逐舰 DDG-105",
-    instance: "驱逐舰 DDG-105 实例-1",
-    behavior: "巡逻航线规划",
-    description: "按日周期刷新巡逻航线方案",
-    createdAt: "2026-08-15 14:20",
-  }),
-  createMockScheduleRecord({
-    id: "schedule-3",
-    name: "高轨监视任务调度",
-    strategy: "规则调度",
-    target: "GSSAP-6 卫星",
-    behavior: "高轨监视计划",
-    description: "接近事件触发后启动监视任务",
-    createdAt: "2026-08-18 11:05",
-  }),
-  createMockScheduleRecord({
-    id: "schedule-4",
-    name: "通信能力评估周期任务",
-    strategy: "周期调度",
-    periodKind: "每周",
-    weekdays: ["周一"],
-    target: "驱逐舰 DDG-105",
-    instance: "驱逐舰 DDG-105 实例-1",
-    behavior: "通信能力评估",
-    description: "每周执行通信链路评估",
-    createdAt: "2026-08-22 16:40",
-  }),
-  createMockScheduleRecord({
-    id: "schedule-5",
-    name: "轨迹关联规则调度",
-    strategy: "规则调度",
-    target: "驱逐舰 DDG-105",
-    behavior: "轨迹关联",
-    description: "多源航迹中实时触发关联算子",
-    createdAt: "2026-08-26 10:15",
-  }),
-  createMockScheduleRecord({
-    id: "schedule-6",
-    name: "环境场周期采集",
-    strategy: "周期调度",
-    periodKind: "Cron",
-    cronExpression: "0 * * * *",
-    target: "海洋环境场",
-    instance: "海洋环境场 实例-1",
-    behavior: "海表风场采集",
-    description: "按小时周期采集海表风场数据",
-    createdAt: "2026-08-28 08:00",
-  }),
-  createMockScheduleRecord({
-    id: "schedule-7",
-    name: "机动事件响应调度",
-    strategy: "规则调度",
-    target: "USA-325 卫星",
-    behavior: "机动事件分析",
-    description: "检测到轨道机动后启动分析流程",
-    createdAt: "2026-09-01 13:25",
-  }),
-];
-const schedules = ref(initialSchedules);
+const schedules = ref<BehaviorScheduleRecord[]>([]);
 
 const keyword = ref("");
 const strategy = ref("");
@@ -185,11 +187,20 @@ const editingScheduleId = ref("");
 const createStatus = ref<BehaviorScheduleCommandStatus>("idle");
 const logVisible = ref(false);
 const logScheduleName = ref("");
-const emptyInvocationLogs: BehaviorScheduleInvocationLog[] = [];
-const invocationLogs = ref(emptyInvocationLogs);
+const invocationLogs = ref<BehaviorSchedulingResultRecord[]>([]);
+const logLoading = ref(false);
+const logError = ref("");
+const logPage = ref(1);
+const logPageSize = ref(10);
+const logTotal = ref(0);
+const logScheduleId = ref("");
+const logScheduleType = ref<"TASK" | "RULE">("TASK");
+let logRequest = 0;
 const deleteVisible = ref(false);
 const deletingScheduleId = ref("");
 const deletingScheduleName = ref("");
+const deletingScheduleType = ref<"TASK" | "RULE">("TASK");
+let scheduleDeleteRequest = 0;
 const deleteStatus = ref<BehaviorScheduleCommandStatus>("idle");
 const strategies: BehaviorScheduleStrategy[] = ["规则调度", "周期调度"];
 const route = useRoute();
@@ -198,6 +209,81 @@ const behaviorOptions = ref<ScheduleBehaviorOption[]>([]);
 const behaviorLoading = ref(false);
 const behaviorError = ref("");
 let behaviorRequest = 0;
+let scheduleSaveRequest = 0;
+let scheduleListRequest = 0;
+let scheduleDetailRequest = 0;
+const schedulePage = ref(1);
+const schedulePageSize = ref(10);
+const scheduleTotal = ref(0);
+const pendingScheduleStatusIds = ref<string[]>([]);
+const pendingScheduleStatuses = new Map<string, { record: BehaviorScheduleRecord; originalStatus: "START" | "STOP" }>();
+let scheduleStatusSession = 0;
+const scheduleListLoading = ref(false);
+const scheduleListError = ref("");
+
+/** @description 获取真实调度列表，支持失败重试，阻止重复请求及过期响应覆盖。 @param force 是否替换正在进行的旧查询。 @returns 查询完成。 */
+async function fetchScheduleList(force = false): Promise<void> {
+  if (scheduleListLoading.value && !force) return;
+  cancelScheduleStatusUpdates();
+  const requestId = ++scheduleListRequest;
+  scheduleListLoading.value = true;
+  scheduleListError.value = "";
+  try {
+    const params: ListBehaviorSchedulingParams = { pageNum: schedulePage.value, pageSize: schedulePageSize.value };
+    if (appliedKeyword.value) params.name = appliedKeyword.value;
+    if (appliedStrategy.value) params.type = appliedStrategy.value === "周期调度" ? "TASK" : "RULE";
+    const result = await fetchBehaviorSchedules(getListBehaviorSchedulingInterface, () => requestId === scheduleListRequest, params);
+    if (requestId === scheduleListRequest && result) {
+      schedules.value = result.records;
+      scheduleTotal.value = result.total;
+    }
+  } catch (cause) {
+    if (requestId === scheduleListRequest) scheduleListError.value = cause instanceof Error ? cause.message : "调度列表加载失败";
+  } finally {
+    if (requestId === scheduleListRequest) scheduleListLoading.value = false;
+  }
+}
+
+/** @description 刷新列表或卸载前恢复未确认状态，使旧响应失效。 */
+function cancelScheduleStatusUpdates(): void {
+  scheduleStatusSession += 1;
+  for (const { record, originalStatus } of pendingScheduleStatuses.values()) record.status = originalStatus;
+  pendingScheduleStatuses.clear();
+  pendingScheduleStatusIds.value = [];
+}
+
+/** @description 乐观切换当前行启停状态，失败恢复原值；同一行防重复并忽略过期响应。 @param row 当前表格行。 @returns 状态操作完成。 */
+async function toggleScheduleStatus(row: unknown): Promise<void> {
+  const record = readScheduleTableRow(row);
+  if (scheduleListLoading.value || pendingScheduleStatuses.has(record.id) || (record.status !== "START" && record.status !== "STOP")) return;
+  const id = Number(record.id);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    ElMessage.error("调度标识无效，无法切换状态");
+    return;
+  }
+  const session = scheduleStatusSession;
+  const originalStatus = record.status;
+  const nextStatus = originalStatus === "START" ? "STOP" : "START";
+  pendingScheduleStatuses.set(record.id, { record, originalStatus });
+  pendingScheduleStatusIds.value = [...pendingScheduleStatusIds.value, record.id];
+  record.status = nextStatus;
+  const params = { type: record.strategy === "周期调度" ? ("TASK" as const) : ("RULE" as const), id };
+  try {
+    const response = await (nextStatus === "START" ? postStartBehaviorSchedulingInterface(params) : postStopBehaviorSchedulingInterface(params));
+    if (session !== scheduleStatusSession) return;
+    if ((response.code !== 200 && response.code !== 0) || response.success === false) throw new Error(response.message?.trim() || "调度状态切换失败");
+    ElMessage.success(response.message?.trim() || (nextStatus === "START" ? "启用调度成功" : "停用调度成功"));
+  } catch (cause) {
+    if (session !== scheduleStatusSession) return;
+    record.status = originalStatus;
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "调度状态切换失败，请重试");
+  } finally {
+    if (session === scheduleStatusSession) {
+      pendingScheduleStatuses.delete(record.id);
+      pendingScheduleStatusIds.value = pendingScheduleStatusIds.value.filter((item) => item !== record.id);
+    }
+  }
+}
 
 /** @description 获取当前空间全部非基础行为，阻止重复请求及过期响应覆盖。 */
 async function fetchBehaviorOptions() {
@@ -224,25 +310,44 @@ async function fetchBehaviorOptions() {
 watch(
   () => route.params.spaceId,
   () => {
+    logRequest += 1;
+    logVisible.value = false;
+    invocationLogs.value = [];
+    logLoading.value = false;
+    scheduleDeleteRequest += 1;
+    deleteStatus.value = "idle";
+    deleteVisible.value = false;
+    deletingScheduleId.value = "";
+    scheduleSaveRequest += 1;
+    scheduleDetailRequest += 1;
+    createStatus.value = "idle";
     behaviorRequest += 1;
     behaviorLoading.value = false;
     void fetchBehaviorOptions();
+    schedules.value = [];
+    schedulePage.value = 1;
+    scheduleTotal.value = 0;
+    void fetchScheduleList(true);
   },
   { immediate: true },
 );
 onBeforeUnmount(() => {
+  logRequest += 1;
+  cancelScheduleStatusUpdates();
+  scheduleDeleteRequest += 1;
+  scheduleSaveRequest += 1;
+  scheduleDetailRequest += 1;
   behaviorRequest += 1;
+  scheduleListRequest += 1;
 });
-const filteredSchedules = computed(() =>
-  schedules.value.filter(
-    (item) => (!appliedKeyword.value || item.name.includes(appliedKeyword.value)) && (!appliedStrategy.value || item.strategy === appliedStrategy.value),
-  ),
-);
+const filteredSchedules = computed(() => schedules.value);
 
 /** @description 应用调度名称和策略筛选条件。 */
 function applyFilters() {
   appliedKeyword.value = keyword.value.trim();
   appliedStrategy.value = strategy.value;
+  schedulePage.value = 1;
+  void fetchScheduleList(true);
 }
 /** @description 清空调度列表筛选条件。 */
 function resetFilters() {
@@ -250,31 +355,24 @@ function resetFilters() {
   strategy.value = "";
   applyFilters();
 }
-/**
- * @description 补齐样例调度记录中查看弹窗所需的表单字段。
- * @param record 列表展示字段及可选周期配置。
- * @returns 完整调度记录。
- */
-function createMockScheduleRecord(
-  record: Omit<BehaviorScheduleRecord, "periodKind" | "weekdays" | "monthDay" | "executeTime" | "cronExpression" | "instance" | "ruleFlow"> &
-    Partial<Pick<BehaviorScheduleRecord, "periodKind" | "weekdays" | "monthDay" | "executeTime" | "cronExpression" | "instance" | "ruleFlow">>,
-): BehaviorScheduleRecord {
-  return {
-    periodKind: "每天",
-    weekdays: [],
-    monthDay: null,
-    executeTime: DEFAULT_BEHAVIOR_SCHEDULE_EXECUTE_TIME,
-    cronExpression: "",
-    instance: "",
-    ruleFlow: null,
-    ...record,
-  };
+/** @description 翻页时保留已应用的筛选条件并替换旧查询。 @param page 目标页码。 */
+function changeSchedulePage(page: number): void {
+  if (!Number.isSafeInteger(page) || page < 1 || page === schedulePage.value) return;
+  schedulePage.value = page;
+  void fetchScheduleList(true);
 }
-
+/** @description 修改每页条数并回到第一页。 @param size 每页条数。 */
+function changeSchedulePageSize(size: number): void {
+  if (![10, 20, 50, 100].includes(size) || size === schedulePageSize.value) return;
+  schedulePageSize.value = size;
+  schedulePage.value = 1;
+  void fetchScheduleList(true);
+}
 /**
  * @description 打开新建调度弹窗。
  */
 function openCreateScheduleDialog() {
+  if (createStatus.value === "submitting") return;
   createStatus.value = "idle";
   formMode.value = "create";
   formDraft.value = null;
@@ -298,36 +396,148 @@ function readScheduleTableRow(row: unknown): BehaviorScheduleRecord {
 /**
  * @description 打开只读查看调度弹窗，回填当前行数据。
  * @param row 列表当前行。
+ * @returns 详情加载完成。
  */
-function openViewScheduleDialog(row: unknown) {
-  formMode.value = "view";
-  formDraft.value = mapScheduleRecordToDraft(readScheduleTableRow(row));
-  editingScheduleId.value = "";
-  formVisible.value = true;
+async function openViewScheduleDialog(row: unknown): Promise<void> {
+  if (createStatus.value === "submitting") return;
+  await loadScheduleDetail(readScheduleTableRow(row), "view");
 }
 
 /**
  * @description 打开编辑调度弹窗，回填当前行数据。
  * @param row 列表当前行。
+ * @returns 详情加载完成。
  */
-function openEditScheduleDialog(row: unknown) {
-  createStatus.value = "idle";
-  const record = readScheduleTableRow(row);
-  formMode.value = "edit";
-  formDraft.value = mapScheduleRecordToDraft(record);
-  editingScheduleId.value = record.id;
-  formVisible.value = true;
+async function openEditScheduleDialog(row: unknown): Promise<void> {
+  if (createStatus.value === "submitting") return;
+  await loadScheduleDetail(readScheduleTableRow(row), "edit");
 }
 
-/**
- * @description 打开当前调度的调用日志弹窗。
- * @param row 列表当前行。
- */
-function openInvocationLogDialog(row: unknown) {
+/** @description 查询详情后打开查看或编辑弹窗，忽略过期响应。 @param record 列表记录。 @param mode 弹窗模式。 @returns 查询完成。 */
+async function loadScheduleDetail(record: BehaviorScheduleRecord, mode: "view" | "edit"): Promise<void> {
+  if (record.detailsAvailable !== false) {
+    formMode.value = mode;
+    formDraft.value = mapScheduleRecordToDraft(record);
+    editingScheduleId.value = mode === "edit" ? record.id : "";
+    formVisible.value = true;
+    return;
+  }
+  const requestId = ++scheduleDetailRequest;
+  createStatus.value = "submitting";
+  try {
+    const response = await getBehaviorSchedulingDetailInterface({ id: Number(record.id), type: record.strategy === "周期调度" ? "TASK" : "RULE" });
+    if (requestId !== scheduleDetailRequest) return;
+    if ((response.code !== 200 && response.code !== 0) || response.success === false || !response.data)
+      throw new Error(response.message?.trim() || "调度详情加载失败");
+    const detail = response.data;
+    const taskDetail = detail.taskVO ?? detail.ruleVO;
+    const draft = mapScheduleRecordToDraft({
+      ...record,
+      name: detail.schedulingName,
+      description: detail.description,
+      target: detail.ontologyName || record.target,
+      behavior: detail.actionName,
+      behaviorActionApi: detail.actionApi,
+      behaviorOntologyIdentifier: detail.ontologyIdentifier,
+      cronExpression: taskDetail?.taskCronExpression || "",
+      detailsAvailable: true,
+    });
+    Object.assign(draft, restoreSchedulePeriod(detail.periodType || taskDetail?.periodType, taskDetail?.taskCronExpression || ""));
+    draft.savedEntityJson = taskDetail?.entityJson || "";
+    formMode.value = mode;
+    formDraft.value = draft;
+    editingScheduleId.value = mode === "edit" ? record.id : "";
+    formVisible.value = true;
+  } catch (cause) {
+    if (requestId === scheduleDetailRequest) ElMessage.error(cause instanceof Error ? cause.message : "调度详情加载失败");
+  } finally {
+    if (requestId === scheduleDetailRequest) createStatus.value = "idle";
+  }
+}
+
+/** @description 打开调用日志并查询当前调度的最新第一页。 @param row 当前调度行。 */
+function openInvocationLogDialog(row: unknown): void {
   const record = readScheduleTableRow(row);
+  if (logVisible.value && logScheduleId.value === record.id && logLoading.value) return;
+  logRequest += 1;
+  logLoading.value = false;
   logScheduleName.value = record.name;
-  invocationLogs.value = createMockInvocationLogs(record);
+  logScheduleId.value = record.id;
+  logScheduleType.value = record.strategy === "周期调度" ? "TASK" : "RULE";
+  logPage.value = 1;
+  logPageSize.value = 10;
+  logTotal.value = 0;
+  invocationLogs.value = [];
   logVisible.value = true;
+  void fetchInvocationLogs(true);
+}
+
+watch(
+  logVisible,
+  (visible) => {
+    if (!visible) {
+      logRequest += 1;
+      logLoading.value = false;
+      invocationLogs.value = [];
+      logError.value = "";
+      logTotal.value = 0;
+    }
+  },
+  { flush: "sync" },
+);
+
+/** @description 加载当前日志页，支持重试并防止重复请求及过期响应。 @param force 是否替换旧查询。 @returns 日志查询完成。 */
+async function fetchInvocationLogs(force = false): Promise<void> {
+  if (!logVisible.value || (logLoading.value && !force)) return;
+  const requestId = ++logRequest;
+  const id = Number(logScheduleId.value);
+  invocationLogs.value = [];
+  logError.value = "";
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    logError.value = "调度标识无效，无法查询调用日志";
+    logLoading.value = false;
+    return;
+  }
+  logLoading.value = true;
+  const page = logPage.value;
+  try {
+    const response = await getBehaviorSchedulingResultInterface({ id, type: logScheduleType.value, pageNum: page, pageSize: logPageSize.value });
+    if (requestId !== logRequest || !logVisible.value) return;
+    if ((response.code !== 200 && response.code !== 0) || response.success === false || !response.data)
+      throw new Error(response.message?.trim() || "调用日志查询失败");
+    const data = response.data;
+    if (
+      !Array.isArray(data.records) ||
+      !Number.isSafeInteger(data.total) ||
+      data.total < 0 ||
+      !Number.isSafeInteger(data.size) ||
+      data.size <= 0 ||
+      data.current !== page
+    )
+      throw new Error("调用日志分页数据无效");
+    invocationLogs.value = data.records;
+    logTotal.value = data.total;
+  } catch (cause) {
+    if (requestId === logRequest && logVisible.value)
+      logError.value = cause instanceof Error && cause.message.trim() ? cause.message : "调用日志查询失败，请重试";
+  } finally {
+    if (requestId === logRequest) logLoading.value = false;
+  }
+}
+
+/** @description 日志翻页并保留目标调度。 @param page 页码。 */
+function changeInvocationLogPage(page: number): void {
+  if (!Number.isSafeInteger(page) || page < 1 || page === logPage.value) return;
+  logPage.value = page;
+  void fetchInvocationLogs(true);
+}
+
+/** @description 修改日志每页条数并回到第一页。 @param size 每页条数。 */
+function changeInvocationLogPageSize(size: number): void {
+  if (![10, 20, 50, 100].includes(size) || size === logPageSize.value) return;
+  logPageSize.value = size;
+  logPage.value = 1;
+  void fetchInvocationLogs(true);
 }
 
 /**
@@ -335,34 +545,13 @@ function openInvocationLogDialog(row: unknown) {
  * @param row 列表当前行。
  */
 function openDeleteScheduleDialog(row: unknown) {
+  if (deleteStatus.value === "submitting") return;
   const record = readScheduleTableRow(row);
   deleteStatus.value = "idle";
+  deletingScheduleType.value = record.strategy === "周期调度" ? "TASK" : "RULE";
   deletingScheduleId.value = record.id;
   deletingScheduleName.value = record.name;
   deleteVisible.value = true;
-}
-
-/**
- * @description 按调度生成调用日志样例；首条调度使用原型中的三条记录。
- * @param record 当前调度记录。
- * @returns 调用日志列表。
- */
-function createMockInvocationLogs(record: BehaviorScheduleRecord): BehaviorScheduleInvocationLog[] {
-  if (record.id === "schedule-1") {
-    return [
-      { id: "log-1-1", name: "威胁响应行为树", invokedAt: "2026-09-03 08:12:16", status: "成功" },
-      { id: "log-1-2", name: "威胁响应行为树", invokedAt: "2026-09-03 10:05:41", status: "失败" },
-      { id: "log-1-3", name: "威胁响应行为树", invokedAt: "2026-09-03 14:20:08", status: "执行中" },
-    ];
-  }
-  if (!record.behavior) return [];
-  const invokedAtSamples = ["2026-09-03 08:12:16", "2026-09-03 10:05:41", "2026-09-03 14:20:08"] as const;
-  return BEHAVIOR_SCHEDULE_INVOCATION_STATUSES.map((status, index) => ({
-    id: `${record.id}-log-${index + 1}`,
-    name: record.behavior,
-    invokedAt: invokedAtSamples[index] ?? invokedAtSamples[0],
-    status,
-  }));
 }
 
 /**
@@ -372,6 +561,8 @@ function createMockInvocationLogs(record: BehaviorScheduleRecord): BehaviorSched
  */
 function mapScheduleRecordToDraft(record: BehaviorScheduleRecord): BehaviorScheduleDraft {
   return {
+    savedEntityJson: record.savedEntityJson,
+    behaviorOntologyIdentifier: record.behaviorOntologyIdentifier,
     name: record.name,
     strategy: record.strategy,
     periodKind: record.periodKind,
@@ -404,96 +595,140 @@ function formatScheduleCreatedAt(date: Date): string {
 }
 
 /**
- * @description 按弹窗模式把草稿写入本地列表，避免重复提交。
+ * @description 按模式处理调度，周期新建等待保存接口，其他模式保留现有流程。
  * @param draft 弹窗提交的草稿。
+ * @param request 周期新建时的完整创建参数。
+ * @returns 操作完成。
  */
-function submitScheduleForm(draft: BehaviorScheduleDraft) {
+async function submitScheduleForm(draft: BehaviorScheduleDraft, request?: CreateBehaviorScheduleParams): Promise<void> {
   if (formMode.value === "edit") {
-    submitEditSchedule(draft);
+    await submitEditSchedule(draft, request);
     return;
   }
-  submitCreateSchedule(draft);
+  await submitCreateSchedule(draft, request);
 }
 
 /**
- * @description 校验通过后把新建调度写入本地列表，避免重复提交。
+ * @description 周期调度保存成功后刷新真实列表；失败保留表单并展示后端提示，忽略过期响应。
  * @param draft 弹窗提交的草稿。
+ * @param request 周期调度创建参数。
+ * @returns 操作完成。
  */
-function submitCreateSchedule(draft: BehaviorScheduleDraft) {
+async function submitCreateSchedule(draft: BehaviorScheduleDraft, request?: CreateBehaviorScheduleParams): Promise<void> {
   if (createStatus.value === "submitting") return;
-  createStatus.value = "submitting";
-  const nextRecord: BehaviorScheduleRecord = {
-    ...draft,
-    id: `schedule-${Date.now()}`,
-    name: draft.name.trim(),
-    weekdays: [...draft.weekdays],
-    description: draft.description.trim(),
-    ruleFlow: draft.ruleFlow ? cloneScheduleRuleFlow(draft.ruleFlow) : null,
-    createdAt: formatScheduleCreatedAt(new Date()),
-  };
-  schedules.value = [nextRecord, ...schedules.value];
-  createStatus.value = "success";
-  formVisible.value = false;
-  ElMessage.success("新建调度成功");
-  createStatus.value = "idle";
-}
-
-/**
- * @description 校验通过后用草稿覆盖当前调度记录，保留标识和创建时间。
- * @param draft 弹窗提交的草稿。
- */
-function submitEditSchedule(draft: BehaviorScheduleDraft) {
-  if (createStatus.value === "submitting") return;
-  const targetId = editingScheduleId.value;
-  if (!targetId) {
+  if (draft.strategy === "周期调度" && !request) {
     createStatus.value = "error";
-    ElMessage.error("未找到待编辑的调度");
+    ElMessage.error("缺少调度创建参数，请检查行为参数后重试");
     return;
   }
   createStatus.value = "submitting";
-  schedules.value = schedules.value.map((item) => {
-    if (item.id !== targetId) return item;
-    return {
-      ...item,
+  const requestId = ++scheduleSaveRequest;
+  let successMessage = "新建调度成功";
+  if (draft.strategy === "周期调度" && request) {
+    try {
+      const response = await postCreateBehaviorScheduleInterface(request);
+      if (requestId !== scheduleSaveRequest) return;
+      if (response.code !== 200 || response.success === false) throw new Error(response.message?.trim() || "新建调度失败");
+      successMessage = response.message?.trim() || successMessage;
+    } catch (cause) {
+      if (requestId !== scheduleSaveRequest) return;
+      createStatus.value = "error";
+      ElMessage.error(cause instanceof Error ? cause.message : "新建调度失败，请稍后重试");
+      return;
+    }
+  }
+  if (draft.strategy !== "周期调度") {
+    const nextRecord: BehaviorScheduleRecord = {
       ...draft,
-      id: item.id,
-      createdAt: item.createdAt,
+      id: `schedule-${Date.now()}`,
       name: draft.name.trim(),
       weekdays: [...draft.weekdays],
       description: draft.description.trim(),
       ruleFlow: draft.ruleFlow ? cloneScheduleRuleFlow(draft.ruleFlow) : null,
+      createdAt: formatScheduleCreatedAt(new Date()),
     };
-  });
+    schedules.value = [nextRecord, ...schedules.value];
+  }
   createStatus.value = "success";
   formVisible.value = false;
-  editingScheduleId.value = "";
-  ElMessage.success("编辑调度成功");
+  ElMessage.success(successMessage);
   createStatus.value = "idle";
+  if (draft.strategy === "周期调度") await fetchScheduleList(true);
 }
 
-/**
- * @description 确认后从本地列表移除当前调度，避免重复提交。
- */
-function confirmDeleteSchedule() {
-  if (deleteStatus.value === "submitting") return;
-  const targetId = deletingScheduleId.value;
-  if (!targetId) {
-    deleteStatus.value = "error";
-    ElMessage.error("未找到待删除的调度");
+/** @description 保存周期调度编辑，失败保留草稿重试，成功刷新当前列表，忽略过期响应。 @param draft 已校验草稿。 @param request 完整周期配置。 @returns 保存和刷新完成。 */
+async function submitEditSchedule(draft: BehaviorScheduleDraft, request?: CreateBehaviorScheduleParams): Promise<void> {
+  if (createStatus.value === "submitting") return;
+  if (draft.strategy !== "周期调度") {
+    createStatus.value = "error";
+    ElMessage.error("规则调度画布与接口条件尚无转换约定，暂不支持保存");
     return;
   }
+  const targetId = Number(editingScheduleId.value);
+  if (!Number.isSafeInteger(targetId) || targetId <= 0 || !request) {
+    createStatus.value = "error";
+    ElMessage.error(!request ? "缺少调度编辑参数，请检查行为参数后重试" : "未找到有效的待编辑调度");
+    return;
+  }
+  const requestId = ++scheduleSaveRequest;
+  createStatus.value = "submitting";
+  try {
+    const response = await putUpdateBehaviorSchedulingInterface({ ...request, id: targetId });
+    if (requestId !== scheduleSaveRequest) return;
+    if ((response.code !== 200 && response.code !== 0) || response.success === false) throw new Error(response.message?.trim() || "编辑调度失败");
+    createStatus.value = "success";
+    formVisible.value = false;
+    editingScheduleId.value = "";
+    ElMessage.success(response.message?.trim() || "编辑调度成功");
+    createStatus.value = "idle";
+    await fetchScheduleList(true);
+  } catch (cause) {
+    if (requestId !== scheduleSaveRequest) return;
+    createStatus.value = "error";
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "编辑调度失败，请重试");
+  }
+}
+
+/** @description 用户二次确认后删除调度并刷新分页，失败保留弹窗重试，忽略空间切换或卸载后的响应。 @returns 删除及列表刷新完成。 */
+async function confirmDeleteSchedule(): Promise<void> {
+  if (!deleteVisible.value || deleteStatus.value === "submitting") return;
+  const targetId = Number(deletingScheduleId.value);
+  if (!Number.isSafeInteger(targetId) || targetId <= 0) {
+    deleteStatus.value = "error";
+    ElMessage.error("未找到有效的待删除调度");
+    return;
+  }
+  const requestId = ++scheduleDeleteRequest;
   deleteStatus.value = "submitting";
-  schedules.value = schedules.value.filter((item) => item.id !== targetId);
-  deleteStatus.value = "success";
-  deleteVisible.value = false;
-  deletingScheduleId.value = "";
-  deletingScheduleName.value = "";
-  ElMessage.success("删除调度成功");
-  deleteStatus.value = "idle";
+  try {
+    const response = await deleteBehaviorSchedulingInterface({ type: deletingScheduleType.value, id: targetId });
+    if (requestId !== scheduleDeleteRequest) return;
+    if ((response.code !== 200 && response.code !== 0) || response.success === false) throw new Error(response.message?.trim() || "删除调度失败");
+    deleteStatus.value = "success";
+    deleteVisible.value = false;
+    deletingScheduleId.value = "";
+    deletingScheduleName.value = "";
+    ElMessage.success(response.message?.trim() || "删除调度成功");
+    if (schedules.value.length === 1 && schedulePage.value > 1) schedulePage.value -= 1;
+    await fetchScheduleList(true);
+  } catch (cause) {
+    if (requestId !== scheduleDeleteRequest) return;
+    deleteStatus.value = "error";
+    ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "删除调度失败，请重试");
+  } finally {
+    if (requestId === scheduleDeleteRequest && deleteStatus.value === "success") deleteStatus.value = "idle";
+  }
 }
 </script>
 
 <style scoped lang="scss">
+.behavior-schedule-workspace__pagination {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .behavior-schedule-workspace {
   display: flex;
   min-width: 0;
