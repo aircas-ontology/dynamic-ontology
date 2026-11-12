@@ -40,6 +40,8 @@ test("mapObjectProfileEntityRows flattens properties and derives dynamic columns
   const rows = mapObjectProfileEntityRows(records);
   assert.equal(rows.length, 2);
   assert.equal(rows[0].rowKey, "e-1");
+  assert.equal(rows[0].ontologyUniqueIdentifier, "obj-1");
+  assert.equal(rows[0].instanceId, "e-1");
   assert.equal(rows[0].cells["舰船名称"], "卡尔·文森号");
   assert.equal(rows[0].cells["所属国家"], "美国");
   assert.equal(rows[1].cells["舷线号"], "CVN-76");
@@ -69,6 +71,7 @@ test("mapObjectProfileEntityRows flattens OpenAPI properties array", () => {
   assert.equal(rows[0].cells["ontologyName"], undefined);
   assert.equal(rows[0].cells["primaryKey"], undefined);
   assert.equal(rows[0].cells["displayName"], undefined);
+  assert.equal(rows[0].instanceId, "1");
 });
 
 test("mapObjectProfileEntityRows prefers propertyDisplayName for column headers", () => {
@@ -145,6 +148,7 @@ test("object profile entity list tab mounts API list component", () => {
 
   assert.match(page, /ObjectProfileEntityList/);
   assert.match(page, /ObjectProfileStandardUsage/);
+  assert.match(page, /:space-id="spaceId"/);
   assert.match(page, /id: ['"]entity-list['"]/);
   assert.match(page, /id: ['"]standard-usage['"]/);
   assert.match(page, /isStandardContentVisible/);
@@ -159,10 +163,13 @@ test("object profile entity list tab mounts API list component", () => {
   assert.match(list, /筛选字段/);
   assert.match(list, /筛选值/);
   assert.match(list, /getOntologyEntitiesInterface|useObjectProfileEntityList/);
+  assert.match(list, /getOntologyInstanceUrlListInterface/);
   assert.match(list, /详情/);
   assert.match(list, /配置/);
   assert.match(list, /ObjectProfileEntityListConfigDialog/);
+  assert.match(list, /openEntityDetail\(asEntityRow\(row\)\)/);
   assert.doesNotMatch(list, /配置功能待接入/);
+  assert.doesNotMatch(list, /:src="ENTITY_BROWSING_ENTITY_DETAIL_URL"/);
   assert.match(composable, /getOntologyEntitiesInterface/);
   assert.match(composable, /ontologyUniqueIdentifier/);
   assert.match(composable, /visibleColumns/);

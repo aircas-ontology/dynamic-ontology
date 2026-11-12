@@ -70,6 +70,7 @@ import {
   postOntologyEntityAllLinkInterface,
 } from "./ontologyEntityApi";
 import { getOntologyInheritanceTreeInterface } from "./ontologyInheritanceTreeApi";
+import { getOntologyInstanceUrlListInterface } from "./ontologyInstanceUrlApi";
 import { postOntologyGlobalSearchInterface } from "./ontologySearchApi";
 import { createOntologySubspaceInterface } from "./ontologySubspaceApi";
 import {
@@ -194,6 +195,7 @@ export {
   postGetOntologyEntityRowDetailPageInterface,
   postOntologyEntityAllLinkInterface,
   getOntologyInheritanceTreeInterface,
+  getOntologyInstanceUrlListInterface,
   getOntologyMetaStatisticInterface,
   getOntologyOverviewCountInterface,
   getOntologyRelationCategoryTreeInterface,

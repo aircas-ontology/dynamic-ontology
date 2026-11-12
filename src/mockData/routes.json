@@ -260,6 +260,11 @@
     "file": "fixtures/ontology/entity/list.get.json"
   },
   {
+    "method": "GET",
+    "path": "/ontology/instance/url/list",
+    "file": "fixtures/instance/url/list.get.json"
+  },
+  {
     "method": "POST",
     "path": "/ontology/entity/row_detail",
     "file": "fixtures/ontology/entity/rowDetail.post.json"

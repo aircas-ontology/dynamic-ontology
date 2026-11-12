@@ -26,7 +26,7 @@
     </header>
 
     <div class="entity-browsing-object-profile__content">
-      <ObjectProfileEntityList v-if="activeTab === 'entity-list'" :object-id="objectId" />
+      <ObjectProfileEntityList v-if="activeTab === 'entity-list'" :object-id="objectId" :space-id="spaceId" />
       <ObjectProfileStandardUsage v-else-if="showStandardContent && activeTab === 'standard-usage'" :object-id="objectId" />
       <div v-else class="entity-browsing-object-profile__placeholder" role="status">内容待配置</div>
     </div>
@@ -59,6 +59,10 @@ const activeTab = ref<EntityBrowsingObjectProfileTab>("entity-list");
 
 const objectId = computed(() => (typeof route.params.objectId === "string" ? route.params.objectId.trim() : ""));
 
+const spaceId = computed(() =>
+  typeof route.params.spaceId === "string" && route.params.spaceId.trim() ? route.params.spaceId.trim() : ENTITY_BROWSING_DEFAULT_SPACE_ID,
+);
+
 const objectNameFallback = computed(() => {
   const fromQuery = route.query.objectName;
   return typeof fromQuery === "string" ? fromQuery.trim() : "";
@@ -77,10 +81,9 @@ function resetActiveTab(): void {
  * @description 返回当前空间的实体浏览对象列表，保留原 query。
  */
 function goBackToEntityBrowsing(): void {
-  const spaceId = typeof route.params.spaceId === "string" && route.params.spaceId ? route.params.spaceId : ENTITY_BROWSING_DEFAULT_SPACE_ID;
   void router.push({
     name: "EntityBrowsingObject",
-    params: { spaceId },
+    params: { spaceId: spaceId.value },
     query: route.query,
   });
 }

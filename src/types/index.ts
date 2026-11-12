@@ -172,6 +172,7 @@ export type {
 export type { GetOntologyFunctionDetailData, GetOntologyFunctionDetailParamItem, GetOntologyFunctionDetailParams } from "./apis/getOntologyFunctionDetailType";
 export type { GetOntologyFunctionListData, GetOntologyFunctionListItem, GetOntologyFunctionListParams } from "./apis/getOntologyFunctionListType";
 export type { GetOntologyFunctionVersionsData, GetOntologyFunctionVersionsParams } from "./apis/getOntologyFunctionVersionsType";
+export type { GetOntologyInstanceUrlListData, GetOntologyInstanceUrlListParams, OntologyInstanceUrlItem } from "./apis/getOntologyInstanceUrlListType";
 export type { GetOntologyLinkByUniqueIdentifierData, GetOntologyLinkByUniqueIdentifierParams } from "./apis/getOntologyLinkByUniqueIdentifierType";
 export type { GetOntologyMetaByObjectIdData, GetOntologyMetaByObjectIdParams } from "./apis/getOntologyMetaByObjectIdType";
 export type { GetOntologyMetaStatisticData, GetOntologyMetaStatisticParams, OntologyMetaStatisticVO } from "./apis/getOntologyMetaStatisticType";

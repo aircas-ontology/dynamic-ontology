@@ -1,0 +1,14 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": [
+    {
+      "id": 1,
+      "spaceId": 23,
+      "objectId": "8b4889e087134b67beeb7ac5ff9b29c8",
+      "instanceId": "1",
+      "url": "http://192.168.53.102:10606/#/layout/entity/ship/f7c3879a-6c62-40e0-8fa0-e9bb856eff61?embed=1",
+      "createTime": "2026-11-12T03:00:00"
+    }
+  ]
+}

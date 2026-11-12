@@ -4,6 +4,10 @@ import type { OntologyEntityInfo, OntologyEntityPropertyItem } from "@/types";
 export interface ObjectProfileEntityRow {
   /** 行唯一键。 */
   rowKey: string;
+  /** 对象唯一标识；用于实例 URL 查询 objectId。 */
+  ontologyUniqueIdentifier: string;
+  /** 实例主键；用于实例 URL 查询 instanceId。 */
+  instanceId: string;
   /** 动态属性展示值。 */
   cells: Record<string, string>;
   /** 详情弹窗用的有序属性对。 */
@@ -35,6 +39,28 @@ function formatEntityCellValue(value: unknown): string {
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   if (typeof value === "object") return JSON.stringify(value) ?? "";
   return String(value);
+}
+
+/**
+ * @description 从实体记录解析实例主键字符串（优先 primaryKey，其次 entityPrimaryKey / id）。
+ * @param record 实体记录。
+ * @param fallbackIndex 无主键时的行序号兜底。
+ * @returns 实例 id 字符串；无法解析时为空串。
+ */
+function resolveObjectProfileEntityInstanceId(record: OntologyEntityInfo, fallbackIndex: number): string {
+  const candidates: unknown[] = [record.primaryKey, record.entityPrimaryKey, record.id];
+  for (const candidate of candidates) {
+    if (candidate === null || candidate === undefined || candidate === "") continue;
+    if (typeof candidate === "string" || typeof candidate === "number" || typeof candidate === "boolean") {
+      return String(candidate);
+    }
+    try {
+      return JSON.stringify(candidate) ?? "";
+    } catch {
+      return String(candidate);
+    }
+  }
+  return fallbackIndex >= 0 ? `row-${fallbackIndex + 1}` : "";
 }
 
 /**
@@ -117,8 +143,10 @@ export function mapObjectProfileEntityRows(records: readonly OntologyEntityInfo[
       cells[label] = value;
       detailItems.push({ label, value });
     }
-    const rowKey = String(record.entityPrimaryKey ?? record.id ?? `row-${index + 1}`);
-    return { rowKey, cells, detailItems };
+    const instanceId = resolveObjectProfileEntityInstanceId(record, index);
+    const ontologyUniqueIdentifier = typeof record.ontologyUniqueIdentifier === "string" ? record.ontologyUniqueIdentifier.trim() : "";
+    const rowKey = instanceId || `row-${index + 1}`;
+    return { rowKey, ontologyUniqueIdentifier, instanceId, cells, detailItems };
   });
 }
 
