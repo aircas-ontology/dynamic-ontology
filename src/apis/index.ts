@@ -5,7 +5,12 @@ import {
   getActionCategoryTreeInterface,
   updateActionCategoryInterface,
 } from "./actionCategoryApi";
-import { getActionTreeNodeDefsInterface, postCreateBehaviorTreeActionInterface, putUpdateBehaviorTreeActionInterface } from "./behaviorTreeApi";
+import {
+  getActionTreeNodeDefsInterface,
+  postCreateBehaviorTreeActionInterface,
+  postOntologyActionTreeTestInterface,
+  putUpdateBehaviorTreeActionInterface,
+} from "./behaviorTreeApi";
 import {
   deleteBehaviorSchedulingInterface,
   deleteOntologyActionInterface,
@@ -159,6 +164,7 @@ export {
   deleteActionCategoryInterface,
   getActionTreeNodeDefsInterface,
   postCreateBehaviorTreeActionInterface,
+  postOntologyActionTreeTestInterface,
   putUpdateBehaviorTreeActionInterface,
   deleteBehaviorSchedulingInterface,
   deleteOntologyActionInterface,

@@ -97,7 +97,25 @@ export type BehaviorTreeSaveStatus = "idle" | "submitting" | "success" | "error"
 export type BehaviorTreePersistMode = "created" | "updated";
 
 /** 右侧 Inspector Tab。 */
-export type BehaviorTreeInspectorTab = "node" | "board";
+export type BehaviorTreeInspectorTab = "node" | "board" | "exec";
+
+/** 执行面板接口日志条目。 */
+export interface BehaviorTreeExecLogEntry {
+  id: string;
+  at: string;
+  label: string;
+  detail: string;
+}
+
+/** 节点执行草稿（UI 态）。 */
+export interface BehaviorTreeNodeExecDraft {
+  params: Record<string, string>;
+  entityPrimaryKey: string;
+  entityPrimaryKeys: Record<string, string>;
+  inputParams: Record<string, { entityPrimaryKey: string; rows: Record<string, string> }>;
+  outputParams: Record<string, { entityPrimaryKey: string; rowKey: string }>;
+  dataPrimaryKey: string;
+}
 
 /** 调色板拖拽载荷。 */
 export interface BehaviorTreeDragPayload {

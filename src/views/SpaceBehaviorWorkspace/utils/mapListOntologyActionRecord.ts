@@ -49,6 +49,18 @@ function mapActionKindToSpaceBehaviorKind(actionKind: string): SpaceBehaviorKind
 }
 
 /**
+ * @description 将列表「行为类别」筛选项映射为接口 actionKind 查询值。
+ * @param kind 工作区 kind；空表示不筛选。
+ * @returns BASE / APPLICATION / TREE；未选时为 undefined。
+ */
+export function mapSpaceBehaviorKindToActionKindQuery(kind: SpaceBehaviorKind | ""): "BASE" | "APPLICATION" | "TREE" | undefined {
+  if (kind === "basic") return "BASE";
+  if (kind === "application") return "APPLICATION";
+  if (kind === "behaviorTree") return "TREE";
+  return undefined;
+}
+
+/**
  * @description 将接口 subjectType 映射为行为类型。
  * @param subjectType 接口主体类型。
  * @returns 工作区 valueType。

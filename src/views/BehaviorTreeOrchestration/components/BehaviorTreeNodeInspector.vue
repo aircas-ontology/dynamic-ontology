@@ -1,6 +1,7 @@
 <template>
   <div v-if="!node" class="behavior-tree-node-inspector__empty">在画布中选中节点后可编辑配置</div>
   <div v-else class="behavior-tree-node-inspector">
+    <p class="behavior-tree-node-inspector__hint" role="note">{{ maxChildrenHint }}</p>
     <el-form label-position="top">
       <el-form-item label="显示名称">
         <el-input :model-value="node.displayName" @update:model-value="patchField('displayName', String($event))" />
@@ -137,7 +138,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ActionTreeBindableAction, BehaviorTreeBlackboardItem, BehaviorTreeNodeDraft } from "@/types";
+import type { ActionTreeBindableAction, BehaviorTreeBlackboardItem, BehaviorTreeKindMeta, BehaviorTreeNodeDraft, BehaviorTreeNodeKind } from "@/types";
 import {
   BEHAVIOR_TREE_LOCAL_KINDS,
   BEHAVIOR_TREE_LOOP_MODE_OPTIONS,
@@ -145,12 +146,14 @@ import {
   BEHAVIOR_TREE_PARALLEL_POLICY_OPTIONS,
   BEHAVIOR_TREE_RUN_MODE_OPTIONS,
   BEHAVIOR_TREE_STATE_OPTIONS,
+  formatBehaviorTreeMaxChildrenHint,
   isBehaviorTreeValueLessOp,
 } from "../utils/behaviorTreeConstants";
 
 const props = defineProps<{
   node: BehaviorTreeNodeDraft | null;
   parent: BehaviorTreeNodeDraft | null;
+  kindMeta: Record<BehaviorTreeNodeKind, BehaviorTreeKindMeta>;
   availableActions: ActionTreeBindableAction[];
   blackboard: BehaviorTreeBlackboardItem[];
 }>();
@@ -165,6 +168,14 @@ const emit = defineEmits<{
 }>();
 
 const config = computed(() => props.node?.config || {});
+
+const maxChildrenHint = computed(() => {
+  const kind = props.node?.kind;
+  if (!kind) return "";
+  const meta = props.kindMeta[kind];
+  const maxChildren = typeof meta?.maxChildren === "number" ? meta.maxChildren : 0;
+  return formatBehaviorTreeMaxChildrenHint(maxChildren);
+});
 
 const isCompositeNode = computed(() => {
   const kind = props.node?.kind;

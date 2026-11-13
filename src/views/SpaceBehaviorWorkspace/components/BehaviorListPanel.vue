@@ -10,6 +10,9 @@
         <el-select v-model="statusModel" class="behavior-list-panel__status" clearable placeholder="行为状态">
           <el-option v-for="item in SPACE_BEHAVIOR_LIST_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
+        <el-select v-model="kindModel" class="behavior-list-panel__kind" clearable placeholder="行为类别">
+          <el-option v-for="item in SPACE_BEHAVIOR_KIND_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
         <el-button @click="emit('query')">查询</el-button>
         <el-button @click="emit('reset')">重置</el-button>
         <el-button :icon="Plus" @click="emit('create')">新建行为</el-button>
@@ -90,8 +93,14 @@
 <script setup lang="ts">
 import { computed, nextTick } from "vue";
 import { ArrowDown, Plus } from "@element-plus/icons-vue";
-import type { SpaceBehaviorItem, SpaceBehaviorListStatus, SpaceBehaviorStatus } from "@/types";
-import { SPACE_BEHAVIOR_BASIC_ACTION_LABELS, SPACE_BEHAVIOR_KIND_LABELS, SPACE_BEHAVIOR_LIST_STATUS_LABELS, SPACE_BEHAVIOR_LIST_STATUS_OPTIONS } from "@/types";
+import type { SpaceBehaviorItem, SpaceBehaviorKind, SpaceBehaviorListStatus, SpaceBehaviorStatus } from "@/types";
+import {
+  SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
+  SPACE_BEHAVIOR_KIND_LABELS,
+  SPACE_BEHAVIOR_KIND_OPTIONS,
+  SPACE_BEHAVIOR_LIST_STATUS_LABELS,
+  SPACE_BEHAVIOR_LIST_STATUS_OPTIONS,
+} from "@/types";
 import { mapSpaceBehaviorItemToListStatus } from "../utils/mapListOntologyActionRecord";
 
 const props = defineProps<{
@@ -102,11 +111,13 @@ const props = defineProps<{
   pageSize: number;
   keyword: string;
   statusFilter: SpaceBehaviorListStatus | "";
+  kindFilter: SpaceBehaviorKind | "";
 }>();
 
 const emit = defineEmits<{
   "update:keyword": [value: string];
   "update:statusFilter": [value: SpaceBehaviorListStatus | ""];
+  "update:kindFilter": [value: SpaceBehaviorKind | ""];
   query: [];
   reset: [];
   create: [];
@@ -126,6 +137,10 @@ const keywordModel = computed({
 const statusModel = computed({
   get: () => props.statusFilter,
   set: (value: SpaceBehaviorListStatus | "") => emit("update:statusFilter", value),
+});
+const kindModel = computed({
+  get: () => props.kindFilter,
+  set: (value: SpaceBehaviorKind | "") => emit("update:kindFilter", value),
 });
 
 /**
@@ -243,6 +258,9 @@ function handleMoreCommand(command: string, item: SpaceBehaviorItem): void {
   width: min(220px, 24vw);
 }
 .behavior-list-panel__status {
+  width: 140px;
+}
+.behavior-list-panel__kind {
   width: 140px;
 }
 .behavior-list-panel__table-wrap {

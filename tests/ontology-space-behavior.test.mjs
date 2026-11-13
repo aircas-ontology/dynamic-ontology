@@ -21,6 +21,7 @@ import { mapActionCategoryTree } from "../src/views/SpaceBehaviorWorkspace/utils
 import {
   mapListOntologyActionRecord,
   mapSpaceBehaviorItemToListStatus,
+  mapSpaceBehaviorKindToActionKindQuery,
   mapSpaceBehaviorListStatusToQuery,
 } from "../src/views/SpaceBehaviorWorkspace/utils/mapListOntologyActionRecord.ts";
 import { resolveBehaviorOntologyId, resolveBehaviorSpaceId } from "../src/views/SpaceBehaviorWorkspace/utils/resolveBehaviorRouteContext.ts";
@@ -111,6 +112,7 @@ test("object behavior route reuses space behavior workspace with ontologyId", ()
 
   const typeSource = readSource("../src/types/apis/listOntologyActionType.ts");
   assert.match(typeSource, /ontologyId\?: string/);
+  assert.match(typeSource, /actionKind\?:\s*"BASE"\s*\|\s*"APPLICATION"\s*\|\s*"TREE"/);
 
   const routeContextSource = readSource("../src/views/SpaceBehaviorWorkspace/utils/resolveBehaviorRouteContext.ts");
   assert.match(routeContextSource, /export function resolveBehaviorSpaceId/);
@@ -427,6 +429,9 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(listSource, /placeholder="行为状态"/);
   assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_OPTIONS/);
   assert.match(listSource, /SPACE_BEHAVIOR_LIST_STATUS_LABELS/);
+  assert.match(listSource, /placeholder="行为类别"/);
+  assert.match(listSource, /SPACE_BEHAVIOR_KIND_OPTIONS/);
+  assert.match(listSource, /kindFilter|kind-filter/);
   assert.match(listSource, /<el-pagination\b/);
   assert.match(listSource, /<el-dropdown\b/);
   assert.match(listSource, /状态管理/);
@@ -439,6 +444,10 @@ test("space behavior workspace loads the action category tree on entry", () => {
   assert.match(source, /getActionCategoryTreeInterface\(\{ spaceId: numericSpaceId \}\)/);
   assert.match(source, /getListOntologyActionInterface/);
   assert.match(source, /mapListOntologyActionRecord/);
+  assert.match(source, /mapSpaceBehaviorKindToActionKindQuery/);
+  assert.match(source, /actionKind:\s*actionKindQuery|actionKind: actionKindQuery/);
+  assert.match(source, /kindFilter/);
+  assert.match(source, /appliedKind/);
   assert.match(source, /response\.code !== 200/);
   assert.match(source, /mapActionCategoryTree/);
   assert.match(source, /resolveListActionCategoryIdQuery/);
@@ -449,6 +458,9 @@ test("space behavior workspace loads the action category tree on entry", () => {
   assert.match(panelSource, /parentCategoryId/);
   assert.match(panelSource, /behavior-category-panel__action-dot/);
   assert.doesNotMatch(panelSource, /Document/);
+  const workspaceSource = readSource("../src/views/SpaceBehaviorWorkspace/index.vue");
+  assert.match(workspaceSource, /:kind-filter="kindFilter"/);
+  assert.match(workspaceSource, /@update:kind-filter="kindFilter = \$event"/);
 });
 
 test("space behavior maps listAction records to table rows with published draft status", () => {
@@ -525,6 +537,10 @@ test("space behavior maps listAction records to table rows with published draft 
   assert.equal(mapSpaceBehaviorListStatusToQuery("published"), 1);
   assert.equal(mapSpaceBehaviorListStatusToQuery("draft"), 2);
   assert.equal(mapSpaceBehaviorListStatusToQuery(""), undefined);
+  assert.equal(mapSpaceBehaviorKindToActionKindQuery("basic"), "BASE");
+  assert.equal(mapSpaceBehaviorKindToActionKindQuery("application"), "APPLICATION");
+  assert.equal(mapSpaceBehaviorKindToActionKindQuery("behaviorTree"), "TREE");
+  assert.equal(mapSpaceBehaviorKindToActionKindQuery(""), undefined);
 
   const linkAction = mapListOntologyActionRecord({
     id: 3,

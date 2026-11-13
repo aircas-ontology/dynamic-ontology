@@ -10,6 +10,8 @@ export interface ListOntologyActionParams {
   keyword?: string;
   /** 状态：1 启用，0 失效。 */
   status?: number;
+  /** 行为类别：BASE / APPLICATION / TREE；不传查全部。 */
+  actionKind?: "BASE" | "APPLICATION" | "TREE";
   /** 页码，默认 1。 */
   pageNum?: number;
   /** 每页条数，默认 10。 */

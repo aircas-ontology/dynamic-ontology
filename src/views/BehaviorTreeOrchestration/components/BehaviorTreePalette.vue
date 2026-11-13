@@ -10,10 +10,12 @@
           type="button"
           class="behavior-tree-palette__item"
           draggable="true"
+          :title="`${item.name}\n${formatBehaviorTreeMaxChildrenHint(item.maxChildren)}`"
           @dragstart="emitDragStart($event, { kind: item.kind })"
           @click="emit('add-kind', item.kind)"
         >
-          {{ item.name }}
+          <strong>{{ item.name }}</strong>
+          <span class="behavior-tree-palette__item-hint">{{ formatBehaviorTreeMaxChildrenHint(item.maxChildren) }}</span>
         </button>
       </div>
     </section>
@@ -51,7 +53,12 @@ import type {
   BehaviorTreeNodeKind,
   BehaviorTreeOrchestrationLoadStatus,
 } from "@/types";
-import { BEHAVIOR_TREE_CATEGORY_LABELS, BEHAVIOR_TREE_DRAG_MIME, BEHAVIOR_TREE_LOCAL_KINDS } from "../utils/behaviorTreeConstants";
+import {
+  BEHAVIOR_TREE_CATEGORY_LABELS,
+  BEHAVIOR_TREE_DRAG_MIME,
+  BEHAVIOR_TREE_LOCAL_KINDS,
+  formatBehaviorTreeMaxChildrenHint,
+} from "../utils/behaviorTreeConstants";
 
 const props = defineProps<{
   kindMeta: Record<BehaviorTreeNodeKind, BehaviorTreeKindMeta>;
@@ -67,7 +74,8 @@ const emit = defineEmits<{
 }>();
 
 const groupedKinds = computed(() => {
-  const categories: Array<"COMPOSITE" | "DECORATOR" | "LEAF"> = ["COMPOSITE", "DECORATOR", "LEAF"];
+  // 叶子 kind 仅保留运行时元数据；调色板不展示，行为节点从「可绑定行为」添加
+  const categories: Array<"COMPOSITE" | "DECORATOR"> = ["COMPOSITE", "DECORATOR"];
   return categories.map((category) => ({
     category,
     label: BEHAVIOR_TREE_CATEGORY_LABELS[category] || category,
@@ -148,6 +156,19 @@ function emitDragStart(event: DragEvent, payload: BehaviorTreeDragPayload): void
 
 .behavior-tree-palette__item:hover {
   border-color: var(--aircas-color-primary);
+}
+
+.behavior-tree-palette__item > strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.behavior-tree-palette__item-hint {
+  color: var(--aircas-color-text-secondary);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 15px;
 }
 
 .behavior-tree-palette__item--action {

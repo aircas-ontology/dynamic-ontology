@@ -2,12 +2,17 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  applyBehaviorTreeBlackboardPropertyBinding,
   applyBehaviorTreeBlackboardSourceChange,
   createBehaviorTreeBlackboardItem,
   mapBehaviorTreePropertyTypeToValueType,
   resolveBehaviorTreeBlackboardSource,
 } from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreeBlackboard.ts";
-import { createBehaviorTreeKindMetaMap, isBehaviorTreeValueLessOp } from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreeConstants.ts";
+import {
+  createBehaviorTreeKindMetaMap,
+  formatBehaviorTreeMaxChildrenHint,
+  isBehaviorTreeValueLessOp,
+} from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreeConstants.ts";
 import {
   behaviorTreeConfigToDraft,
   buildBehaviorTreeDefinition,
@@ -42,6 +47,17 @@ import {
   resolveBehaviorTreeSaveMethod,
 } from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreePersistence.ts";
 import { collectBehaviorTreeErrors, collectBehaviorTreeWarnings } from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreeValidate.ts";
+import {
+  buildBehaviorTreeTestPayload,
+  collectBehaviorTreeExecMissingFields,
+  createBehaviorTreeNodeExecDraft,
+  listBehaviorTreeExecPlanNodeIds,
+  listBehaviorTreeExecPlanObjectIds,
+  mapBehaviorTreeBoundActionApis,
+  mapBehaviorTreeEntityRecordOption,
+  resolveBehaviorTreeNodeDisplayName,
+  resolveBehaviorTreeNodeLinkEnds,
+} from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreeExecutePlan.ts";
 
 /**
  * @description 读取源码文本。
@@ -94,6 +110,39 @@ test("behavior tree model validates single root and blackboard", () => {
   model.roots.push(root);
   assert.match(collectBehaviorTreeErrors(model, kindMeta).join("|"), /至少要有子节点/);
   assert.equal(canAttachBehaviorTreeChild(model.roots, kindMeta, root.id, null), true);
+  const propertyRow = createBehaviorTreeBlackboardItem("hp", { source: "PROPERTY" });
+  applyBehaviorTreeBlackboardPropertyBinding(propertyRow, {
+    id: "prop.hp",
+    objectId: "obj.tank",
+    displayName: "生命",
+    propertyType: "Int",
+  });
+  assert.equal(propertyRow.bindPropertyUniqueIdentifier, "prop.hp");
+  assert.equal(propertyRow.valueType, "INTEGER");
+  applyBehaviorTreeBlackboardPropertyBinding(propertyRow, null);
+  assert.equal(propertyRow.bindPropertyUniqueIdentifier, "prop.hp");
+});
+
+test("behavior tree maxChildren hint formats container decorator and leaf rules", () => {
+  assert.equal(formatBehaviorTreeMaxChildrenHint(-1), "可连接多个子节点");
+  assert.equal(formatBehaviorTreeMaxChildrenHint(0), "不可连接子节点");
+  assert.equal(formatBehaviorTreeMaxChildrenHint(1), "仅可连接 1 个子节点");
+  assert.equal(formatBehaviorTreeMaxChildrenHint(3), "最多可连接 3 个子节点");
+  const kindMeta = createBehaviorTreeKindMetaMap();
+  assert.equal(formatBehaviorTreeMaxChildrenHint(kindMeta.SELECTOR.maxChildren), "可连接多个子节点");
+  assert.equal(formatBehaviorTreeMaxChildrenHint(kindMeta.INVERTER.maxChildren), "仅可连接 1 个子节点");
+  assert.equal(formatBehaviorTreeMaxChildrenHint(kindMeta.ACTION.maxChildren), "不可连接子节点");
+  const paletteSource = readSource("../src/views/BehaviorTreeOrchestration/components/BehaviorTreePalette.vue");
+  assert.match(paletteSource, /formatBehaviorTreeMaxChildrenHint/);
+  assert.match(paletteSource, /behavior-tree-palette__item-hint|可连接多个子节点/);
+  assert.match(paletteSource, /\["COMPOSITE",\s*"DECORATOR"\]/);
+  assert.doesNotMatch(paletteSource, /\["COMPOSITE",\s*"DECORATOR",\s*"LEAF"\]/);
+  assert.doesNotMatch(paletteSource, /Array<"COMPOSITE"\s*\|\s*"DECORATOR"\s*\|\s*"LEAF">/);
+  const inspectorSource = readSource("../src/views/BehaviorTreeOrchestration/components/BehaviorTreeNodeInspector.vue");
+  assert.match(inspectorSource, /formatBehaviorTreeMaxChildrenHint/);
+  assert.match(inspectorSource, /kindMeta/);
+  const dialogSource = readSource("../src/views/BehaviorTreeOrchestration/BehaviorTreeOrchestrationDialog.vue");
+  assert.match(dialogSource, /:kind-meta="kindMeta"|kind-meta=/);
 });
 
 test("behavior tree definition round-trips and builds TREE payload", () => {
@@ -119,19 +168,35 @@ test("behavior tree definition round-trips and builds TREE payload", () => {
   );
   model.roots.push(
     makeNode({
-      id: "node_1",
-      kind: "ACTION",
-      displayName: "行为节点",
-      skipIf: "ammoCount > 0",
-      whileCondition: "",
-      config: { actionApi: "act.demo.ping", timeoutSeconds: "", retryTimes: "" },
+      id: "node_seq",
+      kind: "SEQUENCE",
+      displayName: "顺序",
+      children: [
+        makeNode({
+          id: "node_cond",
+          kind: "BLACKBOARD_CONDITION",
+          displayName: "条件",
+          config: { key: "missingKey", op: "EQ", value: "1" },
+          children: [],
+        }),
+        makeNode({
+          id: "node_1",
+          kind: "ACTION",
+          displayName: "行为节点",
+          skipIf: "ammoCount > 0",
+          whileCondition: "",
+          config: { actionApi: "act.demo.ping", timeoutSeconds: "", retryTimes: "" },
+          children: [],
+        }),
+      ],
     }),
   );
   layoutBehaviorTreeRoots(model.roots);
   const definition = buildBehaviorTreeDefinition(model, kindMeta);
   assert.equal(definition.roots.length, 1);
-  assert.equal(definition.roots[0].config.actionApi, "act.demo.ping");
-  assert.equal(definition.roots[0].skipIf, "ammoCount > 0");
+  assert.equal(definition.roots[0].children[1].config.actionApi, "act.demo.ping");
+  assert.equal(definition.roots[0].children[1].skipIf, "ammoCount > 0");
+  assert.equal(definition.roots[0].children[0].config.key, "missingKey");
   assert.equal(definition.blackboard[0].source, "EXTERNAL");
   assert.equal(definition.blackboard[1].source, "FIXED");
   assert.equal(definition.blackboard[1].value, true);
@@ -147,7 +212,8 @@ test("behavior tree definition round-trips and builds TREE payload", () => {
   assert.equal(restored.blackboard[1].source, "FIXED");
   assert.equal(restored.blackboard[1].fixedValueText, "true");
   assert.equal(restored.blackboard[2].source, "PROPERTY");
-  assert.equal(restored.roots[0].kind, "ACTION");
+  assert.equal(restored.roots[0].kind, "SEQUENCE");
+  assert.equal(restored.roots[0].children[1].kind, "ACTION");
 
   const payload = buildBehaviorTreeSavePayload(model, kindMeta, {
     spaceId: "156",
@@ -192,11 +258,18 @@ test("behavior tree typed values and helpers cover parse paths", () => {
   assert.deepEqual(parseBehaviorTreeTypedValue("[1,2]", "LIST").value, [1, 2]);
   assert.deepEqual(parseBehaviorTreeTypedValue("a, b", "LIST").value, ["a", "b"]);
   assert.deepEqual(parseBehaviorTreeTypedValue('{"a":1}', "OBJECT").value, { a: 1 });
+  assert.equal(parseBehaviorTreeTypedValue('"scalar"', "OBJECT").ok, false);
   assert.equal(parseBehaviorTreeTypedValue("nope", "OBJECT").ok, false);
   assert.equal(parseBehaviorTreeTypedValue("x", "UNKNOWN").ok, true);
   assert.equal(behaviorTreeValueToText(null), "");
+  assert.equal(behaviorTreeValueToText(undefined), "");
   assert.equal(behaviorTreeValueToText({ a: 1 }), '{"a":1}');
   assert.equal(behaviorTreeValueToText(3), "3");
+  layoutBehaviorTreeRoots([]);
+  const twinA = makeNode({ id: "twin_a", kind: "ACTION", displayName: "A", config: { actionApi: "a" }, children: [] });
+  const twinB = makeNode({ id: "twin_b", kind: "ACTION", displayName: "B", config: { actionApi: "b" }, children: [] });
+  layoutBehaviorTreeRoots([twinA, twinB]);
+  assert.ok(twinB._x > twinA._x);
   assert.equal(behaviorTreeIntOrNull(""), null);
   assert.equal(behaviorTreeIntOrNull("4"), 4);
   assert.equal(behaviorTreeIntOrNull("4.5"), null);
@@ -430,6 +503,40 @@ test("behavior tree validation covers kind rules and warnings", () => {
   assert.match(errors, /叶子节点，不能有子节点|必须绑定行为|timeoutSeconds/);
   assert.match(errors, /成败判定策略|循环模式|持续执行条件|冷却时长|限时时长|比较方式|条件表达式|节点标识/);
 
+  const fixedDefaultModel = createEmptyBehaviorTreeModel();
+  fixedDefaultModel.blackboard.push(
+    createBehaviorTreeBlackboardItem("fixedWithDefault", {
+      valueType: "INTEGER",
+      source: "FIXED",
+      fixedValueText: "abc",
+      defaultValueText: "1",
+    }),
+    createBehaviorTreeBlackboardItem("propMismatch", {
+      valueType: "STRING",
+      source: "PROPERTY",
+      bindPropertyUniqueIdentifier: "prop.hp",
+    }),
+  );
+  fixedDefaultModel.roots = [
+    makeNode({
+      id: "fixed_root",
+      kind: /** @type {any} */ ("NOT_A_KIND"),
+      config: null,
+      children: [],
+    }),
+  ];
+  const patchedMeta = {
+    ...kindMeta,
+    NOT_A_KIND: { kind: /** @type {any} */ ("NOT_A_KIND"), name: "未知", category: "LEAF", maxChildren: 0 },
+  };
+  const fixedErrors = collectBehaviorTreeErrors(fixedDefaultModel, patchedMeta, {
+    "prop.hp": { id: "prop.hp", objectId: "obj.tank", displayName: "生命", propertyType: "Int" },
+  }).join("|");
+  assert.match(fixedErrors, /清空默认值再保存/);
+  assert.match(fixedErrors, /固定值不符合/);
+  assert.match(fixedErrors, /类型与绑定属性/);
+  assert.match(fixedErrors, /未知节点类型/);
+
   const warnModel = createEmptyBehaviorTreeModel();
   warnModel.blackboard.push(
     createBehaviorTreeBlackboardItem("k", {
@@ -604,9 +711,14 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(dialogSource, /BehaviorTreePalette/);
   assert.match(dialogSource, /BehaviorTreeNodeInspector/);
   assert.match(dialogSource, /BehaviorTreeBlackboardPanel/);
+  assert.match(dialogSource, /BehaviorTreeExecPanel/);
+  assert.match(dialogSource, /执行 \/ 日志/);
+  assert.match(dialogSource, /useBehaviorTreeExecution/);
   assert.doesNotMatch(dialogSource, /BehaviorTreeJsonPanel|导入\/导出|定义 JSON/);
   assert.doesNotMatch(dialogSource, /空间 \{\{ meta\.spaceId \}\}|分类 \{\{ meta\.categoryId \}\}/);
   assert.equal(existsSync(new URL("../src/views/BehaviorTreeOrchestration/components/BehaviorTreeJsonPanel.vue", import.meta.url)), false);
+  assert.equal(existsSync(new URL("../src/views/BehaviorTreeOrchestration/components/BehaviorTreeExecPanel.vue", import.meta.url)), true);
+  assert.equal(existsSync(new URL("../src/views/BehaviorTreeOrchestration/composables/useBehaviorTreeExecution.ts", import.meta.url)), true);
   assert.match(dialogSource, /object-options|object-properties|loadBehaviorTreeObjectPropertyCatalog/);
   assert.match(dialogSource, /ensureBehaviorTreeObjectProperties|request-object-properties/);
   const boardSource = readSource("../src/views/BehaviorTreeOrchestration/components/BehaviorTreeBlackboardPanel.vue");
@@ -642,7 +754,7 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(dialogSource, /loadBehaviorTreeDetail/);
   assert.match(dialogSource, /persisted/);
   assert.doesNotMatch(dialogSource, /saveBehaviorTreePlaceholder/);
-  assert.doesNotMatch(dialogSource, /执行 \/ 日志|节点说明|btnPublish|拉节点目录|加载已有树/);
+  assert.doesNotMatch(dialogSource, /节点说明|btnPublish|拉节点目录|加载已有树/);
   const composableSource = readSource("../src/views/BehaviorTreeOrchestration/composables/useBehaviorTreeOrchestration.ts");
   assert.match(composableSource, /postCreateBehaviorTreeActionInterface/);
   assert.match(composableSource, /putUpdateBehaviorTreeActionInterface/);
@@ -650,6 +762,21 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(composableSource, /resolveBehaviorTreeSaveMethod/);
   const typeSource = readSource("../src/types/apis/getOntologyActionInfoType.ts");
   assert.match(typeSource, /treeDefinition\?/);
+  assert.match(typeSource, /executeInputs\?/);
+  assert.match(typeSource, /BehaviorTreeExecuteInputs/);
+  const treeTestTypeSource = readSource("../src/types/apis/postOntologyActionTreeTestType.ts");
+  assert.match(treeTestTypeSource, /PostOntologyActionTreeTestParams/);
+  assert.match(treeTestTypeSource, /nodeExecutes/);
+  assert.match(apiSource, /postOntologyActionTreeTestInterface/);
+  assert.match(apiSource, /\/ontology\/action\/tree\/test/);
+  const execComposableSource = readSource("../src/views/BehaviorTreeOrchestration/composables/useBehaviorTreeExecution.ts");
+  assert.match(execComposableSource, /loadBehaviorTreeExecutePlan/);
+  assert.match(execComposableSource, /runBehaviorTreeTest/);
+  assert.match(execComposableSource, /postOntologyActionTreeTestInterface/);
+  const execPanelSource = readSource("../src/views/BehaviorTreeOrchestration/components/BehaviorTreeExecPanel.vue");
+  assert.match(execPanelSource, /读取执行要求/);
+  assert.match(execPanelSource, /试跑 tree\/test/);
+  assert.match(execPanelSource, /接口日志/);
   const routesSource = readSource("../src/mockData/routes.json");
   assert.match(routesSource, /\/ontology\/action\/tree\/node-defs/);
   const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
@@ -665,4 +792,219 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(inspectorSource, /子节点顺序/);
   assert.match(inspectorSource, /behavior-tree-node-inspector__child-order/);
   assert.doesNotMatch(inspectorSource, /同级顺序/);
+});
+
+test("behavior tree execute plan builds payload and reports missing fields", () => {
+  const plan = {
+    inputParams: [
+      { key: "threshold", valueType: "INTEGER", nodeIds: ["node_action_1"] },
+      { key: "orphan", valueType: "STRING", nodeIds: [] },
+    ],
+    instanceRequirements: [
+      { objectIdentifier: "obj.tank", nodeIds: ["node_action_1"] },
+      {
+        objectIdentifier: "obj.tank",
+        nodeIds: ["node_link_1"],
+        linkEntityPrimaryKeyRequired: true,
+        linkFromObjectIdentifier: "obj.tank",
+        linkToObjectIdentifier: "obj.base",
+      },
+      { objectIdentifier: "obj.tank", blackboardKeys: ["ammo"], nodeIds: [] },
+      {
+        objectIdentifier: "obj.tank",
+        nodeIds: ["node_legacy_link"],
+        linkEntityPrimaryKeyRequired: true,
+        linkObjectIdentifier: "obj.base",
+      },
+    ],
+    outputParams: [
+      { key: "prop.hp", mode: "DATA_PRIMARY_KEY", storageGroup: "hp_row", nodeIds: ["node_action_1"], objectIdentifier: "obj.tank" },
+      { key: "prop.out", mode: "OUTPUT_PARAM", storageGroup: "sub", objectIdentifier: "obj.tank", nodeIds: ["node_multi_1"] },
+      { key: "prop.result", mode: "RESULT_ONLY", nodeIds: ["node_multi_1"] },
+    ],
+  };
+  assert.deepEqual(listBehaviorTreeExecPlanNodeIds(plan), ["node_action_1", "node_legacy_link", "node_link_1", "node_multi_1"]);
+  assert.deepEqual(listBehaviorTreeExecPlanObjectIds(plan).sort(), ["obj.base", "obj.tank"]);
+  assert.deepEqual(
+    resolveBehaviorTreeNodeLinkEnds([
+      {
+        linkEntityPrimaryKeyRequired: true,
+        linkFromObjectIdentifier: "obj.tank",
+        linkToObjectIdentifier: "obj.base",
+      },
+    ]),
+    { from: "obj.tank", to: "obj.base", self: false },
+  );
+
+  const drafts = {
+    node_action_1: createBehaviorTreeNodeExecDraft(),
+    node_link_1: createBehaviorTreeNodeExecDraft(),
+    node_legacy_link: createBehaviorTreeNodeExecDraft(),
+    node_multi_1: createBehaviorTreeNodeExecDraft(),
+  };
+  const missing = collectBehaviorTreeExecMissingFields({
+    plan,
+    objectLabelById: { "obj.tank": "坦克", "obj.base": "基地" },
+    blackboardObjectKeys: {},
+    nodeDrafts: drafts,
+  });
+  assert.ok(missing.some((item) => item.includes("threshold")));
+  assert.ok(missing.some((item) => item.includes("行为入参 orphan")));
+  assert.ok(missing.some((item) => item.includes("黑板属性")));
+  assert.ok(missing.some((item) => item.includes("实例")));
+  assert.ok(missing.some((item) => item.includes("关系两端")));
+  assert.ok(missing.some((item) => item.includes("关系对端")));
+  assert.ok(missing.some((item) => item.includes("行主键")));
+  assert.deepEqual(collectBehaviorTreeExecMissingFields({ plan: null, blackboardObjectKeys: {}, nodeDrafts: {} }), []);
+
+  drafts.node_action_1.params.threshold = "3";
+  drafts.node_action_1.entityPrimaryKey = "tank-1";
+  drafts.node_action_1.outputParams["prop.hp"] = { entityPrimaryKey: "", rowKey: "row-9" };
+  drafts.node_action_1.inputParams.speed = { entityPrimaryKey: "tank-1", rows: { speed_row: "r1", empty: "" } };
+  drafts.node_link_1.entityPrimaryKeys.from = "tank-1";
+  drafts.node_link_1.entityPrimaryKeys.to = "base-2";
+  drafts.node_legacy_link.entityPrimaryKeys["obj.base"] = "base-9";
+  drafts.node_multi_1.entityPrimaryKeys = { "obj.a": "a1", "obj.b": "b2" };
+  drafts.node_multi_1.outputParams["prop.out"] = { entityPrimaryKey: "tank-1", rowKey: "out-1" };
+
+  const multiPlan = {
+    ...plan,
+    instanceRequirements: [
+      ...plan.instanceRequirements,
+      { objectIdentifier: "obj.a", nodeIds: ["node_multi_1"] },
+      { objectIdentifier: "obj.b", nodeIds: ["node_multi_1"] },
+    ],
+  };
+
+  const built = buildBehaviorTreeTestPayload({
+    spaceId: "100",
+    treeApi: "tree.demo",
+    plan: multiPlan,
+    blackboard: [
+      createBehaviorTreeBlackboardItem("ammoCount", {
+        valueType: "INTEGER",
+        source: "EXTERNAL",
+        defaultValueText: "1",
+      }),
+      createBehaviorTreeBlackboardItem("bad", {
+        valueType: "INTEGER",
+        source: "EXTERNAL",
+      }),
+      createBehaviorTreeBlackboardItem("", { source: "EXTERNAL" }),
+      createBehaviorTreeBlackboardItem("fixedSkip", { source: "FIXED", fixedValueText: "1", valueType: "INTEGER" }),
+    ],
+    objectProperties: {},
+    externalInputDraft: { ammoCount: "7", bad: "" },
+    blackboardObjectKeys: { "obj.tank": "tank-bb", "obj.empty": "  " },
+    nodeDrafts: drafts,
+  });
+  assert.equal("payload" in built, true);
+  if (!("payload" in built)) return;
+  assert.equal(built.payload.treeApi, "tree.demo");
+  assert.equal(built.payload.inputs?.ammoCount, 7);
+  assert.equal(built.payload.entityPrimaryKeys?.["obj.tank"], "tank-bb");
+  assert.equal(built.payload.nodeExecutes?.node_action_1?.params?.threshold, 3);
+  assert.equal(built.payload.nodeExecutes?.node_action_1?.entityPrimaryKey, "tank-1");
+  assert.equal(built.payload.nodeExecutes?.node_action_1?.dataPrimaryKey, "row-9");
+  assert.deepEqual(built.payload.nodeExecutes?.node_action_1?.inputParams?.speed, {
+    entityPrimaryKey: "tank-1",
+    dataPrimaryKeys: { speed_row: "r1" },
+  });
+  assert.deepEqual(built.payload.nodeExecutes?.node_link_1?.entityPrimaryKeys, { from: "tank-1", to: "base-2" });
+  assert.deepEqual(built.payload.nodeExecutes?.node_multi_1?.entityPrimaryKeys, { "obj.a": "a1", "obj.b": "b2" });
+  assert.deepEqual(built.payload.nodeExecutes?.node_multi_1?.outputParams?.["prop.out"], {
+    entityPrimaryKey: "tank-1",
+    dataPrimaryKeys: { sub: "out-1" },
+  });
+
+  const badInputs = buildBehaviorTreeTestPayload({
+    spaceId: "100",
+    treeApi: "tree.demo",
+    plan,
+    blackboard: [createBehaviorTreeBlackboardItem("ammoCount", { valueType: "INTEGER", source: "EXTERNAL" })],
+    objectProperties: {},
+    externalInputDraft: { ammoCount: "nope" },
+    blackboardObjectKeys: {},
+    nodeDrafts: drafts,
+  });
+  assert.equal("error" in badInputs, true);
+
+  drafts.node_action_1.params.threshold = "x";
+  const badParam = buildBehaviorTreeTestPayload({
+    spaceId: "100",
+    treeApi: "tree.demo",
+    plan,
+    blackboard: [],
+    objectProperties: {},
+    externalInputDraft: {},
+    blackboardObjectKeys: {},
+    nodeDrafts: drafts,
+  });
+  assert.equal("error" in badParam, true);
+
+  const nested = makeNode({
+    id: "root",
+    kind: "SEQUENCE",
+    displayName: "根",
+    children: [
+      makeNode({
+        id: "node_action_1",
+        kind: "ACTION",
+        displayName: "开火",
+        config: { actionApi: "app.fire" },
+        children: [],
+      }),
+    ],
+  });
+  assert.equal(resolveBehaviorTreeNodeDisplayName([nested], "node_action_1"), "开火");
+  assert.equal(resolveBehaviorTreeNodeDisplayName([nested], "missing"), "missing");
+  assert.deepEqual(mapBehaviorTreeBoundActionApis([nested]), { node_action_1: "app.fire" });
+  assert.equal(mapBehaviorTreeEntityRecordOption({ primaryKey: 1, displayName: "甲" })?.label, "甲 · 1");
+  assert.equal(mapBehaviorTreeEntityRecordOption({ entityPrimaryKey: "k2", name: "乙" })?.label, "乙 · k2");
+  assert.equal(mapBehaviorTreeEntityRecordOption({ id: "k3" })?.label, "k3");
+  assert.equal(mapBehaviorTreeEntityRecordOption({ primaryKey: "" }), null);
+  assert.equal(mapBehaviorTreeEntityRecordOption({}), null);
+
+  assert.deepEqual(listBehaviorTreeExecPlanNodeIds(null), []);
+  assert.deepEqual(listBehaviorTreeExecPlanObjectIds(undefined), []);
+  assert.deepEqual(
+    resolveBehaviorTreeNodeLinkEnds([
+      { linkEntityPrimaryKeyRequired: true, linkFromObjectIdentifier: "obj.self", selfRelation: true },
+      { linkEntityPrimaryKeyRequired: false },
+    ]),
+    { from: "obj.self", to: "obj.self", self: true },
+  );
+  assert.equal(resolveBehaviorTreeNodeLinkEnds([{ linkEntityPrimaryKeyRequired: true }]), null);
+
+  const unnamed = makeNode({ id: "node_blank", kind: "ACTION", displayName: "  ", config: { actionApi: "" }, children: [] });
+  assert.equal(resolveBehaviorTreeNodeDisplayName([unnamed], "node_blank"), "node_blank");
+  assert.deepEqual(mapBehaviorTreeBoundActionApis([unnamed]), {});
+
+  drafts.node_action_1.params.threshold = "3";
+  drafts.node_action_1.inputParams.onlyRows = { entityPrimaryKey: "", rows: { g1: "row-a" } };
+  drafts.node_multi_1.outputParams["prop.out"] = { entityPrimaryKey: "tank-1", rowKey: "" };
+  const outputOnly = buildBehaviorTreeTestPayload({
+    spaceId: "100",
+    treeApi: "tree.demo",
+    plan: {
+      inputParams: [],
+      instanceRequirements: [],
+      outputParams: [
+        { key: "prop.out", mode: "OUTPUT_PARAM", objectIdentifier: "obj.tank", nodeIds: ["node_multi_1"] },
+        { mode: "OUTPUT_PARAM", nodeIds: ["node_multi_1"] },
+      ],
+    },
+    blackboard: [],
+    objectProperties: { ignore: { id: "ignore", objectId: "obj.tank", displayName: "x", propertyType: "STRING" } },
+    externalInputDraft: {},
+    blackboardObjectKeys: {},
+    nodeDrafts: {
+      node_multi_1: drafts.node_multi_1,
+      node_action_1: drafts.node_action_1,
+    },
+  });
+  assert.equal("payload" in outputOnly, true);
+  if ("payload" in outputOnly) {
+    assert.deepEqual(outputOnly.payload.nodeExecutes?.node_multi_1?.outputParams?.["prop.out"], { entityPrimaryKey: "tank-1" });
+  }
 });

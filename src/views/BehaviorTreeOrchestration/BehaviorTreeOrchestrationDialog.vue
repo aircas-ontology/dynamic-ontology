@@ -59,6 +59,7 @@
               <BehaviorTreeNodeInspector
                 :node="selectedNode"
                 :parent="selectedParent"
+                :kind-meta="kindMeta"
                 :available-actions="availableActions"
                 :blackboard="model.blackboard"
                 @patch-field="handlePatchField"
@@ -83,6 +84,32 @@
                 @request-object-properties="ensureBehaviorTreeObjectProperties"
               />
             </el-tab-pane>
+            <el-tab-pane label="执行 / 日志" name="exec">
+              <BehaviorTreeExecPanel
+                :plan-status="execPlanStatus"
+                :plan-error="execPlanError"
+                :test-status="execTestStatus"
+                :test-error="execTestError"
+                :test-result="execTestResult"
+                :logs="execLogs"
+                :external-rows="execExternalRows"
+                :property-groups="execPropertyGroups"
+                :node-blocks="execNodeBlocks"
+                :external-draft="execExternalDraft"
+                :blackboard-object-keys="execBlackboardObjectKeys"
+                :node-drafts="execNodeDrafts"
+                :instance-options="execInstanceOptions"
+                :instance-loading-ids="execInstanceLoadingIds"
+                :resolve-object-label="resolveExecObjectLabel"
+                @load-plan="loadBehaviorTreeExecutePlan(false)"
+                @run-test="runBehaviorTreeTest"
+                @clear-logs="clearBehaviorTreeExecLogs"
+                @ensure-instances="loadBehaviorTreeEntityOptions"
+                @update-node-param="updateNodeParamDraft"
+                @update-node-entity="updateNodeEntityKeyDraft"
+                @update-node-output="updateNodeOutputDraft"
+              />
+            </el-tab-pane>
           </el-tabs>
         </aside>
       </div>
@@ -99,9 +126,11 @@ import { BEHAVIOR_TREE_VALUE_TYPES } from "./utils/behaviorTreeConstants";
 import { findBehaviorTreeNode } from "./utils/behaviorTreeModel";
 import { useBehaviorTreeGraph } from "./composables/useBehaviorTreeGraph";
 import { useBehaviorTreeOrchestration } from "./composables/useBehaviorTreeOrchestration";
+import { useBehaviorTreeExecution } from "./composables/useBehaviorTreeExecution";
 import BehaviorTreePalette from "./components/BehaviorTreePalette.vue";
 import BehaviorTreeNodeInspector from "./components/BehaviorTreeNodeInspector.vue";
 import BehaviorTreeBlackboardPanel from "./components/BehaviorTreeBlackboardPanel.vue";
+import BehaviorTreeExecPanel from "./components/BehaviorTreeExecPanel.vue";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -154,6 +183,37 @@ const {
   onPersisted: (mode) => emit("persisted", mode),
 });
 
+const {
+  planStatus: execPlanStatus,
+  planError: execPlanError,
+  testStatus: execTestStatus,
+  testError: execTestError,
+  testResult: execTestResult,
+  logs: execLogs,
+  externalBlackboardRows: execExternalRows,
+  propertyBlackboardGroups: execPropertyGroups,
+  execNodeBlocks,
+  externalInputDraft: execExternalDraft,
+  blackboardObjectKeys: execBlackboardObjectKeys,
+  nodeDrafts: execNodeDrafts,
+  instanceOptions: execInstanceOptions,
+  instanceLoadingIds: execInstanceLoadingIds,
+  resolveObjectLabel: resolveExecObjectLabel,
+  loadBehaviorTreeExecutePlan,
+  runBehaviorTreeTest,
+  clearBehaviorTreeExecLogs,
+  loadBehaviorTreeEntityOptions,
+  updateNodeParamDraft,
+  updateNodeEntityKeyDraft,
+  updateNodeOutputDraft,
+} = useBehaviorTreeExecution({
+  spaceId: () => props.meta.spaceId,
+  treeApi: () => props.meta.actionApi,
+  model,
+  objectOptions,
+  objectProperties,
+});
+
 const selectedParent = computed(() => {
   if (!selectedId.value) return null;
   for (const root of model.roots) {
@@ -200,7 +260,7 @@ const { initBehaviorTreeGraph, fitBehaviorTreeView } = useBehaviorTreeGraph({
  * @param name Element Plus tab 名称。
  */
 function handleInspectorTabChange(name: string | number): void {
-  if (name === "node" || name === "board") {
+  if (name === "node" || name === "board" || name === "exec") {
     activeTab.value = name;
   }
 }

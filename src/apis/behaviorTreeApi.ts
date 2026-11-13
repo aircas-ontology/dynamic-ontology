@@ -1,4 +1,11 @@
-import type { ApiResponse, BehaviorTreeSavePayload, GetActionTreeNodeDefsData, GetActionTreeNodeDefsParams } from "@/types";
+import type {
+  ApiResponse,
+  BehaviorTreeSavePayload,
+  GetActionTreeNodeDefsData,
+  GetActionTreeNodeDefsParams,
+  PostOntologyActionTreeTestData,
+  PostOntologyActionTreeTestParams,
+} from "@/types";
 import { request } from "@/utils/request";
 
 /**
@@ -45,6 +52,22 @@ export function putUpdateBehaviorTreeActionInterface(params: BehaviorTreeSavePay
   return request<null>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action",
     method: "put",
+    data: params,
+  });
+}
+
+/**
+ * @description 试跑行为树（草稿可用；读取库中已保存定义，真实落库）。
+ *
+ * 请求方式：POST `/ontology/action/tree/test`
+ *
+ * @param params 试跑请求体。
+ * @returns 标准 API 响应。
+ */
+export function postOntologyActionTreeTestInterface(params: PostOntologyActionTreeTestParams): Promise<ApiResponse<PostOntologyActionTreeTestData>> {
+  return request<PostOntologyActionTreeTestData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action/tree/test",
+    method: "post",
     data: params,
   });
 }

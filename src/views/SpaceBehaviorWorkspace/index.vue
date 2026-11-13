@@ -24,8 +24,10 @@
         :page-size="pageSize"
         :keyword="keyword"
         :status-filter="statusFilter"
+        :kind-filter="kindFilter"
         @update:keyword="keyword = $event"
         @update:status-filter="statusFilter = $event"
+        @update:kind-filter="kindFilter = $event"
         @query="applyBehaviorFilters"
         @reset="resetBehaviorFilters"
         @create="openBehaviorCreate"
@@ -109,6 +111,7 @@ const {
   selectedCategoryLabel,
   keyword,
   statusFilter,
+  kindFilter,
   page,
   pageSize,
   total,

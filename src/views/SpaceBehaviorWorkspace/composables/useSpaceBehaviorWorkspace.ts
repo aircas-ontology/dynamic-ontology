@@ -16,6 +16,7 @@ import type {
   SpaceBehaviorCategoryNode,
   SpaceBehaviorDraft,
   SpaceBehaviorItem,
+  SpaceBehaviorKind,
   SpaceBehaviorListStatus,
   SpaceBehaviorStatusChangeDraft,
   SpaceBehaviorWorkspaceLoadStatus,
@@ -27,7 +28,7 @@ import { buildBasicOperatorCreateActionParams, isBasicOperatorActionCreateDraft 
 import { buildLinkCreateActionParams, isLinkActionCreateDraft } from "../utils/buildLinkCreateActionParams";
 import { buildPropertyValueCreateActionParams, isPropertyValueActionCreateDraft } from "../utils/buildPropertyValueCreateActionParams";
 import { mapActionCategoryTree } from "../utils/mapActionCategoryTree";
-import { mapListOntologyActionRecord, mapSpaceBehaviorListStatusToQuery } from "../utils/mapListOntologyActionRecord";
+import { mapListOntologyActionRecord, mapSpaceBehaviorKindToActionKindQuery, mapSpaceBehaviorListStatusToQuery } from "../utils/mapListOntologyActionRecord";
 import { resolveBehaviorOntologyId, resolveBehaviorSpaceId } from "../utils/resolveBehaviorRouteContext";
 import { findSpaceBehaviorCategoryNode } from "../utils/spaceBehaviorOperations";
 
@@ -62,8 +63,10 @@ export function useSpaceBehaviorWorkspace() {
   const selectedCategoryId = ref(ROOT_SPACE_BEHAVIOR_CATEGORY_ID);
   const keyword = ref("");
   const statusFilter = ref<SpaceBehaviorListStatus | "">("");
+  const kindFilter = ref<SpaceBehaviorKind | "">("");
   const appliedKeyword = ref("");
   const appliedStatus = ref<SpaceBehaviorListStatus | "">("");
+  const appliedKind = ref<SpaceBehaviorKind | "">("");
   const page = ref(1);
   const pageSize = ref(10);
   const actionLoading = ref(false);
@@ -119,6 +122,7 @@ export function useSpaceBehaviorWorkspace() {
     try {
       const keywordValue = appliedKeyword.value.trim();
       const statusQuery = mapSpaceBehaviorListStatusToQuery(appliedStatus.value);
+      const actionKindQuery = mapSpaceBehaviorKindToActionKindQuery(appliedKind.value);
       const categoryIdQuery = resolveListActionCategoryIdQuery(selectedCategoryId.value, categoryTree.value);
       const ontologyIdValue = ontologyId.value.trim();
       const response = await getListOntologyActionInterface({
@@ -129,6 +133,7 @@ export function useSpaceBehaviorWorkspace() {
         ...(categoryIdQuery === undefined ? {} : { categoryId: categoryIdQuery }),
         ...(keywordValue ? { keyword: keywordValue } : {}),
         ...(statusQuery === undefined ? {} : { status: statusQuery }),
+        ...(actionKindQuery === undefined ? {} : { actionKind: actionKindQuery }),
       });
       if ((response.code !== 0 && response.code !== 200) || !response.data) {
         throw new Error(response.message || "行为列表加载失败");
@@ -190,23 +195,26 @@ export function useSpaceBehaviorWorkspace() {
   }
 
   /**
-   * @description 应用关键字与状态筛选并重新拉取列表。
+   * @description 应用关键字、状态与行为类别筛选并重新拉取列表。
    */
   function applyBehaviorFilters(): void {
     appliedKeyword.value = keyword.value.trim();
     appliedStatus.value = statusFilter.value;
+    appliedKind.value = kindFilter.value;
     page.value = 1;
     void loadSpaceBehaviorList();
   }
 
   /**
-   * @description 清空关键字与状态筛选并重新拉取列表。
+   * @description 清空关键字、状态与行为类别筛选并重新拉取列表。
    */
   function resetBehaviorFilters(): void {
     keyword.value = "";
     statusFilter.value = "";
+    kindFilter.value = "";
     appliedKeyword.value = "";
     appliedStatus.value = "";
+    appliedKind.value = "";
     page.value = 1;
     void loadSpaceBehaviorList();
   }
@@ -477,8 +485,10 @@ export function useSpaceBehaviorWorkspace() {
     selectedCategoryId.value = ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
     keyword.value = "";
     statusFilter.value = "";
+    kindFilter.value = "";
     appliedKeyword.value = "";
     appliedStatus.value = "";
+    appliedKind.value = "";
     page.value = 1;
     void loadSpaceBehaviorWorkspace();
   });
@@ -500,6 +510,7 @@ export function useSpaceBehaviorWorkspace() {
     selectedCategoryLabel,
     keyword,
     statusFilter,
+    kindFilter,
     page,
     pageSize,
     total,

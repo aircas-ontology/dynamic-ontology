@@ -18,8 +18,8 @@ const BEHAVIOR_TREE_EDGE_LINE_ATTRS = {
   },
 };
 
-/** 正交路由：padding 让折线离开节点包围盒。 */
-const BEHAVIOR_TREE_EDGE_ROUTER = { name: "orth" as const, args: { padding: 18 } };
+/** Manhattan 路由：自动正交拐点并避障；padding 让折线离开节点包围盒。 */
+const BEHAVIOR_TREE_EDGE_ROUTER = { name: "manhattan" as const, args: { padding: 38 } };
 
 /** 圆角连接器。 */
 const BEHAVIOR_TREE_EDGE_CONNECTOR = { name: "rounded" as const, args: { radius: 8 } };

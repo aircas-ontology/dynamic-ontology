@@ -148,6 +148,10 @@ export type {
   GetBehaviorSchedulingResultParams,
 } from "./apis/getBehaviorSchedulingResultType";
 export type {
+  BehaviorTreeExecuteInputParam,
+  BehaviorTreeExecuteInputs,
+  BehaviorTreeExecuteInstanceRequirement,
+  BehaviorTreeExecuteOutputParam,
   GetOntologyActionInfoData,
   GetOntologyActionInfoFunctionParam,
   GetOntologyActionInfoLinkMapping,
@@ -268,6 +272,7 @@ export type {
   ParseOntologyFunctionParamsData,
   ParseOntologyFunctionParamsParams,
 } from "./apis/parseOntologyFunctionParamsType";
+export type { BehaviorTreeNodeExecuteData, PostOntologyActionTreeTestData, PostOntologyActionTreeTestParams } from "./apis/postOntologyActionTreeTestType";
 export type {
   PostOntologyEntityAllLinkData,
   PostOntologyEntityAllLinkItem,
@@ -361,6 +366,7 @@ export type {
   BehaviorTreeBlackboardSource,
   BehaviorTreeDefinition,
   BehaviorTreeDragPayload,
+  BehaviorTreeExecLogEntry,
   BehaviorTreeInspectorTab,
   BehaviorTreeKindMeta,
   BehaviorTreeModel,
@@ -368,6 +374,7 @@ export type {
   BehaviorTreeNodeConfigDraft,
   BehaviorTreeNodeDefsSnapshot,
   BehaviorTreeNodeDraft,
+  BehaviorTreeNodeExecDraft,
   BehaviorTreeNodeKind,
   BehaviorTreeObjectPropertyOption,
   BehaviorTreeOrchestrationLoadStatus,

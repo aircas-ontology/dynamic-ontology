@@ -62,6 +62,50 @@ export interface GetOntologyActionInfoFunctionParam {
   referenceType?: string | null;
 }
 
+/** 行为树执行要求：行为外部入参摘要。 */
+export interface BehaviorTreeExecuteInputParam {
+  key: string;
+  valueType?: string;
+  required?: boolean;
+  description?: string | null;
+  nodeIds?: string[];
+  actionApis?: string[];
+}
+
+/** 行为树执行要求：实例依赖。 */
+export interface BehaviorTreeExecuteInstanceRequirement {
+  actionApi?: string;
+  actionDisplayName?: string;
+  objectIdentifier?: string;
+  nodeIds?: string[];
+  blackboardKeys?: string[];
+  linkEntityPrimaryKeyRequired?: boolean;
+  linkObjectIdentifier?: string;
+  linkFromObjectIdentifier?: string;
+  linkToObjectIdentifier?: string;
+  selfRelation?: boolean;
+}
+
+/** 行为树执行要求：写回/出参位置。 */
+export interface BehaviorTreeExecuteOutputParam {
+  key?: string;
+  paramName?: string;
+  displayName?: string;
+  storageGroup?: string;
+  objectIdentifier?: string;
+  mode?: "DATA_PRIMARY_KEY" | "OUTPUT_PARAM" | "RESULT_ONLY" | string;
+  nodeIds?: string[];
+}
+
+/** 行为树详情中的执行入参规划。 */
+export interface BehaviorTreeExecuteInputs {
+  entityPrimaryKeyRequired?: boolean;
+  inputParams?: BehaviorTreeExecuteInputParam[];
+  instanceRequirements?: BehaviorTreeExecuteInstanceRequirement[];
+  outputParams?: BehaviorTreeExecuteOutputParam[];
+  variables?: Array<{ name: string; valueType?: string; defaultValue?: unknown }>;
+}
+
 /** 行为详情 data。 */
 export interface GetOntologyActionInfoData {
   id: number;
@@ -84,4 +128,6 @@ export interface GetOntologyActionInfoData {
   functionParams?: GetOntologyActionInfoFunctionParam[] | null;
   /** 行为树定义；仅 actionKind=TREE 时有值。 */
   treeDefinition?: BehaviorTreeDefinition | null;
+  /** 行为树执行要求；仅 actionKind=TREE 时可能有值。 */
+  executeInputs?: BehaviorTreeExecuteInputs | null;
 }

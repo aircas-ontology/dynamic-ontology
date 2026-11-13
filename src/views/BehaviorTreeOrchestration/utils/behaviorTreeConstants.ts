@@ -117,8 +117,8 @@ export const BEHAVIOR_TREE_OP_OPTIONS = [
 /** 画布节点尺寸与间距。 */
 export const BEHAVIOR_TREE_NODE_W = 190;
 export const BEHAVIOR_TREE_NODE_H = 58;
-export const BEHAVIOR_TREE_H_GAP = 28;
-export const BEHAVIOR_TREE_V_GAP = 52;
+export const BEHAVIOR_TREE_H_GAP = 56;
+export const BEHAVIOR_TREE_V_GAP = 120;
 
 /** 调色板拖拽 MIME。 */
 export const BEHAVIOR_TREE_DRAG_MIME = "application/x-bt";
@@ -133,6 +133,18 @@ export function createBehaviorTreeKindMetaMap(): Record<BehaviorTreeNodeKind, Be
     map[item.kind] = { ...item };
   }
   return map;
+}
+
+/**
+ * @description 将 maxChildren 格式化为界面可读的子节点连接约束文案。
+ * @param maxChildren 最大子节点数；小于 0（如 -1）表示不限制。
+ * @returns 约束说明。
+ */
+export function formatBehaviorTreeMaxChildrenHint(maxChildren: number): string {
+  if (maxChildren < 0) return "可连接多个子节点";
+  if (maxChildren === 0) return "不可连接子节点";
+  if (maxChildren === 1) return "仅可连接 1 个子节点";
+  return `最多可连接 ${maxChildren} 个子节点`;
 }
 
 /**
