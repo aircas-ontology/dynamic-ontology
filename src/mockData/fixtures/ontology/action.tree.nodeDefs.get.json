@@ -1,0 +1,24 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "nodes": [
+      { "kind": "SELECTOR", "name": "选择节点", "category": "COMPOSITE", "maxChildren": -1 },
+      { "kind": "SEQUENCE", "name": "顺序节点", "category": "COMPOSITE", "maxChildren": -1 },
+      { "kind": "PARALLEL", "name": "并行节点", "category": "COMPOSITE", "maxChildren": -1 },
+      { "kind": "INVERTER", "name": "取反节点", "category": "DECORATOR", "maxChildren": 1 },
+      { "kind": "ACTION", "name": "行为节点", "category": "LEAF", "maxChildren": 0 }
+    ],
+    "availableActions": [
+      {
+        "actionApi": "act.demo.ping",
+        "displayName": "演示行为",
+        "requiresInstance": false,
+        "instanceObjects": [],
+        "inputParams": [],
+        "outputParams": [],
+        "externalParams": [{ "name": "target", "type": "STRING", "description": "外部目标" }]
+      }
+    ]
+  }
+}

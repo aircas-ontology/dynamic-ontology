@@ -66,6 +66,7 @@
       :behavior="activeBehavior"
       @submit="handleBehaviorSubmit"
       @save-copy="handleBehaviorSaveCopy"
+      @tree-persisted="handleBehaviorTreePersisted"
     />
     <BehaviorDetailDrawer v-model="behaviorDetailVisible" :space-id="spaceId" :behavior="activeBehavior" />
     <BehaviorTestDialog v-model="behaviorTestVisible" :space-id="spaceId" :behavior="activeBehavior" />
@@ -306,6 +307,13 @@ function openBehaviorDelete(item: SpaceBehaviorItem): void {
   }
   activeBehavior.value = item;
   behaviorDeleteVisible.value = true;
+}
+
+/**
+ * @description 行为树编排保存成功后刷新工作区列表，不关闭表单。
+ */
+async function handleBehaviorTreePersisted(): Promise<void> {
+  await loadSpaceBehaviorWorkspace();
 }
 
 /**

@@ -25,6 +25,11 @@
     "file": "fixtures/ontology/action.list.get.json"
   },
   {
+    "method": "GET",
+    "path": "/ontology/action/tree/node-defs",
+    "file": "fixtures/ontology/action.tree.nodeDefs.get.json"
+  },
+  {
     "method": "POST",
     "path": "/ontology/action/test",
     "file": "fixtures/ontology/action.test.post.json"

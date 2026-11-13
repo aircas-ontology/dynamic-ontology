@@ -11,6 +11,7 @@ node_modules
 node_modules*
 html
 html*
+behavior-tree-editor
 .DS_Store
 dist
 dist-ssr

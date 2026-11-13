@@ -5,6 +5,7 @@ import {
   getActionCategoryTreeInterface,
   updateActionCategoryInterface,
 } from "./actionCategoryApi";
+import { getActionTreeNodeDefsInterface, postCreateBehaviorTreeActionInterface, putUpdateBehaviorTreeActionInterface } from "./behaviorTreeApi";
 import {
   deleteBehaviorSchedulingInterface,
   deleteOntologyActionInterface,
@@ -156,6 +157,9 @@ export {
   autoBindOntologyPropertyDatasourceInterface,
   createActionCategoryInterface,
   deleteActionCategoryInterface,
+  getActionTreeNodeDefsInterface,
+  postCreateBehaviorTreeActionInterface,
+  putUpdateBehaviorTreeActionInterface,
   deleteBehaviorSchedulingInterface,
   deleteOntologyActionInterface,
   getListBehaviorSchedulingInterface,

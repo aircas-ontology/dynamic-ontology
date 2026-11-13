@@ -484,6 +484,13 @@
       </el-button>
     </template>
   </el-dialog>
+
+  <BehaviorTreeOrchestrationDialog
+    v-if="behaviorTreeOrchestrationVisible"
+    v-model="behaviorTreeOrchestrationVisible"
+    :meta="behaviorTreeOrchestrationMeta"
+    @persisted="handleBehaviorTreePersisted"
+  />
 </template>
 
 <script setup lang="ts">
@@ -499,6 +506,8 @@ import {
   getOntologyRelationCategoryTreeInterface,
 } from "@/apis";
 import type {
+  BehaviorTreeOrchestrationMeta,
+  BehaviorTreePersistMode,
   GetOntologyFunctionListItem,
   OntologyPropertyInfo,
   OntologyRelationClass,
@@ -550,6 +559,7 @@ import {
 import { mapOntologyActionInfoToFormState, type SpaceBehaviorActionInfoFormState } from "../utils/mapOntologyActionInfoToFormState";
 import { omitActionLeavesFromCategoryTree } from "../utils/spaceBehaviorOperations";
 import { sortPropertyInfosByStorageGroup } from "../utils/sortPropertyInfosByStorageGroup";
+import BehaviorTreeOrchestrationDialog from "@/views/BehaviorTreeOrchestration/BehaviorTreeOrchestrationDialog.vue";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -565,6 +575,7 @@ const emit = defineEmits<{
   "update:modelValue": [value: boolean];
   submit: [draft: SpaceBehaviorDraft];
   "save-copy": [draft: SpaceBehaviorDraft];
+  "tree-persisted": [mode: BehaviorTreePersistMode];
 }>();
 
 /** 分类选择器仅展示分类节点，不展示行为叶子。 */
@@ -1600,8 +1611,19 @@ function handleAttributeSelectionChange(selection: OntologyPropertyInfo[]): void
   applyResolvedAttributeSelection(resolved.selectedRows, resolved.storageGroup, resolved.warning);
 }
 
+const behaviorTreeOrchestrationVisible = ref(false);
+const behaviorTreeActionPersisted = ref(false);
+const behaviorTreeOrchestrationMeta = ref<BehaviorTreeOrchestrationMeta>({
+  spaceId: "",
+  categoryId: "",
+  actionApi: "",
+  displayName: "",
+  description: "",
+  isEditMode: false,
+});
+
 /**
- * @description 行为树编排入口占位；校验基础字段后提示后续接入。
+ * @description 校验基础字段后打开行为树编排全屏弹框。
  */
 function openBehaviorTreeOrchestration(): void {
   if (readonly.value) return;
@@ -1609,7 +1631,32 @@ function openBehaviorTreeOrchestration(): void {
     ElMessage.warning("请完整填写行为名称、行为api名称和行为分类");
     return;
   }
-  ElMessage.info("行为树编排后续接入");
+  if (!props.spaceId.trim()) {
+    ElMessage.warning("空间标识无效，无法打开行为树编排");
+    return;
+  }
+  behaviorTreeOrchestrationMeta.value = {
+    spaceId: props.spaceId.trim(),
+    categoryId: categoryId.value.trim(),
+    actionApi: behaviorApiName.value.trim(),
+    displayName: displayName.value.trim(),
+    description: description.value.trim(),
+    isEditMode: props.mode === "edit" || behaviorTreeActionPersisted.value,
+  };
+  behaviorTreeOrchestrationVisible.value = true;
+}
+
+/**
+ * @description 行为树保存成功后同步为更新态，并通知工作区刷新列表。
+ * @param mode 创建或更新。
+ */
+function handleBehaviorTreePersisted(mode: BehaviorTreePersistMode): void {
+  behaviorTreeActionPersisted.value = true;
+  behaviorTreeOrchestrationMeta.value = {
+    ...behaviorTreeOrchestrationMeta.value,
+    isEditMode: true,
+  };
+  emit("tree-persisted", mode);
 }
 
 /**
@@ -2058,9 +2105,12 @@ watch(
       detailLoading.value = false;
       detailError.value = "";
       unsupportedEditReason.value = "";
+      behaviorTreeActionPersisted.value = false;
+      behaviorTreeOrchestrationVisible.value = false;
       clearApplicationPropertyOptionCache();
       return;
     }
+    behaviorTreeActionPersisted.value = props.mode === "edit";
     void loadObjectOptions();
     submitLoading.value = false;
     clearObjectInfoSelection();

@@ -134,6 +134,13 @@ export type { FunctionOperatorTemplateLanguage, FunctionOperatorTemplateParams, 
 export type { FunctionPublishData, FunctionPublishParams } from "./apis/functionPublishType";
 export type { FunctionUnpublishData, FunctionUnpublishParams } from "./apis/functionUnpublishType";
 export type { ActionCategoryActionInfo, ActionCategoryVO, GetActionCategoryTreeParams } from "./apis/getActionCategoryTreeType";
+export type {
+  ActionTreeBindableAction,
+  ActionTreeBindableParam,
+  ActionTreeNodeDefMeta,
+  GetActionTreeNodeDefsData,
+  GetActionTreeNodeDefsParams,
+} from "./apis/getActionTreeNodeDefsType";
 export type { BehaviorSchedulingTaskDetail, GetBehaviorSchedulingDetailData, GetBehaviorSchedulingDetailParams } from "./apis/getBehaviorSchedulingDetailType";
 export type {
   BehaviorSchedulingResultRecord,
@@ -349,6 +356,26 @@ export type {
   AssetModelTreeNode,
   AssetObjectPropertyDraft,
 } from "./pages/assetModelBuilderType";
+export type {
+  BehaviorTreeBlackboardItem,
+  BehaviorTreeDefinition,
+  BehaviorTreeDragPayload,
+  BehaviorTreeInspectorTab,
+  BehaviorTreeKindMeta,
+  BehaviorTreeModel,
+  BehaviorTreeNodeCategory,
+  BehaviorTreeNodeConfigDraft,
+  BehaviorTreeNodeDefsSnapshot,
+  BehaviorTreeNodeDraft,
+  BehaviorTreeNodeKind,
+  BehaviorTreeOrchestrationLoadStatus,
+  BehaviorTreeOrchestrationMeta,
+  BehaviorTreePersistMode,
+  BehaviorTreeSavePayload,
+  BehaviorTreeSaveStatus,
+  BehaviorTreeSerializedNode,
+  BehaviorTreeValueType,
+} from "./pages/behaviorTreeOrchestrationType";
 export type { DatasourceBuildSelection, DatasourceConnection, DatasourceDbType, DatasourceField, DatasourceTable } from "./pages/datasourceBuildType";
 export type {
   BehaviorBuildMethod,

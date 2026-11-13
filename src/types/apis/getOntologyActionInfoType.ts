@@ -5,6 +5,7 @@ import type {
   CreateOntologyActionSourceType,
   CreateOntologyActionSubjectType,
 } from "./createOntologyActionType";
+import type { BehaviorTreeDefinition } from "../pages/behaviorTreeOrchestrationType";
 
 /** 行为详情查询参数。 */
 export interface GetOntologyActionInfoParams {
@@ -81,4 +82,6 @@ export interface GetOntologyActionInfoData {
   linkMapping?: GetOntologyActionInfoLinkMapping | null;
   mappingIns?: GetOntologyActionInfoMappingIn[] | null;
   functionParams?: GetOntologyActionInfoFunctionParam[] | null;
+  /** 行为树定义；仅 actionKind=TREE 时有值。 */
+  treeDefinition?: BehaviorTreeDefinition | null;
 }

@@ -595,6 +595,47 @@ test("space behavior maps actionInfos into category counts and displayName leave
   assert.equal(findSpaceBehaviorCategoryParentId(tree, "missing"), "");
 });
 
+test("space behavior category tree filters action leaves by ontologyUniqIdentifier", () => {
+  const payload = {
+    categoryId: 5,
+    name: "根节点",
+    children: [
+      {
+        categoryId: 11,
+        name: "应用",
+        actionInfos: [
+          { actionApi: "act.a", displayName: "本对象A", ontologyUniqIdentifier: "onto-plane" },
+          { actionApi: "act.b", displayName: "其他对象B", ontologyUniqIdentifier: "onto-other" },
+          { actionApi: "act.c", displayName: "本对象C", ontologyUniqIdentifier: " onto-plane " },
+          { actionApi: "act.d", displayName: "无对象标识", ontologyUniqIdentifier: "" },
+        ],
+      },
+      {
+        categoryId: 12,
+        name: "其他",
+        actionInfos: [{ actionApi: "act.e", displayName: "其他对象E", ontologyUniqIdentifier: "onto-other" }],
+      },
+    ],
+  };
+  const filtered = mapActionCategoryTree(payload, { ontologyUniqIdentifier: "onto-plane" });
+  assert.equal(filtered[0]?.count, 2);
+  const application = filtered[0]?.children.find((item) => item.id === "11");
+  const other = filtered[0]?.children.find((item) => item.id === "12");
+  assert.equal(application?.count, 2);
+  assert.deepEqual(
+    application?.children.map((item) => item.actionApi),
+    ["act.a", "act.c"],
+  );
+  assert.equal(other?.count, 0);
+  assert.equal(other?.children.length, 0);
+
+  const unfiltered = mapActionCategoryTree(payload);
+  assert.equal(unfiltered[0]?.count, 5);
+
+  const workspaceSource = readSource("../src/views/SpaceBehaviorWorkspace/composables/useSpaceBehaviorWorkspace.ts");
+  assert.match(workspaceSource, /mapActionCategoryTree\(response\.data,\s*ontologyUniqIdentifier \? \{ ontologyUniqIdentifier \} : \{\}\)/);
+});
+
 test("space behavior crud dialogs follow prototype create view edit and delete surfaces", () => {
   const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
   const drawerSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorDetailDrawer.vue");
@@ -775,11 +816,13 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.doesNotMatch(formSource, /构建行为树/);
   assert.doesNotMatch(formSource, /behavior-form-dialog__tree-panel/);
   assert.match(formSource, /行为树编排/);
-  assert.match(formSource, /行为树编排后续接入/);
   assert.match(formSource, /openBehaviorTreeOrchestration/);
+  assert.match(formSource, /BehaviorTreeOrchestrationDialog/);
+  assert.match(formSource, /behaviorTreeOrchestrationVisible/);
   assert.match(formSource, /保存行为/);
   assert.match(formSource, /kind === ['"]behaviorTree['"][\s\S]*行为树编排|行为树编排[\s\S]*kind === ['"]behaviorTree['"]/);
   assert.match(formSource, /min\(1120px, 94vw\)/);
+
   assert.doesNotMatch(formSource, /基本信息 \/ 输入参数 \/ 输出参数/);
   assert.doesNotMatch(formSource, /变更信息/);
   assert.doesNotMatch(formSource, /请选择函数算子以加载参数/);

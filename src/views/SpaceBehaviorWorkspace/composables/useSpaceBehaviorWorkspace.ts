@@ -89,7 +89,8 @@ export function useSpaceBehaviorWorkspace() {
       throw new Error(response.message || "行为分类树加载失败");
     }
     if (token !== workspaceToken) return;
-    categoryTree.value = mapActionCategoryTree(response.data);
+    const ontologyUniqIdentifier = ontologyId.value.trim();
+    categoryTree.value = mapActionCategoryTree(response.data, ontologyUniqIdentifier ? { ontologyUniqIdentifier } : {});
     if (!findSpaceBehaviorCategoryNode(categoryTree.value, selectedCategoryId.value)) {
       selectedCategoryId.value = categoryTree.value[0]?.id ?? ROOT_SPACE_BEHAVIOR_CATEGORY_ID;
     }
