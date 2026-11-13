@@ -53,6 +53,7 @@ function mapActionInfoStatus(status: number): SpaceBehaviorStatus {
  */
 function mapActionKind(actionKind: string): SpaceBehaviorKind {
   if (actionKind === "APPLICATION") return "application";
+  if (actionKind === "TREE") return "behaviorTree";
   return "basic";
 }
 
@@ -185,7 +186,7 @@ export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData
   const applicationBindingSeeds = kind === "application" ? mapApplicationActionInfoBindingSeeds(data.mappingIns, data.functionParams) : [];
 
   let unsupportedEditReason = "";
-  if (kind !== "application" && subjectType !== "PROPERTY_VALUE" && subjectType !== "LINK" && subjectType !== "BASIC_OPERATOR") {
+  if (kind !== "behaviorTree" && kind !== "application" && subjectType !== "PROPERTY_VALUE" && subjectType !== "LINK" && subjectType !== "BASIC_OPERATOR") {
     unsupportedEditReason = "当前行为类型暂不支持编辑保存";
   }
 

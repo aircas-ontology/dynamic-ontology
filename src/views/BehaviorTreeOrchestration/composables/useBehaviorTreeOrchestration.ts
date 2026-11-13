@@ -3,24 +3,35 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import {
   getActionTreeNodeDefsInterface,
   getOntologyActionInfoInterface,
+  getOntologyCategoryTreeInterface,
+  getOntologyPropertyByOntologyIdInterface,
   postCreateBehaviorTreeActionInterface,
   putUpdateBehaviorTreeActionInterface,
 } from "@/apis";
 import type {
   ActionTreeBindableAction,
   BehaviorTreeBlackboardItem,
+  BehaviorTreeBlackboardSource,
   BehaviorTreeDragPayload,
   BehaviorTreeInspectorTab,
   BehaviorTreeKindMeta,
   BehaviorTreeModel,
   BehaviorTreeNodeDraft,
   BehaviorTreeNodeKind,
+  BehaviorTreeObjectPropertyOption,
   BehaviorTreeOrchestrationLoadStatus,
   BehaviorTreeOrchestrationMeta,
   BehaviorTreePersistMode,
   BehaviorTreeSaveStatus,
   BehaviorTreeValueType,
+  SpaceRelationObjectOption,
 } from "@/types";
+import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
+import {
+  applyBehaviorTreeBlackboardPropertyBinding,
+  applyBehaviorTreeBlackboardSourceChange,
+  createBehaviorTreeBlackboardItem,
+} from "../utils/behaviorTreeBlackboard.ts";
 import { BEHAVIOR_TREE_VALUE_TYPES, createBehaviorTreeKindMetaMap } from "../utils/behaviorTreeConstants.ts";
 import { buildBehaviorTreeSavePayload, importBehaviorTreeDefinition } from "../utils/behaviorTreeDefinition.ts";
 import { layoutBehaviorTreeRoots } from "../utils/behaviorTreeLayout.ts";
@@ -38,7 +49,7 @@ import {
   reparentBehaviorTreeNode,
 } from "../utils/behaviorTreeModel.ts";
 import { extractBehaviorTreeDefinitionFromDetail, resolveBehaviorTreeSaveMethod } from "../utils/behaviorTreePersistence.ts";
-import { collectBehaviorTreeErrors, collectBehaviorTreeWarnings } from "../utils/behaviorTreeValidate.ts";
+import { collectBehaviorTreeErrors } from "../utils/behaviorTreeValidate.ts";
 
 /**
  * @description 管理行为树编排工作区状态：目录加载、详情加载、树模型、保存与画布命令。
@@ -56,31 +67,26 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
   const defsError = ref("");
   const detailStatus = ref<BehaviorTreeOrchestrationLoadStatus>("idle");
   const detailError = ref("");
+  const propertyCatalogStatus = ref<BehaviorTreeOrchestrationLoadStatus>("idle");
+  const propertyCatalogError = ref("");
+  const objectOptions = ref<SpaceRelationObjectOption[]>([]);
+  const objectProperties = ref<Record<string, BehaviorTreeObjectPropertyOption>>({});
+  /** 已成功拉取过属性的对象 id。 */
+  const loadedObjectPropertyIds = ref<Record<string, true>>({});
+  /** 正在拉取属性的对象 id。 */
+  const objectPropertyLoadingIds = ref<Record<string, true>>({});
   const saveStatus = ref<BehaviorTreeSaveStatus>("idle");
   const hasPersisted = ref(Boolean(meta.isEditMode));
   const revision = ref(0);
   const seq = { value: 1 };
   let defsToken = 0;
   let detailToken = 0;
+  let propertyCatalogToken = 0;
   let saveToken = 0;
+  const objectPropertyRequestTokens: Record<string, number> = {};
+  const objectPropertyInflight = new Map<string, Promise<void>>();
 
   const selectedNode = computed(() => findBehaviorTreeNode(model.roots, selectedId.value));
-  const definitionJson = computed(() => {
-    revision.value;
-    return JSON.stringify(buildBehaviorTreeSavePayload(model, kindMeta, meta).treeDefinition, null, 2);
-  });
-  const payloadJson = computed(() => {
-    revision.value;
-    return JSON.stringify(buildBehaviorTreeSavePayload(model, kindMeta, meta), null, 2);
-  });
-  const validationErrors = computed(() => {
-    revision.value;
-    return collectBehaviorTreeErrors(model, kindMeta);
-  });
-  const validationWarnings = computed(() => {
-    revision.value;
-    return collectBehaviorTreeWarnings(model, availableActions.value);
-  });
 
   /**
    * @description 触发视图刷新令牌。
@@ -288,17 +294,114 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
   }
 
   /**
+   * @description 清空对象属性缓存与加载态（切空间或对象目录失败时）。
+   */
+  function resetBehaviorTreeObjectPropertyCache(): void {
+    objectProperties.value = {};
+    loadedObjectPropertyIds.value = {};
+    objectPropertyLoadingIds.value = {};
+    objectPropertyInflight.clear();
+    for (const key of Object.keys(objectPropertyRequestTokens)) {
+      delete objectPropertyRequestTokens[key];
+    }
+  }
+
+  /**
+   * @description 仅加载当前空间对象列表，供黑板先选对象；不预拉属性。
+   */
+  async function loadBehaviorTreeObjectPropertyCatalog(): Promise<void> {
+    const token = ++propertyCatalogToken;
+    const spaceId = meta.spaceId.trim();
+    propertyCatalogStatus.value = "loading";
+    propertyCatalogError.value = "";
+    resetBehaviorTreeObjectPropertyCache();
+    if (!spaceId) {
+      propertyCatalogStatus.value = "error";
+      propertyCatalogError.value = "空间标识无效";
+      objectOptions.value = [];
+      return;
+    }
+    try {
+      const treeResponse = await getOntologyCategoryTreeInterface({ spaceId });
+      if (token !== propertyCatalogToken) return;
+      if (treeResponse.code !== 200 || !treeResponse.data) {
+        throw new Error(treeResponse.message || "对象目录加载失败");
+      }
+      objectOptions.value = mapOntologyObjectsToRelationOptions(treeResponse.data);
+      propertyCatalogStatus.value = "ready";
+    } catch (error) {
+      if (token !== propertyCatalogToken) return;
+      objectOptions.value = [];
+      resetBehaviorTreeObjectPropertyCache();
+      propertyCatalogStatus.value = "error";
+      propertyCatalogError.value = error instanceof Error ? error.message : "对象目录加载失败";
+    }
+  }
+
+  /**
+   * @description 按对象懒加载属性目录；已缓存则跳过，同对象进行中请求去重。
+   * @param objectId 对象 uniqueIdentifier。
+   */
+  async function ensureBehaviorTreeObjectProperties(objectId: string): Promise<void> {
+    const id = objectId.trim();
+    if (!id) return;
+    if (loadedObjectPropertyIds.value[id]) return;
+    const inflight = objectPropertyInflight.get(id);
+    if (inflight) {
+      await inflight;
+      return;
+    }
+    const catalogTokenAtStart = propertyCatalogToken;
+    const requestToken = (objectPropertyRequestTokens[id] || 0) + 1;
+    objectPropertyRequestTokens[id] = requestToken;
+    objectPropertyLoadingIds.value = { ...objectPropertyLoadingIds.value, [id]: true };
+    const task = (async () => {
+      try {
+        const response = await getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier: id });
+        if (catalogTokenAtStart !== propertyCatalogToken) return;
+        if (objectPropertyRequestTokens[id] !== requestToken) return;
+        if (response.code !== 200 || !Array.isArray(response.data)) {
+          throw new Error(response.message || "对象属性加载失败");
+        }
+        const next = { ...objectProperties.value };
+        for (const key of Object.keys(next)) {
+          if (next[key]?.objectId === id) delete next[key];
+        }
+        for (const property of response.data) {
+          const propertyId = (property.uniqueIdentifier || "").trim();
+          if (!propertyId) continue;
+          next[propertyId] = {
+            id: propertyId,
+            objectId: (property.ontologyUniqueIdentifier || id).trim() || id,
+            displayName: (property.displayName || propertyId).trim() || propertyId,
+            propertyType: (property.propertyType || "").trim(),
+          };
+        }
+        objectProperties.value = next;
+        loadedObjectPropertyIds.value = { ...loadedObjectPropertyIds.value, [id]: true };
+      } catch (error) {
+        if (catalogTokenAtStart !== propertyCatalogToken) return;
+        if (objectPropertyRequestTokens[id] !== requestToken) return;
+        ElMessage.error(error instanceof Error ? error.message : "对象属性加载失败");
+      } finally {
+        if (objectPropertyRequestTokens[id] === requestToken) {
+          const nextLoading = { ...objectPropertyLoadingIds.value };
+          delete nextLoading[id];
+          objectPropertyLoadingIds.value = nextLoading;
+        }
+        objectPropertyInflight.delete(id);
+      }
+    })();
+    objectPropertyInflight.set(id, task);
+    await task;
+  }
+
+  /**
    * @description 新增黑板键。
    */
   function addBehaviorTreeBlackboardRow(): void {
     const index = model.blackboard.length + 1;
-    model.blackboard.push({
-      key: `key_${index}`,
-      valueType: "STRING",
-      bindPropertyUniqueIdentifier: "",
-      defaultValueText: "",
-      description: "",
-    });
+    model.blackboard.push(createBehaviorTreeBlackboardItem(`key_${index}`));
     bumpRevision();
   }
 
@@ -317,6 +420,13 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
       renameBehaviorTreeKeyRefs(model.roots, oldKey, value.trim());
     } else if (field === "valueType") {
       item.valueType = (BEHAVIOR_TREE_VALUE_TYPES.includes(value as BehaviorTreeValueType) ? value : "STRING") as BehaviorTreeValueType;
+    } else if (field === "source") {
+      const source = (value === "FIXED" || value === "EXTERNAL" || value === "PROPERTY" ? value : "EXTERNAL") as BehaviorTreeBlackboardSource;
+      applyBehaviorTreeBlackboardSourceChange(item, source);
+    } else if (field === "bindPropertyUniqueIdentifier") {
+      const property = value.trim() ? objectProperties.value[value.trim()] : null;
+      item.bindPropertyUniqueIdentifier = value;
+      applyBehaviorTreeBlackboardPropertyBinding(item, property);
     } else {
       item[field] = value;
     }
@@ -330,25 +440,6 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
   function deleteBehaviorTreeBlackboardRow(index: number): void {
     model.blackboard.splice(index, 1);
     bumpRevision();
-  }
-
-  /**
-   * @description 应用定义 JSON。
-   * @param raw JSON 文本。
-   */
-  function applyBehaviorTreeDefinitionJson(raw: string): void {
-    try {
-      const parsed = JSON.parse(raw) as Parameters<typeof importBehaviorTreeDefinition>[0];
-      const next = importBehaviorTreeDefinition(parsed);
-      model.blackboard.splice(0, model.blackboard.length, ...next.blackboard);
-      model.roots.splice(0, model.roots.length, ...next.roots);
-      selectedId.value = null;
-      layoutBehaviorTreeRoots(model.roots);
-      bumpRevision();
-      ElMessage.success("已应用定义 JSON");
-    } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : "定义 JSON 无效");
-    }
   }
 
   /**
@@ -399,13 +490,12 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
    */
   async function saveBehaviorTreeAction(): Promise<void> {
     if (saveStatus.value === "submitting") return;
-    const errors = collectBehaviorTreeErrors(model, kindMeta);
+    const errors = collectBehaviorTreeErrors(model, kindMeta, objectProperties.value);
     if (!meta.spaceId.trim()) errors.unshift("对象空间 id 不能为空");
     if (!meta.actionApi.trim()) errors.unshift("行为 api 不能为空");
     if (!meta.displayName.trim()) errors.unshift("显示名称不能为空");
     if (!meta.categoryId.trim()) errors.unshift("行为分类不能为空");
     if (errors.length) {
-      activeTab.value = "json";
       ElMessage.warning(errors[0]);
       return;
     }
@@ -435,6 +525,7 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
     () => meta.spaceId,
     () => {
       void loadBehaviorTreeNodeDefs();
+      void loadBehaviorTreeObjectPropertyCatalog();
     },
   );
 
@@ -449,14 +540,17 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
     defsError,
     detailStatus,
     detailError,
+    propertyCatalogStatus,
+    propertyCatalogError,
+    objectOptions,
+    objectProperties,
+    objectPropertyLoadingIds,
     saveStatus,
     hasPersisted,
     revision,
-    definitionJson,
-    payloadJson,
-    validationErrors,
-    validationWarnings,
     loadBehaviorTreeNodeDefs,
+    loadBehaviorTreeObjectPropertyCatalog,
+    ensureBehaviorTreeObjectProperties,
     loadBehaviorTreeDetail,
     selectBehaviorTreeNode,
     addBehaviorTreeNode,
@@ -468,7 +562,6 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
     addBehaviorTreeBlackboardRow,
     updateBehaviorTreeBlackboardField,
     deleteBehaviorTreeBlackboardRow,
-    applyBehaviorTreeDefinitionJson,
     saveBehaviorTreeAction,
     reorderBehaviorTreeChild: (parentId: string, childId: string, delta: number) => {
       reorderBehaviorTreeChild(model, parentId, childId, delta);

@@ -4,9 +4,11 @@ import type {
   BehaviorTreeModel,
   BehaviorTreeNodeDraft,
   BehaviorTreeNodeKind,
+  BehaviorTreeObjectPropertyOption,
   BehaviorTreeValueType,
 } from "@/types";
-import { BEHAVIOR_TREE_NUMBER_TYPES, isBehaviorTreeValueLessOp } from "./behaviorTreeConstants.ts";
+import { mapBehaviorTreePropertyTypeToValueType, resolveBehaviorTreeBlackboardSource } from "./behaviorTreeBlackboard.ts";
+import { BEHAVIOR_TREE_BLACKBOARD_SOURCE_LABELS, BEHAVIOR_TREE_NUMBER_TYPES, isBehaviorTreeValueLessOp } from "./behaviorTreeConstants.ts";
 import { forEachBehaviorTreeNode } from "./behaviorTreeModel.ts";
 import { parseBehaviorTreeTypedValue } from "./behaviorTreeTypedValue.ts";
 
@@ -14,12 +16,16 @@ import { parseBehaviorTreeTypedValue } from "./behaviorTreeTypedValue.ts";
  * @description 收集行为树本地校验错误。
  * @param model 模型。
  * @param kindMeta kind 元信息。
+ * @param objectProperties 可选对象属性目录（用于 PROPERTY 类型对齐校验）。
  * @returns 错误文案列表。
  */
-export function collectBehaviorTreeErrors(model: BehaviorTreeModel, kindMeta: Record<BehaviorTreeNodeKind, BehaviorTreeKindMeta>): string[] {
+export function collectBehaviorTreeErrors(
+  model: BehaviorTreeModel,
+  kindMeta: Record<BehaviorTreeNodeKind, BehaviorTreeKindMeta>,
+  objectProperties: Record<string, BehaviorTreeObjectPropertyOption> = {},
+): string[] {
   const errors: string[] = [];
   const types: Record<string, BehaviorTreeValueType> = {};
-  if (model.blackboard.length === 0) errors.push("行为树至少要有一个黑板键");
   model.blackboard.forEach((item, index) => {
     const key = item.key.trim();
     if (!key) {
@@ -35,8 +41,31 @@ export function collectBehaviorTreeErrors(model: BehaviorTreeModel, kindMeta: Re
       return;
     }
     types[key] = item.valueType;
-    if (!parseBehaviorTreeTypedValue(item.defaultValueText, item.valueType).ok) {
+    const source = resolveBehaviorTreeBlackboardSource(item);
+    const fixedText = String(item.fixedValueText ?? "").trim();
+    const defaultText = String(item.defaultValueText ?? "").trim();
+    if (source !== "EXTERNAL" && defaultText !== "") {
+      errors.push(`黑板键 ${key} 的来源是${BEHAVIOR_TREE_BLACKBOARD_SOURCE_LABELS[source] || source}，取值不来自默认值，清空默认值再保存`);
+    }
+    if (source === "FIXED") {
+      if (fixedText === "") errors.push(`黑板键 ${key} 的值来源是固定值，必须填写固定值`);
+      else if (!parseBehaviorTreeTypedValue(fixedText, item.valueType).ok) {
+        errors.push(`黑板键 ${key} 的固定值不符合 ${item.valueType} 类型`);
+      }
+    }
+    if (source === "EXTERNAL" && defaultText !== "" && !parseBehaviorTreeTypedValue(defaultText, item.valueType).ok) {
       errors.push(`黑板键 ${key} 的默认值不符合 ${item.valueType} 类型`);
+    }
+    if (source !== "PROPERTY") return;
+    if (!(item.bindPropertyUniqueIdentifier || "").trim()) {
+      errors.push(`黑板键 ${key} 的值来源是对象属性，必须选择属性`);
+      return;
+    }
+    const property = objectProperties[item.bindPropertyUniqueIdentifier.trim()];
+    if (!property) return;
+    const mapped = mapBehaviorTreePropertyTypeToValueType(property.propertyType);
+    if (mapped !== item.valueType) {
+      errors.push(`黑板键 ${key} 的类型与绑定属性 ${property.objectId} · ${property.displayName} 不一致：${item.valueType} != ${mapped}`);
     }
   });
   if (model.roots.length !== 1) {

@@ -21,7 +21,7 @@
 
         <div class="behavior-form-dialog__grid">
           <el-form-item label="类别" required>
-            <el-select v-model="kind" placeholder="选择类别" style="width: 100%" @change="handleKindChange">
+            <el-select v-model="kind" placeholder="选择类别" style="width: 100%" :disabled="mode === 'edit'" @change="handleKindChange">
               <el-option v-for="item in SPACE_BEHAVIOR_KIND_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>

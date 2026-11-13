@@ -10,6 +10,7 @@ import type {
   BehaviorTreeSerializedNode,
   BehaviorTreeValueType,
 } from "@/types";
+import { resolveBehaviorTreeBlackboardSource } from "./behaviorTreeBlackboard.ts";
 import { createDefaultBehaviorTreeConfig } from "./behaviorTreeModel.ts";
 import { isBehaviorTreeValueLessOp } from "./behaviorTreeConstants.ts";
 import { behaviorTreeEmptyToNull, behaviorTreeIntOrNull, behaviorTreeValueToText, parseBehaviorTreeTypedValue } from "./behaviorTreeTypedValue.ts";
@@ -146,21 +147,36 @@ export function buildBehaviorTreeDefinition(model: BehaviorTreeModel, kindMeta: 
     return found ? found.valueType : null;
   };
   return {
-    blackboard: model.blackboard.map((item) => ({
-      key: item.key.trim(),
-      valueType: item.valueType,
-      bindPropertyUniqueIdentifier: behaviorTreeEmptyToNull(item.bindPropertyUniqueIdentifier),
-      description: behaviorTreeEmptyToNull(item.description),
-    })),
-    variables: model.blackboard.map((item) => {
-      const parsed = parseBehaviorTreeTypedValue(item.defaultValueText, item.valueType);
-      return {
-        name: item.key.trim(),
+    blackboard: model.blackboard.map((item) => {
+      const source = resolveBehaviorTreeBlackboardSource(item);
+      const serialized: BehaviorTreeDefinition["blackboard"][number] = {
+        key: item.key.trim(),
         valueType: item.valueType,
-        scope: "RUNTIME" as const,
-        defaultValue: parsed.ok ? parsed.value : null,
+        source,
       };
+      if (source === "FIXED") {
+        const parsed = parseBehaviorTreeTypedValue(item.fixedValueText, item.valueType);
+        serialized.value = parsed.ok ? parsed.value : null;
+      }
+      if (source === "PROPERTY") {
+        serialized.bindPropertyUniqueIdentifier = behaviorTreeEmptyToNull(item.bindPropertyUniqueIdentifier);
+      }
+      const description = behaviorTreeEmptyToNull(item.description);
+      if (description) serialized.description = description;
+      return serialized;
     }),
+    // 默认值只属于外部输入：固定值写在 blackboard.value，对象属性执行时按实例回读
+    variables: model.blackboard
+      .filter((item) => resolveBehaviorTreeBlackboardSource(item) === "EXTERNAL" && String(item.defaultValueText ?? "").trim() !== "")
+      .map((item) => {
+        const parsed = parseBehaviorTreeTypedValue(item.defaultValueText, item.valueType);
+        return {
+          name: item.key.trim(),
+          valueType: item.valueType,
+          scope: "RUNTIME" as const,
+          defaultValue: parsed.ok ? parsed.value : null,
+        };
+      }),
     roots: model.roots.map((root) => serializeBehaviorTreeNode(root, kindMeta, blackboardTypeOf)),
   };
 }
@@ -215,14 +231,21 @@ export function importBehaviorTreeSerializedNode(raw: BehaviorTreeSerializedNode
  * @returns 编辑模型。
  */
 export function importBehaviorTreeDefinition(definition: BehaviorTreeDefinition): BehaviorTreeModel {
+  const variables = Array.isArray(definition.variables) ? definition.variables : [];
   return {
-    blackboard: (definition.blackboard || []).map((item, index) => {
-      const variable = definition.variables?.[index];
+    blackboard: (definition.blackboard || []).map((item) => {
+      const source = resolveBehaviorTreeBlackboardSource({
+        source: item.source,
+        bindPropertyUniqueIdentifier: item.bindPropertyUniqueIdentifier || "",
+      });
+      const variable = variables.find((entry) => entry.name === item.key);
       return {
         key: item.key || "",
         valueType: item.valueType || "STRING",
+        source,
         bindPropertyUniqueIdentifier: item.bindPropertyUniqueIdentifier || "",
-        defaultValueText: behaviorTreeValueToText(variable?.defaultValue),
+        fixedValueText: source === "FIXED" ? behaviorTreeValueToText(item.value) : "",
+        defaultValueText: source === "EXTERNAL" && variable ? behaviorTreeValueToText(variable.defaultValue) : "",
         description: item.description || "",
       };
     }),

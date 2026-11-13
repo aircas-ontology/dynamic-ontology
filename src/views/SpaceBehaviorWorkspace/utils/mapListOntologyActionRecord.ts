@@ -44,6 +44,7 @@ export function mapSpaceBehaviorListStatusToQuery(status: SpaceBehaviorListStatu
  */
 function mapActionKindToSpaceBehaviorKind(actionKind: string): SpaceBehaviorKind {
   if (actionKind === "APPLICATION") return "application";
+  if (actionKind === "TREE") return "behaviorTree";
   return "basic";
 }
 

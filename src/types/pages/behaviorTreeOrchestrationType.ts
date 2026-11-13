@@ -22,6 +22,9 @@ export type BehaviorTreeNodeKind =
 /** 黑板值类型。 */
 export type BehaviorTreeValueType = "STRING" | "INTEGER" | "LONG" | "FLOAT" | "DOUBLE" | "BOOL" | "BYTE" | "SHORT" | "CHAR" | "LIST" | "DATE" | "OBJECT";
 
+/** 黑板键取值来源。 */
+export type BehaviorTreeBlackboardSource = "FIXED" | "EXTERNAL" | "PROPERTY";
+
 /** 节点 kind 元信息。 */
 export interface BehaviorTreeKindMeta {
   kind: BehaviorTreeNodeKind;
@@ -34,9 +37,19 @@ export interface BehaviorTreeKindMeta {
 export interface BehaviorTreeBlackboardItem {
   key: string;
   valueType: BehaviorTreeValueType;
+  source: BehaviorTreeBlackboardSource;
   bindPropertyUniqueIdentifier: string;
+  fixedValueText: string;
   defaultValueText: string;
   description: string;
+}
+
+/** 对象属性目录项（黑板 PROPERTY 来源下拉）。 */
+export interface BehaviorTreeObjectPropertyOption {
+  id: string;
+  objectId: string;
+  displayName: string;
+  propertyType: string;
 }
 
 /** 节点配置草稿（表单字符串态）。 */
@@ -84,7 +97,7 @@ export type BehaviorTreeSaveStatus = "idle" | "submitting" | "success" | "error"
 export type BehaviorTreePersistMode = "created" | "updated";
 
 /** 右侧 Inspector Tab。 */
-export type BehaviorTreeInspectorTab = "node" | "board" | "json";
+export type BehaviorTreeInspectorTab = "node" | "board";
 
 /** 调色板拖拽载荷。 */
 export interface BehaviorTreeDragPayload {
@@ -103,8 +116,10 @@ export interface BehaviorTreeDefinition {
   blackboard: Array<{
     key: string;
     valueType: BehaviorTreeValueType;
-    bindPropertyUniqueIdentifier: string | null;
-    description: string | null;
+    source: BehaviorTreeBlackboardSource;
+    value?: unknown;
+    bindPropertyUniqueIdentifier?: string | null;
+    description?: string | null;
   }>;
   variables: Array<{
     name: string;

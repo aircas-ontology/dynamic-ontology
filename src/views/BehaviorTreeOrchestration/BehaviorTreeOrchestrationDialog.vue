@@ -14,8 +14,6 @@
         <div class="behavior-tree-orchestration__meta">
           <span>{{ meta.displayName || "未命名行为树" }}</span>
           <code>{{ meta.actionApi }}</code>
-          <el-tag size="small" effect="plain">空间 {{ meta.spaceId }}</el-tag>
-          <el-tag size="small" effect="plain">分类 {{ meta.categoryId }}</el-tag>
           <el-tag size="small" :type="defsStatus === 'ready' ? 'success' : defsStatus === 'error' ? 'danger' : 'info'">
             {{ defsStatus === "ready" ? "目录已加载" : defsStatus === "loading" ? "目录加载中" : defsStatus === "error" ? "目录失败" : "未加载" }}
           </el-tag>
@@ -30,7 +28,6 @@
         <div class="behavior-tree-orchestration__actions">
           <el-button @click="layoutBehaviorTree">自动布局</el-button>
           <el-button @click="fitBehaviorTreeView">适应画布</el-button>
-          <el-button @click="activeTab = 'json'">导入/导出</el-button>
           <el-button @click="clearBehaviorTree">清空</el-button>
           <el-button @click="emit('update:modelValue', false)">返回上一步</el-button>
           <el-button type="primary" :loading="saveStatus === 'submitting'" @click="saveBehaviorTreeAction">
@@ -75,19 +72,15 @@
             <el-tab-pane label="黑板 / 变量" name="board">
               <BehaviorTreeBlackboardPanel
                 :rows="model.blackboard"
+                :object-options="objectOptions"
+                :object-properties="objectProperties"
+                :property-catalog-status="propertyCatalogStatus"
+                :property-catalog-error="propertyCatalogError"
+                :object-property-loading-ids="objectPropertyLoadingIds"
                 @add-row="addBehaviorTreeBlackboardRow"
                 @delete-row="deleteBehaviorTreeBlackboardRow"
                 @update-field="updateBehaviorTreeBlackboardField"
-              />
-            </el-tab-pane>
-            <el-tab-pane label="定义 JSON" name="json">
-              <BehaviorTreeJsonPanel
-                :definition-json="definitionJson"
-                :payload-json="payloadJson"
-                :errors="validationErrors"
-                :warnings="validationWarnings"
-                @refresh="bumpRevision"
-                @apply="applyBehaviorTreeDefinitionJson"
+                @request-object-properties="ensureBehaviorTreeObjectProperties"
               />
             </el-tab-pane>
           </el-tabs>
@@ -101,6 +94,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import type { BehaviorTreeNodeDraft, BehaviorTreeOrchestrationMeta, BehaviorTreePersistMode, BehaviorTreeValueType } from "@/types";
+import { createBehaviorTreeBlackboardItem } from "./utils/behaviorTreeBlackboard";
 import { BEHAVIOR_TREE_VALUE_TYPES } from "./utils/behaviorTreeConstants";
 import { findBehaviorTreeNode } from "./utils/behaviorTreeModel";
 import { useBehaviorTreeGraph } from "./composables/useBehaviorTreeGraph";
@@ -108,7 +102,6 @@ import { useBehaviorTreeOrchestration } from "./composables/useBehaviorTreeOrche
 import BehaviorTreePalette from "./components/BehaviorTreePalette.vue";
 import BehaviorTreeNodeInspector from "./components/BehaviorTreeNodeInspector.vue";
 import BehaviorTreeBlackboardPanel from "./components/BehaviorTreeBlackboardPanel.vue";
-import BehaviorTreeJsonPanel from "./components/BehaviorTreeJsonPanel.vue";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -132,14 +125,17 @@ const {
   defsStatus,
   defsError,
   detailStatus,
+  propertyCatalogStatus,
+  propertyCatalogError,
+  objectOptions,
+  objectProperties,
+  objectPropertyLoadingIds,
   saveStatus,
   hasPersisted,
   revision,
-  definitionJson,
-  payloadJson,
-  validationErrors,
-  validationWarnings,
   loadBehaviorTreeNodeDefs,
+  loadBehaviorTreeObjectPropertyCatalog,
+  ensureBehaviorTreeObjectProperties,
   loadBehaviorTreeDetail,
   selectBehaviorTreeNode,
   addBehaviorTreeNode,
@@ -151,7 +147,6 @@ const {
   addBehaviorTreeBlackboardRow,
   updateBehaviorTreeBlackboardField,
   deleteBehaviorTreeBlackboardRow,
-  applyBehaviorTreeDefinitionJson,
   saveBehaviorTreeAction,
   reorderBehaviorTreeChild,
   bumpRevision,
@@ -205,7 +200,7 @@ const { initBehaviorTreeGraph, fitBehaviorTreeView } = useBehaviorTreeGraph({
  * @param name Element Plus tab 名称。
  */
 function handleInspectorTabChange(name: string | number): void {
-  if (name === "node" || name === "board" || name === "json") {
+  if (name === "node" || name === "board") {
     activeTab.value = name;
   }
 }
@@ -256,13 +251,12 @@ function handleAddExternalKeys(id: string): void {
   for (const param of bound.externalParams || []) {
     if (!param.name || existing.has(param.name)) continue;
     const valueType = (BEHAVIOR_TREE_VALUE_TYPES.includes(param.type as BehaviorTreeValueType) ? param.type : "STRING") as BehaviorTreeValueType;
-    model.blackboard.push({
-      key: param.name,
-      valueType,
-      bindPropertyUniqueIdentifier: "",
-      defaultValueText: "",
-      description: param.description || `外部输入参数，来自行为 ${bound.actionApi}`,
-    });
+    model.blackboard.push(
+      createBehaviorTreeBlackboardItem(param.name, {
+        valueType,
+        description: param.description || `外部输入参数，来自行为 ${bound.actionApi}`,
+      }),
+    );
     existing.add(param.name);
     added += 1;
   }
@@ -274,7 +268,7 @@ function handleAddExternalKeys(id: string): void {
  * @description 打开弹框时加载目录与（编辑态）详情，再初始化画布。
  */
 async function bootstrapBehaviorTreeOrchestration(): Promise<void> {
-  await loadBehaviorTreeNodeDefs();
+  await Promise.all([loadBehaviorTreeNodeDefs(), loadBehaviorTreeObjectPropertyCatalog()]);
   if (props.meta.isEditMode) await loadBehaviorTreeDetail();
   initBehaviorTreeGraph();
   fitBehaviorTreeView();
@@ -338,7 +332,7 @@ onMounted(() => {
   display: grid;
   min-height: 0;
   flex: 1;
-  grid-template-columns: 240px minmax(0, 1fr) minmax(320px, 380px);
+  grid-template-columns: 240px minmax(0, 1fr) minmax(340px, 420px);
 }
 
 .behavior-tree-orchestration__canvas-wrap {
@@ -366,7 +360,8 @@ onMounted(() => {
 .behavior-tree-orchestration__inspector {
   min-width: 0;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 0 12px 12px;
   background: var(--aircas-color-panel-background);
 }

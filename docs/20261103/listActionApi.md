@@ -36,7 +36,7 @@ GET /ontology/action/list
         "categoryId": 14,
         "status": 1, //2 草稿，1 已发布
         "updateTime": "2026-11-06 15:23:36",
-        "actionKind": "BASE",
+        "actionKind": "BASE", //行为类别：BASE 基础行为 / APPLICATION 应用行为 / TREE 行为树
         "subjectType": "PROPERTY_VALUE",
         "operation": "CREATE",
         "storageGroup": "weapon",

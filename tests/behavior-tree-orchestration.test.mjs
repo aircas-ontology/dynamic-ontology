@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
+import {
+  applyBehaviorTreeBlackboardSourceChange,
+  createBehaviorTreeBlackboardItem,
+  mapBehaviorTreePropertyTypeToValueType,
+  resolveBehaviorTreeBlackboardSource,
+} from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreeBlackboard.ts";
 import { createBehaviorTreeKindMetaMap, isBehaviorTreeValueLessOp } from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreeConstants.ts";
 import {
   behaviorTreeConfigToDraft,
@@ -70,15 +76,14 @@ function makeNode(partial) {
 test("behavior tree model validates single root and blackboard", () => {
   const kindMeta = createBehaviorTreeKindMetaMap();
   const model = createEmptyBehaviorTreeModel();
-  assert.deepEqual(collectBehaviorTreeErrors(model, kindMeta), ["行为树至少要有一个黑板键", "行为树必须且只能有一个根节点，当前 0 个"]);
+  assert.deepEqual(collectBehaviorTreeErrors(model, kindMeta), ["行为树必须且只能有一个根节点，当前 0 个"]);
 
-  model.blackboard.push({
-    key: "ammoCount",
-    valueType: "INTEGER",
-    bindPropertyUniqueIdentifier: "",
-    defaultValueText: "3",
-    description: "",
-  });
+  model.blackboard.push(
+    createBehaviorTreeBlackboardItem("ammoCount", {
+      valueType: "INTEGER",
+      defaultValueText: "3",
+    }),
+  );
   const seq = { value: 1 };
   const root = makeNode({
     id: nextBehaviorTreeNodeId(model.roots, seq),
@@ -94,13 +99,24 @@ test("behavior tree model validates single root and blackboard", () => {
 test("behavior tree definition round-trips and builds TREE payload", () => {
   const kindMeta = createBehaviorTreeKindMetaMap();
   const model = createEmptyBehaviorTreeModel();
-  model.blackboard.push({
-    key: "ammoCount",
-    valueType: "INTEGER",
-    bindPropertyUniqueIdentifier: "prop.ammo",
-    defaultValueText: "1",
-    description: "弹药",
-  });
+  model.blackboard.push(
+    createBehaviorTreeBlackboardItem("ammoCount", {
+      valueType: "INTEGER",
+      source: "EXTERNAL",
+      defaultValueText: "1",
+      description: "弹药",
+    }),
+    createBehaviorTreeBlackboardItem("fixedFlag", {
+      valueType: "BOOL",
+      source: "FIXED",
+      fixedValueText: "true",
+    }),
+    createBehaviorTreeBlackboardItem("hp", {
+      valueType: "INTEGER",
+      source: "PROPERTY",
+      bindPropertyUniqueIdentifier: "prop.hp",
+    }),
+  );
   model.roots.push(
     makeNode({
       id: "node_1",
@@ -116,8 +132,21 @@ test("behavior tree definition round-trips and builds TREE payload", () => {
   assert.equal(definition.roots.length, 1);
   assert.equal(definition.roots[0].config.actionApi, "act.demo.ping");
   assert.equal(definition.roots[0].skipIf, "ammoCount > 0");
+  assert.equal(definition.blackboard[0].source, "EXTERNAL");
+  assert.equal(definition.blackboard[1].source, "FIXED");
+  assert.equal(definition.blackboard[1].value, true);
+  assert.equal(definition.blackboard[2].source, "PROPERTY");
+  assert.equal(definition.blackboard[2].bindPropertyUniqueIdentifier, "prop.hp");
+  assert.equal(definition.variables.length, 1);
+  assert.equal(definition.variables[0].name, "ammoCount");
+  assert.equal(definition.variables[0].defaultValue, 1);
   const restored = importBehaviorTreeDefinition(definition);
   assert.equal(restored.blackboard[0].key, "ammoCount");
+  assert.equal(restored.blackboard[0].source, "EXTERNAL");
+  assert.equal(restored.blackboard[0].defaultValueText, "1");
+  assert.equal(restored.blackboard[1].source, "FIXED");
+  assert.equal(restored.blackboard[1].fixedValueText, "true");
+  assert.equal(restored.blackboard[2].source, "PROPERTY");
   assert.equal(restored.roots[0].kind, "ACTION");
 
   const payload = buildBehaviorTreeSavePayload(model, kindMeta, {
@@ -140,6 +169,14 @@ test("behavior tree definition round-trips and builds TREE payload", () => {
     description: "desc",
   });
   assert.equal(payloadNoCategory.categoryId, null);
+
+  assert.equal(resolveBehaviorTreeBlackboardSource({ source: "", bindPropertyUniqueIdentifier: "p1" }), "PROPERTY");
+  assert.equal(mapBehaviorTreePropertyTypeToValueType("Int"), "INTEGER");
+  const switched = createBehaviorTreeBlackboardItem("tmp", { defaultValueText: "1", fixedValueText: "2", bindPropertyUniqueIdentifier: "p" });
+  applyBehaviorTreeBlackboardSourceChange(switched, "FIXED");
+  assert.equal(switched.source, "FIXED");
+  assert.equal(switched.defaultValueText, "");
+  assert.equal(switched.bindPropertyUniqueIdentifier, "");
 });
 
 test("behavior tree typed values and helpers cover parse paths", () => {
@@ -269,13 +306,15 @@ test("behavior tree validation covers kind rules and warnings", () => {
   const kindMeta = createBehaviorTreeKindMetaMap();
   const model = createEmptyBehaviorTreeModel();
   model.blackboard.push(
-    { key: "", valueType: "STRING", bindPropertyUniqueIdentifier: "", defaultValueText: "", description: "" },
-    { key: "dup", valueType: "STRING", bindPropertyUniqueIdentifier: "", defaultValueText: "a", description: "" },
-    { key: "dup", valueType: "STRING", bindPropertyUniqueIdentifier: "", defaultValueText: "b", description: "" },
-    { key: "badInt", valueType: "", bindPropertyUniqueIdentifier: "", defaultValueText: "x", description: "" },
-    { key: "count", valueType: "INTEGER", bindPropertyUniqueIdentifier: "", defaultValueText: "nope", description: "" },
-    { key: "label", valueType: "STRING", bindPropertyUniqueIdentifier: "", defaultValueText: "ok", description: "" },
-    { key: "items", valueType: "LIST", bindPropertyUniqueIdentifier: "", defaultValueText: "a,b", description: "" },
+    createBehaviorTreeBlackboardItem("", { valueType: "STRING" }),
+    createBehaviorTreeBlackboardItem("dup", { defaultValueText: "a" }),
+    createBehaviorTreeBlackboardItem("dup", { defaultValueText: "b" }),
+    createBehaviorTreeBlackboardItem("badInt", { valueType: "", defaultValueText: "x" }),
+    createBehaviorTreeBlackboardItem("count", { valueType: "INTEGER", defaultValueText: "nope" }),
+    createBehaviorTreeBlackboardItem("label", { defaultValueText: "ok" }),
+    createBehaviorTreeBlackboardItem("items", { valueType: "LIST", defaultValueText: "a,b" }),
+    createBehaviorTreeBlackboardItem("fixedEmpty", { source: "FIXED", fixedValueText: "" }),
+    createBehaviorTreeBlackboardItem("propMissing", { source: "PROPERTY", bindPropertyUniqueIdentifier: "" }),
   );
 
   const leafWithChild = makeNode({
@@ -385,18 +424,19 @@ test("behavior tree validation covers kind rules and warnings", () => {
   assert.match(errors, /黑板第 1 行键名为空/);
   assert.match(errors, /黑板键名重复：dup/);
   assert.match(errors, /必须选择值类型|不符合/);
+  assert.match(errors, /固定值，必须填写固定值/);
+  assert.match(errors, /对象属性，必须选择属性/);
   assert.match(errors, /只能有一个根节点/);
   assert.match(errors, /叶子节点，不能有子节点|必须绑定行为|timeoutSeconds/);
   assert.match(errors, /成败判定策略|循环模式|持续执行条件|冷却时长|限时时长|比较方式|条件表达式|节点标识/);
 
   const warnModel = createEmptyBehaviorTreeModel();
-  warnModel.blackboard.push({
-    key: "k",
-    valueType: "INTEGER",
-    bindPropertyUniqueIdentifier: "",
-    defaultValueText: "1",
-    description: "",
-  });
+  warnModel.blackboard.push(
+    createBehaviorTreeBlackboardItem("k", {
+      valueType: "INTEGER",
+      defaultValueText: "1",
+    }),
+  );
   warnModel.roots = [
     makeNode({
       id: "root",
@@ -497,7 +537,7 @@ test("behavior tree persistence helpers choose method and extract TREE definitio
   assert.equal(resolveBehaviorTreeSaveMethod(true), "PUT");
 
   const definition = {
-    blackboard: [{ key: "ammo", valueType: "INTEGER", bindPropertyUniqueIdentifier: null, description: null }],
+    blackboard: [{ key: "ammo", valueType: "INTEGER", source: "EXTERNAL", description: "弹药" }],
     variables: [{ name: "ammo", valueType: "INTEGER", scope: "RUNTIME", defaultValue: 1 }],
     roots: [
       {
@@ -564,7 +604,39 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(dialogSource, /BehaviorTreePalette/);
   assert.match(dialogSource, /BehaviorTreeNodeInspector/);
   assert.match(dialogSource, /BehaviorTreeBlackboardPanel/);
-  assert.match(dialogSource, /BehaviorTreeJsonPanel/);
+  assert.doesNotMatch(dialogSource, /BehaviorTreeJsonPanel|导入\/导出|定义 JSON/);
+  assert.doesNotMatch(dialogSource, /空间 \{\{ meta\.spaceId \}\}|分类 \{\{ meta\.categoryId \}\}/);
+  assert.equal(existsSync(new URL("../src/views/BehaviorTreeOrchestration/components/BehaviorTreeJsonPanel.vue", import.meta.url)), false);
+  assert.match(dialogSource, /object-options|object-properties|loadBehaviorTreeObjectPropertyCatalog/);
+  assert.match(dialogSource, /ensureBehaviorTreeObjectProperties|request-object-properties/);
+  const boardSource = readSource("../src/views/BehaviorTreeOrchestration/components/BehaviorTreeBlackboardPanel.vue");
+  assert.match(boardSource, /BEHAVIOR_TREE_BLACKBOARD_SOURCE_OPTIONS/);
+  assert.match(boardSource, /behavior-tree-board__card/);
+  assert.doesNotMatch(boardSource, /<el-table\b/);
+  assert.match(boardSource, /先选择对象|handleObjectChange|listPropertiesForObject/);
+  assert.match(boardSource, /request-object-properties/);
+  assert.match(boardSource, /objectPropertyLoadingIds|isObjectPropertyLoading/);
+  assert.match(boardSource, /固定值|默认值/);
+  const orchestrationSource = readSource("../src/views/BehaviorTreeOrchestration/composables/useBehaviorTreeOrchestration.ts");
+  assert.match(orchestrationSource, /getOntologyCategoryTreeInterface/);
+  assert.match(orchestrationSource, /objectOptions\.value = mapOntologyObjectsToRelationOptions/);
+  assert.match(orchestrationSource, /ensureBehaviorTreeObjectProperties/);
+  assert.match(orchestrationSource, /getOntologyPropertyByOntologyIdInterface/);
+  assert.doesNotMatch(orchestrationSource, /Promise\.all\(\s*objects\.map/);
+  assert.match(orchestrationSource, /loadedObjectPropertyIds|objectPropertyLoadingIds/);
+  const graphSource = readSource("../src/views/BehaviorTreeOrchestration/composables/useBehaviorTreeGraph.ts");
+  assert.match(graphSource, /targetMarker/);
+  assert.match(graphSource, /buildBehaviorTreeEdgeTerminals/);
+  assert.match(graphSource, /connectionPoint:\s*\{\s*name:\s*['"]anchor['"][\s\S]*dy:\s*18/);
+  assert.match(graphSource, /connectionPoint:\s*\{\s*name:\s*['"]anchor['"][\s\S]*dy:\s*-14/);
+  assert.match(graphSource, /padding:\s*18/);
+  assert.match(graphSource, /port: ['"]out['"]/);
+  assert.match(graphSource, /port: ['"]in['"]/);
+  assert.match(graphSource, /id: ['"]in['"]/);
+  assert.match(graphSource, /createEdge/);
+  assert.match(graphSource, /mousewheel:\s*\{[^}]*enabled:\s*true/);
+  assert.doesNotMatch(graphSource, /mousewheel:\s*\{[^}]*modifiers/);
+  assert.doesNotMatch(graphSource, new RegExp("targetMarker:[\\s\\S]*offset:\\s*[1-9]"));
   assert.match(dialogSource, /saveBehaviorTreeAction/);
   assert.match(dialogSource, /hasPersisted \? "更新" : "保存"/);
   assert.match(dialogSource, /loadBehaviorTreeDetail/);

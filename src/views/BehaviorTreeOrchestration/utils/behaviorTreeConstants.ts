@@ -43,6 +43,40 @@ export const BEHAVIOR_TREE_VALUE_TYPES: readonly BehaviorTreeValueType[] = [
 /** 数值比较支持的类型。 */
 export const BEHAVIOR_TREE_NUMBER_TYPES: readonly BehaviorTreeValueType[] = ["INTEGER", "LONG", "FLOAT", "DOUBLE"];
 
+/** 黑板取值来源选项。 */
+export const BEHAVIOR_TREE_BLACKBOARD_SOURCE_OPTIONS = [
+  { value: "FIXED", label: "固定值" },
+  { value: "EXTERNAL", label: "外部输入" },
+  { value: "PROPERTY", label: "对象属性" },
+] as const;
+
+/** 黑板来源中文标签。 */
+export const BEHAVIOR_TREE_BLACKBOARD_SOURCE_LABELS: Record<string, string> = {
+  FIXED: "固定值",
+  EXTERNAL: "外部输入",
+  PROPERTY: "对象属性",
+};
+
+/**
+ * 对象属性 propertyType → 黑板 valueType（与后端 toBlackboardValueType 对齐）。
+ */
+export const BEHAVIOR_TREE_PROPERTY_TYPE_TO_VALUE_TYPE: Record<string, BehaviorTreeValueType> = {
+  Bool: "BOOL",
+  Int: "INTEGER",
+  Long: "LONG",
+  Float: "FLOAT",
+  Short: "SHORT",
+  Byte: "BYTE",
+  Double: "DOUBLE",
+  Decimal: "DOUBLE",
+  Date: "DATE",
+  Timestamp: "DATE",
+  Array: "LIST",
+  Map: "OBJECT",
+  Ontology: "OBJECT",
+  String: "STRING",
+};
+
 export const BEHAVIOR_TREE_RUN_MODE_OPTIONS = [
   { value: "STANDARD", label: "标准 STANDARD" },
   { value: "MEMORY", label: "记忆 MEMORY" },

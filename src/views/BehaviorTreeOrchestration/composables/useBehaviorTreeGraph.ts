@@ -1,8 +1,96 @@
 import { onBeforeUnmount, watch, type Ref } from "vue";
-import { Graph } from "@antv/x6";
+import { Graph, type Node } from "@antv/x6";
 import type { BehaviorTreeDragPayload, BehaviorTreeKindMeta, BehaviorTreeModel, BehaviorTreeNodeDraft, BehaviorTreeNodeKind } from "@/types";
 import { BEHAVIOR_TREE_DRAG_MIME, BEHAVIOR_TREE_NODE_H, BEHAVIOR_TREE_NODE_W } from "../utils/behaviorTreeConstants.ts";
 import { forEachBehaviorTreeNode, findBehaviorTreeParent } from "../utils/behaviorTreeModel.ts";
+
+/** 父子连线样式（含指向子节点的方向箭头）。 */
+const BEHAVIOR_TREE_EDGE_LINE_ATTRS = {
+  stroke: "#d7e3f4",
+  strokeWidth: 2,
+  targetMarker: {
+    name: "block",
+    width: 16,
+    height: 12,
+    // 默认约 -width/2，尖端落在终点；勿用正 offset，否则箭头会钻进目标节点
+    fill: "#ffffff",
+    stroke: "#ffffff",
+  },
+};
+
+/** 正交路由：padding 让折线离开节点包围盒。 */
+const BEHAVIOR_TREE_EDGE_ROUTER = { name: "orth" as const, args: { padding: 18 } };
+
+/** 圆角连接器。 */
+const BEHAVIOR_TREE_EDGE_CONNECTOR = { name: "rounded" as const, args: { radius: 8 } };
+
+/**
+ * @description 构建节点上下端口（顶 in / 底 out）。
+ * @param stroke 端口描边色。
+ * @returns X6 ports 配置。
+ */
+function buildBehaviorTreeNodePorts(stroke: string) {
+  return {
+    groups: {
+      in: {
+        position: "top",
+        attrs: {
+          // 缩小并半透明，避免盖住箭头
+          circle: {
+            r: 2.5,
+            magnet: "passive",
+            stroke: "rgba(232,238,247,0.55)",
+            strokeWidth: 1,
+            fill: "rgba(15,23,42,0.35)",
+          },
+        },
+      },
+      out: {
+        position: "bottom",
+        attrs: {
+          circle: { r: 4.5, magnet: true, stroke, strokeWidth: 1.4, fill: "#fff", cursor: "crosshair" },
+        },
+      },
+    },
+    items: [
+      { id: "in", group: "in" },
+      { id: "out", group: "out" },
+    ],
+  };
+}
+
+/**
+ * @description 构建父子边端点：out → in；源端下移、目标上移，避免折线贴边框。
+ * @param parentId 父节点 id。
+ * @param childId 子节点 id。
+ * @returns source/target 配置。
+ */
+function buildBehaviorTreeEdgeTerminals(parentId: string, childId: string) {
+  return {
+    source: {
+      cell: parentId,
+      port: "out",
+      connectionPoint: { name: "anchor", args: { dy: 18 } },
+    },
+    target: {
+      cell: childId,
+      port: "in",
+      connectionPoint: { name: "anchor", args: { dy: -14 } },
+    },
+  };
+}
+
+/**
+ * @description 确保已有节点具备 in/out 端口。
+ * @param nodeCell 节点。
+ * @param stroke 端口描边色。
+ */
+function ensureBehaviorTreeNodePorts(nodeCell: Node, stroke: string): void {
+  const ports = buildBehaviorTreeNodePorts(stroke);
+  nodeCell.prop("ports", ports);
+  nodeCell.setProp("ports/groups/in/attrs/circle/stroke", stroke);
+  nodeCell.setProp("ports/groups/out/attrs/circle/stroke", stroke);
+}
 
 /**
  * @description 节点画布样式。
@@ -112,17 +200,44 @@ export function useBehaviorTreeGraph(options: UseBehaviorTreeGraphOptions) {
       background: { color: "transparent" },
       grid: { visible: true, type: "dot", size: 12, args: { color: "rgba(148,163,184,0.35)" } },
       panning: true,
-      mousewheel: { enabled: true, modifiers: ["ctrl", "meta"], minScale: 0.4, maxScale: 2 },
+      mousewheel: { enabled: true, minScale: 0.4, maxScale: 2, factor: 1.08 },
       connecting: {
-        allowBlank: false,
-        allowLoop: false,
-        allowMulti: false,
-        allowNode: true,
-        allowEdge: false,
-        highlight: true,
-        snap: { radius: 40 },
-        anchor: "center",
-        connectionPoint: "anchor",
+        allowBlank: false, // 禁止连到空白处
+        allowLoop: false, // 禁止自环
+        allowMulti: false, // 禁止同一对节点多条边
+        allowNode: true, // 允许吸附到节点（再落到端口）
+        allowEdge: false, // 禁止连到边上
+        allowPort: true, // 允许连到端口
+        highlight: true, // 可连目标高亮
+        snap: { radius: 40 }, // 吸附半径（px）
+        anchor: "center", // 端点锚在端口中心
+        connectionPoint: "anchor", // 连接点取锚点位置
+        /**
+         * @description 创建带方向箭头的临时连线。
+         * @returns 边实例。
+         */
+        createEdge: () =>
+          graph!.createEdge({
+            attrs: { line: { ...BEHAVIOR_TREE_EDGE_LINE_ATTRS } },
+            router: { ...BEHAVIOR_TREE_EDGE_ROUTER, args: { ...BEHAVIOR_TREE_EDGE_ROUTER.args } },
+            connector: { ...BEHAVIOR_TREE_EDGE_CONNECTOR, args: { ...BEHAVIOR_TREE_EDGE_CONNECTOR.args } },
+          }),
+        /**
+         * @description 仅允许从底部 out 端口拖出连线。
+         * @param args X6 magnet 校验参数。
+         * @returns 是否允许。
+         */
+        validateMagnet: ({ magnet }) => magnet.getAttribute("port-group") === "out",
+        /**
+         * @description 禁止连到自身；目标可为节点或 in 端口。
+         * @param args X6 连接校验参数。
+         * @returns 是否允许。
+         */
+        validateConnection: ({ sourceCell, targetCell, targetMagnet }) => {
+          if (!sourceCell || !targetCell || sourceCell === targetCell) return false;
+          if (!targetMagnet) return true;
+          return targetMagnet.getAttribute("port-group") === "in";
+        },
       },
       interacting: { edgeMovable: false, vertexMovable: false, arrowheadMovable: false, edgeLabelMovable: false },
     });
@@ -232,17 +347,7 @@ export function useBehaviorTreeGraph(options: UseBehaviorTreeGraphOptions) {
           width: BEHAVIOR_TREE_NODE_W,
           height: BEHAVIOR_TREE_NODE_H,
           zIndex: 2,
-          ports: {
-            groups: {
-              out: {
-                position: "bottom",
-                attrs: {
-                  circle: { r: 4.5, magnet: true, stroke: style.stroke, strokeWidth: 1.4, fill: "#fff", cursor: "crosshair" },
-                },
-              },
-            },
-            items: [{ group: "out" }],
-          },
+          ports: buildBehaviorTreeNodePorts(style.stroke),
           markup: [
             { tagName: "rect", selector: "body" },
             { tagName: "text", selector: "title" },
@@ -280,18 +385,30 @@ export function useBehaviorTreeGraph(options: UseBehaviorTreeGraphOptions) {
       existing.attr("body/strokeWidth", style.strokeWidth);
       existing.attr("title/text", title);
       existing.attr("subtitle/text", subtitle);
+      ensureBehaviorTreeNodePorts(existing, style.stroke);
     });
 
     wantedEdges.forEach((edge, id) => {
-      if (graph?.getCellById(id)) return;
+      const terminals = buildBehaviorTreeEdgeTerminals(edge.parent, edge.child);
+      const existingEdge = graph?.getCellById(id);
+      if (existingEdge?.isEdge()) {
+        existingEdge.setSource(terminals.source);
+        existingEdge.setTarget(terminals.target);
+        existingEdge.setRouter(BEHAVIOR_TREE_EDGE_ROUTER.name, { ...BEHAVIOR_TREE_EDGE_ROUTER.args });
+        existingEdge.setConnector(BEHAVIOR_TREE_EDGE_CONNECTOR.name, { ...BEHAVIOR_TREE_EDGE_CONNECTOR.args });
+        existingEdge.attr("line/stroke", BEHAVIOR_TREE_EDGE_LINE_ATTRS.stroke);
+        existingEdge.attr("line/strokeWidth", BEHAVIOR_TREE_EDGE_LINE_ATTRS.strokeWidth);
+        existingEdge.attr("line/targetMarker", { ...BEHAVIOR_TREE_EDGE_LINE_ATTRS.targetMarker });
+        return;
+      }
       graph?.addEdge({
         id,
-        source: { cell: edge.parent },
-        target: { cell: edge.child },
+        source: terminals.source,
+        target: terminals.target,
         zIndex: 1,
-        attrs: { line: { stroke: "#7b8ea3", strokeWidth: 1.4, targetMarker: { name: "block", size: 6, fill: "#7b8ea3" } } },
-        router: { name: "orth" },
-        connector: { name: "rounded", args: { radius: 8 } },
+        attrs: { line: { ...BEHAVIOR_TREE_EDGE_LINE_ATTRS, targetMarker: { ...BEHAVIOR_TREE_EDGE_LINE_ATTRS.targetMarker } } },
+        router: { ...BEHAVIOR_TREE_EDGE_ROUTER, args: { ...BEHAVIOR_TREE_EDGE_ROUTER.args } },
+        connector: { ...BEHAVIOR_TREE_EDGE_CONNECTOR, args: { ...BEHAVIOR_TREE_EDGE_CONNECTOR.args } },
       });
     });
   }

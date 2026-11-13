@@ -160,8 +160,9 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(listSource, /label="行为名称"/);
   assert.match(listSource, /label="行为类别"/);
   assert.match(listSource, /formatBehaviorCategoryLabel/);
-  assert.match(listSource, /SPACE_BEHAVIOR_VALUE_TYPE_LABELS/);
-  assert.match(listSource, /\$\{kindLabel\}-\$\{valueTypeLabel\}/);
+  assert.match(listSource, /SPACE_BEHAVIOR_KIND_LABELS\[item\.kind\]/);
+  assert.doesNotMatch(listSource, /SPACE_BEHAVIOR_VALUE_TYPE_LABELS/);
+  assert.doesNotMatch(listSource, /\$\{kindLabel\}-\$\{valueTypeLabel\}/);
   assert.match(listSource, /label="描述"/);
   assert.match(listSource, /label="函数算子"/);
   assert.match(listSource, /functionOperatorName/);
@@ -543,6 +544,25 @@ test("space behavior maps listAction records to table rows with published draft 
   });
   assert.equal(linkAction.valueType, "relationInstance");
   assert.equal(linkAction.updatedAt, "-");
+
+  const treeAction = mapListOntologyActionRecord({
+    id: 4,
+    actionApi: "tree.ammo.check",
+    displayName: "弹药检查",
+    description: "",
+    ontologyUniqIdentifier: "oid-tree",
+    categoryId: 14,
+    status: 2,
+    updateTime: "2026-11-13 10:00:00",
+    actionKind: "TREE",
+    subjectType: "",
+    operation: "",
+    storageGroup: "",
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+  });
+  assert.equal(treeAction.kind, "behaviorTree");
 });
 
 test("space behavior maps actionInfos into category counts and displayName leaves", () => {
@@ -653,6 +673,8 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /基本信息/);
   assert.match(formSource, /类别/);
   assert.match(formSource, /SPACE_BEHAVIOR_KIND_OPTIONS/);
+  assert.match(formSource, /v-model="kind"/);
+  assert.match(formSource, /v-model="kind"[\s\S]*?:disabled="mode === ['"]edit['"]"/);
   assert.match(formSource, /kind === ['"]basic['"]/);
   assert.match(formSource, /kind === ['"]application['"]/);
   assert.match(formSource, /kind === ['"]behaviorTree['"]/);
@@ -2588,6 +2610,33 @@ test("space behavior maps action info detail into edit form state", () => {
     functionParams: [],
   });
   assert.match(unsupportedSubject.unsupportedEditReason, /暂不支持编辑保存/);
+
+  const treeState = mapOntologyActionInfoToFormState({
+    id: 95,
+    actionApi: "tree",
+    displayName: "tree",
+    description: "行为树描述",
+    ontologyUniqIdentifier: "48c5dada6b68431ba376d0c791f63f4d,ea512d439cd34c6ebbcde6b692261ab5",
+    categoryId: 14,
+    status: 2,
+    actionKind: "TREE",
+    subjectType: "",
+    operation: "",
+    storageGroup: null,
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: null,
+    mappingIns: [],
+    functionParams: [],
+  });
+  assert.equal(treeState.kind, "behaviorTree");
+  assert.equal(treeState.displayName, "tree");
+  assert.equal(treeState.behaviorApiName, "tree");
+  assert.equal(treeState.description, "行为树描述");
+  assert.equal(treeState.categoryId, "14");
+  assert.equal(treeState.status, "draft");
+  assert.equal(treeState.unsupportedEditReason, "");
 
   const linkDeleteStatus = mapOntologyActionInfoToFormState({
     id: 23,

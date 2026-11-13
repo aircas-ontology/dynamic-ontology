@@ -91,13 +91,7 @@
 import { computed, nextTick } from "vue";
 import { ArrowDown, Plus } from "@element-plus/icons-vue";
 import type { SpaceBehaviorItem, SpaceBehaviorListStatus, SpaceBehaviorStatus } from "@/types";
-import {
-  SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
-  SPACE_BEHAVIOR_KIND_LABELS,
-  SPACE_BEHAVIOR_LIST_STATUS_LABELS,
-  SPACE_BEHAVIOR_LIST_STATUS_OPTIONS,
-  SPACE_BEHAVIOR_VALUE_TYPE_LABELS,
-} from "@/types";
+import { SPACE_BEHAVIOR_BASIC_ACTION_LABELS, SPACE_BEHAVIOR_KIND_LABELS, SPACE_BEHAVIOR_LIST_STATUS_LABELS, SPACE_BEHAVIOR_LIST_STATUS_OPTIONS } from "@/types";
 import { mapSpaceBehaviorItemToListStatus } from "../utils/mapListOntologyActionRecord";
 
 const props = defineProps<{
@@ -144,15 +138,12 @@ function asBehavior(row: unknown): SpaceBehaviorItem {
 }
 
 /**
- * @description 格式化行为类别展示；基础行为时追加行为类型，如「基础行为-属性值」。
+ * @description 格式化行为类别展示；按 actionKind 映射：BASE→基础行为、APPLICATION→应用行为、TREE→行为树。
  * @param item 行为记录。
  * @returns 列表展示文案。
  */
 function formatBehaviorCategoryLabel(item: SpaceBehaviorItem): string {
-  const kindLabel = SPACE_BEHAVIOR_KIND_LABELS[item.kind];
-  if (item.kind !== "basic") return kindLabel;
-  const valueTypeLabel = SPACE_BEHAVIOR_VALUE_TYPE_LABELS[item.valueType];
-  return valueTypeLabel ? `${kindLabel}-${valueTypeLabel}` : kindLabel;
+  return SPACE_BEHAVIOR_KIND_LABELS[item.kind] || "-";
 }
 
 /**

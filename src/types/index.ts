@@ -358,6 +358,7 @@ export type {
 } from "./pages/assetModelBuilderType";
 export type {
   BehaviorTreeBlackboardItem,
+  BehaviorTreeBlackboardSource,
   BehaviorTreeDefinition,
   BehaviorTreeDragPayload,
   BehaviorTreeInspectorTab,
@@ -368,6 +369,7 @@ export type {
   BehaviorTreeNodeDefsSnapshot,
   BehaviorTreeNodeDraft,
   BehaviorTreeNodeKind,
+  BehaviorTreeObjectPropertyOption,
   BehaviorTreeOrchestrationLoadStatus,
   BehaviorTreeOrchestrationMeta,
   BehaviorTreePersistMode,
