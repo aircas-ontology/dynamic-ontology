@@ -257,11 +257,51 @@ export function summarizeRuleCondition(node: RuleConditionNode): string {
 }
 
 /**
- * @description 把执行行为摘要成画布副标题。
+ * @description 优先按已确认的执行请求显示参数配置摘要，旧节点回退到 params，仅读取配置而不修改请求。
  * @param action 执行行为。
+ * @param savedDetail 已保存且与当前行为匹配的请求。
  * @returns 摘要文案。
  */
-export function summarizeThenAction(action: RuleFlowThenAction): string {
-  if (!action.params.length) return "行为无参数";
+export function summarizeThenAction(action: RuleFlowThenAction, savedDetail?: { entityJson: string }): string {
+  let request: unknown = action.behaviorParameters?.request;
+  if (!request && savedDetail?.entityJson) {
+    try {
+      request = JSON.parse(savedDetail.entityJson);
+    } catch {
+      request = undefined;
+    }
+  }
+  const configuration = readParameterRecord(request);
+  if (configuration) return summarizeActionRequest(configuration);
+  if (!action.params.length) return "未配置行为参数";
   return truncateRuleFlowText(action.params.map((param) => `${param.paramName}=${summarizeValue(param.value)}`).join("，"), 26);
+}
+
+/** @description 安全读取外部参数对象。 @param value 外部值。 @returns 参数记录或空值。 */
+function readParameterRecord(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? Object.fromEntries(Object.entries(value)) : null;
+}
+
+/** @description 统计保存请求的输入输出和实例绑定，仅读取而不修改配置。 @param request 请求记录。 @returns 节点摘要。 */
+function summarizeActionRequest(request: Record<string, unknown>): string {
+  const inputs = new Set([
+    ...Object.keys(readParameterRecord(request.params) ?? {}),
+    ...Object.entries(readParameterRecord(request.inputParams) ?? {})
+      .filter(([, bindings]) => Array.isArray(bindings) && bindings.length > 0)
+      .map(([name]) => name),
+  ]);
+  const outputCount = Object.keys(readParameterRecord(request.outputParams) ?? {}).length;
+  const summary: string[] = [];
+  if (inputs.size) summary.push(`输入 ${inputs.size} 项`);
+  if (outputCount) summary.push(`输出 ${outputCount} 项`);
+  const keys = readParameterRecord(request.entityPrimaryKeys);
+  if (
+    request.entityPrimaryKey !== undefined ||
+    request.dataPrimaryKey !== undefined ||
+    request.linkEntityPrimaryKey !== undefined ||
+    (Array.isArray(keys?.from) && keys.from.length) ||
+    (Array.isArray(keys?.to) && keys.to.length)
+  )
+    summary.push("实例已配置");
+  return summary.length ? truncateRuleFlowText(`已配置：${summary.join("，")}`, 26) : "参数已配置";
 }

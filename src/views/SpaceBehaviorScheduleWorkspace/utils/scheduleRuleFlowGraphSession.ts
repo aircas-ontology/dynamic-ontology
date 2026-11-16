@@ -43,6 +43,8 @@ export interface ScheduleRuleFlowGraphCanvasState {
 export interface ScheduleRuleFlowGraphSessionCallbacks {
   /** @description 获取当前空间已加载的行为选项。 @returns 行为列表。 */
   getBehaviorOptions: () => readonly ScheduleBehaviorOption[];
+  /** @description 获取匹配节点的已保存参数。 @param action 行为节点。 @returns 请求数据。 */
+  getSavedAction?: ScheduleRuleGraphCellContext["getSavedAction"];
   /**
    * @description 画布拓扑变化后回写规则流文档。
    * @param doc 序列化后的文档。
@@ -108,6 +110,10 @@ function readDagreNodePositions(nodes: unknown): DagreNodePosition[] {
 export class ScheduleRuleFlowGraphSession {
   private graph: Graph | null = null;
   private syncingGraph = false;
+  private resizeObserver: ResizeObserver | null = null;
+  private viewportFrame: number | undefined;
+  private layoutRevision = 0;
+  private viewportNeedsLayout = false;
   private selectedCellId = "";
   private selectedRemovable = false;
   private messageTimer: number | undefined;
@@ -125,8 +131,9 @@ export class ScheduleRuleFlowGraphSession {
    * @description 在容器中创建 X6 图并渲染初始文档。
    * @param container 画布 DOM。
    * @param doc 初始规则流。
+   * @param readonly 是否只读。
    */
-  mount(container: HTMLElement, doc: ScheduleRuleFlowDocument): void {
+  mount(container: HTMLElement, doc: ScheduleRuleFlowDocument, readonly = false): void {
     if (this.graph) return;
     const shell = container.parentElement;
     const initialWidth = Math.max(shell?.clientWidth || container.clientWidth, 320);
@@ -148,11 +155,13 @@ export class ScheduleRuleFlowGraphSession {
       },
       panning: { enabled: true, eventTypes: ["leftMouseDown", "mouseWheel"] },
       mousewheel: { enabled: true, modifiers: ["ctrl", "meta"], minScale: 0.4, maxScale: 2, factor: 1.1 },
-      interacting: {
-        edgeMovable: false,
-        edgeLabelMovable: false,
-        arrowheadMovable: false,
-      },
+      interacting: readonly
+        ? false
+        : {
+            edgeMovable: false,
+            edgeLabelMovable: false,
+            arrowheadMovable: false,
+          },
       translating: { restrict: false },
       connecting: {
         snap: { radius: 28 },
@@ -198,7 +207,11 @@ export class ScheduleRuleFlowGraphSession {
       this.clearSelection();
     });
     this.renderDocument(doc);
-    window.requestAnimationFrame(() => this.fitGraph());
+    if (typeof ResizeObserver !== "undefined") {
+      this.resizeObserver = new ResizeObserver(() => this.scheduleViewportFit());
+      this.resizeObserver.observe(shell ?? container);
+    }
+    this.scheduleViewportFit();
   }
 
   /** @description 读取指定节点数据，供双击配置面板回填。 @param nodeId 节点 id。 @returns 节点数据或空值。 */
@@ -232,7 +245,7 @@ export class ScheduleRuleFlowGraphSession {
       node.attr("summary/text", truncateRuleFlowText(summarizeRuleCondition(data.condition) || "未配置条件", 28));
     if (data.kind === "action" && data.action) {
       node.attr("title/text", truncateRuleFlowText(data.action.behaviorName || "未配置行为", 14));
-      node.attr("summary/text", summarizeThenAction(data.action));
+      node.attr("summary/text", summarizeThenAction(data.action, this.callbacks.getSavedAction?.(data.action)));
     }
     this.commitGraph();
   }
@@ -242,6 +255,12 @@ export class ScheduleRuleFlowGraphSession {
    */
   dispose(): void {
     window.clearTimeout(this.messageTimer);
+    this.layoutRevision += 1;
+    if (this.viewportFrame !== undefined) window.cancelAnimationFrame(this.viewportFrame);
+    this.viewportFrame = undefined;
+    this.viewportNeedsLayout = false;
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
     this.graph?.dispose();
     this.graph = null;
   }
@@ -252,6 +271,7 @@ export class ScheduleRuleFlowGraphSession {
    */
   renderDocument(doc: ScheduleRuleFlowDocument): void {
     if (!this.graph) return;
+    this.layoutRevision += 1;
     this.syncingGraph = true;
     const buffer: Cell[] = [];
     const ctx = this.createCellContext(buffer);
@@ -303,7 +323,7 @@ export class ScheduleRuleFlowGraphSession {
     this.clearSelection();
     this.renderDocument({ steps: [] });
     this.callbacks.onCommit(cloneScheduleRuleFlow({ steps: [] }));
-    window.requestAnimationFrame(() => this.fitGraph());
+    this.scheduleViewportFit();
   }
 
   /**
@@ -311,10 +331,13 @@ export class ScheduleRuleFlowGraphSession {
    */
   async autoLayout(): Promise<void> {
     if (!this.graph) return;
-    const canvasNodes = this.graph.getNodes();
+    const graph = this.graph;
+    const revision = ++this.layoutRevision;
+    const canvasNodes = graph.getNodes();
     if (!canvasNodes.length) return;
     try {
       const { DagreLayout } = await import("@antv/layout");
+      if (this.graph !== graph || revision !== this.layoutRevision) return;
       const layoutNodes = canvasNodes.map((node) => {
         const size = node.getSize();
         return { id: node.id, size: [size.width, size.height] as [number, number] };
@@ -352,8 +375,9 @@ export class ScheduleRuleFlowGraphSession {
         cell.position(Math.round(item.x - size.width / 2), Math.round(item.y - size.height / 2));
       });
       this.syncingGraph = false;
-      window.requestAnimationFrame(() => this.fitGraph());
+      this.scheduleViewportFit();
     } catch {
+      if (this.graph !== graph || revision !== this.layoutRevision) return;
       this.syncingGraph = false;
       this.callbacks.onWarning("自动布局失败，请检查节点连线后重试");
     }
@@ -363,7 +387,28 @@ export class ScheduleRuleFlowGraphSession {
    * @description 缩放画布使全部节点可见。
    */
   fitGraph(): void {
-    this.graph?.zoomToFit({ padding: 40, maxScale: 1 });
+    this.graph?.zoomToFit({ padding: 40, minScale: 0.8, maxScale: 1 });
+    this.graph?.centerContent();
+  }
+
+  /** @description 弹窗展开后合并布局请求，使用最终可用空间展示节点。 */
+  adaptViewport(): void {
+    if (!this.graph) return;
+    this.viewportNeedsLayout = true;
+    this.scheduleViewportFit();
+  }
+
+  /** @description 尺寸变化时合并缩放请求，保持现有节点布局。 */
+  private scheduleViewportFit(): void {
+    if (!this.graph) return;
+    if (this.viewportFrame !== undefined) window.cancelAnimationFrame(this.viewportFrame);
+    this.viewportFrame = window.requestAnimationFrame(() => {
+      this.viewportFrame = undefined;
+      if (this.viewportNeedsLayout) {
+        this.viewportNeedsLayout = false;
+        void this.autoLayout();
+      } else this.fitGraph();
+    });
   }
 
   /**
@@ -394,7 +439,7 @@ export class ScheduleRuleFlowGraphSession {
    * @returns 上下文。
    */
   private createCellContext(renderBuffer: Cell[] | null): ScheduleRuleGraphCellContext {
-    return { graph: this.graph, renderBuffer };
+    return { graph: this.graph, renderBuffer, getSavedAction: this.callbacks.getSavedAction };
   }
 
   /**

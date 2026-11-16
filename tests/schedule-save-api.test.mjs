@@ -7,6 +7,9 @@ import { ModuleKind, transpileModule } from "typescript";
 import * as scheduleTypes from "../src/types/pages/ontologySpaceBehaviorScheduleType.ts";
 import { restoreSchedulePeriod } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/restoreSchedulePeriod.ts";
 import { fetchBehaviorSchedules } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/fetchBehaviorSchedules.ts";
+import { restoreRuleScheduleDetail } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/restoreRuleScheduleDetail.ts";
+import { hydrateRuleDetailVariableNames } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/hydrateRuleDetailVariableNames.ts";
+import { restoreRuleFlowDocument } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/restoreRuleFlowDocument.ts";
 
 /** @description 编译实际 API 模块并记录请求配置。 @param {string} serviceUrl 在线服务配置。 @returns {object} API 和请求记录。 */
 function createApiHarness(serviceUrl) {
@@ -65,6 +68,9 @@ function createPageHarness(handler, listHandler, detailHandler, deleteHandler, u
       };
     if (id.includes("restoreSchedulePeriod")) return { restoreSchedulePeriod };
     if (id.includes("fetchBehaviorSchedules")) return { fetchBehaviorSchedules };
+    if (id.includes("restoreRuleScheduleDetail")) return { restoreRuleScheduleDetail };
+    if (id.includes("restoreRuleFlowDocument")) return { restoreRuleFlowDocument };
+    if (id.includes("hydrateRuleDetailVariableNames")) return { hydrateRuleDetailVariableNames };
     if (id.includes("fetchScheduleBehaviorOptions")) return { fetchScheduleBehaviorOptions: async () => [] };
     if (id.includes("cloneBehaviorParameterSnapshot")) return { cloneBehaviorParameterSnapshot: structuredClone };
     if (id.includes("scheduleRuleFlowFactory")) return { cloneScheduleRuleFlow: structuredClone };
@@ -191,7 +197,7 @@ test("schedule ignores responses after unmount or space switch", async () => {
   }
 });
 
-test("schedule requires a periodic payload and prevents unsupported rule edit saves", async () => {
+test("schedule rejects missing create and edit payloads for both strategies", async () => {
   let calls = 0;
   const { page, scope } = createPageHarness(async () => {
     calls += 1;
@@ -203,14 +209,63 @@ test("schedule requires a periodic payload and prevents unsupported rule edit sa
   assert.equal(calls, 0);
   const count = page.schedules.value.length;
   await page.submitScheduleForm({ ...draft, strategy: "规则调度" });
-  assert.equal(page.schedules.value.length, count + 1);
-  page.openEditScheduleDialog(page.schedules.value[0]);
-  await page.submitScheduleForm({ ...page.formDraft.value, name: "edited" });
-  assert.equal(page.schedules.value[0].name, "new");
+  assert.equal(page.schedules.value.length, count);
+  page.formMode.value = "edit";
+  await page.submitScheduleForm({ ...draft, strategy: "规则调度", name: "edited" });
+  assert.equal(page.schedules.value.length, count);
   assert.equal(page.createStatus.value, "error");
   assert.equal(page.formVisible.value, true);
   assert.equal(calls, 0);
   scope.stop();
+});
+
+test("RULE create calls server once, preserves form on failure and refreshes after retry", async () => {
+  const payload = { spaceId: 1, actionApi: "app", name: "rule", description: "", type: "RULE", rule: { judgeRules: [] } };
+  let finish;
+  let calls = 0;
+  const { page, scope, listCalls } = createPageHarness(() => {
+    calls++;
+    return new Promise((resolve) => {
+      finish = resolve;
+    });
+  });
+  await settleSchedulePage();
+  const pending = page.submitScheduleForm({ ...draft, strategy: "规则调度" }, payload);
+  await page.submitScheduleForm({ ...draft, strategy: "规则调度" }, payload);
+  assert.equal(calls, 1);
+  assert.equal(page.formVisible.value, true);
+  finish({ code: 500, message: "拒绝" });
+  await pending;
+  assert.equal(page.createStatus.value, "error");
+  assert.equal(page.formVisible.value, true);
+  const retry = page.submitScheduleForm({ ...draft, strategy: "规则调度" }, payload);
+  finish({ code: 200 });
+  await retry;
+  assert.equal(page.formVisible.value, false);
+  assert.equal(listCalls.length, 2);
+  scope.stop();
+});
+
+test("RULE create ignores stale responses after space switch and disposal", async () => {
+  for (const changeSpace of [true, false]) {
+    let finish;
+    const { page, scope, route, cleanup, messages } = createPageHarness(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await settleSchedulePage();
+    const pending = page.submitScheduleForm({ ...draft, strategy: "规则调度" }, { ...request, type: "RULE", rule: { judgeRules: [] } });
+    if (changeSpace) {
+      route.params.spaceId = "2";
+      await Vue.nextTick();
+    } else cleanup.forEach((callback) => callback());
+    finish({ code: 200 });
+    await pending;
+    assert.deepEqual(messages, []);
+    scope.stop();
+  }
 });
 
 test("schedule list API sends only paging parameters through the shared service", async () => {
@@ -332,6 +387,82 @@ test("detail API uses id and type query parameters", async () => {
   const { api, calls } = createApiHarness("https://ontology.example.test");
   await api.getBehaviorSchedulingDetailInterface({ id: 99, type: "TASK" });
   assert.deepEqual(calls, [{ url: "https://ontology.example.test/ontology/action/scheduling/detail", method: "get", params: { id: 99, type: "TASK" } }]);
+});
+
+test("RULE detail restores read-only groups and reports malformed responses without opening the dialog", async () => {
+  let broken = false;
+  const record = { ...listRecord, id: 100, type: "RULE", schedulingName: "rule" };
+  const judgment = { leftOperate: { type: "fixed", fixValue: "2" }, rightOperate: { type: "fixed", fixValue: "1" }, condition: "GT" };
+  const h = createPageHarness(
+    async () => ({ code: 200 }),
+    async () => ({ code: 200, data: { records: [record], total: 1, size: 10, current: 1 } }),
+    async () => ({
+      code: 200,
+      data: {
+        ...record,
+        ruleVO: broken
+          ? {}
+          : { judgeRules: [{ condition: false, judgeParams: [judgment], actionParam: { action_api: "app", entity_json: '{"params":{"v":5}}' } }] },
+      },
+    }),
+  );
+  await settleSchedulePage();
+  h.page.formVisible.value = false;
+  await h.page.openViewScheduleDialog(h.page.schedules.value[0]);
+  assert.equal(h.page.formMode.value, "view");
+  assert.equal(h.page.formVisible.value, true);
+  assert.equal(h.page.ruleDetailGroups.value.length, 1);
+  const group = h.page.ruleDetailGroups.value[0];
+  assert.equal(group.flow.steps[0].condition.children[0].operator, "gt");
+  assert.equal(JSON.parse(Object.values(group.actionDetails)[0].entityJson).params.v, 5);
+  h.page.formVisible.value = false;
+  broken = true;
+  await h.page.openViewScheduleDialog(h.page.schedules.value[0]);
+  assert.equal(h.page.formVisible.value, false);
+  assert.match(h.messages.at(-1)[1], /规则详情无法回显/);
+  h.scope.stop();
+});
+
+test("RULE detail prefers stored switch canvas and rejects a corrupt saved document", async () => {
+  const record = { ...listRecord, id: 100, type: "RULE", schedulingName: "rule" };
+  const literal = (text) => ({ kind: "input", text });
+  const snapshot = {
+    version: 1,
+    steps: [
+      {
+        id: "switch-1",
+        kind: "switch",
+        switchOn: literal("2"),
+        cases: [{ id: "case-1", label: "case 1", value: literal("1"), steps: [] }],
+        defaultSteps: null,
+      },
+    ],
+  };
+  let document = JSON.stringify(snapshot);
+  const h = createPageHarness(
+    async () => ({ code: 200 }),
+    async () => ({ code: 200, data: { records: [record], total: 1, size: 10, current: 1 } }),
+    async () => ({ code: 200, data: { ...record, ruleVO: { judgeRules: [], flowDocument: document } } }),
+  );
+  await settleSchedulePage();
+  h.page.formVisible.value = false;
+  await h.page.openViewScheduleDialog(h.page.schedules.value[0]);
+  assert.equal(h.page.formVisible.value, true);
+  assert.equal(h.page.ruleDetailGroups.value[0].flow.steps[0].kind, "switch");
+  h.page.formVisible.value = false;
+  await h.page.openEditScheduleDialog(h.page.schedules.value[0]);
+  assert.deepEqual(h.page.formDraft.value.ruleFlow, { steps: snapshot.steps });
+  assert.equal(h.page.formMode.value, "edit");
+  h.page.formDraft.value.ruleFlow.steps[0].cases[0].label = "unsaved";
+  h.page.formVisible.value = false;
+  await h.page.openEditScheduleDialog(h.page.schedules.value[0]);
+  assert.equal(h.page.formDraft.value.ruleFlow.steps[0].cases[0].label, "case 1");
+  h.page.formVisible.value = false;
+  document = "{";
+  await h.page.openViewScheduleDialog(h.page.schedules.value[0]);
+  assert.equal(h.page.formVisible.value, false);
+  assert.match(h.messages.at(-1)[1], /规则画布无法回显/);
+  h.scope.stop();
 });
 
 test("detail loading prevents duplicate clicks and supports retry after failure", async () => {
@@ -956,5 +1087,80 @@ test("detail view and edit restore period type from top-level or taskVO", async 
       if (expected === "每月") assert.equal(h.page.formDraft.value.monthDay, 15);
       h.scope.stop();
     }
+  }
+});
+
+test("RULE edit PUT includes id, spaceId, judgeRules and flowDocument; duplicate, retry and refresh work", async () => {
+  const payload = {
+    spaceId: 1,
+    actionApi: "app",
+    name: "rule",
+    description: "",
+    type: "RULE",
+    rule: { judgeRules: [{ condition: false }], flowDocument: '{"version":1,"steps":[]}' },
+  };
+  const { api, calls } = createApiHarness("https://ontology.example.test");
+  await api.putUpdateBehaviorSchedulingInterface({ ...payload, id: 99 });
+  assert.deepEqual(calls[0], { url: "https://ontology.example.test/ontology/action/scheduling", method: "put", data: { ...payload, id: 99 } });
+  const pending = [];
+  const h = createPageHarness(
+    async () => ({ code: 200 }),
+    undefined,
+    undefined,
+    undefined,
+    (data) => new Promise((resolve) => pending.push({ data, resolve })),
+  );
+  await settleSchedulePage();
+  h.page.formMode.value = "edit";
+  h.page.editingScheduleId.value = "99";
+  const edited = { ...draft, strategy: "规则调度", ruleFlow: { steps: [] } };
+  const first = h.page.submitScheduleForm(edited, payload);
+  await h.page.submitScheduleForm(edited, payload);
+  assert.equal(pending.length, 1);
+  assert.deepEqual(pending[0].data, { ...payload, id: 99 });
+  pending[0].resolve({ code: 500, message: "规则保存失败" });
+  await first;
+  assert.equal(h.page.formVisible.value, true);
+  assert.equal(h.page.createStatus.value, "error");
+  const retry = h.page.submitScheduleForm(edited, payload);
+  pending[1].resolve({ code: 200 });
+  await retry;
+  assert.equal(h.page.formVisible.value, false);
+  assert.equal(h.listCalls.length, 2);
+  h.scope.stop();
+});
+
+test("RULE edit ignores stale responses and rejects mismatched strategy payloads", async () => {
+  for (const dispose of [false, true]) {
+    let resolveUpdate;
+    const h = createPageHarness(
+      async () => ({ code: 200 }),
+      undefined,
+      undefined,
+      undefined,
+      () =>
+        new Promise((resolve) => {
+          resolveUpdate = resolve;
+        }),
+    );
+    await settleSchedulePage();
+    h.page.formMode.value = "edit";
+    h.page.editingScheduleId.value = "99";
+    const edited = { ...draft, strategy: "规则调度" };
+    await h.page.submitScheduleForm(edited, request);
+    assert.equal(h.page.createStatus.value, "error");
+    assert.equal(resolveUpdate, undefined);
+    const pending = h.page.submitScheduleForm(edited, { ...request, type: "RULE", rule: { judgeRules: [], flowDocument: "{}" } });
+    assert.equal(typeof resolveUpdate, "function");
+    if (dispose) h.cleanup.forEach((fn) => fn());
+    else {
+      h.route.params.spaceId = "2";
+      await Vue.nextTick();
+    }
+    h.messages.length = 0;
+    resolveUpdate({ code: 200 });
+    await pending;
+    assert.deepEqual(h.messages, []);
+    h.scope.stop();
   }
 });

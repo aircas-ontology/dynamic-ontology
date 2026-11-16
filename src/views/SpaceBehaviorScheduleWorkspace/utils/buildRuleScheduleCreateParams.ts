@@ -1,0 +1,240 @@
+import type {
+  BehaviorScheduleDraft,
+  CreateRuleBehaviorScheduleParams,
+  RuleCompareOperator,
+  RuleCompositeCondition,
+  RuleFlowStep,
+  RuleFlowThenAction,
+  RuleValueNode,
+  ScheduleBehaviorOption,
+  ScheduleRuleActionParam,
+  ScheduleRuleDetailGroup,
+  ScheduleRuleCompareOperator,
+  ScheduleRuleJudgeGroup,
+  ScheduleRuleJudgeItem,
+  ScheduleRuleOperand,
+} from "@/types";
+
+const compareOperators: Partial<Record<RuleCompareOperator, ScheduleRuleCompareOperator>> = {
+  eq: "EQ",
+  neq: "NE",
+  gt: "GT",
+  gte: "GE",
+  lt: "LT",
+  lte: "LE",
+  contains: "CONTAINS",
+  notContains: "NOT_CONTAINS",
+};
+
+/** @description 将固定值和单实例变量转换为接口操作数，不推测函数及表达式协议。 @param value 画布值。 @returns 操作数。 */
+function buildRuleOperand(value: RuleValueNode): ScheduleRuleOperand {
+  if (value.kind === "input") {
+    if (!value.text.trim()) throw new Error("请填写条件固定值");
+    return { type: "fixed", fixValue: value.text };
+  }
+  if (value.kind !== "variable") throw new Error("当前接口尚未约定函数或表达式的传参方式");
+  if (!value.objectId || !value.propertyId || value.instanceIds.length !== 1 || !value.instanceIds[0]?.trim())
+    throw new Error("条件变量必须选择对象、属性和一个具体实例");
+  return { type: "dynamic", OntologyId: value.objectId, entityId: value.instanceIds[0], propertyId: value.propertyId };
+}
+
+/** @description 递归展开条件组合，按首末条件叠加括号并用组逻辑连接下一项。 @param condition 条件组合。 @param nested 是否为子分组。 @returns 判断项。 */
+function buildRuleJudgeItems(condition: RuleCompositeCondition, nested = false): ScheduleRuleJudgeItem[] {
+  if (!condition.children.length) throw new Error("请至少配置一个判断条件");
+  const items: ScheduleRuleJudgeItem[] = [];
+  for (const child of condition.children) {
+    let childItems: ScheduleRuleJudgeItem[];
+    if (child.type === "composite") childItems = buildRuleJudgeItems(child, true);
+    else {
+      const operator = compareOperators[child.operator];
+      if (!operator) throw new Error("前置包含操作符已移除，请重新选择条件操作符");
+      childItems = [{ leftOperate: buildRuleOperand(child.left), rightOperate: buildRuleOperand(child.right), condition: operator }];
+    }
+    const previous = items.at(-1);
+    if (previous) previous.linkFlag = condition.logic === "and" ? "AND" : "OR";
+    items.push(...childItems);
+  }
+  if (nested) {
+    const first = items[0];
+    const last = items.at(-1);
+    if (first && last) {
+      first.isLeft = (first.isLeft ?? 0) + 1;
+      last.isRight = (last.isRight ?? 0) + 1;
+    }
+  }
+  return items;
+}
+
+/** 路径中的一层判断，inverted 表示进入该分支的不成立路径。 */
+interface RulePathPredicate {
+  items: ScheduleRuleJudgeItem[];
+  inverted: boolean;
+}
+
+const inverseOperators: Record<ScheduleRuleCompareOperator, ScheduleRuleCompareOperator> = {
+  EQ: "NE",
+  NE: "EQ",
+  GT: "LE",
+  LE: "GT",
+  GE: "LT",
+  LT: "GE",
+  CONTAINS: "NOT_CONTAINS",
+  NOT_CONTAINS: "CONTAINS",
+};
+
+/** @description 合并路径约束，局部否定按德摩根规则下推，保留单层接口整体取反格式。 @param path 从根到行为的约束。 @returns 接口判断条件。 */
+function buildPathJudgeParams(path: RulePathPredicate[]): { judgeParams: ScheduleRuleJudgeItem[]; inverted: boolean } {
+  const single = path[0];
+  if (!single) throw new Error("规则画布需要配置条件分支或 switch 分支");
+  if (path.length === 1) return { judgeParams: single.items.map((item) => ({ ...item })), inverted: single.inverted };
+  const judgeParams: ScheduleRuleJudgeItem[] = [];
+  for (const predicate of path) {
+    const items = predicate.items.map((item): ScheduleRuleJudgeItem => ({
+      ...item,
+      condition: predicate.inverted ? inverseOperators[item.condition] : item.condition,
+      ...(item.linkFlag ? { linkFlag: predicate.inverted ? (item.linkFlag === "AND" ? "OR" : "AND") : item.linkFlag } : {}),
+    }));
+    const first = items[0];
+    const last = items.at(-1);
+    if (!first || !last) throw new Error("请至少配置一个判断条件");
+    // 每层路径单独括起，避免 OR 与外层 AND 的优先级改变原意。
+    first.isLeft = (first.isLeft ?? 0) + 1;
+    last.isRight = (last.isRight ?? 0) + 1;
+    const previous = judgeParams.at(-1);
+    if (previous) previous.linkFlag = "AND";
+    judgeParams.push(...items);
+  }
+  return { judgeParams, inverted: false };
+}
+
+/** @description 验证保存的行为请求为普通对象。 @param value 外部请求。 @returns 是否为参数对象。 */
+function isActionRequest(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+/** @description 优先使用已确认的新快照，否则恢复未编辑行为的原始请求，不拼接临时表单状态。 @param action 行为节点。 @param savedDetails 历史请求映射。 @returns 完整执行请求。 */
+function readRuleActionRequest(action: RuleFlowThenAction, savedDetails: Readonly<ScheduleRuleDetailGroup["actionDetails"]>): Record<string, unknown> {
+  const saved = savedDetails[action.id];
+  const request: unknown = action.behaviorParameters?.request ?? (saved ? JSON.parse(saved.entityJson) : null);
+  if (!isActionRequest(request)) throw new Error("请双击行为节点选择当前空间行为并确认行为参数");
+  return request;
+}
+
+/** @description 递归生成每个行为的完整路径规则；独立规则不承诺行为执行顺序。 @param steps 当前区域步骤。 @param path 祖先路径条件。 @param options 空间行为。 @param spaceId 当前空间。 @param savedDetails 未编辑节点的原始请求。 @returns 执行规则列表。 */
+function buildRulePathGroups(
+  steps: RuleFlowStep[],
+  path: RulePathPredicate[],
+  options: readonly ScheduleBehaviorOption[],
+  spaceId: string,
+  savedDetails: Readonly<ScheduleRuleDetailGroup["actionDetails"]>,
+): ScheduleRuleJudgeGroup[] {
+  if (steps.length > 1 && steps.some((step) => step.kind !== "actions")) throw new Error("当前接口不保证行为与后续条件的执行顺序，请使用分支内嵌套配置");
+  return steps.flatMap((step): ScheduleRuleJudgeGroup[] => {
+    if (step.kind === "branch") {
+      const items = buildRuleJudgeItems(step.condition);
+      return [
+        ...buildRulePathGroups(step.then, [...path, { items, inverted: false }], options, spaceId, savedDetails),
+        ...buildRulePathGroups(step.otherwise ?? [], [...path, { items, inverted: true }], options, spaceId, savedDetails),
+      ];
+    }
+    if (step.kind === "switch") {
+      if (!step.cases.length) throw new Error("Switch 至少需要一个 case");
+      const cases: ScheduleRuleJudgeItem[] = step.cases.map((item) => ({
+        leftOperate: buildRuleOperand(step.switchOn),
+        rightOperate: buildRuleOperand(item.value),
+        condition: "EQ",
+      }));
+      return [
+        ...step.cases.flatMap((item, index) => {
+          const comparison = cases[index];
+          if (!comparison) throw new Error("Switch 条件无效");
+          return buildRulePathGroups(item.steps, [...path, { items: [comparison], inverted: false }], options, spaceId, savedDetails);
+        }),
+        ...buildRulePathGroups(
+          step.defaultSteps ?? [],
+          [
+            ...path,
+            {
+              items: cases.map((item, index) => ({ ...item, ...(index < cases.length - 1 ? { linkFlag: "OR" as const } : {}) })),
+              inverted: true,
+            },
+          ],
+          options,
+          spaceId,
+          savedDetails,
+        ),
+      ];
+    }
+    const { judgeParams, inverted } = buildPathJudgeParams(path);
+    if (!step.actions.length) throw new Error("请配置执行行为");
+    return step.actions.map((action) => {
+      const option = options.find((item) => item.id === action.behaviorId);
+      if (!option) throw new Error("请双击行为节点选择当前空间行为并确认行为参数");
+      const actionRequest = readRuleActionRequest(action, savedDetails);
+      if (actionRequest.actionApi !== option.actionApi || Number(actionRequest.ontologySpaceId) !== Number(spaceId))
+        throw new Error("行为参数与当前行为或空间不匹配，请重新配置");
+      const actionParam: ScheduleRuleActionParam = {
+        action_api: option.actionApi,
+        ...(option.ontologyUniqIdentifier ? { ontology_identifier: option.ontologyUniqIdentifier } : {}),
+        entity_json: JSON.stringify(actionRequest),
+      };
+      return { condition: inverted, judgeParams: judgeParams.map((item) => ({ ...item })), actionParam };
+    });
+  });
+}
+
+/** @description 提取画布业务结构和已确认执行请求，避免保存参数组件的临时查询状态。 @param steps 画布步骤。 @param savedDetails 原始行为请求。 @returns 可序列化步骤。 */
+function buildSavedFlowSteps(steps: RuleFlowStep[], savedDetails: Readonly<ScheduleRuleDetailGroup["actionDetails"]>): object[] {
+  return steps.map((step) => {
+    if (step.kind === "actions")
+      return {
+        ...step,
+        actions: step.actions.map((action) => ({
+          ...action,
+          behaviorParameters: { request: readRuleActionRequest(action, savedDetails) },
+        })),
+      };
+    if (step.kind === "branch")
+      return {
+        ...step,
+        then: buildSavedFlowSteps(step.then, savedDetails),
+        otherwise: step.otherwise ? buildSavedFlowSteps(step.otherwise, savedDetails) : null,
+      };
+    return {
+      ...step,
+      cases: step.cases.map((item) => ({ ...item, steps: buildSavedFlowSteps(item.steps, savedDetails) })),
+      defaultSteps: step.defaultSteps ? buildSavedFlowSteps(step.defaultSteps, savedDetails) : null,
+    };
+  });
+}
+
+/** @description 递归转换多层 if/else 和 switch/case 草稿，每个行为包含全部祖先路径约束，同时保存原始画布。 @param draft 调度草稿。 @param options 当前空间可用行为。 @param spaceId 空间标识。 @param savedDetails 编辑时的原始行为请求。 @returns 创建或编辑公共参数或用户可读错误。 */
+export function buildRuleScheduleCreateParams(
+  draft: BehaviorScheduleDraft,
+  options: readonly ScheduleBehaviorOption[],
+  spaceId: string,
+  savedDetails: Readonly<ScheduleRuleDetailGroup["actionDetails"]> = {},
+): { ok: true; request: CreateRuleBehaviorScheduleParams } | { ok: false; error: string } {
+  try {
+    if (!Number.isSafeInteger(Number(spaceId)) || Number(spaceId) <= 0) throw new Error("空间标识无效");
+    if (!draft.name.trim()) throw new Error("请输入调度名称");
+    const steps = draft.ruleFlow?.steps;
+    if (!steps?.length) throw new Error("请配置规则画布");
+    const judgeRules = buildRulePathGroups(steps, [], options, spaceId, savedDetails);
+    const firstAction = judgeRules[0]?.actionParam;
+    if (!firstAction) throw new Error("规则画布至少需要一个已配置行为");
+    return {
+      ok: true,
+      request: {
+        spaceId: Number(spaceId),
+        name: draft.name.trim(),
+        description: draft.description,
+        type: "RULE",
+        actionApi: firstAction.action_api,
+        ...(firstAction.ontology_identifier ? { ontologyIdentifier: firstAction.ontology_identifier } : {}),
+        rule: { judgeRules, flowDocument: JSON.stringify({ version: 1, steps: buildSavedFlowSteps(steps, savedDetails) }) },
+      },
+    };
+  } catch (cause) {
+    return { ok: false, error: cause instanceof Error ? cause.message : "规则参数转换失败" };
+  }
+}

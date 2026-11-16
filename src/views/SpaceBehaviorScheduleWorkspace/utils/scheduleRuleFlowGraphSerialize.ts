@@ -255,7 +255,7 @@ function findMergeNode(graph: Graph, chain: ChainItem[], elseStartId: string | n
 }
 
 /**
- * @description 在 Switch 多路路径上找第一个汇合节点。
+ * @description 至少两条已连接的 Switch 路径才寻找汇合点，按离首路径起点的距离优先，结束点不覆盖更早的共同后继。
  * @param graph 图实例。
  * @param caseStarts 各 case 起点。
  * @param defaultStart 默认路径起点。
@@ -268,7 +268,8 @@ function findSwitchMerge(graph: Graph, caseStarts: Array<string | null>, default
     if (startId) reachableSets.push(collectReachableNodes(graph, [startId], stopNodeId));
   });
   if (defaultStart) reachableSets.push(collectReachableNodes(graph, [defaultStart], stopNodeId));
-  if (!reachableSets.length) return stopNodeId;
+  // 单条已连接路径不存在分支汇合，路径首节点必须留在原 case/default 内。
+  if (reachableSets.length < 2) return stopNodeId;
   let candidates = reachableSets[0] ?? new Set<string>();
   for (let index = 1; index < reachableSets.length; index += 1) {
     const next = new Set<string>();
@@ -279,20 +280,19 @@ function findSwitchMerge(graph: Graph, caseStarts: Array<string | null>, default
     });
     candidates = next;
   }
-  if (candidates.has(stopNodeId)) return stopNodeId;
   const firstStart = caseStarts.find((item) => item) ?? defaultStart;
   if (!firstStart) return stopNodeId;
-  const stack: string[] = [firstStart];
+  const pending: string[] = [firstStart];
   const seen = new Set<string>();
-  while (stack.length) {
-    const currentId = stack.pop();
+  while (pending.length) {
+    const currentId = pending.shift();
     if (!currentId) break;
     if (candidates.has(currentId)) return currentId;
     if (seen.has(currentId)) continue;
     seen.add(currentId);
     (graph.getOutgoingEdges(currentId) || []).forEach((edge) => {
       const targetId = edge.getTargetCellId();
-      if (targetId && !seen.has(targetId)) stack.push(targetId);
+      if (targetId && !seen.has(targetId)) pending.push(targetId);
     });
   }
   return stopNodeId;

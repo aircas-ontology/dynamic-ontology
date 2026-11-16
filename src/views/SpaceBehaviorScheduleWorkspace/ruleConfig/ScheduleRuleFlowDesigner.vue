@@ -1,9 +1,10 @@
 <template>
   <div class="rule-flow-designer">
     <div class="rule-flow-designer__main">
-      <ScheduleRuleFlowPalette />
+      <ScheduleRuleFlowPalette v-if="!readonly" />
       <section class="rule-flow-designer__canvas-panel">
         <ScheduleRuleFlowToolbar
+          v-if="!readonly"
           :disconnected-count="disconnectedCount"
           :canvas-empty="canvasEmpty"
           :selected-removable="selectedRemovable"
@@ -22,10 +23,16 @@
             @drop="dropPaletteNode"
             @keydown="onCanvasKeydown"
           ></div>
-          <div v-if="canvasEmpty" class="rule-flow-designer__canvas-empty">从左侧拖入「条件分支 / 执行行为 / Switch 分支」到画布，再拖动节点端口完成连线</div>
+          <div v-if="canvasEmpty && !readonly" class="rule-flow-designer__canvas-empty">
+            从左侧拖入「条件分支 / 执行行为 / Switch 分支」到画布，再拖动节点端口完成连线
+          </div>
         </div>
         <div class="rule-flow-designer__message" :class="{ 'is-error': Boolean(connectionMessage) }">
-          {{ connectionMessage || "双击条件分支或执行行为进行配置；Ctrl/Command + 滚轮缩放；保存后写回调度草稿" }}
+          {{
+            readonly
+              ? "双击节点查看详情；Ctrl/Command + 滚轮缩放"
+              : connectionMessage || "双击条件分支或执行行为进行配置；Ctrl/Command + 滚轮缩放；保存后写回调度草稿"
+          }}
         </div>
       </section>
     </div>
@@ -40,23 +47,31 @@
         :close-on-click-modal="false"
       >
         <div class="rule-flow-designer__node-editor">
-          <ScheduleRuleConditionWireSurface v-if="editingNode?.condition" :condition="editingNode.condition" />
-          <ScheduleRuleSwitchConfig v-if="editingNode?.switchStep" :step="editingNode.switchStep" />
+          <el-form v-if="editingNode?.condition" :disabled="readonly"><ScheduleRuleConditionWireSurface :condition="editingNode.condition" /></el-form>
+          <el-form v-if="editingNode?.switchStep" :disabled="readonly"><ScheduleRuleSwitchConfig :step="editingNode.switchStep" /></el-form>
           <el-form v-if="editingNode?.action" label-width="100px">
             <el-form-item label="行为">
               <el-select
-                :model-value="editingNode.action.behaviorId"
+                :model-value="selectedActionOption?.id || editingNode.action.behaviorId"
+                :disabled="readonly"
                 filterable
                 placeholder="请选择行为"
                 :no-data-text="actionObjectIds.length ? '条件对象没有关联行为' : '暂无可选行为'"
                 @update:model-value="changeNodeBehavior"
               >
                 <el-option v-for="option in filteredBehaviorOptions" :key="option.id" :value="option.id" :label="option.displayName" />
+                <el-option
+                  v-if="readonly && selectedActionOption && !filteredBehaviorOptions.some((option) => option.id === selectedActionOption?.id)"
+                  :value="selectedActionOption.id"
+                  :label="selectedActionOption.displayName"
+                />
               </el-select>
             </el-form-item>
             <section class="rule-flow-designer__parameters" aria-label="行为参数">
               <h3 class="rule-flow-designer__parameters-title">行为参数</h3>
-              <BehaviorParameterConfig v-if="selectedActionOption" :controller="parameterConfig" :readonly="parameterBusy" />
+              <el-alert v-if="readonly && !actionDetails?.[editingNode.action.id]?.entityJson" title="未保存行为参数" type="info" :closable="false" />
+              <p v-if="readonly && actionDetails?.[editingNode.action.id]?.entityId">目标实例：{{ actionDetails[editingNode.action.id]?.entityId }}</p>
+              <BehaviorParameterConfig v-if="selectedActionOption" :controller="parameterConfig" :readonly="readonly || parameterBusy" />
               <p v-else>请选择行为以配置参数</p>
               <el-alert v-if="parameterError" :title="parameterError" type="error" :closable="false" />
               <el-button v-if="parameterError" :disabled="parameterBusy" link @click="initializeActionParameters">重新加载行为参数</el-button>
@@ -64,8 +79,8 @@
           </el-form>
         </div>
         <template #footer
-          ><el-button @click="nodeEditorVisible = false">取消</el-button
-          ><el-button type="primary" :disabled="!!editingNode?.action && parameterBusy" @click="confirmNodeEditor">确定</el-button></template
+          ><el-button @click="nodeEditorVisible = false">{{ readonly ? "关闭" : "取消" }}</el-button
+          ><el-button v-if="!readonly" type="primary" :disabled="!!editingNode?.action && parameterBusy" @click="confirmNodeEditor">确定</el-button></template
         >
       </el-dialog>
     </ElConfigProvider>
@@ -76,7 +91,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ElConfigProvider, ElMessage, ElMessageBox } from "element-plus";
-import type { RuleConditionNode, ScheduleBehaviorOption, ScheduleRuleFlowDocument } from "@/types";
+import type { RuleConditionNode, ScheduleBehaviorOption, ScheduleRuleDetailGroup, ScheduleRuleFlowDocument } from "@/types";
 import type { ScheduleRuleGraphNodeData } from "../utils/scheduleRuleFlowGraphCells";
 import { cloneRuleFlowValue } from "../utils/scheduleRuleFlowFactory";
 import ScheduleRuleConditionWireSurface from "./ScheduleRuleConditionWireSurface.vue";
@@ -84,6 +99,7 @@ import ScheduleRuleSwitchConfig from "./ScheduleRuleSwitchConfig.vue";
 import BehaviorParameterConfig from "@/components/BehaviorParameterConfig/BehaviorParameterConfig.vue";
 import { useRuleActionParameters } from "../composables/useRuleActionParameters";
 import { filterBehaviorsByObjects } from "../utils/filterRuleBehaviorsByObject";
+import { buildSavedActionEntityJson } from "../utils/restoreRuleScheduleDetail";
 import { ScheduleRuleFlowGraphSession, type ScheduleRulePaletteKind } from "../utils/scheduleRuleFlowGraphSession";
 import ScheduleRuleFlowPalette from "./ScheduleRuleFlowPalette.vue";
 import ScheduleRuleFlowToolbar from "./ScheduleRuleFlowToolbar.vue";
@@ -93,6 +109,9 @@ const PALETTE_MIME = "application/x-rule-node";
 const props = defineProps<{
   modelValue: ScheduleRuleFlowDocument;
   behaviorOptions: readonly ScheduleBehaviorOption[];
+  readonly?: boolean;
+  viewportReady?: boolean;
+  actionDetails?: Readonly<ScheduleRuleDetailGroup["actionDetails"]>;
 }>();
 
 const emit = defineEmits<{
@@ -105,18 +124,36 @@ const selectedRemovable = ref(false);
 const disconnectedCount = ref(0);
 const canvasEmpty = ref(true);
 let session: ScheduleRuleFlowGraphSession | null = null;
+let disposed = false;
+const savedBehaviorIds = new Map<string, string>();
 const nodeEditorVisible = ref(false);
 const editingNode = ref<ScheduleRuleGraphNodeData | null>(null);
 let editingNodeId = "";
 const actionObjectIds = ref<string[]>([]);
 const filteredBehaviorOptions = computed(() => filterBehaviorsByObjects(props.behaviorOptions, actionObjectIds.value));
 const route = useRoute();
-const selectedActionOption = computed(() => props.behaviorOptions.find((option) => option.id === editingNode.value?.action?.behaviorId));
+const selectedActionOption = computed(() => {
+  const action = editingNode.value?.action;
+  if (!action) return undefined;
+  const option = props.behaviorOptions.find((item) => item.id === action.behaviorId);
+  if (option || !props.readonly) return option;
+  const detail = props.actionDetails?.[action.id];
+  return detail
+    ? { id: action.id, actionApi: detail.actionApi, displayName: action.behaviorName || detail.actionApi, ontologyUniqIdentifier: detail.ontologyIdentifier }
+    : undefined;
+});
 const { parameterConfig, parameterBusy, parameterError, clearActionParameters, initializeActionParameters, captureActionParameters } = useRuleActionParameters(
   () => String(route.params.spaceId ?? ""),
   () => selectedActionOption.value,
   () => editingNode.value?.action,
   () => nodeEditorVisible.value,
+  () => {
+    const action = editingNode.value?.action;
+    if (!action || action.behaviorParameters) return "";
+    const detail = props.actionDetails?.[action.id];
+    if (!detail || detail.actionApi !== selectedActionOption.value?.actionApi) return "";
+    return buildSavedActionEntityJson(detail);
+  },
 );
 watch(nodeEditorVisible, (visible) => {
   if (!visible) clearActionParameters();
@@ -135,6 +172,11 @@ function openNodeEditor(nodeId: string): void {
   clearActionParameters();
   editingNodeId = nodeId;
   editingNode.value = cloneRuleFlowValue(data);
+  if (props.readonly) {
+    nodeEditorVisible.value = true;
+    if (data.action) void initializeActionParameters();
+    return;
+  }
   actionObjectIds.value = data.action ? (session?.getActionConditionObjectIds(nodeId) ?? []) : [];
   if (editingNode.value.action?.behaviorId && actionObjectIds.value.length) {
     const selected = props.behaviorOptions.find((option) => option.id === editingNode.value?.action?.behaviorId);
@@ -171,6 +213,7 @@ function hasUnsupportedConditionValue(condition: RuleConditionNode): boolean {
 
 /** @description 拦截未重新选择的停用值，确认后仅更新目标节点，保留位置和边。 */
 function confirmNodeEditor(): void {
+  if (props.readonly) return;
   if (!editingNode.value) return;
   const { condition, action, switchStep } = editingNode.value;
   if (action && !filteredBehaviorOptions.value.some((option) => option.id === action.behaviorId)) {
@@ -195,6 +238,7 @@ function confirmNodeEditor(): void {
  * @param doc 序列化文档。
  */
 function commitRuleFlowDocument(doc: ScheduleRuleFlowDocument) {
+  if (props.readonly) return;
   emit("update:modelValue", doc);
 }
 
@@ -241,6 +285,7 @@ async function confirmClearCanvas() {
  * @param event 放置事件。
  */
 function dropPaletteNode(event: DragEvent) {
+  if (props.readonly) return;
   const kind = event.dataTransfer?.getData(PALETTE_MIME);
   if (kind !== "condition" && kind !== "action" && kind !== "switch") return;
   session?.dropPaletteNode(kind satisfies ScheduleRulePaletteKind, event.clientX, event.clientY);
@@ -251,15 +296,22 @@ function dropPaletteNode(event: DragEvent) {
  * @param event 键盘事件。
  */
 function onCanvasKeydown(event: KeyboardEvent) {
+  if (props.readonly) return;
   session?.handleCanvasKeydown(event);
 }
 
 onMounted(() => {
   void nextTick(() => {
     const container = canvasRef.value;
-    if (!container) return;
+    if (!container || disposed) return;
     session = new ScheduleRuleFlowGraphSession({
       getBehaviorOptions: () => props.behaviorOptions,
+      getSavedAction: (action) => {
+        const detail = props.actionDetails?.[action.id];
+        const option = props.behaviorOptions.find((item) => item.id === action.behaviorId);
+        if (!savedBehaviorIds.has(action.id)) savedBehaviorIds.set(action.id, action.behaviorId);
+        return detail && savedBehaviorIds.get(action.id) === action.behaviorId && (!option || option.actionApi === detail.actionApi) ? detail : undefined;
+      },
       onCommit: commitRuleFlowDocument,
       onConnectionMessage: (message) => {
         connectionMessage.value = message;
@@ -276,11 +328,20 @@ onMounted(() => {
       },
       onNodeDoubleClick: openNodeEditor,
     });
-    session.mount(container, props.modelValue);
+    session.mount(container, props.modelValue, props.readonly);
+    if (props.viewportReady !== false) session.adaptViewport();
   });
 });
 
+watch(
+  () => props.viewportReady,
+  (ready) => {
+    if (ready) session?.adaptViewport();
+  },
+);
+
 onBeforeUnmount(() => {
+  disposed = true;
   session?.dispose();
   session = null;
 });

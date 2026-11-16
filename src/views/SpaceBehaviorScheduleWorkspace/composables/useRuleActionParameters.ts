@@ -7,6 +7,7 @@ import {
   postGetOntologyEntityRowDetailPageInterface,
 } from "@/apis";
 import type { RuleFlowThenAction, ScheduleBehaviorOption } from "@/types";
+import { restoreScheduleBehaviorParameters } from "@/views/SpaceBehaviorScheduleWorkspace/utils/restoreScheduleBehaviorParameters";
 
 /** @description 为规则行为节点复用周期调度参数控制器，维护独立加载会话与快照。 @param getSpaceId 当前空间。 @param getOption 当前行为选项。 @param getAction 当前编辑副本。 @param getVisible 弹窗可见状态。 @returns 参数控制器及节点校验操作。 */
 export function useRuleActionParameters(
@@ -14,6 +15,7 @@ export function useRuleActionParameters(
   getOption: () => ScheduleBehaviorOption | undefined,
   getAction: () => RuleFlowThenAction | undefined,
   getVisible: () => boolean,
+  getSavedEntityJson: () => string = () => "",
 ) {
   const context = reactive({
     /** @description 获取当前空间上下文。 @returns 空间标识。 */
@@ -79,11 +81,19 @@ export function useRuleActionParameters(
         parameterError.value = parameterConfig.detailError.value;
         return;
       }
+      const savedEntityJson = getSavedEntityJson();
+      if (!snapshot && savedEntityJson) {
+        const error = restoreScheduleBehaviorParameters(parameterConfig, savedEntityJson, spaceId, option.actionApi);
+        if (error) {
+          parameterError.value = error;
+          return;
+        }
+      }
       if (snapshot && !parameterConfig.restoreParameterSnapshot(snapshot)) {
         parameterError.value = "已保存参数与当前行为不匹配，请重新选择行为";
         return;
       }
-      if (!snapshot) {
+      if (!snapshot && !savedEntityJson) {
         for (const param of action.params) {
           if (param.value.kind === "input" && parameterConfig.paramRows.value.some((row) => row.paramName === param.paramName))
             parameterConfig.paramValues[param.paramName] = param.value.text;

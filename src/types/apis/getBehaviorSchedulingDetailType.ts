@@ -25,6 +25,6 @@ export interface GetBehaviorSchedulingDetailData {
   status: "START" | "STOP";
   /** 实际接口返回的周期任务配置。 */
   taskVO?: BehaviorSchedulingTaskDetail;
-  /** 兼容在线文档声明的历史字段。 */
-  ruleVO?: BehaviorSchedulingTaskDetail;
+  /** 规则详情；旧周期详情曾使用此字段。 */
+  ruleVO?: BehaviorSchedulingTaskDetail & { judgeRules?: unknown; flowDocument?: string };
 }

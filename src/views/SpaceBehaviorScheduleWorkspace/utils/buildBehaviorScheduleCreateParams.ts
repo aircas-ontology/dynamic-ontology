@@ -1,6 +1,6 @@
-import type { BehaviorScheduleDraft, BehaviorSchedulePeriodKind, CreateBehaviorScheduleParams, TestOntologyActionParams } from "@/types";
+import type { BehaviorScheduleDraft, BehaviorSchedulePeriodKind, CreateTaskBehaviorScheduleParams, TestOntologyActionParams } from "@/types";
 
-const schedulePeriodTypes: Record<BehaviorSchedulePeriodKind, CreateBehaviorScheduleParams["task"]["periodType"]> = {
+const schedulePeriodTypes: Record<BehaviorSchedulePeriodKind, CreateTaskBehaviorScheduleParams["task"]["periodType"]> = {
   每天: "DAILY",
   每周: "WEEKLY",
   每月: "MONTHLY",
@@ -69,8 +69,9 @@ export function buildBehaviorScheduleCreateParams(
   draft: BehaviorScheduleDraft,
   ontologyIdentifier: string,
   behaviorRequest: TestOntologyActionParams,
-  spaceId = "",
-): { ok: true; request: CreateBehaviorScheduleParams } | { ok: false; error: string } {
+  spaceId = behaviorRequest.ontologySpaceId,
+): { ok: true; request: CreateTaskBehaviorScheduleParams } | { ok: false; error: string } {
+  if (!Number.isSafeInteger(Number(spaceId)) || Number(spaceId) <= 0) return { ok: false, error: "空间标识无效" };
   if (!draft.name.trim() || !draft.behaviorActionApi || draft.behaviorActionApi !== behaviorRequest.actionApi)
     return { ok: false, error: "调度名称或行为参数不匹配" };
   let cron = "";
@@ -92,7 +93,7 @@ export function buildBehaviorScheduleCreateParams(
   return {
     ok: true,
     request: {
-      ...(Number.isSafeInteger(Number(spaceId)) && Number(spaceId) > 0 ? { spaceId: Number(spaceId) } : {}),
+      spaceId: Number(spaceId),
       ...(ontologyIdentifier.trim() ? { ontologyIdentifier: ontologyIdentifier.trim() } : {}),
       actionApi: draft.behaviorActionApi,
       name: draft.name.trim(),

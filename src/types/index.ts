@@ -30,7 +30,17 @@ export type {
 export type { BuildOntologyAssetData, BuildOntologyAssetParams, BuildOntologyAssetProperty } from "./apis/buildOntologyAssetType";
 export type { ChangeBehaviorSchedulingStatusParams } from "./apis/changeBehaviorSchedulingStatusType";
 export type { ActionCategoryNode, CreateActionCategoryParams } from "./apis/createActionCategoryType";
-export type { CreateBehaviorScheduleParams, CreateBehaviorScheduleTask } from "./apis/createBehaviorScheduleType";
+export type {
+  CreateBehaviorScheduleParams,
+  CreateBehaviorScheduleTask,
+  CreateRuleBehaviorScheduleParams,
+  CreateTaskBehaviorScheduleParams,
+  ScheduleRuleActionParam,
+  ScheduleRuleCompareOperator,
+  ScheduleRuleJudgeGroup,
+  ScheduleRuleJudgeItem,
+  ScheduleRuleOperand,
+} from "./apis/createBehaviorScheduleType";
 export type { CreateFunctionOperatorTemplateData, CreateFunctionOperatorTemplateParams } from "./apis/createFunctionOperatorTemplateType";
 export type { CreateFunctionRateLimitTemplateData, CreateFunctionRateLimitTemplateParams } from "./apis/createFunctionRateLimitTemplateType";
 export type {
@@ -600,6 +610,7 @@ export type {
   ScheduleRuleAiMessage,
   ScheduleRuleAiMessageRole,
   ScheduleRuleAiMessageStatus,
+  ScheduleRuleDetailGroup,
   ScheduleRuleFlowDocument,
 } from "./pages/ontologySpaceBehaviorScheduleType";
 export {

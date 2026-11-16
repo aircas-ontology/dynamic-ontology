@@ -31,6 +31,8 @@ export interface ScheduleRuleGraphCellContext {
   graph: Graph | null;
   /** 整图渲染缓冲；非空时只入队不立即写入。 */
   renderBuffer: Cell[] | null;
+  /** @description 读取与当前节点行为匹配的保存参数。 @param action 行为节点。 @returns 保存请求。 */
+  getSavedAction?: (action: RuleFlowThenAction) => { entityJson: string } | undefined;
 }
 
 export const START_NODE_ID = "__rule_start__";
@@ -422,7 +424,7 @@ export function addConditionNode(
       hint: {
         x: cx,
         y: 132,
-        text: "拖动端口连线",
+        text: "双击编辑条件",
         fill: "var(--aircas-color-text-muted)",
         fontSize: 10,
         textAnchor: "middle",
@@ -503,14 +505,14 @@ export function addActionNode(ctx: ScheduleRuleGraphCellContext, action: RuleFlo
       summary: {
         x: 14,
         y: 64,
-        text: summarizeThenAction(action),
+        text: summarizeThenAction(action, ctx.getSavedAction?.(action)),
         fill: "var(--aircas-color-text-secondary)",
         fontSize: 11,
       },
       hint: {
         x: 14,
         y: 90,
-        text: "拖动端口连线",
+        text: "双击编辑行为参数",
         fill: "var(--aircas-color-text-muted)",
         fontSize: 10,
       },

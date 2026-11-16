@@ -47,7 +47,6 @@ const operators: { value: RuleCompareOperator; label: string }[] = [
   { value: "lte", label: "小于或等于" },
   { value: "contains", label: "包含" },
   { value: "notContains", label: "不包含" },
-  { value: "prefixContains", label: "前置包含" },
 ];
 </script>
 

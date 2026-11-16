@@ -147,6 +147,8 @@ export interface RuleVariableValue {
   propertyName: string;
   /** 所选实例；空数组表示全部实例。 */
   instanceIds: string[];
+  /** 详情中解析到的实例显示名称。 */
+  instanceNames?: string[];
 }
 
 /** 函数值。 */
@@ -294,6 +296,12 @@ export type RuleFlowStep = RuleFlowActionsStep | RuleFlowBranchStep | RuleFlowSw
 export interface ScheduleRuleFlowDocument {
   /** 从规则开始依次执行的步骤。 */
   steps: RuleFlowStep[];
+}
+
+/** 一个独立规则条件及其只读行为参数。 */
+export interface ScheduleRuleDetailGroup {
+  flow: ScheduleRuleFlowDocument;
+  actionDetails: Record<string, { actionApi: string; ontologyIdentifier: string; entityJson: string; entityId: string }>;
 }
 
 /** 变量目录来源。 */

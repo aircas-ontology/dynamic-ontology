@@ -242,7 +242,7 @@ test("rule flow text serializes and parses a default canvas document", () => {
   emptyComposite.logic = "or";
   assert.equal(summarizeRuleCondition(emptyComposite), "");
   assert.match(summarizeRuleCondition(createEmptyCompositeCondition(true)), /等于/);
-  assert.equal(summarizeThenAction(createEmptyThenAction()), "行为无参数");
+  assert.equal(summarizeThenAction(createEmptyThenAction()), "未配置行为参数");
   assert.match(
     summarizeThenAction({
       id: "then-1",
@@ -323,4 +323,41 @@ test("AI mock generate returns parseable rule text that can be aborted", async (
     () => pending,
     (error) => error instanceof Error && error.name === "AbortError",
   );
+});
+
+test("confirmed action snapshot summarizes inputs outputs and instances instead of stale legacy params", () => {
+  const cases = [
+    [{ params: { amount: 0, enabled: false } }, /输入 2 项/],
+    [{ inputParams: { amount: [{ entityPrimaryKey: 1 }], empty: [] } }, /输入 1 项/],
+    [{ params: { amount: 0 }, inputParams: { amount: [{ entityPrimaryKey: 1 }] } }, /输入 1 项/],
+    [{ outputParams: { result: { entityPrimaryKey: 1 } } }, /输出 1 项/],
+    [{ entityPrimaryKey: 0 }, /实例已配置/],
+    [{ dataPrimaryKey: 0 }, /实例已配置/],
+    [{ linkEntityPrimaryKey: 0 }, /实例已配置/],
+    [{ entityPrimaryKeys: { from: [0], to: [] } }, /实例已配置/],
+    [{ entityPrimaryKeys: { from: [], to: [0] } }, /实例已配置/],
+  ];
+  for (const [configuration, expected] of cases) {
+    const action = { ...createEmptyThenAction(), behaviorParameters: { request: { actionApi: "app", ontologySpaceId: "156", ...configuration } } };
+    const before = structuredClone(action);
+    assert.match(summarizeThenAction(action), expected);
+    assert.doesNotMatch(summarizeThenAction(action), /无参数|未配置/);
+    assert.deepEqual(action, before);
+  }
+  for (const configuration of [{}, { params: {}, inputParams: { amount: [] }, outputParams: {}, entityPrimaryKeys: { from: [], to: [] } }]) {
+    assert.equal(summarizeThenAction({ ...createEmptyThenAction(), behaviorParameters: { request: configuration } }), "参数已配置");
+  }
+});
+
+test("restored action summary reads saved binding parameters without mutating the action", () => {
+  const action = createEmptyThenAction();
+  const detail = {
+    actionApi: "app",
+    entityJson: JSON.stringify({ actionApi: "app", inputParams: { value: [{ entityPrimaryKey: 0 }] }, outputParams: { result: {} } }),
+  };
+  assert.match(summarizeThenAction(action, detail), /输入 1 项.*输出 1 项/);
+  assert.equal(action.behaviorParameters, undefined);
+  assert.equal(summarizeThenAction(action, { ...detail, entityJson: "invalid" }), "未配置行为参数");
+  action.behaviorParameters = { request: { params: { a: 1, b: 2 } } };
+  assert.match(summarizeThenAction(action, detail), /输入 2 项/);
 });
