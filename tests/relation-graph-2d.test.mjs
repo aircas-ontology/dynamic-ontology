@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createOntologySpaceRelationWorkspaceData } from "../src/mocks/ontologySpaceRelationMock/ontologySpaceRelationMock.ts";
-import { bindRelationGraph2dLinkNodes, buildRelationGraph2dData } from "../src/views/SpaceRelationWorkspace/utils/buildRelationGraph2dData.ts";
+import { bindRelationGraph2dLinkNodes, buildRelationGraph2dData } from "../src/components/OntologyRelationGraph2d/graphData.ts";
 
 test("buildRelationGraph2dData creates unique nodes and directed links from relations", () => {
   const data = createOntologySpaceRelationWorkspaceData();
