@@ -768,6 +768,7 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(typeSource, /executeInputs\?/);
   assert.match(typeSource, /BehaviorTreeExecuteInputs/);
   assert.match(typeSource, /BehaviorTreeExecuteNodePlan/);
+  assert.match(typeSource, /nodeDisplayName\?/);
   assert.match(typeSource, /blackboardInstances\?/);
   assert.match(typeSource, /sourceType\?/);
   assert.match(typeSource, /EXTERNAL/);
@@ -785,18 +786,27 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(execComposableSource, /listBehaviorTreeExecPlanNodeIds/);
   assert.match(execComposableSource, /blackboardInstances/);
   assert.match(execComposableSource, /mapBehaviorTreeDefinitionToBlackboardItems/);
+  assert.match(execComposableSource, /nodePlan\?\.nodeDisplayName/);
   assert.doesNotMatch(execComposableSource, /loadBoundActionDetails/);
   const execPlanUtilSource = readSource("../src/utils/behaviorTreeExecutePlan.ts");
   assert.match(execPlanUtilSource, /listBehaviorTreeExecuteNodePlans/);
   assert.match(execPlanUtilSource, /sourceType/);
   const execPanelSource = readSource("../src/components/BehaviorTreeExecPanel.vue");
   assert.match(execPanelSource, /读取执行要求/);
+  assert.match(execPanelSource, /showLoadPlanButton/);
   assert.match(execPanelSource, />执行</);
   assert.match(execPanelSource, /接口日志/);
   assert.match(execPanelSource, /sourceType/);
   assert.match(execPanelSource, /update-node-input-instance/);
   assert.match(execPanelSource, /PROPERTY/);
   assert.match(execPanelSource, /EXTERNAL/);
+  assert.match(execPanelSource, /target\.mode === 'DATA_PRIMARY_KEY' \|\| target\.rowRequired/);
+  assert.doesNotMatch(execPanelSource, /storageGroup !== 'main'/);
+  assert.match(execPanelSource, /block\.actionDisplayName/);
+  assert.doesNotMatch(execPanelSource, /block\.actionApi/);
+  assert.doesNotMatch(execPanelSource, /<code>\{\{\s*block\.nodeId\s*\}\}<\/code>/);
+  assert.doesNotMatch(execPanelSource, /试跑不要求发布/);
+  assert.doesNotMatch(execPanelSource, /还没读取执行要求/);
   const routesSource = readSource("../src/mockData/routes.json");
   assert.match(routesSource, /\/ontology\/action\/tree\/node-defs/);
   const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
@@ -812,6 +822,9 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(inspectorSource, /子节点顺序/);
   assert.match(inspectorSource, /behavior-tree-node-inspector__child-order/);
   assert.doesNotMatch(inspectorSource, /同级顺序/);
+  assert.doesNotMatch(inspectorSource, /补全.*黑板键/);
+  assert.doesNotMatch(inspectorSource, /add-external-keys/);
+  assert.doesNotMatch(dialogSource, /handleAddExternalKeys/);
 });
 
 test("behavior tree execute plan builds payload and reports missing fields", () => {
@@ -820,6 +833,7 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
     nodes: [
       {
         nodeId: "node_action_1",
+        nodeDisplayName: "开火节点",
         actionApi: "app.fire",
         actionDisplayName: "开火",
         entityPrimaryKeyRequired: true,
@@ -934,6 +948,39 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
     entityPrimaryKey: "tank-1",
     dataPrimaryKeys: { sub: "out-1" },
   });
+
+  const ignoreRowDraft = createBehaviorTreeNodeExecDraft();
+  ignoreRowDraft.outputParams["prop.lon"] = { entityPrimaryKey: "sat-1", rowKey: "should-ignore" };
+  const ignoreRowBuilt = buildBehaviorTreeTestPayload({
+    spaceId: "100",
+    treeApi: "tree.demo",
+    plan: {
+      nodes: [
+        {
+          nodeId: "node_write_1",
+          outputParams: [
+            {
+              key: "prop.lon",
+              mode: "OUTPUT_PARAM",
+              storageGroup: "orbit_point",
+              objectIdentifier: "obj.sat",
+            },
+          ],
+        },
+      ],
+    },
+    blackboard: [],
+    objectProperties: {},
+    externalInputDraft: {},
+    blackboardObjectKeys: {},
+    nodeDrafts: { node_write_1: ignoreRowDraft },
+  });
+  assert.equal("payload" in ignoreRowBuilt, true);
+  if ("payload" in ignoreRowBuilt) {
+    assert.deepEqual(ignoreRowBuilt.payload.nodeExecutes?.node_write_1?.outputParams?.["prop.lon"], {
+      entityPrimaryKey: "sat-1",
+    });
+  }
 
   const badInputs = buildBehaviorTreeTestPayload({
     spaceId: "100",

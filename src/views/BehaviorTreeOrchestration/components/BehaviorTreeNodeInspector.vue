@@ -125,7 +125,6 @@
         <el-form-item label="重试次数">
           <el-input :model-value="config.retryTimes" placeholder="留空或 0" @update:model-value="patchConfig('retryTimes', String($event))" />
         </el-form-item>
-        <el-button v-if="missingExternalKeys.length" @click="emit('add-external-keys', node.id)">补全 {{ missingExternalKeys.length }} 个黑板键</el-button>
       </template>
     </el-form>
 
@@ -138,7 +137,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ActionTreeBindableAction, BehaviorTreeBlackboardItem, BehaviorTreeKindMeta, BehaviorTreeNodeDraft, BehaviorTreeNodeKind } from "@/types";
+import type { ActionTreeBindableAction, BehaviorTreeKindMeta, BehaviorTreeNodeDraft, BehaviorTreeNodeKind } from "@/types";
 import {
   BEHAVIOR_TREE_LOCAL_KINDS,
   BEHAVIOR_TREE_LOOP_MODE_OPTIONS,
@@ -155,7 +154,6 @@ const props = defineProps<{
   parent: BehaviorTreeNodeDraft | null;
   kindMeta: Record<BehaviorTreeNodeKind, BehaviorTreeKindMeta>;
   availableActions: ActionTreeBindableAction[];
-  blackboard: BehaviorTreeBlackboardItem[];
 }>();
 
 const emit = defineEmits<{
@@ -164,7 +162,6 @@ const emit = defineEmits<{
   reorder: [parentId: string, childId: string, delta: number];
   "detach-root": [id: string];
   "delete-node": [id: string];
-  "add-external-keys": [id: string];
 }>();
 
 const config = computed(() => props.node?.config || {});
@@ -180,14 +177,6 @@ const maxChildrenHint = computed(() => {
 const isCompositeNode = computed(() => {
   const kind = props.node?.kind;
   return kind === "SELECTOR" || kind === "SEQUENCE" || kind === "PARALLEL";
-});
-
-const missingExternalKeys = computed(() => {
-  if (!props.node || props.node.kind !== "ACTION") return [];
-  const api = (props.node.config?.actionApi || "").trim();
-  const bound = props.availableActions.find((item) => item.actionApi === api);
-  const keys = new Set(props.blackboard.map((item) => item.key.trim()).filter(Boolean));
-  return (bound?.externalParams || []).filter((item) => item.name && !keys.has(item.name));
 });
 
 /**

@@ -15,7 +15,6 @@
       </div>
     </template>
 
-    <p class="behavior-tree-test-dialog__hint">打开时会自动读取库中已保存定义的执行要求；必填项未传会被后端拒绝。</p>
     <p v-if="catalogError" class="behavior-tree-test-dialog__state" role="alert">{{ catalogError }}</p>
 
     <BehaviorTreeExecPanel
@@ -32,7 +31,7 @@
       :instance-options="instanceOptions"
       :instance-loading-ids="instanceLoadingIds"
       :resolve-object-label="resolveObjectLabel"
-      @load-plan="loadBehaviorTreeExecutePlan(false)"
+      :show-load-plan-button="false"
       @run-test="runBehaviorTreeTest"
       @clear-logs="clearBehaviorTreeExecLogs"
       @ensure-instances="loadBehaviorTreeEntityOptions"
@@ -170,7 +169,6 @@ watch(
   font-weight: 600;
 }
 
-.behavior-tree-test-dialog__hint,
 .behavior-tree-test-dialog__state {
   margin: 0 0 12px;
   color: var(--aircas-color-text-secondary);

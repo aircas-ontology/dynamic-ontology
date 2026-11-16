@@ -61,13 +61,11 @@
                 :parent="selectedParent"
                 :kind-meta="kindMeta"
                 :available-actions="availableActions"
-                :blackboard="model.blackboard"
                 @patch-field="handlePatchField"
                 @patch-config="handlePatchConfig"
                 @reorder="reorderBehaviorTreeChild"
                 @detach-root="detachBehaviorTreeNodeToRoot"
                 @delete-node="deleteBehaviorTreeNode"
-                @add-external-keys="handleAddExternalKeys"
               />
             </el-tab-pane>
             <el-tab-pane label="黑板 / 变量" name="board">
@@ -118,12 +116,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { ElMessage } from "element-plus";
-import type { BehaviorTreeNodeDraft, BehaviorTreeOrchestrationMeta, BehaviorTreePersistMode, BehaviorTreeValueType } from "@/types";
+import type { BehaviorTreeNodeDraft, BehaviorTreeOrchestrationMeta, BehaviorTreePersistMode } from "@/types";
 import { useBehaviorTreeExecution } from "@/composables/behaviorTree/useBehaviorTreeExecution";
 import BehaviorTreeExecPanel from "@/components/BehaviorTreeExecPanel.vue";
-import { createBehaviorTreeBlackboardItem } from "@/utils/behaviorTreeBlackboard";
-import { BEHAVIOR_TREE_VALUE_TYPES } from "./utils/behaviorTreeConstants";
 import { findBehaviorTreeNode } from "./utils/behaviorTreeModel";
 import { useBehaviorTreeGraph } from "./composables/useBehaviorTreeGraph";
 import { useBehaviorTreeOrchestration } from "./composables/useBehaviorTreeOrchestration";
@@ -289,37 +284,6 @@ function handlePatchConfig(id: string, field: string, value: string): void {
   node.config = node.config || {};
   node.config[field] = value;
   bumpRevision();
-}
-
-/**
- * @description 为 ACTION 节点补齐外部入参黑板键。
- * @param id 节点 id。
- */
-function handleAddExternalKeys(id: string): void {
-  const node = findBehaviorTreeNode(model.roots, id);
-  if (!node || node.kind !== "ACTION") return;
-  const api = (node.config?.actionApi || "").trim();
-  const bound = availableActions.value.find((item) => item.actionApi === api);
-  if (!bound) {
-    ElMessage.warning("先选择一个目录里的绑定行为");
-    return;
-  }
-  const existing = new Set(model.blackboard.map((item) => item.key.trim()).filter(Boolean));
-  let added = 0;
-  for (const param of bound.externalParams || []) {
-    if (!param.name || existing.has(param.name)) continue;
-    const valueType = (BEHAVIOR_TREE_VALUE_TYPES.includes(param.type as BehaviorTreeValueType) ? param.type : "STRING") as BehaviorTreeValueType;
-    model.blackboard.push(
-      createBehaviorTreeBlackboardItem(param.name, {
-        valueType,
-        description: param.description || `外部输入参数，来自行为 ${bound.actionApi}`,
-      }),
-    );
-    existing.add(param.name);
-    added += 1;
-  }
-  bumpRevision();
-  ElMessage.success(added ? `已补 ${added} 个黑板键` : "黑板里已经有全部外部输入参数的键");
 }
 
 /**
