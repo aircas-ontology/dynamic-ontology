@@ -984,8 +984,11 @@ const detailLoading = ref(false);
 const detailError = ref("");
 const unsupportedEditReason = ref("");
 let detailLoadToken = 0;
-const dialogTitle = computed(() => (props.mode === "edit" ? "编辑行为" : "创建行为"));
 const readonly = computed(() => props.mode === "edit" && (props.behavior?.status === "published" || props.behavior?.status === "disabled"));
+const dialogTitle = computed(() => {
+  if (props.mode !== "edit") return "创建行为";
+  return readonly.value ? "查看行为" : "编辑行为";
+});
 const showAttributeValueObjectSection = computed(() => kind.value === "basic" && valueType.value === "attributeValue");
 const showRelationInstanceSection = computed(() => kind.value === "basic" && valueType.value === "relationInstance");
 const showBasicFunctionOperatorSection = computed(() => kind.value === "basic" && valueType.value === "basicFunctionOperator");

@@ -158,9 +158,12 @@ export type {
   GetBehaviorSchedulingResultParams,
 } from "./apis/getBehaviorSchedulingResultType";
 export type {
+  BehaviorTreeExecuteBlackboardInstance,
   BehaviorTreeExecuteInputParam,
   BehaviorTreeExecuteInputs,
+  BehaviorTreeExecuteInputSourceType,
   BehaviorTreeExecuteInstanceRequirement,
+  BehaviorTreeExecuteNodePlan,
   BehaviorTreeExecuteOutputParam,
   GetOntologyActionInfoData,
   GetOntologyActionInfoFunctionParam,

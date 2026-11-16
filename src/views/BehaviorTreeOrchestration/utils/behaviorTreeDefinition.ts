@@ -10,10 +10,10 @@ import type {
   BehaviorTreeSerializedNode,
   BehaviorTreeValueType,
 } from "@/types";
-import { resolveBehaviorTreeBlackboardSource } from "./behaviorTreeBlackboard.ts";
+import { mapBehaviorTreeDefinitionToBlackboardItems, resolveBehaviorTreeBlackboardSource } from "../../../utils/behaviorTreeBlackboard.ts";
+import { behaviorTreeEmptyToNull, behaviorTreeIntOrNull, behaviorTreeValueToText, parseBehaviorTreeTypedValue } from "../../../utils/behaviorTreeTypedValue.ts";
 import { createDefaultBehaviorTreeConfig } from "./behaviorTreeModel.ts";
 import { isBehaviorTreeValueLessOp } from "./behaviorTreeConstants.ts";
-import { behaviorTreeEmptyToNull, behaviorTreeIntOrNull, behaviorTreeValueToText, parseBehaviorTreeTypedValue } from "./behaviorTreeTypedValue.ts";
 
 /**
  * @description 将草稿配置转为序列化 config。
@@ -231,24 +231,8 @@ export function importBehaviorTreeSerializedNode(raw: BehaviorTreeSerializedNode
  * @returns 编辑模型。
  */
 export function importBehaviorTreeDefinition(definition: BehaviorTreeDefinition): BehaviorTreeModel {
-  const variables = Array.isArray(definition.variables) ? definition.variables : [];
   return {
-    blackboard: (definition.blackboard || []).map((item) => {
-      const source = resolveBehaviorTreeBlackboardSource({
-        source: item.source,
-        bindPropertyUniqueIdentifier: item.bindPropertyUniqueIdentifier || "",
-      });
-      const variable = variables.find((entry) => entry.name === item.key);
-      return {
-        key: item.key || "",
-        valueType: item.valueType || "STRING",
-        source,
-        bindPropertyUniqueIdentifier: item.bindPropertyUniqueIdentifier || "",
-        fixedValueText: source === "FIXED" ? behaviorTreeValueToText(item.value) : "",
-        defaultValueText: source === "EXTERNAL" && variable ? behaviorTreeValueToText(variable.defaultValue) : "",
-        description: item.description || "",
-      };
-    }),
+    blackboard: mapBehaviorTreeDefinitionToBlackboardItems(definition),
     roots: (definition.roots || []).map((root) => importBehaviorTreeSerializedNode(root)),
   };
 }

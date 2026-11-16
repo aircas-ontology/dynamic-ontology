@@ -7,7 +7,7 @@ import {
   createBehaviorTreeBlackboardItem,
   mapBehaviorTreePropertyTypeToValueType,
   resolveBehaviorTreeBlackboardSource,
-} from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreeBlackboard.ts";
+} from "../src/utils/behaviorTreeBlackboard.ts";
 import {
   createBehaviorTreeKindMetaMap,
   formatBehaviorTreeMaxChildrenHint,
@@ -36,12 +36,7 @@ import {
   reorderBehaviorTreeChild,
   reparentBehaviorTreeNode,
 } from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreeModel.ts";
-import {
-  behaviorTreeEmptyToNull,
-  behaviorTreeIntOrNull,
-  behaviorTreeValueToText,
-  parseBehaviorTreeTypedValue,
-} from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreeTypedValue.ts";
+import { behaviorTreeEmptyToNull, behaviorTreeIntOrNull, behaviorTreeValueToText, parseBehaviorTreeTypedValue } from "../src/utils/behaviorTreeTypedValue.ts";
 import {
   extractBehaviorTreeDefinitionFromDetail,
   resolveBehaviorTreeSaveMethod,
@@ -51,13 +46,19 @@ import {
   buildBehaviorTreeTestPayload,
   collectBehaviorTreeExecMissingFields,
   createBehaviorTreeNodeExecDraft,
+  findBehaviorTreeExecuteNodePlan,
+  listBehaviorTreeExecuteNodePlans,
+  listBehaviorTreeExecPlanInstanceRequirements,
   listBehaviorTreeExecPlanNodeIds,
   listBehaviorTreeExecPlanObjectIds,
+  listBehaviorTreeNodeInputParams,
+  listBehaviorTreeNodeOutputTargets,
   mapBehaviorTreeBoundActionApis,
   mapBehaviorTreeEntityRecordOption,
   resolveBehaviorTreeNodeDisplayName,
   resolveBehaviorTreeNodeLinkEnds,
-} from "../src/views/BehaviorTreeOrchestration/utils/behaviorTreeExecutePlan.ts";
+  resolveBehaviorTreeOutputDraftKey,
+} from "../src/utils/behaviorTreeExecutePlan.ts";
 
 /**
  * @description 读取源码文本。
@@ -712,13 +713,15 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(dialogSource, /BehaviorTreeNodeInspector/);
   assert.match(dialogSource, /BehaviorTreeBlackboardPanel/);
   assert.match(dialogSource, /BehaviorTreeExecPanel/);
+  assert.match(dialogSource, /@\/composables\/behaviorTree\/useBehaviorTreeExecution/);
+  assert.match(dialogSource, /@\/components\/BehaviorTreeExecPanel/);
   assert.match(dialogSource, /执行 \/ 日志/);
   assert.match(dialogSource, /useBehaviorTreeExecution/);
   assert.doesNotMatch(dialogSource, /BehaviorTreeJsonPanel|导入\/导出|定义 JSON/);
   assert.doesNotMatch(dialogSource, /空间 \{\{ meta\.spaceId \}\}|分类 \{\{ meta\.categoryId \}\}/);
   assert.equal(existsSync(new URL("../src/views/BehaviorTreeOrchestration/components/BehaviorTreeJsonPanel.vue", import.meta.url)), false);
-  assert.equal(existsSync(new URL("../src/views/BehaviorTreeOrchestration/components/BehaviorTreeExecPanel.vue", import.meta.url)), true);
-  assert.equal(existsSync(new URL("../src/views/BehaviorTreeOrchestration/composables/useBehaviorTreeExecution.ts", import.meta.url)), true);
+  assert.equal(existsSync(new URL("../src/components/BehaviorTreeExecPanel.vue", import.meta.url)), true);
+  assert.equal(existsSync(new URL("../src/composables/behaviorTree/useBehaviorTreeExecution.ts", import.meta.url)), true);
   assert.match(dialogSource, /object-options|object-properties|loadBehaviorTreeObjectPropertyCatalog/);
   assert.match(dialogSource, /ensureBehaviorTreeObjectProperties|request-object-properties/);
   const boardSource = readSource("../src/views/BehaviorTreeOrchestration/components/BehaviorTreeBlackboardPanel.vue");
@@ -741,7 +744,7 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(graphSource, /buildBehaviorTreeEdgeTerminals/);
   assert.match(graphSource, /connectionPoint:\s*\{\s*name:\s*['"]anchor['"][\s\S]*dy:\s*18/);
   assert.match(graphSource, /connectionPoint:\s*\{\s*name:\s*['"]anchor['"][\s\S]*dy:\s*-14/);
-  assert.match(graphSource, /padding:\s*18/);
+  assert.match(graphSource, /padding:\s*38/);
   assert.match(graphSource, /port: ['"]out['"]/);
   assert.match(graphSource, /port: ['"]in['"]/);
   assert.match(graphSource, /id: ['"]in['"]/);
@@ -764,19 +767,36 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(typeSource, /treeDefinition\?/);
   assert.match(typeSource, /executeInputs\?/);
   assert.match(typeSource, /BehaviorTreeExecuteInputs/);
+  assert.match(typeSource, /BehaviorTreeExecuteNodePlan/);
+  assert.match(typeSource, /blackboardInstances\?/);
+  assert.match(typeSource, /sourceType\?/);
+  assert.match(typeSource, /EXTERNAL/);
+  assert.match(typeSource, /PROPERTY/);
   const treeTestTypeSource = readSource("../src/types/apis/postOntologyActionTreeTestType.ts");
   assert.match(treeTestTypeSource, /PostOntologyActionTreeTestParams/);
   assert.match(treeTestTypeSource, /nodeExecutes/);
   assert.match(apiSource, /postOntologyActionTreeTestInterface/);
   assert.match(apiSource, /\/ontology\/action\/tree\/test/);
-  const execComposableSource = readSource("../src/views/BehaviorTreeOrchestration/composables/useBehaviorTreeExecution.ts");
+  const execComposableSource = readSource("../src/composables/behaviorTree/useBehaviorTreeExecution.ts");
   assert.match(execComposableSource, /loadBehaviorTreeExecutePlan/);
   assert.match(execComposableSource, /runBehaviorTreeTest/);
   assert.match(execComposableSource, /postOntologyActionTreeTestInterface/);
-  const execPanelSource = readSource("../src/views/BehaviorTreeOrchestration/components/BehaviorTreeExecPanel.vue");
+  assert.match(execComposableSource, /findBehaviorTreeExecuteNodePlan/);
+  assert.match(execComposableSource, /listBehaviorTreeExecPlanNodeIds/);
+  assert.match(execComposableSource, /blackboardInstances/);
+  assert.match(execComposableSource, /mapBehaviorTreeDefinitionToBlackboardItems/);
+  assert.doesNotMatch(execComposableSource, /loadBoundActionDetails/);
+  const execPlanUtilSource = readSource("../src/utils/behaviorTreeExecutePlan.ts");
+  assert.match(execPlanUtilSource, /listBehaviorTreeExecuteNodePlans/);
+  assert.match(execPlanUtilSource, /sourceType/);
+  const execPanelSource = readSource("../src/components/BehaviorTreeExecPanel.vue");
   assert.match(execPanelSource, /读取执行要求/);
-  assert.match(execPanelSource, /试跑 tree\/test/);
+  assert.match(execPanelSource, />执行</);
   assert.match(execPanelSource, /接口日志/);
+  assert.match(execPanelSource, /sourceType/);
+  assert.match(execPanelSource, /update-node-input-instance/);
+  assert.match(execPanelSource, /PROPERTY/);
+  assert.match(execPanelSource, /EXTERNAL/);
   const routesSource = readSource("../src/mockData/routes.json");
   assert.match(routesSource, /\/ontology\/action\/tree\/node-defs/);
   const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
@@ -796,35 +816,48 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
 
 test("behavior tree execute plan builds payload and reports missing fields", () => {
   const plan = {
-    inputParams: [
-      { key: "threshold", valueType: "INTEGER", nodeIds: ["node_action_1"] },
-      { key: "orphan", valueType: "STRING", nodeIds: [] },
-    ],
-    instanceRequirements: [
-      { objectIdentifier: "obj.tank", nodeIds: ["node_action_1"] },
+    blackboardInstances: [{ objectIdentifier: "obj.tank", blackboardKeys: ["ammo"] }],
+    nodes: [
       {
-        objectIdentifier: "obj.tank",
-        nodeIds: ["node_link_1"],
-        linkEntityPrimaryKeyRequired: true,
-        linkFromObjectIdentifier: "obj.tank",
-        linkToObjectIdentifier: "obj.base",
+        nodeId: "node_action_1",
+        actionApi: "app.fire",
+        actionDisplayName: "开火",
+        entityPrimaryKeyRequired: true,
+        inputParams: [
+          { key: "threshold", valueType: "INTEGER", sourceType: "EXTERNAL", required: true },
+          { key: "speed", valueType: "DOUBLE", sourceType: "PROPERTY", objectIdentifier: "obj.tank", propertyDisplayName: "速度" },
+          { key: "fixedRate", valueType: "INTEGER", sourceType: "FIXED" },
+        ],
+        instanceRequirements: [{ objectIdentifier: "obj.tank" }],
+        outputParams: [{ key: "prop.hp", mode: "DATA_PRIMARY_KEY", storageGroup: "hp_row", objectIdentifier: "obj.tank" }],
       },
-      { objectIdentifier: "obj.tank", blackboardKeys: ["ammo"], nodeIds: [] },
       {
-        objectIdentifier: "obj.tank",
-        nodeIds: ["node_legacy_link"],
-        linkEntityPrimaryKeyRequired: true,
-        linkObjectIdentifier: "obj.base",
+        nodeId: "node_link_1",
+        actionApi: "app.link",
+        instanceRequirements: [
+          {
+            objectIdentifier: "obj.tank",
+            linkEntityPrimaryKeyRequired: true,
+            linkFromObjectIdentifier: "obj.tank",
+            linkToObjectIdentifier: "obj.base",
+          },
+        ],
+        inputParams: [],
+        outputParams: [],
       },
-    ],
-    outputParams: [
-      { key: "prop.hp", mode: "DATA_PRIMARY_KEY", storageGroup: "hp_row", nodeIds: ["node_action_1"], objectIdentifier: "obj.tank" },
-      { key: "prop.out", mode: "OUTPUT_PARAM", storageGroup: "sub", objectIdentifier: "obj.tank", nodeIds: ["node_multi_1"] },
-      { key: "prop.result", mode: "RESULT_ONLY", nodeIds: ["node_multi_1"] },
+      {
+        nodeId: "node_multi_1",
+        actionApi: "app.multi",
+        instanceRequirements: [{ objectIdentifier: "obj.a" }, { objectIdentifier: "obj.b" }],
+        outputParams: [
+          { key: "prop.out", mode: "OUTPUT_PARAM", storageGroup: "sub", objectIdentifier: "obj.tank", rowRequired: true },
+          { key: "prop.result", mode: "RESULT_ONLY" },
+        ],
+      },
     ],
   };
-  assert.deepEqual(listBehaviorTreeExecPlanNodeIds(plan), ["node_action_1", "node_legacy_link", "node_link_1", "node_multi_1"]);
-  assert.deepEqual(listBehaviorTreeExecPlanObjectIds(plan).sort(), ["obj.base", "obj.tank"]);
+  assert.deepEqual(listBehaviorTreeExecPlanNodeIds(plan), ["node_action_1", "node_link_1", "node_multi_1"]);
+  assert.deepEqual(listBehaviorTreeExecPlanObjectIds(plan).sort(), ["obj.a", "obj.b", "obj.base", "obj.tank"]);
   assert.deepEqual(
     resolveBehaviorTreeNodeLinkEnds([
       {
@@ -839,47 +872,34 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
   const drafts = {
     node_action_1: createBehaviorTreeNodeExecDraft(),
     node_link_1: createBehaviorTreeNodeExecDraft(),
-    node_legacy_link: createBehaviorTreeNodeExecDraft(),
     node_multi_1: createBehaviorTreeNodeExecDraft(),
   };
   const missing = collectBehaviorTreeExecMissingFields({
     plan,
-    objectLabelById: { "obj.tank": "坦克", "obj.base": "基地" },
+    objectLabelById: { "obj.tank": "坦克", "obj.base": "基地", "obj.a": "A", "obj.b": "B" },
     blackboardObjectKeys: {},
     nodeDrafts: drafts,
   });
   assert.ok(missing.some((item) => item.includes("threshold")));
-  assert.ok(missing.some((item) => item.includes("行为入参 orphan")));
   assert.ok(missing.some((item) => item.includes("黑板属性")));
   assert.ok(missing.some((item) => item.includes("实例")));
   assert.ok(missing.some((item) => item.includes("关系两端")));
-  assert.ok(missing.some((item) => item.includes("关系对端")));
   assert.ok(missing.some((item) => item.includes("行主键")));
   assert.deepEqual(collectBehaviorTreeExecMissingFields({ plan: null, blackboardObjectKeys: {}, nodeDrafts: {} }), []);
 
   drafts.node_action_1.params.threshold = "3";
   drafts.node_action_1.entityPrimaryKey = "tank-1";
-  drafts.node_action_1.outputParams["prop.hp"] = { entityPrimaryKey: "", rowKey: "row-9" };
-  drafts.node_action_1.inputParams.speed = { entityPrimaryKey: "tank-1", rows: { speed_row: "r1", empty: "" } };
+  drafts.node_action_1.inputParams.speed = { entityPrimaryKey: "tank-9", rows: {} };
+  drafts.node_action_1.outputParams.__dataPrimaryKey = { entityPrimaryKey: "", rowKey: "row-9" };
   drafts.node_link_1.entityPrimaryKeys.from = "tank-1";
   drafts.node_link_1.entityPrimaryKeys.to = "base-2";
-  drafts.node_legacy_link.entityPrimaryKeys["obj.base"] = "base-9";
   drafts.node_multi_1.entityPrimaryKeys = { "obj.a": "a1", "obj.b": "b2" };
   drafts.node_multi_1.outputParams["prop.out"] = { entityPrimaryKey: "tank-1", rowKey: "out-1" };
-
-  const multiPlan = {
-    ...plan,
-    instanceRequirements: [
-      ...plan.instanceRequirements,
-      { objectIdentifier: "obj.a", nodeIds: ["node_multi_1"] },
-      { objectIdentifier: "obj.b", nodeIds: ["node_multi_1"] },
-    ],
-  };
 
   const built = buildBehaviorTreeTestPayload({
     spaceId: "100",
     treeApi: "tree.demo",
-    plan: multiPlan,
+    plan,
     blackboard: [
       createBehaviorTreeBlackboardItem("ammoCount", {
         valueType: "INTEGER",
@@ -906,10 +926,8 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
   assert.equal(built.payload.nodeExecutes?.node_action_1?.params?.threshold, 3);
   assert.equal(built.payload.nodeExecutes?.node_action_1?.entityPrimaryKey, "tank-1");
   assert.equal(built.payload.nodeExecutes?.node_action_1?.dataPrimaryKey, "row-9");
-  assert.deepEqual(built.payload.nodeExecutes?.node_action_1?.inputParams?.speed, {
-    entityPrimaryKey: "tank-1",
-    dataPrimaryKeys: { speed_row: "r1" },
-  });
+  assert.deepEqual(built.payload.nodeExecutes?.node_action_1?.inputParams?.speed, { entityPrimaryKey: "tank-9" });
+  assert.equal(built.payload.nodeExecutes?.node_action_1?.params?.fixedRate, undefined);
   assert.deepEqual(built.payload.nodeExecutes?.node_link_1?.entityPrimaryKeys, { from: "tank-1", to: "base-2" });
   assert.deepEqual(built.payload.nodeExecutes?.node_multi_1?.entityPrimaryKeys, { "obj.a": "a1", "obj.b": "b2" });
   assert.deepEqual(built.payload.nodeExecutes?.node_multi_1?.outputParams?.["prop.out"], {
@@ -980,18 +998,16 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
   assert.equal(resolveBehaviorTreeNodeDisplayName([unnamed], "node_blank"), "node_blank");
   assert.deepEqual(mapBehaviorTreeBoundActionApis([unnamed]), {});
 
-  drafts.node_action_1.params.threshold = "3";
-  drafts.node_action_1.inputParams.onlyRows = { entityPrimaryKey: "", rows: { g1: "row-a" } };
   drafts.node_multi_1.outputParams["prop.out"] = { entityPrimaryKey: "tank-1", rowKey: "" };
   const outputOnly = buildBehaviorTreeTestPayload({
     spaceId: "100",
     treeApi: "tree.demo",
     plan: {
-      inputParams: [],
-      instanceRequirements: [],
-      outputParams: [
-        { key: "prop.out", mode: "OUTPUT_PARAM", objectIdentifier: "obj.tank", nodeIds: ["node_multi_1"] },
-        { mode: "OUTPUT_PARAM", nodeIds: ["node_multi_1"] },
+      nodes: [
+        {
+          nodeId: "node_multi_1",
+          outputParams: [{ key: "prop.out", mode: "OUTPUT_PARAM", objectIdentifier: "obj.tank" }, { mode: "OUTPUT_PARAM" }],
+        },
       ],
     },
     blackboard: [],
@@ -1000,11 +1016,109 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
     blackboardObjectKeys: {},
     nodeDrafts: {
       node_multi_1: drafts.node_multi_1,
-      node_action_1: drafts.node_action_1,
     },
   });
   assert.equal("payload" in outputOnly, true);
   if ("payload" in outputOnly) {
     assert.deepEqual(outputOnly.payload.nodeExecutes?.node_multi_1?.outputParams?.["prop.out"], { entityPrimaryKey: "tank-1" });
   }
+
+  assert.deepEqual(listBehaviorTreeExecuteNodePlans(null), []);
+  assert.equal(findBehaviorTreeExecuteNodePlan(plan, ""), null);
+  assert.equal(resolveBehaviorTreeOutputDraftKey({ mode: "DATA_PRIMARY_KEY" }), "__dataPrimaryKey");
+  assert.equal(resolveBehaviorTreeOutputDraftKey({ parameterName: "p1" }), "p1");
+
+  const flatPlan = {
+    inputParams: [
+      { key: "alpha", valueType: "STRING", sourceType: "EXTERNAL", required: true, nodeIds: ["flat_a", "  "] },
+      { key: "orphan", valueType: "STRING", sourceType: "EXTERNAL", required: true, nodeIds: [] },
+      { key: "skip", nodeIds: null },
+      null,
+    ],
+    instanceRequirements: [
+      { objectIdentifier: "obj.flat", nodeIds: ["flat_a", ""] },
+      { objectIdentifier: "obj.bb", blackboardKeys: ["hp"], nodeIds: ["flat_a"] },
+      null,
+    ],
+    outputParams: [{ key: "out.flat", mode: "OUTPUT_PARAM", nodeIds: ["flat_a", "   "] }, { key: "out.skip", nodeIds: [] }, null],
+  };
+  const flatNodes = listBehaviorTreeExecuteNodePlans(flatPlan);
+  assert.equal(flatNodes.length, 1);
+  assert.equal(flatNodes[0].nodeId, "flat_a");
+  assert.equal(flatNodes[0].inputParams?.length, 1);
+  assert.equal(flatNodes[0].instanceRequirements?.length, 1);
+  assert.equal(flatNodes[0].outputParams?.length, 1);
+  assert.deepEqual(listBehaviorTreeExecPlanNodeIds(flatPlan), ["flat_a"]);
+  const flatReqs = listBehaviorTreeExecPlanInstanceRequirements(flatPlan);
+  assert.ok(flatReqs.some((item) => (item.blackboardKeys ?? []).includes("hp")));
+  assert.ok(flatReqs.some((item) => item.objectIdentifier === "obj.flat"));
+  assert.deepEqual(
+    listBehaviorTreeNodeInputParams(flatPlan, "missing_node").map((item) => item.key),
+    [],
+  );
+  assert.deepEqual(listBehaviorTreeNodeOutputTargets(flatPlan, "missing_node"), []);
+  const flatMissing = collectBehaviorTreeExecMissingFields({
+    plan: flatPlan,
+    objectLabelById: { "obj.flat": "扁平对象" },
+    blackboardObjectKeys: {},
+    nodeDrafts: { flat_a: createBehaviorTreeNodeExecDraft() },
+  });
+  assert.ok(flatMissing.some((item) => item.includes("行为入参 orphan")));
+  assert.ok(flatMissing.some((item) => item.includes("flat_a") && item.includes("alpha")));
+
+  const linkPeerPlan = {
+    nodes: [
+      {
+        nodeId: "node_peer",
+        instanceRequirements: [{ objectIdentifier: "obj.a", linkEntityPrimaryKeyRequired: true, linkObjectIdentifier: "obj.peer" }],
+        outputParams: [
+          { mode: "DATA_PRIMARY_KEY", displayName: "结果行", storageGroup: "main" },
+          { mode: "RESULT_ONLY", key: "ignore" },
+        ],
+      },
+    ],
+  };
+  const peerMissing = collectBehaviorTreeExecMissingFields({
+    plan: linkPeerPlan,
+    objectLabelById: {},
+    blackboardObjectKeys: {},
+    nodeDrafts: { node_peer: createBehaviorTreeNodeExecDraft() },
+  });
+  assert.ok(peerMissing.some((item) => item.includes("关系对端实例")));
+  assert.ok(peerMissing.some((item) => item.includes("输出参数行主键") && item.includes("结果行")));
+  const peerDraft = createBehaviorTreeNodeExecDraft();
+  peerDraft.entityPrimaryKeys["obj.peer"] = "peer-1";
+  peerDraft.entityPrimaryKey = "a-1";
+  peerDraft.outputParams.__dataPrimaryKey = { entityPrimaryKey: "", rowKey: "" };
+  peerDraft.dataPrimaryKey = "row-from-draft";
+  assert.equal(
+    collectBehaviorTreeExecMissingFields({
+      plan: linkPeerPlan,
+      blackboardObjectKeys: {},
+      nodeDrafts: { node_peer: peerDraft },
+    }).some((item) => item.includes("关系对端")),
+    false,
+  );
+  assert.equal(resolveBehaviorTreeOutputDraftKey({ paramName: "pn" }), "pn");
+  assert.equal(resolveBehaviorTreeOutputDraftKey({ storageGroup: "sg" }), "sg");
+  const peerBuilt = buildBehaviorTreeTestPayload({
+    spaceId: "100",
+    treeApi: "tree.demo",
+    plan: linkPeerPlan,
+    blackboard: [],
+    objectProperties: {},
+    externalInputDraft: {},
+    blackboardObjectKeys: {},
+    nodeDrafts: { node_peer: peerDraft },
+  });
+  assert.equal("payload" in peerBuilt, true);
+  if ("payload" in peerBuilt) {
+    assert.equal(peerBuilt.payload.nodeExecutes?.node_peer?.entityPrimaryKey, "a-1");
+    assert.equal(peerBuilt.payload.nodeExecutes?.node_peer?.dataPrimaryKey, "row-from-draft");
+    assert.equal(peerBuilt.payload.nodeExecutes?.node_peer?.outputParams?.ignore, undefined);
+  }
+
+  const emptyNodesPlan = { nodes: [{ nodeId: "  " }, null] };
+  assert.deepEqual(listBehaviorTreeExecuteNodePlans(emptyNodesPlan), []);
+  assert.deepEqual(listBehaviorTreeNodeInputParams({ nodes: [] }, "x"), []);
 });

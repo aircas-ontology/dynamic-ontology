@@ -7,10 +7,10 @@ import type {
   BehaviorTreeObjectPropertyOption,
   BehaviorTreeValueType,
 } from "@/types";
-import { mapBehaviorTreePropertyTypeToValueType, resolveBehaviorTreeBlackboardSource } from "./behaviorTreeBlackboard.ts";
+import { mapBehaviorTreePropertyTypeToValueType, resolveBehaviorTreeBlackboardSource } from "../../../utils/behaviorTreeBlackboard.ts";
+import { parseBehaviorTreeTypedValue } from "../../../utils/behaviorTreeTypedValue.ts";
 import { BEHAVIOR_TREE_BLACKBOARD_SOURCE_LABELS, BEHAVIOR_TREE_NUMBER_TYPES, isBehaviorTreeValueLessOp } from "./behaviorTreeConstants.ts";
 import { forEachBehaviorTreeNode } from "./behaviorTreeModel.ts";
-import { parseBehaviorTreeTypedValue } from "./behaviorTreeTypedValue.ts";
 
 /**
  * @description 收集行为树本地校验错误。

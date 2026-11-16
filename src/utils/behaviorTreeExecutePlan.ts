@@ -1,7 +1,9 @@
 import type {
   BehaviorTreeBlackboardItem,
+  BehaviorTreeExecuteInputParam,
   BehaviorTreeExecuteInputs,
   BehaviorTreeExecuteInstanceRequirement,
+  BehaviorTreeExecuteNodePlan,
   BehaviorTreeExecuteOutputParam,
   BehaviorTreeNodeDraft,
   BehaviorTreeNodeExecDraft,
@@ -28,29 +30,144 @@ export function createBehaviorTreeNodeExecDraft(): BehaviorTreeNodeExecDraft {
 }
 
 /**
- * @description 收集执行要求中需要单独传参的节点 id。
+ * @description 读取执行要求中的节点列表（优先 nodes 新格式）。
+ * @param plan 执行要求。
+ * @returns 节点规划列表。
+ */
+export function listBehaviorTreeExecuteNodePlans(plan: BehaviorTreeExecuteInputs | null | undefined): BehaviorTreeExecuteNodePlan[] {
+  if (!plan) return [];
+  if (Array.isArray(plan.nodes) && plan.nodes.length) {
+    return plan.nodes.filter((item): item is BehaviorTreeExecuteNodePlan => Boolean(item && String(item.nodeId || "").trim()));
+  }
+  // 旧扁平结构兼容：按 nodeIds 拼回节点块
+  const byNode = new Map<string, BehaviorTreeExecuteNodePlan>();
+  const ensure = (nodeId: string): BehaviorTreeExecuteNodePlan => {
+    let node = byNode.get(nodeId);
+    if (!node) {
+      node = { nodeId, inputParams: [], instanceRequirements: [], outputParams: [] };
+      byNode.set(nodeId, node);
+    }
+    return node;
+  };
+  for (const param of plan.inputParams ?? []) {
+    if (!param) continue;
+    for (const nodeId of param.nodeIds ?? []) {
+      const id = nodeId.trim();
+      if (!id) continue;
+      ensure(id).inputParams = [...(ensure(id).inputParams ?? []), param];
+    }
+  }
+  for (const requirement of plan.instanceRequirements ?? []) {
+    if (!requirement) continue;
+    if ((requirement.blackboardKeys ?? []).length) continue;
+    for (const nodeId of requirement.nodeIds ?? []) {
+      const id = nodeId.trim();
+      if (!id) continue;
+      ensure(id).instanceRequirements = [...(ensure(id).instanceRequirements ?? []), requirement];
+    }
+  }
+  for (const target of plan.outputParams ?? []) {
+    if (!target) continue;
+    for (const nodeId of target.nodeIds ?? []) {
+      const id = nodeId.trim();
+      if (!id) continue;
+      ensure(id).outputParams = [...(ensure(id).outputParams ?? []), target];
+    }
+  }
+  return [...byNode.values()];
+}
+
+/**
+ * @description 按 nodeId 查找节点执行要求。
+ * @param plan 执行要求。
+ * @param nodeId 节点 id。
+ * @returns 节点规划；没有时为 null。
+ */
+export function findBehaviorTreeExecuteNodePlan(plan: BehaviorTreeExecuteInputs | null | undefined, nodeId: string): BehaviorTreeExecuteNodePlan | null {
+  const id = nodeId.trim();
+  if (!id) return null;
+  return listBehaviorTreeExecuteNodePlans(plan).find((item) => item.nodeId === id) ?? null;
+}
+
+/**
+ * @description 收集执行要求中需要单独传参的节点 id（对齐原型 execPlanNodeIds）。
  * @param plan 执行要求。
  * @returns 节点 id 列表。
  */
 export function listBehaviorTreeExecPlanNodeIds(plan: BehaviorTreeExecuteInputs | null | undefined): string[] {
-  const seen = new Set<string>();
   const list: string[] = [];
-  const push = (nodeId: string | undefined) => {
-    const id = (nodeId || "").trim();
-    if (!id || seen.has(id)) return;
-    seen.add(id);
-    list.push(id);
-  };
-  for (const item of plan?.inputParams ?? []) {
-    for (const nodeId of item.nodeIds ?? []) push(nodeId);
-  }
-  for (const item of plan?.instanceRequirements ?? []) {
-    for (const nodeId of item.nodeIds ?? []) push(nodeId);
-  }
-  for (const item of plan?.outputParams ?? []) {
-    for (const nodeId of item.nodeIds ?? []) push(nodeId);
+  for (const node of listBehaviorTreeExecuteNodePlans(plan)) {
+    const hasInputs = (node.inputParams ?? []).length > 0;
+    const hasOutputs = (node.outputParams ?? []).length > 0;
+    const hasInstances = (node.instanceRequirements ?? []).length > 0;
+    if (node.entityPrimaryKeyRequired || hasInputs || hasOutputs || hasInstances) list.push(node.nodeId);
   }
   return list.sort();
+}
+
+/**
+ * @description 平铺节点入参（附带所属 nodeIds，供校验汇总）。
+ * @param plan 执行要求。
+ * @returns 入参列表。
+ */
+export function listBehaviorTreeExecPlanInputs(plan: BehaviorTreeExecuteInputs | null | undefined): BehaviorTreeExecuteInputParam[] {
+  const list: BehaviorTreeExecuteInputParam[] = [];
+  for (const node of listBehaviorTreeExecuteNodePlans(plan)) {
+    for (const param of node.inputParams ?? []) {
+      if (!param?.key) continue;
+      list.push({
+        ...param,
+        nodeIds: [node.nodeId],
+        actionApis: node.actionApi ? [node.actionApi] : param.actionApis,
+      });
+    }
+  }
+  // 旧扁平结构：无 nodeIds 的入参不会拼进节点，仍需参与 EXTERNAL 校验
+  if (!(plan?.nodes && plan.nodes.length) && Array.isArray(plan?.inputParams)) {
+    for (const param of plan.inputParams) {
+      if (!param?.key) continue;
+      const hasNode = (param.nodeIds ?? []).some((nodeId) => Boolean(String(nodeId || "").trim()));
+      if (hasNode) continue;
+      list.push({ ...param, nodeIds: param.nodeIds ?? [] });
+    }
+  }
+  return list;
+}
+
+/**
+ * @description 平铺实例要求（节点级 + 黑板级 blackboardInstances）。
+ * @param plan 执行要求。
+ * @returns 实例要求列表。
+ */
+export function listBehaviorTreeExecPlanInstanceRequirements(plan: BehaviorTreeExecuteInputs | null | undefined): BehaviorTreeExecuteInstanceRequirement[] {
+  const list: BehaviorTreeExecuteInstanceRequirement[] = [];
+  for (const node of listBehaviorTreeExecuteNodePlans(plan)) {
+    for (const requirement of node.instanceRequirements ?? []) {
+      if (!requirement) continue;
+      list.push({
+        ...requirement,
+        actionApi: requirement.actionApi || node.actionApi,
+        actionDisplayName: requirement.actionDisplayName || node.actionDisplayName,
+        nodeIds: [node.nodeId],
+      });
+    }
+  }
+  for (const item of plan?.blackboardInstances ?? []) {
+    if (!item) continue;
+    list.push({
+      objectIdentifier: item.objectIdentifier,
+      nodeIds: [],
+      blackboardKeys: item.blackboardKeys ?? [],
+    });
+  }
+  // 旧扁平结构：仅在没有 nodes 时回退
+  if (!(plan?.nodes && plan.nodes.length) && Array.isArray(plan?.instanceRequirements)) {
+    for (const item of plan.instanceRequirements) {
+      if (!item) continue;
+      list.push(item);
+    }
+  }
+  return list;
 }
 
 /**
@@ -67,7 +184,7 @@ export function listBehaviorTreeExecPlanObjectIds(plan: BehaviorTreeExecuteInput
     seen.add(id);
     list.push(id);
   };
-  for (const item of plan?.instanceRequirements ?? []) {
+  for (const item of listBehaviorTreeExecPlanInstanceRequirements(plan)) {
     push(item.objectIdentifier);
     if (item.linkEntityPrimaryKeyRequired) {
       push(item.linkFromObjectIdentifier);
@@ -75,7 +192,13 @@ export function listBehaviorTreeExecPlanObjectIds(plan: BehaviorTreeExecuteInput
       push(item.linkObjectIdentifier);
     }
   }
-  for (const item of plan?.outputParams ?? []) push(item.objectIdentifier);
+  for (const node of listBehaviorTreeExecuteNodePlans(plan)) {
+    for (const target of node.outputParams ?? []) push(target.objectIdentifier);
+    for (const param of node.inputParams ?? []) {
+      const source = (param.sourceType || "EXTERNAL").trim();
+      if (source === "PROPERTY" || source === "OBJECT" || source === "LIST") push(param.objectIdentifier);
+    }
+  }
   return list;
 }
 
@@ -140,7 +263,7 @@ export function resolveBehaviorTreeNodeLinkEnds(requirements: BehaviorTreeExecut
  * @returns 要求列表。
  */
 export function listBehaviorTreeNodeRequirements(plan: BehaviorTreeExecuteInputs | null | undefined, nodeId: string): BehaviorTreeExecuteInstanceRequirement[] {
-  return (plan?.instanceRequirements ?? []).filter((item) => (item.nodeIds ?? []).includes(nodeId));
+  return listBehaviorTreeExecPlanInstanceRequirements(plan).filter((item) => (item.nodeIds ?? []).includes(nodeId));
 }
 
 /**
@@ -150,7 +273,31 @@ export function listBehaviorTreeNodeRequirements(plan: BehaviorTreeExecuteInputs
  * @returns 出参列表。
  */
 export function listBehaviorTreeNodeOutputTargets(plan: BehaviorTreeExecuteInputs | null | undefined, nodeId: string): BehaviorTreeExecuteOutputParam[] {
-  return (plan?.outputParams ?? []).filter((item) => (item.nodeIds ?? []).includes(nodeId));
+  const node = findBehaviorTreeExecuteNodePlan(plan, nodeId);
+  if (node) return (node.outputParams ?? []).filter(Boolean);
+  return (plan?.outputParams ?? []).filter((item) => (item?.nodeIds ?? []).includes(nodeId));
+}
+
+/**
+ * @description 节点入参列表。
+ * @param plan 执行要求。
+ * @param nodeId 节点 id。
+ * @returns 入参。
+ */
+export function listBehaviorTreeNodeInputParams(plan: BehaviorTreeExecuteInputs | null | undefined, nodeId: string): BehaviorTreeExecuteInputParam[] {
+  const node = findBehaviorTreeExecuteNodePlan(plan, nodeId);
+  if (node) return (node.inputParams ?? []).filter((item) => Boolean(item?.key));
+  return listBehaviorTreeExecPlanInputs(plan).filter((item) => (item.nodeIds ?? []).includes(nodeId));
+}
+
+/**
+ * @description 出参草稿 map 键。
+ * @param target 出参目标。
+ * @returns 键。
+ */
+export function resolveBehaviorTreeOutputDraftKey(target: BehaviorTreeExecuteOutputParam): string {
+  if (target.mode === "DATA_PRIMARY_KEY") return "__dataPrimaryKey";
+  return (target.key || target.parameterName || target.paramName || target.storageGroup || "").trim();
 }
 
 /**
@@ -179,9 +326,11 @@ export function collectBehaviorTreeExecMissingFields(options: {
     return objectLabelById[id] || id;
   };
 
-  for (const param of plan.inputParams ?? []) {
+  for (const param of listBehaviorTreeExecPlanInputs(plan)) {
     const key = (param.key || "").trim();
     if (!key) continue;
+    const source = (param.sourceType || "EXTERNAL").trim();
+    if (source !== "EXTERNAL") continue;
     const nodeIds = param.nodeIds ?? [];
     if (!nodeIds.length) {
       push(`行为入参 ${key}`);
@@ -193,7 +342,7 @@ export function collectBehaviorTreeExecMissingFields(options: {
     }
   }
 
-  for (const requirement of plan.instanceRequirements ?? []) {
+  for (const requirement of listBehaviorTreeExecPlanInstanceRequirements(plan)) {
     const objectId = (requirement.objectIdentifier || "").trim();
     const blackboardKeys = requirement.blackboardKeys ?? [];
     if (blackboardKeys.length) {
@@ -226,7 +375,7 @@ export function collectBehaviorTreeExecMissingFields(options: {
     const draft = nodeDrafts[nodeId] || createBehaviorTreeNodeExecDraft();
     for (const target of listBehaviorTreeNodeOutputTargets(plan, nodeId)) {
       if (target.mode !== "DATA_PRIMARY_KEY") continue;
-      const mapKey = (target.key || target.paramName || target.storageGroup || "").trim();
+      const mapKey = resolveBehaviorTreeOutputDraftKey(target);
       const row = (draft.outputParams[mapKey]?.rowKey || "").trim() || (draft.dataPrimaryKey || "").trim();
       if (row === "") {
         push(`${nodeId} 的输出参数行主键（${target.displayName || target.storageGroup || "分组行"}）`);
@@ -283,10 +432,11 @@ export function buildBehaviorTreeTestPayload(options: {
     const draft = nodeDrafts[nodeId] || createBehaviorTreeNodeExecDraft();
     const entry: BehaviorTreeNodeExecuteData = {};
     const params: Record<string, unknown> = {};
-    for (const param of plan?.inputParams ?? []) {
-      if (!(param.nodeIds ?? []).includes(nodeId)) continue;
+    for (const param of listBehaviorTreeNodeInputParams(plan, nodeId)) {
       const key = (param.key || "").trim();
       if (!key) continue;
+      const source = (param.sourceType || "EXTERNAL").trim();
+      if (source !== "EXTERNAL") continue;
       const text = (draft.params[key] || "").trim();
       if (text === "") continue;
       const parsed = parseBehaviorTreeTypedValue(text, param.valueType || "STRING");
@@ -294,6 +444,18 @@ export function buildBehaviorTreeTestPayload(options: {
       params[key] = parsed.value;
     }
     if (Object.keys(params).length) entry.params = params;
+
+    const inputParams: NonNullable<BehaviorTreeNodeExecuteData["inputParams"]> = {};
+    for (const param of listBehaviorTreeNodeInputParams(plan, nodeId)) {
+      const key = (param.key || "").trim();
+      if (!key) continue;
+      const source = (param.sourceType || "EXTERNAL").trim();
+      if (!source || source === "EXTERNAL" || source === "FIXED") continue;
+      const instanceText = (draft.inputParams[key]?.entityPrimaryKey || "").trim();
+      if (!instanceText) continue;
+      inputParams[key] = { entityPrimaryKey: instanceText };
+    }
+    if (Object.keys(inputParams).length) entry.inputParams = inputParams;
 
     const requirements = listBehaviorTreeNodeRequirements(plan, nodeId);
     const ends = resolveBehaviorTreeNodeLinkEnds(requirements);
@@ -324,25 +486,10 @@ export function buildBehaviorTreeTestPayload(options: {
     }
     if (Object.keys(byObject).length) entry.entityPrimaryKeys = byObject;
 
-    const inputParams: NonNullable<BehaviorTreeNodeExecuteData["inputParams"]> = {};
-    for (const [key, item] of Object.entries(draft.inputParams)) {
-      const instanceText = (item.entityPrimaryKey || "").trim();
-      const dataPrimaryKeys: Record<string, string | number> = {};
-      for (const [group, row] of Object.entries(item.rows)) {
-        const rowText = row.trim();
-        if (rowText) dataPrimaryKeys[group] = rowText;
-      }
-      if (!instanceText && !Object.keys(dataPrimaryKeys).length) continue;
-      inputParams[key] = {
-        ...(instanceText ? { entityPrimaryKey: instanceText } : {}),
-        ...(Object.keys(dataPrimaryKeys).length ? { dataPrimaryKeys } : {}),
-      };
-    }
-    if (Object.keys(inputParams).length) entry.inputParams = inputParams;
-
     const outputs: NonNullable<BehaviorTreeNodeExecuteData["outputParams"]> = {};
     for (const target of listBehaviorTreeNodeOutputTargets(plan, nodeId)) {
-      const mapKey = (target.key || target.paramName || target.storageGroup || "").trim();
+      if (target.mode === "RESULT_ONLY") continue;
+      const mapKey = resolveBehaviorTreeOutputDraftKey(target);
       if (!mapKey) continue;
       const item = draft.outputParams[mapKey] || { entityPrimaryKey: "", rowKey: "" };
       const rowText = (item.rowKey || "").trim();
@@ -351,7 +498,6 @@ export function buildBehaviorTreeTestPayload(options: {
         if (dataKey) entry.dataPrimaryKey = dataKey;
         continue;
       }
-      if (target.mode === "RESULT_ONLY") continue;
       const instanceText = (item.entityPrimaryKey || "").trim();
       if (!instanceText && !rowText) continue;
       const location: { entityPrimaryKey?: string | number; dataPrimaryKeys?: Record<string, string | number> } = {};
@@ -359,7 +505,8 @@ export function buildBehaviorTreeTestPayload(options: {
       if (rowText && target.storageGroup) {
         location.dataPrimaryKeys = { [target.storageGroup]: rowText };
       }
-      outputs[mapKey] = location;
+      const outputKey = (target.key || target.parameterName || target.paramName || "").trim();
+      if (outputKey) outputs[outputKey] = location;
     }
     if (Object.keys(outputs).length) entry.outputParams = outputs;
 

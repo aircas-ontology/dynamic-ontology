@@ -185,15 +185,26 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(listSource, /emit\('test'/);
   assert.match(workspaceSource, /@test="openBehaviorTest"/);
   assert.match(workspaceSource, /BehaviorTestDialog/);
+  assert.match(workspaceSource, /BehaviorTreeTestDialog/);
   assert.match(workspaceSource, /:space-id="spaceId"/);
   assert.match(workspaceSource, /behaviorTestVisible/);
-  assert.match(workspaceSource, /当前仅支持应用行为，以及基础行为-属性值\/基础函数算子\/关系实例测试/);
+  assert.match(workspaceSource, /behaviorTreeTestVisible/);
+  assert.match(workspaceSource, /kind === "behaviorTree"/);
+  assert.match(workspaceSource, /当前仅支持行为树、应用行为，以及基础行为-属性值\/基础函数算子\/关系实例测试/);
   assert.match(workspaceSource, /isApplicationTest/);
   assert.match(workspaceSource, /kind === "application"/);
   assert.match(workspaceSource, /basicFunctionOperator/);
   assert.match(workspaceSource, /relationInstance/);
   assert.match(workspaceSource, /valueType !== "basicFunctionOperator"/);
   assert.match(workspaceSource, /当前行为缺少对象标识，无法加载实体列表/);
+  const treeTestDialogSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorTreeTestDialog.vue");
+  assert.match(treeTestDialogSource, /useBehaviorTreeExecution/);
+  assert.match(treeTestDialogSource, /BehaviorTreeExecPanel/);
+  assert.match(treeTestDialogSource, /loadBehaviorTreeExecutePlan\(true\)/);
+  assert.match(treeTestDialogSource, /openBehaviorTreeTestDialog/);
+  assert.match(treeTestDialogSource, /getOntologyCategoryTreeInterface/);
+  assert.equal(existsSync(new URL("../src/components/BehaviorTreeExecPanel.vue", import.meta.url)), true);
+  assert.equal(existsSync(new URL("../src/composables/behaviorTree/useBehaviorTreeExecution.ts", import.meta.url)), true);
   const testDialogSource = [
     readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorTestDialog.vue"),
     readSource("../src/components/BehaviorParameterConfig/BehaviorParameterConfig.vue"),
@@ -1786,18 +1797,23 @@ test("space behavior edit and status dialogs stay open despite reactive clone an
   assert.match(listSource, /void nextTick/);
 });
 
-test("space behavior published status blocks edit and delete actions", () => {
+test("space behavior published status opens edit as readonly and still blocks delete", () => {
   const listSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorListPanel.vue");
   const pageSource = readSource("../src/views/SpaceBehaviorWorkspace/index.vue");
   const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
   assert.match(listSource, /function canMutateBehavior/);
   assert.match(listSource, /item\.status !== ["']published["']/);
-  assert.match(listSource, /:disabled="!canMutateBehavior\(asBehavior\(row\)\)"/);
+  assert.match(listSource, /@click="emit\('edit', asBehavior\(row\)\)"/);
+  assert.doesNotMatch(listSource, /:disabled="!canMutateBehavior\(asBehavior\(row\)\)" @click="emit\('edit'/);
   assert.match(listSource, /command="delete" :disabled="!canMutateBehavior\(asBehavior\(row\)\)"/);
-  assert.match(pageSource, /已发布行为不可编辑/);
+  assert.doesNotMatch(pageSource, /已发布行为不可编辑/);
   assert.match(pageSource, /已发布行为不可删除/);
-  assert.match(pageSource, /item\.status === ["']published["']/);
+  assert.match(pageSource, /function openBehaviorEdit/);
+  assert.match(pageSource, /behaviorFormVisible\.value = true/);
   assert.match(formSource, /status === ["']published["'] \|\| props\.behavior\?\.status === ["']disabled["']/);
+  assert.match(formSource, /查看行为/);
+  assert.match(formSource, /readonly \? "关闭" : "取消"/);
+  assert.match(formSource, /v-else-if="!readonly"/);
 });
 
 test("space behavior operator selection writes operator id and name without structuredClone", () => {

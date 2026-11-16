@@ -55,7 +55,7 @@
           <template #default="{ row }">
             <div class="behavior-list-panel__row-actions">
               <el-button size="small" @click="emit('view', asBehavior(row))">查看</el-button>
-              <el-button size="small" :disabled="!canMutateBehavior(asBehavior(row))" @click="emit('edit', asBehavior(row))">编辑</el-button>
+              <el-button size="small" @click="emit('edit', asBehavior(row))">编辑</el-button>
               <el-button size="small" @click="emit('test', asBehavior(row))">测试</el-button>
               <el-dropdown trigger="click" @command="handleMoreCommand($event, asBehavior(row))">
                 <el-button size="small"
@@ -181,9 +181,9 @@ function statusTagType(status: SpaceBehaviorStatus): "success" | "warning" {
 }
 
 /**
- * @description 已发布行为不允许编辑或删除。
+ * @description 已发布行为不允许删除；编辑可打开只读弹框查看。
  * @param item 行为记录。
- * @returns 是否允许变更。
+ * @returns 是否允许删除等破坏性变更。
  */
 function canMutateBehavior(item: SpaceBehaviorItem): boolean {
   return item.status !== "published";

@@ -72,6 +72,7 @@
     />
     <BehaviorDetailDrawer v-model="behaviorDetailVisible" :space-id="spaceId" :behavior="activeBehavior" />
     <BehaviorTestDialog v-model="behaviorTestVisible" :space-id="spaceId" :behavior="activeBehavior" />
+    <BehaviorTreeTestDialog v-model="behaviorTreeTestVisible" :space-id="spaceId" :behavior="activeBehavior" />
     <BehaviorStatusDialog v-model="behaviorStatusVisible" :behavior="activeBehavior" :loading="actionLoading" @confirm="handleBehaviorStatusSubmit" />
     <BehaviorDeleteDialog
       v-model="behaviorDeleteVisible"
@@ -98,6 +99,7 @@ import BehaviorCategoryDeleteDialog from "./components/BehaviorCategoryDeleteDia
 import BehaviorFormDialog from "./components/BehaviorFormDialog.vue";
 import BehaviorDetailDrawer from "./components/BehaviorDetailDrawer.vue";
 import BehaviorTestDialog from "./components/BehaviorTestDialog.vue";
+import BehaviorTreeTestDialog from "./components/BehaviorTreeTestDialog.vue";
 import BehaviorStatusDialog from "./components/BehaviorStatusDialog.vue";
 import BehaviorDeleteDialog from "./components/BehaviorDeleteDialog.vue";
 
@@ -145,6 +147,7 @@ const behaviorFormVisible = ref(false);
 const behaviorFormMode = ref<"create" | "edit">("create");
 const behaviorDetailVisible = ref(false);
 const behaviorTestVisible = ref(false);
+const behaviorTreeTestVisible = ref(false);
 const behaviorStatusVisible = ref(false);
 const behaviorDeleteVisible = ref(false);
 const activeBehavior = ref<SpaceBehaviorItem | null>(null);
@@ -257,29 +260,34 @@ function openBehaviorView(item: SpaceBehaviorItem): void {
 }
 
 /**
- * @description 打开编辑行为弹窗；已发布行为不允许编辑。
+ * @description 打开编辑行为弹窗；已发布/失效时弹框内只读查看。
  * @param item 行为记录。
  */
 function openBehaviorEdit(item: SpaceBehaviorItem): void {
-  if (item.status === "published") {
-    ElMessage.warning("已发布行为不可编辑，请先改为草稿后再操作");
-    return;
-  }
   behaviorFormMode.value = "edit";
   activeBehavior.value = item;
   behaviorFormVisible.value = true;
 }
 
 /**
- * @description 打开行为测试弹窗；支持应用行为，以及基础行为的属性值/基础函数算子/关系实例。
+ * @description 打开行为测试弹窗；支持行为树、应用行为，以及基础行为的属性值/基础函数算子/关系实例。
  * @param item 行为记录。
  */
 function openBehaviorTest(item: SpaceBehaviorItem): void {
+  if (item.kind === "behaviorTree") {
+    if (!item.behaviorApiName.trim()) {
+      ElMessage.warning("当前行为缺少 api 名称，无法读取执行要求");
+      return;
+    }
+    activeBehavior.value = item;
+    behaviorTreeTestVisible.value = true;
+    return;
+  }
   const isApplicationTest = item.kind === "application";
   const isSupportedBasicTest =
     item.kind === "basic" && (item.valueType === "attributeValue" || item.valueType === "basicFunctionOperator" || item.valueType === "relationInstance");
   if (!isApplicationTest && !isSupportedBasicTest) {
-    ElMessage.info("当前仅支持应用行为，以及基础行为-属性值/基础函数算子/关系实例测试");
+    ElMessage.info("当前仅支持行为树、应用行为，以及基础行为-属性值/基础函数算子/关系实例测试");
     return;
   }
   if (!isApplicationTest && item.valueType !== "basicFunctionOperator" && !item.ontologyUniqIdentifier.trim()) {
