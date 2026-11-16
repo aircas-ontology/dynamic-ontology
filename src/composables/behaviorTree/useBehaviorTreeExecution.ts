@@ -196,7 +196,7 @@ export function useBehaviorTreeExecution(options: {
       ];
       return {
         nodeId,
-        displayName: resolveBehaviorTreeNodeDisplayName(options.model.roots, nodeId) || nodePlan?.actionDisplayName || nodeId,
+        displayName: (nodePlan?.nodeDisplayName || "").trim() || resolveBehaviorTreeNodeDisplayName(options.model.roots, nodeId) || nodeId,
         actionApi: (nodePlan?.actionApi || "").trim(),
         actionDisplayName: (nodePlan?.actionDisplayName || "").trim(),
         params,

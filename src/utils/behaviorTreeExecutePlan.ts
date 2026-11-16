@@ -499,10 +499,11 @@ export function buildBehaviorTreeTestPayload(options: {
         continue;
       }
       const instanceText = (item.entityPrimaryKey || "").trim();
-      if (!instanceText && !rowText) continue;
+      const includeRowKey = Boolean(target.rowRequired) && rowText !== "" && Boolean(target.storageGroup);
+      if (!instanceText && !includeRowKey) continue;
       const location: { entityPrimaryKey?: string | number; dataPrimaryKeys?: Record<string, string | number> } = {};
       if (instanceText) location.entityPrimaryKey = instanceText;
-      if (rowText && target.storageGroup) {
+      if (includeRowKey && target.storageGroup) {
         location.dataPrimaryKeys = { [target.storageGroup]: rowText };
       }
       const outputKey = (target.key || target.parameterName || target.paramName || "").trim();

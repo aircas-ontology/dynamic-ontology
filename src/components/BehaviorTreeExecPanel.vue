@@ -1,18 +1,13 @@
 <template>
   <div class="behavior-tree-exec">
     <div class="behavior-tree-exec__toolbar">
-      <el-button :loading="planStatus === 'loading'" @click="emit('load-plan')">读取执行要求</el-button>
+      <el-button v-if="showLoadPlanButton" :loading="planStatus === 'loading'" @click="emit('load-plan')">读取执行要求</el-button>
       <el-button type="primary" :loading="testStatus === 'submitting'" @click="emit('run-test')">执行</el-button>
     </div>
-
-    <p class="behavior-tree-exec__hint">试跑不要求发布，但读的是库里已保存的定义——改了画布请先保存再试跑。必填项没传会被后端拒绝。</p>
 
     <p v-if="planStatus === 'loading'" class="behavior-tree-exec__state" role="status">正在读取执行要求…</p>
     <p v-else-if="planStatus === 'error'" class="behavior-tree-exec__state" role="alert">{{ planError }}</p>
     <p v-else-if="planStatus === 'empty'" class="behavior-tree-exec__state" role="status">{{ planError || "详情里没有 executeInputs" }}</p>
-    <p v-else-if="planStatus === 'idle'" class="behavior-tree-exec__state" role="status">
-      还没读取执行要求：点「读取执行要求」按当前行为 api 读详情里的 executeInputs。
-    </p>
 
     <template v-if="planStatus === 'ready' || planStatus === 'empty'">
       <section class="behavior-tree-exec__section" aria-label="黑板变量">
@@ -66,8 +61,7 @@
             <template #title>
               <span class="behavior-tree-exec__node-title">
                 {{ block.displayName }}
-                <code>{{ block.nodeId }}</code>
-                <span v-if="block.actionApi" class="behavior-tree-exec__muted">{{ block.actionApi }}</span>
+                <span v-if="block.actionDisplayName" class="behavior-tree-exec__muted">{{ block.actionDisplayName }}</span>
               </span>
             </template>
 
@@ -223,10 +217,7 @@
                       />
                     </el-select>
                   </div>
-                  <div
-                    v-if="target.mode === 'DATA_PRIMARY_KEY' || target.rowRequired || (target.storageGroup && target.storageGroup !== 'main')"
-                    class="behavior-tree-exec__field"
-                  >
+                  <div v-if="target.mode === 'DATA_PRIMARY_KEY' || target.rowRequired" class="behavior-tree-exec__field">
                     <label>行主键{{ target.storageGroup ? ` · ${target.storageGroup}` : "" }}</label>
                     <el-input
                       :model-value="nodeDrafts[block.nodeId]?.outputParams[outputMapKey(target)]?.rowKey ?? ''"
@@ -270,30 +261,37 @@ import type {
 import type { BehaviorTreeEntityOption, BehaviorTreeExecPlanStatus, BehaviorTreeExecTestStatus } from "@/composables/behaviorTree/useBehaviorTreeExecution";
 import { resolveBehaviorTreeOutputDraftKey } from "@/utils/behaviorTreeExecutePlan";
 
-defineProps<{
-  planStatus: BehaviorTreeExecPlanStatus;
-  planError: string;
-  testStatus: BehaviorTreeExecTestStatus;
-  logs: BehaviorTreeExecLogEntry[];
-  externalRows: BehaviorTreeBlackboardItem[];
-  propertyGroups: Array<{ objectId: string; items: BehaviorTreeBlackboardItem[] }>;
-  nodeBlocks: Array<{
-    nodeId: string;
-    displayName: string;
-    actionApi: string;
-    actionDisplayName?: string;
-    params: BehaviorTreeExecuteInputParam[];
-    outputs: BehaviorTreeExecuteOutputParam[];
-    ends: { from: string; to: string; self: boolean } | null;
-    objects: string[];
-  }>;
-  externalDraft: Record<string, string>;
-  blackboardObjectKeys: Record<string, string>;
-  nodeDrafts: Record<string, BehaviorTreeNodeExecDraft>;
-  instanceOptions: Record<string, BehaviorTreeEntityOption[]>;
-  instanceLoadingIds: Record<string, true>;
-  resolveObjectLabel: (objectId: string) => string;
-}>();
+withDefaults(
+  defineProps<{
+    planStatus: BehaviorTreeExecPlanStatus;
+    planError: string;
+    testStatus: BehaviorTreeExecTestStatus;
+    logs: BehaviorTreeExecLogEntry[];
+    externalRows: BehaviorTreeBlackboardItem[];
+    propertyGroups: Array<{ objectId: string; items: BehaviorTreeBlackboardItem[] }>;
+    nodeBlocks: Array<{
+      nodeId: string;
+      displayName: string;
+      actionApi: string;
+      actionDisplayName?: string;
+      params: BehaviorTreeExecuteInputParam[];
+      outputs: BehaviorTreeExecuteOutputParam[];
+      ends: { from: string; to: string; self: boolean } | null;
+      objects: string[];
+    }>;
+    externalDraft: Record<string, string>;
+    blackboardObjectKeys: Record<string, string>;
+    nodeDrafts: Record<string, BehaviorTreeNodeExecDraft>;
+    instanceOptions: Record<string, BehaviorTreeEntityOption[]>;
+    instanceLoadingIds: Record<string, true>;
+    resolveObjectLabel: (objectId: string) => string;
+    /** 是否展示「读取执行要求」；测试弹框打开已自动读取时可关闭。 */
+    showLoadPlanButton?: boolean;
+  }>(),
+  {
+    showLoadPlanButton: true,
+  },
+);
 
 const emit = defineEmits<{
   "load-plan": [];

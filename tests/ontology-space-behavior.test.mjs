@@ -201,8 +201,12 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(treeTestDialogSource, /useBehaviorTreeExecution/);
   assert.match(treeTestDialogSource, /BehaviorTreeExecPanel/);
   assert.match(treeTestDialogSource, /loadBehaviorTreeExecutePlan\(true\)/);
+  assert.match(treeTestDialogSource, /:show-load-plan-button="false"/);
+  assert.doesNotMatch(treeTestDialogSource, /@load-plan=/);
+  assert.doesNotMatch(treeTestDialogSource, /打开时会自动读取/);
   assert.match(treeTestDialogSource, /openBehaviorTreeTestDialog/);
   assert.match(treeTestDialogSource, /getOntologyCategoryTreeInterface/);
+  assert.match(readSource("../src/components/BehaviorTreeExecPanel.vue"), /showLoadPlanButton/);
   assert.equal(existsSync(new URL("../src/components/BehaviorTreeExecPanel.vue", import.meta.url)), true);
   assert.equal(existsSync(new URL("../src/composables/behaviorTree/useBehaviorTreeExecution.ts", import.meta.url)), true);
   const testDialogSource = [

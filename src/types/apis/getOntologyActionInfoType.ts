@@ -115,6 +115,8 @@ export interface BehaviorTreeExecuteOutputParam {
 /** 行为树执行要求：单个行为节点的入参/实例/写回规划。 */
 export interface BehaviorTreeExecuteNodePlan {
   nodeId: string;
+  /** 节点展示名称（执行要求返回）。 */
+  nodeDisplayName?: string;
   actionApi?: string;
   actionDisplayName?: string;
   entityPrimaryKeyRequired?: boolean;
