@@ -113,7 +113,7 @@ export function renderRuleFlowSteps(
     if (step.kind === "switch") {
       branchRendered = true;
       const caseCount = step.cases.length;
-      const hasDefault = Boolean(step.defaultSteps && step.defaultSteps.length > 0);
+      const hasDefault = step.defaultSteps !== null;
       const switchH = switchNodeHeight(caseCount, hasDefault);
       const switchY = cursorY + ACT_OFFSET_Y;
       addSwitchNode(ctx, step, { x: regionColumnX(depth, xOffset), y: switchY });
@@ -389,7 +389,7 @@ export function buildRuleFlowRegion(graph: Graph, startNodeId: string | null, st
       for (let index = 0; index < caseCount; index += 1) {
         caseStarts.push(portTargetNodeId(graph, currentId, `${PORT_SWITCH_CASE_PREFIX}${index}`));
       }
-      const hasDefault = Boolean(switchStepData.defaultSteps && switchStepData.defaultSteps.length > 0);
+      const hasDefault = switchStepData.defaultSteps !== null;
       const defaultStart = hasDefault ? portTargetNodeId(graph, currentId, PORT_SWITCH_DEFAULT) : null;
       const mergeId = findSwitchMerge(graph, caseStarts, defaultStart, stopNodeId);
       const cases: RuleFlowSwitchCase[] = switchStepData.cases.map((item, index) => ({
@@ -403,7 +403,7 @@ export function buildRuleFlowRegion(graph: Graph, startNodeId: string | null, st
         id: currentId,
         switchOn: cloneRuleFlowValue(switchStepData.switchOn),
         cases,
-        defaultSteps: defaultStart ? buildRuleFlowRegion(graph, defaultStart, mergeId) : null,
+        defaultSteps: defaultStart ? buildRuleFlowRegion(graph, defaultStart, mergeId) : hasDefault ? [] : null,
       });
       currentId = mergeId === stopNodeId ? stopNodeId : mergeId;
       continue;

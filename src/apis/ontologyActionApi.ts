@@ -61,7 +61,7 @@ export function getBehaviorSchedulingDetailInterface(params: GetBehaviorScheduli
 
 /**
  * @description 分页查询行为调度列表。GET `/ontology/action/scheduling/list`。
- * @param params 分页查询参数，仅 pageNum、pageSize，无空间筛选参数。
+ * @param params 分页查询参数及对象空间 id。
  * @returns 标准响应，data 包含调度 records、total、size、current，不包含执行配置详情。
  */
 export function getListBehaviorSchedulingInterface(params: ListBehaviorSchedulingParams): Promise<ApiResponse<ListBehaviorSchedulingData>> {

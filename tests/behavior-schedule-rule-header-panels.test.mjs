@@ -57,7 +57,7 @@ const vueFiles = [
   "../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleAiChatPanel.vue",
 ];
 
-test("rule config header opens custom variable, code, and AI surfaces", () => {
+test("rule config header removes custom variable, code, and AI surfaces", () => {
   const dialogSource = readSource("../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleRuleConfigDialog.vue");
   const variableSource = readSource("../src/views/SpaceBehaviorScheduleWorkspace/CustomRuleVariableDialog.vue");
   const editorSource = readSource("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/CustomRuleVariableEditors.vue");
@@ -66,15 +66,9 @@ test("rule config header opens custom variable, code, and AI surfaces", () => {
   const typeSource = readSource("../src/types/pages/ontologySpaceBehaviorScheduleType.ts");
   const typesIndex = readSource("../src/types/index.ts");
 
-  assert.match(dialogSource, />自定义变量</);
-  assert.match(dialogSource, /收起代码|规则代码/);
-  assert.match(dialogSource, /收起 AI|AI 生成规则/);
-  assert.match(dialogSource, /data-code-open/);
-  assert.match(dialogSource, /ScheduleRuleFlowCodeEditor/);
-  assert.match(dialogSource, /ScheduleRuleAiChatPanel/);
-  assert.match(dialogSource, /CustomRuleVariableDialog/);
-  assert.match(dialogSource, /serializeScheduleRuleFlow/);
-  assert.match(dialogSource, /parseScheduleRuleFlow/);
+  assert.doesNotMatch(dialogSource, /自定义变量|规则代码|AI 生成规则/);
+  assert.doesNotMatch(dialogSource, /ScheduleRuleFlowCodeEditor|ScheduleRuleAiChatPanel|CustomRuleVariableDialog/);
+  assert.doesNotMatch(dialogSource, /serializeScheduleRuleFlow|parseScheduleRuleFlow/);
 
   assert.match(variableSource, /自定义变量管理/);
   assert.match(variableSource, /搜索变量或键/);

@@ -69,6 +69,7 @@ export function buildBehaviorScheduleCreateParams(
   draft: BehaviorScheduleDraft,
   ontologyIdentifier: string,
   behaviorRequest: TestOntologyActionParams,
+  spaceId = "",
 ): { ok: true; request: CreateBehaviorScheduleParams } | { ok: false; error: string } {
   if (!draft.name.trim() || !draft.behaviorActionApi || draft.behaviorActionApi !== behaviorRequest.actionApi)
     return { ok: false, error: "调度名称或行为参数不匹配" };
@@ -91,6 +92,7 @@ export function buildBehaviorScheduleCreateParams(
   return {
     ok: true,
     request: {
+      ...(Number.isSafeInteger(Number(spaceId)) && Number(spaceId) > 0 ? { spaceId: Number(spaceId) } : {}),
       ...(ontologyIdentifier.trim() ? { ontologyIdentifier: ontologyIdentifier.trim() } : {}),
       actionApi: draft.behaviorActionApi,
       name: draft.name.trim(),

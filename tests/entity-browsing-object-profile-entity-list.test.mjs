@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import * as Vue from "vue";
+import { compileScript, parse } from "@vue/compiler-sfc";
+import { ModuleKind, transpileModule } from "typescript";
 import {
   appendNewObjectProfileEntityColumns,
   collectObjectProfileEntityColumns,
@@ -10,6 +13,32 @@ import {
 } from "../src/views/EntityBrowsingObjectProfile/utils/mapObjectProfileEntityRows.ts";
 
 const readSource = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), "utf8");
+
+test("object profile places standard usage before entity list when visible and preserves the default tab", () => {
+  const { descriptor } = parse(readSource("../src/views/EntityBrowsingObjectProfile/index.vue"));
+  const { outputText } = transpileModule(compileScript(descriptor, { id: "profile-tabs" }).content, { compilerOptions: { module: ModuleKind.CommonJS } });
+  for (const visible of [true, false]) {
+    const exports = {};
+    new Function("require", "exports", outputText)((id) => {
+      if (id === "vue") return Vue;
+      if (id === "vue-router") return { useRoute: () => ({ params: { objectId: "obj", spaceId: "7" }, query: {} }), useRouter: () => ({ push() {} }) };
+      if (id.includes("isStandardContentVisible")) return { isStandardContentVisible: () => visible };
+      if (id.includes("entityBrowsingObjectProfileMock")) return { resolveEntityBrowsingObjectProfile: () => ({}) };
+      return {};
+    }, exports);
+    const scope = Vue.effectScope();
+    const page = scope.run(() => exports.default.setup({}, { expose() {} }));
+    assert.deepEqual(
+      page.profileTabs.value.map((item) => item.id),
+      visible ? ["standard-usage", "entity-list"] : ["entity-list"],
+    );
+    assert.equal(page.activeTab.value, "entity-list");
+    page.activeTab.value = "standard-usage";
+    page.resetActiveTab();
+    assert.equal(page.activeTab.value, "entity-list");
+    scope.stop();
+  }
+});
 
 test("mapObjectProfileEntityRows flattens properties and derives dynamic columns", () => {
   const records = [

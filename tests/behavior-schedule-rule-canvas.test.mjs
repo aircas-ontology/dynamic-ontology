@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
+import { createDefaultScheduleRuleFlow } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/scheduleRuleFlowFactory.ts";
 
 /**
  * @description 读取相对 tests 目录的源文件文本。
@@ -54,9 +55,7 @@ test("rule config dialog opens a fullscreen canvas with save and without deferre
   assert.match(dialogSource, />返回</);
   assert.match(dialogSource, />取消</);
   assert.match(dialogSource, />保存</);
-  assert.match(dialogSource, /自定义变量/);
-  assert.match(dialogSource, /规则代码/);
-  assert.match(dialogSource, /AI 生成规则/);
+  assert.doesNotMatch(dialogSource, /自定义变量|规则代码|AI 生成规则/);
   assert.match(paletteSource, /条件分支/);
   assert.match(paletteSource, /执行行为/);
   assert.match(paletteSource, /Switch 分支/);
@@ -66,6 +65,29 @@ test("rule config dialog opens a fullscreen canvas with save and without deferre
   assert.match(toolbarSource, /适应画布/);
   assert.match(toolbarSource, /删除选中/);
   assert.match(designerSource, /ScheduleRuleFlowGraphSession/);
+});
+
+test("default rule canvas creates a connected condition and action path", () => {
+  const document = createDefaultScheduleRuleFlow();
+  assert.equal(document.steps.length, 1);
+  assert.equal(document.steps[0].kind, "branch");
+  assert.equal(document.steps[0].then.length, 1);
+  assert.equal(document.steps[0].then[0].kind, "actions");
+  assert.equal(document.steps[0].then[0].actions.length, 1);
+});
+
+test("rule flow cloning supports Vue reactive documents", async () => {
+  const { reactive } = await import("vue");
+  const { cloneScheduleRuleFlow } = await import("../src/views/SpaceBehaviorScheduleWorkspace/utils/scheduleRuleFlowFactory.ts");
+  const cloned = cloneScheduleRuleFlow(reactive(createDefaultScheduleRuleFlow()));
+  assert.equal(cloned.steps[0].kind, "branch");
+  assert.equal(cloned.steps[0].then[0].kind, "actions");
+});
+
+test("rule config replaces an empty saved flow with the default path", () => {
+  const dialogSource = readSource("../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleRuleConfigDialog.vue");
+  assert.match(dialogSource, /props\.initialFlow && props\.initialFlow\.steps\.length/);
+  assert.match(dialogSource, /createDefaultScheduleRuleFlow\(\)/);
 });
 
 test("rule canvas uses X6 resetCells, dispose, and Dagre layout", () => {
@@ -84,6 +106,7 @@ test("rule canvas uses X6 resetCells, dispose, and Dagre layout", () => {
   assert.match(sessionSource, /import\("@antv\/layout"\)/);
   assert.match(factorySource, /createDefaultScheduleRuleFlow/);
   assert.match(factorySource, /createBranchStep/);
+  assert.match(factorySource, /createBranchStep\(undefined, \[actionStep\]\)/);
   assert.match(typeSource, /ScheduleRuleFlowDocument/);
   assert.match(typeSource, /ruleFlow/);
   assert.match(typesIndex, /ScheduleRuleFlowDocument/);
