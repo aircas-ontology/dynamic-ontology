@@ -126,7 +126,12 @@
       </el-button>
     </template>
   </el-dialog>
-  <BehaviorScheduleRuleConfigDialog v-model="ruleConfigVisible" :initial-flow="draft.ruleFlow" @apply="applyRuleFlowDocument" />
+  <BehaviorScheduleRuleConfigDialog
+    v-model="ruleConfigVisible"
+    :initial-flow="draft.ruleFlow"
+    :behavior-options="behaviorOptions"
+    @apply="applyRuleFlowDocument"
+  />
 </template>
 
 <script setup lang="ts">
@@ -342,12 +347,7 @@ function setScheduleWeekdays(value: string | number | boolean | Array<string | n
   draft.weekdays = BEHAVIOR_SCHEDULE_WEEKDAYS.filter((day) => selected.includes(day));
 }
 
-/**
- * @description 用户切换关联对象时清空已选实例；回填草稿时跳过，避免冲掉回显实例。
- */
-/**
- * @description 打开规则配置全屏画布；查看模式忽略。
- */
+/** @description 打开规则配置全屏画布；查看模式忽略。 */
 function openRuleConfigDialog() {
   if (formDisabled.value) return;
   ruleConfigVisible.value = true;
@@ -408,6 +408,7 @@ function submitCreateScheduleForm() {
         draft,
         parameterConfig.resolvedOntologyUniqIdentifier.value.trim() || option?.ontologyUniqIdentifier || "",
         result.snapshot.request,
+        props.spaceId,
       );
       if (!assembled.ok) {
         validationError.value = assembled.error;

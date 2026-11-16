@@ -118,7 +118,10 @@
             ><el-form-item required :error="fieldError('attribute', selectedAttribute.id, 'storageGroup')"
               ><template #label
                 ><span>存储分组</span
-                ><el-tooltip content="支持输入分组名称回车后创建新的存储分组" placement="top" :show-after="200"
+                ><el-tooltip
+                  content="支持输入分组名称，回车后创建新的存储分组。存储分组用于创建子表，除main分组外，其他分组均会构建相应的子表"
+                  placement="top"
+                  :show-after="200"
                   ><button type="button" class="el-button is-text is-circle" aria-label="存储分组帮助">
                     <el-icon><QuestionFilled /></el-icon></button></el-tooltip></template
               ><el-select

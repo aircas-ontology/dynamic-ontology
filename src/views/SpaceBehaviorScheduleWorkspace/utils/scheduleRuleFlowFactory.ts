@@ -15,6 +15,7 @@ import type {
   RuleValueNode,
   ScheduleRuleFlowDocument,
 } from "@/types";
+import { toRaw } from "vue";
 
 const RULE_COMPARE_OPERATOR_LABELS: Record<RuleCompareOperator, string> = {
   eq: "等于",
@@ -181,11 +182,12 @@ export function createSwitchStep(
 }
 
 /**
- * @description 创建默认规则流：规则开始后接一条空条件分支。
+ * @description 创建默认规则流：规则开始后依次连接空条件分支和空执行行为。
  * @returns 默认规则流文档。
  */
 export function createDefaultScheduleRuleFlow(): ScheduleRuleFlowDocument {
-  return { steps: [createBranchStep()] };
+  const actionStep = createActionsStep();
+  return { steps: [createBranchStep(undefined, [actionStep])] };
 }
 
 /**
@@ -194,7 +196,7 @@ export function createDefaultScheduleRuleFlow(): ScheduleRuleFlowDocument {
  * @returns 文档副本。
  */
 export function cloneScheduleRuleFlow(doc: ScheduleRuleFlowDocument): ScheduleRuleFlowDocument {
-  return structuredClone(doc);
+  return structuredClone(toRaw(doc));
 }
 
 /**
@@ -202,8 +204,8 @@ export function cloneScheduleRuleFlow(doc: ScheduleRuleFlowDocument): ScheduleRu
  * @param value 原始值。
  * @returns 副本。
  */
-export function cloneRuleFlowValue<Value>(value: Value): Value {
-  return structuredClone(value);
+export function cloneRuleFlowValue<Value extends object>(value: Value): Value {
+  return structuredClone(toRaw(value));
 }
 
 /**

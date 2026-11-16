@@ -48,8 +48,9 @@ const showStandardContent = isStandardContentVisible();
 
 /** 空间浏览对象详情：实体列表；标准应用情况仅在运行时开关打开时展示。 */
 const profileTabs = computed<ReadonlyArray<{ id: EntityBrowsingObjectProfileTab; label: string }>>(() => {
-  const tabs: Array<{ id: EntityBrowsingObjectProfileTab; label: string }> = [{ id: "entity-list", label: "实体列表" }];
+  const tabs: Array<{ id: EntityBrowsingObjectProfileTab; label: string }> = [];
   if (showStandardContent) tabs.push({ id: "standard-usage", label: "标准应用情况" });
+  tabs.push({ id: "entity-list", label: "实体列表" });
   return tabs;
 });
 

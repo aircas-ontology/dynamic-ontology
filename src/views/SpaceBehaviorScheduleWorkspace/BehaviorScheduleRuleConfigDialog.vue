@@ -15,52 +15,33 @@
           <el-button class="aircas-button aircas-button--tone-ghost" @click.stop="closeRuleConfigDialog">返回</el-button>
           <span class="behavior-schedule-rule-config-dialog__title">规则配置</span>
         </div>
-        <div class="behavior-schedule-rule-config-dialog__header-actions">
-          <el-button class="aircas-button aircas-button--tone-secondary" @click.stop="customVariableDialogOpen = true">自定义变量</el-button>
-          <el-button class="aircas-button aircas-button--tone-secondary" @click.stop="codePanelOpen = !codePanelOpen">
-            {{ codePanelOpen ? "收起代码" : "规则代码" }}
-          </el-button>
-          <el-button class="aircas-button aircas-button--tone-secondary" @click.stop="aiDrawerOpen = !aiDrawerOpen">
-            {{ aiDrawerOpen ? "收起 AI" : "AI 生成规则" }}
-          </el-button>
-        </div>
       </div>
     </template>
     <div class="behavior-schedule-rule-config-dialog__body">
-      <div class="behavior-schedule-rule-config-dialog__layout" :class="{ 'is-code-open': codePanelOpen }">
+      <div class="behavior-schedule-rule-config-dialog__layout">
         <section class="behavior-schedule-rule-config-dialog__visual">
-          <ScheduleRuleFlowDesigner v-if="modelValue" :key="designerSessionKey" v-model="flowDoc" />
-        </section>
-        <section v-if="codePanelOpen" class="behavior-schedule-rule-config-dialog__code">
-          <ScheduleRuleFlowCodeEditor v-model="codeText" :parse-error="codeError" />
+          <ScheduleRuleFlowDesigner v-if="modelValue" :key="designerSessionKey" v-model="flowDoc" :behavior-options="behaviorOptions" />
         </section>
       </div>
-      <ScheduleRuleAiChatPanel v-if="aiDrawerOpen" :open="aiDrawerOpen" :catalog="catalog" @update:open="aiDrawerOpen = $event" @apply="applyAiDsl" />
     </div>
     <template #footer>
       <el-button class="aircas-button aircas-button--tone-ghost" @click="closeRuleConfigDialog">取消</el-button>
       <el-button class="aircas-button aircas-button--tone-primary" @click="saveRuleFlowDocument">保存</el-button>
     </template>
   </el-dialog>
-
-  <CustomRuleVariableDialog v-model="customVariableDialogOpen" @saved="refreshVariableCatalog" />
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
-import { ElMessage } from "element-plus";
-import type { RuleVariableCatalogObject, ScheduleRuleFlowDocument } from "@/types";
+import { ref, watch } from "vue";
+
+import type { ScheduleBehaviorOption, ScheduleRuleFlowDocument } from "@/types";
 import { cloneScheduleRuleFlow, createDefaultScheduleRuleFlow } from "./utils/scheduleRuleFlowFactory";
-import { parseScheduleRuleFlow, serializeScheduleRuleFlow } from "./utils/scheduleRuleFlowText";
-import { listCustomRuleVariableCatalog } from "./utils/scheduleRuleVariableCatalog";
-import CustomRuleVariableDialog from "./CustomRuleVariableDialog.vue";
 import ScheduleRuleFlowDesigner from "./ruleConfig/ScheduleRuleFlowDesigner.vue";
-import ScheduleRuleFlowCodeEditor from "./ruleConfig/ScheduleRuleFlowCodeEditor.vue";
-import ScheduleRuleAiChatPanel from "./ruleConfig/ScheduleRuleAiChatPanel.vue";
 
 const props = defineProps<{
   modelValue: boolean;
   initialFlow: ScheduleRuleFlowDocument | null;
+  behaviorOptions: readonly ScheduleBehaviorOption[];
 }>();
 
 const emit = defineEmits<{
@@ -70,16 +51,6 @@ const emit = defineEmits<{
 
 const designerSessionKey = ref(0);
 const flowDoc = ref(createDefaultScheduleRuleFlow());
-const catalog = ref<RuleVariableCatalogObject[]>([]);
-const codeText = ref("");
-const codeError = ref("");
-/** 右侧代码面板开关，对应原型 data-code-open 布局。 */
-const codePanelOpen = ref(false);
-const aiDrawerOpen = ref(false);
-const customVariableDialogOpen = ref(false);
-let syncingFromVisual = false;
-let syncingFromCode = false;
-let syncToken = 0;
 
 /**
  * @description 关闭规则配置弹窗且不写回草稿。
@@ -89,103 +60,10 @@ function closeRuleConfigDialog() {
 }
 
 /**
- * @description 重新读取内存中的自定义变量目录。
- */
-function refreshVariableCatalog() {
-  catalog.value = listCustomRuleVariableCatalog();
-}
-
-/**
- * @description 把当前画布同步到规则代码，避免覆盖正在编辑的文本。
- */
-function applyVisualToCode() {
-  if (syncingFromCode) return;
-  const next = serializeScheduleRuleFlow(flowDoc.value);
-  if (next === codeText.value) {
-    codeError.value = "";
-    return;
-  }
-  syncToken += 1;
-  const token = syncToken;
-  syncingFromVisual = true;
-  codeText.value = next;
-  codeError.value = "";
-  void nextTick(() => {
-    if (token === syncToken) syncingFromVisual = false;
-  });
-}
-
-/**
- * @description 把规则代码解析回画布；失败时只提示，不覆盖可视化。
- * @param source 规则文本。
- */
-function applyCodeToVisual(source: string) {
-  if (syncingFromVisual) return;
-  const token = syncToken;
-  const parsed = parseScheduleRuleFlow(source, catalog.value);
-  if (!parsed.ok) {
-    codeError.value = parsed.message;
-    return;
-  }
-  if (token !== syncToken) return;
-  if (serializeScheduleRuleFlow(parsed.doc) === serializeScheduleRuleFlow(flowDoc.value)) {
-    codeError.value = "";
-    return;
-  }
-  syncingFromCode = true;
-  codeError.value = "";
-  flowDoc.value = cloneScheduleRuleFlow(parsed.doc);
-  syncingFromVisual = true;
-  codeText.value = serializeScheduleRuleFlow(parsed.doc);
-  void nextTick(() => {
-    syncingFromCode = false;
-    syncingFromVisual = false;
-  });
-}
-
-/**
- * @description 把 AI 生成的规则文本应用到画布和代码面板。
- * @param dsl 规则文本。
- */
-function applyAiDsl(dsl: string) {
-  const source = dsl.trim();
-  if (!source) {
-    ElMessage.warning("暂无可应用的规则代码");
-    return;
-  }
-  const parsed = parseScheduleRuleFlow(source, catalog.value);
-  if (!parsed.ok) {
-    ElMessage.warning(parsed.message || "生成结果无法解析");
-    return;
-  }
-  syncToken += 1;
-  syncingFromCode = true;
-  codeError.value = "";
-  flowDoc.value = cloneScheduleRuleFlow(parsed.doc);
-  syncingFromVisual = true;
-  codeText.value = serializeScheduleRuleFlow(parsed.doc);
-  void nextTick(() => {
-    syncingFromCode = false;
-    syncingFromVisual = false;
-  });
-  ElMessage.success("已同步到规则配置");
-}
-
-/**
- * @description 校验规则代码后把画布文档写回调度草稿。
+ * @description 把规则画布文档写回调度草稿。
  */
 function saveRuleFlowDocument() {
-  if (codeError.value) {
-    ElMessage.warning(codeError.value);
-    return;
-  }
-  const parsed = parseScheduleRuleFlow(codeText.value, catalog.value);
-  if (!parsed.ok) {
-    codeError.value = parsed.message;
-    ElMessage.warning(parsed.message);
-    return;
-  }
-  emit("apply", cloneScheduleRuleFlow(parsed.doc));
+  emit("apply", cloneScheduleRuleFlow(flowDoc.value));
   emit("update:modelValue", false);
 }
 
@@ -194,35 +72,11 @@ watch(
   (visible) => {
     if (!visible) return;
     designerSessionKey.value += 1;
-    syncToken += 1;
-    syncingFromCode = true;
-    flowDoc.value = cloneScheduleRuleFlow(props.initialFlow ?? createDefaultScheduleRuleFlow());
-    refreshVariableCatalog();
-    syncingFromVisual = true;
-    codeText.value = serializeScheduleRuleFlow(flowDoc.value);
-    codeError.value = "";
-    codePanelOpen.value = false;
-    aiDrawerOpen.value = false;
-    void nextTick(() => {
-      syncingFromCode = false;
-      syncingFromVisual = false;
-    });
+    const initialFlow = props.initialFlow && props.initialFlow.steps.length ? props.initialFlow : createDefaultScheduleRuleFlow();
+    flowDoc.value = cloneScheduleRuleFlow(initialFlow);
   },
   { immediate: true },
 );
-
-watch(
-  flowDoc,
-  () => {
-    if (props.modelValue) applyVisualToCode();
-  },
-  { deep: true },
-);
-
-watch(codeText, (value) => {
-  if (!props.modelValue || syncingFromVisual) return;
-  applyCodeToVisual(value);
-});
 </script>
 
 <style lang="scss">
@@ -280,16 +134,10 @@ watch(codeText, (value) => {
   padding-right: 28px;
 }
 
-.behavior-schedule-rule-config-dialog__header-main,
-.behavior-schedule-rule-config-dialog__header-actions {
+.behavior-schedule-rule-config-dialog__header-main {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.behavior-schedule-rule-config-dialog__header-actions {
-  flex-shrink: 0;
-  gap: 8px;
 }
 
 .behavior-schedule-rule-config-dialog__title {
@@ -314,12 +162,7 @@ watch(codeText, (value) => {
   gap: 12px;
 }
 
-.behavior-schedule-rule-config-dialog__layout.is-code-open {
-  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr);
-}
-
-.behavior-schedule-rule-config-dialog__visual,
-.behavior-schedule-rule-config-dialog__code {
+.behavior-schedule-rule-config-dialog__visual {
   min-width: 0;
   min-height: 0;
   height: 100%;

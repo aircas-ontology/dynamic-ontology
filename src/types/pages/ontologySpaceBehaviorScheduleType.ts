@@ -233,6 +233,8 @@ export interface RuleFlowThenAction {
   instanceIds: string[];
   /** 行为参数。 */
   params: RuleFlowThenParamValue[];
+  /** 使用公共行为参数组件校验后的完整配置快照。 */
+  behaviorParameters?: BehaviorParameterSnapshot;
 }
 
 /** 顺序执行行为步骤。 */

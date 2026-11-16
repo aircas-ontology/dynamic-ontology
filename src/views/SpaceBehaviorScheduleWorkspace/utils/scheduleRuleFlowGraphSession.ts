@@ -1,6 +1,17 @@
 import { Graph, type Cell } from "@antv/x6";
-import type { ScheduleRuleFlowDocument } from "@/types";
-import { cloneScheduleRuleFlow, createBranchStep, createEmptyThenAction, createSwitchStep } from "./scheduleRuleFlowFactory";
+import type { ScheduleBehaviorOption, ScheduleRuleFlowDocument } from "@/types";
+import { clearMismatchedGraphBehaviors, collectUpstreamConditionObjectIds } from "./filterRuleBehaviorsByObject";
+import { updateScheduleRuleSwitchNode } from "./updateScheduleRuleSwitchNode";
+import {
+  cloneRuleFlowValue,
+  cloneScheduleRuleFlow,
+  createBranchStep,
+  createEmptyThenAction,
+  createSwitchStep,
+  summarizeRuleCondition,
+  summarizeThenAction,
+  truncateRuleFlowText,
+} from "./scheduleRuleFlowFactory";
 import {
   addActionNode,
   addConditionNode,
@@ -16,6 +27,7 @@ import {
   readGraphNodeData,
   START_NODE_ID,
   type ScheduleRuleGraphCellContext,
+  type ScheduleRuleGraphNodeData,
 } from "./scheduleRuleFlowGraphCells";
 import { collectReachableNodes, fillRuleFlowRenderBuffer, serializeRuleFlowGraph } from "./scheduleRuleFlowGraphSerialize";
 
@@ -29,6 +41,8 @@ export interface ScheduleRuleFlowGraphCanvasState {
 
 /** 画布会话回调。 */
 export interface ScheduleRuleFlowGraphSessionCallbacks {
+  /** @description 获取当前空间已加载的行为选项。 @returns 行为列表。 */
+  getBehaviorOptions: () => readonly ScheduleBehaviorOption[];
   /**
    * @description 画布拓扑变化后回写规则流文档。
    * @param doc 序列化后的文档。
@@ -54,6 +68,8 @@ export interface ScheduleRuleFlowGraphSessionCallbacks {
    * @param message 提示文案。
    */
   onWarning: (message: string) => void;
+  /** @description 双击可配置节点时通知页面打开编辑器。 @param nodeId 节点 id。 @param kind 节点类型。 */
+  onNodeDoubleClick: (nodeId: string, kind: "condition" | "action" | "switch") => void;
 }
 
 /** 规则配置画布可拖入的节点类型。 */
@@ -174,11 +190,51 @@ export class ScheduleRuleFlowGraphSession {
     this.graph.on("cell:click", ({ cell }) => {
       this.selectCell(cell);
     });
+    this.graph.on("node:dblclick", ({ node }) => {
+      const kind = readGraphNodeData(node).kind;
+      if (kind === "condition" || kind === "action" || kind === "switch") this.callbacks.onNodeDoubleClick(node.id, kind);
+    });
     this.graph.on("blank:click", () => {
       this.clearSelection();
     });
     this.renderDocument(doc);
     window.requestAnimationFrame(() => this.fitGraph());
+  }
+
+  /** @description 读取指定节点数据，供双击配置面板回填。 @param nodeId 节点 id。 @returns 节点数据或空值。 */
+  getNodeData(nodeId: string): ScheduleRuleGraphNodeData | null {
+    const node = this.graph?.getCellById(nodeId);
+    return node?.isNode() ? cloneRuleFlowValue(readGraphNodeData(node)) : null;
+  }
+
+  /** @description 按当前画布连接获取行为节点上游条件引用的对象。 @param nodeId 行为节点标识。 @returns 上游对象标识。 */
+  getActionConditionObjectIds(nodeId: string): string[] {
+    return this.graph ? collectUpstreamConditionObjectIds(this.graph, nodeId) : [];
+  }
+
+  /** @description 更新节点数据并刷新摘要。 @param nodeId 节点 id。 @param data 节点数据。 */
+  updateNodeData(nodeId: string, data: ScheduleRuleGraphNodeData): void {
+    const node = this.graph?.getCellById(nodeId);
+    if (!node?.isNode()) return;
+    const previous = readGraphNodeData(node);
+    if (this.graph && data.kind === "switch" && data.switchStep && previous.switchStep) {
+      this.syncingGraph = true;
+      try {
+        updateScheduleRuleSwitchNode(this.graph, node, previous.switchStep, cloneRuleFlowValue(data.switchStep));
+      } finally {
+        this.syncingGraph = false;
+      }
+      this.commitGraph();
+      return;
+    }
+    node.setData(cloneRuleFlowValue(data));
+    if (data.kind === "condition" && data.condition)
+      node.attr("summary/text", truncateRuleFlowText(summarizeRuleCondition(data.condition) || "未配置条件", 28));
+    if (data.kind === "action" && data.action) {
+      node.attr("title/text", truncateRuleFlowText(data.action.behaviorName || "未配置行为", 14));
+      node.attr("summary/text", summarizeThenAction(data.action));
+    }
+    this.commitGraph();
   }
 
   /**
@@ -346,6 +402,8 @@ export class ScheduleRuleFlowGraphSession {
    */
   private commitGraph(): void {
     if (!this.graph) return;
+    const cleared = clearMismatchedGraphBehaviors(this.graph, this.callbacks.getBehaviorOptions());
+    if (cleared) this.callbacks.onWarning(`条件对象已变化，${cleared} 个执行行为不再匹配，请重新选择`);
     this.refreshConditionBadges();
     this.refreshCanvasState();
     this.callbacks.onCommit(cloneScheduleRuleFlow(serializeRuleFlowGraph(this.graph)));

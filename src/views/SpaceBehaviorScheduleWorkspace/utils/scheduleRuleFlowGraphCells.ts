@@ -568,7 +568,7 @@ export function switchNodePorts(caseCount: number, hasDefault: boolean) {
 export function addSwitchNode(ctx: ScheduleRuleGraphCellContext, step: RuleFlowSwitchStep, position: { x: number; y: number }): void {
   if (!ctx.graph) return;
   const caseCount = step.cases.length;
-  const hasDefault = Boolean(step.defaultSteps && step.defaultSteps.length > 0);
+  const hasDefault = step.defaultSteps !== null;
   const height = switchNodeHeight(caseCount, hasDefault);
   const ports = switchNodePorts(caseCount, hasDefault);
   const switchOnText = serializeValueForNodeDisplay(step.switchOn);

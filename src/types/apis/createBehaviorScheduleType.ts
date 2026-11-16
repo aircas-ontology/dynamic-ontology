@@ -9,6 +9,8 @@ export interface CreateBehaviorScheduleTask {
 
 /** 行为调度创建参数。 */
 export interface CreateBehaviorScheduleParams {
+  /** 对象空间 id。 */
+  spaceId: number;
   /** 应用行为可省略，由后端从 linkMapping 推导。 */
   ontologyIdentifier?: string;
   actionApi: string;

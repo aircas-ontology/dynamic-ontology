@@ -29,7 +29,7 @@ function mapBehaviorSchedulingRecord(record: ListBehaviorSchedulingRecord): Beha
 export async function fetchBehaviorSchedules(
   querySchedulingList: (params: ListBehaviorSchedulingParams) => Promise<ApiResponse<ListBehaviorSchedulingData>>,
   isCurrentSession: () => boolean = () => true,
-  params: ListBehaviorSchedulingParams = { pageNum: 1, pageSize: 10 },
+  params: ListBehaviorSchedulingParams = { pageNum: 1, pageSize: 10, spaceId: 0 },
 ): Promise<{ records: BehaviorScheduleRecord[]; total: number } | null> {
   if (!isCurrentSession()) return null;
   const response = await querySchedulingList(params);

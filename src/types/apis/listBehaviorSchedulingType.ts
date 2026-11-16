@@ -1,5 +1,7 @@
 /** 调度列表分页查询参数。 */
 export interface ListBehaviorSchedulingParams {
+  /** 对象空间 id。 */
+  spaceId: number;
   /** 调度名称，模糊匹配。 */
   name?: string;
   /** 调度类型，不传时查询全部。 */
