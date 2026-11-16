@@ -19,6 +19,7 @@ test("schedule creates exact envelope and serializes complete behavior request",
   const result = buildBehaviorScheduleCreateParams(draft, "ontology", request);
   assert.equal(result.ok, true);
   assert.deepEqual(result.request, {
+    spaceId: 1,
     ontologyIdentifier: "ontology",
     actionApi: "ship",
     name: "schedule",

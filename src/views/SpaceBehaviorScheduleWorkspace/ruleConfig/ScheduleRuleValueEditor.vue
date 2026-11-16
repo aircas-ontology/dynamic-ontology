@@ -29,8 +29,8 @@ const valueKindOptions = [
 const unsupportedValue = computed(() => value.value.kind !== "input" && value.value.kind !== "variable");
 const variablePickerVisible = ref(false);
 const variableSummary = computed(() =>
-  value.value.kind === "variable" && value.value.objectId && value.value.propertyId
-    ? `${value.value.objectName}.${value.value.propertyName} · ${value.value.instanceIds.length ? `${value.value.instanceIds.length} 个实例` : "全部实例"}`
+  value.value.kind === "variable" && value.value.objectId && (value.value.propertyId || value.value.propertyName)
+    ? `${value.value.objectName}.${value.value.propertyName} · ${value.value.instanceNames?.length ? value.value.instanceNames.join("、") : value.value.instanceIds.length ? `${value.value.instanceIds.length} 个实例` : "全部实例"}`
     : "选择变量",
 );
 /** @description 应用变量选择副本。 @param selected 选中变量。 */

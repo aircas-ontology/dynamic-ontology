@@ -44,7 +44,7 @@ export function postStopBehaviorSchedulingInterface(params: ChangeBehaviorSchedu
   return request<unknown>({ url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + `/ontology/action/scheduling/stop/${params.type}/${params.id}`, method: "post" });
 }
 
-/** @description 编辑周期行为调度。PUT `/ontology/action/scheduling`。 @param params 包含id、行为及task完整参数的编辑请求。 @returns 标准响应，使用code/message判断结果，data未定义。 */
+/** @description 编辑周期或规则行为调度。PUT `/ontology/action/scheduling`。 @param params 包含id、spaceId及按type区分的task或rule完整参数。 @returns 标准响应，使用code/message判断结果，data未定义。 */
 export function putUpdateBehaviorSchedulingInterface(params: UpdateBehaviorSchedulingParams): Promise<ApiResponse<unknown>> {
   return request<unknown>({ url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action/scheduling", method: "put", data: params });
 }

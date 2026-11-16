@@ -10,8 +10,10 @@ import {
   createDefaultScheduleRuleFlow,
   createSwitchStep,
   cloneRuleFlowValue,
+  cloneScheduleRuleFlow,
 } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/scheduleRuleFlowFactory.ts";
 import { filterBehaviorsByObjects } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/filterRuleBehaviorsByObject.ts";
+import { buildSavedActionEntityJson } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/restoreRuleScheduleDetail.ts";
 
 /** @description 隔离节点组件测试的参数控制器边界，参数真实行为另行集成验证。 @returns {object} 参数控制器替身。 */
 function createRuleParameterStub() {
@@ -39,6 +41,7 @@ test("node dialog dropdown layers stay above both dialogs without changing outsi
     if (id === "vue-router") return { useRoute: () => ({ params: { spaceId: "7" } }) };
     if (id.includes("useRuleActionParameters")) return { useRuleActionParameters: createRuleParameterStub };
     if (id.includes("filterRuleBehaviorsByObject")) return { filterBehaviorsByObjects };
+    if (id.includes("restoreRuleScheduleDetail")) return { buildSavedActionEntityJson };
     if (id === "element-plus") return { ElConfigProvider, ElMessage: {}, ElMessageBox: {} };
     if (id.includes("scheduleRuleFlowFactory")) return { cloneRuleFlowValue };
     return { default: empty };
@@ -127,7 +130,7 @@ test("removed values remain untouched until an explicit supported selection", ()
 });
 
 /** @description 运行真实画布组件，通过会话边界触发双击并观察回写。 @returns {Promise<object>} 组件和会话记录。 */
-async function createDesignerHarness() {
+async function createDesignerHarness(readonly = false) {
   const file = "../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleFlowDesigner.vue";
   const { descriptor } = parse(readFileSync(new URL(file, import.meta.url), "utf8"));
   const compiled = compileScript(descriptor, { id: "node-edit-test" });
@@ -137,6 +140,7 @@ async function createDesignerHarness() {
   const nodes = new Map();
   const updates = [];
   let callbacks;
+  let savedJson;
   const branch = createDefaultScheduleRuleFlow().steps[0];
   nodes.set("condition", { kind: "condition", condition: branch.condition });
   nodes.set("unconnected-action", { kind: "action", action: branch.then[0].actions[0] });
@@ -148,7 +152,9 @@ async function createDesignerHarness() {
       callbacks = value;
     }
     /** @description 测试不创建 DOM 图。 */
-    mount() {}
+    mount(container, doc, readonlyMode) {
+      updates.push({ readonlyMode });
+    }
     /** @description 读取节点副本。 @param {string} id 标识。 @returns {object} 数据。 */
     getNodeData(id) {
       return structuredClone(nodes.get(id));
@@ -162,6 +168,8 @@ async function createDesignerHarness() {
       updates.push({ id, value });
       nodes.set(id, value);
     }
+    /** @description 测试忽略图形布局。 */
+    adaptViewport() {}
     /** @description 记录实例销毁。 */
     dispose() {
       updates.push("disposed");
@@ -172,7 +180,14 @@ async function createDesignerHarness() {
   new Function("require", "exports", outputText)((id) => {
     if (id === "vue") return { ...Vue, onMounted: (fn) => mounted.push(fn), onBeforeUnmount: (fn) => cleanup.push(fn) };
     if (id === "vue-router") return { useRoute: () => ({ params: { spaceId: "7" } }) };
-    if (id.includes("useRuleActionParameters")) return { useRuleActionParameters: createRuleParameterStub };
+    if (id.includes("useRuleActionParameters"))
+      return {
+        useRuleActionParameters: (...args) => {
+          savedJson = args[4];
+          return createRuleParameterStub();
+        },
+      };
+    if (id.includes("restoreRuleScheduleDetail")) return { buildSavedActionEntityJson };
     if (id.includes("filterRuleBehaviorsByObject")) return { filterBehaviorsByObjects };
     if (id.includes("scheduleRuleFlowGraphSession")) return { ScheduleRuleFlowGraphSession: GraphSession };
     if (id.includes("scheduleRuleFlowFactory")) return { cloneRuleFlowValue };
@@ -181,6 +196,7 @@ async function createDesignerHarness() {
   }, exports);
   const scope = Vue.effectScope();
   const props = {
+    readonly,
     modelValue: createDefaultScheduleRuleFlow(),
     behaviorOptions: [
       { id: "b", displayName: "行为 B", actionApi: "b", ontologyUniqIdentifier: "o" },
@@ -191,6 +207,7 @@ async function createDesignerHarness() {
   page.canvasRef.value = {};
   mounted.forEach((fn) => fn());
   await Vue.nextTick();
+  const mountRecord = updates.shift();
   return {
     page,
     updates,
@@ -198,11 +215,30 @@ async function createDesignerHarness() {
     callbacks,
     cleanup,
     scope,
+    mountRecord,
+    props,
+    savedJson: () => savedJson(),
     setObjectIds: (ids) => {
       objectIds = ids;
     },
   };
 }
+
+test("read-only designer opens node details but never writes changes or handles delete", async () => {
+  const h = await createDesignerHarness(true);
+  assert.equal(h.mountRecord.readonlyMode, true);
+  h.callbacks.onNodeDoubleClick("condition", "condition");
+  assert.equal(h.page.nodeEditorVisible.value, true);
+  h.page.confirmNodeEditor();
+  h.page.onCanvasKeydown({
+    key: "Delete",
+    preventDefault() {
+      throw new Error("should not handle delete");
+    },
+  });
+  assert.equal(h.updates.length, 0);
+  h.scope.stop();
+});
 
 test("double clicking condition clones data, cancel preserves original and confirm updates only its node", async () => {
   const h = await createDesignerHarness();
@@ -297,4 +333,79 @@ test("node confirmation rejects removed condition and action values until explic
   h.page.confirmNodeEditor();
   assert.equal(h.updates.length, 2);
   h.scope.stop();
+});
+
+test("editable action restores matching saved request and skips it after switching behavior or capturing a snapshot", async () => {
+  const h = await createDesignerHarness();
+  const action = h.nodes.get("unconnected-action").action;
+  action.behaviorId = "b";
+  h.props.actionDetails = { [action.id]: { actionApi: "b", entityJson: '{"params":{"name":"original"}}', ontologyIdentifier: "o", entityId: "" } };
+  h.callbacks.onNodeDoubleClick("unconnected-action", "action");
+  assert.match(h.savedJson(), /original/);
+  h.page.changeNodeBehavior("c");
+  assert.equal(h.savedJson(), "");
+  h.page.changeNodeBehavior("b");
+  h.page.editingNode.value.action.behaviorParameters = { values: { name: "changed" } };
+  assert.equal(h.savedJson(), "");
+  h.scope.stop();
+});
+
+test("editable rule dialog passes the saved flow and action request mapping into the real designer boundary", async () => {
+  const source = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleRuleConfigDialog.vue", import.meta.url), "utf8");
+  const { descriptor } = parse(source);
+  const compiled = compileScript(descriptor, { id: "edit-rule-dialog", inlineTemplate: true });
+  const { outputText } = transpileModule(compiled.content, { compilerOptions: { module: ModuleKind.CommonJS } });
+  const exports = {};
+  const captured = [];
+  const designer = Vue.defineComponent({
+    props: ["modelValue", "behaviorOptions", "actionDetails"],
+    /** @description 捕获编辑画布接收的结构与请求映射。 @param {object} props 输入。 @returns {Function} 空渲染。 */
+    setup(props) {
+      captured.push(props);
+      return () => null;
+    },
+  });
+  new Function("require", "exports", outputText)((id) => {
+    if (id === "vue") return Vue;
+    if (id.includes("scheduleRuleFlowFactory")) return { cloneScheduleRuleFlow, createDefaultScheduleRuleFlow };
+    if (id.includes("ScheduleRuleFlowDesigner")) return { __esModule: true, default: designer };
+    return {};
+  }, exports);
+  const flow = createDefaultScheduleRuleFlow();
+  const actionDetails = { a: { actionApi: "b", entityJson: '{"params":{"name":"saved"}}', ontologyIdentifier: "o", entityId: "" } };
+  const app = Vue.createSSRApp({
+    render: () =>
+      Vue.h(exports.default, {
+        modelValue: true,
+        initialFlow: flow,
+        readonly: false,
+        behaviorOptions: [],
+        detailGroups: [{ flow, actionDetails }],
+      }),
+  });
+  app.component("el-dialog", {
+    setup(_props, { slots }) {
+      return () => Vue.h("div", slots.default?.());
+    },
+  });
+  app.config.warnHandler = () => {};
+  await renderToString(app);
+  assert.equal(captured.length, 1);
+  assert.deepEqual(captured[0].modelValue, flow);
+  assert.notEqual(captured[0].modelValue, flow);
+  assert.deepEqual(captured[0].actionDetails, actionDetails);
+});
+
+test("detail and edit summary boundaries use matching saved actions and reject a switched behavior", async () => {
+  for (const readonly of [false, true]) {
+    const h = await createDesignerHarness(readonly);
+    const action = h.nodes.get("unconnected-action").action;
+    action.behaviorId = "b";
+    const detail = { actionApi: "b", entityJson: '{"outputParams":{"result":{}}}' };
+    h.props.actionDetails = { [action.id]: detail };
+    assert.equal(h.callbacks.getSavedAction(action), detail);
+    assert.equal(h.callbacks.getSavedAction({ ...action, behaviorId: "c" }), undefined);
+    h.cleanup.forEach((fn) => fn());
+    h.scope.stop();
+  }
 });

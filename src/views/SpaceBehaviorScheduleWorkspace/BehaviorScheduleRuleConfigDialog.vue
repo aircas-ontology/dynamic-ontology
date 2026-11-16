@@ -7,6 +7,8 @@
     fullscreen
     :z-index="5000"
     :close-on-click-modal="false"
+    @opened="viewportReady = true"
+    @close="viewportReady = false"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <template #header>
@@ -20,36 +22,67 @@
     <div class="behavior-schedule-rule-config-dialog__body">
       <div class="behavior-schedule-rule-config-dialog__layout">
         <section class="behavior-schedule-rule-config-dialog__visual">
-          <ScheduleRuleFlowDesigner v-if="modelValue" :key="designerSessionKey" v-model="flowDoc" :behavior-options="behaviorOptions" />
+          <template v-if="readonly">
+            <el-select v-if="detailGroups.length > 1" v-model="selectedGroup" ariaLabel="选择规则">
+              <el-option v-for="(_, index) in detailGroups" :key="index" :value="index" :label="`规则 ${index + 1}`" />
+            </el-select>
+            <ScheduleRuleFlowDesigner
+              v-if="modelValue && currentDetailGroup"
+              :key="`${designerSessionKey}-${selectedGroup}`"
+              :model-value="currentDetailGroup.flow"
+              :behavior-options="behaviorOptions"
+              readonly
+              :viewport-ready="viewportReady"
+              :action-details="currentDetailGroup.actionDetails"
+            />
+            <el-empty v-else description="暂无规则详情" />
+          </template>
+          <ScheduleRuleFlowDesigner
+            v-else-if="modelValue"
+            :key="designerSessionKey"
+            :viewport-ready="viewportReady"
+            v-model="flowDoc"
+            :behavior-options="behaviorOptions"
+            :action-details="currentDetailGroup?.actionDetails"
+          />
         </section>
       </div>
     </div>
     <template #footer>
-      <el-button class="aircas-button aircas-button--tone-ghost" @click="closeRuleConfigDialog">取消</el-button>
-      <el-button class="aircas-button aircas-button--tone-primary" @click="saveRuleFlowDocument">保存</el-button>
+      <el-button v-if="readonly" class="aircas-button aircas-button--tone-ghost" @click="closeRuleConfigDialog">关闭</el-button>
+      <el-button v-else class="aircas-button aircas-button--tone-ghost" @click="closeRuleConfigDialog">取消</el-button>
+      <el-button v-if="!readonly" class="aircas-button aircas-button--tone-primary" @click="saveRuleFlowDocument">保存</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
-import type { ScheduleBehaviorOption, ScheduleRuleFlowDocument } from "@/types";
+import type { ScheduleBehaviorOption, ScheduleRuleDetailGroup, ScheduleRuleFlowDocument } from "@/types";
 import { cloneScheduleRuleFlow, createDefaultScheduleRuleFlow } from "./utils/scheduleRuleFlowFactory";
 import ScheduleRuleFlowDesigner from "./ruleConfig/ScheduleRuleFlowDesigner.vue";
 
-const props = defineProps<{
-  modelValue: boolean;
-  initialFlow: ScheduleRuleFlowDocument | null;
-  behaviorOptions: readonly ScheduleBehaviorOption[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean;
+    initialFlow: ScheduleRuleFlowDocument | null;
+    behaviorOptions: readonly ScheduleBehaviorOption[];
+    readonly?: boolean;
+    detailGroups?: readonly ScheduleRuleDetailGroup[];
+  }>(),
+  { readonly: false, detailGroups: () => [] },
+);
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
   apply: [doc: ScheduleRuleFlowDocument];
 }>();
 
+const viewportReady = ref(false);
 const designerSessionKey = ref(0);
+const selectedGroup = ref(0);
+const currentDetailGroup = computed(() => props.detailGroups[selectedGroup.value]);
 const flowDoc = ref(createDefaultScheduleRuleFlow());
 
 /**
@@ -63,6 +96,7 @@ function closeRuleConfigDialog() {
  * @description 把规则画布文档写回调度草稿。
  */
 function saveRuleFlowDocument() {
+  if (props.readonly) return;
   emit("apply", cloneScheduleRuleFlow(flowDoc.value));
   emit("update:modelValue", false);
 }
@@ -70,8 +104,10 @@ function saveRuleFlowDocument() {
 watch(
   () => props.modelValue,
   (visible) => {
+    viewportReady.value = false;
     if (!visible) return;
     designerSessionKey.value += 1;
+    selectedGroup.value = 0;
     const initialFlow = props.initialFlow && props.initialFlow.steps.length ? props.initialFlow : createDefaultScheduleRuleFlow();
     flowDoc.value = cloneScheduleRuleFlow(initialFlow);
   },
@@ -163,9 +199,14 @@ watch(
 }
 
 .behavior-schedule-rule-config-dialog__visual {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
   height: 100%;
   overflow: hidden;
+}
+.behavior-schedule-rule-config-dialog__visual .rule-flow-designer {
+  flex: 1;
 }
 </style>

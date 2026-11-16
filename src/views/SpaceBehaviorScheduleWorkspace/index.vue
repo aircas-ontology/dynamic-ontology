@@ -112,6 +112,7 @@
       :behavior-options="behaviorOptions"
       :behavior-loading="behaviorLoading"
       :behavior-error="behaviorError"
+      :rule-detail-groups="ruleDetailGroups"
       @retry-behaviors="fetchBehaviorOptions"
       :submitting="createStatus === 'submitting'"
       @confirm="submitScheduleForm"
@@ -139,13 +140,19 @@
 </template>
 
 <script setup lang="ts">
-import type { CreateBehaviorScheduleParams, ListBehaviorSchedulingParams, ScheduleBehaviorOption } from "@/types";
+import type { CreateBehaviorScheduleParams, ListBehaviorSchedulingParams, ScheduleBehaviorOption, ScheduleRuleDetailGroup } from "@/types";
+import { restoreRuleScheduleDetail } from "@/views/SpaceBehaviorScheduleWorkspace/utils/restoreRuleScheduleDetail";
+import { hydrateRuleDetailVariableNames } from "@/views/SpaceBehaviorScheduleWorkspace/utils/hydrateRuleDetailVariableNames";
+import { restoreRuleFlowDocument } from "@/views/SpaceBehaviorScheduleWorkspace/utils/restoreRuleFlowDocument";
 import { cloneBehaviorParameterSnapshot } from "@/utils/behaviorParameters/cloneBehaviorParameterSnapshot";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import {
   deleteBehaviorSchedulingInterface,
   getBehaviorSchedulingDetailInterface,
+  getOntologyCategoryTreeInterface,
+  getOntologyPropertyByOntologyIdInterface,
+  getOntologyEntitiesInterface,
   getBehaviorSchedulingResultInterface,
   getListBehaviorSchedulingInterface,
   getListOntologyActionInterface,
@@ -175,6 +182,7 @@ import BehaviorScheduleFormDialog from "./BehaviorScheduleFormDialog.vue";
 import BehaviorScheduleInvocationLogDialog from "./BehaviorScheduleInvocationLogDialog.vue";
 
 const schedules = ref<BehaviorScheduleRecord[]>([]);
+const ruleDetailGroups = ref<ScheduleRuleDetailGroup[]>([]);
 
 const keyword = ref("");
 const strategy = ref("");
@@ -415,7 +423,7 @@ async function openEditScheduleDialog(row: unknown): Promise<void> {
 
 /** @description 查询详情后打开查看或编辑弹窗，忽略过期响应。 @param record 列表记录。 @param mode 弹窗模式。 @returns 查询完成。 */
 async function loadScheduleDetail(record: BehaviorScheduleRecord, mode: "view" | "edit"): Promise<void> {
-  if (record.detailsAvailable !== false) {
+  if (record.detailsAvailable !== false && record.strategy !== "规则调度") {
     formMode.value = mode;
     formDraft.value = mapScheduleRecordToDraft(record);
     editingScheduleId.value = mode === "edit" ? record.id : "";
@@ -431,6 +439,27 @@ async function loadScheduleDetail(record: BehaviorScheduleRecord, mode: "view" |
       throw new Error(response.message?.trim() || "调度详情加载失败");
     const detail = response.data;
     const taskDetail = detail.taskVO ?? detail.ruleVO;
+    let ruleGroups: ScheduleRuleDetailGroup[] = [];
+    if (detail.type === "RULE") {
+      const flowDocument = detail.ruleVO?.flowDocument;
+      if (flowDocument != null && flowDocument !== "") {
+        const flowRestored = restoreRuleFlowDocument(flowDocument);
+        if (!flowRestored.ok) throw new Error(`规则画布无法回显：${flowRestored.error}`);
+        ruleGroups = [flowRestored.group];
+      } else {
+        const restored = restoreRuleScheduleDetail(detail.ruleVO, behaviorOptions.value);
+        if (!restored.ok) throw new Error(`规则详情无法回显：${restored.error}`);
+        ruleGroups = restored.groups;
+        const warning = await hydrateRuleDetailVariableNames(
+          ruleGroups,
+          scheduleSpaceId.value,
+          { getOntologyCategoryTreeInterface, getOntologyPropertyByOntologyIdInterface, getOntologyEntitiesInterface },
+          () => requestId === scheduleDetailRequest,
+        );
+        if (requestId !== scheduleDetailRequest) return;
+        if (warning) ElMessage.warning(warning);
+      }
+    }
     const draft = mapScheduleRecordToDraft({
       ...record,
       name: detail.schedulingName,
@@ -444,6 +473,12 @@ async function loadScheduleDetail(record: BehaviorScheduleRecord, mode: "view" |
     });
     Object.assign(draft, restoreSchedulePeriod(detail.periodType || taskDetail?.periodType, taskDetail?.taskCronExpression || ""));
     draft.savedEntityJson = taskDetail?.entityJson || "";
+    if (detail.type === "RULE") {
+      if (mode === "edit" && ruleGroups.length !== 1) throw new Error("历史规则缺少完整画布结构，无法准确恢复编辑画布，请补充 flowDocument");
+      const restoredFlow = ruleGroups[0]?.flow;
+      draft.ruleFlow = restoredFlow ? cloneScheduleRuleFlow(restoredFlow) : null;
+    }
+    ruleDetailGroups.value = ruleGroups;
     formMode.value = mode;
     formDraft.value = draft;
     editingScheduleId.value = mode === "edit" ? record.id : "";
@@ -582,22 +617,9 @@ function mapScheduleRecordToDraft(record: BehaviorScheduleRecord): BehaviorSched
 }
 
 /**
- * @description 将日期格式化为列表使用的创建时间文案。
- * @param date 当前时间。
- * @returns `YYYY-MM-DD HH:mm`。
- */
-function formatScheduleCreatedAt(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hour = String(date.getHours()).padStart(2, "0");
-  const minute = String(date.getMinutes()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}`;
-}
-
-/**
- * @description 按模式处理调度，周期新建等待保存接口，其他模式保留现有流程。
+ * @description 按模式提交周期或规则调度，编辑附带目标调度标识。
  * @param draft 弹窗提交的草稿。
- * @param request 周期新建时的完整创建参数。
+ * @param request 已校验的完整周期或规则参数。
  * @returns 操作完成。
  */
 async function submitScheduleForm(draft: BehaviorScheduleDraft, request?: CreateBehaviorScheduleParams): Promise<void> {
@@ -609,14 +631,14 @@ async function submitScheduleForm(draft: BehaviorScheduleDraft, request?: Create
 }
 
 /**
- * @description 周期调度保存成功后刷新真实列表；失败保留表单并展示后端提示，忽略过期响应。
+ * @description 调度创建成功后刷新真实列表；失败保留表单并展示后端提示，忽略过期响应。
  * @param draft 弹窗提交的草稿。
- * @param request 周期调度创建参数。
+ * @param request 周期或规则调度创建参数。
  * @returns 操作完成。
  */
 async function submitCreateSchedule(draft: BehaviorScheduleDraft, request?: CreateBehaviorScheduleParams): Promise<void> {
   if (createStatus.value === "submitting") return;
-  if (draft.strategy === "周期调度" && !request) {
+  if (!request || request.type !== (draft.strategy === "周期调度" ? "TASK" : "RULE")) {
     createStatus.value = "error";
     ElMessage.error("缺少调度创建参数，请检查行为参数后重试");
     return;
@@ -624,7 +646,7 @@ async function submitCreateSchedule(draft: BehaviorScheduleDraft, request?: Crea
   createStatus.value = "submitting";
   const requestId = ++scheduleSaveRequest;
   let successMessage = "新建调度成功";
-  if (draft.strategy === "周期调度" && request) {
+  {
     try {
       const response = await postCreateBehaviorScheduleInterface(request);
       if (requestId !== scheduleSaveRequest) return;
@@ -637,35 +659,18 @@ async function submitCreateSchedule(draft: BehaviorScheduleDraft, request?: Crea
       return;
     }
   }
-  if (draft.strategy !== "周期调度") {
-    const nextRecord: BehaviorScheduleRecord = {
-      ...draft,
-      id: `schedule-${Date.now()}`,
-      name: draft.name.trim(),
-      weekdays: [...draft.weekdays],
-      description: draft.description.trim(),
-      ruleFlow: draft.ruleFlow ? cloneScheduleRuleFlow(draft.ruleFlow) : null,
-      createdAt: formatScheduleCreatedAt(new Date()),
-    };
-    schedules.value = [nextRecord, ...schedules.value];
-  }
   createStatus.value = "success";
   formVisible.value = false;
   ElMessage.success(successMessage);
   createStatus.value = "idle";
-  if (draft.strategy === "周期调度") await fetchScheduleList(true);
+  await fetchScheduleList(true);
 }
 
-/** @description 保存周期调度编辑，失败保留草稿重试，成功刷新当前列表，忽略过期响应。 @param draft 已校验草稿。 @param request 完整周期配置。 @returns 保存和刷新完成。 */
+/** @description 保存周期或规则调度编辑，失败保留草稿重试，成功刷新列表，忽略过期响应。 @param draft 已校验草稿。 @param request 与策略匹配的完整配置。 @returns 保存和刷新完成。 */
 async function submitEditSchedule(draft: BehaviorScheduleDraft, request?: CreateBehaviorScheduleParams): Promise<void> {
   if (createStatus.value === "submitting") return;
-  if (draft.strategy !== "周期调度") {
-    createStatus.value = "error";
-    ElMessage.error("规则调度画布与接口条件尚无转换约定，暂不支持保存");
-    return;
-  }
   const targetId = Number(editingScheduleId.value);
-  if (!Number.isSafeInteger(targetId) || targetId <= 0 || !request) {
+  if (!Number.isSafeInteger(targetId) || targetId <= 0 || !request || request.type !== (draft.strategy === "周期调度" ? "TASK" : "RULE")) {
     createStatus.value = "error";
     ElMessage.error(!request ? "缺少调度编辑参数，请检查行为参数后重试" : "未找到有效的待编辑调度");
     return;

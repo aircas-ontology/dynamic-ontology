@@ -9,7 +9,7 @@
     :close-on-click-modal="false"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <el-form class="aircas-form behavior-schedule-form-dialog__form" label-position="top" :disabled="formDisabled" @submit.prevent>
+    <el-form class="aircas-form behavior-schedule-form-dialog__form" label-position="top" :disabled="submitting" @submit.prevent>
       <el-form-item label="调度名称" required>
         <el-input v-model="draft.name" class="aircas-input" maxlength="64" placeholder="请输入调度名称" :disabled="formDisabled" />
       </el-form-item>
@@ -21,8 +21,8 @@
       </el-form-item>
 
       <el-form-item v-if="draft.strategy === '规则调度'" label="规则配置">
-        <el-button class="aircas-button aircas-button--tone-primary" native-type="button" :disabled="formDisabled" @click.stop="openRuleConfigDialog">
-          {{ draft.ruleFlow ? "规则配置（已应用）" : "规则配置" }}
+        <el-button class="aircas-button aircas-button--tone-primary" native-type="button" :disabled="submitting" @click.stop="openRuleConfigDialog">
+          {{ mode === "view" ? "查看规则配置" : draft.ruleFlow ? "规则配置（已应用）" : "规则配置" }}
         </el-button>
       </el-form-item>
 
@@ -130,6 +130,8 @@
     v-model="ruleConfigVisible"
     :initial-flow="draft.ruleFlow"
     :behavior-options="behaviorOptions"
+    :readonly="mode === 'view'"
+    :detail-groups="ruleDetailGroups ?? []"
     @apply="applyRuleFlowDocument"
   />
 </template>
@@ -144,9 +146,10 @@ import {
   getOntologyLinkByUniqueIdentifierInterface,
   postGetOntologyEntityRowDetailPageInterface,
 } from "@/apis";
-import type { CreateBehaviorScheduleParams, ScheduleBehaviorOption } from "@/types";
+import type { CreateBehaviorScheduleParams, ScheduleBehaviorOption, ScheduleRuleDetailGroup } from "@/types";
 import { restoreScheduleBehaviorParameters } from "./utils/restoreScheduleBehaviorParameters";
 import { buildBehaviorScheduleCreateParams } from "./utils/buildBehaviorScheduleCreateParams";
+import { buildRuleScheduleCreateParams } from "@/views/SpaceBehaviorScheduleWorkspace/utils/buildRuleScheduleCreateParams";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { Close, Plus } from "@element-plus/icons-vue";
 
@@ -168,6 +171,7 @@ const props = defineProps<{
   mode: BehaviorScheduleFormMode;
   initialDraft: BehaviorScheduleDraft | null;
   behaviorOptions: readonly ScheduleBehaviorOption[];
+  ruleDetailGroups?: readonly ScheduleRuleDetailGroup[];
   behaviorLoading: boolean;
   behaviorError: string;
   submitting: boolean;
@@ -264,7 +268,7 @@ async function initializeScheduleParameters(): Promise<void> {
   parameterConfig.clearRelationTestState();
   parameterRestoreError.value = "";
   validationError.value = "";
-  if (!props.modelValue || !draft.behaviorActionApi) return;
+  if (!props.modelValue || draft.strategy !== "周期调度" || !draft.behaviorActionApi) return;
   const snapshot = draft.behaviorParameters;
   const savedJson = draft.savedEntityJson;
   await parameterConfig.loadApplicationTestForm();
@@ -302,11 +306,7 @@ function createEmptyScheduleDraft(): BehaviorScheduleDraft {
   };
 }
 
-/**
- * @description 复制调度草稿，避免查看弹窗与列表记录共用数组引用。
- * @param value 打开查看或编辑时的草稿；新建时为空。
- * @returns 可写入表单的草稿副本。
- */
+/** @description 复制调度草稿，避免与列表记录共用数组。 @param value 打开时的草稿；新建时为空。 @returns 可写草稿副本。 */
 function cloneScheduleDraft(value: BehaviorScheduleDraft | null): BehaviorScheduleDraft {
   if (!value) return createEmptyScheduleDraft();
   return {
@@ -317,20 +317,14 @@ function cloneScheduleDraft(value: BehaviorScheduleDraft | null): BehaviorSchedu
   };
 }
 
-/**
- * @description 将单选值写入调度策略。
- * @param value 单选组当前值。
- */
+/** @description 将单选值写入调度策略。 @param value 单选组当前值。 */
 function setScheduleStrategy(value: string | number | boolean | undefined) {
   if (value === "规则调度" || value === "周期调度") {
     draft.strategy = value;
   }
 }
 
-/**
- * @description 将单选值写入执行周期。
- * @param value 单选组当前值。
- */
+/** @description 将单选值写入执行周期。 @param value 单选组当前值。 */
 function setSchedulePeriodKind(value: string | number | boolean | undefined) {
   const nextKind = BEHAVIOR_SCHEDULE_PERIOD_KINDS.find((kind) => kind === value);
   if (nextKind) {
@@ -338,10 +332,7 @@ function setSchedulePeriodKind(value: string | number | boolean | undefined) {
   }
 }
 
-/**
- * @description 将复选值写入每周执行日。
- * @param value 复选组当前值。
- */
+/** @description 将复选值写入每周执行日。 @param value 复选组当前值。 */
 function setScheduleWeekdays(value: string | number | boolean | Array<string | number>) {
   const selected = Array.isArray(value) ? value : [];
   draft.weekdays = BEHAVIOR_SCHEDULE_WEEKDAYS.filter((day) => selected.includes(day));
@@ -349,7 +340,7 @@ function setScheduleWeekdays(value: string | number | boolean | Array<string | n
 
 /** @description 打开规则配置全屏画布；查看模式忽略。 */
 function openRuleConfigDialog() {
-  if (formDisabled.value) return;
+  if (props.submitting) return;
   ruleConfigVisible.value = true;
 }
 
@@ -378,7 +369,7 @@ function readCreateScheduleFormError(value: BehaviorScheduleDraft): string {
 }
 
 /**
- * @description 校验调度草稿及行为参数，新建周期调度输出参数后提交；查看模式或提交中忽略。
+ * @description 校验新建或编辑草稿及行为参数，按规则或周期输出完整请求；查看模式或提交中忽略。
  */
 function submitCreateScheduleForm() {
   if (props.mode === "view" || props.submitting) return;
@@ -417,6 +408,15 @@ function submitCreateScheduleForm() {
       createRequest = assembled.request;
       if (props.mode === "create") console.log("行为调度创建参数", createRequest);
     }
+  } else {
+    const savedDetails =
+      props.mode === "edit" ? Object.fromEntries((props.ruleDetailGroups ?? []).flatMap((group) => Object.entries(group.actionDetails))) : {};
+    const assembled = buildRuleScheduleCreateParams(draft, props.behaviorOptions, props.spaceId, savedDetails);
+    if (!assembled.ok) {
+      validationError.value = assembled.error;
+      return;
+    }
+    createRequest = assembled.request;
   }
   emit(
     "confirm",

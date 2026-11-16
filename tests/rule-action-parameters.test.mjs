@@ -16,9 +16,10 @@ registerHooks({
   },
 });
 const realParameters = await import("../src/composables/behavior/useBehaviorParameters.ts");
+const realRestore = await import("../src/views/SpaceBehaviorScheduleWorkspace/utils/restoreScheduleBehaviorParameters.ts");
 
 /** @description 运行真实规则参数适配层并隔离公共参数查询。 @returns {object} 参数状态及测试记录。 */
-function createActionHarness() {
+function createActionHarness(savedDetail = "", restoreResult = "") {
   const source = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/composables/useRuleActionParameters.ts", import.meta.url), "utf8");
   const { outputText } = transpileModule(source, { compilerOptions: { module: ModuleKind.CommonJS } });
   const exports = {};
@@ -47,6 +48,13 @@ function createActionHarness() {
   new Function("require", "exports", outputText)((id) => {
     if (id === "vue") return Vue;
     if (id.includes("useBehaviorParameters")) return { useBehaviorParameters: () => controller };
+    if (id.includes("restoreScheduleBehaviorParameters"))
+      return {
+        restoreScheduleBehaviorParameters: (_controller, json, spaceId, api) => {
+          calls.push(["restore", json, spaceId, api]);
+          return restoreResult;
+        },
+      };
     return {};
   }, exports);
   const option = Vue.ref({ id: "b", actionApi: "api", displayName: "行为", ontologyUniqIdentifier: "o" });
@@ -59,10 +67,26 @@ function createActionHarness() {
       () => option.value,
       () => action.value,
       () => visible.value,
+      () => savedDetail,
     ),
   );
   return { state, controller, action, visible, calls, scope, finish: () => finish() };
 }
+
+test("read-only action loads the definition and restores saved parameters, failures remain visible", async () => {
+  for (const error of ["", "参数定义不匹配"]) {
+    const h = createActionHarness('{"params":{"name":"saved"}}', error);
+    const pending = h.state.initializeActionParameters();
+    h.finish();
+    await pending;
+    assert.deepEqual(
+      h.calls.find((call) => Array.isArray(call)),
+      ["restore", '{"params":{"name":"saved"}}', "7", "api"],
+    );
+    assert.equal(h.state.parameterError.value, error);
+    h.scope.stop();
+  }
+});
 
 test("rule action parameters load, validate, snapshot and restore without changing the node prematurely", async () => {
   const h = createActionHarness();
@@ -96,6 +120,52 @@ test("closing or switching action cancels sessions and does not restore an obsol
   assert.equal(h.state.parameterBusy.value, false);
   assert.ok(h.calls.length > 1);
   h.scope.stop();
+});
+
+test("closing before the definition response does not restore stale saved parameters", async () => {
+  const h = createActionHarness('{"params":{"name":"old"}}');
+  const pending = h.state.initializeActionParameters();
+  h.state.clearActionParameters();
+  h.finish();
+  await pending;
+  assert.equal(
+    h.calls.some((call) => Array.isArray(call) && call[0] === "restore"),
+    false,
+  );
+  h.scope.stop();
+});
+
+test("real parameter controller restores saved input values for the read-only detail", async () => {
+  const source = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/composables/useRuleActionParameters.ts", import.meta.url), "utf8");
+  const { outputText } = transpileModule(source, { compilerOptions: { module: ModuleKind.CommonJS } });
+  const exports = {};
+  const apis = {
+    getOntologyActionInfoInterface: async () => ({
+      code: 200,
+      data: { actionApi: "api", mappingIns: [{ parameterName: "amount", category: "INPUT", sourceType: "EXTERNAL", propertyType: "Int" }], mappingOuts: [] },
+    }),
+  };
+  new Function("require", "exports", outputText)(
+    (id) =>
+      id === "vue" ? Vue : id.includes("useBehaviorParameters") ? realParameters : id.includes("restoreScheduleBehaviorParameters") ? realRestore : apis,
+    exports,
+  );
+  const scope = Vue.effectScope();
+  const state = scope.run(() =>
+    exports.useRuleActionParameters(
+      () => "7",
+      () => ({ id: "b", actionApi: "api", ontologyUniqIdentifier: "ship" }),
+      () => action,
+      () => true,
+      () => '{"ontologySpaceId":7,"actionApi":"api","params":{"amount":12}}',
+    ),
+  );
+  const action = { id: "a", behaviorId: "b", params: [] };
+  await state.initializeActionParameters();
+  assert.equal(state.parameterError.value, "");
+  assert.equal(state.parameterConfig.paramValues.amount, "12");
+  assert.equal(action.behaviorParameters, undefined);
+  scope.stop();
 });
 
 test("real shared controller queries behavior details and preserves validated parameters when reopened", async () => {
@@ -144,4 +214,43 @@ test("real shared controller queries behavior details and preserves validated pa
   assert.equal(state.parameterConfig.paramValues.amount, "12");
   assert.equal(calls.length, 3);
   scope.stop();
+});
+
+test("newly confirmed snapshot takes precedence over original saved entity JSON", async () => {
+  const h = createActionHarness('{"params":{"name":"old"}}', "old request must not be restored");
+  h.action.value.behaviorParameters = { values: { name: "changed" } };
+  const pending = h.state.initializeActionParameters();
+  h.finish();
+  await pending;
+  assert.equal(h.controller.paramValues.name, "changed");
+  assert.equal(h.state.parameterError.value, "");
+  assert.equal(
+    h.calls.some((call) => Array.isArray(call)),
+    false,
+  );
+  h.scope.stop();
+});
+
+test("confirming binding-only parameters and reopening the node retains a configured summary", async () => {
+  const { summarizeThenAction } = await import("../src/views/SpaceBehaviorScheduleWorkspace/utils/scheduleRuleFlowFactory.ts");
+  const h = createActionHarness();
+  h.controller.paramRows.value = [];
+  h.controller.createParameterSnapshot = () => ({
+    ok: true,
+    snapshot: {
+      values: { name: "" },
+      request: { actionApi: "api", ontologySpaceId: "7", outputParams: { result: { entityPrimaryKey: 0 } } },
+    },
+  });
+  const pending = h.state.initializeActionParameters();
+  h.finish();
+  await pending;
+  assert.equal(h.state.captureActionParameters(), true);
+  assert.deepEqual(h.action.value.params, []);
+  assert.match(summarizeThenAction(h.action.value), /输出 1 项/);
+  const reopen = h.state.initializeActionParameters();
+  h.finish();
+  await reopen;
+  assert.match(summarizeThenAction(h.action.value), /输出 1 项/);
+  h.scope.stop();
 });

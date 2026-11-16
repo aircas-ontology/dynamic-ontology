@@ -9,6 +9,7 @@ import { baseParse, compile } from "@vue/compiler-dom";
 import { renderToString } from "vue/server-renderer";
 import { ModuleKind, transpileModule } from "typescript";
 import { buildBehaviorScheduleCreateParams } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/buildBehaviorScheduleCreateParams.ts";
+import { buildRuleScheduleCreateParams } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/buildRuleScheduleCreateParams.ts";
 import * as scheduleTypes from "../src/types/pages/ontologySpaceBehaviorScheduleType.ts";
 
 registerHooks({
@@ -418,6 +419,7 @@ function createScheduleFormHarness(
     if (id.includes("cloneBehaviorParameterSnapshot")) return { cloneBehaviorParameterSnapshot };
     if (id.includes("restoreScheduleBehaviorParameters")) return { restoreScheduleBehaviorParameters };
     if (id.includes("buildBehaviorScheduleCreateParams")) return { buildBehaviorScheduleCreateParams };
+    if (id.includes("buildRuleScheduleCreateParams")) return { buildRuleScheduleCreateParams };
     if (id.includes("scheduleRuleFlowFactory")) return { cloneScheduleRuleFlow: structuredClone };
     if (id === "@element-plus/icons-vue") return { Close: {}, Plus: {} };
     return modules(id);

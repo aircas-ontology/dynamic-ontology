@@ -17,22 +17,12 @@
       />
       <template v-if="selected">
         <label>实例</label>
-        <el-select
-          v-model="selectedInstanceIds"
-          multiple
-          filterable
-          collapse-tags
-          collapse-tags-tooltip
-          ariaLabel="实例"
-          placeholder="请选择实例"
-          :loading="instanceLoading"
-        >
-          <el-option label="全部实例" value="__ALL__" />
+        <el-select v-model="selectedInstanceId" filterable ariaLabel="实例" placeholder="请选择实例" :loading="instanceLoading">
           <el-option v-for="item in instances" :key="item.id" :label="item.label" :value="item.id" />
         </el-select>
         <el-alert v-if="instanceError" :title="instanceError" type="error" :closable="false" />
         <el-button v-if="instanceError" @click="fetchVariableInstances(selected.objectId)">重新加载实例</el-button>
-        <span v-if="!instanceLoading && !instanceError && !instances.length">暂无具体实例，可选择全部实例</span>
+        <span v-if="!instanceLoading && !instanceError && !instances.length">暂无可选实例</span>
       </template>
     </div>
     <template #footer>
@@ -54,7 +44,7 @@ const route = useRoute();
 const treeRef = ref<InstanceType<typeof ElTree> | null>(null);
 const keyword = ref("");
 const selected = ref<RuleVariableValue | null>(null);
-const selectedInstanceIds = ref<string[]>([]);
+const selectedInstanceId = ref("");
 const {
   catalog,
   instances,
@@ -73,7 +63,7 @@ const canConfirm = computed(
     catalog.value.some(
       (object) => object.id === selected.value?.objectId && object.properties.some((property) => property.id === selected.value?.propertyId),
     ) &&
-    selectedInstanceIds.value.length > 0 &&
+    instances.value.some((instance) => instance.id === selectedInstanceId.value) &&
     !catalogLoading.value &&
     !catalogError.value &&
     !instanceLoading.value &&
@@ -114,7 +104,7 @@ function selectVariableProperty(data: unknown): void {
       propertyName: property.name,
       instanceIds: [],
     };
-    if (!sameObject) selectedInstanceIds.value = ["__ALL__"];
+    if (!sameObject) selectedInstanceId.value = "";
     void fetchVariableInstances(object.id);
     return;
   }
@@ -124,10 +114,10 @@ function closeVariablePicker(): void {
   cancelVariableQueries();
   emit("update:modelValue", false);
 }
-/** @description 提交选择副本，全部实例使用空数组表示。 */
+/** @description 提交仅包含一个具体实例的选择副本。 */
 function confirmVariableSelection(): void {
   if (!selected.value || !canConfirm.value) return;
-  emit("confirm", { ...selected.value, instanceIds: selectedInstanceIds.value.includes("__ALL__") ? [] : [...selectedInstanceIds.value] });
+  emit("confirm", { ...selected.value, instanceIds: [selectedInstanceId.value] });
   closeVariablePicker();
 }
 watch(() => route.params.spaceId, closeVariablePicker);
@@ -136,20 +126,16 @@ watch(
   () => {
     cancelVariableQueries();
     selected.value = null;
-    selectedInstanceIds.value = [];
+    selectedInstanceId.value = "";
     keyword.value = "";
     if (!props.modelValue) return;
     selected.value = props.initial ? { ...props.initial, instanceIds: [...props.initial.instanceIds] } : null;
-    selectedInstanceIds.value = props.initial?.instanceIds.length ? [...props.initial.instanceIds] : ["__ALL__"];
+    selectedInstanceId.value = props.initial?.instanceIds[0] ?? "";
     void fetchVariableCatalog();
     if (selected.value?.objectId) void fetchVariableInstances(selected.value.objectId);
   },
   { immediate: true },
 );
-watch(selectedInstanceIds, (next, previous) => {
-  if (next.length <= 1 || !next.includes("__ALL__")) return;
-  selectedInstanceIds.value = previous.includes("__ALL__") ? next.filter((id) => id !== "__ALL__") : ["__ALL__"];
-});
 </script>
 <style scoped lang="scss">
 .rule-variable-picker {

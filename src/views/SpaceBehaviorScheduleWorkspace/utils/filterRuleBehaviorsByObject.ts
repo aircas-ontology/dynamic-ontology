@@ -1,5 +1,5 @@
 import type { Graph } from "@antv/x6";
-import type { RuleConditionNode, RuleExprTerm, RuleValueNode, ScheduleBehaviorOption } from "@/types";
+import type { RuleConditionNode, RuleExprTerm, RuleFlowSwitchStep, RuleValueNode, ScheduleBehaviorOption } from "@/types";
 import type { ScheduleRuleGraphNodeData } from "./scheduleRuleFlowGraphCells";
 
 /** @description 收集值及历史嵌套值中的变量对象标识。 @param value 规则值。 @param ids 对象标识集合。 */
@@ -22,7 +22,16 @@ function collectConditionObjectIds(condition: RuleConditionNode, ids: Set<string
     collectValueObjectIds(condition.right, ids);
   }
 }
-/** @description 沿所有入边逆向收集行为上游条件引用的对象，合流与循环安全去重。 @param graph 当前画布。 @param nodeId 行为节点标识。 @returns 去重对象标识。 */
+/** @description 按 Switch 出口收集判断对象；case 仅取本分支，default 取全部 case。 @param step Switch 配置。 @param portId 出边端口。 @param ids 对象集合。 */
+function collectSwitchObjectIds(step: RuleFlowSwitchStep, portId: string | null | undefined, ids: Set<string>): void {
+  collectValueObjectIds(step.switchOn, ids);
+  if (portId === "default") step.cases.forEach((item) => collectValueObjectIds(item.value, ids));
+  else if (portId && /^case_\d+$/.test(portId)) {
+    const item = step.cases[Number(portId.slice("case_".length))];
+    if (item) collectValueObjectIds(item.value, ids);
+  }
+}
+/** @description 沿所有入边收集上游条件及 Switch 当前路径对象，同节点多端口合流仍逐边采集，节点遍历循环安全。 @param graph 当前画布。 @param nodeId 行为节点标识。 @returns 去重对象标识。 */
 export function collectUpstreamConditionObjectIds(graph: Pick<Graph, "getCellById" | "getIncomingEdges">, nodeId: string): string[] {
   const ids = new Set<string>();
   const seen = new Set<string>([nodeId]);
@@ -34,12 +43,14 @@ export function collectUpstreamConditionObjectIds(graph: Pick<Graph, "getCellByI
     if (!node?.isNode()) continue;
     for (const edge of graph.getIncomingEdges(node) || []) {
       const sourceId = edge.getSourceCellId();
-      if (!sourceId || seen.has(sourceId)) continue;
-      seen.add(sourceId);
+      if (!sourceId) continue;
       const source = graph.getCellById(sourceId);
       if (!source?.isNode()) continue;
       const data = source.getData<ScheduleRuleGraphNodeData>();
       if (data?.kind === "condition" && data.condition) collectConditionObjectIds(data.condition, ids);
+      if (data?.kind === "switch" && data.switchStep) collectSwitchObjectIds(data.switchStep, edge.getSourcePortId(), ids);
+      if (seen.has(sourceId)) continue;
+      seen.add(sourceId);
       pending.push(sourceId);
     }
   }
