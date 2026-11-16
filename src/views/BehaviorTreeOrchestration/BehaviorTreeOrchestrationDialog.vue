@@ -89,8 +89,6 @@
                 :plan-status="execPlanStatus"
                 :plan-error="execPlanError"
                 :test-status="execTestStatus"
-                :test-error="execTestError"
-                :test-result="execTestResult"
                 :logs="execLogs"
                 :external-rows="execExternalRows"
                 :property-groups="execPropertyGroups"
@@ -107,6 +105,7 @@
                 @ensure-instances="loadBehaviorTreeEntityOptions"
                 @update-node-param="updateNodeParamDraft"
                 @update-node-entity="updateNodeEntityKeyDraft"
+                @update-node-input-instance="(nodeId, key, value) => updateNodeInputParamDraft(nodeId, key, 'entityPrimaryKey', value)"
                 @update-node-output="updateNodeOutputDraft"
               />
             </el-tab-pane>
@@ -121,16 +120,16 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import type { BehaviorTreeNodeDraft, BehaviorTreeOrchestrationMeta, BehaviorTreePersistMode, BehaviorTreeValueType } from "@/types";
-import { createBehaviorTreeBlackboardItem } from "./utils/behaviorTreeBlackboard";
+import { useBehaviorTreeExecution } from "@/composables/behaviorTree/useBehaviorTreeExecution";
+import BehaviorTreeExecPanel from "@/components/BehaviorTreeExecPanel.vue";
+import { createBehaviorTreeBlackboardItem } from "@/utils/behaviorTreeBlackboard";
 import { BEHAVIOR_TREE_VALUE_TYPES } from "./utils/behaviorTreeConstants";
 import { findBehaviorTreeNode } from "./utils/behaviorTreeModel";
 import { useBehaviorTreeGraph } from "./composables/useBehaviorTreeGraph";
 import { useBehaviorTreeOrchestration } from "./composables/useBehaviorTreeOrchestration";
-import { useBehaviorTreeExecution } from "./composables/useBehaviorTreeExecution";
 import BehaviorTreePalette from "./components/BehaviorTreePalette.vue";
 import BehaviorTreeNodeInspector from "./components/BehaviorTreeNodeInspector.vue";
 import BehaviorTreeBlackboardPanel from "./components/BehaviorTreeBlackboardPanel.vue";
-import BehaviorTreeExecPanel from "./components/BehaviorTreeExecPanel.vue";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -187,8 +186,6 @@ const {
   planStatus: execPlanStatus,
   planError: execPlanError,
   testStatus: execTestStatus,
-  testError: execTestError,
-  testResult: execTestResult,
   logs: execLogs,
   externalBlackboardRows: execExternalRows,
   propertyBlackboardGroups: execPropertyGroups,
@@ -205,6 +202,7 @@ const {
   loadBehaviorTreeEntityOptions,
   updateNodeParamDraft,
   updateNodeEntityKeyDraft,
+  updateNodeInputParamDraft,
   updateNodeOutputDraft,
 } = useBehaviorTreeExecution({
   spaceId: () => props.meta.spaceId,

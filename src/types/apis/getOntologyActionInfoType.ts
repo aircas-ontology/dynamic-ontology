@@ -62,12 +62,21 @@ export interface GetOntologyActionInfoFunctionParam {
   referenceType?: string | null;
 }
 
-/** 行为树执行要求：行为外部入参摘要。 */
+/** 行为树执行入参取值来源（详情 executeInputs.nodes[].inputParams）。 */
+export type BehaviorTreeExecuteInputSourceType = "EXTERNAL" | "PROPERTY" | "FIXED" | "OBJECT" | "LIST" | string;
+
+/** 行为树执行要求：节点级算子入参。 */
 export interface BehaviorTreeExecuteInputParam {
   key: string;
   valueType?: string;
   required?: boolean;
   description?: string | null;
+  /** 取值来源；缺省按 EXTERNAL。 */
+  sourceType?: BehaviorTreeExecuteInputSourceType;
+  /** PROPERTY/OBJECT/LIST 时按该对象选实例。 */
+  objectIdentifier?: string;
+  propertyDisplayName?: string | null;
+  /** 旧扁平结构兼容字段；新格式由所属 node 提供。 */
   nodeIds?: string[];
   actionApis?: string[];
 }
@@ -77,6 +86,7 @@ export interface BehaviorTreeExecuteInstanceRequirement {
   actionApi?: string;
   actionDisplayName?: string;
   objectIdentifier?: string;
+  /** 旧扁平结构兼容；新格式挂在所属 node 下。 */
   nodeIds?: string[];
   blackboardKeys?: string[];
   linkEntityPrimaryKeyRequired?: boolean;
@@ -90,15 +100,42 @@ export interface BehaviorTreeExecuteInstanceRequirement {
 export interface BehaviorTreeExecuteOutputParam {
   key?: string;
   paramName?: string;
+  /** 详情字段名；与 paramName 同义。 */
+  parameterName?: string;
   displayName?: string;
   storageGroup?: string;
   objectIdentifier?: string;
   mode?: "DATA_PRIMARY_KEY" | "OUTPUT_PARAM" | "RESULT_ONLY" | string;
+  /** 非主表写回时需要行主键。 */
+  rowRequired?: boolean;
+  /** 旧扁平结构兼容字段。 */
   nodeIds?: string[];
 }
 
-/** 行为树详情中的执行入参规划。 */
+/** 行为树执行要求：单个行为节点的入参/实例/写回规划。 */
+export interface BehaviorTreeExecuteNodePlan {
+  nodeId: string;
+  actionApi?: string;
+  actionDisplayName?: string;
+  entityPrimaryKeyRequired?: boolean;
+  inputParams?: BehaviorTreeExecuteInputParam[];
+  instanceRequirements?: BehaviorTreeExecuteInstanceRequirement[];
+  outputParams?: BehaviorTreeExecuteOutputParam[];
+}
+
+/** 黑板对象属性键按对象选实例的要求。 */
+export interface BehaviorTreeExecuteBlackboardInstance {
+  objectIdentifier?: string;
+  blackboardKeys?: string[];
+}
+
+/** 行为树详情中的执行入参规划（以 nodes 为准）。 */
 export interface BehaviorTreeExecuteInputs {
+  /** 按节点的执行要求（新格式主结构）。 */
+  nodes?: BehaviorTreeExecuteNodePlan[];
+  /** 黑板 PROPERTY 来源按对象选实例。 */
+  blackboardInstances?: BehaviorTreeExecuteBlackboardInstance[];
+  /** 旧扁平结构兼容；有 nodes 时优先用 nodes。 */
   entityPrimaryKeyRequired?: boolean;
   inputParams?: BehaviorTreeExecuteInputParam[];
   instanceRequirements?: BehaviorTreeExecuteInstanceRequirement[];

@@ -31,7 +31,7 @@ import {
   applyBehaviorTreeBlackboardPropertyBinding,
   applyBehaviorTreeBlackboardSourceChange,
   createBehaviorTreeBlackboardItem,
-} from "../utils/behaviorTreeBlackboard.ts";
+} from "@/utils/behaviorTreeBlackboard.ts";
 import { BEHAVIOR_TREE_VALUE_TYPES, createBehaviorTreeKindMetaMap } from "../utils/behaviorTreeConstants.ts";
 import { buildBehaviorTreeSavePayload, importBehaviorTreeDefinition } from "../utils/behaviorTreeDefinition.ts";
 import { layoutBehaviorTreeRoots } from "../utils/behaviorTreeLayout.ts";

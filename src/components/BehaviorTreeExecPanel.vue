@@ -2,7 +2,7 @@
   <div class="behavior-tree-exec">
     <div class="behavior-tree-exec__toolbar">
       <el-button :loading="planStatus === 'loading'" @click="emit('load-plan')">读取执行要求</el-button>
-      <el-button type="primary" :loading="testStatus === 'submitting'" @click="emit('run-test')">试跑 tree/test</el-button>
+      <el-button type="primary" :loading="testStatus === 'submitting'" @click="emit('run-test')">执行</el-button>
     </div>
 
     <p class="behavior-tree-exec__hint">试跑不要求发布，但读的是库里已保存的定义——改了画布请先保存再试跑。必填项没传会被后端拒绝。</p>
@@ -77,13 +77,37 @@
                 <label>
                   {{ param.key }}
                   <code>{{ param.valueType || "STRING" }}</code>
-                  <span v-if="param.required" class="behavior-tree-exec__required">必填</span>
+                  <span class="behavior-tree-exec__muted">{{ inputSourceLabel(param.sourceType) }}</span>
+                  <span v-if="param.required && resolveInputSource(param.sourceType) === 'EXTERNAL'" class="behavior-tree-exec__required">必填</span>
                 </label>
                 <el-input
+                  v-if="resolveInputSource(param.sourceType) === 'EXTERNAL'"
                   :model-value="nodeDrafts[block.nodeId]?.params[param.key] ?? ''"
                   :placeholder="param.description || '请输入'"
                   @update:model-value="emit('update-node-param', block.nodeId, param.key, String($event ?? ''))"
                 />
+                <p v-else-if="resolveInputSource(param.sourceType) === 'FIXED'" class="behavior-tree-exec__muted">固定值，执行时取行为里声明的值</p>
+                <el-select
+                  v-else
+                  :model-value="nodeDrafts[block.nodeId]?.inputParams[param.key]?.entityPrimaryKey ?? ''"
+                  filterable
+                  clearable
+                  allow-create
+                  default-first-option
+                  style="width: 100%"
+                  :loading="Boolean(param.objectIdentifier && instanceLoadingIds[param.objectIdentifier])"
+                  :placeholder="param.objectIdentifier ? `选择 ${param.propertyDisplayName || resolveObjectLabel(param.objectIdentifier)}` : '没有对象标识'"
+                  :disabled="!param.objectIdentifier"
+                  @visible-change="(open: boolean) => open && param.objectIdentifier && emit('ensure-instances', param.objectIdentifier)"
+                  @update:model-value="emit('update-node-input-instance', block.nodeId, param.key, String($event ?? ''))"
+                >
+                  <el-option
+                    v-for="option in (param.objectIdentifier && instanceOptions[param.objectIdentifier]) || []"
+                    :key="`${param.key}-${option.value}`"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </el-select>
               </div>
             </div>
 
@@ -172,8 +196,8 @@
                 class="behavior-tree-exec__output"
               >
                 <div class="behavior-tree-exec__output-head">
-                  <strong>{{ target.displayName || target.paramName || target.key || "输出" }}</strong>
-                  <code>{{ target.mode || "OUTPUT_PARAM" }}</code>
+                  <strong>{{ target.displayName || target.parameterName || target.paramName || target.key || "输出" }}</strong>
+                  <code>{{ outputModeLabel(target.mode) }}</code>
                 </div>
                 <p v-if="target.mode === 'RESULT_ONLY'" class="behavior-tree-exec__muted">结果随执行返回，不落库</p>
                 <template v-else>
@@ -199,7 +223,10 @@
                       />
                     </el-select>
                   </div>
-                  <div v-if="target.mode === 'DATA_PRIMARY_KEY' || (target.storageGroup && target.storageGroup !== 'main')" class="behavior-tree-exec__field">
+                  <div
+                    v-if="target.mode === 'DATA_PRIMARY_KEY' || target.rowRequired || (target.storageGroup && target.storageGroup !== 'main')"
+                    class="behavior-tree-exec__field"
+                  >
                     <label>行主键{{ target.storageGroup ? ` · ${target.storageGroup}` : "" }}</label>
                     <el-input
                       :model-value="nodeDrafts[block.nodeId]?.outputParams[outputMapKey(target)]?.rowKey ?? ''"
@@ -214,19 +241,6 @@
         </el-collapse>
       </section>
     </template>
-
-    <section class="behavior-tree-exec__section" aria-label="试跑结果">
-      <h4 class="behavior-tree-exec__section-title">试跑结果</h4>
-      <p v-if="testStatus === 'submitting'" class="behavior-tree-exec__state" role="status">试跑中…</p>
-      <p v-else-if="testStatus === 'error'" class="behavior-tree-exec__state" role="alert">{{ testError }}</p>
-      <p v-else-if="testStatus === 'idle'" class="behavior-tree-exec__empty">尚未试跑</p>
-      <el-descriptions v-else-if="testResult && isPlainResultObject(testResult)" :column="1" size="small" border>
-        <el-descriptions-item v-for="(value, key) in flattenResultEntries(testResult)" :key="String(key)" :label="String(key)">
-          <pre class="behavior-tree-exec__pre">{{ formatResultValue(value) }}</pre>
-        </el-descriptions-item>
-      </el-descriptions>
-      <pre v-else-if="testResult != null" class="behavior-tree-exec__pre">{{ formatResultValue(testResult) }}</pre>
-    </section>
 
     <section class="behavior-tree-exec__section" aria-label="接口日志">
       <div class="behavior-tree-exec__log-head">
@@ -248,19 +262,18 @@
 <script setup lang="ts">
 import type {
   BehaviorTreeBlackboardItem,
+  BehaviorTreeExecuteInputParam,
   BehaviorTreeExecuteOutputParam,
   BehaviorTreeExecLogEntry,
   BehaviorTreeNodeExecDraft,
-  PostOntologyActionTreeTestData,
 } from "@/types";
-import type { BehaviorTreeEntityOption, BehaviorTreeExecPlanStatus, BehaviorTreeExecTestStatus } from "../composables/useBehaviorTreeExecution";
+import type { BehaviorTreeEntityOption, BehaviorTreeExecPlanStatus, BehaviorTreeExecTestStatus } from "@/composables/behaviorTree/useBehaviorTreeExecution";
+import { resolveBehaviorTreeOutputDraftKey } from "@/utils/behaviorTreeExecutePlan";
 
 defineProps<{
   planStatus: BehaviorTreeExecPlanStatus;
   planError: string;
   testStatus: BehaviorTreeExecTestStatus;
-  testError: string;
-  testResult: PostOntologyActionTreeTestData;
   logs: BehaviorTreeExecLogEntry[];
   externalRows: BehaviorTreeBlackboardItem[];
   propertyGroups: Array<{ objectId: string; items: BehaviorTreeBlackboardItem[] }>;
@@ -268,7 +281,8 @@ defineProps<{
     nodeId: string;
     displayName: string;
     actionApi: string;
-    params: Array<{ key: string; valueType?: string; required?: boolean; description?: string | null }>;
+    actionDisplayName?: string;
+    params: BehaviorTreeExecuteInputParam[];
     outputs: BehaviorTreeExecuteOutputParam[];
     ends: { from: string; to: string; self: boolean } | null;
     objects: string[];
@@ -288,6 +302,7 @@ const emit = defineEmits<{
   "ensure-instances": [objectId: string];
   "update-node-param": [nodeId: string, key: string, value: string];
   "update-node-entity": [nodeId: string, objectOrRole: string, value: string];
+  "update-node-input-instance": [nodeId: string, key: string, value: string];
   "update-node-output": [nodeId: string, mapKey: string, field: "entityPrimaryKey" | "rowKey", value: string];
 }>();
 
@@ -297,39 +312,45 @@ const emit = defineEmits<{
  * @returns 键。
  */
 function outputMapKey(target: BehaviorTreeExecuteOutputParam): string {
-  return (target.key || target.paramName || target.storageGroup || "").trim();
+  return resolveBehaviorTreeOutputDraftKey(target);
 }
 
 /**
- * @description 判断结果是否为普通对象。
- * @param value 结果。
- * @returns 是否对象。
+ * @description 归一化入参来源。
+ * @param sourceType 来源。
+ * @returns 来源枚举值。
  */
-function isPlainResultObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+function resolveInputSource(sourceType: string | null | undefined): string {
+  const source = String(sourceType || "EXTERNAL").trim();
+  return source || "EXTERNAL";
 }
 
 /**
- * @description 展平结果条目（一层）。
- * @param value 结果对象。
- * @returns 键值对。
+ * @description 入参来源展示文案。
+ * @param sourceType 来源。
+ * @returns 文案。
  */
-function flattenResultEntries(value: Record<string, unknown>): Record<string, unknown> {
-  return value;
+function inputSourceLabel(sourceType: string | null | undefined): string {
+  const map: Record<string, string> = {
+    EXTERNAL: "外部输入",
+    PROPERTY: "对象属性",
+    FIXED: "固定值",
+    OBJECT: "对象",
+    LIST: "List",
+  };
+  const source = resolveInputSource(sourceType);
+  return map[source] || source;
 }
 
 /**
- * @description 格式化结果值。
- * @param value 任意值。
- * @returns 文本。
+ * @description 出参模式展示文案。
+ * @param mode 模式。
+ * @returns 文案。
  */
-function formatResultValue(value: unknown): string {
-  if (typeof value === "string") return value;
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
+function outputModeLabel(mode: string | null | undefined): string {
+  if (mode === "DATA_PRIMARY_KEY") return "写分组行";
+  if (mode === "RESULT_ONLY") return "仅返回";
+  return "写入对象属性";
 }
 </script>
 

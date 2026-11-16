@@ -112,7 +112,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from "vue";
 import type { BehaviorTreeBlackboardItem, BehaviorTreeObjectPropertyOption, BehaviorTreeOrchestrationLoadStatus, SpaceRelationObjectOption } from "@/types";
-import { resolveBehaviorTreeBlackboardSource } from "../utils/behaviorTreeBlackboard";
+import { resolveBehaviorTreeBlackboardSource } from "@/utils/behaviorTreeBlackboard";
 import { BEHAVIOR_TREE_BLACKBOARD_SOURCE_OPTIONS, BEHAVIOR_TREE_VALUE_TYPES } from "../utils/behaviorTreeConstants";
 
 const props = defineProps<{

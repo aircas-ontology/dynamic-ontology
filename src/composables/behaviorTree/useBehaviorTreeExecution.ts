@@ -8,24 +8,25 @@ import type {
   BehaviorTreeModel,
   BehaviorTreeNodeExecDraft,
   BehaviorTreeObjectPropertyOption,
-  GetOntologyActionInfoData,
   PostOntologyActionTreeTestData,
   SpaceRelationObjectOption,
 } from "@/types";
-import { resolveBehaviorTreeBlackboardSource } from "../utils/behaviorTreeBlackboard.ts";
+import { mapBehaviorTreeDefinitionToBlackboardItems, resolveBehaviorTreeBlackboardSource } from "@/utils/behaviorTreeBlackboard.ts";
 import {
   buildBehaviorTreeTestPayload,
   collectBehaviorTreeExecMissingFields,
   createBehaviorTreeNodeExecDraft,
+  findBehaviorTreeExecuteNodePlan,
   listBehaviorTreeExecPlanNodeIds,
   listBehaviorTreeExecPlanObjectIds,
+  listBehaviorTreeNodeInputParams,
   listBehaviorTreeNodeOutputTargets,
   listBehaviorTreeNodeRequirements,
-  mapBehaviorTreeBoundActionApis,
   mapBehaviorTreeEntityRecordOption,
   resolveBehaviorTreeNodeDisplayName,
   resolveBehaviorTreeNodeLinkEnds,
-} from "../utils/behaviorTreeExecutePlan.ts";
+  resolveBehaviorTreeOutputDraftKey,
+} from "@/utils/behaviorTreeExecutePlan.ts";
 
 /** 实例下拉选项。 */
 export interface BehaviorTreeEntityOption {
@@ -59,7 +60,6 @@ export function useBehaviorTreeExecution(options: {
   const nodeDrafts = reactive<Record<string, BehaviorTreeNodeExecDraft>>({});
   const instanceOptions = reactive<Record<string, BehaviorTreeEntityOption[]>>({});
   const instanceLoadingIds = reactive<Record<string, true>>({});
-  const actionDetailCache = reactive<Record<string, GetOntologyActionInfoData>>({});
   const testStatus = ref<BehaviorTreeExecTestStatus>("idle");
   const testError = ref("");
   const testResult = ref<PostOntologyActionTreeTestData>(null);
@@ -87,7 +87,7 @@ export function useBehaviorTreeExecution(options: {
   }
 
   /**
-   * @description 追加本面板接口日志。
+   * @description 追加本面板接口日志（仅用于执行接口返回）。
    * @param label 摘要。
    * @param detail 详情。
    */
@@ -138,7 +138,7 @@ export function useBehaviorTreeExecution(options: {
   const externalBlackboardRows = computed(() => options.model.blackboard.filter((item) => resolveBehaviorTreeBlackboardSource(item) === "EXTERNAL"));
 
   /**
-   * @description 对象属性黑板键按对象分组。
+   * @description 对象属性黑板键按对象分组（优先 executeInputs.blackboardInstances）。
    */
   const propertyBlackboardGroups = computed(() => {
     const groups = new Map<string, BehaviorTreeBlackboardItem[]>();
@@ -151,38 +151,54 @@ export function useBehaviorTreeExecution(options: {
       list.push(item);
       groups.set(objectId, list);
     }
-    for (const requirement of execPlan.value?.instanceRequirements ?? []) {
+    for (const requirement of execPlan.value?.blackboardInstances ?? []) {
       const keys = requirement.blackboardKeys ?? [];
       const objectId = (requirement.objectIdentifier || "").trim();
-      if (!keys.length || !objectId) continue;
-      if (!groups.has(objectId)) groups.set(objectId, []);
+      if (!objectId) continue;
+      if (!groups.has(objectId)) {
+        groups.set(
+          objectId,
+          keys.map((key) => ({
+            key,
+            valueType: "STRING" as const,
+            source: "PROPERTY" as const,
+            bindPropertyUniqueIdentifier: "",
+            fixedValueText: "",
+            defaultValueText: "",
+            description: "",
+          })),
+        );
+      }
     }
     return [...groups.entries()].map(([objectId, items]) => ({ objectId, items }));
   });
 
   /**
-   * @description 执行要求涉及的节点块。
+   * @description 执行要求涉及的节点块（取自 executeInputs.nodes）。
    */
   const execNodeBlocks = computed(() => {
     const plan = execPlan.value;
     if (!plan) return [];
     return listBehaviorTreeExecPlanNodeIds(plan).map((nodeId) => {
-      const params = (plan.inputParams ?? []).filter((item) => (item.nodeIds ?? []).includes(nodeId));
+      const nodePlan = findBehaviorTreeExecuteNodePlan(plan, nodeId);
+      const params = listBehaviorTreeNodeInputParams(plan, nodeId);
       const requirements = listBehaviorTreeNodeRequirements(plan, nodeId);
       const outputs = listBehaviorTreeNodeOutputTargets(plan, nodeId);
       const ends = resolveBehaviorTreeNodeLinkEnds(requirements);
+      const endIds = ends ? [ends.from, ends.to] : [];
       const objects = [
         ...new Set(
           requirements
             .filter((item) => !(item.blackboardKeys ?? []).length)
             .map((item) => (item.objectIdentifier || "").trim())
-            .filter(Boolean),
+            .filter((objectId) => objectId && !endIds.includes(objectId)),
         ),
       ];
       return {
         nodeId,
-        displayName: resolveBehaviorTreeNodeDisplayName(options.model.roots, nodeId),
-        actionApi: mapBehaviorTreeBoundActionApis(options.model.roots)[nodeId] || "",
+        displayName: resolveBehaviorTreeNodeDisplayName(options.model.roots, nodeId) || nodePlan?.actionDisplayName || nodeId,
+        actionApi: (nodePlan?.actionApi || "").trim(),
+        actionDisplayName: (nodePlan?.actionDisplayName || "").trim(),
         params,
         requirements,
         outputs,
@@ -216,11 +232,6 @@ export function useBehaviorTreeExecution(options: {
         pageNum: 1,
         pageSize: 50,
       });
-      appendBehaviorTreeExecLog(`GET /entity/list ${id}`, {
-        code: response.code,
-        message: response.message,
-        total: response.data?.total,
-      });
       if (response.code !== 200 || !response.data) {
         instanceOptions[id] = [];
         return;
@@ -229,9 +240,8 @@ export function useBehaviorTreeExecution(options: {
       instanceOptions[id] = records
         .map((item) => mapBehaviorTreeEntityRecordOption(item as Record<string, unknown>))
         .filter((item): item is BehaviorTreeEntityOption => item != null);
-    } catch (error) {
+    } catch {
       instanceOptions[id] = [];
-      appendBehaviorTreeExecLog(`GET /entity/list ${id} 失败`, error instanceof Error ? error.message : String(error));
     } finally {
       delete instanceLoadingIds[id];
     }
@@ -247,33 +257,7 @@ export function useBehaviorTreeExecution(options: {
   }
 
   /**
-   * @description 缓存绑定行为详情（用于入参 PROPERTY 行展示）。
-   * @param force 是否强制刷新。
-   */
-  async function loadBoundActionDetails(force = false): Promise<void> {
-    const spaceId = readSpaceId();
-    const map = mapBehaviorTreeBoundActionApis(options.model.roots);
-    const apis = [...new Set(Object.values(map).filter(Boolean))];
-    await Promise.all(
-      apis.map(async (actionApi) => {
-        const cacheKey = `${spaceId}\u0000${actionApi}`;
-        if (!force && actionDetailCache[cacheKey]) return;
-        try {
-          const response = await getOntologyActionInfoInterface({ actionApi, ontologySpaceId: spaceId });
-          appendBehaviorTreeExecLog(`GET /action ${actionApi}`, {
-            code: response.code,
-            message: response.message,
-          });
-          if (response.code === 200 && response.data) actionDetailCache[cacheKey] = response.data;
-        } catch (error) {
-          appendBehaviorTreeExecLog(`GET /action ${actionApi} 失败`, error instanceof Error ? error.message : String(error));
-        }
-      }),
-    );
-  }
-
-  /**
-   * @description 读取执行要求（GET /ontology/action → executeInputs）。
+   * @description 读取执行要求（GET /ontology/action → executeInputs.nodes）。
    * @param silent 是否静默（不弹 toast）。
    */
   async function loadBehaviorTreeExecutePlan(silent = false): Promise<void> {
@@ -291,18 +275,16 @@ export function useBehaviorTreeExecution(options: {
     try {
       const response = await getOntologyActionInfoInterface({ actionApi: treeApi, ontologySpaceId: spaceId });
       if (requestToken !== planToken) return;
-      appendBehaviorTreeExecLog(`GET /action ${treeApi}（执行要求）`, {
-        code: response.code,
-        message: response.message,
-        hasExecuteInputs: Boolean(response.data?.executeInputs),
-      });
+      const plan = response.data?.executeInputs ?? null;
       if (response.code !== 200 || !response.data) {
         throw new Error(response.message || "读取执行要求失败");
       }
       if (response.data.actionKind && response.data.actionKind !== "TREE") {
         throw new Error(`该 api 不是行为树，actionKind=${response.data.actionKind}`);
       }
-      const plan = response.data.executeInputs ?? null;
+      if (response.data.treeDefinition) {
+        options.model.blackboard.splice(0, options.model.blackboard.length, ...mapBehaviorTreeDefinitionToBlackboardItems(response.data.treeDefinition));
+      }
       execPlan.value = plan;
       for (const nodeId of listBehaviorTreeExecPlanNodeIds(plan)) ensureBehaviorTreeNodeExecDraft(nodeId);
       for (const item of options.model.blackboard) {
@@ -319,13 +301,12 @@ export function useBehaviorTreeExecution(options: {
         return;
       }
       planStatus.value = "ready";
-      await Promise.all([prefetchBehaviorTreePlanInstances(), loadBoundActionDetails(false)]);
+      await prefetchBehaviorTreePlanInstances();
       if (!silent) ElMessage.success("已读取执行要求");
     } catch (error) {
       if (requestToken !== planToken) return;
       planStatus.value = "error";
       planError.value = error instanceof Error ? error.message : "读取执行要求失败";
-      appendBehaviorTreeExecLog("读取执行要求失败", planError.value);
       if (!silent) ElMessage.error(planError.value);
     }
   }
@@ -433,10 +414,10 @@ export function useBehaviorTreeExecution(options: {
     testStatus.value = "submitting";
     testError.value = "";
     try {
-      appendBehaviorTreeExecLog("POST /action/tree/test 请求", built.payload);
       const response = await postOntologyActionTreeTestInterface(built.payload);
       if (requestToken !== testToken) return;
-      appendBehaviorTreeExecLog("POST /action/tree/test 响应", {
+      clearBehaviorTreeExecLogs();
+      appendBehaviorTreeExecLog("POST /ontology/action/tree/test 返回", {
         code: response.code,
         message: response.message,
         data: response.data,
@@ -451,7 +432,6 @@ export function useBehaviorTreeExecution(options: {
       if (requestToken !== testToken) return;
       testStatus.value = "error";
       testError.value = error instanceof Error ? error.message : "试跑失败";
-      appendBehaviorTreeExecLog("试跑失败", testError.value);
       ElMessage.error(testError.value);
     }
   }
@@ -465,7 +445,6 @@ export function useBehaviorTreeExecution(options: {
     nodeDrafts,
     instanceOptions,
     instanceLoadingIds,
-    actionDetailCache,
     testStatus,
     testError,
     testResult,
@@ -474,6 +453,7 @@ export function useBehaviorTreeExecution(options: {
     propertyBlackboardGroups,
     execNodeBlocks,
     resolveObjectLabel,
+    resolveBehaviorTreeOutputDraftKey,
     appendBehaviorTreeExecLog,
     clearBehaviorTreeExecLogs,
     ensureBehaviorTreeNodeExecDraft,
