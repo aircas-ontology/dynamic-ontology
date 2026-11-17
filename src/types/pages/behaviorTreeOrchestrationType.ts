@@ -38,10 +38,27 @@ export interface BehaviorTreeBlackboardItem {
   key: string;
   valueType: BehaviorTreeValueType;
   source: BehaviorTreeBlackboardSource;
+  /** PROPERTY 来源所属对象唯一标识（与属性一并保存）。 */
+  bindObjectIdentifier: string;
   bindPropertyUniqueIdentifier: string;
   fixedValueText: string;
   defaultValueText: string;
   description: string;
+}
+
+/** ACTION 入参绑定草稿（面板一行）。 */
+export interface BehaviorTreeInputBindingDraft {
+  key: string;
+  from: "" | "BLACKBOARD" | "ACTION_OUTPUT";
+  blackboardKey?: string;
+  fromNodeId?: string;
+  fromOutput?: string;
+}
+
+/** ACTION 出参回传草稿（面板一行）。 */
+export interface BehaviorTreeOutputBindingDraft {
+  key: string;
+  blackboardKey: string;
 }
 
 /** 对象属性目录项（黑板 PROPERTY 来源下拉）。 */
@@ -52,8 +69,31 @@ export interface BehaviorTreeObjectPropertyOption {
   propertyType: string;
 }
 
-/** 节点配置草稿（表单字符串态）。 */
-export type BehaviorTreeNodeConfigDraft = Record<string, string>;
+/** 节点配置草稿：标量字段为字符串，ACTION 绑定为数组。 */
+export interface BehaviorTreeNodeConfigDraft {
+  [key: string]: string | BehaviorTreeInputBindingDraft[] | BehaviorTreeOutputBindingDraft[] | undefined;
+  runMode?: string;
+  policy?: string;
+  maxConcurrency?: string;
+  loopMode?: string;
+  times?: string;
+  maxTimes?: string;
+  finishState?: string;
+  intervalSeconds?: string;
+  entityPrimaryKeyKey?: string;
+  hitResult?: string;
+  limitSeconds?: string;
+  timeoutState?: string;
+  key?: string;
+  op?: string;
+  value?: string;
+  expression?: string;
+  actionApi?: string;
+  timeoutSeconds?: string;
+  retryTimes?: string;
+  inputBindings?: BehaviorTreeInputBindingDraft[];
+  outputBindings?: BehaviorTreeOutputBindingDraft[];
+}
 
 /** 行为树节点草稿。 */
 export interface BehaviorTreeNodeDraft {
@@ -136,6 +176,7 @@ export interface BehaviorTreeDefinition {
     valueType: BehaviorTreeValueType;
     source: BehaviorTreeBlackboardSource;
     value?: unknown;
+    bindObjectIdentifier?: string | null;
     bindPropertyUniqueIdentifier?: string | null;
     description?: string | null;
   }>;

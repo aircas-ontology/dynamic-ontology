@@ -752,8 +752,12 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /getOntologyFunctionDetailInterface/);
   assert.match(formSource, /buildOntologyFunctionTestBindingKeys/);
   assert.match(formSource, /getOntologyPropertyByOntologyIdInterface/);
-  assert.match(formSource, /getOntologyRelationCategoryTreeInterface/);
-  assert.match(formSource, /mapOntologyRelationLinks/);
+  assert.match(formSource, /getOntologyLinkListInterface/);
+  assert.match(formSource, /mapOntologyLinkListToRelationClass/);
+  assert.match(formSource, /按关系名称搜索/);
+  assert.match(formSource, /pageSize:\s*10/);
+  assert.match(formSource, /relationTotal/);
+  assert.match(formSource, /el-pagination/);
   assert.match(formSource, /请选择一条关系/);
   assert.match(formSource, /请选择状态/);
   assert.match(formSource, /请至少添加一条持续时段/);
@@ -929,6 +933,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.doesNotMatch(drawerSource, /对象标识/);
   assert.doesNotMatch(drawerSource, /label="主体类型"/);
   assert.doesNotMatch(drawerSource, /label="基础操作"/);
+  assert.doesNotMatch(drawerSource, /label="绑定关系"/);
   assert.match(drawerSource, /输入参数/);
   assert.match(drawerSource, /输出参数/);
   assert.doesNotMatch(drawerSource, /执行范围/);

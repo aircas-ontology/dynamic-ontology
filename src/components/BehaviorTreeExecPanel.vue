@@ -12,7 +12,6 @@
     <template v-if="planStatus === 'ready' || planStatus === 'empty'">
       <section class="behavior-tree-exec__section" aria-label="黑板变量">
         <h4 class="behavior-tree-exec__section-title">黑板变量</h4>
-        <p class="behavior-tree-exec__hint">外部输入留空时取默认值；对象属性在这里选实例，执行时按实例当前值重读。</p>
 
         <div v-if="!externalRows.length && !propertyGroups.length" class="behavior-tree-exec__empty">当前黑板没有外部输入或对象属性键</div>
 
@@ -27,33 +26,57 @@
           />
         </div>
 
-        <div v-for="group in propertyGroups" :key="`prop-${group.objectId}`" class="behavior-tree-exec__field">
-          <label>
-            对象属性实例 · {{ resolveObjectLabel(group.objectId) }}
-            <span v-if="group.items.length" class="behavior-tree-exec__muted">
-              （{{ group.items.map((item) => item.key || item.bindPropertyUniqueIdentifier).join("、") }}）
-            </span>
-          </label>
-          <el-select
-            :model-value="blackboardObjectKeys[group.objectId] ?? ''"
-            filterable
-            clearable
-            allow-create
-            default-first-option
-            style="width: 100%"
-            :loading="Boolean(instanceLoadingIds[group.objectId])"
-            placeholder="选择或输入实例主键"
-            @visible-change="(open: boolean) => open && emit('ensure-instances', group.objectId)"
-            @update:model-value="blackboardObjectKeys[group.objectId] = String($event ?? '')"
-          >
-            <el-option v-for="option in instanceOptions[group.objectId] || []" :key="option.value" :label="option.label" :value="option.value" />
-          </el-select>
+        <div v-for="group in propertyGroups" :key="`prop-${group.objectId}`" class="behavior-tree-exec__property-group">
+          <div class="behavior-tree-exec__field">
+            <label>
+              对象属性实例 · {{ resolveObjectLabel(group.objectId) }}
+              <span v-if="group.items.length" class="behavior-tree-exec__muted">
+                （{{ group.items.map((item) => item.key || item.bindPropertyUniqueIdentifier).join("、") }}）
+              </span>
+            </label>
+            <el-select
+              :model-value="blackboardObjectKeys[group.objectId] ?? ''"
+              filterable
+              clearable
+              allow-create
+              default-first-option
+              style="width: 100%"
+              :loading="Boolean(instanceLoadingIds[group.objectId])"
+              placeholder="选择或输入实例主键"
+              @visible-change="(open: boolean) => open && emit('ensure-instances', group.objectId)"
+              @update:model-value="emit('update-blackboard-instance', group.objectId, String($event ?? ''))"
+            >
+              <el-option v-for="option in instanceOptions[group.objectId] || []" :key="option.value" :label="option.label" :value="option.value" />
+            </el-select>
+          </div>
+          <div v-for="storageGroup in group.storageGroups || []" :key="`group-row-${group.objectId}-${storageGroup}`" class="behavior-tree-exec__field">
+            <label>{{ storageGroup }} 行</label>
+            <el-select
+              :model-value="blackboardGroupRows[resolveGroupRowStateKey(group.objectId, storageGroup)] ?? ''"
+              filterable
+              clearable
+              allow-create
+              default-first-option
+              style="width: 100%"
+              :disabled="!(blackboardObjectKeys[group.objectId] || '').trim()"
+              :loading="isGroupRowLoading(group.objectId, storageGroup)"
+              :placeholder="(blackboardObjectKeys[group.objectId] || '').trim() ? `选择或输入 ${storageGroup} 行主键` : '先选实例'"
+              @visible-change="(open: boolean) => open && emit('ensure-group-rows', group.objectId, storageGroup)"
+              @update:model-value="emit('update-blackboard-group-row', group.objectId, storageGroup, String($event ?? ''))"
+            >
+              <el-option
+                v-for="option in resolveGroupRowOptions(group.objectId, storageGroup)"
+                :key="`${storageGroup}-${option.value}`"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
+          </div>
         </div>
       </section>
 
       <section class="behavior-tree-exec__section" aria-label="节点执行数据">
         <h4 class="behavior-tree-exec__section-title">节点</h4>
-        <p class="behavior-tree-exec__hint">nodeExecutes：按节点填行为入参、实例/关系两端与写回行。</p>
         <div v-if="!nodeBlocks.length" class="behavior-tree-exec__empty">执行要求未点名任何节点</div>
 
         <el-collapse v-else>
@@ -259,16 +282,16 @@ import type {
   BehaviorTreeNodeExecDraft,
 } from "@/types";
 import type { BehaviorTreeEntityOption, BehaviorTreeExecPlanStatus, BehaviorTreeExecTestStatus } from "@/composables/behaviorTree/useBehaviorTreeExecution";
-import { resolveBehaviorTreeOutputDraftKey } from "@/utils/behaviorTreeExecutePlan";
+import { resolveBehaviorTreeBbGroupRowStateKey, resolveBehaviorTreeOutputDraftKey } from "@/utils/behaviorTreeExecutePlan";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     planStatus: BehaviorTreeExecPlanStatus;
     planError: string;
     testStatus: BehaviorTreeExecTestStatus;
     logs: BehaviorTreeExecLogEntry[];
     externalRows: BehaviorTreeBlackboardItem[];
-    propertyGroups: Array<{ objectId: string; items: BehaviorTreeBlackboardItem[] }>;
+    propertyGroups: Array<{ objectId: string; items: BehaviorTreeBlackboardItem[]; storageGroups?: string[] }>;
     nodeBlocks: Array<{
       nodeId: string;
       displayName: string;
@@ -281,6 +304,9 @@ withDefaults(
     }>;
     externalDraft: Record<string, string>;
     blackboardObjectKeys: Record<string, string>;
+    blackboardGroupRows?: Record<string, string>;
+    groupRowOptions?: Record<string, BehaviorTreeEntityOption[]>;
+    groupRowLoadingIds?: Record<string, true>;
     nodeDrafts: Record<string, BehaviorTreeNodeExecDraft>;
     instanceOptions: Record<string, BehaviorTreeEntityOption[]>;
     instanceLoadingIds: Record<string, true>;
@@ -296,6 +322,9 @@ withDefaults(
     showLoadPlanButton: true,
     showRunButton: true,
     showLogs: true,
+    blackboardGroupRows: () => ({}),
+    groupRowOptions: () => ({}),
+    groupRowLoadingIds: () => ({}),
   },
 );
 
@@ -304,6 +333,9 @@ const emit = defineEmits<{
   "run-test": [];
   "clear-logs": [];
   "ensure-instances": [objectId: string];
+  "ensure-group-rows": [objectId: string, storageGroup: string];
+  "update-blackboard-instance": [objectId: string, value: string];
+  "update-blackboard-group-row": [objectId: string, storageGroup: string, value: string];
   "update-node-param": [nodeId: string, key: string, value: string];
   "update-node-entity": [nodeId: string, objectOrRole: string, value: string];
   "update-node-input-instance": [nodeId: string, key: string, value: string];
@@ -317,6 +349,46 @@ const emit = defineEmits<{
  */
 function outputMapKey(target: BehaviorTreeExecuteOutputParam): string {
   return resolveBehaviorTreeOutputDraftKey(target);
+}
+
+/**
+ * @description 黑板分组行草稿键。
+ * @param objectId 对象标识。
+ * @param storageGroup 分组名。
+ * @returns 草稿键。
+ */
+function resolveGroupRowStateKey(objectId: string, storageGroup: string): string {
+  return resolveBehaviorTreeBbGroupRowStateKey(objectId, storageGroup);
+}
+
+/**
+ * @description 读取分组行下拉候选。
+ * @param objectId 对象标识。
+ * @param storageGroup 分组名。
+ * @returns 选项列表。
+ */
+function resolveGroupRowOptions(objectId: string, storageGroup: string): BehaviorTreeEntityOption[] {
+  const instance = (props.blackboardObjectKeys[objectId] || "").trim();
+  if (!instance) return [];
+  const optionKey = `${objectId}|${instance}|${storageGroup}`;
+  const options = props.groupRowOptions?.[optionKey] || [];
+  const current = (props.blackboardGroupRows?.[resolveGroupRowStateKey(objectId, storageGroup)] || "").trim();
+  if (current && !options.some((item) => item.value === current)) {
+    return [{ value: current, label: `行 ${current}` }, ...options];
+  }
+  return options;
+}
+
+/**
+ * @description 分组行是否在加载中。
+ * @param objectId 对象标识。
+ * @param storageGroup 分组名。
+ * @returns 是否加载中。
+ */
+function isGroupRowLoading(objectId: string, storageGroup: string): boolean {
+  const instance = (props.blackboardObjectKeys[objectId] || "").trim();
+  if (!instance) return false;
+  return Boolean(props.groupRowLoadingIds?.[`${objectId}|${instance}|${storageGroup}`]);
 }
 
 /**
@@ -372,7 +444,6 @@ function outputModeLabel(mode: string | null | undefined): string {
   gap: 8px;
 }
 
-.behavior-tree-exec__hint,
 .behavior-tree-exec__state,
 .behavior-tree-exec__empty,
 .behavior-tree-exec__muted {
@@ -399,6 +470,12 @@ function outputModeLabel(mode: string | null | undefined): string {
   color: var(--aircas-color-text-primary);
   font-size: 13px;
   font-weight: 600;
+}
+
+.behavior-tree-exec__property-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .behavior-tree-exec__field {

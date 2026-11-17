@@ -10,10 +10,20 @@ import type {
   BehaviorTreeSerializedNode,
   BehaviorTreeValueType,
 } from "@/types";
-import { mapBehaviorTreeDefinitionToBlackboardItems, resolveBehaviorTreeBlackboardSource } from "../../../utils/behaviorTreeBlackboard.ts";
+import {
+  mapBehaviorTreeDefinitionToBlackboardItems,
+  resolveBehaviorTreeBlackboardObjectIdentifier,
+  resolveBehaviorTreeBlackboardSource,
+} from "../../../utils/behaviorTreeBlackboard.ts";
 import { behaviorTreeEmptyToNull, behaviorTreeIntOrNull, behaviorTreeValueToText, parseBehaviorTreeTypedValue } from "../../../utils/behaviorTreeTypedValue.ts";
-import { createDefaultBehaviorTreeConfig } from "./behaviorTreeModel.ts";
+import {
+  mapBehaviorTreeInputBindingsToDraft,
+  mapBehaviorTreeOutputBindingsToDraft,
+  serializeBehaviorTreeInputBindings,
+  serializeBehaviorTreeOutputBindings,
+} from "./behaviorTreeActionBindings.ts";
 import { isBehaviorTreeValueLessOp } from "./behaviorTreeConstants.ts";
+import { createDefaultBehaviorTreeConfig } from "./behaviorTreeModel.ts";
 
 /**
  * @description 将草稿配置转为序列化 config。
@@ -26,42 +36,57 @@ export function buildBehaviorTreeNodeConfig(
   blackboardTypeOf: (key: string) => BehaviorTreeValueType | null,
 ): Record<string, unknown> | null {
   const draft = node.config || {};
+  /**
+   * @description 读取配置标量文本。
+   * @param field 字段名。
+   * @returns 字符串。
+   */
+  const textOf = (field: string): string => {
+    const value = draft[field];
+    return typeof value === "string" ? value : "";
+  };
   switch (node.kind) {
     case "SELECTOR":
     case "SEQUENCE":
-      return { runMode: draft.runMode || "STANDARD" };
+      return { runMode: textOf("runMode") || "STANDARD" };
     case "PARALLEL":
-      return { policy: draft.policy || "ALL_SUCCESS", maxConcurrency: behaviorTreeIntOrNull(draft.maxConcurrency) };
+      return { policy: textOf("policy") || "ALL_SUCCESS", maxConcurrency: behaviorTreeIntOrNull(textOf("maxConcurrency")) };
     case "REPEATER":
-      return { loopMode: draft.loopMode || "FIXED_TIMES", times: behaviorTreeIntOrNull(draft.times) };
+      return { loopMode: textOf("loopMode") || "FIXED_TIMES", times: behaviorTreeIntOrNull(textOf("times")) };
     case "UNTIL_SUCCESS":
     case "UNTIL_FAILURE":
-      return { maxTimes: behaviorTreeIntOrNull(draft.maxTimes), finishState: draft.finishState || "FAILURE" };
+      return { maxTimes: behaviorTreeIntOrNull(textOf("maxTimes")), finishState: textOf("finishState") || "FAILURE" };
     case "COOLDOWN":
       return {
-        intervalSeconds: behaviorTreeIntOrNull(draft.intervalSeconds),
-        entityPrimaryKeyKey: behaviorTreeEmptyToNull(draft.entityPrimaryKeyKey),
-        hitResult: draft.hitResult || "FAILURE",
+        intervalSeconds: behaviorTreeIntOrNull(textOf("intervalSeconds")),
+        entityPrimaryKeyKey: behaviorTreeEmptyToNull(textOf("entityPrimaryKeyKey")),
+        hitResult: textOf("hitResult") || "FAILURE",
       };
     case "TIME_LIMIT":
-      return { limitSeconds: behaviorTreeIntOrNull(draft.limitSeconds), timeoutState: draft.timeoutState || "FAILURE" };
+      return { limitSeconds: behaviorTreeIntOrNull(textOf("limitSeconds")), timeoutState: textOf("timeoutState") || "FAILURE" };
     case "BLACKBOARD_CONDITION": {
-      const config: Record<string, unknown> = { key: (draft.key || "").trim(), op: draft.op || "EQ" };
+      const config: Record<string, unknown> = { key: textOf("key").trim(), op: textOf("op") || "EQ" };
       if (!isBehaviorTreeValueLessOp(String(config.op))) {
         const declared = blackboardTypeOf(String(config.key));
-        const parsed = parseBehaviorTreeTypedValue(draft.value, declared || "STRING");
-        config.value = parsed.ok ? parsed.value : draft.value;
+        const parsed = parseBehaviorTreeTypedValue(textOf("value"), declared || "STRING");
+        config.value = parsed.ok ? parsed.value : textOf("value");
       }
       return config;
     }
     case "CONDITION":
-      return { expression: (draft.expression || "").trim() };
-    case "ACTION":
-      return {
-        actionApi: (draft.actionApi || "").trim(),
-        timeoutSeconds: behaviorTreeIntOrNull(draft.timeoutSeconds),
-        retryTimes: behaviorTreeIntOrNull(draft.retryTimes),
+      return { expression: textOf("expression").trim() };
+    case "ACTION": {
+      const config: Record<string, unknown> = {
+        actionApi: textOf("actionApi").trim(),
+        timeoutSeconds: behaviorTreeIntOrNull(textOf("timeoutSeconds")),
+        retryTimes: behaviorTreeIntOrNull(textOf("retryTimes")),
       };
+      const inputBindings = serializeBehaviorTreeInputBindings(Array.isArray(draft.inputBindings) ? draft.inputBindings : []);
+      const outputBindings = serializeBehaviorTreeOutputBindings(Array.isArray(draft.outputBindings) ? draft.outputBindings : []);
+      if (inputBindings) config.inputBindings = inputBindings;
+      if (outputBindings) config.outputBindings = outputBindings;
+      return config;
+    }
     default:
       return null;
   }
@@ -104,6 +129,8 @@ export function behaviorTreeConfigToDraft(kind: BehaviorTreeNodeKind, config: Re
         actionApi: asText(cfg.actionApi),
         timeoutSeconds: asText(cfg.timeoutSeconds),
         retryTimes: asText(cfg.retryTimes),
+        inputBindings: mapBehaviorTreeInputBindingsToDraft(cfg.inputBindings),
+        outputBindings: mapBehaviorTreeOutputBindingsToDraft(cfg.outputBindings),
       };
     default:
       return createDefaultBehaviorTreeConfig(kind);
@@ -159,6 +186,8 @@ export function buildBehaviorTreeDefinition(model: BehaviorTreeModel, kindMeta: 
         serialized.value = parsed.ok ? parsed.value : null;
       }
       if (source === "PROPERTY") {
+        const objectId = resolveBehaviorTreeBlackboardObjectIdentifier(item);
+        if (objectId) serialized.bindObjectIdentifier = objectId;
         serialized.bindPropertyUniqueIdentifier = behaviorTreeEmptyToNull(item.bindPropertyUniqueIdentifier);
       }
       const description = behaviorTreeEmptyToNull(item.description);

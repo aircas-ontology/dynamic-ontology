@@ -17,6 +17,10 @@ export interface ActionTreeBindableParam {
   name: string;
   type?: string;
   description?: string;
+  /** 行为声明的取值来源：EXTERNAL / PROPERTY / FIXED / OBJECT / LIST。 */
+  sourceType?: string;
+  /** 出参展示字段名；缺省时用 name。 */
+  fieldName?: string;
 }
 
 /** 节点目录中可绑定的已发布行为。 */
@@ -28,6 +32,10 @@ export interface ActionTreeBindableAction {
   inputParams?: ActionTreeBindableParam[];
   outputParams?: ActionTreeBindableParam[];
   externalParams?: ActionTreeBindableParam[];
+  /** 可配置取值来源的入参（优先于 inputParams）。 */
+  bindableInputs?: ActionTreeBindableParam[];
+  /** 可回传黑板的出参（优先于 outputParams）。 */
+  bindableOutputs?: ActionTreeBindableParam[];
 }
 
 /** 行为树节点目录响应 data。 */

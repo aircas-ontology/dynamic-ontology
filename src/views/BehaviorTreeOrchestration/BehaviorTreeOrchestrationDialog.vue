@@ -59,10 +59,14 @@
               <BehaviorTreeNodeInspector
                 :node="selectedNode"
                 :parent="selectedParent"
+                :roots="model.roots"
+                :blackboard="model.blackboard"
                 :kind-meta="kindMeta"
                 :available-actions="availableActions"
                 @patch-field="handlePatchField"
                 @patch-config="handlePatchConfig"
+                @patch-input-binding="handlePatchInputBinding"
+                @patch-output-binding="handlePatchOutputBinding"
                 @reorder="reorderBehaviorTreeChild"
                 @detach-root="detachBehaviorTreeNodeToRoot"
                 @delete-node="deleteBehaviorTreeNode"
@@ -93,6 +97,9 @@
                 :node-blocks="execNodeBlocks"
                 :external-draft="execExternalDraft"
                 :blackboard-object-keys="execBlackboardObjectKeys"
+                :blackboard-group-rows="execBlackboardGroupRows"
+                :group-row-options="execGroupRowOptions"
+                :group-row-loading-ids="execGroupRowLoadingIds"
                 :node-drafts="execNodeDrafts"
                 :instance-options="execInstanceOptions"
                 :instance-loading-ids="execInstanceLoadingIds"
@@ -101,6 +108,9 @@
                 @run-test="runBehaviorTreeTest"
                 @clear-logs="clearBehaviorTreeExecLogs"
                 @ensure-instances="loadBehaviorTreeEntityOptions"
+                @ensure-group-rows="loadBehaviorTreeGroupRowOptions"
+                @update-blackboard-instance="updateBlackboardObjectKey"
+                @update-blackboard-group-row="updateBlackboardGroupRow"
                 @update-node-param="updateNodeParamDraft"
                 @update-node-entity="updateNodeEntityKeyDraft"
                 @update-node-input-instance="(nodeId, key, value) => updateNodeInputParamDraft(nodeId, key, 'entityPrimaryKey', value)"
@@ -116,9 +126,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import type { BehaviorTreeNodeDraft, BehaviorTreeOrchestrationMeta, BehaviorTreePersistMode } from "@/types";
+import type { BehaviorTreeInputBindingDraft, BehaviorTreeNodeDraft, BehaviorTreeOrchestrationMeta, BehaviorTreePersistMode } from "@/types";
 import { useBehaviorTreeExecution } from "@/composables/behaviorTree/useBehaviorTreeExecution";
 import BehaviorTreeExecPanel from "@/components/BehaviorTreeExecPanel.vue";
+import { patchBehaviorTreeInputBinding, patchBehaviorTreeOutputBinding } from "./utils/behaviorTreeActionBindings";
 import { findBehaviorTreeNode } from "./utils/behaviorTreeModel";
 import { useBehaviorTreeGraph } from "./composables/useBehaviorTreeGraph";
 import { useBehaviorTreeOrchestration } from "./composables/useBehaviorTreeOrchestration";
@@ -187,6 +198,9 @@ const {
   execNodeBlocks,
   externalInputDraft: execExternalDraft,
   blackboardObjectKeys: execBlackboardObjectKeys,
+  blackboardGroupRows: execBlackboardGroupRows,
+  groupRowOptions: execGroupRowOptions,
+  groupRowLoadingIds: execGroupRowLoadingIds,
   nodeDrafts: execNodeDrafts,
   instanceOptions: execInstanceOptions,
   instanceLoadingIds: execInstanceLoadingIds,
@@ -195,6 +209,9 @@ const {
   runBehaviorTreeTest,
   clearBehaviorTreeExecLogs,
   loadBehaviorTreeEntityOptions,
+  loadBehaviorTreeGroupRowOptions,
+  updateBlackboardObjectKey,
+  updateBlackboardGroupRow,
   updateNodeParamDraft,
   updateNodeEntityKeyDraft,
   updateNodeInputParamDraft,
@@ -283,6 +300,42 @@ function handlePatchConfig(id: string, field: string, value: string): void {
   if (!node) return;
   node.config = node.config || {};
   node.config[field] = value;
+  if (field === "actionApi") {
+    node.config.inputBindings = [];
+    node.config.outputBindings = [];
+  }
+  bumpRevision();
+}
+
+/**
+ * @description 更新 ACTION 入参绑定。
+ * @param id 节点 id。
+ * @param paramName 入参名。
+ * @param patch 绑定补丁。
+ */
+function handlePatchInputBinding(
+  id: string,
+  paramName: string,
+  patch: Partial<BehaviorTreeInputBindingDraft> & { from?: BehaviorTreeInputBindingDraft["from"] },
+): void {
+  const node = findBehaviorTreeNode(model.roots, id);
+  if (!node) return;
+  node.config = node.config || {};
+  patchBehaviorTreeInputBinding(node.config, paramName, patch);
+  bumpRevision();
+}
+
+/**
+ * @description 更新 ACTION 出参回传。
+ * @param id 节点 id。
+ * @param outputName 出参标识。
+ * @param blackboardKey 黑板键。
+ */
+function handlePatchOutputBinding(id: string, outputName: string, blackboardKey: string): void {
+  const node = findBehaviorTreeNode(model.roots, id);
+  if (!node) return;
+  node.config = node.config || {};
+  patchBehaviorTreeOutputBinding(node.config, outputName, blackboardKey);
   bumpRevision();
 }
 

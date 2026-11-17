@@ -61,6 +61,7 @@ export function createBehaviorTreeBlackboardItem(key: string, overrides: Partial
     key,
     valueType: "STRING",
     source: "EXTERNAL",
+    bindObjectIdentifier: "",
     bindPropertyUniqueIdentifier: "",
     fixedValueText: "",
     defaultValueText: "",
@@ -76,7 +77,10 @@ export function createBehaviorTreeBlackboardItem(key: string, overrides: Partial
  */
 export function applyBehaviorTreeBlackboardSourceChange(item: BehaviorTreeBlackboardItem, source: BehaviorTreeBlackboardSource): void {
   item.source = source;
-  if (source !== "PROPERTY") item.bindPropertyUniqueIdentifier = "";
+  if (source !== "PROPERTY") {
+    item.bindObjectIdentifier = "";
+    item.bindPropertyUniqueIdentifier = "";
+  }
   if (source !== "FIXED") item.fixedValueText = "";
   if (source !== "EXTERNAL") item.defaultValueText = "";
 }
@@ -91,7 +95,48 @@ export function applyBehaviorTreeBlackboardPropertyBinding(
   property: BehaviorTreeObjectPropertyOption | null | undefined,
 ): void {
   item.bindPropertyUniqueIdentifier = property?.id ?? item.bindPropertyUniqueIdentifier;
-  if (property) item.valueType = mapBehaviorTreePropertyTypeToValueType(property.propertyType);
+  if (property) {
+    item.bindObjectIdentifier = property.objectId || item.bindObjectIdentifier;
+    item.valueType = mapBehaviorTreePropertyTypeToValueType(property.propertyType);
+  }
+}
+
+/**
+ * @description 解析黑板 PROPERTY 项绑定的对象标识；优先已存字段，否则按属性目录回退。
+ * @param item 黑板行。
+ * @param objectProperties 属性目录。
+ * @returns 对象唯一标识。
+ */
+export function resolveBehaviorTreeBlackboardObjectIdentifier(
+  item: Pick<BehaviorTreeBlackboardItem, "bindObjectIdentifier" | "bindPropertyUniqueIdentifier">,
+  objectProperties: Record<string, BehaviorTreeObjectPropertyOption> = {},
+): string {
+  const stored = (item.bindObjectIdentifier || "").trim();
+  if (stored) return stored;
+  const property = objectProperties[(item.bindPropertyUniqueIdentifier || "").trim()];
+  return property?.objectId?.trim() || "";
+}
+
+/**
+ * @description 收集黑板 PROPERTY 行需要预拉属性的对象 id（去重）。
+ * @param items 黑板草稿列表。
+ * @param objectProperties 可选已缓存属性目录（用于缺 bindObjectIdentifier 时回退）。
+ * @returns 对象 uniqueIdentifier 列表。
+ */
+export function listBehaviorTreeBlackboardPropertyObjectIds(
+  items: BehaviorTreeBlackboardItem[],
+  objectProperties: Record<string, BehaviorTreeObjectPropertyOption> = {},
+): string[] {
+  const seen: Record<string, true> = {};
+  const ids: string[] = [];
+  for (const item of items) {
+    if (resolveBehaviorTreeBlackboardSource(item) !== "PROPERTY") continue;
+    const objectId = resolveBehaviorTreeBlackboardObjectIdentifier(item, objectProperties);
+    if (!objectId || seen[objectId]) continue;
+    seen[objectId] = true;
+    ids.push(objectId);
+  }
+  return ids;
 }
 
 /**
@@ -111,6 +156,7 @@ export function mapBehaviorTreeDefinitionToBlackboardItems(definition: BehaviorT
       key: item.key || "",
       valueType: item.valueType || "STRING",
       source,
+      bindObjectIdentifier: item.bindObjectIdentifier || "",
       bindPropertyUniqueIdentifier: item.bindPropertyUniqueIdentifier || "",
       fixedValueText: source === "FIXED" ? behaviorTreeValueToText(item.value) : "",
       defaultValueText: source === "EXTERNAL" && variable ? behaviorTreeValueToText(variable.defaultValue) : "",

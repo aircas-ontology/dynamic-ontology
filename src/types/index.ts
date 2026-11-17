@@ -159,6 +159,7 @@ export type {
 } from "./apis/getBehaviorSchedulingResultType";
 export type {
   BehaviorTreeExecuteBlackboardInstance,
+  BehaviorTreeExecuteBlackboardStorageGroup,
   BehaviorTreeExecuteInputParam,
   BehaviorTreeExecuteInputs,
   BehaviorTreeExecuteInputSourceType,
@@ -207,6 +208,7 @@ export type { GetOntologyFunctionListData, GetOntologyFunctionListItem, GetOntol
 export type { GetOntologyFunctionVersionsData, GetOntologyFunctionVersionsParams } from "./apis/getOntologyFunctionVersionsType";
 export type { GetOntologyInstanceUrlListData, GetOntologyInstanceUrlListParams, OntologyInstanceUrlItem } from "./apis/getOntologyInstanceUrlListType";
 export type { GetOntologyLinkByUniqueIdentifierData, GetOntologyLinkByUniqueIdentifierParams } from "./apis/getOntologyLinkByUniqueIdentifierType";
+export type { GetOntologyLinkListData, GetOntologyLinkListObject, GetOntologyLinkListParams, GetOntologyLinkListRecord } from "./apis/getOntologyLinkListType";
 export type { GetOntologyMetaByObjectIdData, GetOntologyMetaByObjectIdParams } from "./apis/getOntologyMetaByObjectIdType";
 export type { GetOntologyMetaStatisticData, GetOntologyMetaStatisticParams, OntologyMetaStatisticVO } from "./apis/getOntologyMetaStatisticType";
 export type { GetOntologyObjectArrTypeTreeData, GetOntologyObjectArrTypeTreeParams } from "./apis/getOntologyObjectArrTypeTreeType";
@@ -387,6 +389,7 @@ export type {
   BehaviorTreeDefinition,
   BehaviorTreeDragPayload,
   BehaviorTreeExecLogEntry,
+  BehaviorTreeInputBindingDraft,
   BehaviorTreeInspectorTab,
   BehaviorTreeKindMeta,
   BehaviorTreeModel,
@@ -399,6 +402,7 @@ export type {
   BehaviorTreeObjectPropertyOption,
   BehaviorTreeOrchestrationLoadStatus,
   BehaviorTreeOrchestrationMeta,
+  BehaviorTreeOutputBindingDraft,
   BehaviorTreePersistMode,
   BehaviorTreeSavePayload,
   BehaviorTreeSaveStatus,

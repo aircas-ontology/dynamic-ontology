@@ -1,4 +1,12 @@
-import type { BehaviorTreeKindMeta, BehaviorTreeModel, BehaviorTreeNodeConfigDraft, BehaviorTreeNodeDraft, BehaviorTreeNodeKind } from "@/types";
+import type {
+  BehaviorTreeInputBindingDraft,
+  BehaviorTreeKindMeta,
+  BehaviorTreeModel,
+  BehaviorTreeNodeConfigDraft,
+  BehaviorTreeNodeDraft,
+  BehaviorTreeNodeKind,
+  BehaviorTreeOutputBindingDraft,
+} from "@/types";
 import { BEHAVIOR_TREE_NODE_H, BEHAVIOR_TREE_NODE_W } from "./behaviorTreeConstants.ts";
 
 /**
@@ -152,7 +160,7 @@ export function createDefaultBehaviorTreeConfig(kind: BehaviorTreeNodeKind): Beh
     case "CONDITION":
       return { expression: "" };
     case "ACTION":
-      return { actionApi: "", timeoutSeconds: "", retryTimes: "" };
+      return { actionApi: "", timeoutSeconds: "", retryTimes: "", inputBindings: [], outputBindings: [] };
     default:
       return null;
   }
@@ -216,5 +224,14 @@ export function renameBehaviorTreeKeyRefs(roots: BehaviorTreeNodeDraft[], oldKey
     if (!config) return;
     if (node.kind === "BLACKBOARD_CONDITION" && config.key === oldKey) config.key = newKey;
     if (node.kind === "COOLDOWN" && config.entityPrimaryKeyKey === oldKey) config.entityPrimaryKeyKey = newKey;
+    if (node.kind !== "ACTION") return;
+    const inputs = Array.isArray(config.inputBindings) ? (config.inputBindings as BehaviorTreeInputBindingDraft[]) : [];
+    for (const item of inputs) {
+      if (item.blackboardKey === oldKey) item.blackboardKey = newKey;
+    }
+    const outputs = Array.isArray(config.outputBindings) ? (config.outputBindings as BehaviorTreeOutputBindingDraft[]) : [];
+    for (const item of outputs) {
+      if (item.blackboardKey === oldKey) item.blackboardKey = newKey;
+    }
   });
 }

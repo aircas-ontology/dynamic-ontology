@@ -31,6 +31,7 @@ import {
   applyBehaviorTreeBlackboardPropertyBinding,
   applyBehaviorTreeBlackboardSourceChange,
   createBehaviorTreeBlackboardItem,
+  listBehaviorTreeBlackboardPropertyObjectIds,
 } from "@/utils/behaviorTreeBlackboard.ts";
 import { BEHAVIOR_TREE_VALUE_TYPES, createBehaviorTreeKindMetaMap } from "../utils/behaviorTreeConstants.ts";
 import { buildBehaviorTreeSavePayload, importBehaviorTreeDefinition } from "../utils/behaviorTreeDefinition.ts";
@@ -423,10 +424,16 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
     } else if (field === "source") {
       const source = (value === "FIXED" || value === "EXTERNAL" || value === "PROPERTY" ? value : "EXTERNAL") as BehaviorTreeBlackboardSource;
       applyBehaviorTreeBlackboardSourceChange(item, source);
+    } else if (field === "bindObjectIdentifier") {
+      item.bindObjectIdentifier = value;
+      if (!value.trim()) item.bindPropertyUniqueIdentifier = "";
     } else if (field === "bindPropertyUniqueIdentifier") {
       const property = value.trim() ? objectProperties.value[value.trim()] : null;
       item.bindPropertyUniqueIdentifier = value;
       applyBehaviorTreeBlackboardPropertyBinding(item, property);
+      if (!value.trim() && !item.bindObjectIdentifier.trim()) {
+        /* keep object selection if only clearing property */
+      }
     } else {
       item[field] = value;
     }
@@ -475,6 +482,9 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
       layoutBehaviorTreeRoots(model.roots);
       hasPersisted.value = true;
       bumpRevision();
+      const propertyObjectIds = listBehaviorTreeBlackboardPropertyObjectIds(model.blackboard, objectProperties.value);
+      await Promise.all(propertyObjectIds.map((objectId) => ensureBehaviorTreeObjectProperties(objectId)));
+      if (token !== detailToken) return;
       detailStatus.value = "ready";
       ElMessage.success("已加载行为树定义");
     } catch (error) {
@@ -490,7 +500,7 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
    */
   async function saveBehaviorTreeAction(): Promise<void> {
     if (saveStatus.value === "submitting") return;
-    const errors = collectBehaviorTreeErrors(model, kindMeta, objectProperties.value);
+    const errors = collectBehaviorTreeErrors(model, kindMeta, objectProperties.value, availableActions.value);
     if (!meta.spaceId.trim()) errors.unshift("对象空间 id 不能为空");
     if (!meta.actionApi.trim()) errors.unshift("行为 api 不能为空");
     if (!meta.displayName.trim()) errors.unshift("显示名称不能为空");

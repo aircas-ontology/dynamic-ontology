@@ -1,6 +1,11 @@
 import { computed, onScopeDispose, reactive, ref, type Ref } from "vue";
 import { ElMessage } from "element-plus";
-import { getOntologyActionInfoInterface, getOntologyEntitiesInterface, postOntologyActionTreeTestInterface } from "@/apis";
+import {
+  getOntologyActionInfoInterface,
+  getOntologyEntitiesInterface,
+  postGetOntologyEntityRowDetailPageInterface,
+  postOntologyActionTreeTestInterface,
+} from "@/apis";
 import type {
   BehaviorTreeBlackboardItem,
   BehaviorTreeExecuteInputs,
@@ -17,12 +22,14 @@ import {
   collectBehaviorTreeExecMissingFields,
   createBehaviorTreeNodeExecDraft,
   findBehaviorTreeExecuteNodePlan,
+  listBehaviorTreeBlackboardStorageGroups,
   listBehaviorTreeExecPlanNodeIds,
   listBehaviorTreeExecPlanObjectIds,
   listBehaviorTreeNodeInputParams,
   listBehaviorTreeNodeOutputTargets,
   listBehaviorTreeNodeRequirements,
   mapBehaviorTreeEntityRecordOption,
+  resolveBehaviorTreeBbGroupRowStateKey,
   resolveBehaviorTreeNodeDisplayName,
   resolveBehaviorTreeNodeLinkEnds,
   resolveBehaviorTreeOutputDraftKey,
@@ -57,6 +64,9 @@ export function useBehaviorTreeExecution(options: {
   const execPlan = ref<BehaviorTreeExecuteInputs | null>(null);
   const externalInputDraft = reactive<Record<string, string>>({});
   const blackboardObjectKeys = reactive<Record<string, string>>({});
+  const blackboardGroupRows = reactive<Record<string, string>>({});
+  const groupRowOptions = reactive<Record<string, BehaviorTreeEntityOption[]>>({});
+  const groupRowLoadingIds = reactive<Record<string, true>>({});
   const nodeDrafts = reactive<Record<string, BehaviorTreeNodeExecDraft>>({});
   const instanceOptions = reactive<Record<string, BehaviorTreeEntityOption[]>>({});
   const instanceLoadingIds = reactive<Record<string, true>>({});
@@ -68,6 +78,7 @@ export function useBehaviorTreeExecution(options: {
   let planToken = 0;
   let testToken = 0;
   let logSeq = 0;
+  const groupRowLoadTokens: Record<string, number> = {};
 
   /**
    * @description 读取空间 id。
@@ -146,7 +157,7 @@ export function useBehaviorTreeExecution(options: {
     for (const item of options.model.blackboard) {
       if (resolveBehaviorTreeBlackboardSource(item) !== "PROPERTY") continue;
       const bound = options.objectProperties.value[item.bindPropertyUniqueIdentifier.trim()];
-      const objectId = (bound?.objectId || "").trim();
+      const objectId = (bound?.objectId || item.bindObjectIdentifier || "").trim();
       if (!objectId) continue;
       const list = groups.get(objectId) || [];
       list.push(item);
@@ -163,6 +174,7 @@ export function useBehaviorTreeExecution(options: {
             key,
             valueType: "STRING" as const,
             source: "PROPERTY" as const,
+            bindObjectIdentifier: objectId,
             bindPropertyUniqueIdentifier: "",
             fixedValueText: "",
             defaultValueText: "",
@@ -171,7 +183,11 @@ export function useBehaviorTreeExecution(options: {
         );
       }
     }
-    return [...groups.entries()].map(([objectId, items]) => ({ objectId, items }));
+    return [...groups.entries()].map(([objectId, items]) => ({
+      objectId,
+      items,
+      storageGroups: listBehaviorTreeBlackboardStorageGroups(execPlan.value, objectId),
+    }));
   });
 
   /**
@@ -260,6 +276,95 @@ export function useBehaviorTreeExecution(options: {
   }
 
   /**
+   * @description 清空指定对象下的黑板分组行选择。
+   * @param objectId 对象标识。
+   */
+  function resetBehaviorTreeBbGroupRows(objectId: string): void {
+    const prefix = `${objectId}|`;
+    for (const key of Object.keys(blackboardGroupRows)) {
+      if (key.startsWith(prefix)) delete blackboardGroupRows[key];
+    }
+  }
+
+  /**
+   * @description 更新黑板对象属性实例；换实例时清空对应分组行。
+   * @param objectId 对象标识。
+   * @param value 实例主键文本。
+   */
+  function updateBlackboardObjectKey(objectId: string, value: string): void {
+    const id = objectId.trim();
+    if (!id) return;
+    const next = String(value ?? "").trim();
+    const previous = (blackboardObjectKeys[id] || "").trim();
+    blackboardObjectKeys[id] = next;
+    if (previous !== next) resetBehaviorTreeBbGroupRows(id);
+    if (next) void loadBehaviorTreeGroupRowOptions(id);
+  }
+
+  /**
+   * @description 更新黑板非主分组行选择。
+   * @param objectId 对象标识。
+   * @param storageGroup 分组名。
+   * @param value 行主键文本。
+   */
+  function updateBlackboardGroupRow(objectId: string, storageGroup: string, value: string): void {
+    const id = objectId.trim();
+    const group = storageGroup.trim();
+    if (!id || !group) return;
+    blackboardGroupRows[resolveBehaviorTreeBbGroupRowStateKey(id, group)] = String(value ?? "").trim();
+  }
+
+  /**
+   * @description 加载对象实例下指定分组的行候选。
+   * @param objectId 对象标识。
+   * @param storageGroup 可选；缺省时加载该对象全部所需分组。
+   */
+  async function loadBehaviorTreeGroupRowOptions(objectId: string, storageGroup = ""): Promise<void> {
+    const id = objectId.trim();
+    const instance = (blackboardObjectKeys[id] || "").trim();
+    if (!id || !instance) return;
+    const groups = storageGroup.trim() ? [storageGroup.trim()] : listBehaviorTreeBlackboardStorageGroups(execPlan.value, id);
+    await Promise.all(
+      groups.map(async (group) => {
+        const optionKey = `${id}|${instance}|${group}`;
+        if (groupRowOptions[optionKey] || groupRowLoadingIds[optionKey]) return;
+        const requestToken = (groupRowLoadTokens[optionKey] ?? 0) + 1;
+        groupRowLoadTokens[optionKey] = requestToken;
+        groupRowLoadingIds[optionKey] = true;
+        try {
+          const response = await postGetOntologyEntityRowDetailPageInterface({
+            ontologyUniqueIdentifier: id,
+            entityPrimaryKey: instance,
+            sort: "ASC",
+            storageGroup: group,
+            pageNum: 1,
+            pageSize: 200,
+          });
+          if (groupRowLoadTokens[optionKey] !== requestToken) return;
+          if (response.code !== 200 || !response.data) {
+            groupRowOptions[optionKey] = [];
+            return;
+          }
+          const records = Array.isArray(response.data.records) ? response.data.records : [];
+          groupRowOptions[optionKey] = records
+            .map((record) => {
+              const primary = record?.dataPrimaryKey;
+              if (primary == null || primary === "") return null;
+              const value = String(primary);
+              return { value, label: `行 ${value}` };
+            })
+            .filter((item): item is BehaviorTreeEntityOption => item != null);
+        } catch {
+          if (groupRowLoadTokens[optionKey] !== requestToken) return;
+          groupRowOptions[optionKey] = [];
+        } finally {
+          if (groupRowLoadTokens[optionKey] === requestToken) delete groupRowLoadingIds[optionKey];
+        }
+      }),
+    );
+  }
+
+  /**
    * @description 读取执行要求（GET /ontology/action → executeInputs.nodes）。
    * @param silent 是否静默（不弹 toast）。
    */
@@ -305,6 +410,8 @@ export function useBehaviorTreeExecution(options: {
       }
       planStatus.value = "ready";
       await prefetchBehaviorTreePlanInstances();
+      if (requestToken !== planToken) return;
+      await Promise.all(propertyBlackboardGroups.value.map((group) => loadBehaviorTreeGroupRowOptions(group.objectId)));
       if (requestToken !== planToken) return;
       if (!silent) ElMessage.success("已读取执行要求");
     } catch (error) {
@@ -394,6 +501,7 @@ export function useBehaviorTreeExecution(options: {
       plan: execPlan.value,
       objectLabelById,
       blackboardObjectKeys,
+      blackboardGroupRows,
       nodeDrafts,
     });
     if (missing.length) {
@@ -408,6 +516,7 @@ export function useBehaviorTreeExecution(options: {
       objectProperties: options.objectProperties.value,
       externalInputDraft,
       blackboardObjectKeys,
+      blackboardGroupRows,
       nodeDrafts,
     });
     if ("error" in built) {
@@ -459,6 +568,9 @@ export function useBehaviorTreeExecution(options: {
     execPlan,
     externalInputDraft,
     blackboardObjectKeys,
+    blackboardGroupRows,
+    groupRowOptions,
+    groupRowLoadingIds,
     nodeDrafts,
     instanceOptions,
     instanceLoadingIds,
@@ -471,11 +583,15 @@ export function useBehaviorTreeExecution(options: {
     execNodeBlocks,
     resolveObjectLabel,
     resolveBehaviorTreeOutputDraftKey,
+    resolveBehaviorTreeBbGroupRowStateKey,
     appendBehaviorTreeExecLog,
     clearBehaviorTreeExecLogs,
     ensureBehaviorTreeNodeExecDraft,
     loadBehaviorTreeExecutePlan,
     loadBehaviorTreeEntityOptions,
+    loadBehaviorTreeGroupRowOptions,
+    updateBlackboardObjectKey,
+    updateBlackboardGroupRow,
     updateNodeParamDraft,
     updateNodeEntityKeyDraft,
     updateNodeOutputDraft,

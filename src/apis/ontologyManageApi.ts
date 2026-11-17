@@ -10,6 +10,8 @@ import type {
   DeleteOntologyRelationCategoryTreeParams,
   GetOntologyLinkByUniqueIdentifierData,
   GetOntologyLinkByUniqueIdentifierParams,
+  GetOntologyLinkListData,
+  GetOntologyLinkListParams,
   OntologyCategoryTreeData,
   OntologyCategoryTreeParams,
   OntologyRelationCategoryTreeData,
@@ -379,6 +381,26 @@ export function getOntologyLinkByUniqueIdentifierInterface(
 ): Promise<ApiResponse<GetOntologyLinkByUniqueIdentifierData | null>> {
   return request<GetOntologyLinkByUniqueIdentifierData | null>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link",
+    method: "get",
+    params,
+  });
+}
+
+/**
+ * @description 分页查询空间内关系，支持按关系名称模糊匹配。
+ *
+ * 请求方式：GET `/ontology/link/list`
+ *
+ * @param params 查询参数。
+ * @param {number} params.spaceId 对象空间 id。
+ * @param {string} [params.relationName] 关系名称，模糊匹配；不传则查询全部。
+ * @param {number} [params.pageNum] 页码，从 1 开始；默认 1。
+ * @param {number} [params.pageSize] 每页条数；默认 10。
+ * @returns 标准 API 响应；data 为分页关系列表。
+ */
+export function getOntologyLinkListInterface(params: GetOntologyLinkListParams): Promise<ApiResponse<GetOntologyLinkListData>> {
+  return request<GetOntologyLinkListData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/link/list",
     method: "get",
     params,
   });
