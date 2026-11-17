@@ -54,11 +54,17 @@
       :start-id="guideStartId"
       @step-change="handleGuideStepChange"
     />
+    <div v-if="creating" class="ontology-subspace-create__progress" role="alert" aria-live="assertive" aria-busy="true">
+      <div class="ontology-subspace-create__progress-card">
+        <p>正在创建主题，请稍候…</p>
+        <el-progress :percentage="createProgress" :stroke-width="10" />
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -114,8 +120,32 @@ const relationLoadStatus = ref<"idle" | "loading" | "success" | "empty" | "error
 const relationLoadError = ref("");
 let relationRequestGeneration = 0;
 const creating = ref(false);
+const createProgress = ref(0);
+let createProgressTimer: number | null = null;
 const parentSpaceId = computed(() => String(route.params.spaceId || route.query.spaceId || "").trim());
 const isThemeSpaceCreation = computed(() => route.query.from === "theme-space-management");
+
+/** @description 停止创建主题进度定时器。 */
+function stopCreateProgressTimer(): void {
+  if (createProgressTimer === null) return;
+  window.clearInterval(createProgressTimer);
+  createProgressTimer = null;
+}
+
+/** @description 启动创建主题软进度，缓增至约 90%。 */
+function startCreateProgress(): void {
+  createProgress.value = 0;
+  stopCreateProgressTimer();
+  createProgressTimer = window.setInterval(() => {
+    if (createProgress.value >= 90) return;
+    const remain = 90 - createProgress.value;
+    createProgress.value = Math.min(90, createProgress.value + Math.max(1, Math.round(remain * 0.08)));
+  }, 400);
+}
+
+onBeforeUnmount(() => {
+  stopCreateProgressTimer();
+});
 /**
  * @description 引导演示模式：仅当从主题管理页的新手引导进入（query 携带 guide=1）时生效；
  *              真实「新建主题」入口不带 guide 参数，仍走真实接口与真实创建。
@@ -531,6 +561,7 @@ async function createSubspace() {
     return;
   }
   creating.value = true;
+  startCreateProgress();
   try {
     const response = await createOntologySubspaceInterface(
       mapSubspaceCreateRequest({
@@ -548,18 +579,26 @@ async function createSubspace() {
       }),
     );
     if (response.code !== 200) throw new Error(response.message || "子空间创建失败");
+    stopCreateProgressTimer();
+    createProgress.value = 100;
     ElMessage.success("子空间创建成功");
+    await new Promise((resolve) => window.setTimeout(resolve, 300));
     await router.back();
   } catch (cause) {
+    stopCreateProgressTimer();
+    createProgress.value = 0;
     ElMessage.error(cause instanceof Error && cause.message.trim() ? cause.message : "子空间创建失败，请重试");
   } finally {
+    stopCreateProgressTimer();
     creating.value = false;
+    createProgress.value = 0;
   }
 }
 </script>
 
 <style scoped lang="scss">
 .ontology-subspace-create {
+  position: relative;
   display: grid;
   width: 100%;
   min-width: 0;
@@ -568,6 +607,34 @@ async function createSubspace() {
   flex: 1;
   grid-template-columns: 320px minmax(0, 1fr);
   gap: 8px;
+}
+
+.ontology-subspace-create__progress {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--aircas-color-overlay);
+}
+
+.ontology-subspace-create__progress-card {
+  width: min(420px, 100%);
+  padding: 24px 28px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 10px;
+  background: var(--aircas-color-panel-background);
+  box-shadow: 0 12px 32px var(--aircas-color-effect-blue-soft);
+}
+
+.ontology-subspace-create__progress-card p {
+  margin: 0 0 16px;
+  color: var(--aircas-color-text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
 }
 
 .ontology-subspace-create__help {

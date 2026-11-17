@@ -4,31 +4,32 @@
       <div class="entity-browsing-object-profile__identity">
         <img class="entity-browsing-object-profile__icon" :src="profile.sideImage" :alt="profile.displayName" />
         <h1>{{ profile.displayName }}</h1>
+        <span v-if="detailVisible && detailEntityName" class="entity-browsing-object-profile__entity-name" :title="detailEntityName">{{
+          detailEntityName
+        }}</span>
       </div>
-      <nav class="entity-browsing-object-profile__tabs" aria-label="对象画像分区">
-        <button
-          v-for="tab in profileTabs"
-          :key="tab.id"
-          type="button"
-          class="entity-browsing-object-profile__tab"
-          :class="{ 'entity-browsing-object-profile__tab--active': activeTab === tab.id }"
-          role="tab"
-          :aria-selected="activeTab === tab.id"
-          @click="activeTab = tab.id"
-        >
-          {{ tab.label }}
-        </button>
-      </nav>
       <el-button type="primary" plain class="entity-browsing-object-profile__back" @click="goBackToEntityBrowsing">
         <el-icon><ArrowLeft /></el-icon>
         返回
       </el-button>
     </header>
 
-    <div class="entity-browsing-object-profile__content">
-      <ObjectProfileEntityList v-if="activeTab === 'entity-list'" :object-id="objectId" :space-id="spaceId" :object-name="profile.displayName" />
-      <ObjectProfileStandardUsage v-else-if="showStandardContent && activeTab === 'standard-usage'" :object-id="objectId" />
-      <div v-else class="entity-browsing-object-profile__placeholder" role="status">内容待配置</div>
+    <div class="entity-browsing-object-profile__content" :class="{ 'is-detail': detailVisible }">
+      <section v-show="!detailVisible" class="entity-browsing-object-profile__properties" aria-label="属性列表">
+        <h2>属性列表</h2>
+        <ObjectProfileStandardUsage :object-id="objectId" />
+      </section>
+      <section class="entity-browsing-object-profile__entities" aria-label="实体列表">
+        <h2 v-if="!detailVisible">实体列表</h2>
+        <ObjectProfileEntityList
+          ref="entityListRef"
+          :object-id="objectId"
+          :space-id="spaceId"
+          :object-name="profile.displayName"
+          @detail-visibility-change="handleEntityDetailVisibility"
+          @detail-name-change="handleEntityDetailName"
+        />
+      </section>
     </div>
   </div>
 </template>
@@ -39,24 +40,13 @@ import { ArrowLeft } from "@element-plus/icons-vue";
 import { useRoute, useRouter } from "vue-router";
 import { resolveEntityBrowsingObjectProfile } from "@/mocks/entityBrowsingObjectProfileMock/entityBrowsingObjectProfileMock";
 import { ENTITY_BROWSING_DEFAULT_SPACE_ID } from "@/utils/entityBrowseConstants";
-import { isStandardContentVisible } from "@/utils/isStandardContentVisible";
 import ObjectProfileEntityList from "./components/ObjectProfileEntityList.vue";
 import ObjectProfileStandardUsage from "./components/ObjectProfileStandardUsage.vue";
-import type { EntityBrowsingObjectProfileTab } from "@/types";
-
-const showStandardContent = isStandardContentVisible();
-
-/** 空间浏览对象详情：实体列表；标准应用情况仅在运行时开关打开时展示。 */
-const profileTabs = computed<ReadonlyArray<{ id: EntityBrowsingObjectProfileTab; label: string }>>(() => {
-  const tabs: Array<{ id: EntityBrowsingObjectProfileTab; label: string }> = [];
-  if (showStandardContent) tabs.push({ id: "standard-usage", label: "标准应用情况" });
-  tabs.push({ id: "entity-list", label: "实体列表" });
-  return tabs;
-});
-
 const route = useRoute();
 const router = useRouter();
-const activeTab = ref<EntityBrowsingObjectProfileTab>("entity-list");
+const detailVisible = ref(false);
+const detailEntityName = ref("");
+const entityListRef = ref<InstanceType<typeof ObjectProfileEntityList>>();
 
 const objectId = computed(() => (typeof route.params.objectId === "string" ? route.params.objectId.trim() : ""));
 
@@ -72,16 +62,29 @@ const objectNameFallback = computed(() => {
 const profile = computed(() => resolveEntityBrowsingObjectProfile(objectId.value, objectNameFallback.value));
 
 /**
- * @description 切换对象时重置为实体列表 Tab。
+ * @description 同步实体详情可见状态，使详情占满页面内容区。
+ * @param visible 是否显示详情。
  */
-function resetActiveTab(): void {
-  activeTab.value = "entity-list";
+function handleEntityDetailVisibility(visible: boolean): void {
+  detailVisible.value = visible;
 }
 
 /**
- * @description 返回当前空间的实体浏览对象列表，保留原 query。
+ * @description 同步顶部标题栏的当前实体名称。
+ * @param name 实体名称，关闭详情时为空。
+ */
+function handleEntityDetailName(name: string): void {
+  detailEntityName.value = name;
+}
+
+/**
+ * @description 详情中返回实体列表，列表中返回当前空间对象列表并保留 query。
  */
 function goBackToEntityBrowsing(): void {
+  if (detailVisible.value) {
+    entityListRef.value?.closeEntityDetail();
+    return;
+  }
   void router.push({
     name: "EntityBrowsingObject",
     params: { spaceId: spaceId.value },
@@ -89,7 +92,10 @@ function goBackToEntityBrowsing(): void {
   });
 }
 
-watch(objectId, resetActiveTab, { immediate: true });
+watch(objectId, () => {
+  detailVisible.value = false;
+  detailEntityName.value = "";
+});
 </script>
 
 <style scoped lang="scss">
@@ -141,6 +147,15 @@ watch(objectId, resetActiveTab, { immediate: true });
   gap: 10px;
 }
 
+.entity-browsing-object-profile__entity-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .entity-browsing-object-profile__icon {
   width: 28px;
   height: 28px;
@@ -158,51 +173,36 @@ watch(objectId, resetActiveTab, { immediate: true });
   white-space: nowrap;
 }
 
-.entity-browsing-object-profile__tabs {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 4px;
-  margin-left: 12px;
-}
-
-.entity-browsing-object-profile__tab {
-  height: 32px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--aircas-color-text-secondary);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.entity-browsing-object-profile__tab:hover {
-  color: var(--aircas-color-text-primary);
-  background: var(--aircas-color-effect-primary-soft);
-}
-
-.entity-browsing-object-profile__tab--active {
-  color: var(--aircas-color-primary);
-  box-shadow: inset 0 -2px 0 var(--aircas-color-primary);
-}
-
 .entity-browsing-object-profile__content {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
   min-width: 0;
   min-height: 0;
   flex: 1;
 }
-
-.entity-browsing-object-profile__placeholder {
+.entity-browsing-object-profile__content.is-detail {
+  grid-template-rows: minmax(0, 1fr);
+}
+.entity-browsing-object-profile__properties,
+.entity-browsing-object-profile__entities {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
   min-height: 0;
-  height: 100%;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
-  color: var(--aircas-color-text-secondary);
-  font-size: 14px;
+  overflow: hidden;
+}
+.entity-browsing-object-profile__properties h2,
+.entity-browsing-object-profile__entities h2 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--aircas-color-text-primary);
+}
+.entity-browsing-object-profile__properties > :last-child,
+.entity-browsing-object-profile__entities > :last-child {
+  flex: 1;
+  min-height: 0;
+  height: auto;
 }
 </style>

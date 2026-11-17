@@ -154,6 +154,7 @@ export function getOntologyObjectByCategoryIdInterface(params?: GetOntologyObjec
  * @param params.ontologyIdentifier 对象 id。
  * @param params.displayName 对象名称。
  * @param params.groupIds 对象分组 id 列表。
+ * @param params.apiName 对象 API 名称；未关联数据源时可选修改。
  * @param params.icon 对象图标。
  * @param params.description 对象描述。
  * @param params.categoryId 对象分类 id。

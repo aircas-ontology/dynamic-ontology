@@ -123,7 +123,7 @@ test("entity detail template renders the three upper panels and object behavior 
   assert.match(html, /实体属性和值/);
   assert.match(html, /实体关系图/);
   assert.match(html, /对象行为/);
-  assert.match(html, /返回实体列表/);
+  assert.doesNotMatch(html, /返回实体列表/);
   assert.equal(boundaries[0].readonly, true);
   assert.deepEqual(boundaries[0].seedNames, ["实体甲"]);
   assert.deepEqual(boundaries[1].items, [{ id: 1 }]);
@@ -354,13 +354,15 @@ async function settleEntityNavigation() {
 
 test("entity details query URL with current identity and use first nonblank URL", async () => {
   const calls = [];
-  const { page, rows, scope } = createEntityNavigation(async (params) => {
+  const { page, rows, events, scope } = createEntityNavigation(async (params) => {
     calls.push(params);
     return { code: 200, data: [{ url: " " }, { url: " https://example.com/entity/0 " }, { url: "https://example.com/other" }] };
   });
   try {
     assert.equal(page.openEntityDetail(rows.value[0]), true);
     assert.equal(page.detailStatus.value, "loading");
+    assert.ok(events.some((event) => event[0] === "detail-visibility-change" && event[1] === true));
+    assert.ok(events.some((event) => event[0] === "detail-name-change" && event[1] === "实体甲"));
     assert.equal(page.openEntityDetail(rows.value[0]), false);
     await settleEntityNavigation();
     assert.deepEqual(calls, [{ spaceId: 156, objectId: "object-a", instanceId: "0" }]);
@@ -369,6 +371,8 @@ test("entity details query URL with current identity and use first nonblank URL"
     page.closeEntityDetail();
     assert.equal(page.detailUrl.value, "");
     assert.equal(page.detailStatus.value, "idle");
+    assert.ok(events.some((event) => event[0] === "detail-name-change" && event[1] === ""));
+    assert.ok(events.some((event) => event[0] === "detail-visibility-change" && event[1] === false));
     assert.equal(page.selectedEntity.value, null);
   } finally {
     scope.stop();

@@ -56,9 +56,9 @@ test("object card and list export confirms before calling the ontology export ap
   assert.match(panelSource, /@confirm="confirmExportOntologyObject"/);
   assert.doesNotMatch(panelSource, /void exportOntologyObject\(item\)/);
   assert.match(dialogSource, /title="导出对象"/);
-  assert.match(dialogSource, /导出「\{\{ objectName \}\}」。/);
-  assert.match(dialogSource, /SCHEMA：仅结构/);
-  assert.match(dialogSource, /INSTANCE：含实例数据/);
+  assert.match(dialogSource, /导出「\{\{ objectName \}\}」。|导出已选的 \{\{ selectedCount \}\} 个对象/);
+  assert.match(dialogSource, />仅结构<\/el-radio>/);
+  assert.match(dialogSource, />含实例数据<\/el-radio>/);
   assert.match(dialogSource, /ref<OntologyExportType>\("INSTANCE"\)/);
   assert.match(dialogSource, /exportType\.value = "INSTANCE"/);
   assert.match(dialogSource, /class="ontology-object-export-dialog__export-type"/);
@@ -67,6 +67,24 @@ test("object card and list export confirms before calling the ontology export ap
   assert.match(dialogSource, /emit\('confirm', exportType\)/);
   assert.doesNotMatch(dialogSource, /schema 与实例数据/);
   assert.match(dialogSource, />导出<\/el-button>/);
+});
+
+test("batch object export opens the shared type dialog and passes the selected exportType", () => {
+  const actionsSource = readSource("../src/views/ObjectWorkspacePanel/composables/useObjectWorkspaceObjectActions.ts");
+  const panelSource = readSource("../src/views/ObjectWorkspacePanel/index.vue");
+  const dialogSource = readSource("../src/views/ObjectWorkspacePanel/components/OntologyObjectExportDialog.vue");
+  assert.match(actionsSource, /function openBatchOntologyObjectExportDialog\(identifiers: string\[\]\)/);
+  assert.match(actionsSource, /pendingBatchExportIds/);
+  assert.match(actionsSource, /getExportOntologyInterface\(\{ uniqueIdentifier, exportType \}\)/);
+  assert.doesNotMatch(actionsSource, /exportType:\s*"SCHEMA"/);
+  assert.match(actionsSource, /批量导出文件已生成|导出文件已生成/);
+  assert.match(panelSource, /@batch-export="exportSelectedObjects"/);
+  assert.match(panelSource, /openBatchOntologyObjectExportDialog\(identifiers\)/);
+  assert.doesNotMatch(panelSource, /exportOntologyObjects\(identifiers\)/);
+  assert.match(panelSource, /:object-name="exportDialogObjectName"/);
+  assert.match(panelSource, /:selected-count="pendingBatchExportIds\.length"/);
+  assert.match(dialogSource, /selectedCount/);
+  assert.match(dialogSource, /导出已选的 \{\{ selectedCount \}\} 个对象/);
 });
 
 test("ontology export file name prefers content disposition and falls back by content type", async () => {

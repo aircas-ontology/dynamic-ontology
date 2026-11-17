@@ -1,12 +1,5 @@
 <template>
   <section class="object-profile-entity-detail" aria-label="实体详情">
-    <header class="object-profile-entity-detail__header">
-      <div class="object-profile-entity-detail__identity">
-        <h2 :title="entityName">{{ entityName }}</h2>
-        <span>实体详情 · {{ instanceId }}</span>
-      </div>
-      <el-button plain :icon="ArrowLeft" @click="emit('back')">返回实体列表</el-button>
-    </header>
     <div class="object-profile-entity-detail__top">
       <aside class="object-profile-entity-detail__panel object-profile-entity-detail__categories" aria-label="属性分类树">
         <h3>属性分类</h3>
@@ -129,7 +122,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { ArrowLeft } from "@element-plus/icons-vue";
 import { ElMessage, type ElTree } from "element-plus";
 import * as behaviorTestApis from "@/apis";
 import BehaviorTestDialog from "@/components/BehaviorTestDialog/BehaviorTestDialog.vue";
@@ -156,7 +148,6 @@ const props = withDefaults(
   }>(),
   { listProperties: () => [] },
 );
-const emit = defineEmits<{ back: [] }>();
 const activeBehavior = ref<SpaceBehaviorItem | null>(null);
 const behaviorTestVisible = ref(false);
 const behaviorTreeTestVisible = ref(false);

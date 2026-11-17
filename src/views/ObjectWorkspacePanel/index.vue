@@ -68,6 +68,8 @@
       :error="objectCreateError"
       :editing-item="editingObject"
       :initial-parent-id="initialParentId"
+      :api-name-locked="objectApiNameLocked"
+      :api-name-checking="objectApiNameChecking"
       @submit-manual="createOntologyObject"
       @submit-import="importOntologyObjects"
       @submit-edit="updateOntologyObject"
@@ -84,7 +86,8 @@
     />
     <OntologyObjectExportDialog
       v-model="objectExportVisible"
-      :object-name="exportingObject?.displayName ?? ''"
+      :object-name="exportDialogObjectName"
+      :selected-count="pendingBatchExportIds.length"
       :submitting="objectExporting"
       :error="objectExportError"
       @confirm="confirmExportOntologyObject"
@@ -160,6 +163,8 @@ const {
   objectCreateSubmitting,
   objectCreateError,
   editingObject,
+  objectApiNameLocked,
+  objectApiNameChecking,
   objectDeleteVisible,
   objectDeleteSubmitting,
   objectDeleteError,
@@ -167,7 +172,8 @@ const {
   objectExportVisible,
   objectExporting,
   objectExportError,
-  exportingObject,
+  pendingBatchExportIds,
+  exportDialogObjectName,
   parentOptions,
   openOntologyObjectCreateDialog,
   openOntologyObjectEditDialog,
@@ -178,6 +184,7 @@ const {
   updateOntologyObject,
   confirmDeleteOntologyObject,
   openOntologyObjectExportDialog,
+  openBatchOntologyObjectExportDialog,
   confirmExportOntologyObject,
   openOntologyLlmBuilder,
 } = objectActions;
@@ -185,9 +192,9 @@ const selectedNodeId = ref("");
 const viewMode = ref<OntologyObjectViewMode>("card");
 const locationTarget = ref<OntologyObjectLocationTarget | null>(null);
 
-/** @description 导出对象列表中勾选的对象。 @param identifiers 对象唯一标识列表。 */
-async function exportSelectedObjects(identifiers: string[]) {
-  await objectActions.exportOntologyObjects(identifiers);
+/** @description 打开批量导出类型选择弹窗。 @param identifiers 对象唯一标识列表。 */
+function exportSelectedObjects(identifiers: string[]) {
+  openBatchOntologyObjectExportDialog(identifiers);
 }
 let locationRequestId = 0;
 

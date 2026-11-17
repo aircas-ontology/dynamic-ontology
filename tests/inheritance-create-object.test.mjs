@@ -65,6 +65,12 @@ test("dialog opens manually with inherited category and resets on ordinary reope
     ref,
     watch,
     defineProps: () => props,
+    withDefaults: (defined, defaults) => {
+      for (const [key, value] of Object.entries(defaults)) {
+        if (defined[key] === undefined) defined[key] = value;
+      }
+      return defined;
+    },
     defineModel: () => visible,
     defineEmits: () => () => {},
     ontologyImportTemplate: {},

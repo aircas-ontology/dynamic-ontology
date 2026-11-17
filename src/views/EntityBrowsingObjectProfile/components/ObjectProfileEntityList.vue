@@ -8,13 +8,8 @@
       :list-properties="selectedEntity.detailItems"
       :space-id="spaceId"
       :entity-name="resolveEntityTitle(selectedEntity)"
-      @back="closeEntityDetail"
     />
     <template v-else-if="selectedEntity">
-      <header class="object-profile-entity-list__toolbar">
-        <strong>{{ resolveEntityTitle(selectedEntity) }}</strong>
-        <el-button @click="closeEntityDetail">返回实体列表</el-button>
-      </header>
       <div v-if="detailStatus === 'loading'" class="object-profile-entity-list__state" role="status">
         <AircasLoading>正在查询实体详情地址…</AircasLoading>
       </div>
@@ -110,6 +105,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   "detail-auto-opened": [];
   "close-detail": [];
+  "detail-visibility-change": [visible: boolean];
+  "detail-name-change": [name: string];
 }>();
 
 const selectedEntity = ref<ObjectProfileEntityRow | null>(null);
@@ -219,6 +216,8 @@ function openEntityDetail(row?: ObjectProfileEntityRow): boolean {
   )
     return false;
   selectedEntity.value = asEntityRow(entity);
+  emit("detail-visibility-change", true);
+  emit("detail-name-change", resolveEntityTitle(selectedEntity.value));
   detailUrl.value = "";
   detailStatus.value = "loading";
   void resolveEntityDetailTarget(selectedEntity.value, ++detailRequestToken);
@@ -237,6 +236,8 @@ function resetEntityDetail(): void {
   selectedEntity.value = null;
   detailUrl.value = "";
   detailStatus.value = "idle";
+  emit("detail-visibility-change", false);
+  emit("detail-name-change", "");
 }
 
 watch(() => [props.objectId, props.spaceId], resetEntityDetail, { flush: "sync" });
@@ -251,7 +252,7 @@ watch(
   { immediate: true },
 );
 
-defineExpose({ openEntityDetail });
+defineExpose({ openEntityDetail, closeEntityDetail });
 
 /**
  * @description 按当前分页参数重新加载实体列表。
