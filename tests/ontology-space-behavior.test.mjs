@@ -918,9 +918,17 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(drawerSource, /loadActionInfoForView/);
   assert.match(drawerSource, /spaceId: string/);
   assert.match(drawerSource, /background: var\(--aircas-color-section-header\)/);
-  assert.match(drawerSource, /行为 ID/);
+  assert.match(drawerSource, /行为名称/);
+  assert.match(drawerSource, /viewState\.displayName/);
+  assert.doesNotMatch(drawerSource, /行为 ID/);
+  assert.doesNotMatch(drawerSource, /apiName \{\{/);
+  assert.doesNotMatch(drawerSource, /behavior-detail-drawer__meta-line/);
   assert.match(drawerSource, /行为 api/);
-  assert.match(drawerSource, /主体类型/);
+  assert.match(drawerSource, /创建时间/);
+  assert.match(drawerSource, /viewState\.createTime/);
+  assert.doesNotMatch(drawerSource, /对象标识/);
+  assert.doesNotMatch(drawerSource, /label="主体类型"/);
+  assert.doesNotMatch(drawerSource, /label="基础操作"/);
   assert.match(drawerSource, /输入参数/);
   assert.match(drawerSource, /输出参数/);
   assert.doesNotMatch(drawerSource, /执行范围/);
@@ -1692,6 +1700,29 @@ test("space behavior maps action info detail into view drawer state", () => {
   assert.equal(applicationView.inputRows[0]?.paramType, "OBJECT");
   assert.match(applicationView.inputRows[0]?.bindSummary ?? "", /对象属性/);
   assert.match(applicationView.outputRows[0]?.bindSummary ?? "", /仅返回/);
+
+  const treeView = mapOntologyActionInfoToViewState({
+    id: 11,
+    actionApi: "tree.demo",
+    displayName: "行为树演示",
+    description: "",
+    ontologyUniqIdentifier: "onto-1",
+    createTime: "2026-11-09 10:58:12",
+    categoryId: 14,
+    status: 2,
+    actionKind: "TREE",
+    subjectType: null,
+    operation: null,
+    storageGroup: null,
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
+    linkMapping: null,
+    mappingIns: [],
+    functionParams: [],
+  });
+  assert.equal(treeView.actionKindLabel, "行为树");
+  assert.equal(treeView.createTime, "2026-11-09 10:58:12");
 
   const edgeView = mapOntologyActionInfoToViewState({
     id: 10,

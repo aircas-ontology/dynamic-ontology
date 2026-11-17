@@ -21,19 +21,13 @@
           <el-tag v-if="viewState.subjectTypeLabel !== '—'" size="small" effect="plain">{{ viewState.subjectTypeLabel }}</el-tag>
           <el-tag v-if="viewState.operationLabel !== '—'" size="small" effect="plain">{{ viewState.operationLabel }}</el-tag>
         </div>
-        <div class="behavior-detail-drawer__meta-line">
-          <span>apiName {{ viewState.actionApi || "—" }}</span>
-          <span v-if="viewState.functionApi">算子 {{ viewState.functionDescription || viewState.functionApi }}</span>
-        </div>
       </header>
 
       <el-descriptions class="behavior-detail-drawer__summary" :column="2" border size="small">
-        <el-descriptions-item label="行为 ID">{{ viewState.id }}</el-descriptions-item>
+        <el-descriptions-item label="行为名称">{{ viewState.displayName || "—" }}</el-descriptions-item>
         <el-descriptions-item label="行为 api">{{ viewState.actionApi || "—" }}</el-descriptions-item>
         <el-descriptions-item label="行为类别">{{ viewState.actionKindLabel }}</el-descriptions-item>
-        <el-descriptions-item label="主体类型">{{ viewState.subjectTypeLabel }}</el-descriptions-item>
-        <el-descriptions-item label="基础操作">{{ viewState.operationLabel }}</el-descriptions-item>
-        <el-descriptions-item label="对象标识">{{ viewState.ontologyUniqIdentifier || "—" }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ viewState.createTime || "—" }}</el-descriptions-item>
         <el-descriptions-item v-if="viewState.storageGroup" label="存储分组">{{ viewState.storageGroup }}</el-descriptions-item>
         <el-descriptions-item v-if="viewState.functionApi" label="绑定算子">
           {{ viewState.functionDescription || viewState.functionApi }}
@@ -202,17 +196,13 @@ watch(
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.behavior-detail-drawer__tags,
-.behavior-detail-drawer__meta-line {
+.behavior-detail-drawer__tags {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   color: var(--aircas-color-text-secondary);
   font-size: 12px;
-}
-.behavior-detail-drawer__meta-line {
-  margin-top: 8px;
 }
 .behavior-detail-drawer__summary {
   margin-top: 16px;

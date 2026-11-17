@@ -13,6 +13,7 @@ export interface SpaceBehaviorActionInfoViewState {
   subjectTypeLabel: string;
   operationLabel: string;
   ontologyUniqIdentifier: string;
+  createTime: string;
   storageGroup: string;
   functionApi: string;
   functionDescription: string;
@@ -40,6 +41,7 @@ function mapActionInfoStatus(status: number): SpaceBehaviorStatus {
 function mapActionKindLabel(actionKind: string): string {
   if (actionKind === "APPLICATION") return "应用行为";
   if (actionKind === "BASE") return "基础行为";
+  if (actionKind === "TREE") return "行为树";
   return actionKind || "—";
 }
 
@@ -204,6 +206,7 @@ export function mapOntologyActionInfoToViewState(data: GetOntologyActionInfoData
     subjectTypeLabel: mapSubjectTypeLabel((data.subjectType ?? "").trim()),
     operationLabel: mapOperationLabel((data.operation ?? "").trim()),
     ontologyUniqIdentifier: (data.ontologyUniqIdentifier ?? "").trim(),
+    createTime: (data.createTime ?? "").trim(),
     storageGroup: (data.storageGroup ?? "").trim(),
     functionApi: (data.functionApi ?? "").trim(),
     functionDescription: (data.functionDescription ?? "").trim(),

@@ -152,6 +152,8 @@ export interface GetOntologyActionInfoData {
   displayName: string;
   description?: string | null;
   ontologyUniqIdentifier: string;
+  /** 创建时间。 */
+  createTime?: string | null;
   categoryId: number;
   /** 1 启用，0 失效。 */
   status: number;
