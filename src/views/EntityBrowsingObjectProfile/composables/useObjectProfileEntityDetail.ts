@@ -112,6 +112,7 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
       const response = await getListOntologyActionInterface({
         ontologySpaceId: spaceId,
         ontologyId: current.objectId,
+        status: 1,
         pageNum: page,
         pageSize: behaviorPageSize,
       });

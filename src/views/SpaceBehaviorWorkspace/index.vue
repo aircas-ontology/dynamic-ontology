@@ -72,7 +72,12 @@
     />
     <BehaviorDetailDrawer v-model="behaviorDetailVisible" :space-id="spaceId" :behavior="activeBehavior" />
     <BehaviorTestDialog v-model="behaviorTestVisible" :space-id="spaceId" :behavior="activeBehavior" />
-    <BehaviorTreeTestDialog v-model="behaviorTreeTestVisible" :space-id="spaceId" :behavior="activeBehavior" />
+    <BehaviorTreeTestDialog
+      :query-object-catalog="getOntologyCategoryTreeInterface"
+      v-model="behaviorTreeTestVisible"
+      :space-id="spaceId"
+      :behavior="activeBehavior"
+    />
     <BehaviorStatusDialog v-model="behaviorStatusVisible" :behavior="activeBehavior" :loading="actionLoading" @confirm="handleBehaviorStatusSubmit" />
     <BehaviorDeleteDialog
       v-model="behaviorDeleteVisible"
@@ -86,6 +91,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { ElMessage } from "element-plus";
+import { getOntologyCategoryTreeInterface } from "@/apis";
+import BehaviorTreeTestDialog from "@/components/BehaviorTreeTestDialog.vue";
 import type { SpaceBehaviorDraft, SpaceBehaviorItem, SpaceBehaviorStatusChangeDraft } from "@/types";
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
@@ -99,7 +106,6 @@ import BehaviorCategoryDeleteDialog from "./components/BehaviorCategoryDeleteDia
 import BehaviorFormDialog from "./components/BehaviorFormDialog.vue";
 import BehaviorDetailDrawer from "./components/BehaviorDetailDrawer.vue";
 import BehaviorTestDialog from "./components/BehaviorTestDialog.vue";
-import BehaviorTreeTestDialog from "./components/BehaviorTreeTestDialog.vue";
 import BehaviorStatusDialog from "./components/BehaviorStatusDialog.vue";
 import BehaviorDeleteDialog from "./components/BehaviorDeleteDialog.vue";
 

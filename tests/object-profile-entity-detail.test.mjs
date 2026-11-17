@@ -200,11 +200,19 @@ test("detail queries selected entity and object-scoped behaviors, supports categ
     const params = h.requests.find(([kind]) => kind === "behaviors")[1];
     assert.equal(params.ontologyId, "object-a");
     assert.equal(params.ontologySpaceId, 156);
+    assert.equal(params.status, 1);
     h.state.selectedCategoryId.value = "3";
     assert.equal(h.state.filteredProperties.value.length, 2);
     await h.state.loadEntityBehaviors(2);
     assert.equal(h.state.behaviorPage.value, 2);
     assert.equal(h.state.behaviorTotal.value, 25);
+    assert.deepEqual(
+      h.requests.filter(([kind]) => kind === "behaviors").map(([, query]) => ({ pageNum: query.pageNum, status: query.status })),
+      [
+        { pageNum: 1, status: 1 },
+        { pageNum: 2, status: 1 },
+      ],
+    );
   } finally {
     h.scope.stop();
   }

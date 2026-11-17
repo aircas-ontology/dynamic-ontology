@@ -210,3 +210,48 @@ test("detail preserves primary-key identity and uses relation examples only when
     scope.stop();
   }
 });
+
+test("behavior cards retain descriptions and metadata without displaying behavior status", async () => {
+  const component = compileProfileComponent(
+    "ObjectProfileEntityBehaviors",
+    (id) => {
+      if (id === "vue") return Vue;
+      if (id === "@element-plus/icons-vue") return { Operation: Vue.defineComponent({ render: () => null }) };
+      return { __esModule: true, default: Vue.defineComponent({ render: () => null }) };
+    },
+    true,
+  );
+  const slot = Vue.defineComponent({
+    setup:
+      (_, { slots }) =>
+      () =>
+        Vue.h("span", slots.default?.()),
+  });
+  for (const status of [0, 1]) {
+    const app = Vue.createSSRApp(component, {
+      items: [
+        {
+          id: 1,
+          displayName: "行为名称",
+          description: "保留原描述",
+          actionApi: "action-api",
+          functionApi: "function-api",
+          actionKind: "BASE",
+          status,
+          updateTime: "2026-11-17",
+        },
+      ],
+      status: "ready",
+      error: "",
+      page: 1,
+      pageSize: 8,
+      total: 1,
+    });
+    for (const name of ["el-icon", "el-tag", "el-button", "el-empty", "el-pagination"]) app.component(name, slot);
+    const html = await renderToString(app);
+    assert.doesNotMatch(html, /行为状态|已启用|已停用/);
+    assert.match(html, /<h3[^>]*>行为名称<\/h3>/);
+    assert.match(html, /class="entity-detail-behavior-card__description"[^>]*>保留原描述<\/p>/);
+    for (const value of ["基础行为", "行为 API", "action-api", "挂载函数", "function-api", "更新时间", "2026-11-17"]) assert.ok(html.includes(value));
+  }
+});

@@ -32,12 +32,6 @@
             <dd :title="item.functionApi || ''">{{ item.functionApi || "—" }}</dd>
           </div>
           <div>
-            <dt>行为状态</dt>
-            <dd>
-              <el-tag size="small" :type="item.status === 1 ? 'success' : 'info'">{{ item.status === 1 ? "已启用" : "已停用" }}</el-tag>
-            </dd>
-          </div>
-          <div>
             <dt>更新时间</dt>
             <dd :title="item.updateTime || ''">{{ item.updateTime || "—" }}</dd>
           </div>

@@ -197,7 +197,7 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(workspaceSource, /relationInstance/);
   assert.match(workspaceSource, /valueType !== "basicFunctionOperator"/);
   assert.match(workspaceSource, /当前行为缺少对象标识，无法加载实体列表/);
-  const treeTestDialogSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorTreeTestDialog.vue");
+  const treeTestDialogSource = readSource("../src/components/BehaviorTreeTestDialog.vue");
   assert.match(treeTestDialogSource, /useBehaviorTreeExecution/);
   assert.match(treeTestDialogSource, /BehaviorTreeExecPanel/);
   assert.match(treeTestDialogSource, /loadBehaviorTreeExecutePlan\(true\)/);
