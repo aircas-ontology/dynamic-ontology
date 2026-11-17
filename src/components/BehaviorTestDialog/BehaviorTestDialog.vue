@@ -182,7 +182,11 @@
     @reload-detail="reloadEntityRowDetailFromPage"
   />
 
-  <BehaviorEntityLinkDataDialog v-model="entityLinkDataVisible" :query-params="entityLinkDataQueryParams" />
+  <BehaviorEntityLinkDataDialog
+    v-model="entityLinkDataVisible"
+    :query-params="entityLinkDataQueryParams"
+    :query-links="apis.postOntologyEntityAllLinkInterface"
+  />
 </template>
 
 <script setup lang="ts">
@@ -191,13 +195,8 @@ import { useBehaviorParameters } from "@/composables/behavior/useBehaviorParamet
 import type { BehaviorTestEntityRow, BehaviorTestEntityDataRow } from "@/types";
 import { computed, onScopeDispose, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import {
-  getOntologyActionInfoInterface,
-  getOntologyEntitiesInterface,
-  getOntologyLinkByUniqueIdentifierInterface,
-  postGetOntologyEntityRowDetailPageInterface,
-  postTestOntologyActionInterface,
-} from "@/apis";
+import type * as BehaviorTestApis from "@/apis";
+import { mergeBehaviorTestEntityRows } from "@/utils/behaviorParameters/createBehaviorTestInitialEntity";
 import {
   SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
   SPACE_BEHAVIOR_KIND_LABELS,
@@ -218,10 +217,28 @@ import { mapOntologyActionInfoToViewState } from "@/utils/behaviorParameters/map
 import { isMainStorageGroup } from "@/utils/behaviorParameters/resolveAttributeValueSelection";
 
 const props = defineProps<{
+  apis: Pick<
+    typeof BehaviorTestApis,
+    | "getOntologyActionInfoInterface"
+    | "getOntologyEntitiesInterface"
+    | "getOntologyLinkByUniqueIdentifierInterface"
+    | "postGetOntologyEntityRowDetailPageInterface"
+    | "postTestOntologyActionInterface"
+    | "postOntologyEntityAllLinkInterface"
+  >;
+  initialEntity?: BehaviorTestEntityRow;
   modelValue: boolean;
   spaceId: string;
   behavior: SpaceBehaviorItem | null;
 }>();
+
+const {
+  getOntologyActionInfoInterface,
+  getOntologyEntitiesInterface,
+  getOntologyLinkByUniqueIdentifierInterface,
+  postGetOntologyEntityRowDetailPageInterface,
+  postTestOntologyActionInterface,
+} = props.apis;
 
 const parameterConfig = useBehaviorParameters(props, {
   getOntologyActionInfoInterface,
@@ -284,6 +301,7 @@ const submitError = ref("");
 /** 基础函数算子测试成功后展示的接口 data 文本。 */
 const basicOperatorTestResultText = ref("");
 let submitToken = 0;
+let contextToken = 0;
 
 const entityRowDetailVisible = ref(false);
 /** 实例数据弹框引用，用于修改测试成功后刷新详情。 */
@@ -366,7 +384,7 @@ const selectedEntityRow = computed(() => {
 });
 
 const selectedEntityPrimaryKey = computed(() => {
-  const primaryKey = selectedEntityRow.value?.primaryKey;
+  const primaryKey = selectedEntityRow.value?.savedPrimaryKey ?? selectedEntityRow.value?.primaryKey;
   if (primaryKey === undefined || primaryKey === null || primaryKey === "") return null;
   return primaryKey;
 });
@@ -663,7 +681,9 @@ async function loadEntityList(): Promise<void> {
     if (requestToken !== entityLoadToken) return;
     if (response.code !== 200 || !response.data) throw new Error(response.message || "实体列表加载失败");
     const records = Array.isArray(response.data.records) ? response.data.records : [];
-    entityRows.value = records.map((item, index) => mapEntityRecordToRow(item, index));
+    const rows = records.map((item, index) => mapEntityRecordToRow(item, index));
+    const snapshot = selectedEntitySnapshot.value;
+    entityRows.value = props.initialEntity && snapshot ? mergeBehaviorTestEntityRows(rows, snapshot) : rows;
     entityTotal.value = Number(response.data.total) || records.length;
     if (selectedEntityRowKey.value) {
       const onPage = entityRows.value.find((item) => item.rowKey === selectedEntityRowKey.value) ?? null;
@@ -967,8 +987,8 @@ async function submitBehaviorTest(): Promise<void> {
       const response = await postTestOntologyActionInterface({
         ontologySpaceId,
         actionApi,
-        entityPrimaryKey: mountRow.primaryKey,
-        linkEntityPrimaryKey: oppositeRow.primaryKey,
+        entityPrimaryKey: mountRow.savedPrimaryKey ?? mountRow.primaryKey,
+        linkEntityPrimaryKey: oppositeRow.savedPrimaryKey ?? oppositeRow.primaryKey,
       });
       if (requestToken !== submitToken) return;
       if (response.code !== 200) throw new Error(response.message || "行为测试失败");
@@ -1059,7 +1079,7 @@ async function submitBehaviorTest(): Promise<void> {
     const response = await postTestOntologyActionInterface({
       ontologySpaceId,
       actionApi,
-      entityPrimaryKey: selected.primaryKey,
+      entityPrimaryKey: selected.savedPrimaryKey ?? selected.primaryKey,
       ...(needsDataRowSelection.value && selectedGroupDataRow.value ? { dataPrimaryKey: selectedGroupDataRow.value.dataPrimaryKey } : {}),
       ...(params ? { params } : {}),
     });
@@ -1082,12 +1102,30 @@ async function submitBehaviorTest(): Promise<void> {
 
 /** @description 销毁弹窗时使页面侧实体、数据行和测试请求的响应失效。 */
 function disposeBehaviorTest(): void {
+  contextToken += 1;
   entityLoadToken += 1;
   groupRowLoadToken += 1;
   submitToken += 1;
 }
 
 onScopeDispose(disposeBehaviorTest);
+
+/** @description 加载测试上下文后预选当前实例，切换或关闭后拒绝旧初始化结果。 @param token 当前打开周期标识。 */
+async function initializeBehaviorTestContext(token: number): Promise<void> {
+  const initial = props.initialEntity;
+  if (isApplicationTest.value || isRelationInstanceTest.value) {
+    if (isApplicationTest.value) await loadApplicationTestForm();
+    else await loadRelationTestContext();
+    if (token !== contextToken || !props.modelValue) return;
+    if (initial) parameterConfig.applyInitialEntitySelection(initial);
+    return;
+  }
+  if (initial && initial.raw.ontologyUniqueIdentifier === props.behavior?.ontologyUniqIdentifier) {
+    selectedEntityRowKey.value = initial.rowKey;
+    selectedEntitySnapshot.value = initial;
+  }
+  await Promise.all([loadEntityList(), ...(isAttributeValueTest.value ? [loadBehaviorDetailParams()] : [])]);
+}
 
 watch(
   () =>
@@ -1099,8 +1137,10 @@ watch(
       props.behavior?.basicAction,
       props.behavior?.valueType,
       props.behavior?.kind,
+      props.initialEntity,
     ] as const,
   ([visible]) => {
+    const token = ++contextToken;
     if (!visible) {
       parameterConfig.cancelParameterRequests();
       entityLoadToken += 1;
@@ -1147,23 +1187,9 @@ watch(
     clearDetailParamState();
     clearRelationTestState();
     clearBasicOperatorTestResult();
-    if (isApplicationTest.value) {
-      void loadApplicationTestForm();
-      return;
-    }
-    if (isRelationInstanceTest.value) {
-      void loadRelationTestContext();
-      return;
-    }
-    if (isBasicFunctionOperatorTest.value) {
-      void loadEntityList();
-      return;
-    }
-    void loadEntityList();
-    if (isAttributeValueTest.value) {
-      void loadBehaviorDetailParams();
-    }
+    void initializeBehaviorTestContext(token);
   },
+  { immediate: true },
 );
 </script>
 

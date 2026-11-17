@@ -5,6 +5,7 @@ import type {
   RuleFlowStep,
   RuleFlowThenAction,
   RuleValueNode,
+  RuleVariableValue,
   ScheduleRuleDetailGroup,
 } from "@/types";
 
@@ -32,15 +33,28 @@ function restoreValue(value: unknown): RuleValueNode {
     Array.isArray(value.instanceIds) &&
     value.instanceIds.every((id) => typeof id === "string")
   ) {
-    return {
+    const restored: RuleVariableValue = {
       kind: "variable",
       objectId: requireString(value.objectId),
       objectName: requireString(value.objectName),
-      objectKind: value.objectKind,
+      objectKind: value.objectKind === "collection" ? "collection" : "object",
       propertyId: requireString(value.propertyId),
       propertyName: requireString(value.propertyName),
       instanceIds: value.instanceIds,
     };
+    if (typeof value.storageGroup === "string") restored.storageGroup = value.storageGroup;
+    if (
+      value.dataPrimaryKey !== undefined &&
+      value.dataPrimaryKey !== null &&
+      value.dataPrimaryKey !== "" &&
+      (typeof value.dataPrimaryKey === "string" ||
+        typeof value.dataPrimaryKey === "number" ||
+        typeof value.dataPrimaryKey === "boolean" ||
+        (typeof value.dataPrimaryKey === "object" && !Array.isArray(value.dataPrimaryKey)))
+    )
+      restored.dataPrimaryKey = value.dataPrimaryKey as string | number | boolean | Record<string, unknown>;
+    if (typeof value.dataPrimaryKeyLabel === "string") restored.dataPrimaryKeyLabel = value.dataPrimaryKeyLabel;
+    return restored;
   }
   throw new Error("画布值类型不支持");
 }

@@ -1,8 +1,8 @@
 <template>
   <div class="behavior-tree-exec">
-    <div class="behavior-tree-exec__toolbar">
+    <div v-if="showLoadPlanButton || showRunButton" class="behavior-tree-exec__toolbar">
       <el-button v-if="showLoadPlanButton" :loading="planStatus === 'loading'" @click="emit('load-plan')">读取执行要求</el-button>
-      <el-button type="primary" :loading="testStatus === 'submitting'" @click="emit('run-test')">执行</el-button>
+      <el-button v-if="showRunButton" type="primary" :loading="testStatus === 'submitting'" @click="emit('run-test')">执行</el-button>
     </div>
 
     <p v-if="planStatus === 'loading'" class="behavior-tree-exec__state" role="status">正在读取执行要求…</p>
@@ -233,7 +233,7 @@
       </section>
     </template>
 
-    <section class="behavior-tree-exec__section" aria-label="接口日志">
+    <section v-if="showLogs" class="behavior-tree-exec__section" aria-label="接口日志">
       <div class="behavior-tree-exec__log-head">
         <h4 class="behavior-tree-exec__section-title">接口日志</h4>
         <el-button link type="danger" @click="emit('clear-logs')">清空</el-button>
@@ -287,9 +287,15 @@ withDefaults(
     resolveObjectLabel: (objectId: string) => string;
     /** 是否展示「读取执行要求」；测试弹框打开已自动读取时可关闭。 */
     showLoadPlanButton?: boolean;
+    /** 是否展示「执行」；调度配置场景关闭。 */
+    showRunButton?: boolean;
+    /** 是否展示接口日志；调度配置场景关闭。 */
+    showLogs?: boolean;
   }>(),
   {
     showLoadPlanButton: true,
+    showRunButton: true,
+    showLogs: true,
   },
 );
 

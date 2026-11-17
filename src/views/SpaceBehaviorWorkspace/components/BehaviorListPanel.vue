@@ -101,7 +101,7 @@ import {
   SPACE_BEHAVIOR_LIST_STATUS_LABELS,
   SPACE_BEHAVIOR_LIST_STATUS_OPTIONS,
 } from "@/types";
-import { mapSpaceBehaviorItemToListStatus } from "../utils/mapListOntologyActionRecord";
+import { mapSpaceBehaviorItemToListStatus } from "@/utils/behaviorParameters/mapListOntologyActionRecord";
 
 const props = defineProps<{
   categoryLabel: string;

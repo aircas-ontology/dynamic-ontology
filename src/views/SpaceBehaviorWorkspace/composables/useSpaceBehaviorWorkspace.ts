@@ -28,7 +28,11 @@ import { buildBasicOperatorCreateActionParams, isBasicOperatorActionCreateDraft 
 import { buildLinkCreateActionParams, isLinkActionCreateDraft } from "../utils/buildLinkCreateActionParams";
 import { buildPropertyValueCreateActionParams, isPropertyValueActionCreateDraft } from "../utils/buildPropertyValueCreateActionParams";
 import { mapActionCategoryTree } from "../utils/mapActionCategoryTree";
-import { mapListOntologyActionRecord, mapSpaceBehaviorKindToActionKindQuery, mapSpaceBehaviorListStatusToQuery } from "../utils/mapListOntologyActionRecord";
+import {
+  mapListOntologyActionRecord,
+  mapSpaceBehaviorKindToActionKindQuery,
+  mapSpaceBehaviorListStatusToQuery,
+} from "@/utils/behaviorParameters/mapListOntologyActionRecord";
 import { resolveBehaviorOntologyId, resolveBehaviorSpaceId } from "../utils/resolveBehaviorRouteContext";
 import { findSpaceBehaviorCategoryNode } from "../utils/spaceBehaviorOperations";
 

@@ -126,6 +126,7 @@ interface DataSourceField {
   id: string;
   name: string;
   dataType: string;
+  comment: string;
   isPrimary: boolean;
 }
 
@@ -158,6 +159,7 @@ interface OntologyPropertyMappingItem {
   displayName: string;
   apiName: string;
   categoryName: string;
+  storageGroup: string;
   isPrimary: boolean;
   isNameKey: boolean;
   dataSource: PropertyDataSourceBind | null;
@@ -310,6 +312,7 @@ const ontologyPropertyMappings = computed<OntologyPropertyMappingItem[]>(() =>
     displayName: item.displayName,
     apiName: item.apiName,
     categoryName: findCategory(categories.value, item.categoryId)?.label ?? "未分类",
+    storageGroup: item.storageGroup ?? "",
     isPrimary: item.isPrimary,
     isNameKey: item.isNameKey,
     dataSource: resolvePropertyDataSourceBind(item.uniqueIdentifier),
@@ -365,7 +368,8 @@ function mapDatasourceColumns(data: GetOntologyDatasourceColumnsData): DataSourc
   return data.map((column) => ({
     id: column.columnName,
     name: column.columnName,
-    dataType: column.type || column.description || "",
+    dataType: column.type || "",
+    comment: column.description ?? "",
     isPrimary: column.isPrimaryKey === true,
   }));
 }

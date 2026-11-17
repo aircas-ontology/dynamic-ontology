@@ -49,8 +49,10 @@ export async function hydrateRuleDetailVariableNames(
         const property = response.data.find(
           (item) => (value.propertyId && item.uniqueIdentifier === value.propertyId) || (!value.propertyId && item.apiName === value.propertyName),
         );
-        if (property) value.propertyName = property.displayName || property.apiName || value.propertyName;
-        else failed = true;
+        if (property) {
+          value.propertyName = property.displayName || property.apiName || value.propertyName;
+          if (typeof property.storageGroup === "string") value.storageGroup = property.storageGroup.trim();
+        } else failed = true;
       }
     } catch {
       failed = true;

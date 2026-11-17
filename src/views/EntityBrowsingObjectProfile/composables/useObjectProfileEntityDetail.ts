@@ -1,7 +1,19 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from "vue";
-import { getListOntologyActionInterface, getOntologyObjectArrTypeTreeInterface, postGetOntologyEntityRowDetailInterface } from "@/apis";
-import type { ListOntologyActionRecord, ObjectProfileEntityCategory, ObjectProfileEntityIdentity, ObjectProfileEntityProperty } from "@/types";
 import {
+  getListOntologyActionInterface,
+  getOntologyObjectArrTypeTreeInterface,
+  postGetOntologyEntityRowDetailInterface,
+  postOntologyEntityLinksInterface,
+} from "@/apis";
+import type {
+  OntologyRelationClass,
+  ListOntologyActionRecord,
+  ObjectProfileEntityCategory,
+  ObjectProfileEntityIdentity,
+  ObjectProfileEntityProperty,
+} from "@/types";
+import {
+  buildEntityRelationRows,
   buildEntityListPropertyRows,
   buildEntityCategoryTree,
   buildEntityPropertyRows,
@@ -9,8 +21,12 @@ import {
   parseEntityPrimaryKey,
 } from "../utils/entityDetailData";
 
-/** @description 独立管理实体属性、对象分类和对象行为请求，屏蔽重复请求、过期响应和卸载后的更新。 @param identity 当前实体身份。 @returns 详情各区域数据与重试方法。 */
+/** @description 独立管理实体关系、属性、对象分类和对象行为请求，屏蔽重复请求、过期响应和卸载后的更新。 @param identity 当前实体身份。 @returns 详情各区域数据与重试方法。 */
 export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityIdentity>) {
+  const relations = ref<OntologyRelationClass[]>([]);
+  const relationStatus = ref<"loading" | "ready" | "empty" | "error">("loading");
+  const relationError = ref("");
+  let relationPending = "";
   const properties = ref<ObjectProfileEntityProperty[]>([]);
   const categories = ref<ObjectProfileEntityCategory[]>([]);
   const behaviors = ref<ListOntologyActionRecord[]>([]);
@@ -130,14 +146,46 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
     }
   }
 
+  /** @description 查询当前实例所有关系，去重并拒绝切换实例或卸载后的旧响应。 */
+  async function loadEntityRelations(): Promise<void> {
+    if (disposed) return;
+    const current = { ...identity.value };
+    const key = JSON.stringify([current.objectId, current.instanceId, current.entityPrimaryKey]);
+    if (relationPending === key) return;
+    relationPending = key;
+    const revision = generation;
+    relationStatus.value = "loading";
+    relationError.value = "";
+    relations.value = [];
+    try {
+      if (!current.objectId.trim()) throw new Error("缺少对象标识");
+      const response = await postOntologyEntityLinksInterface({
+        ontologyUniqueIdentifier: current.objectId,
+        entityPrimaryKey: current.entityPrimaryKey ?? parseEntityPrimaryKey(current.instanceId),
+      });
+      if (disposed || revision !== generation) return;
+      if (response.code !== 200) throw new Error(response.message || "实体关系加载失败");
+      if (response.data != null && !Array.isArray(response.data)) throw new Error("实体关系响应格式错误");
+      relations.value = buildEntityRelationRows(response.data ?? []);
+      relationStatus.value = relations.value.length ? "ready" : "empty";
+    } catch (cause) {
+      if (disposed || revision !== generation) return;
+      relationError.value = cause instanceof Error ? cause.message : "实体关系加载失败";
+      relationStatus.value = "error";
+    } finally {
+      if (revision === generation) relationPending = "";
+    }
+  }
+
   watch(
     identity,
     () => {
       generation += 1;
-      propertyPending = categoryPending = behaviorPending = "";
+      propertyPending = categoryPending = behaviorPending = relationPending = "";
       selectedCategoryId.value = "all";
       behaviorPage.value = 1;
       behaviorTotal.value = 0;
+      void loadEntityRelations();
       void loadEntityProperties();
       void loadPropertyCategories();
       void loadEntityBehaviors(1);
@@ -150,6 +198,10 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
     behaviorRevision += 1;
   });
   return {
+    relations,
+    relationStatus,
+    relationError,
+    loadEntityRelations,
     properties,
     categories,
     behaviors,

@@ -1,5 +1,7 @@
 import type {
   ApiResponse,
+  PostOntologyEntityLinksData,
+  PostOntologyEntityLinksParams,
   GetOntologyEntitiesData,
   GetOntologyEntitiesParams,
   GetOntologyEntityRowDetailData,
@@ -78,6 +80,21 @@ export function postGetOntologyEntityRowDetailPageInterface(
 export function postOntologyEntityAllLinkInterface(params: PostOntologyEntityAllLinkParams): Promise<ApiResponse<PostOntologyEntityAllLinkData>> {
   return request<PostOntologyEntityAllLinkData>({
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/entity/link_between",
+    method: "post",
+    data: params,
+  });
+}
+
+/**
+ * @description 查询单对象单个实体的全部关联关系。POST /ontology/entity/link。
+ * @param params 查询请求体。
+ * @param params.ontologyUniqueIdentifier 对象唯一标识，详情页始终提供。
+ * @param params.entityPrimaryKey 原始实体主键，保留 0、false 及复合结构。
+ * @returns 标准响应，data 为有向实体关系数组。
+ */
+export function postOntologyEntityLinksInterface(params: PostOntologyEntityLinksParams): Promise<ApiResponse<PostOntologyEntityLinksData>> {
+  return request<PostOntologyEntityLinksData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/entity/link",
     method: "post",
     data: params,
   });

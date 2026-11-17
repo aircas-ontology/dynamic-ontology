@@ -17,6 +17,11 @@ function createTreeDialogHarness(query = async () => ({ code: 200, data: [] })) 
     if (id.includes("useBehaviorTreeExecution"))
       return {
         useBehaviorTreeExecution: () => ({
+          cancelBehaviorTreeExecutionRequests() {},
+          externalInputDraft: {},
+          blackboardObjectKeys: {},
+          nodeDrafts: {},
+          instanceOptions: {},
           clearBehaviorTreeExecLogs: () => calls.push("clear"),
           loadBehaviorTreeExecutePlan: async (force) => calls.push(["plan", force]),
         }),

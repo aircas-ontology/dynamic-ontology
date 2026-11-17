@@ -91,7 +91,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from "vue";
-import type { OntologyEntityRowDetailVO, OntologyEntityRowPropertyInfo } from "@/types";
+import type { GetOntologyEntityRowDetailParams, OntologyEntityRowDetailVO, OntologyEntityRowPropertyInfo } from "@/types";
 
 /** 属性值修改测试的外部输入参数行。 */
 export interface BehaviorEntityRowDetailParamRow {
@@ -105,7 +105,7 @@ const props = withDefaults(
   defineProps<{
     modelValue: boolean;
     ontologyUniqueIdentifier: string;
-    entityPrimaryKey: string | number | null;
+    entityPrimaryKey: GetOntologyEntityRowDetailParams["entityPrimaryKey"] | null;
     entityDisplayName?: string;
     /** 父组件传入的 page 适配详情；有值时直接展示，不再请求 row_detail。 */
     externalDetail?: OntologyEntityRowDetailVO | null;

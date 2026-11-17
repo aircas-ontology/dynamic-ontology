@@ -293,6 +293,12 @@ export type {
   PostOntologyEntityAllLinkVisibilityWindow,
 } from "./apis/postOntologyEntityAllLinkType";
 export type {
+  OntologyEntityLinkItem,
+  OntologyEntityLinkVisibilityWindow,
+  PostOntologyEntityLinksData,
+  PostOntologyEntityLinksParams,
+} from "./apis/postOntologyEntityLinksType";
+export type {
   PostOntologyFunctionContainerRuntimeRestartData,
   PostOntologyFunctionContainerRuntimeRestartParams,
 } from "./apis/postOntologyFunctionContainerRuntimeRestartType";
@@ -352,6 +358,7 @@ export type {
   BehaviorTestEntityRow,
   BehaviorTestParamRow,
   RelationMountSide,
+  ScheduleBehaviorKind,
   ScheduleBehaviorOption,
   SpaceBehaviorActionInfoViewParamRow,
 } from "./behavior/behaviorParameterType";

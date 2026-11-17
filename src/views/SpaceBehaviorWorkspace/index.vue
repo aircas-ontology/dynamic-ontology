@@ -71,7 +71,7 @@
       @tree-persisted="handleBehaviorTreePersisted"
     />
     <BehaviorDetailDrawer v-model="behaviorDetailVisible" :space-id="spaceId" :behavior="activeBehavior" />
-    <BehaviorTestDialog v-model="behaviorTestVisible" :space-id="spaceId" :behavior="activeBehavior" />
+    <BehaviorTestDialog :apis="behaviorTestApis" v-model="behaviorTestVisible" :space-id="spaceId" :behavior="activeBehavior" />
     <BehaviorTreeTestDialog
       :query-object-catalog="getOntologyCategoryTreeInterface"
       v-model="behaviorTreeTestVisible"
@@ -105,7 +105,8 @@ import BehaviorCategoryFormDialog from "./components/BehaviorCategoryFormDialog.
 import BehaviorCategoryDeleteDialog from "./components/BehaviorCategoryDeleteDialog.vue";
 import BehaviorFormDialog from "./components/BehaviorFormDialog.vue";
 import BehaviorDetailDrawer from "./components/BehaviorDetailDrawer.vue";
-import BehaviorTestDialog from "./components/BehaviorTestDialog.vue";
+import BehaviorTestDialog from "@/components/BehaviorTestDialog/BehaviorTestDialog.vue";
+import * as behaviorTestApis from "@/apis";
 import BehaviorStatusDialog from "./components/BehaviorStatusDialog.vue";
 import BehaviorDeleteDialog from "./components/BehaviorDeleteDialog.vue";
 

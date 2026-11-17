@@ -127,6 +127,11 @@ test("data source mapping dialog renders mind-node tables, field-list and proper
   assert.match(source, /mind-node mind-node-table/);
   assert.match(source, /mind-node__toggle/);
   assert.match(source, /mind-node__badge/);
+  assert.match(source, /tableRoleLabel\(/);
+  assert.match(source, /resolveDatasourceTableRole/);
+  assert.match(source, /storageGroup/);
+  assert.match(source, />说明</);
+  assert.match(source, /field\.comment/);
   assert.match(source, /field-list/);
   assert.match(source, /property-list/);
   assert.match(source, /mapping-anchor mapping-anchor-source/);
@@ -189,6 +194,10 @@ test("data source mapping tables mark primary and name keys beside field names",
   assert.match(dialog, /\$\{field\.name\}\$\{formatDatasourceKeyMarks\(\{ isPrimary: field\.isPrimary \}\)\}/);
   assert.match(dialog, /\$\{property\.displayName\}\$\{formatDatasourceKeyMarks\(property\)\} \(\$\{property\.apiName\}\)`/);
   assert.match(panel, /isPrimary: column\.isPrimaryKey === true/);
+  assert.match(panel, /comment: column\.description \?\? ""/);
+  assert.match(panel, /dataType: column\.type \|\| ""/);
+  assert.doesNotMatch(panel, /dataType: column\.type \|\| column\.description/);
+  assert.match(panel, /storageGroup: item\.storageGroup \?\? ""/);
   assert.match(panel, /isPrimary: item\.isPrimary/);
   assert.match(panel, /isNameKey: item\.isNameKey/);
 });

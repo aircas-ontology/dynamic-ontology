@@ -76,6 +76,10 @@ test("entity detail template renders the three upper panels and object behavior 
     },
   });
   const state = {
+    relations: Vue.ref([{ id: "api-relation", sourceName: "接口实体" }]),
+    relationStatus: Vue.ref("ready"),
+    relationError: Vue.ref(""),
+    loadEntityRelations() {},
     displayProperties: Vue.ref([]),
     usingListProperties: Vue.ref(false),
     categories: Vue.ref([]),
@@ -99,6 +103,7 @@ test("entity detail template renders the three upper panels and object behavior 
     "ObjectProfileEntityDetail",
     (id) => {
       if (id === "vue") return Vue;
+      if (id.includes("AircasLoading")) return { __esModule: true, default: slot };
       if (id.includes("entityDetailData")) return { buildEntityPropertyTable, groupEntityPropertyRows };
       if (id.includes("objectProfileEntityDetailMock")) return { createObjectProfileEntityRelationsMock };
       if (id.includes("useObjectProfileEntityDetail")) return { useObjectProfileEntityDetail: () => state };
@@ -119,6 +124,21 @@ test("entity detail template renders the three upper panels and object behavior 
   assert.equal(boundaries[0].readonly, true);
   assert.deepEqual(boundaries[0].seedNames, ["实体甲"]);
   assert.deepEqual(boundaries[1].items, [{ id: 1 }]);
+
+  for (const status of ["loading", "error", "empty", "ready"]) {
+    state.relationStatus.value = status;
+    state.relationError.value = status === "error" ? "实体关系查询失败" : "";
+    state.relations.value = status === "ready" ? [{ id: "api-row", sourceName: "真实实体" }] : [];
+    const relationApp = Vue.createSSRApp(component, { objectId: "object-a", instanceId: "0", spaceId: "156", entityName: "实体甲" });
+    for (const name of ["el-button", "el-input", "el-empty", "el-tree", "el-table", "el-table-column", "el-tag", "el-alert"]) relationApp.component(name, slot);
+    const relationHtml = await renderToString(relationApp);
+    assert.doesNotMatch(relationHtml, /示例数据/);
+    if (status === "loading") assert.match(relationHtml, /正在加载实体关系/);
+    else if (status === "error") {
+      assert.match(relationHtml, /实体关系查询失败/);
+      assert.match(relationHtml, /重试/);
+    } else assert.deepEqual(boundaries.at(-2).items, state.relations.value);
+  }
   state.propertyStatus.value = "ready";
   state.filteredProperties.value = buildEntityPropertyRows({
     propertyGroups: [
@@ -168,7 +188,7 @@ test("entity detail template renders the three upper panels and object behavior 
   assert.equal((populated.match(/<dl[\s>]/g) ?? []).length, 1);
 });
 
-test("detail preserves primary-key identity and uses relation examples only when no explicit data is supplied", () => {
+test("detail preserves primary-key identity and uses API relations unless explicit data is supplied", () => {
   const scope = Vue.effectScope();
   let currentIdentity;
   const component = compileProfileComponent("ObjectProfileEntityDetail", (id) => {
@@ -179,7 +199,7 @@ test("detail preserves primary-key identity and uses relation examples only when
       return {
         useObjectProfileEntityDetail: (identity) => {
           currentIdentity = identity;
-          return { displayProperties: Vue.ref([]), categories: Vue.ref([]) };
+          return { relations: Vue.ref([{ id: "api-relation", sourceName: "接口实体" }]), displayProperties: Vue.ref([]), categories: Vue.ref([]) };
         },
       };
     return {};
@@ -197,12 +217,10 @@ test("detail preserves primary-key identity and uses relation examples only when
     const page = scope.run(() => component.setup(props, { expose() {}, emit() {} }));
     assert.equal(currentIdentity.value.entityPrimaryKey, 5);
     assert.deepEqual(currentIdentity.value.listProperties, props.listProperties);
-    assert.equal(page.usingRelationsMock.value, true);
-    assert.ok(page.resolvedRelations.value.every((item) => item.sourceName === "阵风F4"));
+    assert.deepEqual(page.resolvedRelations.value, [{ id: "api-relation", sourceName: "接口实体" }]);
     props.entityName = "实体乙";
-    assert.ok(page.resolvedRelations.value.every((item) => item.sourceName === "实体乙"));
+    assert.equal(page.resolvedRelations.value[0].sourceName, "接口实体");
     props.relations = [];
-    assert.equal(page.usingRelationsMock.value, false);
     assert.deepEqual(page.resolvedRelations.value, []);
     props.relations = [{ id: "real-relation" }];
     assert.deepEqual(page.resolvedRelations.value, [{ id: "real-relation" }]);
@@ -250,8 +268,57 @@ test("behavior cards retain descriptions and metadata without displaying behavio
     for (const name of ["el-icon", "el-tag", "el-button", "el-empty", "el-pagination"]) app.component(name, slot);
     const html = await renderToString(app);
     assert.doesNotMatch(html, /行为状态|已启用|已停用/);
+    assert.match(html, /执行/);
     assert.match(html, /<h3[^>]*>行为名称<\/h3>/);
     assert.match(html, /class="entity-detail-behavior-card__description"[^>]*>保留原描述<\/p>/);
     for (const value of ["基础行为", "行为 API", "action-api", "挂载函数", "function-api", "更新时间", "2026-11-17"]) assert.ok(html.includes(value));
+  }
+});
+
+test("entity category tree contains only API nodes and updates selection without creating a wrapper", async () => {
+  const categories = Vue.ref([]);
+  const selectedCategoryId = Vue.ref("all");
+  const component = compileProfileComponent("ObjectProfileEntityDetail", (id) => {
+    if (id === "vue") return Vue;
+    if (id.includes("useObjectProfileEntityDetail"))
+      return {
+        useObjectProfileEntityDetail: () => ({ categories, selectedCategoryId, relations: Vue.ref([]) }),
+      };
+    return {};
+  });
+  const scope = Vue.effectScope();
+  try {
+    const page = scope.run(() =>
+      component.setup(
+        {
+          objectId: "object-a",
+          instanceId: "0",
+          spaceId: "156",
+          entityName: "实例",
+        },
+        { expose() {}, emit() {} },
+      ),
+    );
+    assert.deepEqual(page.categoryTree.value, []);
+    categories.value = [
+      {
+        id: "1",
+        label: "全部属性",
+        propertyIds: [],
+        children: [{ id: "2", label: "性能", propertyIds: ["speed"], children: [] }],
+      },
+    ];
+    await Vue.nextTick();
+    assert.deepEqual(page.categoryTree.value, categories.value);
+    assert.equal(page.categoryTree.value[0].id, "1");
+    page.selectPropertyCategory(categories.value[0].children[0]);
+    assert.equal(selectedCategoryId.value, "2");
+    page.selectPropertyCategory(categories.value[0]);
+    assert.equal(selectedCategoryId.value, "1");
+    categories.value = [];
+    await Vue.nextTick();
+    assert.deepEqual(page.categoryTree.value, []);
+  } finally {
+    scope.stop();
   }
 });

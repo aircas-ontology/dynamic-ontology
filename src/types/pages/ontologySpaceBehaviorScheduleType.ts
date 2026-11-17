@@ -1,4 +1,5 @@
 import type { BehaviorParameterSnapshot } from "../behavior/behaviorParameterType";
+import type { PostOntologyActionTreeTestParams } from "../apis/postOntologyActionTreeTestType";
 
 /** 行为调度策略。 */
 export type BehaviorScheduleStrategy = "规则调度" | "周期调度";
@@ -149,6 +150,12 @@ export interface RuleVariableValue {
   instanceIds: string[];
   /** 详情中解析到的实例显示名称。 */
   instanceNames?: string[];
+  /** 属性存储分组；main 或空时不选子表行。 */
+  storageGroup?: string;
+  /** 子表数据行主键；非 main 时必填。 */
+  dataPrimaryKey?: string | number | boolean | Record<string, unknown>;
+  /** 子表数据行主键展示文案。 */
+  dataPrimaryKeyLabel?: string;
 }
 
 /** 函数值。 */
@@ -237,6 +244,8 @@ export interface RuleFlowThenAction {
   params: RuleFlowThenParamValue[];
   /** 使用公共行为参数组件校验后的完整配置快照。 */
   behaviorParameters?: BehaviorParameterSnapshot;
+  /** 行为树参数确认后的试跑请求体；应用行为不使用。 */
+  treeParameters?: PostOntologyActionTreeTestParams;
 }
 
 /** 顺序执行行为步骤。 */
@@ -318,6 +327,8 @@ export interface RuleVariablePropertyOption {
   name: string;
   /** 值类型。 */
   valueType: RuleVariablePropertyValueType;
+  /** 属性存储分组；本体属性带入，自定义变量可空。 */
+  storageGroup?: string;
   /** 对象类型的子键。 */
   children?: RuleVariablePropertyOption[];
 }

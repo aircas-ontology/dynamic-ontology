@@ -14,6 +14,7 @@ import type {
   ScheduleRuleJudgeItem,
   ScheduleRuleOperand,
 } from "@/types";
+import { needsRuleVariableDataRow } from "./needsRuleVariableDataRow.ts";
 
 const compareOperators: Partial<Record<RuleCompareOperator, ScheduleRuleCompareOperator>> = {
   eq: "EQ",
@@ -35,6 +36,16 @@ function buildRuleOperand(value: RuleValueNode): ScheduleRuleOperand {
   if (value.kind !== "variable") throw new Error("当前接口尚未约定函数或表达式的传参方式");
   if (!value.objectId || !value.propertyId || value.instanceIds.length !== 1 || !value.instanceIds[0]?.trim())
     throw new Error("条件变量必须选择对象、属性和一个具体实例");
+  if (needsRuleVariableDataRow(value.storageGroup)) {
+    if (value.dataPrimaryKey === undefined || value.dataPrimaryKey === null || value.dataPrimaryKey === "") throw new Error("条件变量的子表属性必须选择数据行");
+    return {
+      type: "dynamic",
+      OntologyId: value.objectId,
+      entityId: value.instanceIds[0],
+      propertyId: value.propertyId,
+      dataPrimaryKey: value.dataPrimaryKey,
+    };
+  }
   return { type: "dynamic", OntologyId: value.objectId, entityId: value.instanceIds[0], propertyId: value.propertyId };
 }
 
@@ -111,10 +122,10 @@ function buildPathJudgeParams(path: RulePathPredicate[]): { judgeParams: Schedul
 function isActionRequest(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-/** @description 优先使用已确认的新快照，否则恢复未编辑行为的原始请求，不拼接临时表单状态。 @param action 行为节点。 @param savedDetails 历史请求映射。 @returns 完整执行请求。 */
+/** @description 优先使用已确认的新快照或行为树请求，否则恢复未编辑行为的原始请求，不拼接临时表单状态。 @param action 行为节点。 @param savedDetails 历史请求映射。 @returns 完整执行请求。 */
 function readRuleActionRequest(action: RuleFlowThenAction, savedDetails: Readonly<ScheduleRuleDetailGroup["actionDetails"]>): Record<string, unknown> {
   const saved = savedDetails[action.id];
-  const request: unknown = action.behaviorParameters?.request ?? (saved ? JSON.parse(saved.entityJson) : null);
+  const request: unknown = action.treeParameters ?? action.behaviorParameters?.request ?? (saved ? JSON.parse(saved.entityJson) : null);
   if (!isActionRequest(request)) throw new Error("请双击行为节点选择当前空间行为并确认行为参数");
   return request;
 }
@@ -170,7 +181,9 @@ function buildRulePathGroups(
       const option = options.find((item) => item.id === action.behaviorId);
       if (!option) throw new Error("请双击行为节点选择当前空间行为并确认行为参数");
       const actionRequest = readRuleActionRequest(action, savedDetails);
-      if (actionRequest.actionApi !== option.actionApi || Number(actionRequest.ontologySpaceId) !== Number(spaceId))
+      const requestApi =
+        typeof actionRequest.actionApi === "string" ? actionRequest.actionApi : typeof actionRequest.treeApi === "string" ? actionRequest.treeApi : "";
+      if (requestApi !== option.actionApi || Number(actionRequest.ontologySpaceId) !== Number(spaceId))
         throw new Error("行为参数与当前行为或空间不匹配，请重新配置");
       const actionParam: ScheduleRuleActionParam = {
         action_api: option.actionApi,

@@ -23,8 +23,17 @@ export interface CreateTaskBehaviorScheduleParams {
 /** 文档支持的比较运算符；CH 明确不支持。 */
 export type ScheduleRuleCompareOperator = "LT" | "LE" | "EQ" | "NE" | "GT" | "GE" | "CONTAINS" | "NOT_CONTAINS";
 
-/** 规则操作数，变量按唯一标识取属性值。 */
-export type ScheduleRuleOperand = { type: "fixed"; fixValue: string } | { type: "dynamic"; OntologyId: string; entityId: string; propertyId: string };
+/** 规则操作数，变量按唯一标识取属性值；非 main 存储分组可带数据行主键。 */
+export type ScheduleRuleOperand =
+  | { type: "fixed"; fixValue: string }
+  | {
+      type: "dynamic";
+      OntologyId: string;
+      entityId: string;
+      propertyId: string;
+      /** 子表数据行主键；main 或空存储分组省略。 */
+      dataPrimaryKey?: string | number | boolean | Record<string, unknown>;
+    };
 
 /** 条件项，连接符指向下一项。 */
 export interface ScheduleRuleJudgeItem {

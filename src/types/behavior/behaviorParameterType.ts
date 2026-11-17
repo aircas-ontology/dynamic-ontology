@@ -130,10 +130,15 @@ export interface BehaviorParameterSnapshot {
   fromEntities: BehaviorTestEntityRow[];
   toEntities: BehaviorTestEntityRow[];
 }
+/** 调度可选行为类别；排除基础行为。 */
+export type ScheduleBehaviorKind = "application" | "behaviorTree";
+
 /** 调度行为选项，稳定标识与显示名称分离。 */
 export interface ScheduleBehaviorOption {
   id: string;
   actionApi: string;
   displayName: string;
   ontologyUniqIdentifier: string;
+  /** 应用行为或行为树；决定参数组件。 */
+  kind: ScheduleBehaviorKind;
 }

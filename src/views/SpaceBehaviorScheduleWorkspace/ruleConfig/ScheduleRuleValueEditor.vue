@@ -28,11 +28,20 @@ const valueKindOptions = [
 ];
 const unsupportedValue = computed(() => value.value.kind !== "input" && value.value.kind !== "variable");
 const variablePickerVisible = ref(false);
-const variableSummary = computed(() =>
-  value.value.kind === "variable" && value.value.objectId && (value.value.propertyId || value.value.propertyName)
-    ? `${value.value.objectName}.${value.value.propertyName} · ${value.value.instanceNames?.length ? value.value.instanceNames.join("、") : value.value.instanceIds.length ? `${value.value.instanceIds.length} 个实例` : "全部实例"}`
-    : "选择变量",
-);
+const variableSummary = computed(() => {
+  if (value.value.kind !== "variable" || !value.value.objectId || !(value.value.propertyId || value.value.propertyName)) return "选择变量";
+  const instanceText = value.value.instanceNames?.length
+    ? value.value.instanceNames.join("、")
+    : value.value.instanceIds.length
+      ? `${value.value.instanceIds.length} 个实例`
+      : "全部实例";
+  const dataRowText = value.value.dataPrimaryKeyLabel?.trim()
+    ? ` · 行 ${value.value.dataPrimaryKeyLabel.trim()}`
+    : value.value.dataPrimaryKey !== undefined && value.value.dataPrimaryKey !== null && value.value.dataPrimaryKey !== ""
+      ? ` · 行 ${typeof value.value.dataPrimaryKey === "object" ? "已选" : String(value.value.dataPrimaryKey)}`
+      : "";
+  return `${value.value.objectName}.${value.value.propertyName} · ${instanceText}${dataRowText}`;
+});
 /** @description 应用变量选择副本。 @param selected 选中变量。 */
 function applyVariableSelection(selected: RuleVariableValue): void {
   value.value = selected;

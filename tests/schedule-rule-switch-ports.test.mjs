@@ -242,7 +242,7 @@ test("nested switch and if survive graph, request snapshot, detail recovery and 
   const flow = { steps: [step] };
   const fromGraph = roundTripGraph(flow);
   assert.deepEqual(fromGraph, flow);
-  const options = [{ id: "behavior", displayName: "行为", actionApi: "app", ontologyUniqIdentifier: "object" }];
+  const options = [{ id: "behavior", displayName: "行为", actionApi: "app", ontologyUniqIdentifier: "object", kind: "application" }];
   const draft = { name: "switch", description: "", ruleFlow: fromGraph };
   const created = buildRuleScheduleCreateParams(draft, options, "156");
   assert.equal(created.ok, true, created.error);

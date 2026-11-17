@@ -112,7 +112,7 @@
                     >
                       {{ isExpanded(tableNodeId(table.databaseId, table.table.id)) ? "−" : "+" }}
                     </button>
-                    <span class="mind-node__badge">表</span>
+                    <span class="mind-node__badge">{{ tableRoleLabel(table.table) }}</span>
                     <strong>{{ table.table.name }}</strong>
                     <span
                       v-if="!isExpanded(tableNodeId(table.databaseId, table.table.id)) && parentMappedCount(tableNodeId(table.databaseId, table.table.id)) > 0"
@@ -128,6 +128,7 @@
                       <div class="field-list__header">
                         <span>字段名称</span>
                         <span>数据类型</span>
+                        <span>说明</span>
                         <span class="field-list__anchor-col" aria-hidden="true" />
                       </div>
                       <div
@@ -140,6 +141,7 @@
                           {{ field.name }}{{ formatDatasourceKeyMarks({ isPrimary: field.isPrimary }) }}
                         </span>
                         <span>{{ field.dataType || "—" }}</span>
+                        <span :title="field.comment || undefined">{{ field.comment || "—" }}</span>
                         <button
                           type="button"
                           class="mapping-anchor mapping-anchor-source"
@@ -253,11 +255,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Connection } from "@element-plus/icons-vue";
+import { resolveDatasourceTableRole } from "../utils/resolveDatasourceTableRole";
 
 interface OntologyDataSourceField {
   id: string;
   name: string;
   dataType: string;
+  comment: string;
   isPrimary: boolean;
 }
 
@@ -289,6 +293,7 @@ interface OntologyPropertyClass {
   displayName: string;
   apiName: string;
   categoryName: string;
+  storageGroup: string;
   isPrimary: boolean;
   isNameKey: boolean;
   dataSource: OntologyPropertyDataSourceBind | null;
@@ -472,6 +477,24 @@ function formatDatasourceKeyMarks(flags: { isPrimary?: boolean; isNameKey?: bool
   if (flags.isPrimary) marks.push("（主）");
   if (flags.isNameKey) marks.push("（名）");
   return marks.join("");
+}
+
+/**
+ * @description 按当前草稿绑定与属性存储分组反推左侧表主/子角色徽章。
+ * @param table 数据源表。
+ * @returns 主表、子表或表。
+ */
+function tableRoleLabel(table: OntologyDataSourceTable): string {
+  return resolveDatasourceTableRole(
+    { id: table.id, name: table.name },
+    props.properties.map((property) => {
+      const bind = draftBinds.value.get(property.id) ?? null;
+      return {
+        storageGroup: property.storageGroup ?? "",
+        boundTableId: bind?.tableId ?? null,
+      };
+    }),
+  );
 }
 
 function manualTableKey(databaseId: string, tableId: string): string {
@@ -1083,11 +1106,11 @@ onBeforeUnmount(() => {
 .property-datasource-mapping-dialog__panels {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(320px, 380px);
+  grid-template-columns: minmax(280px, 360px) minmax(320px, 380px);
   justify-content: space-between;
   gap: 80px;
   align-items: start;
-  min-width: 672px;
+  min-width: 720px;
   padding: 16px;
 }
 
@@ -1214,13 +1237,15 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
+  min-width: 22px;
   height: 22px;
+  padding: 0 4px;
   border-radius: 4px;
   color: var(--aircas-color-text-primary);
   background: var(--aircas-color-effect-blue-fill);
   font-size: 11px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .mind-node strong {
@@ -1240,7 +1265,7 @@ onBeforeUnmount(() => {
 .field-list__header,
 .field-list__row {
   display: grid;
-  grid-template-columns: 1.3fr 1fr 20px;
+  grid-template-columns: 1.2fr 0.9fr 1.1fr 20px;
   gap: 8px;
   align-items: center;
   min-height: 34px;

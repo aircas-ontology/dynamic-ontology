@@ -7,7 +7,7 @@ import * as Vue from "vue";
 import * as scheduleTypes from "../src/types/pages/ontologySpaceBehaviorScheduleType.ts";
 import { buildRuleScheduleCreateParams } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/buildRuleScheduleCreateParams.ts";
 
-const options = [{ id: "action", actionApi: "app", ontologyUniqIdentifier: "ship" }];
+const options = [{ id: "action", actionApi: "app", ontologyUniqIdentifier: "ship", kind: "application" }];
 /** @description 创建固定值。 @param {string} text 文本。 @returns {object} 固定值。 */
 function literal(text) {
   return { kind: "input", text };
@@ -140,7 +140,7 @@ test("condition editor offers the supported string operators without prefix or c
   );
 });
 test("variables require exactly one instance and send unique property identifiers", () => {
-  const variable = { kind: "variable", objectId: "ship", propertyId: "longitude", propertyName: "经度", instanceIds: ["0"] };
+  const variable = { kind: "variable", objectId: "ship", propertyId: "longitude", propertyName: "经度", instanceIds: ["0"], storageGroup: "main" };
   const flow = branch();
   flow.condition.children[0] = { ...leaf, left: variable };
   assert.deepEqual(buildRequest([flow]).request.rule.judgeRules[0].judgeParams[0].leftOperate, {
@@ -153,6 +153,29 @@ test("variables require exactly one instance and send unique property identifier
     variable.instanceIds = instanceIds;
     assert.equal(buildRequest([flow]).ok, false);
   }
+});
+
+test("non-main variable operands include dataPrimaryKey and reject missing rows", () => {
+  const variable = {
+    kind: "variable",
+    objectId: "ship",
+    propertyId: "payload",
+    propertyName: "载荷",
+    instanceIds: ["0"],
+    storageGroup: "payload",
+    dataPrimaryKey: "row-9",
+  };
+  const flow = branch();
+  flow.condition.children[0] = { ...leaf, left: variable };
+  assert.deepEqual(buildRequest([flow]).request.rule.judgeRules[0].judgeParams[0].leftOperate, {
+    type: "dynamic",
+    OntologyId: "ship",
+    entityId: "0",
+    propertyId: "payload",
+    dataPrimaryKey: "row-9",
+  });
+  delete variable.dataPrimaryKey;
+  assert.equal(buildRequest([flow]).ok, false);
 });
 test("flat AND OR conditions link the next item and omit final link", () => {
   for (const logic of ["and", "or"]) {
@@ -276,7 +299,23 @@ test("real create form emits converted RULE payload and blocks unsupported opera
   new Function("require", "exports", outputText)((id) => {
     if (id === "vue") return Vue;
     if (id === "@/types") return scheduleTypes;
-    if (id.includes("useBehaviorParameters")) return { useBehaviorParameters: () => parameterConfig };
+    if (id.includes("useSchedulePeriodParameters"))
+      return {
+        useSchedulePeriodParameters: () => ({
+          selectedBehaviorOption: Vue.computed(() => undefined),
+          selectedBehaviorKind: Vue.computed(() => ""),
+          parameterConfig,
+          treeParameters: {
+            clearTreeParameters() {},
+            initializeTreeParameters: async () => {},
+            captureTreeParameters: () => ({ ok: false, error: "tree stub" }),
+          },
+          parameterRestoreError: Vue.ref(""),
+          clearScheduleParameters() {},
+          initializeScheduleParameters: async () => {},
+          capturePeriodBehaviorRequest: () => ({ ok: false, error: "unused" }),
+        }),
+      };
     if (id.includes("buildRuleScheduleCreateParams")) return { buildRuleScheduleCreateParams };
     if (id.includes("scheduleRuleFlowFactory")) return { cloneScheduleRuleFlow: (value) => JSON.parse(JSON.stringify(value)) };
     return {};

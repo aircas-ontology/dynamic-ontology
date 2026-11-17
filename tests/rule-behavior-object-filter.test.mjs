@@ -11,10 +11,10 @@ const input = { kind: "input", text: "" };
 const leaf = (left, right = input) => ({ id: "l", type: "leaf", left, right });
 const group = (...children) => ({ id: "g", type: "composite", logic: "and", children });
 const options = [
-  { id: "a", ontologyUniqIdentifier: "plane" },
-  { id: "b", ontologyUniqIdentifier: "ship" },
-  { id: "c", ontologyUniqIdentifier: "tank" },
-  { id: "d", ontologyUniqIdentifier: "" },
+  { id: "a", ontologyUniqIdentifier: "plane", kind: "application" },
+  { id: "b", ontologyUniqIdentifier: "ship", kind: "application" },
+  { id: "c", ontologyUniqIdentifier: "tank", kind: "application" },
+  { id: "d", ontologyUniqIdentifier: "", kind: "application" },
 ];
 
 /** @description 构建节点和入边替身，用于执行真实图遍历。 @param {object} nodes 节点数据。 @param {string[][]} edges 连线。 @returns {object} 图。 */
