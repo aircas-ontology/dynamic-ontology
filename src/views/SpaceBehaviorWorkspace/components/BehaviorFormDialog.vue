@@ -123,10 +123,20 @@
             <div class="behavior-form-dialog__attribute-head">
               <div class="behavior-form-dialog__attribute-title">
                 <span>关系选择</span>
-                <el-tag size="small" effect="plain">{{ relationRows.length }}项</el-tag>
+                <el-tag size="small" effect="plain">{{ relationTotal }}项</el-tag>
               </div>
               <span class="behavior-form-dialog__attribute-hint">从当前空间关系中单选一条</span>
             </div>
+            <form class="behavior-form-dialog__relation-toolbar" @submit.prevent="searchRelationRows">
+              <el-input
+                v-model="relationSearchKeyword"
+                class="behavior-form-dialog__relation-search"
+                clearable
+                placeholder="按关系名称搜索"
+                @clear="searchRelationRows"
+              />
+              <el-button native-type="submit">查询</el-button>
+            </form>
             <el-table
               class="behavior-form-dialog__attribute-table"
               :data="relationLoading ? [] : relationRows"
@@ -144,6 +154,16 @@
               <el-table-column prop="targetName" label="目标对象" min-width="160" show-overflow-tooltip />
               <el-table-column prop="description" label="说明" min-width="200" show-overflow-tooltip />
             </el-table>
+            <el-pagination
+              v-if="relationTotal > 0"
+              class="behavior-form-dialog__relation-pagination"
+              background
+              layout="total, prev, pager, next"
+              :total="relationTotal"
+              :current-page="relationPageNum"
+              :page-size="10"
+              @current-change="changeRelationPage"
+            />
             <div v-if="showRelationLinkMappingSection" class="behavior-form-dialog__link-mapping">
               <el-form-item label="状态" required>
                 <el-select v-model="relationTargetStatus" placeholder="选择状态" style="width: 100%" :disabled="readonly">
@@ -425,10 +445,20 @@
               <div class="behavior-form-dialog__attribute-head">
                 <div class="behavior-form-dialog__attribute-title">
                   <span>绑定关系</span>
-                  <el-tag size="small" effect="plain">{{ relationRows.length }}项</el-tag>
+                  <el-tag size="small" effect="plain">{{ relationTotal }}项</el-tag>
                 </div>
                 <span class="behavior-form-dialog__attribute-hint">可选；从当前空间关系中单选一条，可再次点击取消</span>
               </div>
+              <form class="behavior-form-dialog__relation-toolbar" @submit.prevent="searchRelationRows">
+                <el-input
+                  v-model="relationSearchKeyword"
+                  class="behavior-form-dialog__relation-search"
+                  clearable
+                  placeholder="按关系名称搜索"
+                  @clear="searchRelationRows"
+                />
+                <el-button native-type="submit">查询</el-button>
+              </form>
               <el-table
                 class="behavior-form-dialog__attribute-table"
                 :data="relationLoading ? [] : relationRows"
@@ -458,6 +488,16 @@
                   </template>
                 </el-table-column>
               </el-table>
+              <el-pagination
+                v-if="relationTotal > 0"
+                class="behavior-form-dialog__relation-pagination"
+                background
+                layout="total, prev, pager, next"
+                :total="relationTotal"
+                :current-page="relationPageNum"
+                :page-size="10"
+                @current-change="changeRelationPage"
+              />
             </section>
           </template>
         </template>
@@ -501,9 +541,9 @@ import {
   getOntologyCategoryTreeInterface,
   getOntologyFunctionDetailInterface,
   getOntologyFunctionListInterface,
+  getOntologyLinkListInterface,
   getOntologyObjectArrTypeTreeInterface,
   getOntologyPropertyByOntologyIdInterface,
-  getOntologyRelationCategoryTreeInterface,
 } from "@/apis";
 import type {
   BehaviorTreeOrchestrationMeta,
@@ -539,8 +579,8 @@ import {
 } from "@/types";
 import { buildOntologyFunctionTestBindingKeys, buildOntologyFunctionTestBindingParamIds } from "@/utils/mapOntologyFunctionTest";
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
-import { mapOntologyRelationLinks } from "@/views/SpaceRelationWorkspace/utils/mapOntologyRelationCategoryTree";
 import { applyApplicationActionInfoBindings } from "../utils/applyApplicationActionInfoBindings.ts";
+import { mapOntologyLinkListToRelationClass } from "../utils/mapOntologyLinkListToRelationClass";
 import { buildApplicationCreateActionParams } from "../utils/buildApplicationCreateActionParams";
 import { flattenPropertyInfosFromCategoryTree } from "../utils/flattenPropertyInfosFromCategoryTree";
 import {
@@ -610,6 +650,9 @@ let syncingAttributeSelection = false;
 const relationRows = ref<OntologyRelationClass[]>([]);
 const relationLoading = ref(false);
 const relationError = ref("");
+const relationSearchKeyword = ref("");
+const relationPageNum = ref(1);
+const relationTotal = ref(0);
 let relationLoadToken = 0;
 const selectedRelationId = ref("");
 /** 应用行为「绑定关系」多选 id 列表。 */
@@ -1046,9 +1089,29 @@ function clearRelationSelection(): void {
   clearApplicationRelationSelection();
   clearRelationLinkMappingFields();
   relationRows.value = [];
+  relationSearchKeyword.value = "";
+  relationPageNum.value = 1;
+  relationTotal.value = 0;
   relationError.value = "";
   relationLoadToken += 1;
   relationLoading.value = false;
+}
+
+/**
+ * @description 按关系名称搜索并回到第一页。
+ */
+function searchRelationRows(): void {
+  relationPageNum.value = 1;
+  void loadRelationRows();
+}
+
+/**
+ * @description 切换关系列表页码并重新加载。
+ * @param page 目标页码。
+ */
+function changeRelationPage(page: number): void {
+  relationPageNum.value = page;
+  void loadRelationRows();
 }
 
 /**
@@ -2053,26 +2116,36 @@ async function loadAttributeRows(ontologyUniqueIdentifier: string): Promise<void
 }
 
 /**
- * @description 按当前空间加载关系分类树并映射为可选关系行。
+ * @description 按当前空间分页加载关系列表，支持按关系名称搜索。
  */
 async function loadRelationRows(): Promise<void> {
   const requestToken = ++relationLoadToken;
   relationLoading.value = true;
   relationError.value = "";
   try {
-    const spaceId = props.spaceId.trim();
-    if (!spaceId) throw new Error("当前对象空间无效");
-    const response = await getOntologyRelationCategoryTreeInterface({ spaceId });
+    const spaceIdText = props.spaceId.trim();
+    const spaceId = Number(spaceIdText);
+    if (!spaceIdText || !Number.isFinite(spaceId)) throw new Error("当前对象空间无效");
+    const relationName = relationSearchKeyword.value.trim();
+    const response = await getOntologyLinkListInterface({
+      spaceId,
+      ...(relationName ? { relationName } : {}),
+      pageNum: relationPageNum.value,
+      pageSize: 10,
+    });
     if (requestToken !== relationLoadToken) return;
     if (response.code !== 200) throw new Error(response.message || "关系列表加载失败");
     if (!response.data) {
       relationRows.value = [];
+      relationTotal.value = 0;
       return;
     }
-    relationRows.value = mapOntologyRelationLinks(response.data);
+    relationRows.value = mapOntologyLinkListToRelationClass(response.data.records ?? []);
+    relationTotal.value = typeof response.data.total === "number" ? response.data.total : 0;
   } catch (error) {
     if (requestToken !== relationLoadToken) return;
     relationRows.value = [];
+    relationTotal.value = 0;
     relationError.value = error instanceof Error ? error.message : "关系列表加载失败";
   } finally {
     if (requestToken === relationLoadToken) relationLoading.value = false;
@@ -2272,6 +2345,24 @@ defineExpose({
 
 .behavior-form-dialog__relation-mapping {
   color: var(--aircas-color-text-secondary);
+}
+
+.behavior-form-dialog__relation-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.behavior-form-dialog__relation-search {
+  width: 240px;
+  max-width: 100%;
+  flex: 0 0 auto;
+}
+
+.behavior-form-dialog__relation-pagination {
+  margin-top: 12px;
+  justify-content: flex-end;
 }
 
 .behavior-form-dialog__visibility-windows {

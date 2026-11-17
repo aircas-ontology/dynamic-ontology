@@ -181,6 +181,11 @@
   },
   {
     "method": "GET",
+    "path": "/ontology/link/list",
+    "file": "fixtures/ontology/link.list.get.json"
+  },
+  {
+    "method": "GET",
     "path": "/ontology/link",
     "file": "fixtures/ontology/link.get.json"
   },
