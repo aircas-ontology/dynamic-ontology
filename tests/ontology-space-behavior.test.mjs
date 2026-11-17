@@ -929,6 +929,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.doesNotMatch(drawerSource, /对象标识/);
   assert.doesNotMatch(drawerSource, /label="主体类型"/);
   assert.doesNotMatch(drawerSource, /label="基础操作"/);
+  assert.doesNotMatch(drawerSource, /label="绑定关系"/);
   assert.match(drawerSource, /输入参数/);
   assert.match(drawerSource, /输出参数/);
   assert.doesNotMatch(drawerSource, /执行范围/);

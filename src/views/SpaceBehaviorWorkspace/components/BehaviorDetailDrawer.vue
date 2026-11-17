@@ -34,7 +34,6 @@
         </el-descriptions-item>
         <el-descriptions-item v-if="viewState.functionApi" label="算子 api">{{ viewState.functionApi }}</el-descriptions-item>
         <el-descriptions-item v-if="viewState.outputMode" label="输出方式">{{ viewState.outputMode }}</el-descriptions-item>
-        <el-descriptions-item v-if="viewState.linkRelationId" label="绑定关系">{{ viewState.linkRelationId }}</el-descriptions-item>
         <el-descriptions-item v-if="viewState.linkTargetStatus" label="关系状态">{{ viewState.linkTargetStatus }}</el-descriptions-item>
       </el-descriptions>
 
