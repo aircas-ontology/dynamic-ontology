@@ -26,7 +26,7 @@
     </header>
 
     <div class="entity-browsing-object-profile__content">
-      <ObjectProfileEntityList v-if="activeTab === 'entity-list'" :object-id="objectId" :space-id="spaceId" />
+      <ObjectProfileEntityList v-if="activeTab === 'entity-list'" :object-id="objectId" :space-id="spaceId" :object-name="profile.displayName" />
       <ObjectProfileStandardUsage v-else-if="showStandardContent && activeTab === 'standard-usage'" :object-id="objectId" />
       <div v-else class="entity-browsing-object-profile__placeholder" role="status">内容待配置</div>
     </div>

@@ -461,6 +461,10 @@ export type {
   EntityBrowsingObjectProfileStatsSlice,
   EntityBrowsingObjectProfileTab,
   EntityBrowsingObjectProfileTocNode,
+  ObjectProfileEntityCategory,
+  ObjectProfileEntityIdentity,
+  ObjectProfileEntityListProperty,
+  ObjectProfileEntityProperty,
 } from "./pages/entityBrowsingObjectProfileType";
 export type {
   EntityBrowseOverview,

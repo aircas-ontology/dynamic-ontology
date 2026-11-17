@@ -1,3 +1,5 @@
+import type { GetOntologyEntityRowDetailParams } from "../apis/getOntologyEntityRowDetailType";
+
 /** 实体浏览 · 对象画像 Tab。 */
 export type EntityBrowsingObjectProfileTab = "basic-info" | "entity-list" | "entity-stats" | "standard-usage";
 
@@ -203,4 +205,43 @@ export interface EntityBrowsingObjectProfileData {
   relationCenterName: string;
   /** 关系叶子节点。 */
   relationNodes: EntityBrowsingObjectProfileRelationNode[];
+}
+
+/** 实体详情查询身份。 */
+export interface ObjectProfileEntityIdentity {
+  objectId: string;
+  instanceId: string;
+  spaceId: string;
+  /** 列表返回的原始主键，禁止按显示文本猜测类型。 */
+  entityPrimaryKey?: GetOntologyEntityRowDetailParams["entityPrimaryKey"];
+  /** 完整详情查询失败时可展示的已知真实属性。 */
+  listProperties?: ObjectProfileEntityListProperty[];
+}
+
+/** 实体详情中的属性分类。 */
+export interface ObjectProfileEntityCategory {
+  id: string;
+  label: string;
+  children: ObjectProfileEntityCategory[];
+  propertyIds: string[];
+  propertyNames?: string[];
+}
+
+/** 实体详情中的一条属性值，同一属性在不同存储行中分别展示。 */
+export interface ObjectProfileEntityProperty {
+  id: string;
+  /** 原始分组数据行身份，避免缺失或重复主键的不同记录混合。 */
+  recordId?: string;
+  propertyId: string;
+  name: string;
+  value: string;
+  categoryId: string;
+  storageGroup: string;
+  dataPrimaryKey: string;
+}
+
+/** 实体列表中已有的真实属性名称和值。 */
+export interface ObjectProfileEntityListProperty {
+  label: string;
+  value: string;
 }

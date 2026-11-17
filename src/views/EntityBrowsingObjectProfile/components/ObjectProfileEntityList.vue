@@ -1,22 +1,15 @@
 <template>
   <section class="object-profile-entity-list" aria-label="实体列表">
-    <template v-if="detailEmbedded">
-      <header class="object-profile-entity-list__embed-header">
-        <el-button type="primary" plain @click="closeEntityDetail">
-          <el-icon><ArrowLeft /></el-icon>
-          返回
-        </el-button>
-      </header>
-      <div v-if="detailStatus === 'loading'" class="object-profile-entity-list__state" role="status">
-        <AircasLoading>正在加载实体详情…</AircasLoading>
-      </div>
-      <div v-else-if="detailStatus === 'error'" class="object-profile-entity-list__state object-profile-entity-list__state--error" role="alert">
-        <p>{{ detailError }}</p>
-        <el-button type="primary" @click="retryEntityDetailUrl">重试</el-button>
-      </div>
-      <iframe v-else-if="detailUrl" class="object-profile-entity-list__embed" :src="detailUrl" title="实体详情" referrerpolicy="no-referrer" />
-      <div v-else class="object-profile-entity-list__state" role="status">暂无实体详情地址</div>
-    </template>
+    <ObjectProfileEntityDetail
+      v-if="selectedEntity"
+      :object-id="selectedEntity.ontologyUniqueIdentifier || objectId"
+      :instance-id="selectedEntity.instanceId"
+      :entity-primary-key="selectedEntity.entityPrimaryKey"
+      :list-properties="selectedEntity.detailItems"
+      :space-id="spaceId"
+      :entity-name="resolveEntityTitle(selectedEntity)"
+      @back="closeEntityDetail"
+    />
     <template v-else>
       <header class="object-profile-entity-list__toolbar">
         <div class="object-profile-entity-list__filters">
@@ -45,7 +38,7 @@
           <el-table :data="filteredRows" row-key="rowKey" height="100%" class="object-profile-entity-list__table" empty-text="无匹配实体">
             <el-table-column label="操作" width="88" fixed="left">
               <template #default="{ row }">
-                <el-button link type="primary" :loading="detailOpening" :disabled="detailOpening" @click="openEntityDetail(asEntityRow(row))">详情</el-button>
+                <el-button link type="primary" @click="openEntityDetail(asEntityRow(row))">详情</el-button>
               </template>
             </el-table-column>
             <el-table-column v-for="column in visibleColumns" :key="column" :label="column" min-width="120" show-overflow-tooltip>
@@ -80,21 +73,20 @@
 </template>
 
 <script setup lang="ts">
-import { onScopeDispose, ref, toRef, watch } from "vue";
-import { ArrowLeft } from "@element-plus/icons-vue";
+import { ref, toRef, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { getOntologyInstanceUrlListInterface } from "@/apis";
 import AircasLoading from "@/components/AircasLoading.vue";
-import { ENTITY_BROWSING_ENTITY_DETAIL_URL } from "@/utils/entityBrowseConstants";
-import { isUseMockEnabled } from "@/utils/isUseMockEnabled";
 import { useObjectProfileEntityList, type ObjectProfileEntityRow } from "../composables/useObjectProfileEntityList";
 import ObjectProfileEntityListConfigDialog from "./ObjectProfileEntityListConfigDialog.vue";
+import ObjectProfileEntityDetail from "./ObjectProfileEntityDetail.vue";
+import { readObjectProfileEntityPrimaryKey } from "../utils/mapObjectProfileEntityRows";
 
 const props = defineProps<{
   objectId: string;
-  /** 对象空间 id；用于查询实例 URL。 */
+  objectName?: string;
+  /** 对象空间 id。 */
   spaceId: string;
-  /** 外部请求立即打开与「详情」相同的嵌入页。 */
+  /** 外部请求打开首个实体的站内详情。 */
   autoOpenDetail?: boolean;
 }>();
 
@@ -103,13 +95,7 @@ const emit = defineEmits<{
   "close-detail": [];
 }>();
 
-const detailEmbedded = ref(false);
-const detailOpening = ref(false);
-const detailStatus = ref<"idle" | "loading" | "ready" | "error">("idle");
-const detailError = ref("");
-const detailUrl = ref("");
-const detailRequestRow = ref<ObjectProfileEntityRow | null>(null);
-let detailLoadToken = 0;
+const selectedEntity = ref<ObjectProfileEntityRow | null>(null);
 
 const {
   status,
@@ -147,174 +133,58 @@ function asEntityRow(row: unknown): ObjectProfileEntityRow {
   if (!row || typeof row !== "object") {
     return { rowKey: "", ontologyUniqueIdentifier: "", instanceId: "", cells: {}, detailItems: [] };
   }
-  const candidate = row as Partial<ObjectProfileEntityRow>;
-  if (typeof candidate.rowKey !== "string" || !candidate.cells || typeof candidate.cells !== "object") {
+  if (!("rowKey" in row) || typeof row.rowKey !== "string" || !("cells" in row) || !row.cells || typeof row.cells !== "object") {
     return { rowKey: "", ontologyUniqueIdentifier: "", instanceId: "", cells: {}, detailItems: [] };
   }
+  const cells: Record<string, string> = {};
+  Object.entries(row.cells).forEach(([name, value]) => {
+    if (typeof value === "string") cells[name] = value;
+  });
   return {
-    rowKey: candidate.rowKey,
-    ontologyUniqueIdentifier: typeof candidate.ontologyUniqueIdentifier === "string" ? candidate.ontologyUniqueIdentifier : "",
-    instanceId: typeof candidate.instanceId === "string" ? candidate.instanceId : "",
-    cells: candidate.cells,
-    detailItems: Array.isArray(candidate.detailItems) ? candidate.detailItems : [],
+    rowKey: row.rowKey,
+    ontologyUniqueIdentifier: "ontologyUniqueIdentifier" in row && typeof row.ontologyUniqueIdentifier === "string" ? row.ontologyUniqueIdentifier : "",
+    instanceId: "instanceId" in row && typeof row.instanceId === "string" ? row.instanceId : "",
+    entityPrimaryKey: readObjectProfileEntityPrimaryKey("entityPrimaryKey" in row ? row.entityPrimaryKey : undefined),
+    cells,
+    detailItems: Object.entries(cells).map(([label, value]) => ({ label, value })),
   };
 }
 
-/**
- * @description 解析空间 id 为接口所需数字。
- * @param spaceId 路由空间 id。
- * @returns 数字 spaceId；无效时为 null。
- */
-function parseObjectProfileSpaceId(spaceId: string): number | null {
-  const trimmed = spaceId.trim();
-  if (!trimmed) return null;
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : null;
+/** @description 解析实体标题，优先名称字段，缺失时展示主键。 @param row 选中的实体。 @returns 标题文本。 */
+function resolveEntityTitle(row: ObjectProfileEntityRow): string {
+  return Object.entries(row.cells).find(([name, value]) => /名称|name$/i.test(name) && value)?.[1] || `${props.objectName || "实体"} · ${row.instanceId}`;
 }
 
-/**
- * @description 从实例 URL 列表中取出首个非空 url。
- * @param items 接口返回列表。
- * @returns url 或空串。
- */
-function pickOntologyInstanceUrl(items: Array<{ url?: string }> | null | undefined): string {
-  if (!Array.isArray(items)) return "";
-  for (const item of items) {
-    const url = typeof item?.url === "string" ? item.url.trim() : "";
-    if (url) return url;
-  }
-  return "";
-}
-
-/**
- * @description 查询实例详情 URL；成功返回地址，失败抛错。过期请求返回 null。
- * @param row 实体行；为空时仅按对象 id 查询。
- * @param requestToken 本次请求令牌。
- * @returns 详情 URL；过期时为 null。
- */
-async function fetchEntityDetailUrl(row: ObjectProfileEntityRow | null, requestToken: number): Promise<string | null> {
-  const spaceId = parseObjectProfileSpaceId(props.spaceId);
-  if (spaceId === null) {
-    throw new Error("缺少有效对象空间 id，无法加载实体详情。");
-  }
-
-  const objectId = (row?.ontologyUniqueIdentifier || props.objectId).trim();
-  const instanceId = (row?.instanceId ?? "").trim();
-  if (!objectId) {
-    throw new Error("缺少对象标识，无法加载实体详情。");
-  }
-
-  if (isUseMockEnabled()) {
-    if (requestToken !== detailLoadToken) return null;
-    return ENTITY_BROWSING_ENTITY_DETAIL_URL;
-  }
-
-  const response = await getOntologyInstanceUrlListInterface({
-    spaceId,
-    objectId,
-    ...(instanceId ? { instanceId } : {}),
-  });
-  if (requestToken !== detailLoadToken) return null;
-  if (response.code !== 200) {
-    throw new Error(response.message || "实体详情地址加载失败");
-  }
-  const url = pickOntologyInstanceUrl(response.data);
-  if (!url) {
-    throw new Error("未返回实体详情地址");
-  }
-  return url;
-}
-
-/**
- * @description 在已嵌入详情区内重新加载 URL（用于重试）。
- * @param row 实体行。
- */
-async function reloadEmbeddedEntityDetailUrl(row: ObjectProfileEntityRow | null): Promise<void> {
-  const requestToken = ++detailLoadToken;
-  detailStatus.value = "loading";
-  detailError.value = "";
-  detailUrl.value = "";
-  detailRequestRow.value = row;
-  try {
-    const url = await fetchEntityDetailUrl(row, requestToken);
-    if (requestToken !== detailLoadToken || url === null) return;
-    detailUrl.value = url;
-    detailStatus.value = "ready";
-  } catch (cause) {
-    if (requestToken !== detailLoadToken) return;
-    detailUrl.value = "";
-    detailStatus.value = "error";
-    detailError.value = cause instanceof Error && cause.message.trim() ? cause.message : "实体详情地址加载失败，请重试。";
-  }
-}
-
-/**
- * @description 先查询详情 URL，有地址后再进入嵌入页；无地址则留在列表并提示。
- * @param row 当前表格行。
- * @returns 是否成功进入详情嵌入。
- */
-async function openEntityDetail(row?: ObjectProfileEntityRow): Promise<boolean> {
-  if (detailOpening.value) return false;
-  const requestRow = row ? asEntityRow(row) : null;
-  const requestToken = ++detailLoadToken;
-  detailOpening.value = true;
-  detailRequestRow.value = requestRow;
-  try {
-    const url = await fetchEntityDetailUrl(requestRow, requestToken);
-    if (requestToken !== detailLoadToken || url === null) return false;
-    detailUrl.value = url;
-    detailError.value = "";
-    detailStatus.value = "ready";
-    detailEmbedded.value = true;
-    return true;
-  } catch (cause) {
-    if (requestToken !== detailLoadToken) return false;
-    detailEmbedded.value = false;
-    detailUrl.value = "";
-    detailStatus.value = "idle";
-    detailError.value = "";
-    const message = cause instanceof Error && cause.message.trim() ? cause.message : "实体详情地址加载失败，请重试。";
-    ElMessage.error(message);
+/** @description 打开当前实体站内详情，不重置列表分页与筛选。 @param row 当前表格行，不传时打开首条可见实体。 @returns 是否成功打开。 */
+function openEntityDetail(row?: ObjectProfileEntityRow): boolean {
+  const entity = row || filteredRows.value[0];
+  if (!entity?.instanceId) {
+    ElMessage.error("缺少实体主键，无法打开详情");
     return false;
-  } finally {
-    if (requestToken === detailLoadToken) detailOpening.value = false;
   }
+  selectedEntity.value = asEntityRow(entity);
+  return true;
 }
 
-/**
- * @description 重试当前详情 URL 请求（仅嵌入态）。
- */
-function retryEntityDetailUrl(): void {
-  void reloadEmbeddedEntityDetailUrl(detailRequestRow.value);
-}
-
-/**
- * @description 关闭嵌入详情并回到实体列表。
- */
+/** @description 返回原列表，保留分页、筛选和列配置。 */
 function closeEntityDetail(): void {
-  detailLoadToken += 1;
-  detailOpening.value = false;
-  detailEmbedded.value = false;
-  detailStatus.value = "idle";
-  detailError.value = "";
-  detailUrl.value = "";
-  detailRequestRow.value = null;
+  selectedEntity.value = null;
   emit("close-detail");
 }
 
 watch(
-  () => props.autoOpenDetail,
-  async (shouldOpen) => {
-    if (!shouldOpen) return;
-    const opened = await openEntityDetail();
-    if (opened) emit("detail-auto-opened");
+  () => [props.objectId, props.spaceId],
+  () => {
+    selectedEntity.value = null;
+  },
+);
+watch(
+  [() => props.autoOpenDetail, filteredRows, status],
+  ([shouldOpen, rows, loadStatus]) => {
+    if (shouldOpen && loadStatus === "ready" && rows.length && !selectedEntity.value && openEntityDetail(rows[0])) emit("detail-auto-opened");
   },
   { immediate: true },
 );
-
-onScopeDispose(() => {
-  detailLoadToken += 1;
-});
 
 defineExpose({ openEntityDetail });
 
@@ -355,23 +225,6 @@ function handleEntityListPageSizeChange(size: number): void {
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   background: linear-gradient(135deg, var(--aircas-color-panel-background), var(--aircas-color-panel-background-deep));
-}
-
-.object-profile-entity-list__embed-header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.object-profile-entity-list__embed {
-  display: block;
-  width: 100%;
-  min-height: 0;
-  flex: 1;
-  border: 1px solid var(--aircas-color-border);
-  border-radius: 6px;
-  background: var(--aircas-color-panel-background-deep);
 }
 
 .object-profile-entity-list__toolbar {

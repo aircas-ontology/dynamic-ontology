@@ -1,4 +1,4 @@
-import type { OntologyEntityInfo, OntologyEntityPropertyItem } from "@/types";
+import type { GetOntologyEntityRowDetailParams, OntologyEntityInfo, OntologyEntityPropertyItem } from "@/types";
 
 /** 实体列表表格行。 */
 export interface ObjectProfileEntityRow {
@@ -8,6 +8,8 @@ export interface ObjectProfileEntityRow {
   ontologyUniqueIdentifier: string;
   /** 实例主键；用于实例 URL 查询 instanceId。 */
   instanceId: string;
+  /** 详情接口使用的原始主键，独立于展示字符串。 */
+  entityPrimaryKey?: GetOntologyEntityRowDetailParams["entityPrimaryKey"];
   /** 动态属性展示值。 */
   cells: Record<string, string>;
   /** 详情弹窗用的有序属性对。 */
@@ -41,26 +43,18 @@ function formatEntityCellValue(value: unknown): string {
   return String(value);
 }
 
-/**
- * @description 从实体记录解析实例主键字符串（优先 primaryKey，其次 entityPrimaryKey / id）。
- * @param record 实体记录。
- * @param fallbackIndex 无主键时的行序号兜底。
- * @returns 实例 id 字符串；无法解析时为空串。
- */
-function resolveObjectProfileEntityInstanceId(record: OntologyEntityInfo, fallbackIndex: number): string {
-  const candidates: unknown[] = [record.primaryKey, record.entityPrimaryKey, record.id];
-  for (const candidate of candidates) {
-    if (candidate === null || candidate === undefined || candidate === "") continue;
-    if (typeof candidate === "string" || typeof candidate === "number" || typeof candidate === "boolean") {
-      return String(candidate);
-    }
-    try {
-      return JSON.stringify(candidate) ?? "";
-    } catch {
-      return String(candidate);
-    }
-  }
-  return fallbackIndex >= 0 ? `row-${fallbackIndex + 1}` : "";
+/** @description 校验并保留接口主键的原始类型。 @param value 待校验主键。 @returns 主键或未定义。 */
+export function readObjectProfileEntityPrimaryKey(value: unknown): GetOntologyEntityRowDetailParams["entityPrimaryKey"] | undefined {
+  if (typeof value === "string") return value.trim() ? value : undefined;
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value === "boolean") return value;
+  if (isRecord(value) && Object.keys(value).length) return { ...value };
+  return undefined;
+}
+
+/** @description 提取实体记录的原始主键，优先 primaryKey，其次 entityPrimaryKey/id。 @param record 实体记录。 @returns 原始主键。 */
+function resolveObjectProfileEntityPrimaryKey(record: OntologyEntityInfo): GetOntologyEntityRowDetailParams["entityPrimaryKey"] | undefined {
+  return [record.primaryKey, record.entityPrimaryKey, record.id].map(readObjectProfileEntityPrimaryKey).find((value) => value !== undefined);
 }
 
 /**
@@ -143,10 +137,11 @@ export function mapObjectProfileEntityRows(records: readonly OntologyEntityInfo[
       cells[label] = value;
       detailItems.push({ label, value });
     }
-    const instanceId = resolveObjectProfileEntityInstanceId(record, index);
+    const entityPrimaryKey = resolveObjectProfileEntityPrimaryKey(record);
+    const instanceId = entityPrimaryKey === undefined ? "" : typeof entityPrimaryKey === "object" ? JSON.stringify(entityPrimaryKey) : String(entityPrimaryKey);
     const ontologyUniqueIdentifier = typeof record.ontologyUniqueIdentifier === "string" ? record.ontologyUniqueIdentifier.trim() : "";
     const rowKey = instanceId || `row-${index + 1}`;
-    return { rowKey, ontologyUniqueIdentifier, instanceId, cells, detailItems };
+    return { rowKey, ontologyUniqueIdentifier, instanceId, entityPrimaryKey, cells, detailItems };
   });
 }
 

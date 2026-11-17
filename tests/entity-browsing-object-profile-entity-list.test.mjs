@@ -192,17 +192,13 @@ test("object profile entity list tab mounts API list component", () => {
   assert.match(list, /筛选字段/);
   assert.match(list, /筛选值/);
   assert.match(list, /getOntologyEntitiesInterface|useObjectProfileEntityList/);
-  assert.match(list, /getOntologyInstanceUrlListInterface/);
   assert.match(list, /详情/);
   assert.match(list, /配置/);
   assert.match(list, /ObjectProfileEntityListConfigDialog/);
   assert.match(list, /openEntityDetail\(asEntityRow\(row\)\)/);
-  assert.match(list, /detailOpening/);
-  assert.match(list, /async function openEntityDetail/);
-  assert.match(list, /detailEmbedded\.value = true/);
   assert.match(list, /ElMessage\.error/);
-  assert.match(list, /未返回实体详情地址/);
-  assert.match(list, /fetchEntityDetailUrl/);
+  assert.match(list, /ObjectProfileEntityDetail/);
+  assert.doesNotMatch(list, /iframe|getOntologyInstanceUrlListInterface/);
   assert.doesNotMatch(list, /function openEntityDetail\(row\?: ObjectProfileEntityRow\): void \{\s*detailEmbedded\.value = true/);
   assert.doesNotMatch(list, /配置功能待接入/);
   assert.doesNotMatch(list, /:src="ENTITY_BROWSING_ENTITY_DETAIL_URL"/);
@@ -219,4 +215,17 @@ test("entity list mock fixture exposes Chinese property columns", () => {
   assert.ok(fixture.data.records.length >= 2);
   const firstProps = fixture.data.records[0].properties ?? {};
   assert.ok(Object.keys(firstProps).some((key) => /[\u4e00-\u9fff]/.test(key)));
+});
+
+test("entity list rows retain original primary-key types for detail requests", () => {
+  const keys = [5, 0, false, "005", { code: 5 }];
+  const rows = mapObjectProfileEntityRows(keys.map((primaryKey) => ({ primaryKey, properties: { 名称: "示例" } })));
+  assert.deepEqual(
+    rows.map((row) => row.entityPrimaryKey),
+    keys,
+  );
+  assert.deepEqual(
+    rows.map((row) => row.instanceId),
+    ["5", "0", "false", "005", '{"code":5}'],
+  );
 });
