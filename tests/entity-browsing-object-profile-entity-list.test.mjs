@@ -198,7 +198,8 @@ test("object profile entity list tab mounts API list component", () => {
   assert.match(list, /openEntityDetail\(asEntityRow\(row\)\)/);
   assert.match(list, /ElMessage\.error/);
   assert.match(list, /ObjectProfileEntityDetail/);
-  assert.doesNotMatch(list, /iframe|getOntologyInstanceUrlListInterface/);
+  assert.match(list, /iframe/);
+  assert.match(list, /getOntologyInstanceUrlListInterface/);
   assert.doesNotMatch(list, /function openEntityDetail\(row\?: ObjectProfileEntityRow\): void \{\s*detailEmbedded\.value = true/);
   assert.doesNotMatch(list, /配置功能待接入/);
   assert.doesNotMatch(list, /:src="ENTITY_BROWSING_ENTITY_DETAIL_URL"/);

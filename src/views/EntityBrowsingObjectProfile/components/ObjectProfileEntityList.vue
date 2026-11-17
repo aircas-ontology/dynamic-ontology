@@ -1,7 +1,7 @@
 <template>
   <section class="object-profile-entity-list" aria-label="实体列表">
     <ObjectProfileEntityDetail
-      v-if="selectedEntity"
+      v-if="selectedEntity && detailStatus === 'native'"
       :object-id="selectedEntity.ontologyUniqueIdentifier || objectId"
       :instance-id="selectedEntity.instanceId"
       :entity-primary-key="selectedEntity.entityPrimaryKey"
@@ -10,6 +10,22 @@
       :entity-name="resolveEntityTitle(selectedEntity)"
       @back="closeEntityDetail"
     />
+    <template v-else-if="selectedEntity">
+      <header class="object-profile-entity-list__toolbar">
+        <strong>{{ resolveEntityTitle(selectedEntity) }}</strong>
+        <el-button @click="closeEntityDetail">返回实体列表</el-button>
+      </header>
+      <div v-if="detailStatus === 'loading'" class="object-profile-entity-list__state" role="status">
+        <AircasLoading>正在查询实体详情地址…</AircasLoading>
+      </div>
+      <iframe
+        v-else-if="detailStatus === 'external' && detailUrl"
+        class="object-profile-entity-list__embed"
+        :src="detailUrl"
+        title="实体详情"
+        referrerpolicy="no-referrer"
+      />
+    </template>
     <template v-else>
       <header class="object-profile-entity-list__toolbar">
         <div class="object-profile-entity-list__filters">
@@ -73,8 +89,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRef, watch } from "vue";
+import { onScopeDispose, ref, toRef, watch } from "vue";
 import { ElMessage } from "element-plus";
+import { getOntologyInstanceUrlListInterface } from "@/apis";
 import AircasLoading from "@/components/AircasLoading.vue";
 import { useObjectProfileEntityList, type ObjectProfileEntityRow } from "../composables/useObjectProfileEntityList";
 import ObjectProfileEntityListConfigDialog from "./ObjectProfileEntityListConfigDialog.vue";
@@ -86,7 +103,7 @@ const props = defineProps<{
   objectName?: string;
   /** 对象空间 id。 */
   spaceId: string;
-  /** 外部请求打开首个实体的站内详情。 */
+  /** 外部请求查询首个实体详情 URL，无 URL 或查询失败时打开站内详情。 */
   autoOpenDetail?: boolean;
 }>();
 
@@ -96,6 +113,9 @@ const emit = defineEmits<{
 }>();
 
 const selectedEntity = ref<ObjectProfileEntityRow | null>(null);
+const detailStatus = ref<"idle" | "loading" | "external" | "native">("idle");
+const detailUrl = ref("");
+let detailRequestToken = 0;
 
 const {
   status,
@@ -155,29 +175,74 @@ function resolveEntityTitle(row: ObjectProfileEntityRow): string {
   return Object.entries(row.cells).find(([name, value]) => /名称|name$/i.test(name) && value)?.[1] || `${props.objectName || "实体"} · ${row.instanceId}`;
 }
 
-/** @description 打开当前实体站内详情，不重置列表分页与筛选。 @param row 当前表格行，不传时打开首条可见实体。 @returns 是否成功打开。 */
+/**
+ * @description 查询实体详情地址，有 URL 时嵌入展示，无 URL 或接口失败时回退站内详情。
+ * @param entity 当前实体身份。
+ * @param token 请求令牌，避免返回、切换或卸载后写入过期结果。
+ * @returns 查询及详情视图选择完成信号。
+ */
+async function resolveEntityDetailTarget(entity: ObjectProfileEntityRow, token: number): Promise<void> {
+  const spaceId = Number(props.spaceId);
+  try {
+    if (!Number.isSafeInteger(spaceId) || spaceId <= 0) throw new Error("无效空间 ID");
+    const response = await getOntologyInstanceUrlListInterface({
+      spaceId,
+      objectId: entity.ontologyUniqueIdentifier || props.objectId,
+      instanceId: entity.instanceId,
+    });
+    if (token !== detailRequestToken) return;
+    if (response.code === 200 && Array.isArray(response.data)) {
+      const url = response.data.find((item) => typeof item?.url === "string" && item.url.trim())?.url?.trim();
+      if (url) {
+        detailUrl.value = url;
+        detailStatus.value = "external";
+        return;
+      }
+    }
+  } catch {
+    // URL 查询失败按产品约定回退站内详情，由站内详情处理自身的数据加载状态。
+  }
+  if (token === detailRequestToken) detailStatus.value = "native";
+}
+
+/** @description 打开当前实体详情查询，不重置列表分页与筛选，并阻止相同实体重复请求。 @param row 当前表格行，不传时打开首条可见实体。 @returns 是否启动详情查询。 */
 function openEntityDetail(row?: ObjectProfileEntityRow): boolean {
   const entity = row || filteredRows.value[0];
   if (!entity?.instanceId) {
     ElMessage.error("缺少实体主键，无法打开详情");
     return false;
   }
+  if (
+    detailStatus.value === "loading" &&
+    selectedEntity.value?.instanceId === entity.instanceId &&
+    selectedEntity.value?.ontologyUniqueIdentifier === entity.ontologyUniqueIdentifier
+  )
+    return false;
   selectedEntity.value = asEntityRow(entity);
+  detailUrl.value = "";
+  detailStatus.value = "loading";
+  void resolveEntityDetailTarget(selectedEntity.value, ++detailRequestToken);
   return true;
 }
 
 /** @description 返回原列表，保留分页、筛选和列配置。 */
 function closeEntityDetail(): void {
-  selectedEntity.value = null;
+  resetEntityDetail();
   emit("close-detail");
 }
 
-watch(
-  () => [props.objectId, props.spaceId],
-  () => {
-    selectedEntity.value = null;
-  },
-);
+/** @description 清理详情状态并使尚未完成的 URL 查询失效。 */
+function resetEntityDetail(): void {
+  detailRequestToken++;
+  selectedEntity.value = null;
+  detailUrl.value = "";
+  detailStatus.value = "idle";
+}
+
+watch(() => [props.objectId, props.spaceId], resetEntityDetail, { flush: "sync" });
+onScopeDispose(() => {
+  detailRequestToken++;
+});
 watch(
   [() => props.autoOpenDetail, filteredRows, status],
   ([shouldOpen, rows, loadStatus]) => {
@@ -263,6 +328,14 @@ function handleEntityListPageSizeChange(size: number): void {
 
 .object-profile-entity-list__table :deep(.el-table__row:hover > td.el-table__cell) {
   background-color: var(--aircas-color-effect-primary-soft) !important;
+}
+
+.object-profile-entity-list__embed {
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  border: 0;
+  background: var(--aircas-color-panel-background);
 }
 
 .object-profile-entity-list__pager {
