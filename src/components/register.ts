@@ -8,6 +8,7 @@ import AircasPanel from "./AircasPanel.vue";
 import AircasTimeline from "./AircasTimeline.vue";
 import BehaviorParameterConfig from "./BehaviorParameterConfig/BehaviorParameterConfig.vue";
 import BehaviorTreeExecPanel from "./BehaviorTreeExecPanel.vue";
+import BehaviorTreeTestDialog from "./BehaviorTreeTestDialog.vue";
 import OnboardingGuideOverlay from "./OnboardingGuide/OnboardingGuideOverlay.vue";
 import OntologyGlobalSearchField from "./OntologyGlobalSearchField/OntologyGlobalSearchField.vue";
 import OntologyRelationGraph2d from "./OntologyRelationGraph2d.vue";
@@ -18,6 +19,7 @@ export default (app: App) => {
   app.component("AircasTimeline", AircasTimeline);
   app.component("BehaviorParameterConfig", BehaviorParameterConfig);
   app.component("BehaviorTreeExecPanel", BehaviorTreeExecPanel);
+  app.component("BehaviorTreeTestDialog", BehaviorTreeTestDialog);
   app.component("OnboardingGuideOverlay", OnboardingGuideOverlay);
   app.component("OntologyGlobalSearchField", OntologyGlobalSearchField);
   app.component("OntologyRelationGraph2d", OntologyRelationGraph2d);

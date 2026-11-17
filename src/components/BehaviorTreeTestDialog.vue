@@ -44,14 +44,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
-import { getOntologyCategoryTreeInterface } from "@/apis";
+import { computed, onScopeDispose, reactive, ref, watch } from "vue";
+import type { getOntologyCategoryTreeInterface } from "@/apis";
 import BehaviorTreeExecPanel from "@/components/BehaviorTreeExecPanel.vue";
 import { useBehaviorTreeExecution } from "@/composables/behaviorTree/useBehaviorTreeExecution";
 import type { BehaviorTreeModel, BehaviorTreeObjectPropertyOption, SpaceBehaviorItem, SpaceRelationObjectOption } from "@/types";
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
 
 const props = defineProps<{
+  queryObjectCatalog: typeof getOntologyCategoryTreeInterface;
   modelValue: boolean;
   spaceId: string;
   behavior: SpaceBehaviorItem | null;
@@ -117,7 +118,7 @@ async function loadBehaviorTreeTestObjectCatalog(): Promise<void> {
     return;
   }
   try {
-    const response = await getOntologyCategoryTreeInterface({ spaceId });
+    const response = await props.queryObjectCatalog({ spaceId });
     if (token !== catalogToken) return;
     if (response.code !== 200 || !response.data) {
       throw new Error(response.message || "对象目录加载失败");
@@ -142,9 +143,18 @@ async function openBehaviorTreeTestDialog(): Promise<void> {
   await loadBehaviorTreeExecutePlan(true);
 }
 
+/** @description 关闭、切换或卸载时阻止目录请求和旧打开流程继续更新弹窗。 */
+function invalidateBehaviorTreeTestRequests(): void {
+  catalogToken += 1;
+  openToken += 1;
+}
+
+onScopeDispose(invalidateBehaviorTreeTestRequests);
+
 watch(
-  () => props.modelValue,
-  (visible) => {
+  () => [props.modelValue, props.behavior?.id, props.behavior?.behaviorApiName, props.spaceId] as const,
+  ([visible]) => {
+    invalidateBehaviorTreeTestRequests();
     if (!visible) return;
     if (!treeApi.value) {
       catalogError.value = "缺少行为 api";
@@ -152,6 +162,7 @@ watch(
     }
     void openBehaviorTreeTestDialog();
   },
+  { immediate: true },
 );
 </script>
 
