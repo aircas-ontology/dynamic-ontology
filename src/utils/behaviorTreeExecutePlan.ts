@@ -90,7 +90,7 @@ export function findBehaviorTreeExecuteNodePlan(plan: BehaviorTreeExecuteInputs 
 }
 
 /**
- * @description 收集执行要求中需要单独传参的节点 id（对齐原型 execPlanNodeIds）。
+ * @description 收集执行要求中需要单独传参的节点 id，顺序与 executeInputs.nodes 一致。
  * @param plan 执行要求。
  * @returns 节点 id 列表。
  */
@@ -102,7 +102,7 @@ export function listBehaviorTreeExecPlanNodeIds(plan: BehaviorTreeExecuteInputs 
     const hasInstances = (node.instanceRequirements ?? []).length > 0;
     if (node.entityPrimaryKeyRequired || hasInputs || hasOutputs || hasInstances) list.push(node.nodeId);
   }
-  return list.sort();
+  return list;
 }
 
 /**

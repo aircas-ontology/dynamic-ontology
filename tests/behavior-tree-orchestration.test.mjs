@@ -1048,6 +1048,16 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
     ],
   };
   assert.deepEqual(listBehaviorTreeExecPlanNodeIds(plan), ["node_action_1", "node_link_1", "node_multi_1"]);
+  assert.deepEqual(
+    listBehaviorTreeExecPlanNodeIds({
+      nodes: [
+        { nodeId: "node_z", inputParams: [{ key: "a", sourceType: "EXTERNAL" }] },
+        { nodeId: "node_a", instanceRequirements: [{ objectIdentifier: "obj.x" }] },
+        { nodeId: "node_m", outputParams: [{ key: "out", mode: "RESULT_ONLY" }] },
+      ],
+    }),
+    ["node_z", "node_a", "node_m"],
+  );
   assert.deepEqual(listBehaviorTreeExecPlanObjectIds(plan).sort(), ["obj.a", "obj.b", "obj.base", "obj.tank"]);
   assert.deepEqual(listBehaviorTreeBlackboardStorageGroups(plan, "obj.tank"), ["weapon"]);
   assert.equal(resolveBehaviorTreeBbGroupRowStateKey("obj.tank", "weapon"), "obj.tank|weapon");
