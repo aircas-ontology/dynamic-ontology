@@ -81,6 +81,14 @@ export interface BehaviorTreeExecuteInputParam {
   actionApis?: string[];
 }
 
+/** 黑板对象属性键落在非主分组时的分组行要求。 */
+export interface BehaviorTreeExecuteBlackboardStorageGroup {
+  /** 属性存储分组名。 */
+  storageGroup?: string;
+  /** 依赖该分组行的黑板键。 */
+  blackboardKeys?: string[];
+}
+
 /** 行为树执行要求：实例依赖。 */
 export interface BehaviorTreeExecuteInstanceRequirement {
   actionApi?: string;
@@ -89,6 +97,8 @@ export interface BehaviorTreeExecuteInstanceRequirement {
   /** 旧扁平结构兼容；新格式挂在所属 node 下。 */
   nodeIds?: string[];
   blackboardKeys?: string[];
+  /** 黑板属性平铺时保留的非主分组行要求。 */
+  storageGroups?: BehaviorTreeExecuteBlackboardStorageGroup[];
   linkEntityPrimaryKeyRequired?: boolean;
   linkObjectIdentifier?: string;
   linkFromObjectIdentifier?: string;
@@ -129,6 +139,8 @@ export interface BehaviorTreeExecuteNodePlan {
 export interface BehaviorTreeExecuteBlackboardInstance {
   objectIdentifier?: string;
   blackboardKeys?: string[];
+  /** 非主分组：除实例外还要选分组行。 */
+  storageGroups?: BehaviorTreeExecuteBlackboardStorageGroup[];
 }
 
 /** 行为树详情中的执行入参规划（以 nodes 为准）。 */

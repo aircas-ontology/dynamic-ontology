@@ -159,6 +159,7 @@ export type {
 } from "./apis/getBehaviorSchedulingResultType";
 export type {
   BehaviorTreeExecuteBlackboardInstance,
+  BehaviorTreeExecuteBlackboardStorageGroup,
   BehaviorTreeExecuteInputParam,
   BehaviorTreeExecuteInputs,
   BehaviorTreeExecuteInputSourceType,
@@ -381,6 +382,7 @@ export type {
   BehaviorTreeDefinition,
   BehaviorTreeDragPayload,
   BehaviorTreeExecLogEntry,
+  BehaviorTreeInputBindingDraft,
   BehaviorTreeInspectorTab,
   BehaviorTreeKindMeta,
   BehaviorTreeModel,
@@ -393,6 +395,7 @@ export type {
   BehaviorTreeObjectPropertyOption,
   BehaviorTreeOrchestrationLoadStatus,
   BehaviorTreeOrchestrationMeta,
+  BehaviorTreeOutputBindingDraft,
   BehaviorTreePersistMode,
   BehaviorTreeSavePayload,
   BehaviorTreeSaveStatus,

@@ -158,6 +158,7 @@ export function listBehaviorTreeExecPlanInstanceRequirements(plan: BehaviorTreeE
       objectIdentifier: item.objectIdentifier,
       nodeIds: [],
       blackboardKeys: item.blackboardKeys ?? [],
+      storageGroups: item.storageGroups ?? [],
     });
   }
   // 旧扁平结构：仅在没有 nodes 时回退
@@ -301,6 +302,39 @@ export function resolveBehaviorTreeOutputDraftKey(target: BehaviorTreeExecuteOut
 }
 
 /**
+ * @description 黑板分组行草稿键（对象|分组）。
+ * @param objectId 对象标识。
+ * @param storageGroup 分组名。
+ * @returns 草稿键。
+ */
+export function resolveBehaviorTreeBbGroupRowStateKey(objectId: string, storageGroup: string): string {
+  return `${objectId}|${storageGroup}`;
+}
+
+/**
+ * @description 列出某对象黑板属性需要选择的非主分组。
+ * @param plan 执行要求。
+ * @param objectId 对象标识。
+ * @returns 分组名列表（去重保序）。
+ */
+export function listBehaviorTreeBlackboardStorageGroups(plan: BehaviorTreeExecuteInputs | null | undefined, objectId: string): string[] {
+  const id = objectId.trim();
+  if (!id || !plan) return [];
+  const seen = new Set<string>();
+  const list: string[] = [];
+  for (const item of plan.blackboardInstances ?? []) {
+    if ((item?.objectIdentifier || "").trim() !== id) continue;
+    for (const group of item.storageGroups ?? []) {
+      const name = (group?.storageGroup || "").trim();
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      list.push(name);
+    }
+  }
+  return list;
+}
+
+/**
  * @description 校验试跑必填数据是否齐全（对齐原型 missingExecData）。
  * @param options 校验上下文。
  * @returns 缺失项文案。
@@ -309,9 +343,10 @@ export function collectBehaviorTreeExecMissingFields(options: {
   plan: BehaviorTreeExecuteInputs | null;
   objectLabelById?: Record<string, string>;
   blackboardObjectKeys: Record<string, string>;
+  blackboardGroupRows?: Record<string, string>;
   nodeDrafts: Record<string, BehaviorTreeNodeExecDraft>;
 }): string[] {
-  const { plan, objectLabelById = {}, blackboardObjectKeys, nodeDrafts } = options;
+  const { plan, objectLabelById = {}, blackboardObjectKeys, blackboardGroupRows = {}, nodeDrafts } = options;
   if (!plan) return [];
   const missing: string[] = [];
   const seen = new Set<string>();
@@ -348,6 +383,16 @@ export function collectBehaviorTreeExecMissingFields(options: {
     if (blackboardKeys.length) {
       if (objectId && !(blackboardObjectKeys[objectId] || "").trim()) {
         push(`黑板属性 ${blackboardKeys.join("、")} 的实例（${objectLabel(objectId)}）`);
+        continue;
+      }
+      for (const group of requirement.storageGroups ?? []) {
+        const storageGroup = (group?.storageGroup || "").trim();
+        if (!storageGroup || !objectId) continue;
+        const rowText = (blackboardGroupRows[resolveBehaviorTreeBbGroupRowStateKey(objectId, storageGroup)] || "").trim();
+        if (rowText === "") {
+          const keys = Array.isArray(group.blackboardKeys) ? group.blackboardKeys.filter(Boolean) : [];
+          push(`黑板属性 ${keys.length ? keys.join("、") : blackboardKeys.join("、")} 的分组 ${storageGroup} 行（${objectLabel(objectId)}）`);
+        }
       }
       continue;
     }
@@ -399,9 +444,10 @@ export function buildBehaviorTreeTestPayload(options: {
   objectProperties: Record<string, BehaviorTreeObjectPropertyOption>;
   externalInputDraft: Record<string, string>;
   blackboardObjectKeys: Record<string, string>;
+  blackboardGroupRows?: Record<string, string>;
   nodeDrafts: Record<string, BehaviorTreeNodeExecDraft>;
 }): { payload: PostOntologyActionTreeTestParams } | { error: string } {
-  const { spaceId, treeApi, plan, blackboard, objectProperties, externalInputDraft, blackboardObjectKeys, nodeDrafts } = options;
+  const { spaceId, treeApi, plan, blackboard, objectProperties, externalInputDraft, blackboardObjectKeys, blackboardGroupRows = {}, nodeDrafts } = options;
   const payload: PostOntologyActionTreeTestParams = {
     ontologySpaceId: spaceId,
     treeApi,
@@ -426,6 +472,20 @@ export function buildBehaviorTreeTestPayload(options: {
     if (text) entityPrimaryKeys[objectId] = text;
   }
   if (Object.keys(entityPrimaryKeys).length) payload.entityPrimaryKeys = entityPrimaryKeys;
+
+  const inputDataPrimaryKeys: Record<string, Record<string, string | number>> = {};
+  for (const [stateKey, value] of Object.entries(blackboardGroupRows)) {
+    const text = value.trim();
+    if (text === "") continue;
+    const separatorIndex = stateKey.indexOf("|");
+    if (separatorIndex <= 0) continue;
+    const objectId = stateKey.slice(0, separatorIndex).trim();
+    const group = stateKey.slice(separatorIndex + 1).trim();
+    if (!objectId || !group || !(blackboardObjectKeys[objectId] || "").trim()) continue;
+    if (!inputDataPrimaryKeys[objectId]) inputDataPrimaryKeys[objectId] = {};
+    inputDataPrimaryKeys[objectId][group] = text;
+  }
+  if (Object.keys(inputDataPrimaryKeys).length) payload.inputDataPrimaryKeys = inputDataPrimaryKeys;
 
   const nodeExecutes: Record<string, BehaviorTreeNodeExecuteData> = {};
   for (const nodeId of listBehaviorTreeExecPlanNodeIds(plan)) {

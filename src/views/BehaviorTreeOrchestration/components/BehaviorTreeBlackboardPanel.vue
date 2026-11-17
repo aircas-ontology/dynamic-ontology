@@ -3,7 +3,6 @@
     <div class="behavior-tree-board__toolbar">
       <el-button type="primary" @click="emit('add-row')">新增黑板键</el-button>
     </div>
-    <p class="behavior-tree-board__hint">黑板键不是必填。固定值写在本行；外部输入才生成同名变量默认值；对象属性执行时按实例回读。</p>
 
     <div v-if="rows.length === 0" class="behavior-tree-board__empty">暂无黑板键（可选）</div>
 
@@ -104,8 +103,6 @@
         <el-input :model-value="row.description" @update:model-value="emit('update-field', index, 'description', String($event))" />
       </div>
     </article>
-
-    <p class="behavior-tree-board__footer-hint">固定值取本行；外部输入可由执行 inputs 覆盖；对象属性按实例读库。行为外部入参不在此声明。</p>
   </div>
 </template>
 
@@ -152,6 +149,11 @@ function syncSelectedObjectsFromBindings(): void {
       delete selectedObjectIds[index];
       return;
     }
+    const stored = (row.bindObjectIdentifier || "").trim();
+    if (stored) {
+      selectedObjectIds[index] = stored;
+      return;
+    }
     const bound = props.objectProperties[row.bindPropertyUniqueIdentifier.trim()];
     if (bound?.objectId) {
       selectedObjectIds[index] = bound.objectId;
@@ -165,9 +167,27 @@ watch(
   () => [props.rows, props.objectProperties] as const,
   () => {
     syncSelectedObjectsFromBindings();
+    requestMissingObjectProperties();
   },
   { deep: true, immediate: true },
 );
+
+/**
+ * @description 对已绑定对象但属性目录未就绪的行发起懒加载，保证属性下拉能按名称回显。
+ */
+function requestMissingObjectProperties(): void {
+  props.rows.forEach((row, index) => {
+    if (resolveSource(row) !== "PROPERTY") return;
+    const objectId = resolveSelectedObjectId(row, index).trim();
+    if (!objectId) return;
+    const propertyId = row.bindPropertyUniqueIdentifier.trim();
+    const hasBoundProperty = propertyId ? Boolean(props.objectProperties[propertyId]) : false;
+    const hasObjectProperties = listPropertiesForObject(objectId).length > 0;
+    if (hasBoundProperty || hasObjectProperties) return;
+    if (isObjectPropertyLoading(objectId)) return;
+    emit("request-object-properties", objectId);
+  });
+}
 
 /**
  * @description 解析某行当前选中的对象 id。
@@ -255,6 +275,7 @@ function handleSourceChange(index: number, source: string): void {
  */
 function handleObjectChange(index: number, objectId: string): void {
   selectedObjectIds[index] = objectId;
+  emit("update-field", index, "bindObjectIdentifier", objectId);
   emit("update-field", index, "bindPropertyUniqueIdentifier", "");
   if (objectId.trim()) emit("request-object-properties", objectId.trim());
 }
@@ -270,21 +291,12 @@ function handleObjectChange(index: number, objectId: string): void {
   margin-bottom: 8px;
 }
 
-.behavior-tree-board__hint,
-.behavior-tree-board__footer-hint,
 .behavior-tree-board__empty {
   margin: 0;
+  padding: 16px 0;
   color: var(--aircas-color-text-secondary);
   font-size: 12px;
   line-height: 1.5;
-}
-
-.behavior-tree-board__hint {
-  margin-bottom: 12px;
-}
-
-.behavior-tree-board__empty {
-  padding: 16px 0;
   text-align: center;
 }
 
@@ -324,9 +336,5 @@ function handleObjectChange(index: number, objectId: string): void {
     color: var(--aircas-color-text-secondary);
     font-size: 12px;
   }
-}
-
-.behavior-tree-board__footer-hint {
-  margin-top: 8px;
 }
 </style>

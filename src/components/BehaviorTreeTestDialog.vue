@@ -27,6 +27,9 @@
       :node-blocks="execNodeBlocks"
       :external-draft="externalInputDraft"
       :blackboard-object-keys="blackboardObjectKeys"
+      :blackboard-group-rows="blackboardGroupRows"
+      :group-row-options="groupRowOptions"
+      :group-row-loading-ids="groupRowLoadingIds"
       :node-drafts="nodeDrafts"
       :instance-options="instanceOptions"
       :instance-loading-ids="instanceLoadingIds"
@@ -35,6 +38,9 @@
       @run-test="runBehaviorTreeTest"
       @clear-logs="clearBehaviorTreeExecLogs"
       @ensure-instances="loadBehaviorTreeEntityOptions"
+      @ensure-group-rows="loadBehaviorTreeGroupRowOptions"
+      @update-blackboard-instance="updateBlackboardObjectKey"
+      @update-blackboard-group-row="updateBlackboardGroupRow"
       @update-node-param="updateNodeParamDraft"
       @update-node-entity="updateNodeEntityKeyDraft"
       @update-node-input-instance="(nodeId, key, value) => updateNodeInputParamDraft(nodeId, key, 'entityPrimaryKey', value)"
@@ -79,6 +85,9 @@ const {
   planError,
   externalInputDraft,
   blackboardObjectKeys,
+  blackboardGroupRows,
+  groupRowOptions,
+  groupRowLoadingIds,
   nodeDrafts,
   instanceOptions,
   instanceLoadingIds,
@@ -92,6 +101,9 @@ const {
   runBehaviorTreeTest,
   clearBehaviorTreeExecLogs,
   loadBehaviorTreeEntityOptions,
+  loadBehaviorTreeGroupRowOptions,
+  updateBlackboardObjectKey,
+  updateBlackboardGroupRow,
   updateNodeParamDraft,
   updateNodeEntityKeyDraft,
   updateNodeInputParamDraft,

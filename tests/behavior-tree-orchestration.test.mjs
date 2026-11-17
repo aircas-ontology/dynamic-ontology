@@ -5,6 +5,7 @@ import {
   applyBehaviorTreeBlackboardPropertyBinding,
   applyBehaviorTreeBlackboardSourceChange,
   createBehaviorTreeBlackboardItem,
+  listBehaviorTreeBlackboardPropertyObjectIds,
   mapBehaviorTreePropertyTypeToValueType,
   resolveBehaviorTreeBlackboardSource,
 } from "../src/utils/behaviorTreeBlackboard.ts";
@@ -47,6 +48,7 @@ import {
   collectBehaviorTreeExecMissingFields,
   createBehaviorTreeNodeExecDraft,
   findBehaviorTreeExecuteNodePlan,
+  listBehaviorTreeBlackboardStorageGroups,
   listBehaviorTreeExecuteNodePlans,
   listBehaviorTreeExecPlanInstanceRequirements,
   listBehaviorTreeExecPlanNodeIds,
@@ -55,6 +57,7 @@ import {
   listBehaviorTreeNodeOutputTargets,
   mapBehaviorTreeBoundActionApis,
   mapBehaviorTreeEntityRecordOption,
+  resolveBehaviorTreeBbGroupRowStateKey,
   resolveBehaviorTreeNodeDisplayName,
   resolveBehaviorTreeNodeLinkEnds,
   resolveBehaviorTreeOutputDraftKey,
@@ -119,9 +122,25 @@ test("behavior tree model validates single root and blackboard", () => {
     propertyType: "Int",
   });
   assert.equal(propertyRow.bindPropertyUniqueIdentifier, "prop.hp");
+  assert.equal(propertyRow.bindObjectIdentifier, "obj.tank");
   assert.equal(propertyRow.valueType, "INTEGER");
   applyBehaviorTreeBlackboardPropertyBinding(propertyRow, null);
   assert.equal(propertyRow.bindPropertyUniqueIdentifier, "prop.hp");
+  assert.deepEqual(
+    listBehaviorTreeBlackboardPropertyObjectIds(
+      [
+        createBehaviorTreeBlackboardItem("a", { source: "EXTERNAL" }),
+        createBehaviorTreeBlackboardItem("b", { source: "PROPERTY", bindObjectIdentifier: "obj.a" }),
+        createBehaviorTreeBlackboardItem("c", { source: "PROPERTY", bindObjectIdentifier: "obj.a" }),
+        createBehaviorTreeBlackboardItem("d", {
+          source: "PROPERTY",
+          bindPropertyUniqueIdentifier: "prop.x",
+        }),
+      ],
+      { "prop.x": { id: "prop.x", objectId: "obj.b", displayName: "x", propertyType: "Int" } },
+    ),
+    ["obj.a", "obj.b"],
+  );
 });
 
 test("behavior tree maxChildren hint formats container decorator and leaf rules", () => {
@@ -164,6 +183,7 @@ test("behavior tree definition round-trips and builds TREE payload", () => {
     createBehaviorTreeBlackboardItem("hp", {
       valueType: "INTEGER",
       source: "PROPERTY",
+      bindObjectIdentifier: "obj.tank",
       bindPropertyUniqueIdentifier: "prop.hp",
     }),
   );
@@ -202,6 +222,7 @@ test("behavior tree definition round-trips and builds TREE payload", () => {
   assert.equal(definition.blackboard[1].source, "FIXED");
   assert.equal(definition.blackboard[1].value, true);
   assert.equal(definition.blackboard[2].source, "PROPERTY");
+  assert.equal(definition.blackboard[2].bindObjectIdentifier, "obj.tank");
   assert.equal(definition.blackboard[2].bindPropertyUniqueIdentifier, "prop.hp");
   assert.equal(definition.variables.length, 1);
   assert.equal(definition.variables[0].name, "ammoCount");
@@ -213,6 +234,7 @@ test("behavior tree definition round-trips and builds TREE payload", () => {
   assert.equal(restored.blackboard[1].source, "FIXED");
   assert.equal(restored.blackboard[1].fixedValueText, "true");
   assert.equal(restored.blackboard[2].source, "PROPERTY");
+  assert.equal(restored.blackboard[2].bindObjectIdentifier, "obj.tank");
   assert.equal(restored.roots[0].kind, "SEQUENCE");
   assert.equal(restored.roots[0].children[1].kind, "ACTION");
 
@@ -736,9 +758,12 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(orchestrationSource, /getOntologyCategoryTreeInterface/);
   assert.match(orchestrationSource, /objectOptions\.value = mapOntologyObjectsToRelationOptions/);
   assert.match(orchestrationSource, /ensureBehaviorTreeObjectProperties/);
+  assert.match(orchestrationSource, /listBehaviorTreeBlackboardPropertyObjectIds/);
+  assert.match(orchestrationSource, /propertyObjectIds\.map\(\(objectId\) => ensureBehaviorTreeObjectProperties\(objectId\)\)/);
   assert.match(orchestrationSource, /getOntologyPropertyByOntologyIdInterface/);
   assert.doesNotMatch(orchestrationSource, /Promise\.all\(\s*objects\.map/);
   assert.match(orchestrationSource, /loadedObjectPropertyIds|objectPropertyLoadingIds/);
+  assert.match(boardSource, /requestMissingObjectProperties/);
   const graphSource = readSource("../src/views/BehaviorTreeOrchestration/composables/useBehaviorTreeGraph.ts");
   assert.match(graphSource, /targetMarker/);
   assert.match(graphSource, /buildBehaviorTreeEdgeTerminals/);
@@ -770,27 +795,36 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(typeSource, /BehaviorTreeExecuteNodePlan/);
   assert.match(typeSource, /nodeDisplayName\?/);
   assert.match(typeSource, /blackboardInstances\?/);
+  assert.match(typeSource, /storageGroups\?/);
+  assert.match(typeSource, /BehaviorTreeExecuteBlackboardStorageGroup/);
   assert.match(typeSource, /sourceType\?/);
   assert.match(typeSource, /EXTERNAL/);
   assert.match(typeSource, /PROPERTY/);
   const treeTestTypeSource = readSource("../src/types/apis/postOntologyActionTreeTestType.ts");
   assert.match(treeTestTypeSource, /PostOntologyActionTreeTestParams/);
   assert.match(treeTestTypeSource, /nodeExecutes/);
+  assert.match(treeTestTypeSource, /inputDataPrimaryKeys\?/);
   assert.match(apiSource, /postOntologyActionTreeTestInterface/);
   assert.match(apiSource, /\/ontology\/action\/tree\/test/);
   const execComposableSource = readSource("../src/composables/behaviorTree/useBehaviorTreeExecution.ts");
   assert.match(execComposableSource, /loadBehaviorTreeExecutePlan/);
   assert.match(execComposableSource, /runBehaviorTreeTest/);
   assert.match(execComposableSource, /postOntologyActionTreeTestInterface/);
+  assert.match(execComposableSource, /postGetOntologyEntityRowDetailPageInterface/);
   assert.match(execComposableSource, /findBehaviorTreeExecuteNodePlan/);
   assert.match(execComposableSource, /listBehaviorTreeExecPlanNodeIds/);
   assert.match(execComposableSource, /blackboardInstances/);
+  assert.match(execComposableSource, /blackboardGroupRows/);
+  assert.match(execComposableSource, /updateBlackboardObjectKey/);
+  assert.match(execComposableSource, /loadBehaviorTreeGroupRowOptions/);
   assert.match(execComposableSource, /mapBehaviorTreeDefinitionToBlackboardItems/);
   assert.match(execComposableSource, /nodePlan\?\.nodeDisplayName/);
   assert.doesNotMatch(execComposableSource, /loadBoundActionDetails/);
   const execPlanUtilSource = readSource("../src/utils/behaviorTreeExecutePlan.ts");
   assert.match(execPlanUtilSource, /listBehaviorTreeExecuteNodePlans/);
   assert.match(execPlanUtilSource, /sourceType/);
+  assert.match(execPlanUtilSource, /inputDataPrimaryKeys/);
+  assert.match(execPlanUtilSource, /listBehaviorTreeBlackboardStorageGroups/);
   const execPanelSource = readSource("../src/components/BehaviorTreeExecPanel.vue");
   assert.match(execPanelSource, /读取执行要求/);
   assert.match(execPanelSource, /showLoadPlanButton/);
@@ -798,6 +832,9 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(execPanelSource, /接口日志/);
   assert.match(execPanelSource, /sourceType/);
   assert.match(execPanelSource, /update-node-input-instance/);
+  assert.match(execPanelSource, /update-blackboard-instance/);
+  assert.match(execPanelSource, /update-blackboard-group-row/);
+  assert.match(execPanelSource, /ensure-group-rows/);
   assert.match(execPanelSource, /PROPERTY/);
   assert.match(execPanelSource, /EXTERNAL/);
   assert.match(execPanelSource, /target\.mode === 'DATA_PRIMARY_KEY' \|\| target\.rowRequired/);
@@ -807,6 +844,11 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.doesNotMatch(execPanelSource, /<code>\{\{\s*block\.nodeId\s*\}\}<\/code>/);
   assert.doesNotMatch(execPanelSource, /试跑不要求发布/);
   assert.doesNotMatch(execPanelSource, /还没读取执行要求/);
+  assert.match(dialogSource, /updateBlackboardObjectKey/);
+  assert.match(dialogSource, /loadBehaviorTreeGroupRowOptions/);
+  const testDialogSource = readSource("../src/components/BehaviorTreeTestDialog.vue");
+  assert.match(testDialogSource, /update-blackboard-group-row/);
+  assert.match(testDialogSource, /ensure-group-rows/);
   const routesSource = readSource("../src/mockData/routes.json");
   assert.match(routesSource, /\/ontology\/action\/tree\/node-defs/);
   const formSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue");
@@ -821,15 +863,150 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(inspectorSource, /isCompositeNode/);
   assert.match(inspectorSource, /子节点顺序/);
   assert.match(inspectorSource, /behavior-tree-node-inspector__child-order/);
+  assert.match(inspectorSource, /入参取值/);
+  assert.match(inspectorSource, /出参回传黑板/);
+  assert.match(inspectorSource, /patch-input-binding/);
+  assert.match(inspectorSource, /patch-output-binding/);
   assert.doesNotMatch(inspectorSource, /同级顺序/);
   assert.doesNotMatch(inspectorSource, /补全.*黑板键/);
   assert.doesNotMatch(inspectorSource, /add-external-keys/);
   assert.doesNotMatch(dialogSource, /handleAddExternalKeys/);
+  assert.match(dialogSource, /handlePatchInputBinding/);
+  assert.match(dialogSource, /handlePatchOutputBinding/);
+});
+
+test("behavior tree ACTION bindings serialize, restore, and validate previous action", async () => {
+  const {
+    findBehaviorTreeSurePreviousActionNode,
+    serializeBehaviorTreeInputBindings,
+    serializeBehaviorTreeOutputBindings,
+    mapBehaviorTreeInputBindingsToDraft,
+    mapBehaviorTreeOutputBindingsToDraft,
+  } = await import("../src/views/BehaviorTreeOrchestration/utils/behaviorTreeActionBindings.ts");
+  const kindMeta = createBehaviorTreeKindMetaMap();
+  const model = createEmptyBehaviorTreeModel();
+  model.blackboard.push(createBehaviorTreeBlackboardItem("score", { valueType: "INTEGER", source: "EXTERNAL" }));
+  const first = makeNode({
+    id: "act_a",
+    kind: "ACTION",
+    displayName: "A",
+    config: {
+      actionApi: "act.a",
+      timeoutSeconds: "",
+      retryTimes: "",
+      inputBindings: [],
+      outputBindings: [{ key: "result", blackboardKey: "score" }],
+    },
+  });
+  const second = makeNode({
+    id: "act_b",
+    kind: "ACTION",
+    displayName: "B",
+    config: {
+      actionApi: "act.b",
+      timeoutSeconds: "",
+      retryTimes: "",
+      inputBindings: [
+        { key: "target", from: "BLACKBOARD", blackboardKey: "score" },
+        { key: "prev", from: "ACTION_OUTPUT", fromNodeId: "act_a", fromOutput: "result" },
+      ],
+      outputBindings: [],
+    },
+  });
+  model.roots.push(
+    makeNode({
+      id: "root_seq",
+      kind: "SEQUENCE",
+      displayName: "顺序",
+      config: createDefaultBehaviorTreeConfig("SEQUENCE"),
+      children: [first, second],
+    }),
+  );
+  assert.equal(findBehaviorTreeSurePreviousActionNode(model.roots, "act_b")?.id, "act_a");
+  const definition = buildBehaviorTreeDefinition(model, kindMeta);
+  const secondConfig = definition.roots[0].children[1].config;
+  assert.deepEqual(secondConfig.inputBindings, {
+    target: { blackboardKey: "score" },
+    prev: { nodeId: "act_a", output: "result" },
+  });
+  assert.deepEqual(definition.roots[0].children[0].config.outputBindings, { result: "score" });
+  const restored = importBehaviorTreeDefinition(definition);
+  assert.equal(restored.roots[0].children[1].config.inputBindings[0].from, "BLACKBOARD");
+  assert.equal(restored.roots[0].children[1].config.inputBindings[1].from, "ACTION_OUTPUT");
+  assert.equal(restored.roots[0].children[0].config.outputBindings[0].blackboardKey, "score");
+  assert.deepEqual(serializeBehaviorTreeInputBindings(mapBehaviorTreeInputBindingsToDraft({ x: { blackboardKey: "k" } })), { x: { blackboardKey: "k" } });
+  assert.deepEqual(serializeBehaviorTreeOutputBindings(mapBehaviorTreeOutputBindingsToDraft({ y: "bb" })), { y: "bb" });
+  const availableActions = [
+    {
+      actionApi: "act.a",
+      bindableOutputs: [{ name: "result", type: "STRING" }],
+    },
+    {
+      actionApi: "act.b",
+      bindableInputs: [
+        { name: "target", type: "INTEGER", sourceType: "EXTERNAL" },
+        { name: "prev", type: "STRING", sourceType: "EXTERNAL" },
+      ],
+    },
+  ];
+  assert.equal(collectBehaviorTreeErrors(model, kindMeta, {}, availableActions).length, 0);
+
+  const {
+    listBehaviorTreeBindableInputs,
+    listBehaviorTreeBindableOutputs,
+    patchBehaviorTreeInputBinding,
+    patchBehaviorTreeOutputBinding,
+    listBehaviorTreeReturnableBlackboardOptions,
+  } = await import("../src/views/BehaviorTreeOrchestration/utils/behaviorTreeActionBindings.ts");
+  assert.equal(listBehaviorTreeBindableInputs({ actionApi: "x", inputParams: [{ name: "a" }] })[0].name, "a");
+  assert.equal(listBehaviorTreeBindableOutputs({ actionApi: "x", outputParams: [{ name: "b" }] })[0].name, "b");
+  const draftConfig = { actionApi: "x", inputBindings: [], outputBindings: [] };
+  patchBehaviorTreeInputBinding(draftConfig, "p1", { from: "BLACKBOARD", blackboardKey: "score" });
+  patchBehaviorTreeInputBinding(draftConfig, "p1", { from: "" });
+  assert.equal(draftConfig.inputBindings.length, 0);
+  patchBehaviorTreeOutputBinding(draftConfig, "o1", "score");
+  patchBehaviorTreeOutputBinding(draftConfig, "o1", "");
+  assert.equal(draftConfig.outputBindings.length, 0);
+  const options = listBehaviorTreeReturnableBlackboardOptions(
+    [
+      createBehaviorTreeBlackboardItem("ext", { source: "EXTERNAL" }),
+      createBehaviorTreeBlackboardItem("prop", {
+        source: "PROPERTY",
+        bindObjectIdentifier: "obj",
+        bindPropertyUniqueIdentifier: "out.x",
+      }),
+      createBehaviorTreeBlackboardItem("fixed", { source: "FIXED", fixedValueText: "1", valueType: "INTEGER" }),
+    ],
+    "out.x",
+    "ghost",
+  );
+  assert.equal(
+    options.some((item) => item.value === "ext"),
+    true,
+  );
+  assert.equal(
+    options.some((item) => item.value === "prop"),
+    true,
+  );
+  assert.equal(
+    options.some((item) => item.value === "fixed"),
+    false,
+  );
+  assert.equal(
+    options.some((item) => item.value === "ghost"),
+    true,
+  );
 });
 
 test("behavior tree execute plan builds payload and reports missing fields", () => {
   const plan = {
-    blackboardInstances: [{ objectIdentifier: "obj.tank", blackboardKeys: ["ammo"] }],
+    blackboardInstances: [
+      {
+        objectIdentifier: "obj.tank",
+        blackboardKeys: ["ammo"],
+        storageGroups: [{ storageGroup: "weapon", blackboardKeys: ["ammo"] }],
+      },
+    ],
     nodes: [
       {
         nodeId: "node_action_1",
@@ -872,6 +1049,11 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
   };
   assert.deepEqual(listBehaviorTreeExecPlanNodeIds(plan), ["node_action_1", "node_link_1", "node_multi_1"]);
   assert.deepEqual(listBehaviorTreeExecPlanObjectIds(plan).sort(), ["obj.a", "obj.b", "obj.base", "obj.tank"]);
+  assert.deepEqual(listBehaviorTreeBlackboardStorageGroups(plan, "obj.tank"), ["weapon"]);
+  assert.equal(resolveBehaviorTreeBbGroupRowStateKey("obj.tank", "weapon"), "obj.tank|weapon");
+  assert.deepEqual(listBehaviorTreeExecPlanInstanceRequirements(plan).find((item) => (item.blackboardKeys || []).includes("ammo"))?.storageGroups, [
+    { storageGroup: "weapon", blackboardKeys: ["ammo"] },
+  ]);
   assert.deepEqual(
     resolveBehaviorTreeNodeLinkEnds([
       {
@@ -892,6 +1074,7 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
     plan,
     objectLabelById: { "obj.tank": "坦克", "obj.base": "基地", "obj.a": "A", "obj.b": "B" },
     blackboardObjectKeys: {},
+    blackboardGroupRows: {},
     nodeDrafts: drafts,
   });
   assert.ok(missing.some((item) => item.includes("threshold")));
@@ -899,7 +1082,52 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
   assert.ok(missing.some((item) => item.includes("实例")));
   assert.ok(missing.some((item) => item.includes("关系两端")));
   assert.ok(missing.some((item) => item.includes("行主键")));
+  assert.equal(
+    missing.some((item) => item.includes("分组")),
+    false,
+  );
   assert.deepEqual(collectBehaviorTreeExecMissingFields({ plan: null, blackboardObjectKeys: {}, nodeDrafts: {} }), []);
+
+  const missingGroupRow = collectBehaviorTreeExecMissingFields({
+    plan,
+    objectLabelById: { "obj.tank": "坦克", "obj.base": "基地", "obj.a": "A", "obj.b": "B" },
+    blackboardObjectKeys: { "obj.tank": "tank-bb" },
+    blackboardGroupRows: {},
+    nodeDrafts: drafts,
+  });
+  assert.ok(missingGroupRow.some((item) => item.includes("分组 weapon 行")));
+  assert.deepEqual(listBehaviorTreeBlackboardStorageGroups(null, "obj.tank"), []);
+  assert.deepEqual(listBehaviorTreeBlackboardStorageGroups(plan, "  "), []);
+  assert.deepEqual(listBehaviorTreeBlackboardStorageGroups(plan, "obj.missing"), []);
+  assert.deepEqual(
+    listBehaviorTreeBlackboardStorageGroups(
+      {
+        blackboardInstances: [
+          {
+            objectIdentifier: "obj.tank",
+            storageGroups: [
+              { storageGroup: "weapon", blackboardKeys: ["ammo"] },
+              { storageGroup: "weapon", blackboardKeys: ["ammo2"] },
+              { storageGroup: "  ", blackboardKeys: ["x"] },
+              { blackboardKeys: ["y"] },
+            ],
+          },
+        ],
+      },
+      "obj.tank",
+    ),
+    ["weapon"],
+  );
+  assert.equal(
+    collectBehaviorTreeExecMissingFields({
+      plan,
+      objectLabelById: { "obj.tank": "坦克" },
+      blackboardObjectKeys: { "obj.tank": "tank-bb" },
+      blackboardGroupRows: { "obj.tank|weapon": "6" },
+      nodeDrafts: drafts,
+    }).some((item) => item.includes("分组")),
+    false,
+  );
 
   drafts.node_action_1.params.threshold = "3";
   drafts.node_action_1.entityPrimaryKey = "tank-1";
@@ -930,6 +1158,11 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
     objectProperties: {},
     externalInputDraft: { ammoCount: "7", bad: "" },
     blackboardObjectKeys: { "obj.tank": "tank-bb", "obj.empty": "  " },
+    blackboardGroupRows: {
+      "obj.tank|weapon": "6",
+      "obj.other|weapon": "9",
+      "obj.tank|": "skip",
+    },
     nodeDrafts: drafts,
   });
   assert.equal("payload" in built, true);
@@ -937,6 +1170,7 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
   assert.equal(built.payload.treeApi, "tree.demo");
   assert.equal(built.payload.inputs?.ammoCount, 7);
   assert.equal(built.payload.entityPrimaryKeys?.["obj.tank"], "tank-bb");
+  assert.deepEqual(built.payload.inputDataPrimaryKeys, { "obj.tank": { weapon: "6" } });
   assert.equal(built.payload.nodeExecutes?.node_action_1?.params?.threshold, 3);
   assert.equal(built.payload.nodeExecutes?.node_action_1?.entityPrimaryKey, "tank-1");
   assert.equal(built.payload.nodeExecutes?.node_action_1?.dataPrimaryKey, "row-9");

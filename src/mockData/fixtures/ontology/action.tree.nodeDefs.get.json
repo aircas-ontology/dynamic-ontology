@@ -15,9 +15,11 @@
         "displayName": "演示行为",
         "requiresInstance": false,
         "instanceObjects": [],
-        "inputParams": [],
-        "outputParams": [],
-        "externalParams": [{ "name": "target", "type": "STRING", "description": "外部目标" }]
+        "inputParams": [{ "name": "target", "type": "STRING", "description": "外部目标", "sourceType": "EXTERNAL" }],
+        "outputParams": [{ "name": "result", "type": "STRING", "description": "结果", "fieldName": "result" }],
+        "externalParams": [{ "name": "target", "type": "STRING", "description": "外部目标" }],
+        "bindableInputs": [{ "name": "target", "type": "STRING", "description": "外部目标", "sourceType": "EXTERNAL" }],
+        "bindableOutputs": [{ "name": "result", "type": "STRING", "description": "结果", "fieldName": "result" }]
       }
     ]
   }

@@ -35,6 +35,8 @@ export interface PostOntologyActionTreeTestParams {
   inputs?: Record<string, unknown>;
   /** 黑板对象属性键按对象选的实例。 */
   entityPrimaryKeys?: Record<string, string | number>;
+  /** 黑板非主分组行：对象标识 ->（分组名 -> 行主键）。 */
+  inputDataPrimaryKeys?: Record<string, Record<string, string | number>>;
   /** 按节点执行数据。 */
   nodeExecutes?: Record<string, BehaviorTreeNodeExecuteData>;
 }
