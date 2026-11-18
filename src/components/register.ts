@@ -13,6 +13,7 @@ import BehaviorTreeTestDialog from "./BehaviorTreeTestDialog.vue";
 import OnboardingGuideOverlay from "./OnboardingGuide/OnboardingGuideOverlay.vue";
 import OntologyGlobalSearchField from "./OntologyGlobalSearchField/OntologyGlobalSearchField.vue";
 import OntologyRelationGraph2d from "./OntologyRelationGraph2d.vue";
+import OntologyRelationGraph3d from "./OntologyRelationGraph3d.vue";
 
 export default (app: App) => {
   app.component("AircasLoading", AircasLoading);
@@ -25,4 +26,5 @@ export default (app: App) => {
   app.component("OnboardingGuideOverlay", OnboardingGuideOverlay);
   app.component("OntologyGlobalSearchField", OntologyGlobalSearchField);
   app.component("OntologyRelationGraph2d", OntologyRelationGraph2d);
+  app.component("OntologyRelationGraph3d", OntologyRelationGraph3d);
 };

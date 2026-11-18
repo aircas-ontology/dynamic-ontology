@@ -8,6 +8,7 @@
       :list-properties="selectedEntity.detailItems"
       :space-id="spaceId"
       :entity-name="resolveEntityTitle(selectedEntity)"
+      :tabs-target="tabsTarget"
     />
     <template v-else-if="selectedEntity">
       <div v-if="detailStatus === 'loading'" class="object-profile-entity-list__state" role="status">
@@ -100,6 +101,7 @@ const props = defineProps<{
   spaceId: string;
   /** 外部请求查询首个实体详情 URL，无 URL 或查询失败时打开站内详情。 */
   autoOpenDetail?: boolean;
+  tabsTarget?: HTMLElement | null;
 }>();
 
 const emit = defineEmits<{

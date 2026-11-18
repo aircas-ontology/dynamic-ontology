@@ -179,8 +179,8 @@ export function buildEntityRelationRows(links: OntologyEntityLinkItem[]): Ontolo
   }
   return rows.map(({ link, index, from, to }) => ({
     id: JSON.stringify([from.id, to.id, link.linkName, index]),
-    categoryId: link.linkType ?? "",
-    categoryName: link.linkType ?? "",
+    categoryId: "",
+    categoryName: "未分类",
     displayName: link.linkName || link.linkType || "关系",
     apiName: "",
     sourceName: resolveEndpointLabel(from.id),

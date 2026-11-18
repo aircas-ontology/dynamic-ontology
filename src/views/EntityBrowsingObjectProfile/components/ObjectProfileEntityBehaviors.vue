@@ -76,12 +76,19 @@ function formatActionKind(kind: string): string {
 
 <style scoped lang="scss">
 .entity-detail-behaviors {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   padding: 16px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 8px;
   background: var(--aircas-color-panel-background);
 }
 .entity-detail-behaviors__heading {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -105,6 +112,10 @@ function formatActionKind(kind: string): string {
 }
 .entity-detail-behaviors__grid {
   display: grid;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  align-content: start;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
@@ -200,6 +211,7 @@ function formatActionKind(kind: string): string {
   white-space: nowrap;
 }
 .entity-detail-behaviors__state {
+  flex: 1;
   display: flex;
   min-height: 160px;
   flex-direction: column;
@@ -208,6 +220,7 @@ function formatActionKind(kind: string): string {
   gap: 8px;
 }
 .entity-detail-behaviors__pager {
+  flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
   margin-top: 12px;

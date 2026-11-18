@@ -2,6 +2,7 @@
   <el-dialog :model-value="modelValue" title="选择变量" width="520px" append-to-body destroy-on-close :z-index="5200" @close="closeVariablePicker">
     <div class="rule-variable-picker">
       <el-input v-model="keyword" clearable ariaLabel="搜索变量或键" placeholder="搜索变量或键" />
+      <el-alert title="这里只选择对象和字段；实例及数据行在双击行为后的弹窗中统一配置。" type="info" :closable="false" />
       <el-alert v-if="catalogError" :title="catalogError" type="error" :closable="false" />
       <el-button v-if="catalogError" @click="fetchVariableCatalog">重新加载</el-button>
       <span v-if="catalogLoading">正在加载变量…</span>
@@ -15,38 +16,7 @@
         empty-text="暂无可选变量"
         @node-click="selectVariableProperty"
       />
-      <template v-if="selected">
-        <label>实例</label>
-        <el-select
-          :model-value="selectedInstanceId"
-          filterable
-          ariaLabel="实例"
-          placeholder="请选择实例"
-          :loading="instanceLoading"
-          @update:model-value="changeSelectedInstance"
-        >
-          <el-option v-for="item in instances" :key="item.id" :label="item.label" :value="item.id" />
-        </el-select>
-        <el-alert v-if="instanceError" :title="instanceError" type="error" :closable="false" />
-        <el-button v-if="instanceError" @click="fetchVariableInstances(selected.objectId)">重新加载实例</el-button>
-        <span v-if="!instanceLoading && !instanceError && !instances.length">暂无可选实例</span>
-        <template v-if="requiresDataRow">
-          <label>数据行</label>
-          <el-select
-            v-model="selectedDataRowId"
-            filterable
-            ariaLabel="数据行"
-            placeholder="请选择数据行"
-            :loading="dataRowLoading"
-            :disabled="!selectedInstanceId"
-          >
-            <el-option v-for="item in dataRows" :key="item.id" :label="item.label" :value="item.id" />
-          </el-select>
-          <el-alert v-if="dataRowError" :title="dataRowError" type="error" :closable="false" />
-          <el-button v-if="dataRowError" @click="reloadSelectedDataRows">重新加载数据行</el-button>
-          <span v-if="selectedInstanceId && !dataRowLoading && !dataRowError && !dataRows.length">暂无可选数据行</span>
-        </template>
-      </template>
+      <p v-if="selected">已选字段：{{ selected.objectName }} · {{ selected.propertyName }}</p>
     </div>
     <template #footer>
       <el-button @click="closeVariablePicker">取消</el-button>
@@ -59,7 +29,7 @@ import { computed, nextTick, ref, watch } from "vue";
 import type { ElTree } from "element-plus";
 import { useRoute } from "vue-router";
 import type { RuleVariableValue } from "@/types";
-import { needsRuleVariableDataRow, useRuleVariablePicker } from "../composables/useRuleVariablePicker";
+import { useRuleVariablePicker } from "../composables/useRuleVariablePicker";
 
 const props = defineProps<{ modelValue: boolean; initial: RuleVariableValue | null }>();
 const emit = defineEmits<{ "update:modelValue": [visible: boolean]; confirm: [value: RuleVariableValue] }>();
@@ -67,41 +37,16 @@ const route = useRoute();
 const treeRef = ref<InstanceType<typeof ElTree> | null>(null);
 const keyword = ref("");
 const selected = ref<RuleVariableValue | null>(null);
-const selectedInstanceId = ref("");
-const selectedDataRowId = ref("");
-const {
-  catalog,
-  instances,
-  dataRows,
-  catalogLoading,
-  catalogError,
-  instanceLoading,
-  instanceError,
-  dataRowLoading,
-  dataRowError,
-  fetchVariableCatalog,
-  fetchVariableInstances,
-  fetchVariableDataRows,
-  clearVariableDataRows,
-  cancelVariableQueries,
-} = useRuleVariablePicker(() => String(route.params.spaceId ?? ""));
+const { catalog, catalogLoading, catalogError, fetchVariableCatalog, cancelVariableQueries } = useRuleVariablePicker(() => String(route.params.spaceId ?? ""));
 const selectedKey = computed(() => (selected.value ? JSON.stringify([selected.value.objectId, selected.value.propertyId]) : ""));
-const requiresDataRow = computed(() => needsRuleVariableDataRow(selected.value?.storageGroup));
-const selectedDataRow = computed(() => dataRows.value.find((item) => item.id === selectedDataRowId.value));
 const canConfirm = computed(
   () =>
     !!selected.value &&
     catalog.value.some(
       (object) => object.id === selected.value?.objectId && object.properties.some((property) => property.id === selected.value?.propertyId),
     ) &&
-    instances.value.some((instance) => instance.id === selectedInstanceId.value) &&
-    (!requiresDataRow.value || !!selectedDataRow.value) &&
     !catalogLoading.value &&
-    !catalogError.value &&
-    !instanceLoading.value &&
-    !instanceError.value &&
-    !dataRowLoading.value &&
-    !dataRowError.value,
+    !catalogError.value,
 );
 const variableTree = computed(() =>
   catalog.value
@@ -110,10 +55,7 @@ const variableTree = computed(() =>
       label: object.name,
       children: object.properties
         .filter((property) => `${object.name} ${property.name} ${property.id}`.toLowerCase().includes(keyword.value.toLowerCase()))
-        .map((property) => ({
-          id: JSON.stringify([object.id, property.id]),
-          label: property.name,
-        })),
+        .map((property) => ({ id: JSON.stringify([object.id, property.id]), label: property.name })),
     }))
     .filter((object) => object.children.length),
 );
@@ -121,119 +63,47 @@ watch([variableTree, selectedKey, treeRef], async () => {
   await nextTick();
   treeRef.value?.setCurrentKey(selectedKey.value || null, false);
 });
-
-/** @description 选择真实目录中的属性，保留同对象已选实例，并按存储分组决定是否加载数据行。 @param data 树节点。 */
+/** @description 选择对象字段；重复选择原字段保留共享实例，改变字段则清空绑定，交由行为弹窗重新配置。 @param data 树节点。 */
 function selectVariableProperty(data: unknown): void {
   if (!data || typeof data !== "object" || !("id" in data)) return;
   for (const object of catalog.value) {
     const property = object.properties.find((item) => JSON.stringify([object.id, item.id]) === data.id);
     if (!property) continue;
-    const sameObject = selected.value?.objectId === object.id;
+    const sameProperty =
+      selected.value?.objectId === object.id && selected.value.propertyId === property.id && selected.value.storageGroup === (property.storageGroup ?? "");
     selected.value = {
+      ...(sameProperty ? selected.value : {}),
       kind: "variable",
       objectId: object.id,
       objectName: object.name,
       objectKind: object.kind,
       propertyId: property.id,
       propertyName: property.name,
-      instanceIds: [],
+      instanceIds: sameProperty ? [...(selected.value?.instanceIds ?? [])] : [],
       storageGroup: property.storageGroup ?? "",
     };
-    selectedDataRowId.value = "";
-    clearVariableDataRows();
-    if (!sameObject) selectedInstanceId.value = "";
-    void fetchVariableInstances(object.id);
-    if (sameObject && selectedInstanceId.value && needsRuleVariableDataRow(property.storageGroup))
-      void fetchVariableDataRows(object.id, selectedInstanceId.value, property.storageGroup ?? "");
     return;
   }
 }
-
-/** @description 切换实例并清空或重载子表数据行。 @param value 实例标识。 */
-function changeSelectedInstance(value: string | number | boolean | undefined): void {
-  selectedInstanceId.value = typeof value === "string" || typeof value === "number" ? String(value) : "";
-  selectedDataRowId.value = "";
-  clearVariableDataRows();
-  if (selected.value && selectedInstanceId.value && needsRuleVariableDataRow(selected.value.storageGroup))
-    void fetchVariableDataRows(selected.value.objectId, selectedInstanceId.value, selected.value.storageGroup ?? "");
-}
-
-/** @description 按当前属性与实例重新加载数据行。 */
-function reloadSelectedDataRows(): void {
-  if (!selected.value || !selectedInstanceId.value) return;
-  void fetchVariableDataRows(selected.value.objectId, selectedInstanceId.value, selected.value.storageGroup ?? "");
-}
-
-/**
- * @description 按已保存主键在选项中匹配数据行。
- * @param dataPrimaryKey 已保存主键。
- * @returns 选项标识；未匹配为空。
- */
-function matchDataRowId(dataPrimaryKey: unknown): string {
-  if (dataPrimaryKey === undefined || dataPrimaryKey === null || dataPrimaryKey === "") return "";
-  const matched = dataRows.value.find((item) => {
-    try {
-      return JSON.stringify(item.dataPrimaryKey) === JSON.stringify(dataPrimaryKey);
-    } catch {
-      return String(item.dataPrimaryKey) === String(dataPrimaryKey);
-    }
-  });
-  return matched?.id ?? "";
-}
-
-/** @description 关闭弹窗并使未完成的查询失效。 */
+/** @description 关闭字段选择并使未完成查询失效。 */
 function closeVariablePicker(): void {
   cancelVariableQueries();
   emit("update:modelValue", false);
 }
-
-/** @description 提交仅包含一个具体实例（及必要数据行）的选择副本。 */
+/** @description 确认字段副本，无需预先选择实例或子表行。 */
 function confirmVariableSelection(): void {
   if (!selected.value || !canConfirm.value) return;
-  const next: RuleVariableValue = {
-    ...selected.value,
-    instanceIds: [selectedInstanceId.value],
-  };
-  if (requiresDataRow.value && selectedDataRow.value) {
-    next.dataPrimaryKey = selectedDataRow.value.dataPrimaryKey;
-    next.dataPrimaryKeyLabel = selectedDataRow.value.label;
-  } else {
-    delete next.dataPrimaryKey;
-    delete next.dataPrimaryKeyLabel;
-  }
-  emit("confirm", next);
+  emit("confirm", { ...selected.value, instanceIds: [...selected.value.instanceIds] });
   closeVariablePicker();
 }
-
 watch(() => route.params.spaceId, closeVariablePicker);
 watch(
   () => props.modelValue,
-  async () => {
+  () => {
     cancelVariableQueries();
-    selected.value = null;
-    selectedInstanceId.value = "";
-    selectedDataRowId.value = "";
     keyword.value = "";
-    if (!props.modelValue) return;
-    selected.value = props.initial
-      ? {
-          ...props.initial,
-          instanceIds: [...props.initial.instanceIds],
-          storageGroup: props.initial.storageGroup ?? "",
-        }
-      : null;
-    selectedInstanceId.value = props.initial?.instanceIds[0] ?? "";
-    await fetchVariableCatalog();
-    if (selected.value?.objectId) {
-      const object = catalog.value.find((item) => item.id === selected.value?.objectId);
-      const property = object?.properties.find((item) => item.id === selected.value?.propertyId);
-      if (property && selected.value) selected.value = { ...selected.value, storageGroup: property.storageGroup ?? selected.value.storageGroup ?? "" };
-      await fetchVariableInstances(selected.value.objectId);
-    }
-    if (selected.value && selectedInstanceId.value && needsRuleVariableDataRow(selected.value.storageGroup)) {
-      await fetchVariableDataRows(selected.value.objectId, selectedInstanceId.value, selected.value.storageGroup ?? "");
-      selectedDataRowId.value = matchDataRowId(props.initial?.dataPrimaryKey);
-    }
+    selected.value = props.initial ? { ...props.initial, instanceIds: [...props.initial.instanceIds] } : null;
+    if (props.modelValue) void fetchVariableCatalog();
   },
   { immediate: true },
 );

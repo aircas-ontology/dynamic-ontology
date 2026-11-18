@@ -15,6 +15,8 @@ export interface DatasourceConnectionParam {
 
 export interface DatasourceConnectionItem {
   id: number;
+  /** 历史空间关联，仅用于兼容读取，不写入连接。 */
+  spaceId?: number;
   name: string;
   dbType: string;
   driverClass?: string;
@@ -75,11 +77,9 @@ export interface DatasourceTableDetail {
   foreignKeys: DatasourceForeignKeyCandidate[];
 }
 
-export interface ListDatasourceTableColumnsParams {
-  spaceId: number;
-  schemaName: string;
+export type ListDatasourceTableColumnsParams = ListDatasourceTablesParams & {
   tableNames: string[];
-}
+};
 
 export interface DatasourceSchema {
   schemaName: string;
@@ -88,8 +88,9 @@ export interface DatasourceSchema {
 
 export interface ListDatasourceSchemasParams {
   spaceId: number;
+  datasourceId?: number;
 }
 
-export interface ListDatasourceTablesParams extends ListDatasourceSchemasParams {
+export type ListDatasourceTablesParams = ({ datasourceId: number; spaceId?: never } | { spaceId: number; datasourceId?: never }) & {
   schemaName: string;
-}
+};

@@ -41,8 +41,8 @@ export function postDatasourceConnectionTestInterface(data: DatasourceConnection
 }
 
 /**
- * @description GET /ontology/datasource/connection/table/list 查询空间所选 schema 中的表摘要。
- * @param params 空间 ID 和 schema 名称。
+ * @description GET /ontology/datasource/connection/table/list 查询数据源所选 schema 中的表摘要。
+ * @param params 数据源 ID（兼容空间 ID）和 schema 名称。
  * @returns 表名、说明及字段数量。
  */
 export function getDatasourceTableListInterface(params: ListDatasourceTablesParams): Promise<ApiResponse<DatasourceTableSummary[]>> {
@@ -55,7 +55,7 @@ export function getDatasourceTableListInterface(params: ListDatasourceTablesPara
 
 /**
  * @description GET /ontology/datasource/connection/table/columns 查询多张数据表的字段和外键候选。
- * @param params 空间 ID、schema 名称及所选表名。
+ * @param params 数据源 ID（兼容空间 ID）、schema 名称及所选表名。
  * @returns 数据表字段、主键及外键候选列表。
  */
 export function getDatasourceTableColumnsInterface(params: ListDatasourceTableColumnsParams): Promise<ApiResponse<DatasourceTableDetail[]>> {
@@ -80,8 +80,21 @@ export function postBuildObjectFromDatasourceInterface(data: BuildObjectFromData
 }
 
 /**
- * @description GET /ontology/datasource/connection/schema/list 查询空间关联的 schema。
- * @param params 当前空间 ID。
+ * @description GET /ontology/datasource/connection/schema/list_by_datasource 查询未绑定空间所选数据源的 schema。
+ * @param id 已保存的数据源连接 ID。
+ * @returns schema 名称及 catalog 列表。
+ */
+export function getDatasourceSchemaListByDatasourceInterface(id: number): Promise<ApiResponse<DatasourceSchema[]>> {
+  return request<DatasourceSchema[]>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/datasource/connection/schema/list_by_datasource",
+    method: "get",
+    params: { id },
+  });
+}
+
+/**
+ * @description GET /ontology/datasource/connection/schema/list 查询数据源的 schema。
+ * @param params 当前空间 ID，可同时指定所选数据源 ID；仅传空间 ID 时查询空间绑定的数据源。
  * @returns schema 名称及 catalog 列表。
  */
 export function getDatasourceSchemaListInterface(params: ListDatasourceSchemasParams): Promise<ApiResponse<DatasourceSchema[]>> {

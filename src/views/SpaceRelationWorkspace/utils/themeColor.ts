@@ -1,7 +1,1 @@
-export function themeColor(name: string): string {
-  if (typeof document === "undefined") {
-    return "";
-  }
-
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-}
+export { themeColor } from "@/components/OntologyRelationGraph3d/themeColor";

@@ -68,6 +68,7 @@ import { postLoginInterface } from "./loginApi";
 import {
   getDatasourceConnectionDetailInterface,
   getDatasourceConnectionListInterface,
+  getDatasourceSchemaListByDatasourceInterface,
   getDatasourceSchemaListInterface,
   getDatasourceTableColumnsInterface,
   getDatasourceTableListInterface,
@@ -145,6 +146,7 @@ import {
 export {
   getDatasourceConnectionDetailInterface,
   getDatasourceConnectionListInterface,
+  getDatasourceSchemaListByDatasourceInterface,
   getDatasourceSchemaListInterface,
   getDatasourceTableColumnsInterface,
   getDatasourceTableListInterface,

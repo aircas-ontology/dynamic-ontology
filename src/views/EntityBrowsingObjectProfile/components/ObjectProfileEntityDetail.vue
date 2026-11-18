@@ -1,6 +1,33 @@
 <template>
   <section class="object-profile-entity-detail" aria-label="实体详情">
-    <div class="object-profile-entity-detail__top">
+    <Teleport :to="tabsTarget || 'body'" :disabled="!tabsTarget">
+      <nav ref="tabListRef" class="object-profile-entity-detail__tabs" role="tablist" aria-label="实例详情">
+        <button
+          v-for="tab in detailTabs"
+          :id="`${tabPanelId}-${tab.id}-tab`"
+          :key="tab.id"
+          type="button"
+          role="tab"
+          class="object-profile-entity-detail__tab"
+          :class="{ 'is-active': activeTab === tab.id }"
+          :data-detail-tab="tab.id"
+          :aria-selected="activeTab === tab.id"
+          :aria-controls="`${tabPanelId}-${tab.id}-panel`"
+          :tabindex="activeTab === tab.id ? 0 : -1"
+          @click="selectDetailTab(tab.id)"
+          @keydown="handleDetailTabKeydown"
+        >
+          {{ tab.label }}
+        </button>
+      </nav>
+    </Teleport>
+    <div
+      v-show="activeTab === 'properties'"
+      :id="`${tabPanelId}-properties-panel`"
+      role="tabpanel"
+      :aria-labelledby="`${tabPanelId}-properties-tab`"
+      class="object-profile-entity-detail__top"
+    >
       <aside class="object-profile-entity-detail__panel object-profile-entity-detail__categories" aria-label="属性分类树">
         <h3>属性分类</h3>
         <el-input v-model="categorySearch" clearable placeholder="搜索属性分类" ariaLabel="搜索属性分类" />
@@ -76,9 +103,34 @@
           </section>
         </div>
       </section>
-      <section class="object-profile-entity-detail__panel object-profile-entity-detail__relations" aria-label="实体关系图">
+    </div>
+    <div
+      v-show="activeTab === 'relations'"
+      :id="`${tabPanelId}-relations-panel`"
+      role="tabpanel"
+      :aria-labelledby="`${tabPanelId}-relations-tab`"
+      class="object-profile-entity-detail__top"
+    >
+      <ObjectProfileDetailCategories
+        :key="identityKey"
+        title="关系分类"
+        :items="relationCategories"
+        :selected-id="relationCategoryId"
+        :status="relationCategoryCatalogStatus"
+        :error="relationCategoryCatalogError"
+        @retry="fetchRelationCategories"
+        @select="relationCategoryId = $event"
+      />
+      <section class="object-profile-entity-detail__panel object-profile-entity-detail__relations" aria-label="实体关系">
         <header class="object-profile-entity-detail__section-title">
-          <h3>实体关系</h3>
+          <h3>
+            实体关系 <span>{{ filteredRelations.length }} 条</span>
+          </h3>
+          <el-radio-group :model-value="relationView" ariaLabel="关系展示方式" @update:model-value="selectRelationView">
+            <el-radio-button value="list">列表</el-radio-button>
+            <el-radio-button value="graph2d">2D 图</el-radio-button>
+            <el-radio-button value="graph3d">3D 图</el-radio-button>
+          </el-radio-group>
         </header>
         <div v-if="relations === undefined && relationStatus === 'loading'" class="object-profile-entity-detail__state" role="status">
           <AircasLoading>正在加载实体关系…</AircasLoading>
@@ -87,20 +139,65 @@
           <p>{{ relationError }}</p>
           <el-button @click="loadEntityRelations">重试</el-button>
         </div>
-        <OntologyRelationGraph2d v-else :items="resolvedRelations" :seed-names="[entityName]" readonly empty-description="暂无关联实体" />
+        <el-empty v-else-if="!filteredRelations.length" description="当前分类暂无关联实体" />
+        <div v-else-if="relationView === 'list'" class="object-profile-entity-detail__relation-table">
+          <el-table :data="filteredRelations" row-key="id" stripe height="100%" class="aircas-table--accent-header">
+            <el-table-column prop="sourceName" label="源实例" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="targetName" label="目标实例" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="displayName" label="关系名称" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="categoryName" label="类型" min-width="110" show-overflow-tooltip />
+            <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="apiName" label="API 名称" min-width="140" show-overflow-tooltip />
+          </el-table>
+        </div>
+        <OntologyRelationGraph2d
+          v-else-if="activeTab === 'relations' && relationView === 'graph2d'"
+          :items="filteredRelations"
+          :seed-names="[entityName]"
+          readonly
+          empty-description="暂无关联实体"
+        />
+        <OntologyRelationGraph3d
+          v-else-if="activeTab === 'relations' && relationView === 'graph3d'"
+          :items="filteredRelations"
+          :seed-names="[entityName]"
+          layout-mode="network"
+          :max-hop="2"
+          readonly
+        />
       </section>
     </div>
-    <ObjectProfileEntityBehaviors
-      :items="behaviors"
-      :status="behaviorStatus"
-      :error="behaviorError"
-      :page="behaviorPage"
-      :page-size="behaviorPageSize"
-      :total="behaviorTotal"
-      @retry="loadEntityBehaviors()"
-      @page-change="loadEntityBehaviors"
-      @execute="openEntityBehaviorTest"
-    />
+    <div
+      v-show="activeTab === 'behaviors'"
+      :id="`${tabPanelId}-behaviors-panel`"
+      role="tabpanel"
+      :aria-labelledby="`${tabPanelId}-behaviors-tab`"
+      class="object-profile-entity-detail__top"
+    >
+      <ObjectProfileDetailCategories
+        :key="identityKey"
+        title="行为分类"
+        :items="behaviorCategories"
+        :selected-id="selectedBehaviorCategoryId"
+        :status="behaviorCategoryStatus"
+        :error="behaviorCategoryError"
+        @select="selectedBehaviorCategoryId = $event"
+        @retry="fetchBehaviorCategories"
+      />
+      <div class="object-profile-entity-detail__behavior-content">
+        <ObjectProfileEntityBehaviors
+          :items="behaviors"
+          :status="behaviorStatus"
+          :error="behaviorError"
+          :page="behaviorPage"
+          :page-size="behaviorPageSize"
+          :total="behaviorTotal"
+          @retry="loadEntityBehaviors()"
+          @page-change="loadEntityBehaviors"
+          @execute="openEntityBehaviorTest"
+        />
+      </div>
+    </div>
     <BehaviorTestDialog
       v-if="activeBehavior && activeBehavior.kind !== 'behaviorTree'"
       v-model="behaviorTestVisible"
@@ -121,7 +218,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, useId, watch } from "vue";
 import { ElMessage, type ElTree } from "element-plus";
 import * as behaviorTestApis from "@/apis";
 import BehaviorTestDialog from "@/components/BehaviorTestDialog/BehaviorTestDialog.vue";
@@ -133,6 +230,12 @@ import type { GetOntologyEntityRowDetailParams, ObjectProfileEntityCategory, Obj
 import AircasLoading from "@/components/AircasLoading.vue";
 import OntologyRelationGraph2d from "@/components/OntologyRelationGraph2d.vue";
 import ObjectProfileEntityBehaviors from "./ObjectProfileEntityBehaviors.vue";
+import ObjectProfileDetailCategories from "./ObjectProfileDetailCategories.vue";
+import OntologyRelationGraph3d from "@/components/OntologyRelationGraph3d.vue";
+import { useEntityRelationCategories } from "../composables/useEntityRelationCategories";
+import { buildInstanceRelationCategoryTree, enrichEntityRelationCategories } from "../utils/entityRelationCategories";
+import { useEntityBehaviorCategories } from "../composables/useEntityBehaviorCategories";
+import { filterEntityRelations } from "../utils/entityDetailCategories";
 import { useObjectProfileEntityDetail } from "../composables/useObjectProfileEntityDetail";
 import { buildEntityPropertyTable, groupEntityPropertyRows, parseEntityPrimaryKey } from "../utils/entityDetailData";
 
@@ -145,9 +248,63 @@ const props = withDefaults(
     entityPrimaryKey?: GetOntologyEntityRowDetailParams["entityPrimaryKey"];
     listProperties?: ObjectProfileEntityListProperty[];
     relations?: OntologyRelationClass[];
+    tabsTarget?: HTMLElement | null;
   }>(),
   { listProperties: () => [] },
 );
+const activeTab = ref("properties");
+const tabListRef = ref<HTMLElement | null>(null);
+const tabPanelId = useId();
+const detailTabs = [
+  { id: "properties", label: "属性" },
+  { id: "relations", label: "关系" },
+  { id: "behaviors", label: "行为" },
+];
+const relationView = ref("graph2d");
+const relationCategoryId = ref("all");
+/** @description 仅允许切换到已定义的实例详情页签。 @param value 页签名称。 */
+function selectDetailTab(value: unknown): void {
+  if (value === "properties" || value === "relations" || value === "behaviors") activeTab.value = value;
+}
+/** @description 用方向键和首尾键切换详情页签，更新后将焦点移动到选中项。 @param event 页签键盘事件。 @returns 焦点更新结束。 */
+async function handleDetailTabKeydown(event: KeyboardEvent): Promise<void> {
+  const current = detailTabs.findIndex((tab) => tab.id === activeTab.value);
+  let index: number;
+  if (event.key === "ArrowRight") index = (current + 1) % detailTabs.length;
+  else if (event.key === "ArrowLeft") index = (current + detailTabs.length - 1) % detailTabs.length;
+  else if (event.key === "Home") index = 0;
+  else if (event.key === "End") index = detailTabs.length - 1;
+  else return;
+  event.preventDefault();
+  const tab = detailTabs[index];
+  if (!tab) return;
+  selectDetailTab(tab.id);
+  await nextTick();
+  tabListRef.value?.querySelector<HTMLButtonElement>(`[data-detail-tab="${tab.id}"]`)?.focus();
+}
+/** @description 切换关系只读展示方式。 @param value 视图名称。 */
+function selectRelationView(value: unknown): void {
+  if (value === "list" || value === "graph2d" || value === "graph3d") relationView.value = value;
+}
+const identityKey = computed(() => JSON.stringify([props.objectId, props.instanceId, props.spaceId, props.entityPrimaryKey]));
+watch(identityKey, () => {
+  activeTab.value = "properties";
+  relationView.value = "graph2d";
+  relationCategoryId.value = "all";
+  categorySearch.value = "";
+});
+const {
+  items: behaviorCategories,
+  status: behaviorCategoryStatus,
+  error: behaviorCategoryError,
+  fetchBehaviorCategories,
+} = useEntityBehaviorCategories(() => props.spaceId);
+const {
+  items: relationCategoryCatalog,
+  status: relationCategoryCatalogStatus,
+  error: relationCategoryCatalogError,
+  fetchRelationCategories,
+} = useEntityRelationCategories(() => props.spaceId);
 const activeBehavior = ref<SpaceBehaviorItem | null>(null);
 const behaviorTestVisible = ref(false);
 const behaviorTreeTestVisible = ref(false);
@@ -195,6 +352,7 @@ const {
   categories,
   behaviors,
   selectedCategoryId,
+  selectedBehaviorCategoryId,
   filteredProperties,
   propertyStatus,
   categoryStatus,
@@ -209,7 +367,10 @@ const {
   loadPropertyCategories,
   loadEntityBehaviors,
 } = useObjectProfileEntityDetail(identity);
-const resolvedRelations = computed(() => props.relations ?? entityRelations.value);
+const rawRelations = computed(() => props.relations ?? entityRelations.value);
+const resolvedRelations = computed(() => enrichEntityRelationCategories(rawRelations.value, relationCategoryCatalog.value));
+const relationCategories = computed(() => buildInstanceRelationCategoryTree(resolvedRelations.value, relationCategoryCatalog.value));
+const filteredRelations = computed(() => filterEntityRelations(resolvedRelations.value, relationCategoryId.value, relationCategories.value));
 const treeRef = ref<InstanceType<typeof ElTree> | null>(null);
 const categorySearch = ref("");
 const treeProps = { children: "children", label: "label" };
@@ -238,7 +399,7 @@ watch([categorySearch, categories], () => treeRef.value?.filter(categorySearch.v
   flex: 1;
   flex-direction: column;
   gap: 16px;
-  overflow: auto;
+  overflow: hidden;
   color: var(--aircas-color-text-primary);
 }
 .object-profile-entity-detail__header {
@@ -269,10 +430,9 @@ watch([categorySearch, categories], () => treeRef.value?.filter(categorySearch.v
 }
 .object-profile-entity-detail__top {
   display: grid;
-  min-height: 400px;
-  height: min(58vh, 640px);
-  flex-shrink: 0;
-  grid-template-columns: 220px minmax(0, 1.2fr) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: 220px minmax(0, 1fr);
   gap: 12px;
 }
 .object-profile-entity-detail__panel {
@@ -382,31 +542,72 @@ watch([categorySearch, categories], () => treeRef.value?.filter(categorySearch.v
 }
 @media (max-width: 1200px) {
   .object-profile-entity-detail__top {
-    grid-template-columns: 180px minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-columns: 180px minmax(0, 1fr);
   }
   .object-profile-entity-detail__panel {
     padding: 12px;
   }
 }
-@media (max-width: 1000px) {
+@media (max-width: 760px) {
   .object-profile-entity-detail__top {
-    height: auto;
-    grid-template-columns: 180px minmax(0, 1fr);
-    grid-template-rows: 400px 320px;
+    grid-template-columns: 150px minmax(0, 1fr);
+    overflow: auto;
   }
-  .object-profile-entity-detail__relations {
-    grid-column: 1 / -1;
+  .object-profile-entity-detail__section-title {
+    flex-wrap: wrap;
+    gap: 8px;
   }
 }
-@media (max-width: 640px) {
-  .object-profile-entity-detail__top {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 240px 400px 320px;
-  }
-  .object-profile-entity-detail__identity {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
-  }
+.object-profile-entity-detail__tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.object-profile-entity-detail__tab {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--aircas-color-text-secondary);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.object-profile-entity-detail__tab:hover {
+  color: var(--aircas-color-text-primary);
+  background: var(--aircas-color-card-background);
+}
+.object-profile-entity-detail__tab:focus-visible {
+  outline: 2px solid var(--aircas-color-primary);
+  outline-offset: 2px;
+}
+.object-profile-entity-detail__tab.is-active,
+.object-profile-entity-detail__tab.is-active:hover {
+  color: var(--aircas-color-primary);
+  border-color: var(--aircas-color-border);
+  background: var(--aircas-color-effect-primary-soft);
+  box-shadow: inset 0 -2px 0 var(--aircas-color-primary);
+}
+.object-profile-entity-detail__relation-table {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+}
+.object-profile-entity-detail__behavior-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 </style>

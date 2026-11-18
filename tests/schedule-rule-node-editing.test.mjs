@@ -128,7 +128,7 @@ test("rule values offer only input and variable and reject removed types", () =>
     instanceIds: ["2"],
   };
   page.applyVariableSelection(variable);
-  assert.equal(page.variableSummary.value, "舰船.名称 · 1 个实例");
+  assert.equal(page.variableSummary.value, "舰船 · 名称");
   page.changeValueKind("input");
   assert.deepEqual(page.value.value, { kind: "input", text: "" });
 });
@@ -182,6 +182,14 @@ async function createDesignerHarness(readonly = false) {
     /** @description 返回测试中指定的上游对象。 @returns {string[]} 上游对象。 */
     getActionConditionObjectIds() {
       return objectIds;
+    }
+    /** @description 默认测试行为没有路径条件。 @returns {Array} 空路径。 */
+    getActionConditionPaths() {
+      return [];
+    }
+    /** @description 确认行为与共享条件草稿。 @param {string} id 标识。 @param {object} value 数据。 */
+    updateActionWithConditions(id, value) {
+      this.updateNodeData(id, value);
     }
     /** @description 记录目标节点回写。 @param {string} id 标识。 @param {object} value 数据。 */
     updateNodeData(id, value) {
@@ -315,6 +323,15 @@ test("action selection filters upstream object union and never commits a mismatc
     h.page.filteredBehaviorOptions.value.map((option) => option.id),
     ["b", "c"],
   );
+  h.scope.stop();
+});
+
+test("opening a node editor resets the content scroll so its title and condition context remain visible", async () => {
+  const h = await createDesignerHarness();
+  h.page.nodeEditorRef.value = { scrollTop: 240 };
+  h.callbacks.onNodeDoubleClick("unconnected-action", "action");
+  await Vue.nextTick();
+  assert.equal(h.page.nodeEditorRef.value.scrollTop, 0);
   h.scope.stop();
 });
 
