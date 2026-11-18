@@ -550,7 +550,7 @@
       </section>
 
       <section v-else class="function-operator-form__section function-operator-form__section--empty">
-        <el-empty description="该函数类型本阶段暂未开放，请选择基础函数、脚本函数、外部 API、容器算子或函数编排" />
+        <el-empty description="该函数类型本阶段暂未开放，请选择脚本函数、外部 API 或容器算子" />
       </section>
     </el-form>
 
@@ -1056,7 +1056,7 @@ async function loadSourceFunctionOptions(): Promise<void> {
 }
 
 /**
- * @description 创建空草稿，默认基础函数。
+ * @description 创建空草稿，默认首个公开类型（脚本函数）。
  * @returns 新建草稿。
  */
 function createEmptyDraft(): FunctionOperatorDraft {
@@ -1064,7 +1064,7 @@ function createEmptyDraft(): FunctionOperatorDraft {
     spaceId: props.spaceId,
     name: "",
     functionApi: "",
-    type: "basic",
+    type: "code",
     protocol: "HTTP",
     version: "1.0.0",
     description: "",
@@ -1077,7 +1077,7 @@ function createEmptyDraft(): FunctionOperatorDraft {
     timeout: 5000,
     retryCount: 0,
     retryInterval: 0,
-    definition: { kind: "basic", parameterConfig: createDefaultBasicParameterConfig(), aggFunc: "", targetProperty: "" },
+    definition: createDefaultCodeDefinition(),
     dependencies: [],
     testStatus: "untested",
     testedAt: "",
