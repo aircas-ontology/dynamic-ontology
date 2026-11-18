@@ -7,6 +7,11 @@ import type {
   SpaceBehaviorStatus,
   SpaceBehaviorValueType,
 } from "@/types";
+import {
+  createBlankBasicFilterDocument,
+  mapActionFiltersToBasicFilterDocument,
+  stringifyBasicFilterConfig,
+} from "../../../utils/functionOperatorBasicFilter.ts";
 import { mapApplicationActionInfoBindingSeeds, type SpaceBehaviorApplicationBindingSeed } from "./applyApplicationActionInfoBindings.ts";
 
 /** 行为详情映射后的表单回填状态。 */
@@ -20,6 +25,12 @@ export interface SpaceBehaviorActionInfoFormState {
   status: SpaceBehaviorStatus;
   basicAction: SpaceBehaviorBasicAction;
   ontologyIdentifier: string;
+  /** 基础函数多选对象。 */
+  ontologyIdentifiers: string[];
+  basicFunctionAggFunc: string;
+  basicFunctionTargetField: string;
+  basicFunctionSelectFields: string[];
+  basicFunctionParameterConfig: string;
   functionOperatorId: string;
   functionOperatorName: string;
   storageGroup: string;
@@ -64,7 +75,7 @@ function mapActionKind(actionKind: string): SpaceBehaviorKind {
  */
 function mapSubjectType(subjectType: string): SpaceBehaviorValueType {
   if (subjectType === "LINK") return "relationInstance";
-  if (subjectType === "BASIC_OPERATOR") return "basicFunctionOperator";
+  if (subjectType === "BASIC_FUNCTION" || subjectType === "BASIC_OPERATOR") return "basicFunctionOperator";
   return "attributeValue";
 }
 
@@ -163,16 +174,21 @@ export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData
     }
   }
 
-  if (subjectType === "BASIC_OPERATOR") {
-    for (const item of mappingIns) {
-      const parameterName = typeof item.parameterName === "string" ? item.parameterName.trim() : "";
-      if (!parameterName) continue;
-      operatorParamBindings[parameterName] = typeof item.sourceConfig === "string" ? item.sourceConfig.trim() : "";
-      if (typeof item.functionParamId === "number" && Number.isInteger(item.functionParamId)) {
-        operatorParamIds[parameterName] = item.functionParamId;
-      }
-    }
-  }
+  const basicFunction = data.basicFunction;
+  const ontologyIdentifiers =
+    subjectType === "BASIC_FUNCTION" && Array.isArray(basicFunction?.ontologyIdentifiers)
+      ? basicFunction.ontologyIdentifiers.map((item) => String(item ?? "").trim()).filter(Boolean)
+      : [];
+  const basicFunctionAggFunc = subjectType === "BASIC_FUNCTION" && typeof basicFunction?.aggFunc === "string" ? basicFunction.aggFunc.trim() : "";
+  const basicFunctionTargetField = subjectType === "BASIC_FUNCTION" && typeof basicFunction?.targetField === "string" ? basicFunction.targetField.trim() : "";
+  const basicFunctionSelectFields =
+    subjectType === "BASIC_FUNCTION" && Array.isArray(basicFunction?.selectFields)
+      ? basicFunction.selectFields.map((item) => String(item ?? "").trim()).filter(Boolean)
+      : [];
+  const basicFunctionParameterConfig =
+    subjectType === "BASIC_FUNCTION"
+      ? stringifyBasicFilterConfig(mapActionFiltersToBasicFilterDocument(basicFunction?.filters ?? null))
+      : stringifyBasicFilterConfig(createBlankBasicFilterDocument());
 
   const linkMapping = data.linkMapping;
   const selectedRelationId =
@@ -186,7 +202,7 @@ export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData
   const applicationBindingSeeds = kind === "application" ? mapApplicationActionInfoBindingSeeds(data.mappingIns, data.functionParams) : [];
 
   let unsupportedEditReason = "";
-  if (kind !== "behaviorTree" && kind !== "application" && subjectType !== "PROPERTY_VALUE" && subjectType !== "LINK" && subjectType !== "BASIC_OPERATOR") {
+  if (kind !== "behaviorTree" && kind !== "application" && subjectType !== "PROPERTY_VALUE" && subjectType !== "LINK" && subjectType !== "BASIC_FUNCTION") {
     unsupportedEditReason = "当前行为类型暂不支持编辑保存";
   }
 
@@ -200,6 +216,11 @@ export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData
     status: mapActionInfoStatus(data.status),
     basicAction: mapOperation(operation),
     ontologyIdentifier,
+    ontologyIdentifiers,
+    basicFunctionAggFunc,
+    basicFunctionTargetField,
+    basicFunctionSelectFields,
+    basicFunctionParameterConfig,
     functionOperatorId,
     functionOperatorName,
     storageGroup,

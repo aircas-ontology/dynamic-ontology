@@ -6,6 +6,9 @@ import type {
   BasicFilterOp,
   BasicFilterValue,
   BasicFilterValueType,
+  CreateOntologyActionBasicFunctionFilterCondition,
+  CreateOntologyActionBasicFunctionFilterNode,
+  CreateOntologyActionBasicFunctionFilters,
   CreateOntologyFunctionAggFunc,
   CreateOntologyFunctionFilterCondition,
   CreateOntologyFunctionFilterDataType,
@@ -546,4 +549,121 @@ export function mapOntologyFunctionQueryConfigToBasicFilter(queryConfig: CreateO
     return createBlankBasicFilterDocument();
   }
   return mapApiFiltersToGroup(queryConfig.filters);
+}
+
+/**
+ * @description 将单条过滤条件转为行为 BASIC_FUNCTION filters（不传 dataType）。
+ * @param condition 表单过滤条件。
+ * @returns 行为过滤条件。
+ */
+function mapConditionToActionFilter(condition: BasicFilterCondition): CreateOntologyActionBasicFunctionFilterCondition {
+  const next: CreateOntologyActionBasicFunctionFilterCondition = {
+    propertyApiName: condition.propertyApiName.trim(),
+    op: condition.op,
+  };
+  if (opNeedsRange(condition.op) || opNeedsList(condition.op)) {
+    next.values = [...(condition.values ?? [])];
+  } else if (opNeedsValue(condition.op)) {
+    next.value = condition.value;
+  }
+  return next;
+}
+
+/**
+ * @description 将过滤节点转为行为 BASIC_FUNCTION filters 节点。
+ * @param node 表单节点。
+ * @returns 行为过滤节点。
+ */
+function mapNodeToActionFilter(node: BasicFilterNode): CreateOntologyActionBasicFunctionFilterNode {
+  if (node.type === "GROUP") {
+    return {
+      type: "GROUP",
+      group: mapGroupToActionFilters(node.group ?? { logic: "OR", children: [] }),
+    };
+  }
+  return {
+    type: "FILTER",
+    filter: mapConditionToActionFilter(node.filter ?? createEmptyBasicFilterCondition()),
+  };
+}
+
+/**
+ * @description 将过滤文档转为行为 BASIC_FUNCTION filters。
+ * @param group 表单过滤组。
+ * @returns 行为 filters。
+ */
+function mapGroupToActionFilters(group: BasicFilterDocument): CreateOntologyActionBasicFunctionFilters {
+  return {
+    logic: group.logic,
+    children: group.children.map(mapNodeToActionFilter),
+  };
+}
+
+/**
+ * @description 将行为过滤条件转为表单条件（无 dataType 时默认 string）。
+ * @param filter 行为过滤条件。
+ * @returns 表单过滤条件。
+ */
+function mapActionFilterToCondition(filter: CreateOntologyActionBasicFunctionFilterCondition): BasicFilterCondition {
+  return mapApiFilterToCondition({
+    propertyApiName: filter.propertyApiName,
+    op: filter.op,
+    dataType: "STRING",
+    value: filter.value,
+    values: filter.values,
+  });
+}
+
+/**
+ * @description 将行为过滤节点转为表单节点。
+ * @param node 行为过滤节点。
+ * @returns 表单节点。
+ */
+function mapActionFilterToNode(node: CreateOntologyActionBasicFunctionFilterNode): BasicFilterNode {
+  if (node.type === "GROUP") {
+    return {
+      type: "GROUP",
+      group: mapActionFiltersToGroup(node.group ?? { logic: "OR", children: [] }),
+    };
+  }
+  return {
+    type: "FILTER",
+    filter: mapActionFilterToCondition(node.filter ?? { propertyApiName: "", op: "EQ", value: "" }),
+  };
+}
+
+/**
+ * @description 将行为 filters 转为表单过滤文档。
+ * @param group 行为 filters。
+ * @returns 表单过滤文档。
+ */
+function mapActionFiltersToGroup(group: CreateOntologyActionBasicFunctionFilters): BasicFilterDocument {
+  return {
+    logic: group.logic === "OR" ? "OR" : "AND",
+    children: Array.isArray(group.children) ? group.children.map(mapActionFilterToNode) : [],
+  };
+}
+
+/**
+ * @description 由表单过滤文档生成行为 BASIC_FUNCTION.filters；无条件时返回 undefined。
+ * @param doc 基础过滤文档。
+ * @returns filters 或 undefined。
+ */
+export function mapBasicFilterDocumentToActionFilters(doc: BasicFilterDocument): CreateOntologyActionBasicFunctionFilters | undefined {
+  if (!doc.children.length) {
+    return undefined;
+  }
+  return mapGroupToActionFilters(doc);
+}
+
+/**
+ * @description 将行为 BASIC_FUNCTION.filters 转为表单过滤文档。
+ * @param filters 行为 filters；空则返回空白文档。
+ * @returns 表单过滤文档。
+ */
+export function mapActionFiltersToBasicFilterDocument(filters: CreateOntologyActionBasicFunctionFilters | null | undefined): BasicFilterDocument {
+  if (!filters || !Array.isArray(filters.children) || filters.children.length === 0) {
+    return createBlankBasicFilterDocument();
+  }
+  return mapActionFiltersToGroup(filters);
 }

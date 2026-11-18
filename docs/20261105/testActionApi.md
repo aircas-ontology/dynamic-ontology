@@ -158,32 +158,40 @@
 
 ---
 
-#### 5.3.3 基础算子行为（`actionKind=BASE`、`subjectType=BASIC_OPERATOR`）
+#### 5.3.3 基础函数行为（`actionKind=BASE`、`subjectType=BASIC_FUNCTION`）
+
+**接口**：`POST /action/test`
+
+按创建时 `basicFunction` 定义执行查询/聚合。实例传法：
+
+- **不传实例**：默认查全部
+- **单对象**：传 `entityPrimaryKey` 查单个实例
+- **多对象**：传 `entityPrimaryKeys`（对象唯一标识 → 实例主键）
+
+**4.1 不传实例（默认查全部）**
 
 ```json
-{
-  "ontologySpaceId": "",
-  "actionApi": "act.fn.rename",
-  "entityPrimaryKey": "1"
-}
+{ "ontologySpaceId": 1, "actionApi": "count_active_satellite" }
 ```
 
-> 算子类行为会执行绑定的算子，算子输出按 `outputMode` 回写（`RESULT_ONLY` 只返回结果，`WRITE_PROPERTY` 写入对象属性）。
+**4.2 传实例查单个**
 
-如果算子行为还关联了实例关系（`linkMapping != null`），可以传 `linkEntityPrimaryKey` 指定对端实体：
+```json
+{ "ontologySpaceId": 1, "actionApi": "query_satellite_speed", "entityPrimaryKey": 101 }
+```
+
+**4.3 多对象**
 
 ```json
 {
-  "actionApi": "act.fn.link.compute",
-  "entityPrimaryKey": "1",
-  "linkEntityPrimaryKey": "2",
-  "params": {
-    "param1": "value1"
+  "ontologySpaceId": 1,
+  "actionApi": "sum_cost_fly_objects",
+  "entityPrimaryKeys": {
+    "3f2a9c1e-7b4d-4a86-9e21-5c8d1f0a6b34": 101,
+    "a5e8c206-3f17-4d92-8b74-1c6f9d3e5028": 205
   }
 }
 ```
-
-> 不传 `linkEntityPrimaryKey` 时，会遍历关系下的全部实体执行。
 
 ---
 

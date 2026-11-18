@@ -2,7 +2,41 @@
 export type CreateOntologyActionKind = "BASE" | "APPLICATION";
 
 /** 创建行为请求中的主体类型。 */
-export type CreateOntologyActionSubjectType = "PROPERTY_VALUE" | "LINK" | "BASIC_OPERATOR";
+export type CreateOntologyActionSubjectType = "PROPERTY_VALUE" | "LINK" | "BASIC_OPERATOR" | "BASIC_FUNCTION";
+
+/** 基础函数行为 mode。 */
+export type CreateOntologyActionBasicFunctionMode = "AGGREGATE" | "QUERY";
+
+/** 基础函数行为过滤条件（行为契约不传 dataType）。 */
+export interface CreateOntologyActionBasicFunctionFilterCondition {
+  propertyApiName: string;
+  op: string;
+  value?: string | number | boolean;
+  values?: Array<string | number | boolean>;
+}
+
+/** 基础函数行为过滤节点。 */
+export interface CreateOntologyActionBasicFunctionFilterNode {
+  type: "FILTER" | "GROUP";
+  filter?: CreateOntologyActionBasicFunctionFilterCondition;
+  group?: CreateOntologyActionBasicFunctionFilters;
+}
+
+/** 基础函数行为 filters。 */
+export interface CreateOntologyActionBasicFunctionFilters {
+  logic: "AND" | "OR";
+  children: CreateOntologyActionBasicFunctionFilterNode[];
+}
+
+/** 基础函数行为 basicFunction 配置。 */
+export interface CreateOntologyActionBasicFunction {
+  ontologyIdentifiers: string[];
+  mode: CreateOntologyActionBasicFunctionMode;
+  aggFunc?: string;
+  targetField?: string;
+  selectFields?: string[];
+  filters?: CreateOntologyActionBasicFunctionFilters;
+}
 
 /** 创建行为请求中的基础操作。 */
 export type CreateOntologyActionOperation = "CREATE" | "UPDATE" | "DELETE";
@@ -50,18 +84,18 @@ export interface CreateOntologyActionLinkMapping {
   visibilityWindows?: CreateOntologyActionVisibilityWindow[];
 }
 
-/** 创建行为请求体（属性值 / 关系实例 / 基础算子 / 应用行为按字段选用）。 */
+/** 创建行为请求体（属性值 / 关系实例 / 基础算子 / 基础函数 / 应用行为按字段选用）。 */
 export interface CreateOntologyActionParams {
   actionApi: string;
   displayName: string;
   description?: string;
   categoryId: number;
-  /** 基础行为必填；应用行为不传。 */
+  /** 属性值 / 关系实例必填；基础函数不传顶层，改用 basicFunction.ontologyIdentifiers。 */
   ontologyIdentifier?: string;
   actionKind: CreateOntologyActionKind;
   /** 基础行为必填；应用行为不传。 */
   subjectType?: CreateOntologyActionSubjectType;
-  /** 属性值 / 关系实例行为必填；基础算子 / 应用行为不传。 */
+  /** 属性值 / 关系实例行为必填；基础算子 / 基础函数 / 应用行为不传。 */
   operation?: CreateOntologyActionOperation;
   /** 属性值行为必填。 */
   storageGroup?: string;
@@ -73,6 +107,8 @@ export interface CreateOntologyActionParams {
   mappingIns?: CreateOntologyActionMappingIn[];
   /** 关系实例 / 应用行为必填。 */
   linkMapping?: CreateOntologyActionLinkMapping;
+  /** 基础函数行为配置；subjectType=BASIC_FUNCTION 时必填。 */
+  basicFunction?: CreateOntologyActionBasicFunction;
 }
 
 /** 创建行为成功响应 data；文档约定为 null。 */

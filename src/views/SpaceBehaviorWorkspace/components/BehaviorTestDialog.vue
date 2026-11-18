@@ -19,39 +19,46 @@
     </section>
 
     <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
-      <h4 class="behavior-test-dialog__section-title">选择实体实例（可选）</h4>
-      <p v-if="entityLoading && !entityRows.length" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
-      <p v-else-if="entityError && !entityRows.length" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
-      <el-select
-        v-else
-        class="behavior-test-dialog__entity-select"
-        :model-value="selectedEntityRowKey"
-        filterable
-        clearable
-        :loading="entityLoading"
-        placeholder="请选择实体实例"
-        @update:model-value="updateBasicOperatorEntitySelection"
-      >
-        <el-option
-          v-for="option in listBasicOperatorEntitySelectOptions()"
-          :key="option.rowKey"
-          :label="formatBasicOperatorEntityOptionLabel(option)"
-          :value="option.rowKey"
-        />
-        <template #footer>
-          <div v-if="entityTotal > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
-            <el-pagination
-              small
-              layout="total, prev, pager, next"
-              :total="entityTotal"
-              :current-page="entityPage"
-              :page-size="entityPageSize"
-              @current-change="changeEntityPage"
-            />
-          </div>
-          <p v-else-if="entityError" class="behavior-test-dialog__select-footer-error" role="alert">{{ entityError }}</p>
-        </template>
-      </el-select>
+      <p v-if="basicFunctionDetailLoading" class="behavior-test-dialog__state" role="status">正在加载行为详情…</p>
+      <p v-else-if="basicFunctionDetailError" class="behavior-test-dialog__state" role="alert">{{ basicFunctionDetailError }}</p>
+      <template v-else-if="showBasicFunctionEntityPicker">
+        <h4 class="behavior-test-dialog__section-title">选择实体实例（可选）</h4>
+        <p v-if="entityLoading && !entityRows.length" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
+        <p v-else-if="entityError && !entityRows.length" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
+        <el-select
+          v-else
+          class="behavior-test-dialog__entity-select"
+          :model-value="selectedEntityRowKey"
+          filterable
+          clearable
+          :loading="entityLoading"
+          placeholder="不选则查询全部实例"
+          @update:model-value="updateBasicOperatorEntitySelection"
+        >
+          <el-option
+            v-for="option in listBasicOperatorEntitySelectOptions()"
+            :key="option.rowKey"
+            :label="formatBasicOperatorEntityOptionLabel(option)"
+            :value="option.rowKey"
+          />
+          <template #footer>
+            <div v-if="entityTotal > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
+              <el-pagination
+                small
+                layout="total, prev, pager, next"
+                :total="entityTotal"
+                :current-page="entityPage"
+                :page-size="entityPageSize"
+                @current-change="changeEntityPage"
+              />
+            </div>
+            <p v-else-if="entityError" class="behavior-test-dialog__select-footer-error" role="alert">{{ entityError }}</p>
+          </template>
+        </el-select>
+      </template>
+      <p v-else-if="basicFunctionOntologyIds.length > 1" class="behavior-test-dialog__state" role="status">
+        多对象基础函数测试无需选择实例，将按行为定义执行。
+      </p>
     </section>
 
     <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
@@ -283,6 +290,13 @@ const submitLoading = ref(false);
 const submitError = ref("");
 /** 基础函数算子测试成功后展示的接口 data 文本。 */
 const basicOperatorTestResultText = ref("");
+/** 基础函数详情中的对象 id 列表。 */
+const basicFunctionOntologyIds = ref<string[]>([]);
+/** 单对象测试时用于拉实体列表的对象 id。 */
+const basicFunctionTestOntologyId = ref("");
+const basicFunctionDetailLoading = ref(false);
+const basicFunctionDetailError = ref("");
+let basicFunctionDetailLoadToken = 0;
 let submitToken = 0;
 
 const entityRowDetailVisible = ref(false);
@@ -334,6 +348,8 @@ const behaviorBasicActionLabel = computed(() => {
   return SPACE_BEHAVIOR_BASIC_ACTION_LABELS[basicAction] || "";
 });
 const isBasicFunctionOperatorTest = computed(() => !isApplicationTest.value && props.behavior?.valueType === "basicFunctionOperator");
+/** 基础函数仅绑定单个对象时，测试弹窗展示可选实例。 */
+const showBasicFunctionEntityPicker = computed(() => isBasicFunctionOperatorTest.value && basicFunctionOntologyIds.value.length === 1);
 const isAttributeValueTest = computed(() => !isApplicationTest.value && props.behavior?.valueType === "attributeValue");
 const isCreateTest = computed(() => isAttributeValueTest.value && props.behavior?.basicAction === "create");
 const isUpdateTest = computed(() => isAttributeValueTest.value && props.behavior?.basicAction === "update");
@@ -348,7 +364,13 @@ const dialogHint = computed(() => {
   }
   if (isApplicationTest.value) return "根据入参来源填写外部值或选择对象实例后开始测试。";
   if (isRelationInstanceTest.value) return "选择关系两端对象实例后执行关系实例测试。";
-  if (isBasicFunctionOperatorTest.value) return "";
+  if (isBasicFunctionOperatorTest.value) {
+    if (basicFunctionDetailLoading.value) return "正在加载基础函数测试上下文…";
+    if (basicFunctionDetailError.value) return basicFunctionDetailError.value;
+    if (showBasicFunctionEntityPicker.value) return "可选择单个实体实例后开始测试；不选则查询全部。";
+    if (basicFunctionOntologyIds.value.length > 1) return "多对象基础函数无需选择实例，确认后直接执行测试。";
+    return "确认后直接执行基础函数测试。";
+  }
   if (isUpdateTest.value) return "选择实体实例与数据行后，在「查看实例数据」中填写测试参数并开始测试。";
   if (isCreateTest.value) return "选择实体实例后，在「查看实例数据」中填写测试参数并开始测试。";
   if (isDeleteTest.value) return "选择实体实例与数据行，用于属性值-删除测试。";
@@ -554,6 +576,74 @@ function clearBasicOperatorTestResult(): void {
 }
 
 /**
+ * @description 清空基础函数测试上下文（详情对象 id 与加载态）。
+ */
+function clearBasicFunctionTestContext(): void {
+  basicFunctionOntologyIds.value = [];
+  basicFunctionTestOntologyId.value = "";
+  basicFunctionDetailLoading.value = false;
+  basicFunctionDetailError.value = "";
+}
+
+/**
+ * @description 规范化详情返回的基础函数对象 id 列表。
+ * @param raw 原始 ontologyIdentifiers。
+ * @returns 去空白后的唯一 id 列表。
+ */
+function normalizeBasicFunctionOntologyIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    if (typeof item !== "string") continue;
+    const id = item.trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+  return ids;
+}
+
+/**
+ * @description 打开基础函数测试时加载行为详情，按 ontologyIdentifiers 决定是否展示可选实例。
+ */
+async function loadBasicFunctionTestContext(): Promise<void> {
+  clearEntityListState();
+  clearBasicFunctionTestContext();
+  const actionApi = (props.behavior?.behaviorApiName ?? "").trim();
+  const ontologySpaceId = props.spaceId.trim();
+  if (!actionApi) {
+    basicFunctionDetailError.value = "当前行为缺少 apiName，无法加载测试上下文";
+    return;
+  }
+  if (!ontologySpaceId) {
+    basicFunctionDetailError.value = "缺少对象空间 id，无法加载测试上下文";
+    return;
+  }
+  const requestToken = ++basicFunctionDetailLoadToken;
+  basicFunctionDetailLoading.value = true;
+  basicFunctionDetailError.value = "";
+  try {
+    const response = await getOntologyActionInfoInterface({ actionApi, ontologySpaceId });
+    if (requestToken !== basicFunctionDetailLoadToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "行为详情加载失败");
+    const ontologyIds = normalizeBasicFunctionOntologyIds(response.data.basicFunction?.ontologyIdentifiers);
+    basicFunctionOntologyIds.value = ontologyIds;
+    if (ontologyIds.length === 1) {
+      basicFunctionTestOntologyId.value = ontologyIds[0] ?? "";
+      await loadEntityList();
+    }
+  } catch (error) {
+    if (requestToken !== basicFunctionDetailLoadToken) return;
+    basicFunctionOntologyIds.value = [];
+    basicFunctionTestOntologyId.value = "";
+    basicFunctionDetailError.value = error instanceof Error ? error.message : "行为详情加载失败";
+  } finally {
+    if (requestToken === basicFunctionDetailLoadToken) basicFunctionDetailLoading.value = false;
+  }
+}
+
+/**
  * @description 清空应用行为测试结果展示。
  */
 function clearApplicationTestResult(): void {
@@ -645,7 +735,9 @@ function handleGroupDataRowClick(row: unknown): void {
  * @description 按当前行为对象标识分页加载实体列表。
  */
 async function loadEntityList(): Promise<void> {
-  const ontologyUniqueIdentifier = (props.behavior?.ontologyUniqIdentifier ?? "").trim();
+  const ontologyUniqueIdentifier = isBasicFunctionOperatorTest.value
+    ? basicFunctionTestOntologyId.value.trim()
+    : (props.behavior?.ontologyUniqIdentifier ?? "").trim();
   if (!ontologyUniqueIdentifier) {
     clearEntityListState();
     entityError.value = "当前行为缺少对象标识，无法加载实体列表";
@@ -984,6 +1076,10 @@ async function submitBehaviorTest(): Promise<void> {
     return;
   }
   if (isBasicFunctionOperatorTest.value) {
+    if (basicFunctionDetailLoading.value || basicFunctionDetailError.value) {
+      ElMessage.warning("请等待基础函数测试上下文加载完成后再测试");
+      return;
+    }
     const actionApi = (props.behavior.behaviorApiName ?? "").trim();
     const ontologySpaceId = props.spaceId.trim();
     if (!actionApi || !ontologySpaceId) {
@@ -994,7 +1090,7 @@ async function submitBehaviorTest(): Promise<void> {
     submitLoading.value = true;
     basicOperatorTestResultText.value = "";
     try {
-      const selectedPrimaryKey = selectedEntityPrimaryKey.value;
+      const selectedPrimaryKey = showBasicFunctionEntityPicker.value ? selectedEntityPrimaryKey.value : null;
       const response = await postTestOntologyActionInterface({
         ontologySpaceId,
         actionApi,
@@ -1084,6 +1180,7 @@ async function submitBehaviorTest(): Promise<void> {
 function disposeBehaviorTest(): void {
   entityLoadToken += 1;
   groupRowLoadToken += 1;
+  basicFunctionDetailLoadToken += 1;
   submitToken += 1;
 }
 
@@ -1106,6 +1203,7 @@ watch(
       entityLoadToken += 1;
       detailLoadToken.value += 1;
       groupRowLoadToken += 1;
+      basicFunctionDetailLoadToken += 1;
       relationContextLoadToken.value += 1;
       fromEntityLoadToken.value += 1;
       toEntityLoadToken.value += 1;
@@ -1128,6 +1226,7 @@ watch(
       clearGroupDataRowState();
       clearRelationTestState();
       clearBasicOperatorTestResult();
+      clearBasicFunctionTestContext();
       entityPage.value = 1;
       entityPageSize.value = 10;
       groupRowPage.value = 1;
@@ -1147,6 +1246,7 @@ watch(
     clearDetailParamState();
     clearRelationTestState();
     clearBasicOperatorTestResult();
+    clearBasicFunctionTestContext();
     if (isApplicationTest.value) {
       void loadApplicationTestForm();
       return;
@@ -1156,7 +1256,7 @@ watch(
       return;
     }
     if (isBasicFunctionOperatorTest.value) {
-      void loadEntityList();
+      void loadBasicFunctionTestContext();
       return;
     }
     void loadEntityList();

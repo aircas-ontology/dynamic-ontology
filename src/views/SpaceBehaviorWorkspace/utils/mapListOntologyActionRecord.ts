@@ -67,7 +67,7 @@ export function mapSpaceBehaviorKindToActionKindQuery(kind: SpaceBehaviorKind | 
  */
 function mapSubjectTypeToValueType(subjectType: string): SpaceBehaviorValueType {
   if (subjectType === "LINK") return "relationInstance";
-  if (subjectType === "BASIC_OPERATOR") return "basicFunctionOperator";
+  if (subjectType === "BASIC_FUNCTION" || subjectType === "BASIC_OPERATOR") return "basicFunctionOperator";
   return "attributeValue";
 }
 

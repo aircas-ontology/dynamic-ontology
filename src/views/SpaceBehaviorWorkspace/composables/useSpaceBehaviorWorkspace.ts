@@ -24,7 +24,7 @@ import type {
 import { ROOT_SPACE_BEHAVIOR_CATEGORY_ID } from "@/types";
 import { createSpaceBehaviorMock, updateSpaceBehaviorMock } from "@/mocks/ontologySpaceBehaviorMock/ontologySpaceBehaviorMock";
 import { buildApplicationCreateActionParams, isApplicationActionCreateDraft } from "../utils/buildApplicationCreateActionParams";
-import { buildBasicOperatorCreateActionParams, isBasicOperatorActionCreateDraft } from "../utils/buildBasicOperatorCreateActionParams";
+import { buildBasicFunctionCreateActionParams, isBasicFunctionActionCreateDraft } from "../utils/buildBasicFunctionCreateActionParams";
 import { buildLinkCreateActionParams, isLinkActionCreateDraft } from "../utils/buildLinkCreateActionParams";
 import { buildPropertyValueCreateActionParams, isPropertyValueActionCreateDraft } from "../utils/buildPropertyValueCreateActionParams";
 import { mapActionCategoryTree } from "../utils/mapActionCategoryTree";
@@ -347,13 +347,13 @@ export function useSpaceBehaviorWorkspace() {
         useRemotePropertyValueAction &&
         (isPropertyValueActionCreateDraft(draft) ||
           isLinkActionCreateDraft(draft) ||
-          isBasicOperatorActionCreateDraft(draft) ||
+          isBasicFunctionActionCreateDraft(draft) ||
           isApplicationActionCreateDraft(draft))
       ) {
         const params = isApplicationActionCreateDraft(draft)
           ? buildApplicationCreateActionParams(draft)
-          : isBasicOperatorActionCreateDraft(draft)
-            ? buildBasicOperatorCreateActionParams(draft)
+          : isBasicFunctionActionCreateDraft(draft)
+            ? buildBasicFunctionCreateActionParams(draft)
             : isLinkActionCreateDraft(draft)
               ? buildLinkCreateActionParams(draft)
               : buildPropertyValueCreateActionParams(draft);
@@ -390,13 +390,13 @@ export function useSpaceBehaviorWorkspace() {
       if (
         isPropertyValueActionCreateDraft(draft) ||
         isLinkActionCreateDraft(draft) ||
-        isBasicOperatorActionCreateDraft(draft) ||
+        isBasicFunctionActionCreateDraft(draft) ||
         isApplicationActionCreateDraft(draft)
       ) {
         const params = isApplicationActionCreateDraft(draft)
           ? buildApplicationCreateActionParams(draft)
-          : isBasicOperatorActionCreateDraft(draft)
-            ? buildBasicOperatorCreateActionParams(draft)
+          : isBasicFunctionActionCreateDraft(draft)
+            ? buildBasicFunctionCreateActionParams(draft)
             : isLinkActionCreateDraft(draft)
               ? buildLinkCreateActionParams(draft)
               : buildPropertyValueCreateActionParams(draft);

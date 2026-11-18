@@ -45,6 +45,11 @@ export type { CreateFunctionOperatorTemplateData, CreateFunctionOperatorTemplate
 export type { CreateFunctionRateLimitTemplateData, CreateFunctionRateLimitTemplateParams } from "./apis/createFunctionRateLimitTemplateType";
 export type {
   CreateOntologyActionData,
+  CreateOntologyActionBasicFunction,
+  CreateOntologyActionBasicFunctionFilterCondition,
+  CreateOntologyActionBasicFunctionFilterNode,
+  CreateOntologyActionBasicFunctionFilters,
+  CreateOntologyActionBasicFunctionMode,
   CreateOntologyActionKind,
   CreateOntologyActionLinkMapping,
   CreateOntologyActionMappingCategory,

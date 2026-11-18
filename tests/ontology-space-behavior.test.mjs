@@ -50,6 +50,13 @@ import { mapOntologyActionInfoToFormState } from "../src/views/SpaceBehaviorWork
 import { mapOntologyActionInfoToViewState } from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyActionInfoToViewState.ts";
 import { coerceBehaviorTestParamValue } from "../src/views/SpaceBehaviorWorkspace/utils/coerceBehaviorTestParamValue.ts";
 import {
+  applyOntologyCategorySelectTreeDisabled,
+  mapOntologyCategoryTreeToSelectNodes,
+  mapOntologyObjectsToCategoryOptions,
+  resolveOntologyCategoryTreeNodeId,
+} from "../src/utils/mapOntologyObjectsToCategoryOptions.ts";
+import { resolveSameCategoryOntologySelection } from "../src/utils/resolveSameCategoryOntologySelection.ts";
+import {
   buildApplicationStorageGroupPickerKey,
   collectApplicationPropertyOntologyPickers,
   collectApplicationStorageGroupPickers,
@@ -64,6 +71,11 @@ import {
 } from "../src/views/SpaceBehaviorWorkspace/utils/mapOntologyEntityRowDetailToDataRows.ts";
 
 const EMPTY_APPLICATION_DRAFT_FIELDS = {
+  ontologyIdentifiers: [],
+  basicFunctionAggFunc: "",
+  basicFunctionTargetField: "",
+  basicFunctionSelectFields: [],
+  basicFunctionParameterConfig: "",
   applicationInputRows: [],
   applicationOutputRows: [],
   applicationInputBindings: {},
@@ -307,10 +319,18 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /applicationTestResultText/);
   assert.match(testDialogSource, /v-if="showRelationLinkForm"/);
   assert.match(testDialogSource, /选择实体实例（可选）/);
+  assert.match(testDialogSource, /showBasicFunctionEntityPicker/);
+  assert.match(testDialogSource, /loadBasicFunctionTestContext/);
+  assert.match(testDialogSource, /basicFunctionOntologyIds/);
+  assert.match(testDialogSource, /basicFunctionTestOntologyId/);
+  assert.match(testDialogSource, /basicFunction\?\.ontologyIdentifiers/);
+  assert.match(testDialogSource, /多对象基础函数测试无需选择实例/);
+  assert.match(testDialogSource, /不选则查询全部实例/);
   assert.match(testDialogSource, /updateBasicOperatorEntitySelection/);
   assert.match(testDialogSource, /listBasicOperatorEntitySelectOptions/);
   assert.match(testDialogSource, /formatBasicOperatorEntityOptionLabel/);
   assert.match(testDialogSource, /v-if="dialogHint"/);
+  assert.match(testDialogSource, /showBasicFunctionEntityPicker\.value \? selectedEntityPrimaryKey\.value : null/);
   assert.match(testDialogSource, /selectedPrimaryKey === null \? \{\} : \{ entityPrimaryKey: selectedPrimaryKey \}/);
   assert.match(testDialogSource, /basicOperatorTestResultText/);
   assert.doesNotMatch(testDialogSource, /可选择实体实例后开始基础函数算子测试/);
@@ -747,10 +767,50 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /prop="propertyType" label="类型"/);
   assert.match(formSource, /关系选择/);
   assert.match(formSource, /从当前空间关系中单选一条/);
-  assert.match(formSource, /函数基础算子/);
-  assert.match(formSource, /参数配置/);
+  assert.doesNotMatch(formSource, /函数基础算子/);
+  assert.doesNotMatch(formSource, /handleBasicFunctionOperatorChange/);
+  assert.doesNotMatch(formSource, /loadOperatorDetailBindings/);
+  assert.doesNotMatch(formSource, /基础函数保存接口待更新/);
+  assert.match(formSource, /多对象时请选择聚合类型/);
+  assert.match(formSource, /请选择展示字段/);
+  assert.match(formSource, /basicFunctionParameterConfig/);
+  assert.match(formSource, /:show-value-type-select="false"/);
+  assert.match(formSource, /mapOntologyObjectsToCategoryOptions/);
+  assert.match(formSource, /mapOntologyCategoryTreeToSelectNodes/);
+  assert.match(formSource, /applyOntologyCategorySelectTreeDisabled/);
+  assert.match(formSource, /resolveSameCategoryOntologySelection/);
+  assert.match(formSource, /handleBasicFunctionOntologyIdsChange/);
+  assert.match(formSource, /basicFunctionOntologyIds/);
+  assert.match(formSource, /basicFunctionObjectTree/);
+  assert.match(formSource, /FunctionOperatorBasicFilterBuilder/);
+  assert.match(formSource, /basicFunctionParameterConfig/);
+  assert.match(formSource, /basicFunctionAggFunc/);
+  assert.match(formSource, /basicFunctionTargetField/);
+  assert.match(formSource, /FUNCTION_OPERATOR_AGG_FUNC_OPTIONS/);
+  assert.match(formSource, /label="聚合类型"/);
+  assert.match(formSource, /label="聚合参数名"/);
+  assert.match(formSource, /请选择聚合类型/);
+  assert.match(formSource, /例如：target/);
+  assert.match(formSource, /showBasicFunctionSelectFields/);
+  assert.match(formSource, /basicFunctionSelectFields/);
+  assert.match(formSource, /basicFunctionSelectFieldOptions/);
+  assert.match(formSource, /loadBasicFunctionSelectFieldOptions/);
+  assert.match(formSource, /label="展示字段"/);
+  assert.match(formSource, /getOntologyObjectArrTypeTreeInterface/);
+  assert.match(formSource, /label="参数配置"/);
+  assert.match(formSource, /property-placeholder="输入属性名"/);
+  assert.match(formSource, /:property-options="basicFunctionFilterPropertyOptions"/);
+  assert.match(formSource, /basicFunctionFilterPropertyOptions/);
+  assert.match(formSource, /showBasicFunctionSelectFields[\s\S]*?选择聚合参数/);
+  assert.match(formSource, /label="选择对象"/);
+  assert.match(formSource, /el-tree-select/);
+  assert.match(formSource, /show-checkbox/);
+  assert.match(formSource, /behavior-form-dialog__basic-function-objects/);
+  assert.doesNotMatch(formSource, /collapse-tags/);
+  assert.match(formSource, /选择同一目录下的对象/);
+  assert.match(readSource("../src/utils/resolveSameCategoryOntologySelection.ts"), /多选对象须属于同一目录/);
   assert.match(formSource, /getOntologyFunctionDetailInterface/);
-  assert.match(formSource, /buildOntologyFunctionTestBindingKeys/);
+  assert.doesNotMatch(formSource, /buildOntologyFunctionTestBindingKeys/);
   assert.match(formSource, /getOntologyPropertyByOntologyIdInterface/);
   assert.match(formSource, /getOntologyLinkListInterface/);
   assert.match(formSource, /mapOntologyLinkListToRelationClass/);
@@ -773,7 +833,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /functionOperatorVersion:/);
   assert.match(formSource, /operatorParamBindings:/);
   assert.match(formSource, /operatorParamIds:/);
-  assert.match(formSource, /buildOntologyFunctionTestBindingParamIds/);
+  assert.doesNotMatch(formSource, /buildOntologyFunctionTestBindingParamIds/);
   assert.match(formSource, /attributeSelectionHint/);
   assert.match(formSource, /resolveAttributeValueSelection/);
   assert.match(formSource, /getOntologyCategoryTreeInterface/);
@@ -794,8 +854,8 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(workspaceComposable, /isPropertyValueActionCreateDraft/);
   assert.match(workspaceComposable, /buildLinkCreateActionParams/);
   assert.match(workspaceComposable, /isLinkActionCreateDraft/);
-  assert.match(workspaceComposable, /buildBasicOperatorCreateActionParams/);
-  assert.match(workspaceComposable, /isBasicOperatorActionCreateDraft/);
+  assert.match(workspaceComposable, /buildBasicFunctionCreateActionParams/);
+  assert.match(workspaceComposable, /isBasicFunctionActionCreateDraft/);
   assert.match(workspaceComposable, /buildApplicationCreateActionParams/);
   assert.match(workspaceComposable, /isApplicationActionCreateDraft/);
   assert.match(workspaceComposable, /putEditOntologyActionInterface/);
@@ -816,7 +876,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /sortPropertyInfosByStorageGroup/);
   assert.match(formSource, /关联函数算子/);
   assert.match(formSource, /excludeTypes: "BASIC_QUERY"/);
-  assert.match(formSource, /types: "BASIC_QUERY"/);
+  assert.doesNotMatch(formSource, /types: "BASIC_QUERY"/);
   assert.match(formSource, /loadApplicationOperatorDetail/);
   assert.match(formSource, /flattenApplicationFunctionInputRows/);
   assert.match(formSource, /flattenApplicationFunctionOutputRows/);
@@ -888,6 +948,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(typeSource, /SpaceBehaviorKind/);
   assert.match(typeSource, /SpaceBehaviorValueType/);
   assert.match(typeSource, /ontologyIdentifier: string/);
+  assert.match(typeSource, /ontologyIdentifiers: string\[\]/);
   assert.match(typeSource, /selectedPropertyIds: string\[\]/);
   assert.match(typeSource, /selectedPropertyValues: Record<string, string>/);
   assert.match(typeSource, /selectedPropertyApiNames: Record<string, string>/);
@@ -911,7 +972,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(typeSource, /label: "属性值"/);
   assert.match(typeSource, /label: "关系实例"/);
   assert.match(typeSource, /value: "relationInstance"/);
-  assert.match(typeSource, /label: "基础函数算子"/);
+  assert.match(typeSource, /label: "基础函数"/);
   assert.match(typeSource, /SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS[\s\S]*label: "新增"[\s\S]*label: "修改"[\s\S]*label: "删除"/);
   assert.doesNotMatch(typeSource, /SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS[\s\S]*label: "查询"/);
 
@@ -2496,35 +2557,40 @@ test("space behavior maps action info detail into edit form state", () => {
 
   const operatorState = mapOntologyActionInfoToFormState({
     id: 3,
-    actionApi: "act.bo.aircraft",
-    displayName: "基础算子",
-    description: "",
-    ontologyUniqIdentifier: "onto-1",
-    categoryId: 14,
+    actionApi: "count_active_satellite",
+    displayName: "统计在轨卫星数量",
+    description: "基础函数",
+    ontologyUniqIdentifier: "",
+    categoryId: 12,
     status: 2,
     actionKind: "BASE",
-    subjectType: "BASIC_OPERATOR",
+    subjectType: "BASIC_FUNCTION",
     operation: null,
     storageGroup: null,
-    functionApi: "act.bq.aircraft",
-    functionDescription: "查飞机",
-    outputMode: "RESULT_ONLY",
+    functionApi: null,
+    functionDescription: null,
+    outputMode: null,
     linkMapping: null,
-    mappingIns: [
-      {
-        functionParamId: 2292,
-        parameterName: "nm",
-        sourceType: "FIXED",
-        sourceConfig: "name",
-      },
-    ],
+    mappingIns: [],
     functionParams: [],
+    basicFunction: {
+      ontologyIdentifiers: ["onto-sat"],
+      mode: "AGGREGATE",
+      aggFunc: "COUNT",
+      targetField: "orbit_type",
+      filters: {
+        logic: "AND",
+        children: [{ type: "FILTER", filter: { propertyApiName: "status", op: "EQ", value: "on_orbit" } }],
+      },
+    },
   });
   assert.equal(operatorState.valueType, "basicFunctionOperator");
   assert.equal(operatorState.status, "draft");
-  assert.equal(operatorState.functionOperatorId, "act.bq.aircraft");
-  assert.equal(operatorState.operatorParamBindings.nm, "name");
-  assert.equal(operatorState.operatorParamIds.nm, 2292);
+  assert.equal(operatorState.unsupportedEditReason, "");
+  assert.deepEqual(operatorState.ontologyIdentifiers, ["onto-sat"]);
+  assert.equal(operatorState.basicFunctionAggFunc, "COUNT");
+  assert.equal(operatorState.basicFunctionTargetField, "orbit_type");
+  assert.match(operatorState.basicFunctionParameterConfig, /status/);
 
   const applicationState = mapOntologyActionInfoToFormState({
     id: 8,
@@ -2772,22 +2838,22 @@ test("space behavior maps action info detail into edit form state", () => {
   assert.equal("p2" in propertyEdge.selectedPropertyApiNames, false);
 });
 
-test("space behavior builds basic-operator createAction params with FIXED apiName bindings", () => {
+test("space behavior builds basic-function createAction params for aggregate and query", () => {
   const baseDraft = {
-    displayName: "基础算子-查飞机",
-    behaviorApiName: "act.bo.aircraft",
+    displayName: "统计在轨卫星数量",
+    behaviorApiName: "count_active_satellite",
     kind: "basic",
     valueType: "basicFunctionOperator",
-    functionOperatorId: "act.bq.aircraft",
-    functionOperatorName: "查飞机",
-    functionOperatorVersion: "1.0.0",
-    description: "基础算子行为：绑定 BASIC_QUERY",
-    categoryId: "14",
+    functionOperatorId: "",
+    functionOperatorName: "",
+    functionOperatorVersion: "",
+    description: "基础函数：聚合",
+    categoryId: "12",
     status: "draft",
     basicAction: "create",
-    ontologyIdentifier: "ea512d439cd34c6ebbcde6b692261ab5",
-    operatorParamBindings: { nm: "name" },
-    operatorParamIds: { nm: 2292 },
+    ontologyIdentifier: "",
+    operatorParamBindings: {},
+    operatorParamIds: {},
     selectedPropertyIds: [],
     selectedPropertyValues: {},
     selectedPropertyApiNames: {},
@@ -2796,6 +2862,14 @@ test("space behavior builds basic-operator createAction params with FIXED apiNam
     relationTargetStatus: "",
     relationVisibilityWindows: [],
     ...EMPTY_APPLICATION_DRAFT_FIELDS,
+    ontologyIdentifiers: ["onto-sat"],
+    basicFunctionAggFunc: "COUNT",
+    basicFunctionTargetField: "orbit_type",
+    basicFunctionSelectFields: [],
+    basicFunctionParameterConfig: JSON.stringify({
+      logic: "AND",
+      children: [{ type: "FILTER", filter: { propertyApiName: "status", op: "EQ", valueType: "string", value: "on_orbit" } }],
+    }),
   };
   assert.equal(isBasicOperatorActionCreateDraft(baseDraft), true);
   assert.equal(isPropertyValueActionCreateDraft(baseDraft), false);
@@ -2805,45 +2879,125 @@ test("space behavior builds basic-operator createAction params with FIXED apiNam
   assert.equal("error" in created, false);
   if (!("error" in created)) {
     assert.equal(created.actionKind, "BASE");
-    assert.equal(created.subjectType, "BASIC_OPERATOR");
-    assert.equal(created.functionApi, "act.bq.aircraft");
-    assert.equal(created.outputMode, "RESULT_ONLY");
-    assert.equal(created.categoryId, 14);
-    assert.equal(created.ontologyIdentifier, "ea512d439cd34c6ebbcde6b692261ab5");
-    assert.equal("operation" in created, false);
-    assert.equal("storageGroup" in created, false);
-    assert.equal("linkMapping" in created, false);
-    assert.deepEqual(created.mappingIns, [
-      {
-        functionParamId: 2292,
-        parameterName: "nm",
-        sourceType: "FIXED",
-        sourceConfig: "name",
+    assert.equal(created.subjectType, "BASIC_FUNCTION");
+    assert.equal(created.categoryId, 12);
+    assert.equal("ontologyIdentifier" in created, false);
+    assert.equal("functionApi" in created, false);
+    assert.equal("mappingIns" in created, false);
+    assert.deepEqual(created.basicFunction, {
+      ontologyIdentifiers: ["onto-sat"],
+      mode: "AGGREGATE",
+      aggFunc: "COUNT",
+      targetField: "orbit_type",
+      filters: {
+        logic: "AND",
+        children: [{ type: "FILTER", filter: { propertyApiName: "status", op: "EQ", value: "on_orbit" } }],
       },
-    ]);
+    });
   }
 
-  const withoutBindings = buildBasicOperatorCreateActionParams({
+  const queryDraft = buildBasicOperatorCreateActionParams({
     ...baseDraft,
-    operatorParamBindings: {},
-    operatorParamIds: {},
+    basicFunctionAggFunc: "",
+    basicFunctionTargetField: "",
+    basicFunctionSelectFields: ["name", "speed"],
+    basicFunctionParameterConfig: "",
     description: "  ",
   });
-  assert.equal("error" in withoutBindings, false);
-  if (!("error" in withoutBindings)) {
-    assert.equal("mappingIns" in withoutBindings, false);
-    assert.equal("description" in withoutBindings, false);
+  assert.equal("error" in queryDraft, false);
+  if (!("error" in queryDraft)) {
+    assert.equal(queryDraft.basicFunction.mode, "QUERY");
+    assert.deepEqual(queryDraft.basicFunction.selectFields, ["name", "speed"]);
+    assert.equal("aggFunc" in queryDraft.basicFunction, false);
+    assert.equal("filters" in queryDraft.basicFunction, false);
+    assert.equal("description" in queryDraft, false);
   }
 
   assert.equal(isBasicOperatorActionCreateDraft({ ...baseDraft, kind: "application" }), false);
   assert.equal(isBasicOperatorActionCreateDraft({ ...baseDraft, valueType: "attributeValue" }), false);
   assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, categoryId: "behavior-root" }), true);
-  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, ontologyIdentifier: "  " }), true);
-  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, behaviorApiName: "" }), true);
-  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, displayName: " " }), true);
-  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, functionOperatorId: "" }), true);
-  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, operatorParamBindings: { nm: "  " } }), true);
-  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, operatorParamIds: {} }), true);
+  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, ontologyIdentifiers: [] }), true);
+  assert.equal(
+    "error" in
+      buildBasicOperatorCreateActionParams({
+        ...baseDraft,
+        ontologyIdentifiers: ["a", "b"],
+        basicFunctionAggFunc: "",
+      }),
+    true,
+  );
+  assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, basicFunctionTargetField: "" }), true);
+  assert.equal(
+    "error" in
+      buildBasicOperatorCreateActionParams({
+        ...baseDraft,
+        basicFunctionAggFunc: "",
+        basicFunctionSelectFields: [],
+      }),
+    true,
+  );
+
+  const clearedAgg = buildBasicOperatorCreateActionParams({
+    ...baseDraft,
+    basicFunctionAggFunc: undefined,
+    basicFunctionTargetField: undefined,
+    basicFunctionSelectFields: ["name", "speed"],
+    basicFunctionParameterConfig: undefined,
+  });
+  assert.equal("error" in clearedAgg, false);
+  if (!("error" in clearedAgg)) {
+    assert.equal(clearedAgg.basicFunction.mode, "QUERY");
+    assert.deepEqual(clearedAgg.basicFunction.selectFields, ["name", "speed"]);
+  }
+});
+
+test("space behavior maps category tree objects and enforces same-category multi select", () => {
+  const treeData = {
+    categoryId: 1,
+    name: "平台",
+    ontologyMetaInfos: [
+      { uniqueIdentifier: "air-1", displayName: "飞机1", ontologyCategoryId: 1 },
+      { uniqueIdentifier: "air-2", displayName: "飞机2", ontologyCategoryId: 1 },
+    ],
+    children: [
+      {
+        categoryId: 2,
+        name: "舰船目录",
+        ontologyMetaInfos: [{ uniqueIdentifier: "ship-1", displayName: "舰船1", ontologyCategoryId: 2 }],
+      },
+      { categoryId: 3, name: "空目录", ontologyMetaInfos: [], children: [] },
+    ],
+  };
+  const options = mapOntologyObjectsToCategoryOptions(treeData);
+  assert.equal(options.find((item) => item.value === "air-1")?.categoryId, 1);
+  assert.equal(options.find((item) => item.value === "ship-1")?.categoryId, 2);
+  assert.deepEqual(resolveSameCategoryOntologySelection([], ["air-1", "air-2"], options).nextIds, ["air-1", "air-2"]);
+  const rejected = resolveSameCategoryOntologySelection(["air-1"], ["air-1", "ship-1"], options);
+  assert.deepEqual(rejected.nextIds, ["air-1"]);
+  assert.match(rejected.error, /同一目录/);
+  assert.deepEqual(resolveSameCategoryOntologySelection(["air-1"], [], options).nextIds, []);
+
+  const selectTree = mapOntologyCategoryTreeToSelectNodes(treeData);
+  assert.equal(selectTree.length, 1);
+  assert.equal(selectTree[0].id, resolveOntologyCategoryTreeNodeId(1));
+  assert.equal(selectTree[0].disabled, true);
+  assert.equal(
+    selectTree[0].children?.some((item) => item.id === "air-1"),
+    true,
+  );
+  assert.equal(
+    selectTree[0].children?.some((item) => item.id === resolveOntologyCategoryTreeNodeId(2)),
+    true,
+  );
+  assert.equal(
+    selectTree[0].children?.some((item) => item.id === resolveOntologyCategoryTreeNodeId(3)),
+    false,
+  );
+  const disabledTree = applyOntologyCategorySelectTreeDisabled(selectTree, 1);
+  const shipNode = disabledTree[0].children?.find((item) => item.id === resolveOntologyCategoryTreeNodeId(2))?.children?.find((item) => item.id === "ship-1");
+  assert.equal(shipNode?.disabled, true);
+  const airNode = disabledTree[0].children?.find((item) => item.id === "air-1");
+  assert.equal(airNode?.disabled, false);
 });
 
 test("space behavior builds application createAction params with linkMapping and mixed mappingIns", () => {
@@ -2860,6 +3014,7 @@ test("space behavior builds application createAction params with linkMapping and
     status: "draft",
     basicAction: "create",
     ontologyIdentifier: "",
+    ontologyIdentifiers: [],
     operatorParamBindings: {},
     operatorParamIds: {},
     selectedPropertyIds: [],
