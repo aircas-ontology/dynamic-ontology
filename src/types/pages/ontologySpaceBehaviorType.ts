@@ -100,6 +100,10 @@ export interface SpaceBehaviorOperatorOption {
   id: string;
   name: string;
   version: string;
+  /** 函数列表 description，下拉补充展示。 */
+  description: string;
+  /** 函数列表原始 type（如 CUSTOMIZE / EXTERNAL），下拉补充展示。 */
+  type: string;
   basicAction: SpaceBehaviorBasicAction;
   objectName: string;
   inputParameters: SpaceBehaviorParameter[];

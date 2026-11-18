@@ -875,7 +875,21 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.doesNotMatch(formSource, /updatePropertyInputValue/);
   assert.match(formSource, /sortPropertyInfosByStorageGroup/);
   assert.match(formSource, /关联函数算子/);
+  assert.match(formSource, /behavior-form-dialog__operator-option/);
+  assert.match(formSource, /popper-class="behavior-form-dialog__operator-popper"/);
+  assert.match(formSource, /behavior-form-dialog__operator-popper[\s\S]*el-select-dropdown__item[\s\S]*height:\s*auto/);
+  assert.match(formSource, /item\.description/);
+  assert.match(formSource, /resolveOperatorTypeLabel/);
+  assert.match(formSource, /mapFunctionOperatorTypeFromApi/);
+  assert.match(formSource, /FUNCTION_OPERATOR_TYPE_LABELS/);
+  assert.match(formSource, /description:\s*\(item\.description/);
+  assert.match(formSource, /type:\s*\(item\.type/);
   assert.match(formSource, /excludeTypes: "BASIC_QUERY"/);
+  {
+    const typeSource = readSource("../src/types/pages/ontologySpaceBehaviorType.ts");
+    assert.match(typeSource, /export interface SpaceBehaviorOperatorOption[\s\S]*description:\s*string/);
+    assert.match(typeSource, /export interface SpaceBehaviorOperatorOption[\s\S]*type:\s*string/);
+  }
   assert.doesNotMatch(formSource, /types: "BASIC_QUERY"/);
   assert.match(formSource, /loadApplicationOperatorDetail/);
   assert.match(formSource, /flattenApplicationFunctionInputRows/);

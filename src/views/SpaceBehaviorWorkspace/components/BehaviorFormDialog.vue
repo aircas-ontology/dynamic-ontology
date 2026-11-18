@@ -261,13 +261,20 @@
               <el-select
                 :model-value="functionOperatorId"
                 filterable
+                popper-class="behavior-form-dialog__operator-popper"
                 :loading="operatorLoading"
                 :disabled="operatorLoading || operatorError !== ''"
                 :placeholder="operatorLoading ? '正在加载函数算子' : operatorError || (operatorCatalog.length ? '选择函数算子' : '当前空间暂无函数算子')"
                 style="width: 100%"
                 @change="handleOperatorChange"
               >
-                <el-option v-for="item in operatorCatalog" :key="item.id" :label="`${item.name} · ${item.version}`" :value="item.id" />
+                <el-option v-for="item in operatorCatalog" :key="item.id" :label="`${item.name} · ${item.version}`" :value="item.id">
+                  <div class="behavior-form-dialog__operator-option">
+                    <span class="behavior-form-dialog__operator-option-title">{{ item.name }} · {{ item.version }}</span>
+                    <span v-if="item.description.trim()" class="behavior-form-dialog__operator-option-meta">{{ item.description }}</span>
+                    <span class="behavior-form-dialog__operator-option-meta">类型：{{ resolveOperatorTypeLabel(item.type) }}</span>
+                  </div>
+                </el-option>
               </el-select>
             </el-form-item>
 
@@ -594,12 +601,14 @@ import {
   SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_OPTIONS,
   SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_OPTIONS,
   FUNCTION_OPERATOR_AGG_FUNC_OPTIONS,
+  FUNCTION_OPERATOR_TYPE_LABELS,
   SPACE_BEHAVIOR_BASIC_ACTION_OPTIONS,
   SPACE_BEHAVIOR_KIND_OPTIONS,
   SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS,
   listSpaceBehaviorRelationTargetStatusOptions,
   type FunctionOperatorAggFunc,
 } from "@/types";
+import { mapFunctionOperatorTypeFromApi } from "@/utils/mapFunctionOperatorTypeToApi";
 import type { OntologyCategoryObjectOption, OntologyCategorySelectTreeNode } from "@/utils/mapOntologyObjectsToCategoryOptions";
 import {
   applyOntologyCategorySelectTreeDisabled,
@@ -2204,6 +2213,15 @@ async function loadRelationRows(): Promise<void> {
 }
 
 /**
+ * @description 将函数列表 type 转为下拉展示用中文标签。
+ * @param apiType 列表接口原始 type。
+ * @returns 类型中文标签。
+ */
+function resolveOperatorTypeLabel(apiType: string): string {
+  return FUNCTION_OPERATOR_TYPE_LABELS[mapFunctionOperatorTypeFromApi(apiType)] || apiType.trim() || "未知类型";
+}
+
+/**
  * @description 将函数列表记录映射为行为弹框使用的算子选项。
  * @param item 函数列表记录。
  * @returns 算子选项。
@@ -2213,6 +2231,8 @@ function mapFunctionOperator(item: GetOntologyFunctionListItem): SpaceBehaviorOp
     id: item.functionApi,
     name: item.displayName,
     version: item.version,
+    description: (item.description ?? "").trim(),
+    type: (item.type ?? "").trim(),
     basicAction: basicAction.value,
     objectName: item.displayName,
     inputParameters: [],
@@ -2388,6 +2408,35 @@ defineExpose({
   font-size: 12px;
 }
 
+.behavior-form-dialog__operator-option {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+  line-height: 1.4;
+}
+
+.behavior-form-dialog__operator-option-title {
+  display: block;
+  color: var(--aircas-color-text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.behavior-form-dialog__operator-option-meta {
+  display: block;
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .behavior-form-dialog__external-default {
   display: flex;
   flex-direction: column;
@@ -2459,5 +2508,16 @@ defineExpose({
     flex-direction: column;
     align-items: flex-start;
   }
+}
+</style>
+
+<!-- 下拉挂载到 body，需非 scoped 才能放开固定行高。 -->
+<style lang="scss">
+.behavior-form-dialog__operator-popper .el-select-dropdown__item {
+  height: auto;
+  min-height: var(--aircas-size-control);
+  padding-top: 8px;
+  padding-bottom: 8px;
+  line-height: normal;
 }
 </style>
