@@ -5,6 +5,7 @@ import {
   createOntologyObjectInterface,
   deleteOntologyObjectInterface,
   getExportOntologyInterface,
+  getOntologyPropertyDetailByOntologyIdInterface,
   postImportOntologiesInterface,
   updateOntologyObjectInterface,
 } from "@/apis";
@@ -18,6 +19,7 @@ import type {
   DatasourceBuildSelection,
 } from "@/types";
 import { downloadOntologyFile } from "../utils/downloadOntologyFile";
+import { isOntologyObjectDatasourceBound } from "../utils/isOntologyObjectDatasourceBound";
 import { collectCategoryOptions } from "../utils/objectWorkspace";
 import { resolveExportOntologyFileName } from "../utils/resolveExportOntologyFileName";
 
@@ -40,6 +42,9 @@ export function useObjectWorkspaceObjectActions(options: {
   const objectCreateSubmitting = ref(false);
   const objectCreateError = ref("");
   const editingObject = ref<OntologyObjectItem | null>(null);
+  const objectApiNameLocked = ref(false);
+  const objectApiNameChecking = ref(false);
+  let objectApiNameCheckSerial = 0;
   const initialParentObject = ref<OntologyObjectItem | null>(null);
   const initialParentId = computed(() => initialParentObject.value?.id);
   const objectDeleteVisible = ref(false);
@@ -50,6 +55,11 @@ export function useObjectWorkspaceObjectActions(options: {
   const objectExporting = ref(false);
   const objectExportError = ref("");
   const exportingObject = ref<OntologyObjectItem | null>(null);
+  const pendingBatchExportIds = ref<string[]>([]);
+  const exportDialogObjectName = computed(() => {
+    if (pendingBatchExportIds.value.length > 0) return `已选的 ${pendingBatchExportIds.value.length} 个对象`;
+    return exportingObject.value?.displayName ?? "";
+  });
 
   const categoryOptions = computed(() => collectCategoryOptions(workspace.value?.tree ?? []));
   const parentOptions = computed(() => {
@@ -63,6 +73,9 @@ export function useObjectWorkspaceObjectActions(options: {
     initialParentObject.value = null;
     objectCreateError.value = "";
     editingObject.value = null;
+    objectApiNameLocked.value = false;
+    objectApiNameChecking.value = false;
+    objectApiNameCheckSerial += 1;
     objectCreateVisible.value = true;
   }
 
@@ -76,14 +89,35 @@ export function useObjectWorkspaceObjectActions(options: {
   }
 
   /**
-   * @description 打开对象编辑弹框并回显当前对象信息。
+   * @description 打开对象编辑弹框，回显信息并按属性数据源关联结果锁定 API 名称。
    * @param item 待编辑的对象。
    */
-  function openOntologyObjectEditDialog(item: OntologyObjectItem) {
+  async function openOntologyObjectEditDialog(item: OntologyObjectItem) {
     initialParentObject.value = null;
     objectCreateError.value = "";
     editingObject.value = item;
+    objectApiNameLocked.value = true;
     objectCreateVisible.value = true;
+    const ontologyUniqueIdentifier = item.id.trim();
+    if (!ontologyUniqueIdentifier) {
+      objectCreateError.value = "缺少对象标识，无法确认数据源关联状态。";
+      return;
+    }
+    objectApiNameCheckSerial += 1;
+    const serial = objectApiNameCheckSerial;
+    objectApiNameChecking.value = true;
+    try {
+      const response = await getOntologyPropertyDetailByOntologyIdInterface({ ontologyUniqueIdentifier });
+      if (serial !== objectApiNameCheckSerial) return;
+      if (response.code !== 200) throw new Error(response.message || "属性信息查询失败");
+      objectApiNameLocked.value = isOntologyObjectDatasourceBound(response.data ?? []);
+    } catch (cause) {
+      if (serial !== objectApiNameCheckSerial) return;
+      objectApiNameLocked.value = true;
+      objectCreateError.value = cause instanceof Error && cause.message.trim() ? cause.message : "无法确认数据源关联状态，API 名称暂不可修改。";
+    } finally {
+      if (serial === objectApiNameCheckSerial) objectApiNameChecking.value = false;
+    }
   }
 
   /**
@@ -240,10 +274,14 @@ export function useObjectWorkspaceObjectActions(options: {
    * @param draft 编辑后的对象草稿。
    */
   async function updateOntologyObject(draft: OntologyObjectCreateDraft) {
-    if (objectCreateSubmitting.value) return;
+    if (objectCreateSubmitting.value || objectApiNameChecking.value) return;
     const categoryId = Number(draft.categoryId);
     if (!editingObject.value?.id || !draft.displayName.trim() || !Number.isInteger(categoryId)) {
       objectCreateError.value = "请填写有效的对象名称和分类。";
+      return;
+    }
+    if (!objectApiNameLocked.value && !draft.apiName.trim()) {
+      objectCreateError.value = "请填写有效的 API 名称。";
       return;
     }
     objectCreateSubmitting.value = true;
@@ -256,10 +294,12 @@ export function useObjectWorkspaceObjectActions(options: {
         icon: draft.iconUrl,
         description: draft.description,
         categoryId,
+        ...(!objectApiNameLocked.value ? { apiName: draft.apiName.trim() } : {}),
       });
       if (response.code !== 200) throw new Error(response.message || "对象修改失败");
       objectCreateVisible.value = false;
       editingObject.value = null;
+      objectApiNameLocked.value = false;
       ElMessage.success("对象修改成功");
       await load();
     } catch (cause) {
@@ -304,17 +344,61 @@ export function useObjectWorkspaceObjectActions(options: {
       return;
     }
     objectExportError.value = "";
+    pendingBatchExportIds.value = [];
     exportingObject.value = item;
     objectExportVisible.value = true;
   }
 
   /**
-   * @description 确认导出当前对象，按所选类型下载接口返回的文件。
+   * @description 打开批量导出类型选择弹窗；无有效标识时不打开。
+   * @param identifiers 已选对象唯一标识列表。
+   */
+  function openBatchOntologyObjectExportDialog(identifiers: string[]) {
+    if (objectExporting.value) return;
+    const uniqueIdentifiers = identifiers.map((item) => item.trim()).filter(Boolean);
+    if (!uniqueIdentifiers.length) {
+      ElMessage.warning("请先选择对象");
+      return;
+    }
+    objectExportError.value = "";
+    exportingObject.value = null;
+    pendingBatchExportIds.value = uniqueIdentifiers;
+    objectExportVisible.value = true;
+  }
+
+  /**
+   * @description 确认导出当前对象或批量对象，按所选类型下载接口返回的文件。
    * @param exportType 导出类型。SCHEMA 表示仅结构，INSTANCE 表示含实例数据。
    */
   async function confirmExportOntologyObject(exportType: OntologyExportType) {
+    if (objectExporting.value) return;
+    const batchIds = pendingBatchExportIds.value;
+    if (batchIds.length > 0) {
+      const uniqueIdentifier = batchIds.join(",");
+      objectExporting.value = true;
+      objectExportError.value = "";
+      try {
+        const file = await getExportOntologyInterface({ uniqueIdentifier, exportType });
+        const fileName = resolveExportOntologyFileName({
+          contentDisposition: file.contentDisposition,
+          contentType: file.contentType,
+          apiName: "ontology-batch",
+          uniqueIdentifier,
+        });
+        downloadOntologyFile(fileName, file.blob);
+        objectExportVisible.value = false;
+        pendingBatchExportIds.value = [];
+        ElMessage.success("批量导出文件已生成");
+      } catch (cause) {
+        objectExportError.value = cause instanceof Error && cause.message.trim() ? cause.message : "批量导出失败，请重试。";
+      } finally {
+        objectExporting.value = false;
+      }
+      return;
+    }
+
     const item = exportingObject.value;
-    if (!item || objectExporting.value) return;
+    if (!item) return;
     const uniqueIdentifier = item.id.trim();
     if (!uniqueIdentifier) {
       objectExportError.value = "缺少对象标识，无法导出。";
@@ -341,34 +425,6 @@ export function useObjectWorkspaceObjectActions(options: {
     }
   }
 
-  /** @description 批量导出选中的对象，使用逗号拼接唯一标识调用导出接口。 @param identifiers 对象唯一标识列表。 */
-  async function exportOntologyObjects(identifiers: string[]) {
-    const uniqueIdentifier = identifiers
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .join(",");
-    if (!uniqueIdentifier || objectExporting.value) {
-      ElMessage.warning("请先选择对象");
-      return;
-    }
-    objectExporting.value = true;
-    try {
-      const file = await getExportOntologyInterface({ uniqueIdentifier, exportType: "SCHEMA" });
-      const fileName = resolveExportOntologyFileName({
-        contentDisposition: file.contentDisposition,
-        contentType: file.contentType,
-        apiName: "ontology-batch",
-        uniqueIdentifier,
-      });
-      downloadOntologyFile(fileName, file.blob);
-      ElMessage.success("批量导出文件已生成");
-    } catch (cause) {
-      ElMessage.error(cause instanceof Error ? cause.message : "批量导出失败，请重试。");
-    } finally {
-      objectExporting.value = false;
-    }
-  }
-
   /** @description 保留原型的大模型构建入口，在当前项目尚未接入流程时给出明确反馈。 */
   function openOntologyLlmBuilder() {
     objectCreateVisible.value = false;
@@ -386,6 +442,8 @@ export function useObjectWorkspaceObjectActions(options: {
     objectCreateSubmitting,
     objectCreateError,
     editingObject,
+    objectApiNameLocked,
+    objectApiNameChecking,
     objectDeleteVisible,
     objectDeleteSubmitting,
     objectDeleteError,
@@ -394,6 +452,8 @@ export function useObjectWorkspaceObjectActions(options: {
     objectExporting,
     objectExportError,
     exportingObject,
+    pendingBatchExportIds,
+    exportDialogObjectName,
     categoryOptions,
     parentOptions,
     openOntologyObjectCreateDialog,
@@ -405,8 +465,8 @@ export function useObjectWorkspaceObjectActions(options: {
     updateOntologyObject,
     confirmDeleteOntologyObject,
     openOntologyObjectExportDialog,
+    openBatchOntologyObjectExportDialog,
     confirmExportOntologyObject,
-    exportOntologyObjects,
     openOntologyLlmBuilder,
   };
 }

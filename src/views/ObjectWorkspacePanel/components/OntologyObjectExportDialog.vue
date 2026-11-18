@@ -1,6 +1,7 @@
 <template>
   <el-dialog v-model="visible" title="导出对象" width="min(440px, 94vw)" append-to-body destroy-on-close>
-    <p>导出「{{ objectName }}」。</p>
+    <p v-if="selectedCount > 0">导出已选的 {{ selectedCount }} 个对象。</p>
+    <p v-else>导出「{{ objectName }}」。</p>
     <ul class="ontology-object-export-dialog__export-types">
       <li>可仅导出结构数据也可导出结构+实例数据</li>
     </ul>
@@ -27,7 +28,9 @@ import { ref, watch } from "vue";
 import type { OntologyExportType } from "@/types";
 
 const visible = defineModel<boolean>({ required: true });
-defineProps<{ objectName: string; submitting: boolean; error: string }>();
+withDefaults(defineProps<{ objectName: string; selectedCount?: number; submitting: boolean; error: string }>(), {
+  selectedCount: 0,
+});
 const exportType = ref<OntologyExportType>("INSTANCE");
 const emit = defineEmits<{ confirm: [exportType: OntologyExportType] }>();
 

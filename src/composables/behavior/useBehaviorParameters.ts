@@ -14,6 +14,7 @@ import type {
 } from "@/types";
 
 import { computed, reactive, ref, onScopeDispose } from "vue";
+import { mergeBehaviorTestEntityRows } from "@/utils/behaviorParameters/createBehaviorTestInitialEntity";
 import type * as BehaviorApis from "@/apis";
 import type { BuildApplicationTestRequestParamsResult } from "@/utils/behaviorParameters/buildApplicationTestRequestParams";
 import { cloneBehaviorParameterSnapshot } from "@/utils/behaviorParameters/cloneBehaviorParameterSnapshot";
@@ -1403,8 +1404,7 @@ export function useBehaviorParameters(
       selectedFromEntities.value = [];
       selectedToEntityRowKeys.value = [];
       selectedToEntities.value = [];
-      void loadFromEntityList();
-      void loadToEntityList();
+      await Promise.all([loadFromEntityList(), loadToEntityList()]);
     } catch (error) {
       if (requestToken !== relationContextLoadToken.value) return;
       ontologyLinkUniqIdentifier.value = "";
@@ -1537,7 +1537,43 @@ export function useBehaviorParameters(
     return true;
   }
 
+  /** @description 将当前实例预选到匹配对象的应用参数及关系挂载侧，不覆盖无关对象。 @param row 当前实例及原始主键快照。 */
+  function applyInitialEntitySelection(row: BehaviorTestEntityRow): void {
+    const objectId = row.raw.ontologyUniqueIdentifier?.trim();
+    if (!objectId) return;
+    for (const picker of [...applicationOntologyPickers.value]) {
+      if (picker.ontologyUniqueIdentifier !== objectId) continue;
+      patchApplicationOntologyPicker(picker.pickerKey, {
+        rows: mergeBehaviorTestEntityRows(picker.rows, row),
+        selectedEntities: [row],
+        selectedRowKeys: [row.rowKey],
+      });
+      if (picker.selectionMode === "multiple") {
+        const input = applicationInputRows.value.find((item) => item.paramName === picker.paramName);
+        const group = normalizeStorageGroup(input?.storageGroup ?? "");
+        const existing = listApplicationInputBindingRecords(picker.paramName);
+        const alreadyBound = existing.some((item) => JSON.stringify(item.entityPrimaryKey) === JSON.stringify(row.savedPrimaryKey ?? row.primaryKey));
+        if (!group || isMainStorageGroup(group)) {
+          if (!alreadyBound) addApplicationInputBindingRecords(picker.paramName);
+        } else {
+          syncApplicationStorageGroupSlotsForParam(picker.paramName);
+        }
+      }
+    }
+    if (relationMountSide.value === "from" && ontologyUniqueIdentifierFrom.value === objectId) {
+      fromEntityRows.value = mergeBehaviorTestEntityRows(fromEntityRows.value, row);
+      selectedFromEntities.value = [row];
+      selectedFromEntityRowKeys.value = [row.rowKey];
+    }
+    if (relationMountSide.value === "to" && ontologyUniqueIdentifierTo.value === objectId) {
+      toEntityRows.value = mergeBehaviorTestEntityRows(toEntityRows.value, row);
+      selectedToEntities.value = [row];
+      selectedToEntityRowKeys.value = [row.rowKey];
+    }
+  }
+
   return {
+    applyInitialEntitySelection,
     loadApplicationTestForm,
     loadRelationTestContext,
     buildParameterRequest,

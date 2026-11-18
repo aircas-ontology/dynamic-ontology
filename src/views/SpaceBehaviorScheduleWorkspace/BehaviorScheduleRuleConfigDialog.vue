@@ -44,15 +44,15 @@
             v-model="flowDoc"
             :behavior-options="behaviorOptions"
             :action-details="currentDetailGroup?.actionDetails"
-          />
+          >
+            <template #toolbar-actions>
+              <el-button @click="closeRuleConfigDialog">取消</el-button>
+              <el-button class="behavior-schedule-rule-config-dialog__save" type="success" @click="saveRuleFlowDocument">保存</el-button>
+            </template>
+          </ScheduleRuleFlowDesigner>
         </section>
       </div>
     </div>
-    <template #footer>
-      <el-button v-if="readonly" class="aircas-button aircas-button--tone-ghost" @click="closeRuleConfigDialog">关闭</el-button>
-      <el-button v-else class="aircas-button aircas-button--tone-ghost" @click="closeRuleConfigDialog">取消</el-button>
-      <el-button v-if="!readonly" class="aircas-button aircas-button--tone-primary" @click="saveRuleFlowDocument">保存</el-button>
-    </template>
   </el-dialog>
 </template>
 
@@ -153,12 +153,6 @@ watch(
   padding: 12px 16px;
   overflow: hidden;
 }
-
-.behavior-schedule-rule-config-dialog .el-dialog__footer {
-  flex-shrink: 0;
-  padding: 12px 16px 16px;
-  border-top: 1px solid var(--aircas-color-border-soft);
-}
 </style>
 
 <style scoped lang="scss">
@@ -167,13 +161,21 @@ watch(
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-right: 28px;
+  padding-right: 40px;
 }
 
 .behavior-schedule-rule-config-dialog__header-main {
   display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
+}
+
+.behavior-schedule-rule-config-dialog__save {
+  flex-shrink: 0;
+  min-width: 88px;
+  font-weight: 600;
 }
 
 .behavior-schedule-rule-config-dialog__title {

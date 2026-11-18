@@ -3,6 +3,8 @@ export interface UpdateOntologyObjectParams {
   ontologyIdentifier: string;
   displayName: string;
   groupIds: Array<string | null>;
+  /** 未关联数据源时可修改的对象 API 名称。 */
+  apiName?: string;
   icon?: string;
   description?: string;
   categoryId?: number;

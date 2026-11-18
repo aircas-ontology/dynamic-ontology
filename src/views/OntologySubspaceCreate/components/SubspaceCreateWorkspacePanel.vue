@@ -100,13 +100,31 @@
       >
         <section v-for="group in propertyGroups" :key="group.objectId" class="subspace-create-workspace__property-group">
           <header class="subspace-create-workspace__property-group-header">
-            <div>
+            <div class="subspace-create-workspace__property-group-title">
+              <button
+                type="button"
+                class="subspace-create-workspace__property-group-toggle"
+                :aria-expanded="isPropertyGroupExpanded(group.objectId)"
+                :aria-label="`${isPropertyGroupExpanded(group.objectId) ? '折叠' : '展开'} ${group.objectLabel}`"
+                @click="togglePropertyGroupCollapse(group.objectId)"
+              >
+                <el-icon>
+                  <ArrowDown v-if="isPropertyGroupExpanded(group.objectId)" />
+                  <ArrowRight v-else />
+                </el-icon>
+              </button>
               <strong>{{ group.objectLabel }}</strong>
               <span>{{ countSelectedObjectProperties(group.objectId) }} / {{ group.properties.length }} 个属性</span>
             </div>
             <el-button class="aircas-button" size="small" @click="selectObjectProperties(group.objectId)">全选</el-button>
           </header>
-          <el-table class="aircas-table aircas-table--flat subspace-create-workspace__property-table" :data="group.properties" row-key="id" stripe>
+          <el-table
+            v-show="isPropertyGroupExpanded(group.objectId)"
+            class="aircas-table aircas-table--flat subspace-create-workspace__property-table"
+            :data="group.properties"
+            row-key="id"
+            stripe
+          >
             <el-table-column label="选择" width="72">
               <template v-slot:default="{ row }">
                 <el-checkbox
@@ -217,7 +235,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import { Ship } from "@element-plus/icons-vue";
+import { ArrowDown, ArrowRight, Ship } from "@element-plus/icons-vue";
 import type { CheckboxValueType, TableInstance } from "element-plus";
 import type { SubspaceCreateObjectProperty, SubspaceCreateObjectPropertyGroup } from "../utils/mapSubspaceCreateObjectProperty";
 import { resolveSubspaceCreatePropertyFilterKind } from "../utils/resolveSubspaceCreatePropertyFilterKind";
@@ -277,8 +295,41 @@ const relationTableRef = ref<TableInstance>();
 let isApplyingRelationSelection = false;
 const stepPanelCopy = computed(() => resolveStepPanelCopy());
 const propertyFilters = ref<Record<string, SubspaceCreatePropertyFilterState>>({ ...props.propertyFilters });
+const collapsedPropertyObjectIds = ref<Set<string>>(new Set());
 
 watch(propertyFilters, (filters) => emit("update:propertyFilters", filters), { deep: true });
+
+watch(
+  () => props.propertyGroups.map((group) => group.objectId),
+  (objectIds) => {
+    const validIds = new Set(objectIds);
+    const next = new Set<string>();
+    collapsedPropertyObjectIds.value.forEach((objectId) => {
+      if (validIds.has(objectId)) next.add(objectId);
+    });
+    collapsedPropertyObjectIds.value = next;
+  },
+);
+
+/**
+ * @description 判断对象属性卡片是否展开。
+ * @param objectId 对象标识。
+ * @returns 未折叠时为 true。
+ */
+function isPropertyGroupExpanded(objectId: string): boolean {
+  return !collapsedPropertyObjectIds.value.has(objectId);
+}
+
+/**
+ * @description 切换对象属性卡片的展开或折叠状态。
+ * @param objectId 对象标识。
+ */
+function togglePropertyGroupCollapse(objectId: string): void {
+  const next = new Set(collapsedPropertyObjectIds.value);
+  if (next.has(objectId)) next.delete(objectId);
+  else next.add(objectId);
+  collapsedPropertyObjectIds.value = next;
+}
 
 /** @description 转发对象实例分页变化。 @param objectId 对象标识。 @param page 目标页码。 */
 function handleInstancePageChange(objectId: string, page: number) {
@@ -923,13 +974,45 @@ watch(
   background: var(--aircas-color-card-background-active);
 }
 
+.subspace-create-workspace__property-group-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.subspace-create-workspace__property-group-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  color: var(--aircas-color-text-secondary);
+  background: transparent;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.subspace-create-workspace__property-group-toggle:hover,
+.subspace-create-workspace__property-group-toggle:focus-visible {
+  color: var(--aircas-color-primary);
+  outline: none;
+}
+
 .subspace-create-workspace__property-group-header strong {
+  overflow: hidden;
   color: var(--aircas-color-text-primary);
   font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .subspace-create-workspace__property-group-header span {
-  margin-left: 8px;
+  flex-shrink: 0;
   color: var(--aircas-color-text-muted);
   font-size: 12px;
 }

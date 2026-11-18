@@ -4,6 +4,7 @@ import type {
   RuleConditionNode,
   RuleFlowThenAction,
   RuleValueNode,
+  RuleVariableValue,
   ScheduleBehaviorOption,
   ScheduleRuleDetailGroup,
 } from "@/types";
@@ -54,7 +55,7 @@ function restoreOperand(value: unknown): RuleValueNode {
     const propertyId = typeof value.propertyId === "string" ? value.propertyId : "";
     const propertyName = typeof value.propertyName === "string" ? value.propertyName : "";
     if (!propertyId && !propertyName) throw new Error("规则变量属性缺失");
-    return {
+    const restored: RuleVariableValue = {
       kind: "variable",
       objectId: value.OntologyId,
       objectName: value.OntologyId,
@@ -63,6 +64,20 @@ function restoreOperand(value: unknown): RuleValueNode {
       propertyName: propertyName || propertyId,
       instanceIds: [value.entityId],
     };
+    if (value.dataPrimaryKey !== undefined && value.dataPrimaryKey !== null && value.dataPrimaryKey !== "") {
+      restored.dataPrimaryKey = value.dataPrimaryKey as RuleVariableValue["dataPrimaryKey"];
+      restored.dataPrimaryKeyLabel =
+        typeof value.dataPrimaryKey === "string" || typeof value.dataPrimaryKey === "number" || typeof value.dataPrimaryKey === "boolean"
+          ? String(value.dataPrimaryKey)
+          : (() => {
+              try {
+                return JSON.stringify(value.dataPrimaryKey);
+              } catch {
+                return "数据行";
+              }
+            })();
+    }
+    return restored;
   }
   throw new Error("规则变量或固定值不完整");
 }

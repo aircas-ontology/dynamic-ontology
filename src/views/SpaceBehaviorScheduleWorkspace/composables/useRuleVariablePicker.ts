@@ -1,6 +1,25 @@
 import { onScopeDispose, ref } from "vue";
-import { getOntologyCategoryTreeInterface, getOntologyPropertyByOntologyIdInterface, getOntologyEntitiesInterface } from "@/apis";
+import {
+  getOntologyCategoryTreeInterface,
+  getOntologyPropertyByOntologyIdInterface,
+  getOntologyEntitiesInterface,
+  postGetOntologyEntityRowDetailPageInterface,
+} from "@/apis";
 import type { ApiResponse, OntologyCategoryTreeNode, RuleVariableCatalogObject } from "@/types";
+import { mapOntologyEntityRowDetailPageToDataRows } from "@/utils/behaviorParameters/mapOntologyEntityRowDetailToDataRows";
+import { needsRuleVariableDataRow } from "../utils/needsRuleVariableDataRow.ts";
+
+export { needsRuleVariableDataRow };
+
+/** 变量选择器中的子表数据行选项。 */
+export interface RuleVariableDataRowOption {
+  /** 选项稳定键。 */
+  id: string;
+  /** 展示文案。 */
+  label: string;
+  /** 提交用数据行主键。 */
+  dataPrimaryKey: string | number | boolean | Record<string, unknown>;
+}
 
 /** @description 校验变量查询响应，失败时保留服务端错误。 @param response 接口响应。 @returns 响应数据。 */
 function requireVariableData<Value>(response: ApiResponse<Value>): Value {
@@ -9,17 +28,22 @@ function requireVariableData<Value>(response: ApiResponse<Value>): Value {
   return response.data;
 }
 
-/** @description 读取当前空间对象、属性及实例，阻止重复请求和过期响应回写。 @param getSpaceId 当前空间标识。 @returns 变量选择状态及查询操作。 */
+/** @description 读取当前空间对象、属性、实例及子表数据行，阻止重复请求和过期响应回写。 @param getSpaceId 当前空间标识。 @returns 变量选择状态及查询操作。 */
 export function useRuleVariablePicker(getSpaceId: () => string) {
   const catalog = ref<RuleVariableCatalogObject[]>([]);
   const instances = ref<{ id: string; label: string }[]>([]);
+  const dataRows = ref<RuleVariableDataRowOption[]>([]);
   const catalogLoading = ref(false);
   const catalogError = ref("");
   const instanceLoading = ref(false);
   const instanceError = ref("");
+  const dataRowLoading = ref(false);
+  const dataRowError = ref("");
   let catalogSession = 0;
   let instanceSession = 0;
+  let dataRowSession = 0;
   let pendingObject = "";
+  let pendingDataRowKey = "";
 
   /** @description 加载空间内真实对象和属性作为变量目录。 @returns 查询结束。 */
   async function fetchVariableCatalog(): Promise<void> {
@@ -60,7 +84,14 @@ export function useRuleVariablePicker(getSpaceId: () => string) {
                   : propertyType === "object"
                     ? "object"
                     : "string";
-            return [{ id: property.uniqueIdentifier, name: property.displayName || property.apiName || property.uniqueIdentifier, valueType }];
+            return [
+              {
+                id: property.uniqueIdentifier,
+                name: property.displayName || property.apiName || property.uniqueIdentifier,
+                valueType,
+                storageGroup: typeof property.storageGroup === "string" ? property.storageGroup.trim() : "",
+              },
+            ];
           }),
         });
       }
@@ -102,24 +133,100 @@ export function useRuleVariablePicker(getSpaceId: () => string) {
     }
   }
 
+  /**
+   * @description 分页加载非 main 存储分组下的子表数据行。
+   * @param objectId 对象标识。
+   * @param entityPrimaryKey 实例主键。
+   * @param storageGroup 存储分组。
+   * @returns 查询结束。
+   */
+  async function fetchVariableDataRows(objectId: string, entityPrimaryKey: string, storageGroup: string): Promise<void> {
+    const group = storageGroup.trim();
+    const entityKey = entityPrimaryKey.trim();
+    const requestKey = `${objectId}::${entityKey}::${group}`;
+    if (!objectId.trim() || !entityKey || !needsRuleVariableDataRow(group)) {
+      dataRowSession++;
+      dataRows.value = [];
+      dataRowError.value = "";
+      dataRowLoading.value = false;
+      pendingDataRowKey = "";
+      return;
+    }
+    if (dataRowLoading.value && pendingDataRowKey === requestKey) return;
+    const session = ++dataRowSession;
+    pendingDataRowKey = requestKey;
+    dataRows.value = [];
+    dataRowError.value = "";
+    dataRowLoading.value = true;
+    try {
+      const result = new Map<string, RuleVariableDataRowOption>();
+      for (let pageNum = 1; ; pageNum++) {
+        const page = requireVariableData(
+          await postGetOntologyEntityRowDetailPageInterface({
+            ontologyUniqueIdentifier: objectId,
+            entityPrimaryKey: entityKey,
+            sort: "DESC",
+            storageGroup: group,
+            pageNum,
+            pageSize: 100,
+          }),
+        );
+        if (session !== dataRowSession) return;
+        const rows = mapOntologyEntityRowDetailPageToDataRows(page, group);
+        const total = typeof page?.total === "number" && Number.isSafeInteger(page.total) ? page.total : rows.length;
+        for (const row of rows) {
+          result.set(row.rowKey, {
+            id: row.rowKey,
+            label: row.dataPrimaryKeyLabel,
+            dataPrimaryKey: row.dataPrimaryKey,
+          });
+        }
+        if (pageNum * 100 >= total) break;
+        if (!rows.length) throw new Error("数据行分页数据不完整");
+      }
+      if (session === dataRowSession) dataRows.value = [...result.values()];
+    } catch (cause) {
+      if (session === dataRowSession) dataRowError.value = cause instanceof Error ? cause.message : "数据行加载失败";
+    } finally {
+      if (session === dataRowSession) dataRowLoading.value = false;
+    }
+  }
+
+  /** @description 清空数据行状态并使旧会话失效。 */
+  function clearVariableDataRows(): void {
+    dataRowSession++;
+    dataRows.value = [];
+    dataRowError.value = "";
+    dataRowLoading.value = false;
+    pendingDataRowKey = "";
+  }
+
   /** @description 关闭选择器或卸载时使所有旧请求失效。 */
   function cancelVariableQueries(): void {
     catalogSession++;
     instanceSession++;
+    dataRowSession++;
     catalogLoading.value = false;
     instanceLoading.value = false;
+    dataRowLoading.value = false;
     pendingObject = "";
+    pendingDataRowKey = "";
   }
   onScopeDispose(cancelVariableQueries);
   return {
     catalog,
     instances,
+    dataRows,
     catalogLoading,
     catalogError,
     instanceLoading,
     instanceError,
+    dataRowLoading,
+    dataRowError,
     fetchVariableCatalog,
     fetchVariableInstances,
+    fetchVariableDataRows,
+    clearVariableDataRows,
     cancelVariableQueries,
   };
 }

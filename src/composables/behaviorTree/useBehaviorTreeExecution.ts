@@ -1,4 +1,4 @@
-import { computed, reactive, ref, type Ref } from "vue";
+import { computed, onScopeDispose, reactive, ref, type Ref } from "vue";
 import { ElMessage } from "element-plus";
 import {
   getOntologyActionInfoInterface,
@@ -74,6 +74,7 @@ export function useBehaviorTreeExecution(options: {
   const testError = ref("");
   const testResult = ref<PostOntologyActionTreeTestData>(null);
   const logs = ref<BehaviorTreeExecLogEntry[]>([]);
+  let instanceToken = 0;
   let planToken = 0;
   let testToken = 0;
   let logSeq = 0;
@@ -241,6 +242,7 @@ export function useBehaviorTreeExecution(options: {
   async function loadBehaviorTreeEntityOptions(objectId: string): Promise<void> {
     const id = objectId.trim();
     if (!id || instanceOptions[id] || instanceLoadingIds[id]) return;
+    const requestToken = instanceToken;
     instanceLoadingIds[id] = true;
     try {
       const response = await getOntologyEntitiesInterface({
@@ -248,6 +250,7 @@ export function useBehaviorTreeExecution(options: {
         pageNum: 1,
         pageSize: 50,
       });
+      if (requestToken !== instanceToken) return;
       if (response.code !== 200 || !response.data) {
         instanceOptions[id] = [];
         return;
@@ -257,9 +260,9 @@ export function useBehaviorTreeExecution(options: {
         .map((item) => mapBehaviorTreeEntityRecordOption(item as Record<string, unknown>))
         .filter((item): item is BehaviorTreeEntityOption => item != null);
     } catch {
-      instanceOptions[id] = [];
+      if (requestToken === instanceToken) instanceOptions[id] = [];
     } finally {
-      delete instanceLoadingIds[id];
+      if (requestToken === instanceToken) delete instanceLoadingIds[id];
     }
   }
 
@@ -407,7 +410,9 @@ export function useBehaviorTreeExecution(options: {
       }
       planStatus.value = "ready";
       await prefetchBehaviorTreePlanInstances();
+      if (requestToken !== planToken) return;
       await Promise.all(propertyBlackboardGroups.value.map((group) => loadBehaviorTreeGroupRowOptions(group.objectId)));
+      if (requestToken !== planToken) return;
       if (!silent) ElMessage.success("已读取执行要求");
     } catch (error) {
       if (requestToken !== planToken) return;
@@ -544,7 +549,20 @@ export function useBehaviorTreeExecution(options: {
     }
   }
 
+  /** @description 关闭或销毁执行上下文时使接口结果失效，防止新旧行为状态互相覆盖。 */
+  function cancelBehaviorTreeExecutionRequests(): void {
+    planToken += 1;
+    testToken += 1;
+    instanceToken += 1;
+    for (const key of Object.keys(instanceLoadingIds)) delete instanceLoadingIds[key];
+    planStatus.value = "idle";
+    testStatus.value = "idle";
+    execPlan.value = null;
+  }
+  onScopeDispose(cancelBehaviorTreeExecutionRequests);
+
   return {
+    cancelBehaviorTreeExecutionRequests,
     planStatus,
     planError,
     execPlan,

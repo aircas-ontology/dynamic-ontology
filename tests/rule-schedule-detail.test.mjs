@@ -9,7 +9,7 @@ const action = (value) => ({
   ontology_identifier: "obj",
   entity_json: JSON.stringify({ ontologySpaceId: 156, actionApi: "app", params: { count: value } }),
 });
-const options = [{ id: "a", actionApi: "app", displayName: "行为", ontologyUniqIdentifier: "obj" }];
+const options = [{ id: "a", actionApi: "app", displayName: "行为", ontologyUniqIdentifier: "obj", kind: "application" }];
 const rule = (condition, judgeParams, value) => ({ condition, judgeParams, actionParam: action(value) });
 
 test("restores grouped conditions, if/else and multiple actions with full saved parameters", () => {

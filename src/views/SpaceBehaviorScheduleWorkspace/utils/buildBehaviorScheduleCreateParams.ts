@@ -1,4 +1,24 @@
-import type { BehaviorScheduleDraft, BehaviorSchedulePeriodKind, CreateTaskBehaviorScheduleParams, TestOntologyActionParams } from "@/types";
+import type {
+  BehaviorScheduleDraft,
+  BehaviorSchedulePeriodKind,
+  CreateTaskBehaviorScheduleParams,
+  PostOntologyActionTreeTestParams,
+  TestOntologyActionParams,
+} from "@/types";
+
+/** 周期调度可写入 entityJson 的行为执行请求。 */
+export type ScheduleBehaviorEntityRequest = TestOntologyActionParams | PostOntologyActionTreeTestParams;
+
+/**
+ * @description 读取执行请求中的行为 api（应用行为 actionApi，行为树 treeApi）。
+ * @param request 执行请求。
+ * @returns api；缺失为空。
+ */
+function readScheduleBehaviorRequestApi(request: ScheduleBehaviorEntityRequest): string {
+  if ("actionApi" in request && typeof request.actionApi === "string") return request.actionApi;
+  if ("treeApi" in request && typeof request.treeApi === "string") return request.treeApi;
+  return "";
+}
 
 const schedulePeriodTypes: Record<BehaviorSchedulePeriodKind, CreateTaskBehaviorScheduleParams["task"]["periodType"]> = {
   每天: "DAILY",
@@ -68,11 +88,11 @@ function normalizeScheduleCron(expression: string): string {
 export function buildBehaviorScheduleCreateParams(
   draft: BehaviorScheduleDraft,
   ontologyIdentifier: string,
-  behaviorRequest: TestOntologyActionParams,
+  behaviorRequest: ScheduleBehaviorEntityRequest,
   spaceId = behaviorRequest.ontologySpaceId,
 ): { ok: true; request: CreateTaskBehaviorScheduleParams } | { ok: false; error: string } {
   if (!Number.isSafeInteger(Number(spaceId)) || Number(spaceId) <= 0) return { ok: false, error: "空间标识无效" };
-  if (!draft.name.trim() || !draft.behaviorActionApi || draft.behaviorActionApi !== behaviorRequest.actionApi)
+  if (!draft.name.trim() || !draft.behaviorActionApi || draft.behaviorActionApi !== readScheduleBehaviorRequestApi(behaviorRequest))
     return { ok: false, error: "调度名称或行为参数不匹配" };
   let cron = "";
   if (draft.periodKind === "Cron") cron = normalizeScheduleCron(draft.cronExpression);

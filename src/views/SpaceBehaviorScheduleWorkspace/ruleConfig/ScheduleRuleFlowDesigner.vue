@@ -12,7 +12,9 @@
           @layout="autoLayoutCanvas"
           @fit="fitCanvas"
           @remove="removeSelectedCanvasCells"
-        />
+        >
+          <template #document-actions><slot name="toolbar-actions" /></template>
+        </ScheduleRuleFlowToolbar>
         <div class="rule-flow-designer__canvas-shell">
           <div
             ref="canvasRef"
@@ -69,9 +71,24 @@
             </el-form-item>
             <section class="rule-flow-designer__parameters" aria-label="行为参数">
               <h3 class="rule-flow-designer__parameters-title">行为参数</h3>
-              <el-alert v-if="readonly && !actionDetails?.[editingNode.action.id]?.entityJson" title="未保存行为参数" type="info" :closable="false" />
+              <el-alert
+                v-if="
+                  readonly &&
+                  !actionDetails?.[editingNode.action.id]?.entityJson &&
+                  !editingNode.action.treeParameters &&
+                  !editingNode.action.behaviorParameters
+                "
+                title="未保存行为参数"
+                type="info"
+                :closable="false"
+              />
               <p v-if="readonly && actionDetails?.[editingNode.action.id]?.entityId">目标实例：{{ actionDetails[editingNode.action.id]?.entityId }}</p>
-              <BehaviorParameterConfig v-if="selectedActionOption" :controller="parameterConfig" :readonly="readonly || parameterBusy" />
+              <BehaviorParameterConfig
+                v-if="selectedActionOption?.kind === 'application'"
+                :controller="parameterConfig"
+                :readonly="readonly || parameterBusy"
+              />
+              <ScheduleTreeParametersPanel v-else-if="selectedActionOption?.kind === 'behaviorTree'" :tree-parameters="treeParameters" />
               <p v-else>请选择行为以配置参数</p>
               <el-alert v-if="parameterError" :title="parameterError" type="error" :closable="false" />
               <el-button v-if="parameterError" :disabled="parameterBusy" link @click="initializeActionParameters">重新加载行为参数</el-button>
@@ -97,6 +114,7 @@ import { cloneRuleFlowValue } from "../utils/scheduleRuleFlowFactory";
 import ScheduleRuleConditionWireSurface from "./ScheduleRuleConditionWireSurface.vue";
 import ScheduleRuleSwitchConfig from "./ScheduleRuleSwitchConfig.vue";
 import BehaviorParameterConfig from "@/components/BehaviorParameterConfig/BehaviorParameterConfig.vue";
+import ScheduleTreeParametersPanel from "../components/ScheduleTreeParametersPanel.vue";
 import { useRuleActionParameters } from "../composables/useRuleActionParameters";
 import { filterBehaviorsByObjects } from "../utils/filterRuleBehaviorsByObject";
 import { buildSavedActionEntityJson } from "../utils/restoreRuleScheduleDetail";
@@ -139,22 +157,29 @@ const selectedActionOption = computed(() => {
   if (option || !props.readonly) return option;
   const detail = props.actionDetails?.[action.id];
   return detail
-    ? { id: action.id, actionApi: detail.actionApi, displayName: action.behaviorName || detail.actionApi, ontologyUniqIdentifier: detail.ontologyIdentifier }
+    ? {
+        id: action.id,
+        actionApi: detail.actionApi,
+        displayName: action.behaviorName || detail.actionApi,
+        ontologyUniqIdentifier: detail.ontologyIdentifier,
+        kind: Boolean(action.treeParameters) || detail.entityJson.includes('"treeApi"') ? ("behaviorTree" as const) : ("application" as const),
+      }
     : undefined;
 });
-const { parameterConfig, parameterBusy, parameterError, clearActionParameters, initializeActionParameters, captureActionParameters } = useRuleActionParameters(
-  () => String(route.params.spaceId ?? ""),
-  () => selectedActionOption.value,
-  () => editingNode.value?.action,
-  () => nodeEditorVisible.value,
-  () => {
-    const action = editingNode.value?.action;
-    if (!action || action.behaviorParameters) return "";
-    const detail = props.actionDetails?.[action.id];
-    if (!detail || detail.actionApi !== selectedActionOption.value?.actionApi) return "";
-    return buildSavedActionEntityJson(detail);
-  },
-);
+const { parameterConfig, treeParameters, parameterBusy, parameterError, clearActionParameters, initializeActionParameters, captureActionParameters } =
+  useRuleActionParameters(
+    () => String(route.params.spaceId ?? ""),
+    () => selectedActionOption.value,
+    () => editingNode.value?.action,
+    () => nodeEditorVisible.value,
+    () => {
+      const action = editingNode.value?.action;
+      if (!action || action.behaviorParameters || action.treeParameters) return "";
+      const detail = props.actionDetails?.[action.id];
+      if (!detail || detail.actionApi !== selectedActionOption.value?.actionApi) return "";
+      return buildSavedActionEntityJson(detail);
+    },
+  );
 watch(nodeEditorVisible, (visible) => {
   if (!visible) clearActionParameters();
 });

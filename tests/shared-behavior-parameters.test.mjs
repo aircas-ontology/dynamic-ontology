@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire, registerHooks } from "node:module";
 import test from "node:test";
-import { effectScope, nextTick, reactive } from "vue";
+import { effectScope, nextTick, reactive, ref } from "vue";
 import * as Vue from "vue";
 import { compileScript, parse } from "@vue/compiler-sfc";
 import { baseParse, compile } from "@vue/compiler-dom";
@@ -415,7 +415,51 @@ function createScheduleFormHarness(
     if (id.endsWith(".vue")) return { default: {} };
     if (id === "@/apis") return apis;
     if (id === "@/types") return scheduleTypes;
-    if (id.includes("useBehaviorParameters")) return { useBehaviorParameters };
+    if (id.includes("useSchedulePeriodParameters")) {
+      const periodSource = readFileSync(
+        new URL("../src/views/SpaceBehaviorScheduleWorkspace/composables/useSchedulePeriodParameters.ts", import.meta.url),
+        "utf8",
+      );
+      const periodCompiled = transpileModule(periodSource, { compilerOptions: { module: ModuleKind.CommonJS } }).outputText;
+      const periodExports = {};
+      new Function("require", "exports", periodCompiled)((dep) => {
+        if (dep === "vue") return Vue;
+        if (dep.includes("useBehaviorParameters")) return { useBehaviorParameters };
+        if (dep.includes("useScheduleTreeParameters"))
+          return {
+            useScheduleTreeParameters: () => ({
+              planStatus: ref("idle"),
+              planError: ref(""),
+              testStatus: ref("idle"),
+              logs: ref([]),
+              externalBlackboardRows: ref([]),
+              propertyBlackboardGroups: ref([]),
+              execNodeBlocks: ref([]),
+              externalInputDraft: reactive({}),
+              blackboardObjectKeys: reactive({}),
+              nodeDrafts: reactive({}),
+              instanceOptions: reactive({}),
+              instanceLoadingIds: reactive({}),
+              parameterBusy: ref(false),
+              parameterError: ref(""),
+              resolveObjectLabel: () => "",
+              clearTreeParameters() {},
+              initializeTreeParameters: async () => {},
+              captureTreeParameters: () => ({ ok: false, error: "tree stub" }),
+              loadBehaviorTreeEntityOptions() {},
+              updateNodeParamDraft() {},
+              updateNodeEntityKeyDraft() {},
+              updateNodeInputParamDraft() {},
+              updateNodeOutputDraft() {},
+            }),
+          };
+        if (dep.includes("restoreScheduleBehaviorParameters")) return { restoreScheduleBehaviorParameters };
+        if (dep === "@/apis" || dep.endsWith("/apis") || dep.includes("apis/index")) return apis;
+        if (dep === "@/types" || dep.includes("/types")) return scheduleTypes;
+        return modules(dep);
+      }, periodExports);
+      return periodExports;
+    }
     if (id.includes("cloneBehaviorParameterSnapshot")) return { cloneBehaviorParameterSnapshot };
     if (id.includes("restoreScheduleBehaviorParameters")) return { restoreScheduleBehaviorParameters };
     if (id.includes("buildBehaviorScheduleCreateParams")) return { buildBehaviorScheduleCreateParams };
@@ -435,8 +479,8 @@ function createScheduleFormHarness(
     behaviorLoading: false,
     behaviorError: "",
     behaviorOptions: [
-      { id: "1", actionApi: "app", displayName: "同名行为", ontologyUniqIdentifier: "ship" },
-      { id: "2", actionApi: "next", displayName: "同名行为", ontologyUniqIdentifier: "ship" },
+      { id: "1", actionApi: "app", displayName: "同名行为", ontologyUniqIdentifier: "ship", kind: "application" },
+      { id: "2", actionApi: "next", displayName: "同名行为", ontologyUniqIdentifier: "ship", kind: "application" },
     ],
   });
   const events = [];
@@ -632,9 +676,12 @@ test("schedule parameter panel stays visible while its content follows the selec
   const { code } = compile(panel.loc.source);
   const renderPanel = new Function("Vue", code)(Vue);
   const draft = reactive({ behaviorActionApi: "" });
+  const selectedBehaviorKind = ref("");
   /** @description 渲染真实参数模块，替换内部业务组件为可观察的占位节点。 @returns {Promise<string>} 模块 HTML。 */
   async function renderParameterPanel() {
-    const app = Vue.createSSRApp({ render: () => renderPanel({ draft, parameterConfig: {}, formDisabled: false }, []) });
+    const app = Vue.createSSRApp({
+      render: () => renderPanel({ draft, selectedBehaviorKind: selectedBehaviorKind.value, parameterConfig: {}, treeParameters: {}, formDisabled: false }, []),
+    });
     app.component("el-form-item", {
       setup:
         (props, { slots }) =>
@@ -642,6 +689,7 @@ test("schedule parameter panel stays visible while its content follows the selec
           Vue.h("div", slots.default?.()),
     });
     app.component("BehaviorParameterConfig", { render: () => Vue.h("div", { "data-parameter-content": "true" }) });
+    app.component("ScheduleTreeParametersPanel", { render: () => Vue.h("div", { "data-tree-parameter-content": "true" }) });
     return renderToString(app);
   }
   const emptyPanel = await renderParameterPanel();
@@ -649,11 +697,16 @@ test("schedule parameter panel stays visible while its content follows the selec
   assert.match(emptyPanel, /行为参数/);
   assert.doesNotMatch(emptyPanel, /data-parameter-content/);
   draft.behaviorActionApi = "app";
+  selectedBehaviorKind.value = "application";
   assert.match(await renderParameterPanel(), /data-parameter-content/);
+  selectedBehaviorKind.value = "behaviorTree";
+  assert.match(await renderParameterPanel(), /data-tree-parameter-content/);
+  assert.doesNotMatch(await renderParameterPanel(), /data-parameter-content/);
   draft.behaviorActionApi = "";
+  selectedBehaviorKind.value = "";
   const clearedPanel = await renderParameterPanel();
   assert.match(clearedPanel, /behavior-schedule-form-dialog__parameters/);
-  assert.doesNotMatch(clearedPanel, /data-parameter-content/);
+  assert.doesNotMatch(clearedPanel, /data-parameter-content|data-tree-parameter-content/);
 });
 
 test("schedule remote detail hydrates API selection and zero parameter after options retry", async () => {
@@ -675,7 +728,7 @@ test("schedule remote detail hydrates API selection and zero parameter after opt
     assert.equal(context.form.parameterConfig.paramValues.amount, "0");
     assert.equal(context.form.selectedBehaviorValue.value, "saved:app");
     context.form.parameterConfig.updateParamValue("amount", "7");
-    context.props.behaviorOptions = [{ id: "1", actionApi: "app", displayName: "行为", ontologyUniqIdentifier: "ship" }];
+    context.props.behaviorOptions = [{ id: "1", actionApi: "app", displayName: "行为", ontologyUniqIdentifier: "ship", kind: "application" }];
     await settleForm();
     assert.equal(context.form.selectedBehaviorValue.value, "1");
     assert.equal(context.form.parameterConfig.paramValues.amount, "7");
@@ -711,4 +764,48 @@ test("schedule malformed saved parameters block confirmation and recover on retr
   context.form.submitCreateScheduleForm();
   assert.equal(context.events[0][1].behaviorParameters.request.params.amount, 4);
   context.scope.stop();
+});
+
+test("current instance seeds matching application parameters and mount side with original primary keys", async () => {
+  const { state, scope } = createBindingContext(true);
+  try {
+    await state.loadApplicationTestForm();
+    const row = {
+      rowKey: "current",
+      displayName: "current ship",
+      primaryKey: "001",
+      primaryKeyLabel: "001",
+      ontologyName: "ship",
+      propertySummary: "",
+      savedPrimaryKey: "001",
+      raw: { ontologyUniqueIdentifier: "ship" },
+    };
+    state.applyInitialEntitySelection(row);
+    state.updateParamValue("amount", "7");
+    assert.equal(state.listApplicationInputBindingRecords("ships")[0].entityPrimaryKey, "001");
+    assert.equal(state.findApplicationOntologyPicker("result", "output").selectedEntities[0].savedPrimaryKey, "001");
+    assert.equal(state.selectedFromEntityRows.value[0].rowKey, "current");
+    assert.equal(state.selectedToEntityRows.value.length, 0);
+    state.toggleToEntityRow(state.toEntityRows.value[0]);
+    const result = state.buildParameterRequest();
+    assert.equal(result.ok, true);
+    assert.equal(result.request.inputParams.ships[0].entityPrimaryKey, "001");
+    assert.equal(result.request.outputParams.result.entityPrimaryKey, "001");
+    state.applyInitialEntitySelection(row);
+    assert.equal(state.listApplicationInputBindingRecords("ships").length, 1);
+  } finally {
+    scope.stop();
+  }
+});
+
+test("nonmatching initial instance does not populate unrelated application parameters", async () => {
+  const { state, scope } = createBindingContext();
+  try {
+    await state.loadApplicationTestForm();
+    state.applyInitialEntitySelection({ rowKey: "other", displayName: "other", primaryKey: 0, savedPrimaryKey: 0, raw: { ontologyUniqueIdentifier: "other" } });
+    assert.equal(state.listApplicationInputBindingRecords("ships").length, 0);
+    assert.equal(state.findApplicationOntologyPicker("result", "output").selectedEntities.length, 0);
+  } finally {
+    scope.stop();
+  }
 });

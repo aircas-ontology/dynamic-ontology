@@ -99,7 +99,8 @@
         </el-form-item>
         <section class="behavior-schedule-form-dialog__parameters" aria-label="行为参数">
           <h3 class="behavior-schedule-form-dialog__parameters-title">行为参数</h3>
-          <BehaviorParameterConfig v-if="draft.behaviorActionApi" :controller="parameterConfig" :readonly="formDisabled" />
+          <BehaviorParameterConfig v-if="selectedBehaviorKind === 'application'" :controller="parameterConfig" :readonly="formDisabled" />
+          <ScheduleTreeParametersPanel v-else-if="selectedBehaviorKind === 'behaviorTree'" :tree-parameters="treeParameters" />
         </section>
       </template>
 
@@ -138,21 +139,13 @@
 
 <script setup lang="ts">
 import BehaviorParameterConfig from "@/components/BehaviorParameterConfig/BehaviorParameterConfig.vue";
-import { useBehaviorParameters } from "@/composables/behavior/useBehaviorParameters";
 import { cloneBehaviorParameterSnapshot } from "@/utils/behaviorParameters/cloneBehaviorParameterSnapshot";
-import {
-  getOntologyActionInfoInterface,
-  getOntologyEntitiesInterface,
-  getOntologyLinkByUniqueIdentifierInterface,
-  postGetOntologyEntityRowDetailPageInterface,
-} from "@/apis";
 import type { CreateBehaviorScheduleParams, ScheduleBehaviorOption, ScheduleRuleDetailGroup } from "@/types";
-import { restoreScheduleBehaviorParameters } from "./utils/restoreScheduleBehaviorParameters";
 import { buildBehaviorScheduleCreateParams } from "./utils/buildBehaviorScheduleCreateParams";
 import { buildRuleScheduleCreateParams } from "@/views/SpaceBehaviorScheduleWorkspace/utils/buildRuleScheduleCreateParams";
+import { useSchedulePeriodParameters } from "./composables/useSchedulePeriodParameters";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { Close, Plus } from "@element-plus/icons-vue";
-
 import {
   BEHAVIOR_SCHEDULE_MONTH_DAYS,
   BEHAVIOR_SCHEDULE_PERIOD_KINDS,
@@ -164,6 +157,7 @@ import {
 } from "@/types";
 import { cloneScheduleRuleFlow } from "./utils/scheduleRuleFlowFactory";
 import BehaviorScheduleRuleConfigDialog from "./BehaviorScheduleRuleConfigDialog.vue";
+import ScheduleTreeParametersPanel from "./components/ScheduleTreeParametersPanel.vue";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -184,37 +178,23 @@ const emit = defineEmits<{
 }>();
 
 const draft = reactive<BehaviorScheduleDraft>(createEmptyScheduleDraft());
-const selectedBehaviorOption = computed(() =>
-  props.behaviorOptions.find((item) => (draft.behaviorActionApi ? item.actionApi === draft.behaviorActionApi : item.id === draft.behaviorId)),
+const {
+  selectedBehaviorOption,
+  selectedBehaviorKind,
+  parameterConfig,
+  treeParameters,
+  parameterRestoreError,
+  clearScheduleParameters,
+  initializeScheduleParameters: loadSchedulePeriodParameters,
+  capturePeriodBehaviorRequest,
+} = useSchedulePeriodParameters(
+  () => props.spaceId,
+  () => draft,
+  () => props.behaviorOptions,
+  () => props.modelValue,
+  () => props.mode,
 );
 const selectedBehaviorValue = computed(() => selectedBehaviorOption.value?.id ?? (draft.behaviorActionApi ? `saved:${draft.behaviorActionApi}` : ""));
-const parameterRestoreError = ref("");
-const parameterContext = reactive({
-  /** @description 提供当前空间，保持参数加载上下文随页面更新。 @returns 空间标识。 */
-  get spaceId() {
-    return props.spaceId;
-  },
-  /** @description 将调度选择转换为共用参数配置上下文。 @returns 当前行为或空值。 */
-  get behavior() {
-    if (!draft.behaviorActionApi) return null;
-    const option = selectedBehaviorOption.value;
-    return {
-      id: draft.behaviorId ?? "",
-      kind: "application" as const,
-      valueType: "attributeValue" as const,
-      basicAction: "" as const,
-      behaviorApiName: draft.behaviorActionApi,
-      ontologyUniqIdentifier: option?.ontologyUniqIdentifier || draft.behaviorOntologyIdentifier || "",
-    };
-  },
-});
-const parameterConfig = useBehaviorParameters(parameterContext, {
-  getOntologyActionInfoInterface,
-  getOntologyEntitiesInterface,
-  getOntologyLinkByUniqueIdentifierInterface,
-  postGetOntologyEntityRowDetailPageInterface,
-});
-let parameterSession = 0;
 const validationError = ref("");
 const hydratingScheduleDraft = ref(false);
 const ruleConfigVisible = ref(false);
@@ -230,10 +210,7 @@ watch(
   () => props.modelValue,
   (visible) => {
     if (!visible) {
-      parameterSession += 1;
-      parameterConfig.cancelParameterRequests();
-      parameterConfig.clearDetailParamState();
-      parameterConfig.clearRelationTestState();
+      clearScheduleParameters();
       return;
     }
     validationError.value = "";
@@ -260,30 +237,15 @@ function selectScheduleBehavior(value: string | number | boolean | undefined): v
   draft.savedEntityJson = "";
   void initializeScheduleParameters();
 }
-/** @description 加载参数并恢复相同行为的配置，关闭或切换时忽略过期会话。 */
+
+/** @description 重新加载行为参数并把恢复错误同步到校验文案。 */
 async function initializeScheduleParameters(): Promise<void> {
-  const session = ++parameterSession;
-  parameterConfig.cancelParameterRequests();
-  parameterConfig.clearDetailParamState();
-  parameterConfig.clearRelationTestState();
-  parameterRestoreError.value = "";
   validationError.value = "";
-  if (!props.modelValue || draft.strategy !== "周期调度" || !draft.behaviorActionApi) return;
-  const snapshot = draft.behaviorParameters;
-  const savedJson = draft.savedEntityJson;
-  await parameterConfig.loadApplicationTestForm();
-  if (session !== parameterSession || !props.modelValue) return;
-  if (parameterConfig.detailError.value) parameterRestoreError.value = parameterConfig.detailError.value;
-  else if (snapshot) {
-    if (!parameterConfig.restoreParameterSnapshot(snapshot)) parameterRestoreError.value = "已保存参数与当前行为不匹配，请重新配置";
-  } else if (savedJson) parameterRestoreError.value = restoreScheduleBehaviorParameters(parameterConfig, savedJson, props.spaceId, draft.behaviorActionApi);
+  await loadSchedulePeriodParameters();
   validationError.value = parameterRestoreError.value;
 }
 
-/**
- * @description 生成空白新建调度草稿。
- * @returns 空白草稿。
- */
+/** @description 生成空白新建调度草稿。 @returns 空白草稿。 */
 function createEmptyScheduleDraft(): BehaviorScheduleDraft {
   return {
     name: "",
@@ -319,17 +281,13 @@ function cloneScheduleDraft(value: BehaviorScheduleDraft | null): BehaviorSchedu
 
 /** @description 将单选值写入调度策略。 @param value 单选组当前值。 */
 function setScheduleStrategy(value: string | number | boolean | undefined) {
-  if (value === "规则调度" || value === "周期调度") {
-    draft.strategy = value;
-  }
+  if (value === "规则调度" || value === "周期调度") draft.strategy = value;
 }
 
 /** @description 将单选值写入执行周期。 @param value 单选组当前值。 */
 function setSchedulePeriodKind(value: string | number | boolean | undefined) {
   const nextKind = BEHAVIOR_SCHEDULE_PERIOD_KINDS.find((kind) => kind === value);
-  if (nextKind) {
-    draft.periodKind = nextKind;
-  }
+  if (nextKind) draft.periodKind = nextKind;
 }
 
 /** @description 将复选值写入每周执行日。 @param value 复选组当前值。 */
@@ -338,25 +296,18 @@ function setScheduleWeekdays(value: string | number | boolean | Array<string | n
   draft.weekdays = BEHAVIOR_SCHEDULE_WEEKDAYS.filter((day) => selected.includes(day));
 }
 
-/** @description 打开规则配置全屏画布；查看模式忽略。 */
+/** @description 打开规则配置全屏画布。 */
 function openRuleConfigDialog() {
   if (props.submitting) return;
   ruleConfigVisible.value = true;
 }
 
-/**
- * @description 把画布保存结果写入当前调度草稿。
- * @param doc 规则流文档。
- */
+/** @description 把画布保存结果写入当前调度草稿。 @param doc 规则流文档。 */
 function applyRuleFlowDocument(doc: ScheduleRuleFlowDocument) {
   draft.ruleFlow = cloneScheduleRuleFlow(doc);
 }
 
-/**
- * @description 校验新建调度草稿并返回可展示错误文案。
- * @param value 当前草稿。
- * @returns 错误文案；通过时为空字符串。
- */
+/** @description 校验新建调度草稿并返回可展示错误文案。 @param value 当前草稿。 @returns 错误文案；通过时为空字符串。 */
 function readCreateScheduleFormError(value: BehaviorScheduleDraft): string {
   if (!value.name.trim()) return "请输入调度名称";
   if (value.strategy !== "周期调度") return "";
@@ -368,9 +319,7 @@ function readCreateScheduleFormError(value: BehaviorScheduleDraft): string {
   return "";
 }
 
-/**
- * @description 校验新建或编辑草稿及行为参数，按规则或周期输出完整请求；查看模式或提交中忽略。
- */
+/** @description 校验新建或编辑草稿及行为参数，按规则或周期输出完整请求；查看模式或提交中忽略。 */
 function submitCreateScheduleForm() {
   if (props.mode === "view" || props.submitting) return;
   const error = parameterRestoreError.value || readCreateScheduleFormError(draft);
@@ -378,36 +327,18 @@ function submitCreateScheduleForm() {
   if (error) return;
   let createRequest: CreateBehaviorScheduleParams | undefined;
   if (draft.strategy === "周期调度") {
-    if (props.mode === "create") {
-      const unfilledParam = parameterConfig.paramRows.value.find((row) => !(parameterConfig.paramValues[row.paramName] ?? "").trim());
-      if (unfilledParam) {
-        validationError.value = `请填写行为参数「${unfilledParam.propertyDisplayName || unfilledParam.paramName}」`;
-        return;
-      }
-    }
-    const result = parameterConfig.createParameterSnapshot();
-    if (!result.ok) {
-      validationError.value = result.error;
+    const captured = capturePeriodBehaviorRequest();
+    if (!captured.ok) {
+      validationError.value = captured.error;
       return;
     }
-    draft.behaviorParameters = result.snapshot;
-    draft.behaviorId = selectedBehaviorOption.value?.id ?? draft.behaviorId;
-    draft.savedEntityJson = "";
-    {
-      const option = selectedBehaviorOption.value;
-      const assembled = buildBehaviorScheduleCreateParams(
-        draft,
-        parameterConfig.resolvedOntologyUniqIdentifier.value.trim() || option?.ontologyUniqIdentifier || "",
-        result.snapshot.request,
-        props.spaceId,
-      );
-      if (!assembled.ok) {
-        validationError.value = assembled.error;
-        return;
-      }
-      createRequest = assembled.request;
-      if (props.mode === "create") console.log("行为调度创建参数", createRequest);
+    const assembled = buildBehaviorScheduleCreateParams(draft, captured.ontologyIdentifier, captured.request, props.spaceId);
+    if (!assembled.ok) {
+      validationError.value = assembled.error;
+      return;
     }
+    createRequest = assembled.request;
+    if (props.mode === "create") console.log("行为调度创建参数", createRequest);
   } else {
     const savedDetails =
       props.mode === "edit" ? Object.fromEntries((props.ruleDetailGroups ?? []).flatMap((group) => Object.entries(group.actionDetails))) : {};

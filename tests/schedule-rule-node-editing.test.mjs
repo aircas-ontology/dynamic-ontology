@@ -19,6 +19,26 @@ import { buildSavedActionEntityJson } from "../src/views/SpaceBehaviorScheduleWo
 function createRuleParameterStub() {
   return {
     parameterConfig: {},
+    treeParameters: {
+      planStatus: Vue.ref("idle"),
+      planError: Vue.ref(""),
+      testStatus: Vue.ref("idle"),
+      logs: Vue.ref([]),
+      externalBlackboardRows: Vue.ref([]),
+      propertyBlackboardGroups: Vue.ref([]),
+      execNodeBlocks: Vue.ref([]),
+      externalInputDraft: Vue.reactive({}),
+      blackboardObjectKeys: Vue.reactive({}),
+      nodeDrafts: Vue.reactive({}),
+      instanceOptions: Vue.reactive({}),
+      instanceLoadingIds: Vue.reactive({}),
+      resolveObjectLabel: () => "",
+      loadBehaviorTreeEntityOptions() {},
+      updateNodeParamDraft() {},
+      updateNodeEntityKeyDraft() {},
+      updateNodeInputParamDraft() {},
+      updateNodeOutputDraft() {},
+    },
     parameterBusy: Vue.ref(false),
     parameterError: Vue.ref(""),
     clearActionParameters() {},
@@ -199,8 +219,8 @@ async function createDesignerHarness(readonly = false) {
     readonly,
     modelValue: createDefaultScheduleRuleFlow(),
     behaviorOptions: [
-      { id: "b", displayName: "行为 B", actionApi: "b", ontologyUniqIdentifier: "o" },
-      { id: "c", displayName: "行为 C", actionApi: "c", ontologyUniqIdentifier: "other" },
+      { id: "b", displayName: "行为 B", actionApi: "b", ontologyUniqIdentifier: "o", kind: "application" },
+      { id: "c", displayName: "行为 C", actionApi: "c", ontologyUniqIdentifier: "other", kind: "application" },
     ],
   };
   const page = scope.run(() => exports.default.setup(props, { expose() {}, emit() {} }));

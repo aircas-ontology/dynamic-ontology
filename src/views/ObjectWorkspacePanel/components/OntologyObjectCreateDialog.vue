@@ -33,12 +33,26 @@
       <el-form label-position="top">
         <div class="ontology-object-create-dialog__grid">
           <el-form-item label="API 名称" required :error="apiNameError">
-            <el-input v-model="draft.apiName" maxlength="64" ariaLabel="API 名称" placeholder="如 airplane" :disabled="submitting || Boolean(editingItem)" />
+            <el-input
+              v-model="draft.apiName"
+              maxlength="64"
+              ariaLabel="API 名称"
+              placeholder="如 airplane"
+              :disabled="submitting || apiNameChecking || (Boolean(editingItem) && apiNameLocked)"
+            />
           </el-form-item>
           <el-form-item label="显示名称" required :error="displayNameError">
             <el-input v-model="draft.displayName" maxlength="64" ariaLabel="显示名称" placeholder="请输入对象显示名称" :disabled="submitting" />
           </el-form-item>
         </div>
+        <el-alert
+          v-if="editingItem && apiNameLocked"
+          class="ontology-object-create-dialog__api-name-lock"
+          title="已关联数据源，API 名称不可修改"
+          type="info"
+          show-icon
+          :closable="false"
+        />
         <el-form-item label="描述">
           <el-input v-model="draft.description" type="textarea" :rows="2" maxlength="300" ariaLabel="描述" :disabled="submitting" />
         </el-form-item>
@@ -149,7 +163,8 @@
         v-else-if="createMode !== 'datasource' && createMode !== 'asset'"
         type="primary"
         data-onboarding="object-create-confirm"
-        :loading="submitting"
+        :loading="submitting || apiNameChecking"
+        :disabled="apiNameChecking"
         @click="submitCreate"
         >{{ editingItem ? "保存修改" : "确认创建" }}</el-button
       >
@@ -192,15 +207,25 @@ interface ParentOption {
 type CreateMode = "manual" | "import" | "datasource" | "llm" | "asset";
 
 const visible = defineModel<boolean>({ required: true });
-const props = defineProps<{
-  spaceId: string;
-  categoryTree: OntologyConceptNode[];
-  parentOptions: ParentOption[];
-  submitting: boolean;
-  error: string;
-  editingItem?: OntologyObjectItem | null;
-  initialParentId?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    spaceId: string;
+    categoryTree: OntologyConceptNode[];
+    parentOptions: ParentOption[];
+    submitting: boolean;
+    error: string;
+    editingItem?: OntologyObjectItem | null;
+    initialParentId?: string;
+    apiNameLocked?: boolean;
+    apiNameChecking?: boolean;
+  }>(),
+  {
+    editingItem: null,
+    initialParentId: undefined,
+    apiNameLocked: false,
+    apiNameChecking: false,
+  },
+);
 const emit = defineEmits<{
   "submit-manual": [draft: OntologyObjectCreateDraft];
   "submit-import": [file: File];
@@ -395,7 +420,7 @@ function downloadTemplate() {
 
 /** @description 校验当前创建模式并向父组件提交一个或多个对象草稿。 */
 function submitCreate() {
-  if (props.submitting || iconError.value || iconUploading.value) return;
+  if (props.submitting || props.apiNameChecking || iconError.value || iconUploading.value) return;
   if (createMode.value === "import") {
     if (!importFile.value) {
       importError.value = "请先选择文件。";
@@ -425,6 +450,9 @@ function submitCreate() {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 16px;
+}
+.ontology-object-create-dialog__api-name-lock {
+  margin-bottom: 12px;
 }
 .ontology-object-create-dialog__datasource-card {
   display: flex;

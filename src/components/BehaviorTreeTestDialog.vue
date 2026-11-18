@@ -54,11 +54,12 @@ import { computed, onScopeDispose, reactive, ref, watch } from "vue";
 import type { getOntologyCategoryTreeInterface } from "@/apis";
 import BehaviorTreeExecPanel from "@/components/BehaviorTreeExecPanel.vue";
 import { useBehaviorTreeExecution } from "@/composables/behaviorTree/useBehaviorTreeExecution";
-import type { BehaviorTreeModel, BehaviorTreeObjectPropertyOption, SpaceBehaviorItem, SpaceRelationObjectOption } from "@/types";
+import type { BehaviorTestEntityRow, BehaviorTreeModel, BehaviorTreeObjectPropertyOption, SpaceBehaviorItem, SpaceRelationObjectOption } from "@/types";
 import { mapOntologyObjectsToRelationOptions } from "@/utils/mapOntologyObjectsToRelationOptions";
 
 const props = defineProps<{
   queryObjectCatalog: typeof getOntologyCategoryTreeInterface;
+  initialEntity?: BehaviorTestEntityRow;
   modelValue: boolean;
   spaceId: string;
   behavior: SpaceBehaviorItem | null;
@@ -108,6 +109,8 @@ const {
   updateNodeEntityKeyDraft,
   updateNodeInputParamDraft,
   updateNodeOutputDraft,
+  resolveBehaviorTreeOutputDraftKey,
+  cancelBehaviorTreeExecutionRequests,
 } = useBehaviorTreeExecution({
   spaceId: () => spaceIdRef.value,
   treeApi: () => treeApi.value,
@@ -150,21 +153,58 @@ async function openBehaviorTreeTestDialog(): Promise<void> {
   model.blackboard.splice(0, model.blackboard.length);
   model.roots.splice(0, model.roots.length);
   clearBehaviorTreeExecLogs();
+  for (const draft of [externalInputDraft, blackboardObjectKeys, nodeDrafts, instanceOptions]) {
+    for (const key of Object.keys(draft)) delete draft[key];
+  }
   await loadBehaviorTreeTestObjectCatalog();
   if (token !== openToken) return;
   await loadBehaviorTreeExecutePlan(true);
+  if (token !== openToken) return;
+  prefillBehaviorTreeEntity();
+}
+
+/** @description 将当前实例填入执行要求中明确匹配对象的实例位置，其他对象和子表行保持待选。 */
+function prefillBehaviorTreeEntity(): void {
+  const entity = props.initialEntity;
+  const objectId = entity?.raw.ontologyUniqueIdentifier?.trim();
+  if (!entity || !objectId) return;
+  const primaryKey = String(entity.primaryKey);
+  const options = instanceOptions[objectId] ?? [];
+  instanceOptions[objectId] = [
+    { value: primaryKey, label: entity.displayName + " · " + entity.primaryKeyLabel },
+    ...options.filter((item) => item.value !== primaryKey),
+  ];
+  for (const group of propertyBlackboardGroups.value) {
+    if (group.objectId === objectId) blackboardObjectKeys[objectId] = primaryKey;
+  }
+  for (const block of execNodeBlocks.value) {
+    if (block.objects.includes(objectId)) updateNodeEntityKeyDraft(block.nodeId, objectId, primaryKey);
+    if (block.ends?.from === objectId) updateNodeEntityKeyDraft(block.nodeId, "from", primaryKey);
+    else if (block.ends?.to === objectId) updateNodeEntityKeyDraft(block.nodeId, "to", primaryKey);
+    for (const param of block.params) {
+      if (param.objectIdentifier === objectId && ["PROPERTY", "OBJECT", "LIST"].includes(param.sourceType ?? "")) {
+        updateNodeInputParamDraft(block.nodeId, param.key, "entityPrimaryKey", primaryKey);
+      }
+    }
+    for (const output of block.outputs) {
+      if (output.objectIdentifier !== objectId || output.mode === "RESULT_ONLY" || output.mode === "DATA_PRIMARY_KEY") continue;
+      const key = resolveBehaviorTreeOutputDraftKey(output);
+      if (key) updateNodeOutputDraft(block.nodeId, key, "entityPrimaryKey", primaryKey);
+    }
+  }
 }
 
 /** @description 关闭、切换或卸载时阻止目录请求和旧打开流程继续更新弹窗。 */
 function invalidateBehaviorTreeTestRequests(): void {
   catalogToken += 1;
   openToken += 1;
+  cancelBehaviorTreeExecutionRequests();
 }
 
 onScopeDispose(invalidateBehaviorTreeTestRequests);
 
 watch(
-  () => [props.modelValue, props.behavior?.id, props.behavior?.behaviorApiName, props.spaceId] as const,
+  () => [props.modelValue, props.behavior?.id, props.behavior?.behaviorApiName, props.spaceId, props.initialEntity] as const,
   ([visible]) => {
     invalidateBehaviorTreeTestRequests();
     if (!visible) return;

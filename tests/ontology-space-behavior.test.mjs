@@ -23,7 +23,7 @@ import {
   mapSpaceBehaviorItemToListStatus,
   mapSpaceBehaviorKindToActionKindQuery,
   mapSpaceBehaviorListStatusToQuery,
-} from "../src/views/SpaceBehaviorWorkspace/utils/mapListOntologyActionRecord.ts";
+} from "../src/utils/behaviorParameters/mapListOntologyActionRecord.ts";
 import { resolveBehaviorOntologyId, resolveBehaviorSpaceId } from "../src/views/SpaceBehaviorWorkspace/utils/resolveBehaviorRouteContext.ts";
 import { flattenPropertyInfosFromCategoryTree } from "../src/views/SpaceBehaviorWorkspace/utils/flattenPropertyInfosFromCategoryTree.ts";
 import { isAttributeValueRowSelectable, resolveAttributeValueSelection } from "../src/views/SpaceBehaviorWorkspace/utils/resolveAttributeValueSelection.ts";
@@ -222,7 +222,7 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.equal(existsSync(new URL("../src/components/BehaviorTreeExecPanel.vue", import.meta.url)), true);
   assert.equal(existsSync(new URL("../src/composables/behaviorTree/useBehaviorTreeExecution.ts", import.meta.url)), true);
   const testDialogSource = [
-    readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorTestDialog.vue"),
+    readSource("../src/components/BehaviorTestDialog/BehaviorTestDialog.vue"),
     readSource("../src/components/BehaviorParameterConfig/BehaviorParameterConfig.vue"),
     readSource("../src/composables/behavior/useBehaviorParameters.ts"),
   ].join("\n");
@@ -376,7 +376,7 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /link_between/);
   assert.match(testDialogSource, /BehaviorEntityRowDetailDialog/);
   assert.match(testDialogSource, /openEntityRowDetail/);
-  const linkDataDialogSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorEntityLinkDataDialog.vue");
+  const linkDataDialogSource = readSource("../src/components/BehaviorTestDialog/BehaviorEntityLinkDataDialog.vue");
   assert.match(linkDataDialogSource, /postOntologyEntityAllLinkInterface/);
   assert.match(linkDataDialogSource, /link_between/);
   assert.match(linkDataDialogSource, /关系名称/);
@@ -406,7 +406,7 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /props\.behavior\?\.valueType/);
   assert.match(testDialogSource, /开始测试/);
   assert.match(testDialogSource, /<el-pagination\b/);
-  const entityRowDetailSource = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorEntityRowDetailDialog.vue");
+  const entityRowDetailSource = readSource("../src/components/BehaviorTestDialog/BehaviorEntityRowDetailDialog.vue");
   assert.doesNotMatch(entityRowDetailSource, /postGetOntologyEntityRowDetailInterface/);
   assert.match(entityRowDetailSource, /externalDetail/);
   assert.match(entityRowDetailSource, /reload-detail/);

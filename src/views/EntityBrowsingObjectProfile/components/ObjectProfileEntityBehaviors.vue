@@ -19,23 +19,26 @@
             ><el-icon><Operation /></el-icon
           ></span>
           <h3 :title="item.displayName">{{ item.displayName || item.actionApi }}</h3>
-          <el-tag size="small" effect="plain">{{ formatActionKind(item.actionKind) }}</el-tag>
+          <el-tag size="small" type="info" effect="light">{{ formatActionKind(item.actionKind) }}</el-tag>
         </header>
         <p class="entity-detail-behavior-card__description" :title="item.description">{{ item.description || "暂无描述" }}</p>
-        <dl class="entity-detail-behavior-card__meta">
-          <div>
-            <dt>行为 API</dt>
-            <dd :title="item.actionApi">{{ item.actionApi }}</dd>
-          </div>
-          <div>
-            <dt>挂载函数</dt>
-            <dd :title="item.functionApi || ''">{{ item.functionApi || "—" }}</dd>
-          </div>
-          <div>
-            <dt>更新时间</dt>
-            <dd :title="item.updateTime || ''">{{ item.updateTime || "—" }}</dd>
-          </div>
-        </dl>
+        <div class="entity-detail-behavior-card__body">
+          <dl class="entity-detail-behavior-card__meta">
+            <div>
+              <dt>行为 API</dt>
+              <dd :title="item.actionApi">{{ item.actionApi }}</dd>
+            </div>
+            <div>
+              <dt>挂载函数</dt>
+              <dd :title="item.functionApi || ''">{{ item.functionApi || "—" }}</dd>
+            </div>
+            <div>
+              <dt>更新时间</dt>
+              <dd :title="item.updateTime || ''">{{ item.updateTime || "—" }}</dd>
+            </div>
+          </dl>
+          <el-button class="entity-detail-behavior-card__execute" type="primary" size="small" @click="emit('execute', item)">执行</el-button>
+        </div>
       </article>
     </div>
     <footer v-if="status !== 'error' && total > pageSize" class="entity-detail-behaviors__pager">
@@ -64,7 +67,7 @@ defineProps<{
   total: number;
 }>();
 const actionKindLabels: Record<string, string> = { BASE: "基础行为", APPLICATION: "应用行为", TREE: "行为树" };
-const emit = defineEmits<{ retry: []; "page-change": [page: number] }>();
+const emit = defineEmits<{ retry: []; "page-change": [page: number]; execute: [behavior: ListOntologyActionRecord] }>();
 /** @description 将接口行为类别转换为与空间行为一致的文案。 @param kind 行为类别。 @returns 展示标签。 */
 function formatActionKind(kind: string): string {
   return actionKindLabels[kind] || kind || "行为";
@@ -106,6 +109,8 @@ function formatActionKind(kind: string): string {
   gap: 12px;
 }
 .entity-detail-behavior-card {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--aircas-color-border-soft);
@@ -158,7 +163,20 @@ function formatActionKind(kind: string): string {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+.entity-detail-behavior-card__body {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  padding-right: 12px;
+}
+.entity-detail-behavior-card__execute {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
 .entity-detail-behavior-card__meta {
+  min-width: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;

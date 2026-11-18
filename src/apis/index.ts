@@ -82,6 +82,7 @@ import {
   postGetOntologyEntityRowDetailInterface,
   postGetOntologyEntityRowDetailPageInterface,
   postOntologyEntityAllLinkInterface,
+  postOntologyEntityLinksInterface,
 } from "./ontologyEntityApi";
 import { getOntologyInheritanceTreeInterface } from "./ontologyInheritanceTreeApi";
 import { getOntologyInstanceUrlListInterface } from "./ontologyInstanceUrlApi";
@@ -222,6 +223,7 @@ export {
   postGetOntologyEntityRowDetailInterface,
   postGetOntologyEntityRowDetailPageInterface,
   postOntologyEntityAllLinkInterface,
+  postOntologyEntityLinksInterface,
   getOntologyInheritanceTreeInterface,
   getOntologyInstanceUrlListInterface,
   getOntologyMetaStatisticInterface,

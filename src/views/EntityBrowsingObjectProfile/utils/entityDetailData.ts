@@ -1,5 +1,7 @@
 import type {
   GetOntologyObjectArrTypeTreeData,
+  OntologyEntityLinkItem,
+  OntologyRelationClass,
   GetOntologyEntityRowDetailData,
   GetOntologyEntityRowDetailParams,
   ObjectProfileEntityCategory,
@@ -147,4 +149,46 @@ export function buildEntityPropertyTable(records: ReturnType<typeof groupEntityP
     }),
   }));
   return { columns, rows };
+}
+
+/** @description 将接口有向关系转换为现有只读图输入，同名不同实例补充身份以免合并。 @param links 接口关系数组。 @returns 图关系记录，不虚构缺失端点。 */
+export function buildEntityRelationRows(links: OntologyEntityLinkItem[]): OntologyRelationClass[] {
+  const endpoints = new Map<string, string>();
+  /** @description 解析端点的稳定身份及展示名，保留 false 和 0。 @param link 关系。 @param side 端点方向。 @returns 有效端点或空。 */
+  function resolveEntityEndpoint(link: OntologyEntityLinkItem, side: "From" | "To"): { id: string; name: string } | null {
+    const objectId = link[side === "From" ? "ontologyFrom" : "ontologyTo"] ?? "";
+    const primaryKey = link[side === "From" ? "entityPrimaryKeyFrom" : "entityPrimaryKeyTo"];
+    const nodeId = link[side === "From" ? "entityNodeFrom" : "entityNodeTo"]?.trim();
+    if (primaryKey == null && !nodeId) return null;
+    const id = JSON.stringify([objectId, primaryKey ?? nodeId]);
+    const name = link[side === "From" ? "displayNameFrom" : "displayNameTo"]?.trim() || nodeId || id;
+    if (!endpoints.has(id)) endpoints.set(id, name);
+    return { id, name };
+  }
+  const rows = links.flatMap((link, index) => {
+    const from = resolveEntityEndpoint(link, "From");
+    const to = resolveEntityEndpoint(link, "To");
+    return from && to ? [{ link, index, from, to }] : [];
+  });
+  const names = new Map<string, number>();
+  for (const name of endpoints.values()) names.set(name, (names.get(name) ?? 0) + 1);
+  /** @description 为重复显示名附加稳定端点身份。 @param id 端点身份。 @returns 唯一展示名。 */
+  function resolveEndpointLabel(id: string): string {
+    const name = endpoints.get(id) ?? id;
+    return (names.get(name) ?? 0) > 1 ? name + " · " + id : name;
+  }
+  return rows.map(({ link, index, from, to }) => ({
+    id: JSON.stringify([from.id, to.id, link.linkName, index]),
+    categoryId: link.linkType ?? "",
+    categoryName: link.linkType ?? "",
+    displayName: link.linkName || link.linkType || "关系",
+    apiName: "",
+    sourceName: resolveEndpointLabel(from.id),
+    targetName: resolveEndpointLabel(to.id),
+    sourceOntologyId: link.ontologyFrom ?? "",
+    targetOntologyId: link.ontologyTo ?? "",
+    // 现有只读图不消费基数字段，此值仅兼容输入类型，不代表接口实际基数。
+    cardinality: "多对多",
+    description: "",
+  }));
 }

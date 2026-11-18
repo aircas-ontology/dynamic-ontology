@@ -18,13 +18,17 @@ test("loads every page with 1000 records and excludes base behaviors", async () 
                 { id: 4, status: 0, actionKind: "APPLICATION", displayName: "inactive", actionApi: "inactive" },
                 { id: 1, status: 1, actionKind: "APPLICATION", displayName: "app", actionApi: "app", ontologyUniqIdentifier: "ship" },
               ]
-            : [{ id: 2, status: 1, actionKind: "APPLICATION", displayName: "app", actionApi: "second", ontologyUniqIdentifier: "ship" }],
+            : [
+                { id: 2, status: 1, actionKind: "APPLICATION", displayName: "app", actionApi: "second", ontologyUniqIdentifier: "ship" },
+                { id: 5, status: 1, actionKind: "TREE", displayName: "tree", actionApi: "tree.api", ontologyUniqIdentifier: "ship" },
+              ],
       },
     };
   });
   assert.deepEqual(result, [
-    { id: "1", displayName: "app", actionApi: "app", ontologyUniqIdentifier: "ship" },
-    { id: "2", displayName: "app", actionApi: "second", ontologyUniqIdentifier: "ship" },
+    { id: "1", displayName: "app", actionApi: "app", ontologyUniqIdentifier: "ship", kind: "application" },
+    { id: "2", displayName: "app", actionApi: "second", ontologyUniqIdentifier: "ship", kind: "application" },
+    { id: "5", displayName: "tree", actionApi: "tree.api", ontologyUniqIdentifier: "ship", kind: "behaviorTree" },
   ]);
   assert.deepEqual(queries, [
     { ontologySpaceId: 23, pageNum: 1, pageSize: 1000, status: 1 },

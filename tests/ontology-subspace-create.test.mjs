@@ -157,6 +157,13 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, /全选属性/);
   assert.match(source, /取消全选/);
   assert.match(source, />全选</);
+  assert.match(source, /collapsedPropertyObjectIds/);
+  assert.match(source, /function togglePropertyGroupCollapse/);
+  assert.match(source, /function isPropertyGroupExpanded/);
+  assert.match(source, /:aria-label="`\$\{isPropertyGroupExpanded\(group\.objectId\) \? '折叠' : '展开'\} \$\{group\.objectLabel\}`"/);
+  assert.match(source, /v-show="isPropertyGroupExpanded\(group\.objectId\)"/);
+  assert.match(source, /ArrowDown|ArrowRight/);
+  assert.match(source, /subspace-create-workspace__property-group-toggle/);
   assert.match(source, /属性名称/);
   assert.match(source, /数据类型/);
   assert.match(source, /筛选条件/);
@@ -424,6 +431,14 @@ test("subspace create exposes the create API path and submit wiring", () => {
   assert.match(pageSource, /createOntologySubspaceInterface/);
   assert.match(pageSource, /creating/);
   assert.match(pageSource, /mapSubspaceCreateRequest/);
+  assert.match(pageSource, /createProgress/);
+  assert.match(pageSource, /function startCreateProgress/);
+  assert.match(pageSource, /function stopCreateProgressTimer/);
+  assert.match(pageSource, /正在创建主题，请稍候/);
+  assert.match(pageSource, /<el-progress/);
+  assert.match(pageSource, /:percentage="createProgress"/);
+  assert.match(pageSource, /createProgress\.value = 100/);
+  assert.match(pageSource, /ontology-subspace-create__progress/);
 });
 
 test("subspace create maps selected objects to instance rows", () => {

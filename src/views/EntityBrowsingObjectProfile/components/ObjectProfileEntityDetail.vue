@@ -1,12 +1,5 @@
 <template>
   <section class="object-profile-entity-detail" aria-label="实体详情">
-    <header class="object-profile-entity-detail__header">
-      <div class="object-profile-entity-detail__identity">
-        <h2 :title="entityName">{{ entityName }}</h2>
-        <span>实体详情 · {{ instanceId }}</span>
-      </div>
-      <el-button plain :icon="ArrowLeft" @click="emit('back')">返回实体列表</el-button>
-    </header>
     <div class="object-profile-entity-detail__top">
       <aside class="object-profile-entity-detail__panel object-profile-entity-detail__categories" aria-label="属性分类树">
         <h3>属性分类</h3>
@@ -86,9 +79,15 @@
       <section class="object-profile-entity-detail__panel object-profile-entity-detail__relations" aria-label="实体关系图">
         <header class="object-profile-entity-detail__section-title">
           <h3>实体关系</h3>
-          <el-tag v-if="usingRelationsMock" size="small" type="info">示例数据</el-tag>
         </header>
-        <OntologyRelationGraph2d :items="resolvedRelations" :seed-names="[entityName]" readonly empty-description="暂无关联实体" />
+        <div v-if="relations === undefined && relationStatus === 'loading'" class="object-profile-entity-detail__state" role="status">
+          <AircasLoading>正在加载实体关系…</AircasLoading>
+        </div>
+        <div v-else-if="relations === undefined && relationStatus === 'error'" class="object-profile-entity-detail__state" role="alert">
+          <p>{{ relationError }}</p>
+          <el-button @click="loadEntityRelations">重试</el-button>
+        </div>
+        <OntologyRelationGraph2d v-else :items="resolvedRelations" :seed-names="[entityName]" readonly empty-description="暂无关联实体" />
       </section>
     </div>
     <ObjectProfileEntityBehaviors
@@ -100,21 +99,42 @@
       :total="behaviorTotal"
       @retry="loadEntityBehaviors()"
       @page-change="loadEntityBehaviors"
+      @execute="openEntityBehaviorTest"
+    />
+    <BehaviorTestDialog
+      v-if="activeBehavior && activeBehavior.kind !== 'behaviorTree'"
+      v-model="behaviorTestVisible"
+      :apis="behaviorTestApis"
+      :space-id="spaceId"
+      :behavior="activeBehavior"
+      :initial-entity="initialBehaviorEntity"
+    />
+    <BehaviorTreeTestDialog
+      v-if="activeBehavior && activeBehavior.kind === 'behaviorTree'"
+      v-model="behaviorTreeTestVisible"
+      :query-object-catalog="behaviorTestApis.getOntologyCategoryTreeInterface"
+      :space-id="spaceId"
+      :behavior="activeBehavior"
+      :initial-entity="initialBehaviorEntity"
     />
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { ArrowLeft } from "@element-plus/icons-vue";
-import type { ElTree } from "element-plus";
+import { ElMessage, type ElTree } from "element-plus";
+import * as behaviorTestApis from "@/apis";
+import BehaviorTestDialog from "@/components/BehaviorTestDialog/BehaviorTestDialog.vue";
+import BehaviorTreeTestDialog from "@/components/BehaviorTreeTestDialog.vue";
+import type { BehaviorTestEntityRow, ListOntologyActionRecord, SpaceBehaviorItem } from "@/types";
+import { mapListOntologyActionRecord } from "@/utils/behaviorParameters/mapListOntologyActionRecord";
+import { createBehaviorTestInitialEntity } from "@/utils/behaviorParameters/createBehaviorTestInitialEntity";
 import type { GetOntologyEntityRowDetailParams, ObjectProfileEntityCategory, ObjectProfileEntityListProperty, OntologyRelationClass } from "@/types";
 import AircasLoading from "@/components/AircasLoading.vue";
 import OntologyRelationGraph2d from "@/components/OntologyRelationGraph2d.vue";
-import { createObjectProfileEntityRelationsMock } from "@/mocks/objectProfileEntityDetailMock/objectProfileEntityDetailMock";
 import ObjectProfileEntityBehaviors from "./ObjectProfileEntityBehaviors.vue";
 import { useObjectProfileEntityDetail } from "../composables/useObjectProfileEntityDetail";
-import { buildEntityPropertyTable, groupEntityPropertyRows } from "../utils/entityDetailData";
+import { buildEntityPropertyTable, groupEntityPropertyRows, parseEntityPrimaryKey } from "../utils/entityDetailData";
 
 const props = withDefaults(
   defineProps<{
@@ -128,7 +148,37 @@ const props = withDefaults(
   }>(),
   { listProperties: () => [] },
 );
-const emit = defineEmits<{ back: [] }>();
+const activeBehavior = ref<SpaceBehaviorItem | null>(null);
+const behaviorTestVisible = ref(false);
+const behaviorTreeTestVisible = ref(false);
+const initialBehaviorEntity = ref<BehaviorTestEntityRow>();
+
+/** @description 打开当前卡片对应的测试弹窗并传递当前实例，不自动执行行为。 @param record 行为列表记录。 */
+function openEntityBehaviorTest(record: ListOntologyActionRecord): void {
+  try {
+    if (!props.objectId.trim() || !props.spaceId.trim() || !record.actionApi.trim()) throw new Error("缺少空间、对象或行为标识，无法执行");
+    const primaryKey = props.entityPrimaryKey ?? parseEntityPrimaryKey(props.instanceId);
+    initialBehaviorEntity.value = createBehaviorTestInitialEntity(props.objectId, primaryKey, props.entityName);
+    activeBehavior.value = {
+      ...mapListOntologyActionRecord(record),
+      ontologyUniqIdentifier: record.ontologyUniqIdentifier?.trim() || props.objectId,
+    };
+    behaviorTestVisible.value = activeBehavior.value.kind !== "behaviorTree";
+    behaviorTreeTestVisible.value = activeBehavior.value.kind === "behaviorTree";
+  } catch (cause) {
+    ElMessage.error(cause instanceof Error ? cause.message : "当前实例无效，无法执行行为");
+  }
+}
+
+/** @description 当前实例或空间改变时关闭测试并清理前一次行为选择。 */
+function clearEntityBehaviorTest(): void {
+  behaviorTestVisible.value = false;
+  behaviorTreeTestVisible.value = false;
+  activeBehavior.value = null;
+  initialBehaviorEntity.value = undefined;
+}
+watch(() => [props.objectId, props.instanceId, props.spaceId, JSON.stringify(props.entityPrimaryKey)] as const, clearEntityBehaviorTest);
+
 const identity = computed(() => ({
   objectId: props.objectId,
   instanceId: props.instanceId,
@@ -136,11 +186,11 @@ const identity = computed(() => ({
   entityPrimaryKey: props.entityPrimaryKey,
   listProperties: props.listProperties,
 }));
-const usingRelationsMock = computed(() => props.relations === undefined);
-const resolvedRelations = computed(
-  () => props.relations ?? createObjectProfileEntityRelationsMock({ objectId: props.objectId, instanceId: props.instanceId, entityName: props.entityName }),
-);
 const {
+  relations: entityRelations,
+  relationStatus,
+  relationError,
+  loadEntityRelations,
   usingListProperties,
   categories,
   behaviors,
@@ -159,10 +209,11 @@ const {
   loadPropertyCategories,
   loadEntityBehaviors,
 } = useObjectProfileEntityDetail(identity);
+const resolvedRelations = computed(() => props.relations ?? entityRelations.value);
 const treeRef = ref<InstanceType<typeof ElTree> | null>(null);
 const categorySearch = ref("");
 const treeProps = { children: "children", label: "label" };
-const categoryTree = computed<ObjectProfileEntityCategory[]>(() => [{ id: "all", label: "全部属性", propertyIds: [], children: categories.value }]);
+const categoryTree = computed(() => categories.value);
 const propertyGroups = computed(() =>
   groupEntityPropertyRows(filteredProperties.value).map((group) => ({ ...group, table: buildEntityPropertyTable(group.records) })),
 );

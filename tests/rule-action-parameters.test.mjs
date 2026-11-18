@@ -18,6 +18,35 @@ registerHooks({
 const realParameters = await import("../src/composables/behavior/useBehaviorParameters.ts");
 const realRestore = await import("../src/views/SpaceBehaviorScheduleWorkspace/utils/restoreScheduleBehaviorParameters.ts");
 
+/** @description 构造调度行为树参数桩，避免规则参数测试加载真实执行面板依赖。 @returns {object} 树参数控制器。 */
+function createScheduleTreeParametersStub() {
+  return {
+    planStatus: Vue.ref("idle"),
+    planError: Vue.ref(""),
+    testStatus: Vue.ref("idle"),
+    logs: Vue.ref([]),
+    externalBlackboardRows: Vue.ref([]),
+    propertyBlackboardGroups: Vue.ref([]),
+    execNodeBlocks: Vue.ref([]),
+    externalInputDraft: Vue.reactive({}),
+    blackboardObjectKeys: Vue.reactive({}),
+    nodeDrafts: Vue.reactive({}),
+    instanceOptions: Vue.reactive({}),
+    instanceLoadingIds: Vue.reactive({}),
+    parameterBusy: Vue.ref(false),
+    parameterError: Vue.ref(""),
+    resolveObjectLabel: () => "",
+    clearTreeParameters() {},
+    initializeTreeParameters: async () => {},
+    captureTreeParameters: () => ({ ok: false, error: "tree stub" }),
+    loadBehaviorTreeEntityOptions() {},
+    updateNodeParamDraft() {},
+    updateNodeEntityKeyDraft() {},
+    updateNodeInputParamDraft() {},
+    updateNodeOutputDraft() {},
+  };
+}
+
 /** @description 运行真实规则参数适配层并隔离公共参数查询。 @returns {object} 参数状态及测试记录。 */
 function createActionHarness(savedDetail = "", restoreResult = "") {
   const source = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/composables/useRuleActionParameters.ts", import.meta.url), "utf8");
@@ -48,6 +77,7 @@ function createActionHarness(savedDetail = "", restoreResult = "") {
   new Function("require", "exports", outputText)((id) => {
     if (id === "vue") return Vue;
     if (id.includes("useBehaviorParameters")) return { useBehaviorParameters: () => controller };
+    if (id.includes("useScheduleTreeParameters")) return { useScheduleTreeParameters: () => createScheduleTreeParametersStub() };
     if (id.includes("restoreScheduleBehaviorParameters"))
       return {
         restoreScheduleBehaviorParameters: (_controller, json, spaceId, api) => {
@@ -57,7 +87,7 @@ function createActionHarness(savedDetail = "", restoreResult = "") {
       };
     return {};
   }, exports);
-  const option = Vue.ref({ id: "b", actionApi: "api", displayName: "行为", ontologyUniqIdentifier: "o" });
+  const option = Vue.ref({ id: "b", actionApi: "api", displayName: "行为", ontologyUniqIdentifier: "o", kind: "application" });
   const action = Vue.ref({ id: "a", behaviorId: "b", params: [] });
   const visible = Vue.ref(true);
   const scope = Vue.effectScope();
@@ -145,16 +175,18 @@ test("real parameter controller restores saved input values for the read-only de
       data: { actionApi: "api", mappingIns: [{ parameterName: "amount", category: "INPUT", sourceType: "EXTERNAL", propertyType: "Int" }], mappingOuts: [] },
     }),
   };
-  new Function("require", "exports", outputText)(
-    (id) =>
-      id === "vue" ? Vue : id.includes("useBehaviorParameters") ? realParameters : id.includes("restoreScheduleBehaviorParameters") ? realRestore : apis,
-    exports,
-  );
+  new Function("require", "exports", outputText)((id) => {
+    if (id === "vue") return Vue;
+    if (id.includes("useBehaviorParameters")) return realParameters;
+    if (id.includes("useScheduleTreeParameters")) return { useScheduleTreeParameters: () => createScheduleTreeParametersStub() };
+    if (id.includes("restoreScheduleBehaviorParameters")) return realRestore;
+    return apis;
+  }, exports);
   const scope = Vue.effectScope();
   const state = scope.run(() =>
     exports.useRuleActionParameters(
       () => "7",
-      () => ({ id: "b", actionApi: "api", ontologyUniqIdentifier: "ship" }),
+      () => ({ id: "b", actionApi: "api", ontologyUniqIdentifier: "ship", kind: "application" }),
       () => action,
       () => true,
       () => '{"ontologySpaceId":7,"actionApi":"api","params":{"amount":12}}',
@@ -188,9 +220,14 @@ test("real shared controller queries behavior details and preserves validated pa
       };
     },
   };
-  new Function("require", "exports", outputText)((id) => (id === "vue" ? Vue : id.includes("useBehaviorParameters") ? realParameters : apis), exports);
+  new Function("require", "exports", outputText)((id) => {
+    if (id === "vue") return Vue;
+    if (id.includes("useBehaviorParameters")) return realParameters;
+    if (id.includes("useScheduleTreeParameters")) return { useScheduleTreeParameters: () => createScheduleTreeParametersStub() };
+    return apis;
+  }, exports);
   const action = Vue.ref({ id: "a", behaviorId: "b", params: [] });
-  const option = { id: "b", actionApi: "api", ontologyUniqIdentifier: "ship" };
+  const option = { id: "b", actionApi: "api", ontologyUniqIdentifier: "ship", kind: "application" };
   const scope = Vue.effectScope();
   const state = scope.run(() =>
     exports.useRuleActionParameters(

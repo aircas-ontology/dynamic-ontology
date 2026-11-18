@@ -46,8 +46,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { postOntologyEntityAllLinkInterface } from "@/apis";
+import { onScopeDispose, ref, watch } from "vue";
+import type { postOntologyEntityAllLinkInterface } from "@/apis";
 import {
   SPACE_BEHAVIOR_RELATION_TARGET_STATUS_LABELS,
   type PostOntologyEntityAllLinkItem,
@@ -57,6 +57,7 @@ import {
 } from "@/types";
 
 const props = defineProps<{
+  queryLinks: typeof postOntologyEntityAllLinkInterface;
   modelValue: boolean;
   queryParams: PostOntologyEntityAllLinkParams;
 }>();
@@ -163,7 +164,7 @@ async function loadEntityLinkData(): Promise<void> {
   detailError.value = "";
   linkItems.value = [];
   try {
-    const response = await postOntologyEntityAllLinkInterface(props.queryParams);
+    const response = await props.queryLinks(props.queryParams);
     if (requestToken !== detailLoadToken) return;
     if (response.code !== 200) throw new Error(response.message || "实例关系数据加载失败");
     linkItems.value = Array.isArray(response.data) ? response.data : [];
@@ -175,6 +176,10 @@ async function loadEntityLinkData(): Promise<void> {
     if (requestToken === detailLoadToken) detailLoading.value = false;
   }
 }
+
+onScopeDispose(() => {
+  detailLoadToken += 1;
+});
 
 watch(
   () => [props.modelValue, props.queryParams] as const,

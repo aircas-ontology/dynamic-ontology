@@ -1,10 +1,25 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { createRequire, registerHooks } from "node:module";
 import test from "node:test";
 import { ModuleKind, transpileModule } from "typescript";
 import * as Vue from "vue";
 import { compileScript, parse } from "@vue/compiler-sfc";
 import TreeStore from "../node_modules/element-plus/es/components/tree/src/model/tree-store.mjs";
+
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier.startsWith("@/")) specifier = new URL(`../src/${specifier.slice(2)}${specifier.endsWith(".ts") ? "" : ".ts"}`, import.meta.url).href;
+    if (specifier.startsWith(".") && !/\.[a-z]+$/i.test(specifier)) {
+      const candidate = new URL(`${specifier}.ts`, context.parentURL);
+      if (existsSync(candidate)) specifier = candidate.href;
+    }
+    return nextResolve(specifier, context);
+  },
+});
+const modules = createRequire(import.meta.url);
+const { mapOntologyEntityRowDetailPageToDataRows } = await import("../src/utils/behaviorParameters/mapOntologyEntityRowDetailToDataRows.ts");
+const { needsRuleVariableDataRow } = await import("../src/views/SpaceBehaviorScheduleWorkspace/utils/needsRuleVariableDataRow.ts");
 
 test("picker keeps object nodes collapsed when highlighting a previously selected property", async () => {
   const source = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleVariablePicker.vue", import.meta.url), "utf8");
@@ -14,7 +29,15 @@ test("picker keeps object nodes collapsed when highlighting a previously selecte
   const exports = {};
   const { state } = createPickerHarness(apis);
   new Function("require", "exports", outputText)(
-    (id) => (id === "vue" ? Vue : id === "vue-router" ? { useRoute: () => ({ params: { spaceId: "7" } }) } : { useRuleVariablePicker: () => state }),
+    (id) =>
+      id === "vue"
+        ? Vue
+        : id === "vue-router"
+          ? { useRoute: () => ({ params: { spaceId: "7" } }) }
+          : {
+              useRuleVariablePicker: () => state,
+              needsRuleVariableDataRow: (group) => Boolean(String(group ?? "").trim()) && String(group).trim() !== "main",
+            },
     exports,
   );
   const objectId = JSON.stringify(["ship"]);
@@ -50,15 +73,32 @@ function createPickerHarness(apis) {
   const { outputText } = transpileModule(source, { compilerOptions: { module: ModuleKind.CommonJS } });
   const cleanup = [];
   const exports = {};
-  new Function("require", "exports", outputText)((id) => (id === "vue" ? { ...Vue, onScopeDispose: (fn) => cleanup.push(fn) } : apis), exports);
+  new Function("require", "exports", outputText)((id) => {
+    if (id === "vue") return { ...Vue, onScopeDispose: (fn) => cleanup.push(fn) };
+    if (id === "@/apis" || id.endsWith("/apis") || id.includes("apis/index")) return apis;
+    if (id.includes("mapOntologyEntityRowDetailToDataRows")) return { mapOntologyEntityRowDetailPageToDataRows };
+    if (id.includes("needsRuleVariableDataRow")) return { needsRuleVariableDataRow };
+    if (id === "@/types" || id.includes("/types")) return {};
+    return modules(id);
+  }, exports);
   return { state: exports.useRuleVariablePicker(() => "7"), cleanup };
 }
 
 const object = { uniqueIdentifier: "ship", displayName: "舰船" };
 const apis = {
   getOntologyCategoryTreeInterface: async () => ({ code: 200, data: { categoryId: 1, ontologyMetaInfos: [object] } }),
-  getOntologyPropertyByOntologyIdInterface: async () => ({ code: 200, data: [{ uniqueIdentifier: "country", displayName: "国家", propertyType: "String" }] }),
+  getOntologyPropertyByOntologyIdInterface: async () => ({
+    code: 200,
+    data: [
+      { uniqueIdentifier: "country", displayName: "国家", propertyType: "String", storageGroup: "main" },
+      { uniqueIdentifier: "payload", displayName: "载荷", propertyType: "String", storageGroup: "payload" },
+    ],
+  }),
   getOntologyEntitiesInterface: async () => ({ code: 200, data: { records: [{ primaryKey: 12 }], total: 1, current: 1, size: 100 } }),
+  postGetOntologyEntityRowDetailPageInterface: async () => ({
+    code: 200,
+    data: { records: [{ dataPrimaryKey: "row-1" }, { dataPrimaryKey: "row-2" }], total: 2, size: 100, current: 1 },
+  }),
 };
 
 test("variable picker queries current-space properties and preserves selected instance ids", async () => {
@@ -66,8 +106,39 @@ test("variable picker queries current-space properties and preserves selected in
   await state.fetchVariableCatalog();
   assert.equal(state.catalog.value[0].name, "舰船");
   assert.equal(state.catalog.value[0].properties[0].name, "国家");
+  assert.equal(state.catalog.value[0].properties[0].storageGroup, "main");
+  assert.equal(state.catalog.value[0].properties[1].storageGroup, "payload");
   await state.fetchVariableInstances("ship");
   assert.deepEqual(state.instances.value, [{ id: "12", label: "12" }]);
+});
+
+test("non-main storage group loads data rows and clears them when cancelled", async () => {
+  const queries = [];
+  const { state } = createPickerHarness({
+    ...apis,
+    postGetOntologyEntityRowDetailPageInterface: async (query) => {
+      queries.push(query);
+      return {
+        code: 200,
+        data: { records: [{ dataPrimaryKey: "row-1" }], total: 1, size: 100, current: 1 },
+      };
+    },
+  });
+  await state.fetchVariableDataRows("ship", "12", "payload");
+  assert.deepEqual(queries[0], {
+    ontologyUniqueIdentifier: "ship",
+    entityPrimaryKey: "12",
+    sort: "DESC",
+    storageGroup: "payload",
+    pageNum: 1,
+    pageSize: 100,
+  });
+  assert.equal(state.dataRows.value[0].label, "row-1");
+  assert.equal(state.dataRows.value[0].dataPrimaryKey, "row-1");
+  await state.fetchVariableDataRows("ship", "12", "main");
+  assert.deepEqual(state.dataRows.value, []);
+  state.clearVariableDataRows();
+  assert.equal(state.dataRowLoading.value, false);
 });
 
 test("instance response maps primaryKey and displayName for all returned aircraft", async () => {
@@ -180,7 +251,10 @@ test("picker selection cancels without mutation and confirms a copied reference"
   new Function("require", "exports", outputText)((id) => {
     if (id === "vue") return Vue;
     if (id === "vue-router") return { useRoute: () => ({ params: { spaceId: "7" } }) };
-    return { useRuleVariablePicker: () => state };
+    return {
+      useRuleVariablePicker: () => state,
+      needsRuleVariableDataRow: (group) => Boolean(String(group ?? "").trim()) && String(group).trim() !== "main",
+    };
   }, exports);
   const initial = {
     kind: "variable",
@@ -190,6 +264,7 @@ test("picker selection cancels without mutation and confirms a copied reference"
     propertyId: "country",
     propertyName: "国家",
     instanceIds: ["12"],
+    storageGroup: "main",
   };
   const props = Vue.reactive({ modelValue: true, initial });
   const emitted = [];
@@ -221,6 +296,7 @@ test("picker selection cancels without mutation and confirms a copied reference"
   await Vue.nextTick();
   page.confirmVariableSelection();
   assert.deepEqual(emitted.find(([name]) => name === "confirm")[1].instanceIds, ["12"]);
+  assert.equal(emitted.find(([name]) => name === "confirm")[1].dataPrimaryKey, undefined);
   assert.deepEqual(initial.instanceIds, ["12"]);
   page.keyword.value = "不存在";
   assert.deepEqual(page.variableTree.value, []);
@@ -240,6 +316,50 @@ test("picker selection cancels without mutation and confirms a copied reference"
   state.instances.value = [];
   page.selectedInstanceId.value = "12";
   assert.equal(page.canConfirm.value, false);
+  scope.stop();
+});
+
+test("subtable property requires a data row and clears it when the instance changes", async () => {
+  const { state } = createPickerHarness(apis);
+  const { descriptor } = parse(
+    readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleVariablePicker.vue", import.meta.url), "utf8"),
+  );
+  const compiled = compileScript(descriptor, { id: "picker-subtable" });
+  const { outputText } = transpileModule(compiled.content, { compilerOptions: { module: ModuleKind.CommonJS } });
+  const exports = {};
+  new Function("require", "exports", outputText)((id) => {
+    if (id === "vue") return Vue;
+    if (id === "vue-router") return { useRoute: () => ({ params: { spaceId: "7" } }) };
+    return { useRuleVariablePicker: () => state, needsRuleVariableDataRow: (group) => Boolean(group?.trim()) && group.trim() !== "main" };
+  }, exports);
+  await state.fetchVariableCatalog();
+  await state.fetchVariableInstances("ship");
+  const props = Vue.reactive({ modelValue: true, initial: null });
+  const emitted = [];
+  const scope = Vue.effectScope();
+  const page = scope.run(() => exports.default.setup(props, { expose() {}, emit: (...args) => emitted.push(args) }));
+  await new Promise((resolve) => setImmediate(resolve));
+  page.selectVariableProperty({ id: JSON.stringify(["ship", "payload"]) });
+  await new Promise((resolve) => setImmediate(resolve));
+  page.changeSelectedInstance("12");
+  await state.fetchVariableDataRows("ship", "12", "payload");
+  page.selectedDataRowId.value = "";
+  assert.equal(page.requiresDataRow.value, true);
+  assert.equal(page.canConfirm.value, false);
+  page.selectedDataRowId.value = state.dataRows.value[0].id;
+  assert.equal(page.canConfirm.value, true);
+  page.confirmVariableSelection();
+  const confirmed = emitted.find(([name]) => name === "confirm")[1];
+  assert.equal(confirmed.storageGroup, "payload");
+  assert.equal(confirmed.dataPrimaryKey, "row-1");
+  props.modelValue = true;
+  await new Promise((resolve) => setImmediate(resolve));
+  page.selectVariableProperty({ id: JSON.stringify(["ship", "payload"]) });
+  page.changeSelectedInstance("12");
+  await state.fetchVariableDataRows("ship", "12", "payload");
+  page.selectedDataRowId.value = state.dataRows.value[0].id;
+  page.changeSelectedInstance("12");
+  assert.equal(page.selectedDataRowId.value, "");
   scope.stop();
 });
 

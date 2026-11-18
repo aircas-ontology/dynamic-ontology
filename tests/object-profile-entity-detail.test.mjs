@@ -4,6 +4,7 @@ import test from "node:test";
 import * as Vue from "vue";
 import { ModuleKind, transpileModule } from "typescript";
 import {
+  buildEntityRelationRows,
   buildEntityListPropertyRows,
   groupEntityPropertyRows,
   buildEntityPropertyTable,
@@ -173,10 +174,18 @@ function createDetailHarness(apis = {}) {
         postGetOntologyEntityRowDetailInterface: properties,
         getOntologyObjectArrTypeTreeInterface: category,
         getListOntologyActionInterface: behaviors,
+        postOntologyEntityLinksInterface: async () => ({ code: 200, data: [] }),
         ...apis,
       };
     if (id.includes("entityDetailData"))
-      return { buildEntityPropertyRows, buildEntityCategoryTree, filterEntityPropertyRows, parseEntityPrimaryKey, buildEntityListPropertyRows };
+      return {
+        buildEntityRelationRows,
+        buildEntityPropertyRows,
+        buildEntityCategoryTree,
+        filterEntityPropertyRows,
+        parseEntityPrimaryKey,
+        buildEntityListPropertyRows,
+      };
     throw new Error(id);
   }, exports);
   const identity = Vue.ref({ objectId: "object-a", instanceId: "0", spaceId: "156" });
@@ -363,4 +372,125 @@ test("failed full detail displays actual selected-list values, keeps error, filt
   } finally {
     h.scope.stop();
   }
+});
+
+test("relations preserve raw keys, direction and distinct same-name entity endpoints", async () => {
+  const requests = [];
+  const h = createDetailHarness({
+    postOntologyEntityLinksInterface: async (params) => {
+      requests.push(params);
+      return {
+        code: 200,
+        data: [
+          {
+            linkName: "协同",
+            linkType: "COORDINATION",
+            ontologyFrom: "object-a",
+            ontologyTo: "object-a",
+            entityPrimaryKeyFrom: 0,
+            entityPrimaryKeyTo: 1,
+            displayNameFrom: "同名",
+            displayNameTo: "同名",
+          },
+          {
+            linkName: "返回",
+            ontologyFrom: "object-a",
+            ontologyTo: "object-a",
+            entityPrimaryKeyFrom: 1,
+            entityPrimaryKeyTo: 0,
+            displayNameFrom: "同名",
+            displayNameTo: "同名",
+          },
+        ],
+      };
+    },
+  });
+  try {
+    await settleDetailRequests();
+    assert.equal(h.state.relationStatus.value, "ready");
+    const rows = h.state.relations.value;
+    assert.notEqual(rows[0].sourceName, rows[0].targetName);
+    assert.equal(rows[0].sourceName, rows[1].targetName);
+    assert.equal(rows[0].targetName, rows[1].sourceName);
+    assert.equal(rows[0].displayName, "协同");
+    for (const key of [0, false, "001", { id: 0 }]) {
+      h.identity.value = { ...h.identity.value, entityPrimaryKey: key };
+      await settleDetailRequests();
+      assert.deepEqual(requests.at(-1), { ontologyUniqueIdentifier: "object-a", entityPrimaryKey: key });
+    }
+  } finally {
+    h.scope.stop();
+  }
+});
+
+test("relation loading coalesces duplicates and ignores switched or disposed responses", async () => {
+  const pending = [];
+  const h = createDetailHarness({
+    postOntologyEntityLinksInterface: () => new Promise((resolve) => pending.push(resolve)),
+  });
+  assert.equal(h.state.relationStatus.value, "loading");
+  await h.state.loadEntityRelations();
+  assert.equal(pending.length, 1);
+  h.identity.value = { ...h.identity.value, instanceId: "new" };
+  assert.equal(pending.length, 2);
+  pending[0]({ code: 500, message: "旧错误" });
+  await settleDetailRequests();
+  assert.equal(h.state.relationStatus.value, "loading");
+  pending[1]({ code: 200, data: [] });
+  await settleDetailRequests();
+  assert.equal(h.state.relationStatus.value, "empty");
+  const late = h.state.loadEntityRelations();
+  h.scope.stop();
+  pending[2]({ code: 500, message: "销毁后" });
+  await late;
+  assert.equal(h.state.relationError.value, "");
+});
+
+test("relation errors are independent, visible and retryable, including malformed and empty payloads", async () => {
+  let response = new Error("网络失败");
+  let count = 0;
+  const h = createDetailHarness({
+    postOntologyEntityLinksInterface: async () => {
+      count += 1;
+      if (response instanceof Error) throw response;
+      return response;
+    },
+  });
+  try {
+    await settleDetailRequests();
+    assert.equal(h.state.relationStatus.value, "error");
+    assert.match(h.state.relationError.value, /网络失败/);
+    assert.equal(h.state.behaviorStatus.value, "ready");
+    response = { code: 500, message: "业务失败" };
+    await h.state.loadEntityRelations();
+    assert.match(h.state.relationError.value, /业务失败/);
+    response = { code: 200, data: {} };
+    await h.state.loadEntityRelations();
+    assert.equal(h.state.relationStatus.value, "error");
+    response = { code: 200, data: null };
+    await h.state.loadEntityRelations();
+    assert.equal(h.state.relationStatus.value, "empty");
+    assert.equal(h.state.relationError.value, "");
+    h.identity.value = { ...h.identity.value, objectId: "" };
+    await settleDetailRequests();
+    assert.equal(count, 4);
+    assert.match(h.state.relationError.value, /对象标识/);
+  } finally {
+    h.scope.stop();
+  }
+});
+
+test("relation mapping handles unnamed endpoints, self loops, parallel links and absent fields without inventing examples", () => {
+  assert.deepEqual(buildEntityRelationRows([]), []);
+  const rows = buildEntityRelationRows([
+    { ontologyFrom: "a", ontologyTo: "a", entityPrimaryKeyFrom: false, entityPrimaryKeyTo: false },
+    { ontologyFrom: "a", ontologyTo: "a", entityPrimaryKeyFrom: false, entityPrimaryKeyTo: false },
+    { ontologyFrom: "b", ontologyTo: "c", entityNodeFrom: "node1", entityNodeTo: "node2", displayNameFrom: "甲", displayNameTo: "乙" },
+    {},
+  ]);
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].sourceName, rows[0].targetName);
+  assert.notEqual(rows[0].id, rows[1].id);
+  assert.match(rows[0].sourceName, /false/);
+  assert.equal(rows[2].sourceName, "甲");
 });

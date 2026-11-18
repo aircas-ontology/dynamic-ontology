@@ -14,28 +14,54 @@ import {
 
 const readSource = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), "utf8");
 
-test("object profile places standard usage before entity list when visible and preserves the default tab", () => {
+test("object profile stacks properties and entities and expands detail to whole content", () => {
   const { descriptor } = parse(readSource("../src/views/EntityBrowsingObjectProfile/index.vue"));
-  const { outputText } = transpileModule(compileScript(descriptor, { id: "profile-tabs" }).content, { compilerOptions: { module: ModuleKind.CommonJS } });
-  for (const visible of [true, false]) {
-    const exports = {};
-    new Function("require", "exports", outputText)((id) => {
-      if (id === "vue") return Vue;
-      if (id === "vue-router") return { useRoute: () => ({ params: { objectId: "obj", spaceId: "7" }, query: {} }), useRouter: () => ({ push() {} }) };
-      if (id.includes("isStandardContentVisible")) return { isStandardContentVisible: () => visible };
-      if (id.includes("entityBrowsingObjectProfileMock")) return { resolveEntityBrowsingObjectProfile: () => ({}) };
-      return {};
-    }, exports);
-    const scope = Vue.effectScope();
+  const { outputText } = transpileModule(compileScript(descriptor, { id: "profile-layout" }).content, { compilerOptions: { module: ModuleKind.CommonJS } });
+  const exports = {};
+  const navigations = [];
+  new Function("require", "exports", outputText)((id) => {
+    if (id === "vue") return Vue;
+    if (id === "vue-router")
+      return {
+        useRoute: () => ({ params: { objectId: "obj", spaceId: "7" }, query: {} }),
+        useRouter: () => ({
+          push(target) {
+            navigations.push(target);
+          },
+        }),
+      };
+    if (id.includes("entityBrowsingObjectProfileMock")) return { resolveEntityBrowsingObjectProfile: () => ({}) };
+    return {};
+  }, exports);
+  const scope = Vue.effectScope();
+  try {
     const page = scope.run(() => exports.default.setup({}, { expose() {} }));
-    assert.deepEqual(
-      page.profileTabs.value.map((item) => item.id),
-      visible ? ["standard-usage", "entity-list"] : ["entity-list"],
-    );
-    assert.equal(page.activeTab.value, "entity-list");
-    page.activeTab.value = "standard-usage";
-    page.resetActiveTab();
-    assert.equal(page.activeTab.value, "entity-list");
+    assert.equal(page.detailVisible.value, false);
+    page.entityListRef.value = {
+      closeEntityDetail() {
+        page.handleEntityDetailVisibility(false);
+        page.handleEntityDetailName("");
+      },
+    };
+    page.handleEntityDetailName("F16-2-q");
+    page.handleEntityDetailVisibility(true);
+    assert.equal(page.detailEntityName.value, "F16-2-q");
+    page.goBackToEntityBrowsing();
+    assert.equal(page.detailVisible.value, false);
+    assert.equal(page.detailEntityName.value, "");
+    assert.equal(navigations.length, 0);
+    page.goBackToEntityBrowsing();
+    assert.equal(navigations[0].name, "EntityBrowsingObject");
+    page.handleEntityDetailVisibility(true);
+    assert.equal(page.detailVisible.value, true);
+    page.handleEntityDetailVisibility(false);
+    assert.equal(page.detailVisible.value, false);
+    const template = descriptor.template.content;
+    assert.doesNotMatch(template, /role="tab"|activeTab/);
+    assert.ok(template.indexOf("<ObjectProfileStandardUsage") < template.indexOf("<ObjectProfileEntityList"));
+    assert.match(template, /v-show="!detailVisible"/);
+    assert.match(template, /@detail-visibility-change="handleEntityDetailVisibility"/);
+  } finally {
     scope.stop();
   }
 });
@@ -178,12 +204,6 @@ test("object profile entity list tab mounts API list component", () => {
   assert.match(page, /ObjectProfileEntityList/);
   assert.match(page, /ObjectProfileStandardUsage/);
   assert.match(page, /:space-id="spaceId"/);
-  assert.match(page, /id: ['"]entity-list['"]/);
-  assert.match(page, /id: ['"]standard-usage['"]/);
-  assert.match(page, /isStandardContentVisible/);
-  assert.match(page, /showStandardContent && activeTab === ['"]standard-usage['"]/);
-  assert.match(page, /activeTab === ['"]entity-list['"]/);
-  assert.match(page, /activeTab\.value = ['"]entity-list['"]/);
   assert.doesNotMatch(page, /ObjectProfileOverview/);
   assert.doesNotMatch(page, /basic-info/);
   assert.doesNotMatch(page, /isEntityBrowsingLiteProfileObjectId/);
@@ -198,7 +218,8 @@ test("object profile entity list tab mounts API list component", () => {
   assert.match(list, /openEntityDetail\(asEntityRow\(row\)\)/);
   assert.match(list, /ElMessage\.error/);
   assert.match(list, /ObjectProfileEntityDetail/);
-  assert.doesNotMatch(list, /iframe|getOntologyInstanceUrlListInterface/);
+  assert.match(list, /iframe/);
+  assert.match(list, /getOntologyInstanceUrlListInterface/);
   assert.doesNotMatch(list, /function openEntityDetail\(row\?: ObjectProfileEntityRow\): void \{\s*detailEmbedded\.value = true/);
   assert.doesNotMatch(list, /配置功能待接入/);
   assert.doesNotMatch(list, /:src="ENTITY_BROWSING_ENTITY_DETAIL_URL"/);

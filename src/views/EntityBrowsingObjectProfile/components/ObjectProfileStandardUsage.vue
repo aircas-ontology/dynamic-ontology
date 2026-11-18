@@ -1,5 +1,5 @@
 <template>
-  <section class="object-profile-standard-usage" aria-label="标准应用情况">
+  <section class="object-profile-standard-usage" aria-label="属性列表">
     <aside class="object-profile-standard-usage__tree-panel" aria-label="属性分类树">
       <header class="object-profile-standard-usage__panel-header">
         <h2>属性分类树</h2>
