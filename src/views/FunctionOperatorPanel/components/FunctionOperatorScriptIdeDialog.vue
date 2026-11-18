@@ -439,7 +439,7 @@ async function submitScriptFunctionCreate(): Promise<void> {
 }
 
 /**
- * @description 切换语言；若当前代码仍为上一语言默认模板则替换为新语言 starter，并写回父级草稿。
+ * @description 切换语言时始终写入新语言默认 starter，并写回父级草稿，保证语言与模板一致。
  * @param value 目标语言。
  */
 function onScriptLanguageChange(value: string | number | boolean | undefined): void {
@@ -447,10 +447,7 @@ function onScriptLanguageChange(value: string | number | boolean | undefined): v
     return;
   }
   const language = value as FunctionOperatorScriptLanguage;
-  const previousStarter = SCRIPT_FUNCTION_STARTERS[lastStarterLanguage.value];
-  if (!props.code.trim() || props.code === previousStarter) {
-    emit("update:code", SCRIPT_FUNCTION_STARTERS[language]);
-  }
+  emit("update:code", SCRIPT_FUNCTION_STARTERS[language]);
   lastStarterLanguage.value = language;
   emit("update:language", language);
 }
@@ -477,6 +474,7 @@ watch(
       ideTestOutput.value = "";
       return;
     }
+    lastStarterLanguage.value = props.language;
     applyIncomingParsedParameters();
     selectedTemplate.value = undefined;
     void loadLanguageTemplates();

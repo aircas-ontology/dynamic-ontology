@@ -388,6 +388,10 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(scriptIdeSource, /testOntologyFunctionInterface/);
   assert.match(scriptStartersSource, /export function handle/);
   assert.match(scriptStartersSource, /SCRIPT_FUNCTION_STARTERS/);
+  assert.match(scriptStartersSource, /shouldReplaceScriptStarterOnLanguageChange/);
+  assert.match(scriptIdeSource, /emit\(["']update:code["'],\s*SCRIPT_FUNCTION_STARTERS\[language\]\)/);
+  assert.doesNotMatch(scriptIdeSource, /props\.code === previousStarter/);
+  assert.doesNotMatch(scriptIdeSource, /if\s*\(\s*shouldReplaceScriptStarterOnLanguageChange/);
   assert.match(formSource, /:source-version="sourceVersion"/);
   assert.match(formSource, /:rate-limit-template-id="form\.rateLimitTemplateId"/);
   assert.match(formSource, /label="限流配置模版"/);
