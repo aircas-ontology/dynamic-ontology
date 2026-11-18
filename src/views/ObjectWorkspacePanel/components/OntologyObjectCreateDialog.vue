@@ -132,7 +132,7 @@
       </div>
       <div class="ontology-object-create-dialog__datasource-copy">
         <strong>数据源构建</strong>
-        <p>连接 MySQL / PostgreSQL，选择主子表与字段映射后，按主表生成本体对象。</p>
+        <p>选择已有连接或新建达梦 / SQLite / PostgreSQL 连接，选择主子表与字段映射后，按主表生成本体对象。</p>
       </div>
     </div>
     <div v-else-if="createMode === 'asset'" class="ontology-object-create-dialog__datasource-card">

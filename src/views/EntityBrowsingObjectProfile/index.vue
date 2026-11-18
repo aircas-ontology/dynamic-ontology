@@ -1,6 +1,6 @@
 <template>
   <div class="entity-browsing-object-profile">
-    <header class="entity-browsing-object-profile__header">
+    <header class="entity-browsing-object-profile__header" :class="{ 'is-detail': detailVisible }">
       <div class="entity-browsing-object-profile__identity">
         <img class="entity-browsing-object-profile__icon" :src="profile.sideImage" :alt="profile.displayName" />
         <h1>{{ profile.displayName }}</h1>
@@ -8,6 +8,7 @@
           detailEntityName
         }}</span>
       </div>
+      <div v-show="detailVisible" ref="detailTabsTarget" class="entity-browsing-object-profile__tabs-target" />
       <el-button type="primary" plain class="entity-browsing-object-profile__back" @click="goBackToEntityBrowsing">
         <el-icon><ArrowLeft /></el-icon>
         返回
@@ -26,6 +27,7 @@
           :object-id="objectId"
           :space-id="spaceId"
           :object-name="profile.displayName"
+          :tabs-target="detailTabsTarget"
           @detail-visibility-change="handleEntityDetailVisibility"
           @detail-name-change="handleEntityDetailName"
         />
@@ -46,6 +48,7 @@ const route = useRoute();
 const router = useRouter();
 const detailVisible = ref(false);
 const detailEntityName = ref("");
+const detailTabsTarget = ref<HTMLElement | null>(null);
 const entityListRef = ref<InstanceType<typeof ObjectProfileEntityList>>();
 
 const objectId = computed(() => (typeof route.params.objectId === "string" ? route.params.objectId.trim() : ""));
@@ -134,10 +137,24 @@ watch(objectId, () => {
 }
 
 .entity-browsing-object-profile__back {
+  flex-shrink: 0;
   margin-left: auto;
   height: 32px;
   padding: 0 12px;
   font-size: 14px;
+}
+.entity-browsing-object-profile__header.is-detail {
+  gap: 16px;
+}
+.entity-browsing-object-profile__header.is-detail .entity-browsing-object-profile__identity {
+  max-width: min(40%, 360px);
+}
+.entity-browsing-object-profile__tabs-target {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  overflow-x: auto;
 }
 
 .entity-browsing-object-profile__identity {

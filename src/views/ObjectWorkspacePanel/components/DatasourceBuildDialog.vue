@@ -1,10 +1,70 @@
 <template>
   <el-dialog v-model="visible" class="datasource-build-dialog" title="数据源构建对象" width="min(980px, 92vw)" append-to-body destroy-on-close>
-    <el-steps :active="step" align-center class="datasource-build-dialog__steps"
-      ><el-step title="选择 schema" /><el-step title="选择数据库表" /><el-step title="字段与外键"
-    /></el-steps>
+    <el-steps :active="activeStep" align-center class="datasource-build-dialog__steps">
+      <el-step v-for="title in stepTitles" :key="title" :title="title" />
+    </el-steps>
     <el-alert v-if="error" :title="error" type="error" :closable="false" />
-    <section v-if="step === 0" v-loading="busy" class="datasource-build-dialog__tables">
+    <section v-if="step === -1" v-loading="busy" class="datasource-build-dialog__connections">
+      <aside class="datasource-build-dialog__history" aria-label="历史连接">
+        <h2>历史连接</h2>
+        <el-input v-model="connectionKeyword" placeholder="搜索连接名称或类型" clearable ariaLabel="搜索历史连接" :disabled="busy" />
+        <div class="datasource-build-dialog__history-list">
+          <button
+            v-for="item in filteredConnections"
+            :key="item.id"
+            type="button"
+            class="datasource-build-dialog__history-item"
+            :class="{ 'is-active': connectionMode === 'existing' && datasourceId === item.id }"
+            :disabled="busy"
+            :aria-pressed="connectionMode === 'existing' && datasourceId === item.id"
+            @click="chooseHistoricalConnection(item.id)"
+          >
+            <strong :title="item.name">{{ item.name }}</strong
+            ><span>{{ item.dbType }}</span>
+          </button>
+          <el-empty v-if="connectionReady && !filteredConnections.length" :description="connections.length ? '暂无匹配连接' : '暂无历史连接，请在右侧新建'" />
+        </div>
+        <el-button v-if="error" :disabled="busy" @click="loadConnections">重新查询连接</el-button>
+      </aside>
+      <div class="datasource-build-dialog__new-connection" @input="invalidateConnectionTest" @change="invalidateConnectionTest">
+        <header>
+          <h2>新建连接</h2>
+          <el-button :disabled="busy" :type="connectionMode === 'new' ? 'primary' : 'default'" @click="activateNewConnection">使用新建连接</el-button>
+        </header>
+        <el-form label-position="top" :disabled="busy">
+          <el-form-item label="数据库类型" required>
+            <el-select v-model="connectionForm.dbType" ariaLabel="数据库类型" @change="invalidateConnectionTest">
+              <el-option label="达梦" value="DM" /><el-option label="SQLite" value="SQLITE" /><el-option label="PostgreSQL" value="POSTGRESQL" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="连接名称" required><el-input v-model="connectionForm.name" maxlength="128" ariaLabel="连接名称" /></el-form-item>
+          <el-form-item label="JDBC URL" required
+            ><el-input
+              v-model="connectionForm.jdbcUrl"
+              :placeholder="
+                connectionForm.dbType === 'SQLITE'
+                  ? 'jdbc:sqlite:/path/database.sqlite'
+                  : connectionForm.dbType === 'DM'
+                    ? 'jdbc:dm://host:5236'
+                    : 'jdbc:postgresql://host:5432/database'
+              "
+              ariaLabel="JDBC URL"
+          /></el-form-item>
+          <template v-if="connectionForm.dbType !== 'SQLITE'">
+            <el-form-item label="用户名" required><el-input v-model="connectionForm.username" autocomplete="off" ariaLabel="用户名" /></el-form-item>
+            <el-form-item label="密码" required
+              ><el-input v-model="connectionForm.password" type="password" show-password autocomplete="new-password" ariaLabel="密码"
+            /></el-form-item>
+            <el-form-item label="Schema"><el-input v-model="connectionForm.schemaName" placeholder="public" ariaLabel="连接 Schema" /></el-form-item>
+          </template>
+        </el-form>
+        <footer>
+          <el-button :loading="busy" @click="testConnection">测试连接</el-button
+          ><span role="status">{{ isConnectionTested ? "连接测试成功，可点击下一步" : "新建连接需先测试，修改配置后需重新测试" }}</span>
+        </footer>
+      </div>
+    </section>
+    <section v-else-if="step === 0" v-loading="busy" class="datasource-build-dialog__tables datasource-build-dialog__connection">
       <el-form label-position="top" :disabled="busy">
         <el-form-item label="对象名称" required>
           <el-input v-model="objectName" maxlength="64" placeholder="请输入对象名称" ariaLabel="对象名称" />
@@ -24,12 +84,18 @@
           />
         </el-form-item>
       </el-form>
-      <p>选择当前空间的数据源 schema</p>
-      <el-select v-model="schemaName" placeholder="请选择 schema" :ariaLabel="'选择 schema'" :disabled="busy" @change="resetTableSelection">
+      <p v-if="datasourceId && !isSqlite">选择数据源 schema</p>
+      <el-select
+        v-if="datasourceId && !isSqlite"
+        v-model="schemaName"
+        placeholder="请选择 schema"
+        :ariaLabel="'选择 schema'"
+        :disabled="busy"
+        @change="resetTableSelection"
+      >
         <el-option v-for="item in schemas" :key="item.schemaName" :label="item.schemaName" :value="item.schemaName" />
       </el-select>
-      <el-empty v-if="!busy && !schemas.length && !error" description="当前空间暂无 schema" />
-      <el-button v-if="error" :disabled="busy" @click="loadSchemas">重新查询</el-button>
+      <el-button v-if="error" :disabled="busy" @click="loadSchemas">重新查询 Schema</el-button>
     </section>
     <section v-else-if="step === 1" v-loading="busy" class="datasource-build-dialog__tables">
       <p>勾选需要的数据表，并指定唯一主表（子表可选）</p>
@@ -123,7 +189,7 @@
         <span />
         <div class="datasource-build-dialog__footer-actions">
           <el-button @click="visible = false">取消</el-button>
-          <el-button v-if="step > 0" :disabled="busy" @click="step -= 1">上一步</el-button>
+          <el-button v-if="activeStep > 0" :disabled="busy" @click="step -= 1">上一步</el-button>
           <el-button type="primary" :loading="busy" @click="nextStep">{{ step === 2 ? "创建" : "下一步" }}</el-button>
         </div>
       </div>
@@ -133,8 +199,16 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch, onBeforeUnmount } from "vue";
 import { ElLoading } from "element-plus";
-import { getDatasourceSchemaListInterface, getDatasourceTableColumnsInterface, getDatasourceTableListInterface } from "@/apis";
-import type { DatasourceBuildSelection, DatasourceSchema, DatasourceTable } from "@/types";
+import {
+  getDatasourceConnectionListInterface,
+  postDatasourceConnectionInterface,
+  postDatasourceConnectionTestInterface,
+  getDatasourceSchemaListByDatasourceInterface,
+  getDatasourceSchemaListInterface,
+  getDatasourceTableColumnsInterface,
+  getDatasourceTableListInterface,
+} from "@/apis";
+import type { DatasourceBuildSelection, DatasourceConnectionItem, DatasourceConnectionParam, DatasourceSchema, DatasourceTable } from "@/types";
 interface CategoryOption {
   id: string;
   label: string;
@@ -151,8 +225,24 @@ const busy = ref(false);
 const error = ref("");
 const schemas = ref<DatasourceSchema[]>([]);
 const schemaName = ref("");
+const connections = ref<DatasourceConnectionItem[]>([]);
+const datasourceId = ref<number>();
+const connectionMode = ref("existing");
+const connectionReady = ref(false);
+const hasBoundConnection = ref(true);
+const connectionKeyword = ref("");
+const testedConnection = ref("");
+const stepTitles = computed(() => [...(hasBoundConnection.value ? [] : ["连接数据源"]), "对象信息", "选择数据库表", "字段与外键"]);
+const activeStep = computed(() => step.value + (hasBoundConnection.value ? 0 : 1));
+const filteredConnections = computed(() =>
+  connections.value.filter((item) => `${item.name} ${item.dbType}`.toLowerCase().includes(connectionKeyword.value.trim().toLowerCase())),
+);
+const connectionForm = reactive<DatasourceConnectionParam>({ name: "", dbType: "POSTGRESQL", jdbcUrl: "", username: "", password: "", schemaName: "public" });
+const isConnectionTested = computed(() => testedConnection.value !== "" && testedConnection.value === JSON.stringify(getConnectionPayload()));
+const isSqlite = computed(() => connections.value.find((item) => item.id === datasourceId.value)?.dbType.toUpperCase() === "SQLITE");
 const tables = ref<DatasourceTable[]>([]);
 let generation = 0;
+let dialogGeneration = 0;
 const selected = ref<string[]>([]);
 const primary = ref("");
 const activeTableId = ref("");
@@ -220,35 +310,218 @@ function resetTableSelection(): void {
 watch(
   [visible, () => props.spaceId],
   ([opened]) => {
+    dialogGeneration++;
     resetTableSelection();
     schemas.value = [];
     schemaName.value = "";
-    step.value = 0;
     objectName.value = "";
     categoryId.value = "";
-    if (opened) void loadSchemas();
+    connections.value = [];
+    datasourceId.value = undefined;
+    connectionReady.value = false;
+    hasBoundConnection.value = false;
+    step.value = -1;
+    connectionKeyword.value = "";
+    testedConnection.value = "";
+    connectionMode.value = "existing";
+    Object.assign(connectionForm, { name: "", dbType: "POSTGRESQL", jdbcUrl: "", username: "", password: "", schemaName: "public" });
+    if (opened) void loadConnections();
   },
   { immediate: true },
 );
 onBeforeUnmount(() => {
   generation++;
+  dialogGeneration++;
 });
-/** @description 按当前空间查询 schema，阻止重复查询并忽略过期响应。 */
+/** @description 返回连接查询标识，未选择连接时兼容原空间查询。
+ * @returns 数据源或空间标识。
+ */
+function getDatasourceTarget() {
+  return datasourceId.value === undefined ? { spaceId: Number(props.spaceId) } : { datasourceId: datasourceId.value };
+}
+/** @description 完整读取连接分页并优先选择历史空间关联，忽略关闭后的响应。 */
+async function loadConnections(): Promise<void> {
+  if (busy.value) return;
+  const token = ++generation;
+  busy.value = true;
+  error.value = "";
+  try {
+    const items: DatasourceConnectionItem[] = [];
+    let pageNum = 1;
+    while (true) {
+      const response = await getDatasourceConnectionListInterface({ pageNum, pageSize: 100 });
+      if (token !== generation) return;
+      if (response.code !== 200) throw new Error(response.message || "连接查询失败");
+      const before = items.length;
+      for (const item of response.data.records) if (!items.some((existing) => existing.id === item.id)) items.push(item);
+      if (items.length >= response.data.total) break;
+      if (items.length === before) throw new Error("连接分页数据不完整，请重试");
+      pageNum++;
+    }
+    connections.value = items;
+    connectionReady.value = true;
+    busy.value = false;
+    const historical = items.find((item) => item.spaceId === Number(props.spaceId));
+    if (step.value <= 0) {
+      hasBoundConnection.value = Boolean(historical);
+      step.value = historical ? 0 : -1;
+    }
+    if (historical) await selectConnection(historical.id);
+  } catch (cause) {
+    if (token === generation) error.value = cause instanceof Error ? cause.message : "连接查询失败";
+  } finally {
+    if (token === generation) busy.value = false;
+  }
+}
+/** @description 切换数据源，清理下游配置并读取 schema。
+ * @param id 选中连接的标识。
+ */
+async function selectConnection(id: number | undefined): Promise<void> {
+  resetTableSelection();
+  datasourceId.value = id;
+  schemas.value = [];
+  schemaName.value = "";
+  if (id === undefined) return;
+  const connection = connections.value.find((item) => item.id === id);
+  if (!connection) return;
+  if (connection.dbType.toUpperCase() === "SQLITE") {
+    schemaName.value = "public";
+    return;
+  }
+  const token = generation + 1;
+  await loadSchemas();
+  if (token === generation && datasourceId.value === id && !schemaName.value && !error.value)
+    schemaName.value = connection.schemaName || schemas.value[0]?.schemaName || "public";
+}
+/** @description 切换已有或新建连接模式，废弃进行中的请求和旧连接选择。 */
+function changeConnectionMode(): void {
+  resetTableSelection();
+  datasourceId.value = undefined;
+  schemas.value = [];
+  schemaName.value = "";
+}
+/** @description 选用历史连接并在 schema 就绪后进入对象信息，失败停留且不修改空间绑定。
+ * @param id 历史连接标识。
+ */
+async function chooseHistoricalConnection(id: number): Promise<void> {
+  if (busy.value) return;
+  if (!connections.value.some((item) => item.id === id)) {
+    error.value = "请选择有效的历史连接";
+    return;
+  }
+  const dialogToken = dialogGeneration;
+  connectionMode.value = "existing";
+  if (datasourceId.value !== id || !schemaName.value || error.value) await selectConnection(id);
+  if (dialogToken !== dialogGeneration || datasourceId.value !== id || error.value || !schemaName.value) return;
+  if (step.value === -1) step.value = 0;
+}
+/** @description 选用右侧新建表单，清理原连接的下游选择。 */
+function activateNewConnection(): void {
+  if (busy.value || connectionMode.value === "new") return;
+  connectionMode.value = "new";
+  changeConnectionMode();
+}
+/** @description 用户修改连接配置后立即清除已通过的测试结果，并选用新建表单。 */
+function invalidateConnectionTest(): void {
+  testedConnection.value = "";
+  activateNewConnection();
+}
+/** @description 规范化当前连接配置，不包含空间绑定。
+ * @returns 测试及创建共用的连接参数。
+ */
+function getConnectionPayload(): DatasourceConnectionParam {
+  const sqlite = connectionForm.dbType === "SQLITE";
+  return {
+    name: connectionForm.name.trim(),
+    dbType: connectionForm.dbType,
+    jdbcUrl: connectionForm.jdbcUrl.trim(),
+    username: sqlite ? "" : connectionForm.username.trim(),
+    password: sqlite ? "" : connectionForm.password,
+    schemaName: sqlite ? "public" : connectionForm.schemaName?.trim() || "public",
+  };
+}
+/** @description 仅测试新建连接；配置变化后测试结果自动失效，测试成功不落库。 */
+async function testConnection(): Promise<void> {
+  if (busy.value) return;
+  activateNewConnection();
+  testedConnection.value = "";
+  error.value = "";
+  const sqlite = connectionForm.dbType === "SQLITE";
+  if (!connectionForm.name.trim() || !connectionForm.jdbcUrl.trim() || (!sqlite && (!connectionForm.username.trim() || !connectionForm.password))) {
+    error.value = "请填写连接名称、JDBC URL，以及非 SQLite 连接的用户名和密码";
+    return;
+  }
+  const token = ++generation;
+  const data = getConnectionPayload();
+  busy.value = true;
+  try {
+    const tested = await postDatasourceConnectionTestInterface(data);
+    if (token !== generation) return;
+    if (tested.code !== 200) throw new Error(tested.message || "连接测试失败");
+    if (JSON.stringify(data) !== JSON.stringify(getConnectionPayload())) throw new Error("连接配置已变化，请重新测试");
+    testedConnection.value = JSON.stringify(data);
+  } catch (cause) {
+    if (token === generation) error.value = cause instanceof Error ? cause.message : "连接测试失败";
+  } finally {
+    if (token === generation) busy.value = false;
+  }
+}
+/** @description 下一步时创建已测试的新连接，禁止重复提交并忽略过期响应。 */
+async function createConnection(): Promise<void> {
+  if (busy.value) return;
+  if (!isConnectionTested.value) {
+    error.value = "请先测试连接，配置修改后需要重新测试";
+    return;
+  }
+  const token = ++generation;
+  const data = getConnectionPayload();
+  busy.value = true;
+  error.value = "";
+  try {
+    const created = await postDatasourceConnectionInterface(data);
+    if (token !== generation) return;
+    if (created.code !== 200 || !created.data?.id) throw new Error(created.message || "连接创建失败");
+    connections.value = [...connections.value.filter((item) => item.id !== created.data.id), created.data];
+    connectionReady.value = true;
+    connectionMode.value = "existing";
+    connectionForm.password = "";
+    testedConnection.value = "";
+    busy.value = false;
+    await selectConnection(created.data.id);
+  } catch (cause) {
+    if (token === generation) error.value = cause instanceof Error ? cause.message : "连接创建失败";
+  } finally {
+    if (token === generation) busy.value = false;
+  }
+}
+/** @description 已绑定空间按空间查询，未绑定空间按所选数据源 ID 查询 schema，忽略过期响应。 */
 async function loadSchemas(): Promise<void> {
   if (busy.value) return;
   const spaceId = Number(props.spaceId);
-  if (!Number.isInteger(spaceId) || spaceId <= 0) {
+  if (hasBoundConnection.value && (!Number.isInteger(spaceId) || spaceId <= 0)) {
     error.value = "缺少有效空间 ID";
+    return;
+  }
+  const selectedDatasourceId = datasourceId.value;
+  if (!hasBoundConnection.value && (!selectedDatasourceId || !Number.isInteger(selectedDatasourceId) || selectedDatasourceId <= 0)) {
+    error.value = "请选择有效的数据源连接";
     return;
   }
   const token = ++generation;
   busy.value = true;
   error.value = "";
   try {
-    const response = await getDatasourceSchemaListInterface({ spaceId });
+    const response =
+      !hasBoundConnection.value && selectedDatasourceId !== undefined
+        ? await getDatasourceSchemaListByDatasourceInterface(selectedDatasourceId)
+        : await getDatasourceSchemaListInterface({ spaceId });
     if (token !== generation) return;
     if (response.code !== 200) throw new Error(response.message || "Schema 查询失败");
     schemas.value = response.data;
+    if (datasourceId.value !== undefined && !schemas.value.length) {
+      schemas.value = [{ schemaName: "public" }];
+      schemaName.value = "public";
+    }
   } catch (cause) {
     if (token === generation) error.value = cause instanceof Error ? cause.message : "Schema 查询失败";
   } finally {
@@ -259,6 +532,19 @@ async function loadSchemas(): Promise<void> {
 async function nextStep(): Promise<void> {
   if (busy.value) return;
   error.value = "";
+  if (step.value === -1) {
+    const dialogToken = dialogGeneration;
+    if (connectionMode.value === "new") await createConnection();
+    if (dialogToken !== dialogGeneration) return;
+    if (!datasourceId.value) {
+      if (!error.value) error.value = "请选择历史连接，或测试并创建新连接";
+      return;
+    }
+    if (!schemaName.value && !error.value) await loadSchemas();
+    if (dialogToken !== dialogGeneration) return;
+    if (!error.value) step.value = 0;
+    return;
+  }
   const token = generation;
   busy.value = true;
   try {
@@ -277,7 +563,11 @@ async function nextStep(): Promise<void> {
         error.value = "请选择 schema";
         return;
       }
-      const response = await getDatasourceTableListInterface({ spaceId: Number(props.spaceId), schemaName: schemaName.value });
+      if (connectionReady.value && datasourceId.value === undefined) {
+        error.value = "请选择或新建数据源连接";
+        return;
+      }
+      const response = await getDatasourceTableListInterface({ ...getDatasourceTarget(), schemaName: schemaName.value });
       if (token !== generation) return;
       if (response.code !== 200) throw new Error(response.message || "数据表加载失败");
       const previousTables = new Map(tables.value.map((table) => [table.name, table]));
@@ -291,8 +581,8 @@ async function nextStep(): Promise<void> {
           previousTables.get(table.tableName)?.fields ??
           Array.from({ length: table.columnCount }, (_, index) => ({ id: `${table.tableName}-${index}`, name: "", dataType: "" })),
       }));
-      selected.value = [];
-      primary.value = "";
+      selected.value = selected.value.filter((id) => tables.value.some((table) => table.id === id));
+      if (!selected.value.includes(primary.value)) primary.value = "";
       step.value = 1;
       return;
     }
@@ -310,7 +600,7 @@ async function nextStep(): Promise<void> {
         return;
       }
       const response = await getDatasourceTableColumnsInterface({
-        spaceId: Number(props.spaceId),
+        ...getDatasourceTarget(),
         schemaName: schemaName.value,
         tableNames: selectedTables.value.map((table) => table.name),
       });
@@ -404,6 +694,92 @@ function clearFields(): void {
 }
 </script>
 <style scoped lang="scss">
+.datasource-build-dialog__connections {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.6fr);
+  gap: 20px;
+  height: 460px;
+}
+.datasource-build-dialog__history,
+.datasource-build-dialog__new-connection {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 10px;
+  background: var(--aircas-color-panel-background-deep);
+}
+.datasource-build-dialog__connections h2 {
+  margin: 0;
+  color: var(--aircas-color-text-primary);
+  font-size: 16px;
+}
+.datasource-build-dialog__history-list {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+}
+.datasource-build-dialog__history-item {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 12px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 6px;
+  color: var(--aircas-color-text-secondary);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.datasource-build-dialog__history-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.datasource-build-dialog__history-item:hover,
+.datasource-build-dialog__history-item.is-active {
+  border-color: var(--aircas-color-primary);
+  color: var(--aircas-color-text-primary);
+  background: var(--aircas-color-effect-primary-soft);
+}
+.datasource-build-dialog__history-item:focus-visible {
+  outline: 2px solid var(--aircas-color-primary);
+  outline-offset: -2px;
+}
+.datasource-build-dialog__history-item:disabled {
+  color: var(--aircas-color-text-disabled);
+  cursor: not-allowed;
+}
+.datasource-build-dialog__new-connection header,
+.datasource-build-dialog__new-connection footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.datasource-build-dialog__new-connection header {
+  justify-content: space-between;
+}
+.datasource-build-dialog__new-connection > .el-form {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+}
+.datasource-build-dialog__new-connection footer span {
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+}
+.datasource-build-dialog__connection {
+  gap: 12px;
+}
+.datasource-build-dialog__connection > * {
+  flex-shrink: 0;
+}
 .datasource-build-dialog__steps {
   margin: 0 10% 32px;
 }
@@ -514,6 +890,14 @@ function clearFields(): void {
   white-space: nowrap;
 }
 @media (max-width: 800px) {
+  .datasource-build-dialog__connections {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .datasource-build-dialog__history-list {
+    max-height: 200px;
+    flex: auto;
+  }
   .datasource-build-dialog__fields {
     grid-template-columns: 1fr;
   }

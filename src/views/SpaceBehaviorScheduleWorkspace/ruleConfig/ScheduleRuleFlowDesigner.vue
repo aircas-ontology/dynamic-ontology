@@ -41,17 +41,19 @@
     <ElConfigProvider :z-index="5300">
       <el-dialog
         v-model="nodeEditorVisible"
-        :title="editingNode?.kind === 'condition' ? '配置条件' : editingNode?.kind === 'switch' ? '配置 Switch 分支' : '配置执行行为'"
-        width="880px"
+        :title="editingNode?.kind === 'condition' ? '配置条件' : editingNode?.kind === 'switch' ? '配置 Switch 分支' : '配置参数'"
+        :width="editingNode?.action ? 'min(1100px, 94vw)' : '880px'"
         append-to-body
         destroy-on-close
         :z-index="5100"
         :close-on-click-modal="false"
       >
-        <div class="rule-flow-designer__node-editor">
+        <div ref="nodeEditorRef" class="rule-flow-designer__node-editor">
           <el-form v-if="editingNode?.condition" :disabled="readonly"><ScheduleRuleConditionWireSurface :condition="editingNode.condition" /></el-form>
           <el-form v-if="editingNode?.switchStep" :disabled="readonly"><ScheduleRuleSwitchConfig :step="editingNode.switchStep" /></el-form>
           <el-form v-if="editingNode?.action" label-width="100px">
+            <ScheduleRuleConditionInstances ref="conditionInstancesRef" :key="editingNodeId" :paths="actionConditionPaths" :readonly="readonly" />
+            <h3 class="rule-flow-designer__section-title">执行行为配置</h3>
             <el-form-item label="行为">
               <el-select
                 :model-value="selectedActionOption?.id || editingNode.action.behaviorId"
@@ -121,6 +123,8 @@ import { buildSavedActionEntityJson } from "../utils/restoreRuleScheduleDetail";
 import { ScheduleRuleFlowGraphSession, type ScheduleRulePaletteKind } from "../utils/scheduleRuleFlowGraphSession";
 import ScheduleRuleFlowPalette from "./ScheduleRuleFlowPalette.vue";
 import ScheduleRuleFlowToolbar from "./ScheduleRuleFlowToolbar.vue";
+import ScheduleRuleConditionInstances from "./ScheduleRuleConditionInstances.vue";
+import type { ActionConditionSource } from "../utils/ruleConditionInstanceBindings";
 
 const PALETTE_MIME = "application/x-rule-node";
 
@@ -137,6 +141,7 @@ const emit = defineEmits<{
 }>();
 
 const canvasRef = ref<HTMLElement | null>(null);
+const nodeEditorRef = ref<HTMLElement | null>(null);
 const connectionMessage = ref("");
 const selectedRemovable = ref(false);
 const disconnectedCount = ref(0);
@@ -146,6 +151,8 @@ let disposed = false;
 const savedBehaviorIds = new Map<string, string>();
 const nodeEditorVisible = ref(false);
 const editingNode = ref<ScheduleRuleGraphNodeData | null>(null);
+const actionConditionPaths = ref<ActionConditionSource[][]>([]);
+const conditionInstancesRef = ref<InstanceType<typeof ScheduleRuleConditionInstances> | null>(null);
 let editingNodeId = "";
 const actionObjectIds = ref<string[]>([]);
 const filteredBehaviorOptions = computed(() => filterBehaviorsByObjects(props.behaviorOptions, actionObjectIds.value));
@@ -197,6 +204,10 @@ function openNodeEditor(nodeId: string): void {
   clearActionParameters();
   editingNodeId = nodeId;
   editingNode.value = cloneRuleFlowValue(data);
+  actionConditionPaths.value = data.action ? (session?.getActionConditionPaths(nodeId) ?? []) : [];
+  void nextTick(() => {
+    if (nodeEditorRef.value) nodeEditorRef.value.scrollTop = 0;
+  });
   if (props.readonly) {
     nodeEditorVisible.value = true;
     if (data.action) void initializeActionParameters();
@@ -253,8 +264,15 @@ function confirmNodeEditor(): void {
     ElMessage.warning("存在已停用的值类型，请重新选择输入值或变量后再确定");
     return;
   }
-  if (action && !captureActionParameters()) return;
-  session?.updateNodeData(editingNodeId, cloneRuleFlowValue(editingNode.value));
+  if (action) {
+    const bindingError = conditionInstancesRef.value?.validateInstances();
+    if (bindingError) {
+      ElMessage.warning(bindingError);
+      return;
+    }
+    if (!captureActionParameters()) return;
+    session?.updateActionWithConditions(editingNodeId, cloneRuleFlowValue(editingNode.value), actionConditionPaths.value);
+  } else session?.updateNodeData(editingNodeId, cloneRuleFlowValue(editingNode.value));
   nodeEditorVisible.value = false;
 }
 
@@ -397,6 +415,12 @@ onBeforeUnmount(() => {
   margin: 0 0 12px;
   color: var(--aircas-color-text-primary);
   font-size: 14px;
+  font-weight: 600;
+}
+.rule-flow-designer__section-title {
+  margin: 0 0 8px;
+  color: var(--aircas-color-text-primary);
+  font-size: 16px;
   font-weight: 600;
 }
 

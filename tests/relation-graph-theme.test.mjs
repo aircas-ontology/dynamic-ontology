@@ -91,7 +91,7 @@ function createGraphEnvironment() {
     requestAnimationFrame: () => 1,
     cancelAnimationFrame: () => {},
   };
-  const source = readFileSync("src/views/SpaceRelationWorkspace/composables/useRelationGraph3d.ts", "utf8")
+  const source = readFileSync("src/components/OntologyRelationGraph3d/createRelationGraph3d.ts", "utf8")
     .replace(/^import[\s\S]*?from ["'][^"']+["'];\s*/gm, "")
     .replace(/^export /gm, "");
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
@@ -174,4 +174,23 @@ test("empty graph can refresh and dispose without creating textures", async () =
   graph.refreshTheme();
   assert.equal(environment.textures.length, 0);
   graph.dispose();
+});
+
+test("network graph with an unmatched instance display name keeps distinct nodes instead of stacking them at the origin", async () => {
+  const environment = createGraphEnvironment();
+  const graph = environment.factory({ container: environment.container, onEdgeContextMenu: () => {} });
+  try {
+    await graph.setData({
+      items: [{ id: "one", sourceName: "甲 · 唯一身份", targetName: "乙", displayName: "搭载" }],
+      layoutMode: "network",
+      seedNames: ["甲"],
+      maxHop: 2,
+    });
+    const root = environment.state.scene.children.find((child) => child instanceof THREE.Group);
+    const nodes = root.children.filter((child) => child instanceof THREE.Sprite && child.userData.kind === "node");
+    assert.equal(nodes.length, 2);
+    assert.ok(nodes[0].position.distanceTo(nodes[1].position) > 1);
+  } finally {
+    graph.dispose();
+  }
 });

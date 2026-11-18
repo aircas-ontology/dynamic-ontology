@@ -203,6 +203,10 @@ test("entity detail routes card execution to normal or tree dialog with current 
   const component = compileExecutionComponent("views/EntityBrowsingObjectProfile/components/ObjectProfileEntityDetail.vue", (id) => {
     if (id === "vue") return Vue;
     if (id.includes("useObjectProfileEntityDetail")) return { useObjectProfileEntityDetail: () => state };
+    if (id.includes("useEntityRelationCategories"))
+      return { useEntityRelationCategories: () => ({ items: Vue.ref(undefined), status: Vue.ref("empty"), error: Vue.ref("") }) };
+    if (id.includes("useEntityBehaviorCategories"))
+      return { useEntityBehaviorCategories: () => ({ items: Vue.ref([]), status: Vue.ref("empty"), error: Vue.ref("") }) };
     if (id.includes("mapListOntologyActionRecord")) return mapper;
     if (id.includes("createBehaviorTestInitialEntity")) return initialEntityUtils;
     if (id.includes("entityDetailData")) return { parseEntityPrimaryKey: (key) => key };

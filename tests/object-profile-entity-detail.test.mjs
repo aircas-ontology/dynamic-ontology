@@ -199,6 +199,43 @@ async function settleDetailRequests() {
   for (let index = 0; index < 8; index += 1) await Vue.nextTick();
 }
 
+test("behavior category selection resets pagination, retains ontology scope and discards older category responses", async () => {
+  const calls = [];
+  const pending = [];
+  const h = createDetailHarness({
+    getListOntologyActionInterface: (params) => {
+      calls.push(params);
+      return new Promise((resolve) => pending.push(resolve));
+    },
+  });
+  try {
+    await settleDetailRequests();
+    pending[0]({ code: 200, data: { records: [], total: 0 } });
+    await settleDetailRequests();
+    const olderPage = h.state.loadEntityBehaviors(3);
+    h.state.selectedBehaviorCategoryId.value = "2";
+    await settleDetailRequests();
+    assert.equal(calls.at(-1).pageNum, 1);
+    assert.equal(calls.at(-1).categoryId, 2);
+    assert.equal(calls.at(-1).pageSize, 12);
+    assert.equal(calls.at(-1).ontologyId, "object-a");
+    await h.state.loadEntityBehaviors(1);
+    assert.equal(calls.length, 3);
+    pending[2]({ code: 200, data: { records: [{ id: 2 }], total: 1 } });
+    await settleDetailRequests();
+    pending[1]({ code: 200, data: { records: [{ id: 99 }], total: 99 } });
+    await olderPage;
+    assert.equal(h.state.behaviors.value[0].id, 2);
+    assert.equal(h.state.behaviorPage.value, 1);
+    h.state.selectedBehaviorCategoryId.value = "all";
+    await settleDetailRequests();
+    assert.equal(calls.at(-1).categoryId, undefined);
+    pending[3]({ code: 200, data: { records: [], total: 0 } });
+  } finally {
+    h.scope.stop();
+  }
+});
+
 test("detail queries selected entity and object-scoped behaviors, supports categories and pagination", async () => {
   const h = createDetailHarness();
   try {
@@ -210,16 +247,18 @@ test("detail queries selected entity and object-scoped behaviors, supports categ
     assert.equal(params.ontologyId, "object-a");
     assert.equal(params.ontologySpaceId, 156);
     assert.equal(params.status, 1);
+    assert.equal(params.pageSize, 12);
+    assert.equal(h.state.behaviorPageSize, 12);
     h.state.selectedCategoryId.value = "3";
     assert.equal(h.state.filteredProperties.value.length, 2);
     await h.state.loadEntityBehaviors(2);
     assert.equal(h.state.behaviorPage.value, 2);
     assert.equal(h.state.behaviorTotal.value, 25);
     assert.deepEqual(
-      h.requests.filter(([kind]) => kind === "behaviors").map(([, query]) => ({ pageNum: query.pageNum, status: query.status })),
+      h.requests.filter(([kind]) => kind === "behaviors").map(([, query]) => ({ pageNum: query.pageNum, pageSize: query.pageSize, status: query.status })),
       [
-        { pageNum: 1, status: 1 },
-        { pageNum: 2, status: 1 },
+        { pageNum: 1, pageSize: 12, status: 1 },
+        { pageNum: 2, pageSize: 12, status: 1 },
       ],
     );
   } finally {

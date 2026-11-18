@@ -30,6 +30,7 @@ import {
   type ScheduleRuleGraphNodeData,
 } from "./scheduleRuleFlowGraphCells";
 import { collectReachableNodes, fillRuleFlowRenderBuffer, serializeRuleFlowGraph } from "./scheduleRuleFlowGraphSerialize";
+import { collectActionConditionPaths, type ActionConditionSource } from "./ruleConditionInstanceBindings";
 
 /** 画布会话回写到 Vue 的状态。 */
 export interface ScheduleRuleFlowGraphCanvasState {
@@ -223,6 +224,25 @@ export class ScheduleRuleFlowGraphSession {
   /** @description 按当前画布连接获取行为节点上游条件引用的对象。 @param nodeId 行为节点标识。 @returns 上游对象标识。 */
   getActionConditionObjectIds(nodeId: string): string[] {
     return this.graph ? collectUpstreamConditionObjectIds(this.graph, nodeId) : [];
+  }
+
+  /** @description 获取行为所有上游执行路径的共享条件草稿。 @param nodeId 行为节点。 @returns 路径条件副本。 */
+  getActionConditionPaths(nodeId: string): ActionConditionSource[][] {
+    return this.graph ? collectActionConditionPaths(this.graph, nodeId) : [];
+  }
+
+  /** @description 同时确认条件共享实例和行为独立参数，只触发一次文档回写。 @param nodeId 行为节点。 @param data 行为草稿。 @param paths 共享条件草稿。 */
+  updateActionWithConditions(nodeId: string, data: ScheduleRuleGraphNodeData, paths: ActionConditionSource[][]): void {
+    const updated = new Set<string>();
+    for (const source of paths.flat()) {
+      if (updated.has(source.nodeId)) continue;
+      updated.add(source.nodeId);
+      const node = this.graph?.getCellById(source.nodeId);
+      if (!node?.isNode()) continue;
+      node.setData(cloneRuleFlowValue(source.data));
+      if (source.data.condition) node.attr("summary/text", truncateRuleFlowText(summarizeRuleCondition(source.data.condition), 28));
+    }
+    this.updateNodeData(nodeId, data);
   }
 
   /** @description 更新节点数据并刷新摘要。 @param nodeId 节点 id。 @param data 节点数据。 */

@@ -5,6 +5,7 @@ import test from "node:test";
 import { ModuleKind, transpileModule } from "typescript";
 import * as Vue from "vue";
 import { compileScript, parse } from "@vue/compiler-sfc";
+import { renderToString } from "@vue/server-renderer";
 import TreeStore from "../node_modules/element-plus/es/components/tree/src/model/tree-store.mjs";
 
 registerHooks({
@@ -240,22 +241,27 @@ test("instance queries ignore superseded objects, paginate and support retry aft
   assert.equal(state.instanceError.value, "");
 });
 
-test("picker selection cancels without mutation and confirms a copied reference", async () => {
+/** @description 执行实际字段选择组件与查询控制器。 @param {object} initial 初始引用。 @returns {object} 组件状态。 */
+function createFieldPickerHarness(initial) {
   const { state } = createPickerHarness(apis);
   const { descriptor } = parse(
     readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleVariablePicker.vue", import.meta.url), "utf8"),
   );
-  const compiled = compileScript(descriptor, { id: "picker-test" });
+  const compiled = compileScript(descriptor, { id: "field-picker" });
   const { outputText } = transpileModule(compiled.content, { compilerOptions: { module: ModuleKind.CommonJS } });
   const exports = {};
-  new Function("require", "exports", outputText)((id) => {
-    if (id === "vue") return Vue;
-    if (id === "vue-router") return { useRoute: () => ({ params: { spaceId: "7" } }) };
-    return {
-      useRuleVariablePicker: () => state,
-      needsRuleVariableDataRow: (group) => Boolean(String(group ?? "").trim()) && String(group).trim() !== "main",
-    };
-  }, exports);
+  new Function("require", "exports", outputText)(
+    (id) => (id === "vue" ? Vue : id === "vue-router" ? { useRoute: () => ({ params: { spaceId: "7" } }) } : { useRuleVariablePicker: () => state }),
+    exports,
+  );
+  const props = Vue.reactive({ modelValue: true, initial });
+  const emitted = [];
+  const scope = Vue.effectScope();
+  const page = scope.run(() => exports.default.setup(props, { expose() {}, emit: (...args) => emitted.push(args) }));
+  return { props, page, emitted, scope, state };
+}
+
+test("field picker confirms without instance, preserves unchanged binding and clears changed field binding", async () => {
   const initial = {
     kind: "variable",
     objectId: "ship",
@@ -266,101 +272,157 @@ test("picker selection cancels without mutation and confirms a copied reference"
     instanceIds: ["12"],
     storageGroup: "main",
   };
-  const props = Vue.reactive({ modelValue: true, initial });
-  const emitted = [];
-  const scope = Vue.effectScope();
-  const page = scope.run(() => exports.default.setup(props, { expose() {}, emit: (...args) => emitted.push(args) }));
+  const h = createFieldPickerHarness(initial);
   await new Promise((resolve) => setImmediate(resolve));
-  page.selectedInstanceId.value = "99";
-  page.closeVariablePicker();
+  h.page.selectVariableProperty({ id: JSON.stringify(["ship", "country"]) });
+  assert.equal(h.page.canConfirm.value, true);
+  assert.deepEqual(h.page.selected.value.instanceIds, ["12"]);
+  h.page.selectVariableProperty({ id: JSON.stringify(["ship", "payload"]) });
+  assert.deepEqual(h.page.selected.value.instanceIds, []);
+  assert.equal(h.page.canConfirm.value, true);
+  h.page.confirmVariableSelection();
+  assert.equal(h.emitted.find(([name]) => name === "confirm")[1].propertyId, "payload");
   assert.deepEqual(initial.instanceIds, ["12"]);
-  assert.equal(
-    emitted.some(([name]) => name === "confirm"),
-    false,
-  );
-  props.modelValue = false;
-  await Vue.nextTick();
-  props.modelValue = true;
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(page.selectedInstanceId.value, "12");
-  page.selectVariableProperty({ id: JSON.stringify(["ship", "country"]) });
-  await new Promise((resolve) => setImmediate(resolve));
-  page.selectedInstanceId.value = "__ALL__";
-  assert.equal(page.canConfirm.value, false);
-  page.selectedInstanceId.value = "99";
-  assert.equal(page.canConfirm.value, false);
-  page.selectedInstanceId.value = "";
-  assert.equal(page.canConfirm.value, false);
-  page.selectedInstanceId.value = "12";
-  assert.equal(page.canConfirm.value, true);
-  await Vue.nextTick();
-  page.confirmVariableSelection();
-  assert.deepEqual(emitted.find(([name]) => name === "confirm")[1].instanceIds, ["12"]);
-  assert.equal(emitted.find(([name]) => name === "confirm")[1].dataPrimaryKey, undefined);
-  assert.deepEqual(initial.instanceIds, ["12"]);
-  page.keyword.value = "不存在";
-  assert.deepEqual(page.variableTree.value, []);
-  props.modelValue = false;
-  await Vue.nextTick();
-  props.initial = { ...initial, instanceIds: ["12", "99"] };
-  props.modelValue = true;
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(page.selectedInstanceId.value, "12");
-  props.modelValue = false;
-  await Vue.nextTick();
-  props.initial = { ...initial, instanceIds: [] };
-  props.modelValue = true;
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(page.selectedInstanceId.value, "");
-  assert.equal(page.canConfirm.value, false);
-  state.instances.value = [];
-  page.selectedInstanceId.value = "12";
-  assert.equal(page.canConfirm.value, false);
-  scope.stop();
+  h.scope.stop();
 });
 
-test("subtable property requires a data row and clears it when the instance changes", async () => {
-  const { state } = createPickerHarness(apis);
-  const { descriptor } = parse(
-    readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleVariablePicker.vue", import.meta.url), "utf8"),
+test("field picker cancel, search, invalid directory and error prevent incorrect writes", async () => {
+  const h = createFieldPickerHarness(null);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(h.page.canConfirm.value, false);
+  h.page.selectVariableProperty({ id: JSON.stringify(["ship", "country"]) });
+  h.state.catalogError.value = "失败";
+  assert.equal(h.page.canConfirm.value, false);
+  h.page.confirmVariableSelection();
+  h.page.keyword.value = "不存在";
+  assert.deepEqual(h.page.variableTree.value, []);
+  h.page.closeVariablePicker();
+  assert.equal(
+    h.emitted.some(([name]) => name === "confirm"),
+    false,
   );
-  const compiled = compileScript(descriptor, { id: "picker-subtable" });
+  h.scope.stop();
+});
+
+/** @description 执行共享条件实例行组件并注入真实查询控制器。 @param {object} value 条件引用。 @returns {object} 组件状态。 */
+function createInstanceRowHarness(value) {
+  const { state, cleanup } = createPickerHarness(apis);
+  const { descriptor } = parse(
+    readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleConditionInstanceRow.vue", import.meta.url), "utf8"),
+  );
+  const compiled = compileScript(descriptor, { id: "instance-row" });
   const { outputText } = transpileModule(compiled.content, { compilerOptions: { module: ModuleKind.CommonJS } });
   const exports = {};
-  new Function("require", "exports", outputText)((id) => {
-    if (id === "vue") return Vue;
-    if (id === "vue-router") return { useRoute: () => ({ params: { spaceId: "7" } }) };
-    return { useRuleVariablePicker: () => state, needsRuleVariableDataRow: (group) => Boolean(group?.trim()) && group.trim() !== "main" };
-  }, exports);
-  await state.fetchVariableCatalog();
-  await state.fetchVariableInstances("ship");
-  const props = Vue.reactive({ modelValue: true, initial: null });
+  new Function("require", "exports", outputText)(
+    (id) =>
+      id === "vue"
+        ? Vue
+        : id === "vue-router"
+          ? { useRoute: () => ({ params: { spaceId: "7" } }) }
+          : { useRuleVariablePicker: () => state, needsRuleVariableDataRow },
+    exports,
+  );
+  const props = Vue.reactive({ value, label: "条件1 左侧", readonly: false });
   const emitted = [];
   const scope = Vue.effectScope();
   const page = scope.run(() => exports.default.setup(props, { expose() {}, emit: (...args) => emitted.push(args) }));
+  return { props, page, emitted, scope, state, cleanup };
+}
+
+test("instance row restores saved subtable selection, clears on instance change and validates current options", async () => {
+  const h = createInstanceRowHarness({ objectId: "ship", instanceIds: ["12"], storageGroup: "payload", dataPrimaryKey: "row-1" });
   await new Promise((resolve) => setImmediate(resolve));
-  page.selectVariableProperty({ id: JSON.stringify(["ship", "payload"]) });
+  assert.equal(h.page.ready.value, true);
+  assert.ok(h.page.selectedDataRowId.value);
+  h.page.changeConditionInstance("12");
   await new Promise((resolve) => setImmediate(resolve));
-  page.changeSelectedInstance("12");
-  await state.fetchVariableDataRows("ship", "12", "payload");
-  page.selectedDataRowId.value = "";
-  assert.equal(page.requiresDataRow.value, true);
-  assert.equal(page.canConfirm.value, false);
-  page.selectedDataRowId.value = state.dataRows.value[0].id;
-  assert.equal(page.canConfirm.value, true);
-  page.confirmVariableSelection();
-  const confirmed = emitted.find(([name]) => name === "confirm")[1];
-  assert.equal(confirmed.storageGroup, "payload");
-  assert.equal(confirmed.dataPrimaryKey, "row-1");
-  props.modelValue = true;
+  assert.equal(h.props.value.dataPrimaryKey, undefined);
+  assert.equal(h.page.ready.value, false);
+  h.page.changeConditionDataRow(h.state.dataRows.value[0].id);
+  assert.equal(h.page.ready.value, true);
+  assert.equal(h.props.value.dataPrimaryKey, "row-1");
+  h.page.changeConditionDataRow("");
+  assert.equal(h.page.ready.value, false);
+  h.page.changeConditionInstance("missing");
+  await Vue.nextTick();
+  assert.equal(h.page.ready.value, false);
+  assert.equal(h.props.value.dataPrimaryKey, undefined);
+  h.cleanup.forEach((fn) => fn());
+  h.scope.stop();
+});
+
+test("main field needs only instance; readonly renders persisted data without querying", async () => {
+  const h = createInstanceRowHarness({ objectId: "ship", instanceIds: [], storageGroup: "main" });
   await new Promise((resolve) => setImmediate(resolve));
-  page.selectVariableProperty({ id: JSON.stringify(["ship", "payload"]) });
-  page.changeSelectedInstance("12");
-  await state.fetchVariableDataRows("ship", "12", "payload");
-  page.selectedDataRowId.value = state.dataRows.value[0].id;
-  page.changeSelectedInstance("12");
-  assert.equal(page.selectedDataRowId.value, "");
-  scope.stop();
+  h.page.changeConditionInstance("12");
+  await Vue.nextTick();
+  assert.equal(h.page.ready.value, true);
+  assert.deepEqual(h.props.value.instanceNames, ["12"]);
+  h.props.readonly = true;
+  await Vue.nextTick();
+  assert.equal(h.page.ready.value, true);
+  assert.equal(h.state.instanceLoading.value, false);
+  h.cleanup.forEach((fn) => fn());
+  h.scope.stop();
+});
+
+test("instance error cards show readable fields and compact failure feedback without exposing internal identifiers", async () => {
+  const { state } = createPickerHarness(apis);
+  const serviceError = "服务依赖缺失或版本不一致，请确认部署包与服务脚本已更新到最新版本（请求号：request-123）";
+  state.fetchVariableInstances = async () => {
+    state.instanceError.value = serviceError;
+  };
+  const { descriptor } = parse(
+    readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleConditionInstanceRow.vue", import.meta.url), "utf8"),
+  );
+  const compiled = compileScript(descriptor, { id: "instance-error-display", inlineTemplate: true });
+  const { outputText } = transpileModule(compiled.content, { compilerOptions: { module: ModuleKind.CommonJS } });
+  const exports = {};
+  new Function("require", "exports", outputText)(
+    (id) =>
+      id === "vue"
+        ? Vue
+        : id === "vue-router"
+          ? { useRoute: () => ({ params: { spaceId: "7" } }) }
+          : { useRuleVariablePicker: () => state, needsRuleVariableDataRow },
+    exports,
+  );
+  const app = Vue.createSSRApp(exports.default, {
+    value: {
+      objectId: "internal-object-id",
+      propertyId: "internal-property-id",
+      objectName: "飞机",
+      propertyName: "武器名称",
+      storageGroup: "weapon",
+      instanceIds: [],
+    },
+    label: "并且 / 条件1 · 左侧",
+  });
+  app.component("el-alert", {
+    props: ["title"],
+    render() {
+      return Vue.h("div", this.title);
+    },
+  });
+  app.component("el-button", {
+    setup(_props, { slots }) {
+      return () => Vue.h("button", slots.default?.());
+    },
+  });
+  app.component("el-select", { render: () => Vue.h("select") });
+  app.component("el-popover", {
+    props: ["content"],
+    setup(_props, { slots }) {
+      return () => Vue.h("span", slots.reference?.());
+    },
+  });
+  app.config.warnHandler = () => {};
+  const html = await renderToString(app);
+  assert.match(html, /飞机 · 武器名称/);
+  assert.doesNotMatch(html, /internal-object-id|internal-property-id|weapon|服务依赖缺失/);
+  assert.match(html, /实例加载失败/);
+  assert.match(html, /查看详情/);
+  assert.match(html, /重新加载实例/);
 });
 
 test("condition wires connect direct parent ports and release observers and frames", async () => {

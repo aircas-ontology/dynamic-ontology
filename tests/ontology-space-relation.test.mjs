@@ -48,10 +48,7 @@ test("hop distances and hop filter tolerate blank seeds and endpoints", () => {
   assert.equal(computeHopDistances(data.relations, ["", "   "]).size, 0);
   assert.equal(filterRelationsByHop(data.relations, ["  "], 2).length, data.relations.length);
 
-  const withBlankSource = [
-    ...data.relations,
-    { ...data.relations[0], id: "rel-blank-source", sourceName: "  ", targetName: "孤立对象" },
-  ];
+  const withBlankSource = [...data.relations, { ...data.relations[0], id: "rel-blank-source", sourceName: "  ", targetName: "孤立对象" }];
   const hop = computeHopDistances(withBlankSource, ["孤立对象"]);
   assert.equal(hop.get("孤立对象"), 0);
 });
@@ -65,13 +62,7 @@ test("hop filter expands one more layer at two hops", () => {
 
   assert.ok(oneHopIds.has("rel-burke-escorts-ford"));
   assert.ok(oneHopIds.has("rel-cruiser-escorts-ford"));
-  [
-    "rel-airwing-fighter",
-    "rel-destroyer-submarine-escort",
-    "rel-base-shipyard",
-    "rel-jtf-patrol-aircraft",
-    "rel-amphibious-carries-marine",
-  ].forEach((id) => {
+  ["rel-airwing-fighter", "rel-destroyer-submarine-escort", "rel-base-shipyard", "rel-jtf-patrol-aircraft", "rel-amphibious-carries-marine"].forEach((id) => {
     assert.ok(twoHopIds.has(id), `expected ${id} in two-hop result`);
   });
   ["rel-shipyard-repair-center", "rel-fighter-squadron", "rel-burke-aa-coord", "rel-burke-replenished", "rel-burke-homeported"].forEach((id) => {
@@ -160,8 +151,8 @@ test("relation category tree pruning keeps only branches containing matched rela
 });
 
 test("relation 3d graph does not load entity svg node icons", () => {
-  const graphSource = readFileSync(new URL("../src/views/SpaceRelationWorkspace/composables/useRelationGraph3d.ts", import.meta.url), "utf8");
-  const textureSource = readFileSync(new URL("../src/views/SpaceRelationWorkspace/utils/relationGraph3dTexture.ts", import.meta.url), "utf8");
+  const graphSource = readFileSync(new URL("../src/components/OntologyRelationGraph3d/createRelationGraph3d.ts", import.meta.url), "utf8");
+  const textureSource = readFileSync(new URL("../src/components/OntologyRelationGraph3d/relationGraph3dTexture.ts", import.meta.url), "utf8");
   assert.doesNotMatch(graphSource, /resolveRelationObjectIcon|relationObjectIcon|createRelationNodeTexture/);
   assert.doesNotMatch(textureSource, /createRelationNodeTexture/);
   assert.equal(existsSync(new URL("../src/views/OntologySpaceManagementDetail/utils/relationObjectIcon.ts", import.meta.url)), false);
@@ -314,7 +305,7 @@ test("relation route context resolves space id and object filter seed", async ()
 test("space and object relation pages use the prototype panel and graph backgrounds", () => {
   const workspace = readFileSync(new URL("../src/views/SpaceRelationWorkspace/index.vue", import.meta.url), "utf8");
   const categoryPanel = readFileSync(new URL("../src/views/SpaceRelationWorkspace/components/RelationCategoryPanel.vue", import.meta.url), "utf8");
-  const graph = readFileSync(new URL("../src/views/SpaceRelationWorkspace/components/RelationGraphView.vue", import.meta.url), "utf8");
+  const graph = readFileSync(new URL("../src/components/OntologyRelationGraph3d.vue", import.meta.url), "utf8");
   const panelGradient = /linear-gradient\(135deg, var\(--aircas-color-panel-background\), var\(--aircas-color-panel-background-deep\)\)/;
 
   assert.match(categoryPanel, panelGradient);

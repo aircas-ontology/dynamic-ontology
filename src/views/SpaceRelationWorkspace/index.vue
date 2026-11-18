@@ -199,7 +199,7 @@ import { useSpaceRelationWorkspace } from "./composables/useSpaceRelationWorkspa
 import { collectCategoryIds, findRelationCategoryNode } from "./utils/relationOperations";
 import { buildCategoryParentTree } from "@/utils/categoryParentTree";
 import RelationCategoryPanel from "./components/RelationCategoryPanel.vue";
-import RelationGraphView from "./components/RelationGraphView.vue";
+import RelationGraphView from "@/components/OntologyRelationGraph3d.vue";
 import RelationCategoryFormDialog from "./components/RelationCategoryFormDialog.vue";
 import RelationCategoryDeleteDialog from "./components/RelationCategoryDeleteDialog.vue";
 import RelationDeleteDialog from "./components/RelationDeleteDialog.vue";

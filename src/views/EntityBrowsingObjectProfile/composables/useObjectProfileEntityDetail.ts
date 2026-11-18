@@ -31,6 +31,7 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
   const categories = ref<ObjectProfileEntityCategory[]>([]);
   const behaviors = ref<ListOntologyActionRecord[]>([]);
   const selectedCategoryId = ref("all");
+  const selectedBehaviorCategoryId = ref("all");
   const propertyStatus = ref<"loading" | "ready" | "empty" | "error">("loading");
   const categoryStatus = ref<"loading" | "ready" | "empty" | "error">("loading");
   const behaviorStatus = ref<"loading" | "ready" | "empty" | "error">("loading");
@@ -38,7 +39,7 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
   const categoryError = ref("");
   const behaviorError = ref("");
   const behaviorPage = ref(1);
-  const behaviorPageSize = 8;
+  const behaviorPageSize = 12;
   const behaviorTotal = ref(0);
   const usingListProperties = computed(() => propertyStatus.value === "error" && Boolean(identity.value.listProperties?.length));
   const displayProperties = computed(() =>
@@ -113,7 +114,7 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
   async function loadEntityBehaviors(page = behaviorPage.value): Promise<void> {
     if (disposed) return;
     const current = { ...identity.value };
-    const key = JSON.stringify([current, page]);
+    const key = JSON.stringify([current, page, selectedBehaviorCategoryId.value]);
     if (behaviorPending === key) return;
     behaviorPending = key;
     const request = generation;
@@ -128,6 +129,7 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
       const response = await getListOntologyActionInterface({
         ontologySpaceId: spaceId,
         ontologyId: current.objectId,
+        ...(selectedBehaviorCategoryId.value !== "all" ? { categoryId: Number(selectedBehaviorCategoryId.value) } : {}),
         status: 1,
         pageNum: page,
         pageSize: behaviorPageSize,
@@ -183,6 +185,7 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
       generation += 1;
       propertyPending = categoryPending = behaviorPending = relationPending = "";
       selectedCategoryId.value = "all";
+      selectedBehaviorCategoryId.value = "all";
       behaviorPage.value = 1;
       behaviorTotal.value = 0;
       void loadEntityRelations();
@@ -197,6 +200,9 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
     generation += 1;
     behaviorRevision += 1;
   });
+  watch(selectedBehaviorCategoryId, () => {
+    void loadEntityBehaviors(1);
+  });
   return {
     relations,
     relationStatus,
@@ -206,6 +212,7 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
     categories,
     behaviors,
     selectedCategoryId,
+    selectedBehaviorCategoryId,
     filteredProperties,
     displayProperties,
     usingListProperties,
