@@ -122,9 +122,19 @@ test("function operator panel wires workspace composable and basic form", () => 
   {
     const typeSource = readSource("../src/types/pages/ontologyFunctionOperatorType.ts");
     assert.match(typeSource, /FUNCTION_OPERATOR_COMPOSITE_PUBLIC\s*=\s*false/);
+    assert.match(typeSource, /FUNCTION_OPERATOR_BASIC_PUBLIC\s*=\s*false/);
     assert.match(typeSource, /FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS/);
     assert.match(typeSource, /item\.value !== ["']composite["']/);
+    assert.match(typeSource, /item\.value !== ["']basic["']/);
     assert.match(typeSource, /value:\s*["']composite["']\s*,\s*label:\s*["']函数编排["']/);
+    assert.match(typeSource, /value:\s*["']basic["']\s*,\s*label:\s*["']基础函数["']/);
+  }
+  {
+    const formSourceForDefault = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue");
+    const emptyDraftMatch = formSourceForDefault.match(/function createEmptyDraft\(\)[\s\S]*?\n\}/);
+    assert.ok(emptyDraftMatch, "createEmptyDraft should exist");
+    assert.match(emptyDraftMatch[0], /type:\s*["']code["']/);
+    assert.doesNotMatch(emptyDraftMatch[0], /type:\s*["']basic["']/);
   }
   assert.match(panelSource, /FunctionOperatorFormDialog/);
   assert.match(panelSource, /FunctionOperatorDetailDrawer/);
@@ -410,7 +420,7 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(formSource, /请输入API名称/);
   assert.match(formSource, /请输入函数api名称/);
   assert.match(formSource, /请选择调用协议/);
-  assert.match(formSource, /请选择基础函数、脚本函数、外部 API、容器算子或函数编排/);
+  assert.match(formSource, /请选择脚本函数、外部 API 或容器算子/);
   assert.match(formSource, /label="函数名称"[\s\S]*label="函数api名称"/);
   assert.match(formSource, /label="函数版本"[\s\S]*label="函数说明"/);
   assert.match(formSource, /prop="version"/);

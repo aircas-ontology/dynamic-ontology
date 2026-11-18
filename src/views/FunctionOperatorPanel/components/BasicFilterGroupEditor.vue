@@ -14,14 +14,27 @@
       <div v-for="(child, index) in group.children" :key="`${depth}-${index}-${child.type}`" class="basic-filter-group__child">
         <template v-if="child.type === 'FILTER' && child.filter">
           <div class="basic-filter-row">
+            <el-select
+              v-if="propertyOptions.length > 0"
+              :model-value="child.filter.propertyApiName || undefined"
+              class="basic-filter-row__property"
+              filterable
+              clearable
+              :placeholder="propertyPlaceholder"
+              @update:model-value="(value) => updateFilterProperty(index, value == null ? '' : String(value))"
+            >
+              <el-option v-for="item in propertyOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
             <el-input
+              v-else
               :model-value="child.filter.propertyApiName"
               class="basic-filter-row__property"
               maxlength="64"
-              placeholder="输入变量名"
+              :placeholder="propertyPlaceholder"
               @update:model-value="(value) => updateFilterProperty(index, value)"
             />
             <el-select
+              v-if="showValueTypeSelect"
               :model-value="child.filter.valueType"
               class="basic-filter-row__value-type"
               @update:model-value="(value) => updateFilterValueType(index, value)"
@@ -33,7 +46,7 @@
             </el-select>
             <div class="basic-filter-row__values">
               <template v-if="opNeedsRange(child.filter.op)">
-                <template v-if="child.filter.valueType === 'number'">
+                <template v-if="showValueTypeSelect && child.filter.valueType === 'number'">
                   <el-input-number
                     :model-value="Number(child.filter.values?.[0] ?? 0)"
                     class="basic-filter-row__number"
@@ -69,7 +82,7 @@
               </template>
               <template v-else-if="opNeedsValue(child.filter.op)">
                 <el-select
-                  v-if="child.filter.valueType === 'boolean'"
+                  v-if="showValueTypeSelect && child.filter.valueType === 'boolean'"
                   :model-value="Boolean(child.filter.value)"
                   @update:model-value="(value) => updateFilterValue(index, Boolean(value))"
                 >
@@ -77,7 +90,7 @@
                   <el-option label="false" :value="false" />
                 </el-select>
                 <el-input-number
-                  v-else-if="child.filter.valueType === 'number'"
+                  v-else-if="showValueTypeSelect && child.filter.valueType === 'number'"
                   :model-value="Number(child.filter.value ?? 0)"
                   class="basic-filter-row__number"
                   controls-position="right"
@@ -101,7 +114,14 @@
               <span>分组</span>
               <el-button type="danger" plain class="basic-filter-row__remove" @click="removeChild(index)">删除分组</el-button>
             </div>
-            <BasicFilterGroupEditor :group="child.group" :depth="depth + 1" @update:group="(value) => updateNestedGroup(index, value)" />
+            <BasicFilterGroupEditor
+              :group="child.group"
+              :depth="depth + 1"
+              :property-placeholder="propertyPlaceholder"
+              :property-options="propertyOptions"
+              :show-value-type-select="showValueTypeSelect"
+              @update:group="(value) => updateNestedGroup(index, value)"
+            />
           </div>
         </template>
       </div>
@@ -124,10 +144,23 @@ import { createEmptyBasicFilterGroup, createEmptyBasicFilterNode, opNeedsList, o
 
 defineOptions({ name: "BasicFilterGroupEditor" });
 
-const props = defineProps<{
-  group: BasicFilterDocument;
-  depth: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    group: BasicFilterDocument;
+    depth: number;
+    /** 属性/变量名输入框占位文案。 */
+    propertyPlaceholder?: string;
+    /** 有值时属性列改为单选；空数组则仍为文本输入。 */
+    propertyOptions?: ReadonlyArray<{ value: string; label: string }>;
+    /** 是否展示数据类型下拉；基础函数行为侧关闭。 */
+    showValueTypeSelect?: boolean;
+  }>(),
+  {
+    propertyPlaceholder: "输入变量名",
+    propertyOptions: () => [],
+    showValueTypeSelect: true,
+  },
+);
 
 const emit = defineEmits<{
   "update:group": [value: BasicFilterDocument];

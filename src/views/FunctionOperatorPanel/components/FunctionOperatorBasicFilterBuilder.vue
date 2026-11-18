@@ -1,6 +1,13 @@
 <template>
   <div class="basic-filter-builder">
-    <BasicFilterGroupEditor :group="model" :depth="0" @update:group="emitUpdate" />
+    <BasicFilterGroupEditor
+      :group="model"
+      :depth="0"
+      :property-placeholder="propertyPlaceholder"
+      :property-options="propertyOptions"
+      :show-value-type-select="showValueTypeSelect"
+      @update:group="emitUpdate"
+    />
   </div>
 </template>
 
@@ -12,9 +19,22 @@ import { parseBasicFilterConfig, stringifyBasicFilterConfig } from "@/utils/func
 
 import BasicFilterGroupEditor from "./BasicFilterGroupEditor.vue";
 
-const props = defineProps<{
-  modelValue: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: string;
+    /** 属性/变量名输入框占位文案。 */
+    propertyPlaceholder?: string;
+    /** 有值时属性列改为单选；空数组则仍为文本输入。 */
+    propertyOptions?: ReadonlyArray<{ value: string; label: string }>;
+    /** 是否展示数据类型下拉；基础函数行为侧关闭。 */
+    showValueTypeSelect?: boolean;
+  }>(),
+  {
+    propertyPlaceholder: "输入变量名",
+    propertyOptions: () => [],
+    showValueTypeSelect: true,
+  },
+);
 
 const emit = defineEmits<{
   "update:modelValue": [value: string];

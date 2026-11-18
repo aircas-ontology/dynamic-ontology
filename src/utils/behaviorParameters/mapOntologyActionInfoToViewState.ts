@@ -53,7 +53,7 @@ function mapActionKindLabel(actionKind: string): string {
 function mapSubjectTypeLabel(subjectType: string): string {
   if (subjectType === "PROPERTY_VALUE") return "属性值";
   if (subjectType === "LINK") return "关系实例";
-  if (subjectType === "BASIC_OPERATOR") return "基础函数算子";
+  if (subjectType === "BASIC_FUNCTION" || subjectType === "BASIC_OPERATOR") return "基础函数";
   return subjectType || "—";
 }
 

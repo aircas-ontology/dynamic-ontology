@@ -152,6 +152,16 @@ export interface SpaceBehaviorDraft {
   basicAction: SpaceBehaviorBasicAction;
   /** 属性值新增 / 基础函数算子：选中对象唯一标识。 */
   ontologyIdentifier: string;
+  /** 基础函数：多选对象 uniqueIdentifier 列表（须同目录）。 */
+  ontologyIdentifiers: string[];
+  /** 基础函数：聚合类型；空表示 QUERY。 */
+  basicFunctionAggFunc: string;
+  /** 基础函数：聚合参数名 targetField。 */
+  basicFunctionTargetField: string;
+  /** 基础函数：展示字段 apiName 列表（QUERY）。 */
+  basicFunctionSelectFields: string[];
+  /** 基础函数：参数配置序列化 JSON（filters 表单）。 */
+  basicFunctionParameterConfig: string;
   /** 基础函数算子：参数名 → 属性 apiName。 */
   operatorParamBindings: Record<string, string>;
   /** 基础函数算子：参数名 → 详情 paramId（functionParamId）。 */
@@ -272,13 +282,13 @@ export const SPACE_BEHAVIOR_KIND_LABELS: Record<SpaceBehaviorKind, string> = {
 export const SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS: ReadonlyArray<{ value: SpaceBehaviorValueType; label: string }> = [
   { value: "attributeValue", label: "属性值" },
   { value: "relationInstance", label: "关系实例" },
-  { value: "basicFunctionOperator", label: "基础函数算子" },
+  { value: "basicFunctionOperator", label: "基础函数" },
 ];
 
 export const SPACE_BEHAVIOR_VALUE_TYPE_LABELS: Record<SpaceBehaviorValueType, string> = {
   attributeValue: "属性值",
   relationInstance: "关系实例",
-  basicFunctionOperator: "基础函数算子",
+  basicFunctionOperator: "基础函数",
 };
 
 export const SPACE_BEHAVIOR_RELATION_TARGET_STATUS_OPTIONS: ReadonlyArray<{

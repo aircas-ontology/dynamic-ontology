@@ -1,4 +1,5 @@
 import type {
+  CreateOntologyActionBasicFunction,
   CreateOntologyActionKind,
   CreateOntologyActionOperation,
   CreateOntologyActionOutputMode,
@@ -183,4 +184,6 @@ export interface GetOntologyActionInfoData {
   treeDefinition?: BehaviorTreeDefinition | null;
   /** 行为树执行要求；仅 actionKind=TREE 时可能有值。 */
   executeInputs?: BehaviorTreeExecuteInputs | null;
+  /** 基础函数配置；subjectType=BASIC_FUNCTION 时与创建同构。 */
+  basicFunction?: CreateOntologyActionBasicFunction | null;
 }

@@ -29,14 +29,14 @@ POST /ontology/action
 
 ### 3.1 通用字段
 
-| 字段                 | 类型    | 必填   | 说明                                                    |
-| -------------------- | ------- | ------ | ------------------------------------------------------- |
-| `actionApi`          | String  | **是** | 行为唯一标识，如 `act.pv.weapon.add`                    |
-| `displayName`        | String  | **是** | 行为显示名称                                            |
-| `description`        | String  | 否     | 描述                                                    |
-| `categoryId`         | Integer | **是** | 行为分类 id（从分类树获取）                             |
-| `ontologyIdentifier` | String  | **是** | 本体唯一标识                                            |
-| `actionKind`         | String  | **是** | 行为类别：`BASE`（基础行为）/ `APPLICATION`（应用行为） |
+| 字段                 | 类型    | 必填   | 说明                                                                         |
+| -------------------- | ------- | ------ | ---------------------------------------------------------------------------- |
+| `actionApi`          | String  | **是** | 行为唯一标识，如 `act.pv.weapon.add`                                         |
+| `displayName`        | String  | **是** | 行为显示名称                                                                 |
+| `description`        | String  | 否     | 描述                                                                         |
+| `categoryId`         | Integer | **是** | 行为分类 id（从分类树获取）                                                  |
+| `ontologyIdentifier` | String  | 视类型 | 本体唯一标识；**基础函数行为不传**，改用 `basicFunction.ontologyIdentifiers` |
+| `actionKind`         | String  | **是** | 行为类别：`BASE`（基础行为）/ `APPLICATION`（应用行为）                      |
 
 ---
 
@@ -180,56 +180,110 @@ POST /ontology/action
 
 ---
 
-### 3.4 基础算子行为（`actionKind=BASE`, `subjectType=BASIC_OPERATOR`）
+### 3.4 基础函数行为（`actionKind=BASE`, `subjectType=BASIC_FUNCTION`）
 
-绑定 `BASIC_QUERY` 算子，只读，`outputMode` 固定 `RESULT_ONLY`。
+内联定义查询/聚合逻辑，**不绑定** `BASIC_QUERY` 算子，也不传顶层 `ontologyIdentifier` / `functionApi` / `mappingIns`。对象列表放在 `basicFunction.ontologyIdentifiers`（同一目录下可多选）。
 
-| 字段          | 类型   | 必填   | 说明                                              |
-| ------------- | ------ | ------ | ------------------------------------------------- |
-| `subjectType` | String | **是** | 固定 `"BASIC_OPERATOR"`                           |
-| `functionApi` | String | **是** | BASIC_QUERY 算子 api                              |
-| `outputMode`  | String | 否     | 固定 `"RESULT_ONLY"`（不传也行）                  |
-| `mappingIns`  | Array  | 否     | 变量绑定（**必须用** `FIXED` **传属性 apiName**） |
+| 字段            | 类型   | 必填   | 说明                    |
+| --------------- | ------ | ------ | ----------------------- |
+| `subjectType`   | String | **是** | 固定 `"BASIC_FUNCTION"` |
+| `basicFunction` | Object | **是** | 基础函数配置，见下表    |
 
-**关键限制**：BASIC_QUERY 算子的变量绑定需要的是**属性的 apiName**（用于构建 SQL 的列名），不是属性的数据值。因此 `sourceType` **只能用** `FIXED`，`sourceConfig` 填属性的 apiName。
+**`basicFunction` 字段**：
 
-**为什么不能用** `sourceType=PROPERTY`：
+| 字段                  | 类型     | 必填   | 说明                                                      |
+| --------------------- | -------- | ------ | --------------------------------------------------------- |
+| `ontologyIdentifiers` | String[] | **是** | 对象唯一标识列表；单对象传 1 个，多对象传多个（须同目录） |
+| `mode`                | String   | **是** | `"AGGREGATE"`（聚合）/ `"QUERY"`（查询）                  |
+| `aggFunc`             | String   | 聚合时 | 如 `"COUNT"` / `"SUM"`；`mode=AGGREGATE` 时必填           |
+| `targetField`         | String   | 聚合时 | 聚合目标属性 apiName；`mode=AGGREGATE` 时必填             |
+| `selectFields`        | String[] | 查询时 | 查询返回的属性 apiName 列表；`mode=QUERY` 时必填          |
+| `filters`             | Object   | 否     | 过滤树：`logic` + `children`（`FILTER` / `GROUP` 嵌套）   |
 
-- `PROPERTY` 会在执行时取具体实例的属性数据值（如 "F-22"）
-- 但 BASIC_QUERY 需要的是属性 apiName（如 "name"）来构建 SQL
-- 如果传数据值，SQL 会变成 `SELECT "F-22" FROM table`，这是错误的
-
-**示例**：
-
-假设 BASIC_QUERY 算子 `act.bq.aircraft` 的 queryConfig 定义了一个变量 `nm`（代表要查询的属性），前端需要把 `nm` 绑定到 "name" 属性：
+**示例 1：单对象 · 聚合**
 
 ```json
 {
-  "ontologyIdentifier": "ea512d439cd34c6ebbcde6b692261ab5",
-  "categoryId": 14,
-  "actionApi": "act.bo.aircraft",
-  "displayName": "基础算子-查飞机",
-  "description": "基础算子行为：绑定 BASIC_QUERY，只查询不回写",
   "actionKind": "BASE",
-  "subjectType": "BASIC_OPERATOR",
-  "functionApi": "act.bq.aircraft",
-  "outputMode": "RESULT_ONLY",
-  "mappingIns": [
-    {
-      "functionParamId": 2292,
-      "parameterName": "nm",
-      "sourceType": "FIXED",
-      "sourceConfig": "name"
+  "subjectType": "BASIC_FUNCTION",
+  "actionApi": "count_active_satellite",
+  "displayName": "统计在轨卫星数量",
+  "description": "基础函数：按轨道类型统计在轨卫星条数",
+  "categoryId": 12,
+  "basicFunction": {
+    "ontologyIdentifiers": ["3f2a9c1e-7b4d-4a86-9e21-5c8d1f0a6b34"],
+    "mode": "AGGREGATE",
+    "aggFunc": "COUNT",
+    "targetField": "orbit_type",
+    "filters": {
+      "logic": "AND",
+      "children": [
+        { "type": "FILTER", "filter": { "propertyApiName": "status", "op": "EQ", "value": "on_orbit" } },
+        { "type": "FILTER", "filter": { "propertyApiName": "launch_date", "op": "GE", "value": "2020-01-01" } },
+        {
+          "type": "GROUP",
+          "group": {
+            "logic": "OR",
+            "children": [
+              { "type": "FILTER", "filter": { "propertyApiName": "max_mach", "op": "GT", "value": 20 } },
+              { "type": "FILTER", "filter": { "propertyApiName": "owner", "op": "IN", "values": ["aa", "bb"] } }
+            ]
+          }
+        }
+      ]
     }
-  ]
+  }
 }
 ```
 
-**执行时**：
+**示例 2：单对象 · 查询**
 
-- 行为测试只需传 `entityPrimaryKey`（指定查哪个实例的数据）
-- 算子内部用 `sourceConfig` 里的 "name" 作为列名构建 SQL：`SELECT name FROM table WHERE ...`
-- 返回该实例的 name 属性值
+```json
+{
+  "actionKind": "BASE",
+  "subjectType": "BASIC_FUNCTION",
+  "actionApi": "query_satellite_speed",
+  "displayName": "查询卫星速度",
+  "categoryId": 12,
+  "basicFunction": {
+    "ontologyIdentifiers": ["3f2a9c1e-7b4d-4a86-9e21-5c8d1f0a6b34"],
+    "mode": "QUERY",
+    "selectFields": ["name", "speed", "duty_log_mileage"], //展示字段
+    "filters": {
+      "logic": "AND",
+      "children": [{ "type": "FILTER", "filter": { "propertyApiName": "status", "op": "NE", "value": "scrap" } }]
+    }
+  }
+}
+```
+
+**示例 3：多对象 · 聚合**
+
+```json
+{
+  "actionKind": "BASE",
+  "subjectType": "BASIC_FUNCTION",
+  "actionApi": "sum_cost_fly_objects",
+  "displayName": "统计飞行器总成本",
+  "categoryId": 12,
+  "basicFunction": {
+    "ontologyIdentifiers": ["3f2a9c1e-7b4d-4a86-9e21-5c8d1f0a6b34", "a5e8c206-3f17-4d92-8b74-1c6f9d3e5028"],
+    "mode": "AGGREGATE",
+    "aggFunc": "SUM",
+    "targetField": "total_cost",
+    "filters": {
+      "logic": "AND",
+      "children": [{ "type": "FILTER", "filter": { "propertyApiName": "status", "op": "IS_NOT_NULL" } }]
+    }
+  }
+}
+```
+
+**测试约定**（详见 `docs/20261105/testActionApi.md`）：
+
+- 不传实例：默认查全部
+- 单对象传 `entityPrimaryKey`：查单个实例
+- 多对象传 `entityPrimaryKeys`：按对象唯一标识分别指定实例
 
 ---
 
@@ -581,7 +635,7 @@ POST /ontology/action
 ### ontologyIdentifier 必填规则
 
 - **应用行为**：可选（前端不选对象，后端跳过关系端点归属校验）
-- **基础算子行为**：必须传
+- **基础函数行为**：不传顶层 `ontologyIdentifier`；对象列表写在 `basicFunction.ontologyIdentifiers`（可多选）
 - **属性值行为**：必须传（后端用它定位对象下的属性）
 - **实例关系行为**：必须传
 

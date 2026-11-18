@@ -2,7 +2,7 @@
 
 **接口**：`GET /ontology/function/list`
 
-**用途**：创建行为时选择要绑定的算子。行为侧只展示「基础算子」或「应用行为算子」，不展示「函数编排」。
+**用途**：创建行为时选择要绑定的算子。行为侧用于「应用行为」选算子；**基础函数行为不绑算子、不调用本接口**。不展示「函数编排」。
 
 ### 1.1 请求参数（Query String）
 
@@ -24,13 +24,9 @@
 
 - 不调用本接口。
 
-**场景 B：创建「基础算子行为」时，只查基础算子**
+**场景 B：创建「基础函数行为」时，不展示算子选择**
 
-```http
-GET /function/list?ontologySpaceId=156&types=BASIC_QUERY&publishStatus=1&pageNum=1&pageSize=20
-```
-
-> 期望：`data.records[]` 里每条 `type=BASIC_QUERY`、`publishStatus=1`。
+- 不调用本接口（配置写在创建行为的 `basicFunction` 内联字段中）。
 
 **场景 C：创建「应用行为」时，查自定义/外部/容器算子**
 

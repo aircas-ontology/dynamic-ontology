@@ -45,6 +45,11 @@ export type { CreateFunctionOperatorTemplateData, CreateFunctionOperatorTemplate
 export type { CreateFunctionRateLimitTemplateData, CreateFunctionRateLimitTemplateParams } from "./apis/createFunctionRateLimitTemplateType";
 export type {
   CreateOntologyActionData,
+  CreateOntologyActionBasicFunction,
+  CreateOntologyActionBasicFunctionFilterCondition,
+  CreateOntologyActionBasicFunctionFilterNode,
+  CreateOntologyActionBasicFunctionFilters,
+  CreateOntologyActionBasicFunctionMode,
   CreateOntologyActionKind,
   CreateOntologyActionLinkMapping,
   CreateOntologyActionMappingCategory,
@@ -531,6 +536,7 @@ export type {
 } from "./pages/ontologyFunctionOperatorBasicFilterType";
 export {
   FUNCTION_OPERATOR_AGG_FUNC_OPTIONS,
+  FUNCTION_OPERATOR_BASIC_PUBLIC,
   FUNCTION_OPERATOR_COMPOSITE_PUBLIC,
   FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS,
   FUNCTION_OPERATOR_PUBLISH_STATUS_OPTIONS,

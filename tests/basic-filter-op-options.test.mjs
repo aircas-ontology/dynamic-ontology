@@ -91,8 +91,19 @@ test("basic filter editor wires list and range helpers", () => {
   assert.match(source, /opNeedsRange/);
   assert.match(source, /updateFilterList/);
   assert.match(source, /逗号分隔/);
+  assert.match(source, /propertyPlaceholder/);
+  assert.match(source, /propertyOptions/);
+  assert.match(source, /showValueTypeSelect/);
+  assert.match(source, /输入变量名/);
+  assert.match(source, /v-if="propertyOptions\.length > 0"/);
   assert.doesNotMatch(source, /group\.children\.length <= 1/);
   assert.doesNotMatch(source, /if \(props\.group\.children\.length <= 1\)/);
+});
+
+test("basic filter builder forwards property options to group editor", () => {
+  const source = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorBasicFilterBuilder.vue");
+  assert.match(source, /propertyOptions/);
+  assert.match(source, /:property-options="propertyOptions"/);
 });
 
 test("parseBasicFilterConfig keeps empty children without padding a default filter", () => {
