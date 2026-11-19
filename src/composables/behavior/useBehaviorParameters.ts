@@ -7,6 +7,7 @@ import type {
   BehaviorTestEntityDataRow,
   BehaviorTestEntityRow,
   BehaviorTestParamRow,
+  GetOntologyActionInfoData,
   OntologyEntityInfo,
   RelationMountSide,
   SpaceBehaviorActionInfoViewParamRow,
@@ -30,7 +31,7 @@ import {
   type ApplicationOntologyPickerSide,
 } from "@/utils/behaviorParameters/collectApplicationPropertyOntologyPickers";
 import { mapOntologyEntityRowDetailPageToDataRows } from "@/utils/behaviorParameters/mapOntologyEntityRowDetailToDataRows";
-import { mapOntologyActionInfoToViewState } from "@/utils/behaviorParameters/mapOntologyActionInfoToViewState";
+import { mapOntologyActionInfoToViewState, type SpaceBehaviorActionInfoViewState } from "@/utils/behaviorParameters/mapOntologyActionInfoToViewState";
 import { isMainStorageGroup, normalizeStorageGroup } from "@/utils/behaviorParameters/resolveAttributeValueSelection";
 /** @description 创建独立的行为参数配置状态，销毁时使未完成请求失效。 @param props 当前空间和行为。 @param apis 调用方提供的数据查询接口，不包含测试执行接口。 @returns 参数状态、选择方法及快照校验能力。 */
 export function useBehaviorParameters(
@@ -56,6 +57,9 @@ export function useBehaviorParameters(
   const detailLoading = ref(false);
 
   const detailError = ref("");
+
+  /** 行为详情摘要，供测试弹窗左侧展示；由各加载路径写入，避免重复请求。 */
+  const actionInfoViewState = ref<SpaceBehaviorActionInfoViewState | null>(null);
 
   const paramRows = ref<BehaviorTestParamRow[]>([]);
 
@@ -333,12 +337,28 @@ export function useBehaviorParameters(
     selectedToEntities.value = [];
   }
 
+  /**
+   * @description 将行为详情接口 data 映射为摘要状态并写入共享字段。
+   * @param data 行为详情。
+   * @param fallbackActionApi 详情缺 api 时的回退值。
+   * @returns 映射后的查看状态。
+   */
+  function applyActionInfoViewState(data: GetOntologyActionInfoData, fallbackActionApi = ""): SpaceBehaviorActionInfoViewState {
+    const viewState = mapOntologyActionInfoToViewState(data);
+    actionInfoViewState.value = viewState;
+    resolvedActionApi.value = viewState.actionApi || fallbackActionApi;
+    resolvedStorageGroup.value = viewState.storageGroup.trim();
+    resolvedOntologyUniqIdentifier.value = viewState.ontologyUniqIdentifier.trim();
+    return viewState;
+  }
+
   /** @description 清空参数详情状态。 */
   function clearDetailParamState(): void {
     paramRows.value = [];
     resetParamValues([]);
     detailError.value = "";
     detailLoading.value = false;
+    actionInfoViewState.value = null;
     resolvedActionApi.value = "";
     resolvedStorageGroup.value = "";
     resolvedOntologyUniqIdentifier.value = "";
@@ -1110,10 +1130,7 @@ export function useBehaviorParameters(
       const response = await getOntologyActionInfoInterface({ actionApi, ontologySpaceId });
       if (requestToken !== detailLoadToken.value) return;
       if (response.code !== 200 || !response.data) throw new Error(response.message || "行为详情加载失败");
-      const viewState = mapOntologyActionInfoToViewState(response.data);
-      resolvedActionApi.value = viewState.actionApi || actionApi;
-      resolvedStorageGroup.value = viewState.storageGroup.trim();
-      resolvedOntologyUniqIdentifier.value = viewState.ontologyUniqIdentifier.trim();
+      const viewState = applyActionInfoViewState(response.data, actionApi);
       applicationInputRows.value = viewState.inputRows;
       const writePropertyOutputRows = filterWritePropertyOutputRows(viewState.outputRows);
       applicationWritePropertyOutputRows.value = writePropertyOutputRows;
@@ -1161,6 +1178,7 @@ export function useBehaviorParameters(
       applicationHasLinkMapping.value = false;
       paramRows.value = [];
       resetParamValues([]);
+      actionInfoViewState.value = null;
       resolvedActionApi.value = "";
       resolvedStorageGroup.value = "";
       resolvedOntologyUniqIdentifier.value = "";
@@ -1378,7 +1396,7 @@ export function useBehaviorParameters(
       const detailResponse = await getOntologyActionInfoInterface({ actionApi, ontologySpaceId });
       if (requestToken !== relationContextLoadToken.value) return;
       if (detailResponse.code !== 200 || !detailResponse.data) throw new Error(detailResponse.message || "行为详情加载失败");
-      resolvedActionApi.value = (detailResponse.data.actionApi ?? "").trim() || actionApi;
+      applyActionInfoViewState(detailResponse.data, actionApi);
       const linkId = (detailResponse.data.linkMapping?.ontologyLinkUniqIdentifier ?? "").trim();
       if (!linkId) throw new Error("行为未配置关系唯一标识，无法测试");
       ontologyLinkUniqIdentifier.value = linkId;
@@ -1573,6 +1591,7 @@ export function useBehaviorParameters(
 
   return {
     applyInitialEntitySelection,
+    applyActionInfoViewState,
     loadApplicationTestForm,
     loadRelationTestContext,
     buildParameterRequest,
@@ -1580,6 +1599,7 @@ export function useBehaviorParameters(
     isApplicationTest,
     detailLoading,
     detailError,
+    actionInfoViewState,
     applicationInputRows,
     asApplicationInputRow,
     normalizeApplicationSourceType,

@@ -11,6 +11,12 @@ export interface BehaviorSchedulingResultRecord {
   msg?: string;
   executeResult?: string;
   triggerTime?: string;
+  /** 开始执行时间。 */
+  executeStartTime?: string;
+  /** 执行机主机名。 */
+  executorHost?: string;
+  /** 执行机 IP。 */
+  executorIp?: string;
   requestParam?: string;
   completeTime?: string;
   taskStatus?: "PENDING" | "FAILED" | "COMPLETED";

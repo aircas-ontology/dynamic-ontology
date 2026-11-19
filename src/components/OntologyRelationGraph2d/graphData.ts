@@ -25,6 +25,24 @@ export interface RelationGraph2dData {
 }
 
 /**
+ * @description 隐藏收起节点的出线，并移除没有其他入线及可见出线的终点。
+ * @param graph 完整关系图。
+ * @param collapsed 收起节点的标识集合。
+ * @returns 可见节点及关系。
+ */
+export function filterCollapsedRelationGraph(graph: RelationGraph2dData, collapsed: ReadonlySet<string>): RelationGraph2dData {
+  const links = graph.links.filter((link) => !collapsed.has(link.source));
+  const affected = new Set(graph.links.filter((link) => collapsed.has(link.source) && link.source !== link.target).map((link) => link.target));
+  const hidden = new Set(
+    [...affected].filter((id) => !links.some((link) => link.target === id && link.source !== id) && !links.some((link) => link.source === id)),
+  );
+  return {
+    nodes: graph.nodes.filter((node) => !hidden.has(node.id)),
+    links: links.filter((link) => !hidden.has(link.source) && !hidden.has(link.target)),
+  };
+}
+
+/**
  * @description 将空间关系列表转换为二维力导向图节点与有向边；忽略空白端点，按种子名标记中心节点并统计度数。
  * @param relations 可见关系列表。
  * @param seedNames 中心对象名称集合。

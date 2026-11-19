@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { mapOperatorParametersToScriptParamTree } from "../src/views/FunctionOperatorPanel/utils/mapOperatorParametersToScriptParamTree.ts";
+import { mapOperatorParametersToScriptParamTree } from "../src/utils/mapOperatorParametersToScriptParamTree.ts";
 
 test("mapOperatorParametersToScriptParamTree passes non-empty description and omits blank", () => {
   const nodes = mapOperatorParametersToScriptParamTree(

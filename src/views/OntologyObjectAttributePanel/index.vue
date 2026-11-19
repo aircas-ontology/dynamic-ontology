@@ -25,11 +25,13 @@
       :data-source-opening="dataSourceOpening"
       :visible-attributes="visibleAttributes"
       @update:attribute-search="attributeSearch = $event"
+      @open-metadata-manage="metadataDialogVisible = true"
       @open-data-source="openDataSource"
       @create-attribute="openCreateAttribute"
       @edit-attribute="handleEditAttribute"
       @remove-attribute="removeAttribute"
     />
+    <MetadataManageDialog v-model:visible="metadataDialogVisible" :ontology-identifier="String(route.params.objectId || '')" />
     <AttributeCategoryCreateDialog
       :visible="categoryDialogVisible"
       :parent-name="categoryParentName"
@@ -55,6 +57,7 @@
     />
     <AttributePropertyFormDialog
       :visible="attributeDialogVisible"
+      :ontology-identifier="String(route.params.objectId || '')"
       :editing-attribute-id="editingAttributeId"
       :datasource-locked="datasourceLocked"
       :draft="draft"
@@ -67,6 +70,7 @@
       @update:visible="attributeDialogVisible = $event"
       @update-primary="updateDraftPrimaryKey"
       @update-name-key="updateDraftNameKey"
+      @update-metadata="updateDraftMetadata"
       @confirm="saveAttributeDraft"
     />
     <AttributePropertyDetailDialog
@@ -113,7 +117,7 @@ import type {
 import { useRoute } from "vue-router";
 import { useAttributeCategoryTree } from "./composables/useAttributeCategoryTree";
 import { useAttributePropertyList } from "./composables/useAttributePropertyList";
-import { collectPropertyItemsFromTree, findCategory, filterCategoryNode, isAttributeItem, mapOntologyPropertyItem } from "./utils/attributePanelHelpers";
+import { findCategory, filterCategoryNode, isAttributeItem, mapOntologyPropertyItem } from "./utils/attributePanelHelpers";
 import AttributeCategoryCreateDialog from "./components/AttributeCategoryCreateDialog.vue";
 import AttributeCategoryEditDialog from "./components/AttributeCategoryEditDialog.vue";
 import AttributeCategoryTree from "./components/AttributeCategoryTree.vue";
@@ -121,6 +125,7 @@ import AttributePropertyFormDialog from "./components/AttributePropertyFormDialo
 import AttributePropertyDetailDialog from "./components/AttributePropertyDetailDialog.vue";
 import AttributePropertyTable from "./components/AttributePropertyTable.vue";
 import DataSourceAssociateDialog from "./components/DataSourceAssociateDialog.vue";
+import MetadataManageDialog from "./components/MetadataManageDialog.vue";
 
 interface DataSourceField {
   id: string;
@@ -135,6 +140,7 @@ interface DataSourceTable {
   name: string;
   schemaName: string;
   dataSourceId: string;
+  description: string;
   fields: DataSourceField[];
 }
 
@@ -172,6 +178,7 @@ interface PropertyBindPayload {
 
 const route = useRoute();
 const selectedCategoryId = ref("all");
+const metadataDialogVisible = ref(false);
 let categoryApi: ReturnType<typeof useAttributeCategoryTree>;
 
 const propertyApi = useAttributePropertyList({
@@ -242,6 +249,7 @@ const {
   saveAttributeDraft,
   updateDraftPrimaryKey,
   updateDraftNameKey,
+  updateDraftMetadata,
   removeAttribute,
 } = propertyApi;
 
@@ -305,18 +313,23 @@ const dataSourceTableError = ref("");
 const dataSourceColumnLoading = ref(false);
 const dataSourceColumnError = ref("");
 const autoDataSourceSubmitting = ref(false);
-const allAttributes = computed(() => collectPropertyItemsFromTree(categories.value, String(route.params.objectId || "")));
 const ontologyPropertyMappings = computed<OntologyPropertyMappingItem[]>(() =>
-  allAttributes.value.map((item) => ({
-    id: item.uniqueIdentifier,
-    displayName: item.displayName,
-    apiName: item.apiName,
-    categoryName: findCategory(categories.value, item.categoryId)?.label ?? "未分类",
-    storageGroup: item.storageGroup ?? "",
-    isPrimary: item.isPrimary,
-    isNameKey: item.isNameKey,
-    dataSource: resolvePropertyDataSourceBind(item.uniqueIdentifier),
-  })),
+  ontologyPropertyDetails.value.flatMap((item) => {
+    const id = item.uniqueIdentifier?.trim() ?? "";
+    if (!id) return [];
+    return [
+      {
+        id,
+        displayName: item.displayName ?? "",
+        apiName: item.apiName ?? "",
+        categoryName: findCategory(categories.value, item.categoryId === undefined ? "" : String(item.categoryId))?.label ?? "未分类",
+        storageGroup: item.storageGroup ?? "",
+        isPrimary: item.isPrimaryKey === true,
+        isNameKey: item.isTitleKey === true,
+        dataSource: resolvePropertyDataSourceBind(id),
+      },
+    ];
+  }),
 );
 
 /**
@@ -357,6 +370,7 @@ function mapDatasourceTables(response: GetOntologyDatasourceTablesData): DataSou
         name: record.tableName,
         schemaName: record.schemaName,
         dataSourceId: record.tableName,
+        description: record.description ?? "",
         fields: [],
       })),
     },
@@ -514,19 +528,19 @@ async function handleAutoDataSourceAssociate() {
 async function handleDataSourceSubmit(payloads: PropertyBindPayload[]) {
   const params: BatchUpdateOntologyPropertiesParams = [];
   for (const payload of payloads) {
-    const attribute = allAttributes.value.find((item) => item.uniqueIdentifier === payload.id);
-    if (!attribute) {
+    const detail = ontologyPropertyDetails.value.find((item) => item.uniqueIdentifier === payload.id);
+    if (!detail?.uniqueIdentifier) {
       dataSourceDialogRef.value?.setLoading(false);
       ElMessage.error("未找到待关联的对象属性，请重新打开弹窗后再试。");
       return;
     }
     params.push({
-      uniqueIdentifier: attribute.uniqueIdentifier,
-      displayName: attribute.displayName,
-      dataType: attribute.dataType,
-      isTitleKey: attribute.isNameKey,
-      isPrimaryKey: attribute.isPrimary,
-      storageGroup: attribute.storageGroup,
+      uniqueIdentifier: detail.uniqueIdentifier,
+      displayName: detail.displayName ?? "",
+      dataType: detail.propertyType ?? "",
+      isTitleKey: detail.isTitleKey === true,
+      isPrimaryKey: detail.isPrimaryKey === true,
+      storageGroup: detail.storageGroup ?? "",
       ...(payload.dataSource
         ? {
             datasource: {

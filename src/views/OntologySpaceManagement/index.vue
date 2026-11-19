@@ -20,7 +20,7 @@
     <p v-if="overviewError" class="ontology-space-management__overview-error" role="alert">{{ overviewError }}</p>
     <SectionToolbar
       :browse-only="browseOnly"
-      :title="browseOnly ? '对象空间浏览' : '对象空间管理'"
+      :title="browseOnly ? '空间浏览' : '空间管理'"
       v-model:keyword="keyword"
       v-model:order="order"
       v-model:view-mode="viewMode"

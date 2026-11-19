@@ -128,7 +128,9 @@ export type {
   DatasourceTableSummary,
   ListDatasourceConnectionsParams,
   ListDatasourceSchemasParams,
+  ListDatasourceTableColumnsByDatasourceParams,
   ListDatasourceTableColumnsParams,
+  ListDatasourceTablesByDatasourceParams,
   ListDatasourceTablesParams,
 } from "./apis/datasourceConnectionType";
 export type { DeleteActionCategoryParams } from "./apis/deleteActionCategoryType";
@@ -246,6 +248,7 @@ export type {
 } from "./apis/listFunctionRateLimitTemplateType";
 export type { ListOntologyActionData, ListOntologyActionParams, ListOntologyActionRecord } from "./apis/listOntologyActionType";
 export type { LoginData, LoginParams } from "./apis/loginType";
+export type { MetadataSchemaCreateParams, MetadataSchemaDeleteParams, MetadataSchemaUpdateParams, MetadataSchemaValueType } from "./apis/metadataSchemaType";
 export type {
   OntologyApiDocsComponents,
   OntologyApiDocsData,
@@ -494,6 +497,17 @@ export type {
   EntityBrowsingRouteName,
   EntityBrowsingTab,
 } from "./pages/entityBrowsingType";
+export { METADATA_VALUE_TYPE_OPTIONS, ROOT_METADATA_PARENT_ID } from "./pages/ontologyAttributeMetadataType";
+export type {
+  OntologyAttributeMetadataEnumRecord,
+  OntologyAttributeMetadataInputRecord,
+  OntologyAttributeMetadataRangeRecord,
+  OntologyAttributeMetadataRecord,
+  OntologyAttributeMetadataTreeNode,
+  OntologyAttributeMetadataValueType,
+  OntologyAttributeMetadataWorkspaceData,
+  OntologyAttributeMetadataWritePayload,
+} from "./pages/ontologyAttributeMetadataType";
 export { COMPOSITE_WORKFLOW_DND_MIME } from "./pages/ontologyCompositeWorkflowType";
 export type {
   CompositeWorkflowBranchConfig,

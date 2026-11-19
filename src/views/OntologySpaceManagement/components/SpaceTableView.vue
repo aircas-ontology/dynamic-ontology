@@ -8,7 +8,7 @@
     row-key="id"
     @row-click="openBrowseSpaceFromRow"
   >
-    <el-table-column label="空间名称" min-width="280">
+    <el-table-column label="空间名称" min-width="200">
       <template #default="{ row }">
         <div class="space-table-view__name">
           <span class="space-table-view__icon">
@@ -24,7 +24,7 @@
         </div>
       </template>
     </el-table-column>
-    <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+    <el-table-column prop="description" label="描述" min-width="300" show-overflow-tooltip />
     <el-table-column label="对象" width="90" align="center">
       <template #default="{ row }">{{ spaceRow(row).metrics.ontology }}</template>
     </el-table-column>

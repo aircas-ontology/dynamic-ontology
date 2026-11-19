@@ -40,6 +40,7 @@ export interface OntologyAttributeItem {
   isNameKey: boolean;
   datasourceId: string;
   datasourceColumnName: string;
+  metadata: Record<string, unknown>;
 }
 
 /** 属性新增/编辑表单草稿。 */
@@ -53,6 +54,7 @@ export interface OntologyAttributeDraft {
   description: string;
   isPrimary: boolean;
   isNameKey: boolean;
+  metadata: Record<string, unknown>;
 }
 
 /** 存储分组下拉选项。 */

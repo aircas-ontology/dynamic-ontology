@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="space ? '编辑对象空间' : '新建对象空间'"
+    :title="space ? '编辑对象空间' : '新建空间'"
     width="min(640px, 94vw)"
     :close-on-click-modal="false"
     :close-on-press-escape="!busy"

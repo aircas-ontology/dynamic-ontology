@@ -1,7 +1,7 @@
 import type { OnboardingGuidePageId, OnboardingGuideStep } from "@/composables/shared/useOnboardingGuide";
 
-/** 大步骤（chain）名称：新建对象空间。 */
-export const CHAIN_CREATE_SPACE = "新建对象空间";
+/** 大步骤（chain）名称：新建空间。 */
+export const CHAIN_CREATE_SPACE = "新建空间";
 
 /** 大步骤（chain）名称：新建主题。 */
 export const CHAIN_CREATE_THEME = "新建主题";
@@ -9,7 +9,7 @@ export const CHAIN_CREATE_THEME = "新建主题";
 /**
  * 六步流程式新手引导的统一步骤配置。
  *
- * 六步链：新建对象空间 → 新建对象 → 新建关系 → 新建属性 → 属性关联数据源 → 自动关联数据源。
+ * 六步链：新建空间 → 新建对象 → 新建关系 → 新建属性 → 属性关联数据源 → 自动关联数据源。
  * 每个大步骤按真实操作链路拆分为多个小步，逐元素高亮；弹窗内小步通过 enterTriggerSelector 自动点击对应打开按钮
  * 弹出目标弹窗，模式页签与工作区菜单类小步通过 enterClickSelector 在进入时自动切换；按钮类小步配置 advanceOnTargetClick，
  * 用户真实点击目标等同点击下一步。切换大步骤时通过 exitClickSelector 自动点击退出元素（如弹窗取消按钮）关闭上一步
@@ -17,18 +17,18 @@ export const CHAIN_CREATE_THEME = "新建主题";
  * 新页面挂载时经 sessionStorage 续接。数据填写与提交仍由用户真实完成。
  */
 export const ONBOARDING_GUIDE_STEPS: readonly OnboardingGuideStep[] = [
-  // ── 步骤1 新建对象空间（对象空间列表页） ────────────────────────────────────────
+  // ── 步骤1 新建空间（对象空间列表页） ────────────────────────────────────────
   {
     id: "space-create-open",
     chain: CHAIN_CREATE_SPACE,
     page: "space-list",
-    title: "新建对象空间",
-    description: "点击左上角「新建对象空间」按钮，打开创建弹窗。",
+    title: "新建空间",
+    description: "点击左上角「新建空间」按钮，打开创建弹窗。",
     targetSelector: ".welcome-panel__create",
     advanceOnTargetClick: true,
     exitClickSelector: "[data-onboarding='space-create-cancel']",
     leaveClickSelector: "[data-onboarding='space-enter']",
-    mockLabel: "新建对象空间",
+    mockLabel: "新建空间",
   },
   {
     id: "space-create-manual",

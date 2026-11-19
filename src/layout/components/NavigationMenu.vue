@@ -15,11 +15,11 @@
     <el-menu class="navigation-menu__list" :default-active="route.path" :collapse="collapsed" :collapse-transition="false" router>
       <el-menu-item index="/workspace/ontology-space-browse" :route="{ name: 'OntologySpaceBrowse' }">
         <el-icon><Monitor /></el-icon>
-        <template #title>对象空间浏览</template>
+        <template #title>空间浏览</template>
       </el-menu-item>
       <el-menu-item index="/workspace/ontology-space-management" :route="{ name: 'OntologySpaceManagement' }">
         <el-icon><Box /></el-icon>
-        <template #title>对象空间管理</template>
+        <template #title>空间管理</template>
       </el-menu-item>
       <el-menu-item index="/workspace/theme-space-browse" :route="{ name: 'ThemeSpaceBrowse' }">
         <el-icon><Files /></el-icon>

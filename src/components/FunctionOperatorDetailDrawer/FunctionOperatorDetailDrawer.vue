@@ -54,7 +54,7 @@
           </div>
         </template>
 
-        <div class="function-operator-detail__actions">
+        <div v-if="!readonly" class="function-operator-detail__actions">
           <el-button v-if="!browseOnly && operator.status !== 'published'" type="primary" @click="emitEdit">编辑</el-button>
           <el-button v-if="!browseOnly" type="warning" @click="emitTogglePublish">{{ operator.status === "published" ? "下线" : "发布" }}</el-button>
           <el-button v-if="!browseOnly" type="danger" @click="emitDelete">删除</el-button>
@@ -83,10 +83,12 @@ import AircasLoading from "@/components/AircasLoading.vue";
 import type { FunctionOperator, FunctionOperatorStatus } from "@/types";
 import { FUNCTION_OPERATOR_STATUS_LABELS, FUNCTION_OPERATOR_TYPE_LABELS } from "@/types";
 import FunctionOperatorScriptParamTree from "./FunctionOperatorScriptParamTree.vue";
-import { mapOperatorParametersToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
+import { mapOperatorParametersToScriptParamTree } from "@/utils/mapOperatorParametersToScriptParamTree";
 
 const props = defineProps<{
   browseOnly?: boolean;
+  /** 只读模式：隐藏编辑、发布、删除、测试等全部操作。 */
+  readonly?: boolean;
   modelValue: boolean;
   operator: FunctionOperator | null;
   loading?: boolean;

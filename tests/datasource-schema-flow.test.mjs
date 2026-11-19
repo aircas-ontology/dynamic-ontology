@@ -14,11 +14,12 @@ function createWizard(api = {}) {
   const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
   const code = ts.transpile(
     script +
-      "\nreturn { invalidateConnectionTest, chooseHistoricalConnection, activateNewConnection, filteredConnections, connectionKeyword, hasBoundConnection, activeStep, stepTitles, connectionMode, testConnection, isConnectionTested, connections, datasourceId, connectionForm, createConnection, selectConnection, loadConnections, objectName, categoryId, nextStep, loadSchemas, step, schemas, schemaName, tables, selected, primary, error, busy, resetTableSelection, fieldIdsByTable, foreignKeys, visible };",
+      "\nreturn { deleteHistoricalConnection, invalidateConnectionTest, chooseHistoricalConnection, activateNewConnection, filteredConnections, connectionKeyword, hasBoundConnection, activeStep, stepTitles, connectionMode, testConnection, isConnectionTested, connections, datasourceId, connectionForm, createConnection, selectConnection, loadConnections, objectName, categoryId, nextStep, loadSchemas, step, schemas, schemaName, tables, selected, primary, error, busy, resetTableSelection, fieldIdsByTable, foreignKeys, visible };",
     { target: ts.ScriptTarget.ES2022 },
   );
   const dependencies = {
     ElLoading: { directive: {} },
+    ElMessageBox: { confirm: async () => "confirm" },
     ref,
     reactive,
     computed,
@@ -400,6 +401,7 @@ test("clearing connection discards pending schema default", async () => {
 test("selected datasource supplies columns but is excluded from build selection", async () => {
   let selection;
   const wizard = createWizard({
+    getDatasourceTableColumnsByDatasourceInterface: () => assert.fail("bound space must keep original columns API"),
     defineEmits: () => (_event, value) => {
       selection = value;
     },
@@ -672,4 +674,346 @@ test("pending historical selection blocks duplicates and does not advance after 
   finish({ code: 200, data: [{ schemaName: "public" }] });
   await pending;
   assert.equal(wizard.step.value, -1);
+});
+
+test("unbound space queries tables by id and schema with retry", async () => {
+  let calls = 0;
+  const wizard = createWizard({
+    getDatasourceTableListInterface: () => assert.fail("unbound space must not use bound table API"),
+    getDatasourceTableListByDatasourceInterface: async (params) => {
+      calls++;
+      assert.deepEqual(params, { id: 7, schemaName: "ship_schema" });
+      return calls === 1 ? { code: 500, message: "读取表失败" } : { code: 200, data: [{ tableName: "ship", columnCount: 2 }] };
+    },
+  });
+  wizard.hasBoundConnection.value = false;
+  wizard.datasourceId.value = 7;
+  wizard.schemaName.value = "ship_schema";
+  await wizard.nextStep();
+  assert.equal(wizard.step.value, 0);
+  assert.equal(wizard.error.value, "读取表失败");
+  await wizard.nextStep();
+  assert.equal(wizard.step.value, 1);
+  assert.equal(wizard.tables.value[0].name, "ship");
+  assert.equal(calls, 2);
+});
+
+test("bound space keeps original table API and datasource parameter handling", async () => {
+  let calls = 0;
+  const wizard = createWizard({
+    getDatasourceTableListInterface: async (params) => {
+      calls++;
+      assert.deepEqual(params, { datasourceId: 7, schemaName: "public" });
+      return { code: 200, data: [] };
+    },
+    getDatasourceTableListByDatasourceInterface: () => assert.fail("bound space must keep original table API"),
+  });
+  wizard.datasourceId.value = 7;
+  wizard.schemaName.value = "public";
+  await wizard.nextStep();
+  assert.equal(calls, 1);
+  assert.equal(wizard.step.value, 1);
+});
+
+test("table by datasource API uses ontology prefix and documented query parameters", () => {
+  const source = readFileSync(new URL("../src/apis/datasourceConnectionApi.ts", import.meta.url), "utf8");
+  const code = ts.transpile(source, { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 });
+  const api = {};
+  new Function("exports", "require", "DOMAIN_CONFIG", code)(api, () => ({ request: (config) => config }), { ONTOLOGYMANAGE_URL: "https://example.test" });
+  const config = api.getDatasourceTableListByDatasourceInterface({ id: 7, schemaName: "public" });
+  assert.equal(config.url, "https://example.test/ontology/datasource/connection/table/list_by_datasource");
+  assert.equal(config.method, "get");
+  assert.deepEqual(config.params, { id: 7, schemaName: "public" });
+});
+
+test("unbound table query requires a valid datasource id", async () => {
+  const wizard = createWizard({ getDatasourceTableListByDatasourceInterface: () => assert.fail("invalid datasource id") });
+  wizard.hasBoundConnection.value = false;
+  wizard.schemaName.value = "public";
+  for (const id of [undefined, 0, -1, 1.5]) {
+    wizard.datasourceId.value = id;
+    await wizard.nextStep();
+    assert.equal(wizard.step.value, 0);
+    assert.match(wizard.error.value, /有效的数据源连接/);
+    assert.equal(wizard.busy.value, false);
+  }
+});
+
+test("unbound pending table query coalesces calls and ignores old schema response", async () => {
+  let finish;
+  let calls = 0;
+  const wizard = createWizard({
+    getDatasourceTableListByDatasourceInterface: () => {
+      calls++;
+      return new Promise((resolve) => {
+        finish = resolve;
+      });
+    },
+  });
+  wizard.hasBoundConnection.value = false;
+  wizard.datasourceId.value = 7;
+  wizard.schemaName.value = "old";
+  const pending = wizard.nextStep();
+  await wizard.nextStep();
+  assert.equal(calls, 1);
+  wizard.schemaName.value = "new";
+  wizard.resetTableSelection();
+  finish({ code: 200, data: [{ tableName: "old_table", columnCount: 0 }] });
+  await pending;
+  assert.deepEqual(wizard.tables.value, []);
+  assert.equal(wizard.step.value, 0);
+});
+
+test("unbound columns query uses id and retains edited property metadata", async () => {
+  let calls = 0;
+  const wizard = createWizard({
+    getDatasourceTableColumnsInterface: () => assert.fail("must not use bound columns API"),
+    getDatasourceTableColumnsByDatasourceInterface: async (params) => {
+      calls++;
+      assert.deepEqual(params, { id: 7, schemaName: "public", tableNames: ["ship"] });
+      return {
+        code: 200,
+        data: [{ tableName: "ship", columns: [{ columnName: "id", nativeType: "int", ontologyDataType: "Int", isPrimaryKey: true, description: "编号" }] }],
+      };
+    },
+  });
+  wizard.hasBoundConnection.value = false;
+  wizard.datasourceId.value = 7;
+  wizard.schemaName.value = "public";
+  wizard.tables.value = [{ id: "ship", name: "ship", storageName: "ship", fields: [] }];
+  wizard.selected.value = ["ship"];
+  wizard.primary.value = "ship";
+  wizard.step.value = 1;
+  await wizard.nextStep();
+  assert.equal(wizard.step.value, 2);
+  assert.equal(wizard.tables.value[0].fields[0].isPrimaryKey, true);
+  wizard.tables.value[0].fields[0].propertyName = "ship_id";
+  wizard.tables.value[0].fields[0].description = "编辑编号";
+  wizard.step.value = 1;
+  await wizard.nextStep();
+  assert.equal(calls, 2);
+  assert.equal(wizard.tables.value[0].fields[0].propertyName, "ship_id");
+  assert.equal(wizard.tables.value[0].fields[0].description, "编辑编号");
+});
+
+test("columns by datasource API sends id schema and comma-separated table names", () => {
+  const source = readFileSync(new URL("../src/apis/datasourceConnectionApi.ts", import.meta.url), "utf8");
+  const code = ts.transpile(source, { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 });
+  const api = {};
+  new Function("exports", "require", "DOMAIN_CONFIG", code)(api, () => ({ request: (config) => config }), { ONTOLOGYMANAGE_URL: "https://example.test" });
+  const config = api.getDatasourceTableColumnsByDatasourceInterface({ id: 7, schemaName: "public", tableNames: ["Ship", "port"] });
+  assert.equal(config.url, "https://example.test/ontology/datasource/connection/table/columns_by_datasource");
+  assert.equal(config.method, "get");
+  assert.deepEqual(config.params, { id: 7, schemaName: "public", tableNames: "Ship,port" });
+});
+
+test("unbound columns failure retries coalesce and stale responses are ignored", async () => {
+  let calls = 0;
+  let finish;
+  const wizard = createWizard({
+    getDatasourceTableColumnsByDatasourceInterface: async () => {
+      calls++;
+      if (calls === 1) return { code: 500, message: "字段查询失败" };
+      return new Promise((resolve) => {
+        finish = resolve;
+      });
+    },
+  });
+  wizard.hasBoundConnection.value = false;
+  wizard.datasourceId.value = 7;
+  wizard.schemaName.value = "public";
+  wizard.tables.value = [{ id: "ship", name: "ship", storageName: "ship", fields: [] }];
+  wizard.selected.value = ["ship"];
+  wizard.primary.value = "ship";
+  wizard.step.value = 1;
+  await wizard.nextStep();
+  assert.equal(wizard.error.value, "字段查询失败");
+  assert.equal(wizard.step.value, 1);
+  assert.equal(wizard.busy.value, false);
+  const pending = wizard.nextStep();
+  await wizard.nextStep();
+  assert.equal(calls, 2);
+  wizard.resetTableSelection();
+  finish({ code: 200, data: [{ tableName: "ship", columns: [{ columnName: "old_id", ontologyDataType: "Int" }] }] });
+  await pending;
+  assert.deepEqual(wizard.tables.value, []);
+  assert.equal(wizard.step.value, 1);
+});
+
+test("unbound columns query rejects invalid datasource ids", async () => {
+  const wizard = createWizard({ getDatasourceTableColumnsByDatasourceInterface: () => assert.fail("invalid datasource") });
+  wizard.hasBoundConnection.value = false;
+  wizard.schemaName.value = "public";
+  wizard.tables.value = [{ id: "ship", name: "ship", storageName: "ship", fields: [] }];
+  wizard.selected.value = ["ship"];
+  wizard.primary.value = "ship";
+  wizard.step.value = 1;
+  for (const id of [undefined, 0, -1, 1.5]) {
+    wizard.datasourceId.value = id;
+    await wizard.nextStep();
+    assert.match(wizard.error.value, /有效的数据源连接/);
+    assert.equal(wizard.step.value, 1);
+    assert.equal(wizard.busy.value, false);
+  }
+});
+
+test("deleting selected history clears dependent selection without advancing", async () => {
+  let deletedId;
+  const wizard = createWizard({
+    ElMessageBox: {
+      confirm: async (message) => {
+        assert.match(message, /物理删除.*local/);
+        return "confirm";
+      },
+    },
+    deleteDatasourceConnectionInterface: async (id) => {
+      deletedId = id;
+      return { code: 200 };
+    },
+  });
+  wizard.hasBoundConnection.value = false;
+  wizard.step.value = -1;
+  wizard.connections.value = [
+    { id: 7, name: "local", dbType: "SQLITE" },
+    { id: 8, name: "other", dbType: "SQLITE" },
+  ];
+  wizard.datasourceId.value = 7;
+  wizard.schemaName.value = "public";
+  wizard.schemas.value = [{ schemaName: "public" }];
+  wizard.tables.value = [{ id: "ship", name: "ship", fields: [] }];
+  wizard.selected.value = ["ship"];
+  wizard.fieldIdsByTable.ship = ["id"];
+  wizard.foreignKeys.ship = { childFieldId: "id", parentFieldId: "id" };
+  await wizard.deleteHistoricalConnection(7);
+  assert.equal(deletedId, 7);
+  assert.deepEqual(
+    wizard.connections.value.map((item) => item.id),
+    [8],
+  );
+  assert.equal(wizard.datasourceId.value, undefined);
+  assert.equal(wizard.schemaName.value, "");
+  assert.deepEqual(wizard.schemas.value, []);
+  assert.deepEqual(wizard.tables.value, []);
+  assert.deepEqual(wizard.fieldIdsByTable, {});
+  assert.deepEqual(wizard.foreignKeys, {});
+  assert.equal(wizard.step.value, -1);
+  assert.equal(wizard.busy.value, false);
+});
+
+test("cancelled and failed deletion preserve history", async () => {
+  const cancelled = createWizard({
+    ElMessageBox: {
+      confirm: async () => {
+        throw "cancel";
+      },
+    },
+    deleteDatasourceConnectionInterface: () => assert.fail("cancelled deletion"),
+  });
+  cancelled.connections.value = [{ id: 7, name: "local", dbType: "SQLITE" }];
+  await cancelled.deleteHistoricalConnection(7);
+  assert.equal(cancelled.connections.value.length, 1);
+  assert.equal(cancelled.error.value, "");
+  assert.equal(cancelled.busy.value, false);
+  const failed = createWizard({ deleteDatasourceConnectionInterface: async () => ({ code: 500, message: "连接仍在使用" }) });
+  failed.connections.value = [{ id: 7, name: "local", dbType: "SQLITE" }];
+  failed.datasourceId.value = 7;
+  failed.schemaName.value = "public";
+  await failed.deleteHistoricalConnection(7);
+  assert.equal(failed.connections.value.length, 1);
+  assert.equal(failed.datasourceId.value, 7);
+  assert.equal(failed.schemaName.value, "public");
+  assert.equal(failed.error.value, "连接仍在使用");
+});
+
+test("delete datasource API uses DELETE with query id and no request body", () => {
+  const source = readFileSync(new URL("../src/apis/datasourceConnectionApi.ts", import.meta.url), "utf8");
+  const code = ts.transpile(source, { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 });
+  const api = {};
+  new Function("exports", "require", "DOMAIN_CONFIG", code)(api, () => ({ request: (config) => config }), { ONTOLOGYMANAGE_URL: "https://example.test" });
+  const config = api.deleteDatasourceConnectionInterface(7);
+  assert.equal(config.url, "https://example.test/ontology/datasource/connection");
+  assert.equal(config.method, "delete");
+  assert.deepEqual(config.params, { id: 7 });
+  assert.equal(Object.hasOwn(config, "data"), false);
+});
+
+test("history deletion coalesces requests and preserves other selections", async () => {
+  let finish;
+  let calls = 0;
+  const wizard = createWizard({
+    deleteDatasourceConnectionInterface: () => {
+      calls++;
+      return new Promise((resolve) => {
+        finish = resolve;
+      });
+    },
+  });
+  wizard.connections.value = [
+    { id: 7, name: "local" },
+    { id: 8, name: "selected" },
+  ];
+  wizard.datasourceId.value = 8;
+  wizard.schemaName.value = "public";
+  const pending = wizard.deleteHistoricalConnection(7);
+  await wizard.deleteHistoricalConnection(7);
+  assert.equal(calls, 1);
+  finish({ code: 200 });
+  await pending;
+  assert.equal(wizard.datasourceId.value, 8);
+  assert.equal(wizard.schemaName.value, "public");
+  assert.deepEqual(
+    wizard.connections.value.map((item) => item.id),
+    [8],
+  );
+});
+
+test("closing during confirmation prevents deletion and repeated confirmation", async () => {
+  let confirm;
+  let confirmations = 0;
+  let unmount;
+  const wizard = createWizard({
+    onBeforeUnmount: (callback) => {
+      unmount = callback;
+    },
+    ElMessageBox: {
+      confirm: () => {
+        confirmations++;
+        return new Promise((resolve) => {
+          confirm = resolve;
+        });
+      },
+    },
+    deleteDatasourceConnectionInterface: () => assert.fail("closed confirmation"),
+  });
+  wizard.connections.value = [{ id: 7, name: "local" }];
+  const pending = wizard.deleteHistoricalConnection(7);
+  await wizard.deleteHistoricalConnection(7);
+  assert.equal(confirmations, 1);
+  unmount();
+  confirm("confirm");
+  await pending;
+  assert.equal(wizard.connections.value.length, 1);
+});
+
+test("unmounted deletion ignores response and does not overwrite newer state", async () => {
+  let finish;
+  let unmount;
+  const wizard = createWizard({
+    onBeforeUnmount: (callback) => {
+      unmount = callback;
+    },
+    deleteDatasourceConnectionInterface: () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  });
+  wizard.connections.value = [{ id: 7, name: "local" }];
+  const pending = wizard.deleteHistoricalConnection(7);
+  await Promise.resolve();
+  unmount();
+  wizard.error.value = "new state";
+  finish({ code: 200 });
+  await pending;
+  assert.equal(wizard.connections.value.length, 1);
+  assert.equal(wizard.error.value, "new state");
 });

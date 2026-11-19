@@ -84,7 +84,7 @@
 
     <template #footer>
       <el-button :disabled="submitLoading" @click="emit('update:modelValue', false)">关闭</el-button>
-      <el-button v-if="enableUpdateTest || enableCreateTest" type="primary" :loading="submitLoading" @click="emit('start-test')">开始测试</el-button>
+      <el-button v-if="enableUpdateTest || enableCreateTest" type="primary" :loading="submitLoading" @click="emit('start-test')">执行</el-button>
     </template>
   </el-dialog>
 </template>

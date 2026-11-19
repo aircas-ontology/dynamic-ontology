@@ -35,6 +35,8 @@ export interface ListOntologyActionRecord {
   operation: string;
   storageGroup: string;
   functionApi: string | null;
+  /** 挂载函数展示名称；列表卡片优先使用。 */
+  functionName?: string | null;
   functionDescription: string | null;
   outputMode: string | null;
 }

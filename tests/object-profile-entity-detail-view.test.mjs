@@ -531,24 +531,42 @@ test("behavior cards retain descriptions and metadata without displaying behavio
           description: "保留原描述",
           actionApi: "action-api",
           functionApi: "function-api",
+          functionName: "函数展示名",
+          functionDescription: "函数描述文案",
           actionKind: "BASE",
           status,
           updateTime: "2026-11-17",
+        },
+        {
+          id: 2,
+          displayName: "无函数名用例",
+          description: "仅有函数标识回退",
+          actionApi: "api-only-action",
+          functionApi: "fallback-function-api",
+          functionName: null,
+          functionDescription: null,
+          actionKind: "APPLICATION",
+          status,
+          updateTime: "2026-11-18",
         },
       ],
       status: "ready",
       error: "",
       page: 1,
       pageSize: 8,
-      total: 1,
+      total: 2,
     });
     for (const name of ["el-icon", "el-tag", "el-button", "el-empty", "el-pagination"]) app.component(name, slot);
     const html = await renderToString(app);
     assert.doesNotMatch(html, /行为状态|已启用|已停用/);
-    assert.match(html, /执行/);
+    assert.doesNotMatch(html, /<dt>函数 API<\/dt>/);
+    assert.match(html, /详情/);
+    assert.match(html, /entity-detail-behavior-card__detail/);
     assert.match(html, /<h3[^>]*>行为名称<\/h3>/);
     assert.match(html, /class="entity-detail-behavior-card__description"[^>]*>保留原描述<\/p>/);
-    for (const value of ["基础行为", "行为 API", "action-api", "挂载函数", "function-api", "更新时间", "2026-11-17"]) assert.ok(html.includes(value));
+    for (const value of ["基础行为", "行为 API", "action-api", "挂载函数", "函数展示名", "fallback-function-api", "更新时间", "2026-11-17"]) {
+      assert.ok(html.includes(value), `missing ${value}`);
+    }
   }
 });
 

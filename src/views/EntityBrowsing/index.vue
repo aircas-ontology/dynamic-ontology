@@ -44,23 +44,24 @@ import AircasLoading from "@/components/AircasLoading.vue";
 import type { ManagementWorkspaceTab } from "@/types";
 import EntityBrowseOverview from "./components/EntityBrowseOverview.vue";
 import WorkspaceTypeTabs from "./components/WorkspaceTypeTabs.vue";
+import { useEntityBrowseBehaviorCount } from "./composables/useEntityBrowseBehaviorCount";
 import { useEntityBrowseOverview } from "./composables/useEntityBrowseOverview";
 import { useEntityBrowseWorkspace } from "./composables/useEntityBrowseWorkspace";
 import { routeNameForEntityBrowseTab } from "./utils/workspaceTabs";
-import { powerBehaviorInstances } from "@/mocks/entityBrowsingDeweyBehavior/deweyBehaviorMock";
 
 const router = useRouter();
 const route = useRoute();
 const { status, error, spaceId, activeTab, availableTabs, loadEntityBrowseSpace } = useEntityBrowseWorkspace();
 const { overview, counts, status: overviewStatus, error: overviewError, loadBrowseStatistics } = useEntityBrowseOverview(spaceId);
-/** 行为 Tab 固定展示杜威号动力层静态实例数（不依赖内网行为统计接口）。 */
+const { behaviorTotal, status: behaviorCountStatus } = useEntityBrowseBehaviorCount(spaceId);
+/** 行为 Tab 角标使用行为列表接口 total。 */
 const spaceOverviewCounts = computed(() => ({
   ...(overviewStatus.value === "success"
     ? { object: counts.value.ontology, relation: counts.value.relation, "function-operator": counts.value.functionOperator }
     : {}),
-  behavior: powerBehaviorInstances.length,
+  ...(behaviorCountStatus.value === "ready" ? { behavior: behaviorTotal.value } : {}),
 }));
-const spaceOverviewCountsLoading = computed(() => overviewStatus.value === "loading");
+const spaceOverviewCountsLoading = computed(() => overviewStatus.value === "loading" || behaviorCountStatus.value === "loading");
 
 /**
  * @description 切换实体浏览工作区 Tab，透传当前 query。

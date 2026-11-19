@@ -264,13 +264,18 @@ test("tree execution prefills only matching blackboard, node input, relationship
   };
   const component = compileExecutionComponent("components/BehaviorTreeTestDialog.vue", (id) => {
     if (id === "vue") return Vue;
+    if (id === "@/apis") return { getOntologyActionInfoInterface: async () => ({ code: 200, data: null }) };
+    if (id === "@/types") return { SPACE_BEHAVIOR_STATUS_LABELS: { published: "已发布", draft: "草稿", disabled: "已失效" } };
     if (id.includes("useBehaviorTreeExecution")) return { useBehaviorTreeExecution: () => execution };
+    if (id.includes("mapOntologyActionInfoToViewState")) return { mapOntologyActionInfoToViewState: (data) => data };
+    if (id.includes("mapOntologyObjectsToRelationOptions")) return { mapOntologyObjectsToRelationOptions: (items) => items };
     return { __esModule: true, default: {} };
   });
   const props = Vue.reactive({
     modelValue: false,
     spaceId: "23",
     behavior: { id: "tree", behaviorApiName: "tree" },
+    showBehaviorDetailPanel: false,
     initialEntity: initialEntityUtils.createBehaviorTestInitialEntity("ship", "001", "当前实例"),
   });
   const scope = Vue.effectScope();
@@ -387,7 +392,7 @@ test("execution errors remain visible, pending commands coalesce and reopening c
   }
 });
 
-test("clicking the rendered card execute button emits the selected behavior record", () => {
+test("clicking the rendered card or detail button emits the selected behavior record", () => {
   const { descriptor } = parse(
     readFileSync(new URL("../src/views/EntityBrowsingObjectProfile/components/ObjectProfileEntityBehaviors.vue", import.meta.url), "utf8"),
   );
@@ -445,7 +450,13 @@ test("clicking the rendered card execute button emits the selected behavior reco
     setup:
       (_, { slots, emit }) =>
       () =>
-        Vue.h("button", { onClick: () => emit("click") }, slots.default?.()),
+        Vue.h(
+          "button",
+          {
+            onClick: (event) => emit("click", event),
+          },
+          slots.default?.(),
+        ),
   });
   for (const name of ["el-icon", "el-tag", "el-empty", "el-pagination"]) app.component(name, slot);
   app.component("el-button", button);
@@ -453,14 +464,21 @@ test("clicking the rendered card execute button emits the selected behavior reco
   app.mount(root);
   try {
     const nodes = [...root.children];
-    let executeButton;
+    let detailButton;
+    let card;
     while (nodes.length) {
       const node = nodes.shift();
-      if (node.type === "button") executeButton = node;
+      if (node.type === "button") detailButton = node;
+      if (node.type === "article") card = node;
       nodes.push(...(node.children ?? []));
     }
-    assert.ok(executeButton);
-    executeButton.props.onClick();
+    const clickEvent = { stopPropagation() {}, preventDefault() {} };
+    assert.ok(detailButton);
+    detailButton.props.onClick(clickEvent);
+    assert.deepEqual(events, [record]);
+    events.length = 0;
+    assert.ok(card?.props?.onClick);
+    card.props.onClick(clickEvent);
     assert.deepEqual(events, [record]);
   } finally {
     app.unmount();

@@ -14,6 +14,7 @@
           ariaLabel="搜索属性"
           @update:model-value="$emit('update:attributeSearch', $event)"
         />
+        <el-button data-onboarding="metadata-manage-open" @click="$emit('open-metadata-manage')">元数据管理</el-button>
         <el-button :loading="dataSourceOpening" data-onboarding="associate-open" @click="$emit('open-data-source')">
           <el-icon><Connection /></el-icon>关联数据源
         </el-button>
@@ -71,6 +72,7 @@ defineProps<{
 
 defineEmits<{
   "update:attributeSearch": [value: string];
+  "open-metadata-manage": [];
   "open-data-source": [];
   "create-attribute": [];
   "edit-attribute": [row: unknown];

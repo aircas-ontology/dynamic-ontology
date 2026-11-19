@@ -266,7 +266,7 @@ import { useFunctionOperatorWorkspace } from "./composables/useFunctionOperatorW
 import FunctionOperatorContainerRuntimePanel from "./components/FunctionOperatorContainerRuntimePanel.vue";
 import RuntimeConfigTemplateDialog from "./components/RuntimeConfigTemplateDialog.vue";
 import FunctionOperatorDeleteDialog from "./components/FunctionOperatorDeleteDialog.vue";
-import FunctionOperatorDetailDrawer from "./components/FunctionOperatorDetailDrawer.vue";
+import FunctionOperatorDetailDrawer from "@/components/FunctionOperatorDetailDrawer/FunctionOperatorDetailDrawer.vue";
 import FunctionOperatorFormDialog from "./components/FunctionOperatorFormDialog.vue";
 import FunctionOperatorScriptTestDialog from "./components/FunctionOperatorScriptTestDialog.vue";
 

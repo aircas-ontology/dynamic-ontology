@@ -14,7 +14,7 @@ export interface OntologyPropertyInfo {
   defaultValue?: string;
   storageGroup?: string;
   categoryId?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: string | Record<string, unknown>;
   datasourceColumnName?: string;
   datasourceId?: string;
   datasourceDescription?: string;

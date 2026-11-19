@@ -1,7 +1,18 @@
 import * as d3 from "d3";
 import type { OntologyRelationClass } from "@/types";
-import { bindRelationGraph2dLinkNodes, buildRelationGraph2dData, type RelationGraph2dLink, type RelationGraph2dNode } from "./graphData";
+import {
+  bindRelationGraph2dLinkNodes,
+  buildRelationGraph2dData,
+  filterCollapsedRelationGraph,
+  type RelationGraph2dData,
+  type RelationGraph2dLink,
+  type RelationGraph2dNode,
+} from "./graphData";
+import { layoutRelationGraph2dPositions } from "./layoutRelationGraph2d";
 import { themeColor } from "./themeColor";
+
+/** 同步预热 tick 次数：首屏接近稳态后再渲染。 */
+const LAYOUT_WARMUP_TICKS = 100;
 
 let relationMarkerSequence = 0;
 
@@ -55,6 +66,9 @@ export function createRelationGraph2d(options: {
   let height = Math.max(container.clientHeight, 1);
   let nodes: SimulationNode[] = [];
   let links: SimulationLink[] = [];
+  let fullGraph: RelationGraph2dData = { nodes: [], links: [] };
+  const collapsedNodes = new Set<string>();
+  const nodePositions = new Map<string, SimulationNode>();
   let categoryColors: Record<string, string> = {};
   let hoveredRelationId: string | null = null;
 
@@ -70,20 +84,32 @@ export function createRelationGraph2d(options: {
   const linkForce = d3
     .forceLink<SimulationNode, SimulationLink>([])
     .id((node) => node.id)
-    .distance(118)
-    .strength(0.55);
+    .distance((link) => {
+      const sourceDegree = link.source.degree || 1;
+      const targetDegree = link.target.degree || 1;
+      return 100 + Math.min(sourceDegree + targetDegree, 12) * 6;
+    })
+    .strength(0.72);
 
   const simulation = d3
     .forceSimulation<SimulationNode>()
     .force("link", linkForce)
-    .force("charge", d3.forceManyBody<SimulationNode>().strength(-320))
+    .force(
+      "charge",
+      d3.forceManyBody<SimulationNode>().strength((node) => (node.isSeed ? -520 : -380 - Math.min(node.degree, 8) * 18)),
+    )
     .force(
       "collide",
-      d3.forceCollide<SimulationNode>().radius((node) => (node.isSeed ? 34 : 22)),
+      d3
+        .forceCollide<SimulationNode>()
+        .radius((node) => (node.isSeed ? 36 : 24))
+        .iterations(2),
     )
     .force("center", d3.forceCenter(0, 0))
-    .force("x", d3.forceX(0).strength(0.05))
-    .force("y", d3.forceY(0).strength(0.05))
+    .force("x", d3.forceX(0).strength(0.08))
+    .force("y", d3.forceY(0).strength(0.08))
+    .alphaDecay(0.068)
+    .velocityDecay(0.42)
     .on("tick", () => {
       renderPositions();
     })
@@ -218,12 +244,25 @@ export function createRelationGraph2d(options: {
         const group = enter.append("g").attr("class", "relation-graph-2d__node").attr("role", "button").attr("tabindex", 0).call(dragBehavior);
         group.append("circle").attr("class", "relation-graph-2d__node-halo");
         group.append("circle").attr("class", "relation-graph-2d__node-bg");
+        group.append("text").attr("class", "relation-graph-2d__node-toggle");
         group.append("text").attr("class", "relation-graph-2d__node-label");
         group.append("title");
         return group;
       });
 
-    nodeSelection.attr("aria-label", (node) => node.label);
+    nodeSelection
+      .attr("aria-label", (node) => `${node.label}，${collapsedNodes.has(node.id) ? "已收起，点击展开" : "已展开，点击收起"}`)
+      .attr("aria-expanded", (node) => String(!collapsedNodes.has(node.id)))
+      .style("cursor", "pointer")
+      .on("click", (event, node) => {
+        event.stopPropagation();
+        toggleNodeCollapse(node.id);
+      })
+      .on("keydown", (event, node) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        toggleNodeCollapse(node.id);
+      });
     nodeSelection
       .select<SVGCircleElement>(".relation-graph-2d__node-halo")
       .attr("r", (node) => (node.isSeed ? 28 : 0))
@@ -238,36 +277,82 @@ export function createRelationGraph2d(options: {
       .attr("stroke", (node) => themeColor(node.isSeed ? "--aircas-color-primary" : "--aircas-color-border") || "currentColor")
       .attr("stroke-width", (node) => (node.isSeed ? 2 : 1.2));
     nodeSelection
+      .select<SVGTextElement>(".relation-graph-2d__node-toggle")
+      .attr("text-anchor", "middle")
+      .attr("dy", "0.35em")
+      .attr("fill", (node) => themeColor(node.isSeed ? "--aircas-color-on-accent" : "--aircas-color-text-primary") || "currentColor")
+      .attr("font-size", 14)
+      .attr("pointer-events", "none")
+      .text((node) => (collapsedNodes.has(node.id) ? "+" : "−"));
+    nodeSelection
       .select<SVGTextElement>(".relation-graph-2d__node-label")
       .attr("dy", (node) => (node.isSeed ? 30 : 24))
       .attr("text-anchor", "middle")
       .attr("fill", themeColor("--aircas-color-text-primary") || "currentColor")
       .text((node) => (node.label.length > 14 ? `${node.label.slice(0, 13)}…` : node.label));
-    nodeSelection.select("title").text((node) => `${node.label} · ${node.degree} 条关联`);
+    nodeSelection.select("title").text((node) => `${node.label} · ${node.degree} 条关联 · ${collapsedNodes.has(node.id) ? "点击展开" : "点击收起"}`);
 
     void linkSelection;
     simulation.stop();
     simulation.nodes(nodes);
     linkForce.links(links);
-    nodes.forEach((node, index) => {
+
+    const layoutSeeds = layoutRelationGraph2dPositions(
+      nodes.map((node) => ({ id: node.id, label: node.label, isSeed: node.isSeed, degree: node.degree })),
+      links.map((link) => ({
+        source: typeof link.source === "string" ? link.source : link.source.id,
+        target: typeof link.target === "string" ? link.target : link.target.id,
+      })),
+    );
+
+    nodes.forEach((node) => {
+      const layout = layoutSeeds.get(node.id);
       if (node.isSeed) {
         node.fx = 0;
         node.fy = 0;
-        node.x = node.x ?? 0;
-        node.y = node.y ?? 0;
+        node.x = node.x ?? layout?.x ?? 0;
+        node.y = node.y ?? layout?.y ?? 0;
+        node.vx = 0;
+        node.vy = 0;
         return;
       }
       if (node.x === undefined || node.y === undefined) {
-        const angle = (index / Math.max(nodes.length, 1)) * Math.PI * 2;
-        const radius = 120 + (node.degree || 1) * 12;
-        node.x = Math.cos(angle) * radius;
-        node.y = Math.sin(angle) * radius;
+        node.x = layout?.x ?? 0;
+        node.y = layout?.y ?? 0;
+        node.vx = 0;
+        node.vy = 0;
       }
       node.fx = null;
       node.fy = null;
     });
-    simulation.alpha(1).restart();
+
+    simulation.alpha(1);
+    simulation.tick(LAYOUT_WARMUP_TICKS);
+    renderPositions();
+    simulation.alpha(0.12).restart();
     applyHoverState();
+  }
+
+  /**
+   * @description 切换节点收起状态并保留可见节点的位置。
+   * @param id 被操作的节点标识。
+   */
+  function toggleNodeCollapse(id: string): void {
+    if (collapsedNodes.has(id)) collapsedNodes.delete(id);
+    else collapsedNodes.add(id);
+    renderVisibleGraph();
+  }
+
+  /** @description 根据收起状态更新可见节点和边。 */
+  function renderVisibleGraph(): void {
+    nodes.forEach((node) => nodePositions.set(node.id, node));
+    const graph = filterCollapsedRelationGraph(fullGraph, collapsedNodes);
+    nodes = graph.nodes.map((node) => {
+      const prior = nodePositions.get(node.id);
+      return { ...node, x: prior?.x, y: prior?.y, vx: prior?.vx ?? 0, vy: prior?.vy ?? 0, fx: node.isSeed ? 0 : null, fy: node.isSeed ? 0 : null };
+    });
+    links = bindRelationGraph2dLinkNodes(nodes, graph.links);
+    renderGraph();
   }
 
   /**
@@ -276,23 +361,12 @@ export function createRelationGraph2d(options: {
    */
   function setData(data: { items: OntologyRelationClass[]; seedNames: string[]; categoryColors?: Record<string, string> }): void {
     categoryColors = data.categoryColors ?? {};
-    const graph = buildRelationGraph2dData(data.items, data.seedNames);
-    const previous = new Map(nodes.map((node) => [node.id, node]));
-    nodes = graph.nodes.map((node) => {
-      const prior = previous.get(node.id);
-      return {
-        ...node,
-        x: prior?.x,
-        y: prior?.y,
-        vx: prior?.vx ?? 0,
-        vy: prior?.vy ?? 0,
-        fx: node.isSeed ? 0 : null,
-        fy: node.isSeed ? 0 : null,
-      };
-    });
-    links = bindRelationGraph2dLinkNodes(nodes, graph.links);
+    fullGraph = buildRelationGraph2dData(data.items, data.seedNames);
+    const ids = new Set(fullGraph.nodes.map((node) => node.id));
+    for (const id of collapsedNodes) if (!ids.has(id)) collapsedNodes.delete(id);
+    for (const id of nodePositions.keys()) if (!ids.has(id)) nodePositions.delete(id);
     applyThemeColors();
-    renderGraph();
+    renderVisibleGraph();
   }
 
   /**
@@ -312,6 +386,9 @@ export function createRelationGraph2d(options: {
     root.remove();
     nodes = [];
     links = [];
+    fullGraph = { nodes: [], links: [] };
+    nodePositions.clear();
+    collapsedNodes.clear();
   }
 
   resize();

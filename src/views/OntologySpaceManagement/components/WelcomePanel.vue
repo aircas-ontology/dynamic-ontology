@@ -8,7 +8,7 @@
 </template>
 <script setup lang="ts">
 import { Plus } from "@element-plus/icons-vue";
-withDefaults(defineProps<{ browseOnly?: boolean; showCreate?: boolean; spaceLabel?: string }>(), { showCreate: true, spaceLabel: "对象空间" });
+withDefaults(defineProps<{ browseOnly?: boolean; showCreate?: boolean; spaceLabel?: string }>(), { showCreate: true, spaceLabel: "空间" });
 defineEmits<{ create: [] }>();
 </script>
 <style scoped lang="scss">

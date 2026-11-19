@@ -127,6 +127,8 @@ test("data source mapping dialog renders mind-node tables, field-list and proper
   assert.match(source, /mind-node mind-node-table/);
   assert.match(source, /mind-node__toggle/);
   assert.match(source, /mind-node__badge/);
+  assert.match(source, /mind-node__description/);
+  assert.match(source, /table\.table\.description \|\| "—"/);
   assert.match(source, /tableRoleLabel\(/);
   assert.match(source, /resolveDatasourceTableRole/);
   assert.match(source, /storageGroup/);
@@ -197,9 +199,12 @@ test("data source mapping tables mark primary and name keys beside field names",
   assert.match(panel, /comment: column\.description \?\? ""/);
   assert.match(panel, /dataType: column\.type \|\| ""/);
   assert.doesNotMatch(panel, /dataType: column\.type \|\| column\.description/);
+  assert.match(panel, /description: record\.description \?\? ""/);
+  assert.match(panel, /ontologyPropertyDetails\.value\.flatMap/);
+  assert.doesNotMatch(panel, /allAttributes\.value\.map/);
   assert.match(panel, /storageGroup: item\.storageGroup \?\? ""/);
-  assert.match(panel, /isPrimary: item\.isPrimary/);
-  assert.match(panel, /isNameKey: item\.isNameKey/);
+  assert.match(panel, /isPrimary: item\.isPrimaryKey === true/);
+  assert.match(panel, /isNameKey: item\.isTitleKey === true/);
 });
 
 test("data source mapping dialog dropdowns hide fields that are already associated", () => {
@@ -219,6 +224,7 @@ test("attribute panel wires api catalog and all properties to the data source ma
   assert.match(source, /:properties="ontologyPropertyMappings"/);
   assert.match(source, /@table-change="loadDataSourceColumns"/);
   assert.match(source, /dataSourceId: record\.tableName/);
+  assert.match(source, /description: record\.description \?\? ""/);
   assert.match(source, /dataSourceId: table\.dataSourceId/);
   assert.match(source, /@submit="handleDataSourceSubmit"/);
   assert.match(source, /ref="dataSourceDialogRef"/);
@@ -252,8 +258,14 @@ test("attribute panel persists local datasource drafts only from dialog submit",
   const submitSource = source.match(/async function handleDataSourceSubmit[\s\S]*?\n}/)?.[0] ?? "";
 
   assert.match(source, /putBatchUpdateOntologyPropertiesInterface/);
-  assert.match(submitSource, /allAttributes\.value\.find/);
-  assert.match(submitSource, /uniqueIdentifier: attribute\.uniqueIdentifier/);
+  assert.match(submitSource, /ontologyPropertyDetails\.value\.find/);
+  assert.doesNotMatch(submitSource, /allAttributes\.value\.find/);
+  assert.match(submitSource, /uniqueIdentifier: detail\.uniqueIdentifier/);
+  assert.match(submitSource, /displayName: detail\.displayName \?\? ""/);
+  assert.match(submitSource, /dataType: detail\.propertyType \?\? ""/);
+  assert.match(submitSource, /isTitleKey: detail\.isTitleKey === true/);
+  assert.match(submitSource, /isPrimaryKey: detail\.isPrimaryKey === true/);
+  assert.match(submitSource, /storageGroup: detail\.storageGroup \?\? ""/);
   assert.match(submitSource, /schemaName: payload\.dataSource\.schemaName/);
   assert.match(submitSource, /datasourceId: payload\.dataSource\.tableName/);
   assert.match(submitSource, /datasourceColumnName: payload\.dataSource\.fieldName/);

@@ -18,7 +18,7 @@ export interface CreateOntologyPropertyParams {
   defaultValue?: string;
   storageGroup: string;
   categoryId?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: string;
 }
 
 export type CreateOntologyPropertyData = undefined;

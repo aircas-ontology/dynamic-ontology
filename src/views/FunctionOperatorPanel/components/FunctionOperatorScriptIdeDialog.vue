@@ -108,7 +108,7 @@ import {
   type OntologyFunctionScriptTestInputRow,
 } from "@/utils/mapOntologyFunctionTest";
 import FunctionOperatorScriptCodeEditor from "./FunctionOperatorScriptCodeEditor.vue";
-import FunctionOperatorScriptParamTree from "./FunctionOperatorScriptParamTree.vue";
+import FunctionOperatorScriptParamTree from "@/components/FunctionOperatorDetailDrawer/FunctionOperatorScriptParamTree.vue";
 import FunctionOperatorScriptTestParamTree from "./FunctionOperatorScriptTestParamTree.vue";
 import FunctionOperatorTemplateDrawer from "./FunctionOperatorTemplateDrawer.vue";
 import { buildCreateOntologyScriptFunctionParams } from "../utils/buildCreateOntologyScriptFunctionParams";

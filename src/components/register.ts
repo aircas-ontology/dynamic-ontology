@@ -10,6 +10,7 @@ import BehaviorParameterConfig from "./BehaviorParameterConfig/BehaviorParameter
 import BehaviorTestDialog from "./BehaviorTestDialog/BehaviorTestDialog.vue";
 import BehaviorTreeExecPanel from "./BehaviorTreeExecPanel.vue";
 import BehaviorTreeTestDialog from "./BehaviorTreeTestDialog.vue";
+import FunctionOperatorDetailDrawer from "./FunctionOperatorDetailDrawer/FunctionOperatorDetailDrawer.vue";
 import OnboardingGuideOverlay from "./OnboardingGuide/OnboardingGuideOverlay.vue";
 import OntologyGlobalSearchField from "./OntologyGlobalSearchField/OntologyGlobalSearchField.vue";
 import OntologyRelationGraph2d from "./OntologyRelationGraph2d.vue";
@@ -23,6 +24,7 @@ export default (app: App) => {
   app.component("BehaviorTestDialog", BehaviorTestDialog);
   app.component("BehaviorTreeExecPanel", BehaviorTreeExecPanel);
   app.component("BehaviorTreeTestDialog", BehaviorTreeTestDialog);
+  app.component("FunctionOperatorDetailDrawer", FunctionOperatorDetailDrawer);
   app.component("OnboardingGuideOverlay", OnboardingGuideOverlay);
   app.component("OntologyGlobalSearchField", OntologyGlobalSearchField);
   app.component("OntologyRelationGraph2d", OntologyRelationGraph2d);

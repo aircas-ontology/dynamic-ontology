@@ -62,6 +62,7 @@ export function useAttributePropertyList(options: {
     description: "",
     isPrimary: false,
     isNameKey: false,
+    metadata: {},
   });
   const attributeRules: FormRules<OntologyAttributeDraft> = {
     displayName: [{ required: true, whitespace: true, message: "请输入属性名称", trigger: "blur" }],
@@ -157,6 +158,7 @@ export function useAttributePropertyList(options: {
       defaultValue: draft.defaultValue,
       storageGroup: draft.storageGroup,
       ...(categoryId === undefined ? {} : { categoryId }),
+      ...(Object.keys(draft.metadata).length ? { metadata: JSON.stringify(draft.metadata) } : {}),
     };
   }
 
@@ -173,6 +175,7 @@ export function useAttributePropertyList(options: {
         displayName: draft.displayName.trim(),
         description: draft.description,
         ...(categoryId === undefined ? {} : { categoryId }),
+        ...(Object.keys(draft.metadata).length ? { metadata: JSON.stringify(draft.metadata) } : {}),
       };
     }
     return {
@@ -186,6 +189,7 @@ export function useAttributePropertyList(options: {
       defaultValue: draft.defaultValue,
       storageGroup: draft.storageGroup,
       ...(categoryId === undefined ? {} : { categoryId }),
+      ...(Object.keys(draft.metadata).length ? { metadata: JSON.stringify(draft.metadata) } : {}),
     };
   }
 
@@ -201,6 +205,7 @@ export function useAttributePropertyList(options: {
       description: "",
       isPrimary: false,
       isNameKey: false,
+      metadata: {},
     });
     attributeCommandError.value = "";
   }
@@ -233,6 +238,7 @@ export function useAttributePropertyList(options: {
       description: value.description,
       isPrimary: value.isPrimary,
       isNameKey: value.isNameKey,
+      metadata: value.metadata,
     });
     attributeCommandError.value = "";
     originalEditParams = null;
@@ -345,6 +351,14 @@ export function useAttributePropertyList(options: {
     draft.isNameKey = true;
   }
 
+  /**
+   * @description 更新属性草稿中的元数据选择结果。
+   * @param records 当前表单选择的元数据记录。
+   */
+  function updateDraftMetadata(records: unknown[]) {
+    draft.metadata = { selectedRecords: records };
+  }
+
   return {
     dataTypes,
     storageGroups,
@@ -367,6 +381,7 @@ export function useAttributePropertyList(options: {
     saveAttributeDraft,
     updateDraftPrimaryKey,
     updateDraftNameKey,
+    updateDraftMetadata,
     removeAttribute,
   };
 }

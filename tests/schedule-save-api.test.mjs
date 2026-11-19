@@ -1164,3 +1164,36 @@ test("RULE edit ignores stale responses and rejects mismatched strategy payloads
     h.scope.stop();
   }
 });
+
+test("schedule log display combines executor identity and retains execution timestamps", () => {
+  const source = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleInvocationLogDialog.vue", import.meta.url), "utf8");
+  const { descriptor } = parse(source);
+  const script = descriptor.scriptSetup.content.replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
+  const { outputText } = transpileModule(script + "\nreturn { tableLogs };", { compilerOptions: { module: ModuleKind.CommonJS } });
+  const logs = [
+    { executorHost: "worker-1", executorIp: "10.0.0.1", executeStartTime: "2026-11-18T08:00:00Z", completeTime: "2026-11-18T08:01:00Z" },
+    { executorHost: "worker-2" },
+    { executorIp: "10.0.0.3" },
+    {},
+    { executorHost: "  ", executorIp: " " },
+  ];
+  const props = Vue.reactive({ scheduleName: "test", logs });
+  const { tableLogs } = new Function("computed", "defineProps", "defineEmits", outputText)(
+    Vue.computed,
+    () => props,
+    () => () => {},
+  );
+  assert.deepEqual(
+    tableLogs.value.map((item) => item.executorDisplay),
+    ["worker-1（10.0.0.1）", "worker-2", "10.0.0.3", "—", "—"],
+  );
+  assert.equal(tableLogs.value[0].executeStartTime, logs[0].executeStartTime);
+  assert.equal(tableLogs.value[0].completeTime, logs[0].completeTime);
+  assert.equal(logs[0].executorDisplay, undefined);
+  props.logs = [{ executorIp: "10.0.0.9" }];
+  assert.equal(tableLogs.value[0].executorDisplay, "10.0.0.9");
+  assert.match(descriptor.template.content, /prop="executorDisplay" label="执行机器"/);
+  assert.match(descriptor.template.content, /prop="executeStartTime" label="执行时间"/);
+  assert.match(descriptor.template.content, /row.executeStartTime \|\| "—"/);
+  assert.match(descriptor.template.content, /prop="completeTime" label="完成时间"/);
+});
