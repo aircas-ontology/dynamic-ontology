@@ -13,6 +13,8 @@
             :rows="inputRows"
             ariaLabel="脚本测试入参"
             @update-param="(path, paramValue) => emit('update-param', path, paramValue)"
+            @add-list-item="(path) => emit('add-list-item', path)"
+            @remove-list-item="(path, itemIndex) => emit('remove-list-item', path, itemIndex)"
           />
           <el-form-item label="执行结果">
             <el-input :model-value="output" type="textarea" :rows="14" readonly placeholder="运行测试后展示完整接口响应" />
@@ -50,6 +52,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   run: [];
   "update-param": [path: number[], paramValue: string];
+  "add-list-item": [path: number[]];
+  "remove-list-item": [path: number[], itemIndex: number];
 }>();
 
 /**

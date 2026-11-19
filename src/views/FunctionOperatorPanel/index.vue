@@ -239,6 +239,8 @@
       :input-rows="scriptTestInputRows"
       :output="scriptTestOutput"
       @update-param="updateScriptTestParamValue"
+      @add-list-item="addScriptTestListItem"
+      @remove-list-item="removeScriptTestListItem"
       @run="runScriptTest"
     />
     <RuntimeConfigTemplateDialog v-model="runtimeTemplateVisible" />
@@ -339,6 +341,8 @@ const {
   updateTestPropertyBinding,
   runTest,
   updateScriptTestParamValue,
+  addScriptTestListItem,
+  removeScriptTestListItem,
   runScriptTest,
 } = useFunctionOperatorWorkspace();
 

@@ -99,7 +99,14 @@
           <div class="function-operator-composite-workflow__label">测试参数</div>
           <div class="function-operator-composite-workflow__test-params">
             <p v-if="testInputRows.length === 0" class="function-operator-composite-workflow__empty">请先在开始节点配置入参</p>
-            <FunctionOperatorScriptTestParamTree v-else :rows="testInputRows" ariaLabel="编排测试入参" @update-param="updateCompositeWorkflowTestParamValue" />
+            <FunctionOperatorScriptTestParamTree
+              v-else
+              :rows="testInputRows"
+              ariaLabel="编排测试入参"
+              @update-param="updateCompositeWorkflowTestParamValue"
+              @add-list-item="addCompositeWorkflowTestListItem"
+              @remove-list-item="removeCompositeWorkflowTestListItem"
+            />
           </div>
           <p class="function-operator-composite-workflow__status">{{ testStatusText }}</p>
         </div>
@@ -145,7 +152,9 @@ import {
 } from "@/types";
 import { mapFunctionOperatorTypeFromApi } from "@/utils/mapFunctionOperatorTypeToApi";
 import {
+  addOntologyFunctionScriptTestListItem,
   buildOntologyFunctionScriptTestRequest,
+  removeOntologyFunctionScriptTestListItem,
   writeOntologyFunctionScriptTestParamValue,
   type OntologyFunctionScriptTestInputRow,
 } from "@/utils/mapOntologyFunctionTest";
@@ -283,6 +292,23 @@ function syncCompositeWorkflowTestParamsFromStartNode(): void {
  */
 function updateCompositeWorkflowTestParamValue(path: number[], paramValue: string): void {
   testInputRows.value = writeOntologyFunctionScriptTestParamValue(testInputRows.value, path, paramValue);
+}
+
+/**
+ * @description 为路径指向的 LIST 测试参数追加一组空元素。
+ * @param path 指向 LIST 节点的序号路径。
+ */
+function addCompositeWorkflowTestListItem(path: number[]): void {
+  testInputRows.value = addOntologyFunctionScriptTestListItem(testInputRows.value, path);
+}
+
+/**
+ * @description 删除路径指向的 LIST 测试参数中指定元素组。
+ * @param path 指向 LIST 节点的序号路径。
+ * @param itemIndex 元素下标。
+ */
+function removeCompositeWorkflowTestListItem(path: number[], itemIndex: number): void {
+  testInputRows.value = removeOntologyFunctionScriptTestListItem(testInputRows.value, path, itemIndex);
 }
 
 /**

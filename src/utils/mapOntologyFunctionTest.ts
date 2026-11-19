@@ -9,10 +9,12 @@ import type {
 export interface OntologyFunctionScriptTestInputRow {
   paramName: string;
   paramType: string;
-  /** 叶子参数当前输入值。有下级时省略。 */
+  /** 叶子参数当前输入值。有下级或 listItems 时省略。 */
   paramValue?: string;
-  /** 下级参数。无下级时省略。 */
+  /** 下级参数；LIST/ARRAY 有元素字段时同时作为元素模板。 */
   fields?: OntologyFunctionScriptTestInputRow[];
+  /** LIST/ARRAY 多组元素；每组为一份元素字段树。 */
+  listItems?: OntologyFunctionScriptTestInputRow[][];
 }
 
 /** 基础函数测试弹框参数绑定行（含类型与描述展示）。 */
@@ -98,7 +100,58 @@ export function buildOntologyFunctionTestBindingParamIds(params: GetOntologyFunc
 }
 
 /**
- * @description 从详情参数项生成脚本测试入参树。仅顶层保留 INPUT；每层按 paramOrder 排序。空 fields 视为叶子，paramValue 初始为空字符串。
+ * @description 判断参数类型是否为列表。
+ * @param paramType 参数类型。
+ * @returns 是否为 LIST/ARRAY。
+ */
+function isOntologyFunctionScriptTestListType(paramType: string): boolean {
+  const normalized = paramType.trim().toUpperCase();
+  return normalized === "LIST" || normalized === "ARRAY";
+}
+
+/**
+ * @description 深拷贝脚本测试入参行树（含 listItems）。
+ * @param rows 入参行。
+ * @returns 拷贝后的入参行。
+ */
+function cloneOntologyFunctionScriptTestRows(rows: OntologyFunctionScriptTestInputRow[]): OntologyFunctionScriptTestInputRow[] {
+  return rows.map((row) => {
+    const next: OntologyFunctionScriptTestInputRow = {
+      paramName: row.paramName,
+      paramType: row.paramType,
+    };
+    if (row.paramValue !== undefined) {
+      next.paramValue = row.paramValue;
+    }
+    if (row.fields && row.fields.length > 0) {
+      next.fields = cloneOntologyFunctionScriptTestRows(row.fields);
+    }
+    if (row.listItems) {
+      next.listItems = row.listItems.map((item) => cloneOntologyFunctionScriptTestRows(item));
+    }
+    return next;
+  });
+}
+
+/**
+ * @description 按元素模板生成一组空值 LIST 元素字段。
+ * @param template 元素字段模板。
+ * @returns 空值元素字段树。
+ */
+function createEmptyOntologyFunctionScriptTestListItem(template: OntologyFunctionScriptTestInputRow[]): OntologyFunctionScriptTestInputRow[] {
+  return cloneOntologyFunctionScriptTestRows(template).map((row) => {
+    if (row.listItems && row.fields && row.fields.length > 0) {
+      return { ...row, listItems: [createEmptyOntologyFunctionScriptTestListItem(row.fields)] };
+    }
+    if (row.fields && row.fields.length > 0) {
+      return { ...row, fields: createEmptyOntologyFunctionScriptTestListItem(row.fields) };
+    }
+    return { paramName: row.paramName, paramType: row.paramType, paramValue: "" };
+  });
+}
+
+/**
+ * @description 从详情参数项生成脚本测试入参树。仅顶层保留 INPUT；每层按 paramOrder 排序。空 fields 视为叶子，paramValue 初始为空字符串；LIST/ARRAY 有元素字段时初始化一组 listItems。
  * @param items 详情参数项。
  * @param filterInput 为 true 时只保留 category 为 INPUT 的项。
  * @returns 脚本测试表单入参行。
@@ -120,7 +173,17 @@ function mapDetailItemsToScriptTestRows(items: OntologyFunctionScriptTestParamSo
     const paramOrder = typeof item.paramOrder === "number" && Number.isFinite(item.paramOrder) ? item.paramOrder : Number.MAX_SAFE_INTEGER;
     const fields = mapDetailItemsToScriptTestRows(Array.isArray(item.fields) ? item.fields : [], false);
     if (fields.length > 0) {
-      sortable.push({ paramName, paramType, fields, paramOrder });
+      if (isOntologyFunctionScriptTestListType(paramType)) {
+        sortable.push({
+          paramName,
+          paramType,
+          fields,
+          listItems: [createEmptyOntologyFunctionScriptTestListItem(fields)],
+          paramOrder,
+        });
+      } else {
+        sortable.push({ paramName, paramType, fields, paramOrder });
+      }
     } else {
       sortable.push({ paramName, paramType, paramValue: "", paramOrder });
     }
@@ -132,6 +195,9 @@ function mapDetailItemsToScriptTestRows(items: OntologyFunctionScriptTestParamSo
     return left.paramName.localeCompare(right.paramName);
   });
   return sortable.map((row) => {
+    if (row.listItems && row.fields && row.fields.length > 0) {
+      return { paramName: row.paramName, paramType: row.paramType, fields: row.fields, listItems: row.listItems };
+    }
     if (row.fields && row.fields.length > 0) {
       return { paramName: row.paramName, paramType: row.paramType, fields: row.fields };
     }
@@ -158,7 +224,7 @@ export function buildOntologyFunctionScriptTestInputRowsFromParsed(items: ParseO
 }
 
 /**
- * @description 按从根到叶子的序号路径写入叶子参数值，并返回新的入参树。
+ * @description 按从根到叶子的序号路径写入叶子参数值，并返回新的入参树。遇到 LIST 的 listItems 时，下一段路径为元素下标。
  * @param rows 当前层入参行。
  * @param path 剩余序号路径。
  * @param paramValue 参数值。
@@ -182,22 +248,186 @@ export function writeOntologyFunctionScriptTestParamValue(
     next[index] = { ...current, paramValue };
     return next;
   }
+  if (current.listItems) {
+    const [itemIndex, ...itemRest] = rest;
+    if (itemIndex === undefined || !Number.isInteger(itemIndex) || itemIndex < 0 || itemIndex >= current.listItems.length) {
+      return rows;
+    }
+    const itemRows = current.listItems[itemIndex] ?? [];
+    const nextListItems = current.listItems.map((item, listIndex) =>
+      listIndex === itemIndex ? writeOntologyFunctionScriptTestParamValue(itemRows, itemRest, paramValue) : item,
+    );
+    next[index] = { ...current, listItems: nextListItems };
+    return next;
+  }
   next[index] = { ...current, fields: writeOntologyFunctionScriptTestParamValue(current.fields ?? [], rest, paramValue) };
   return next;
 }
 
 /**
- * @description 将脚本测试入参树转换为测试请求 parameters。父级只保留 fields，叶子只保留 paramValue。
+ * @description 在路径指向的 LIST 参数末尾追加一组空元素（按 fields 模板克隆）。
+ * @param rows 当前层入参行。
+ * @param path 指向 LIST 节点的序号路径。
+ * @returns 更新后的入参行。
+ */
+export function addOntologyFunctionScriptTestListItem(rows: OntologyFunctionScriptTestInputRow[], path: number[]): OntologyFunctionScriptTestInputRow[] {
+  const [index, ...rest] = path;
+  if (index === undefined || !Number.isInteger(index) || index < 0 || index >= rows.length) {
+    return rows;
+  }
+  const current = rows[index];
+  if (!current) {
+    return rows;
+  }
+  const next = [...rows];
+  if (rest.length === 0) {
+    if (!isOntologyFunctionScriptTestListType(current.paramType) || !current.fields || current.fields.length === 0) {
+      return rows;
+    }
+    const template = current.fields;
+    const listItems = [...(current.listItems ?? []), createEmptyOntologyFunctionScriptTestListItem(template)];
+    next[index] = { ...current, fields: template, listItems };
+    return next;
+  }
+  if (current.listItems) {
+    const [itemIndex, ...itemRest] = rest;
+    if (itemIndex === undefined || !Number.isInteger(itemIndex) || itemIndex < 0 || itemIndex >= current.listItems.length) {
+      return rows;
+    }
+    const itemRows = current.listItems[itemIndex] ?? [];
+    const nextListItems = current.listItems.map((item, listIndex) =>
+      listIndex === itemIndex ? addOntologyFunctionScriptTestListItem(itemRows, itemRest) : item,
+    );
+    next[index] = { ...current, listItems: nextListItems };
+    return next;
+  }
+  next[index] = { ...current, fields: addOntologyFunctionScriptTestListItem(current.fields ?? [], rest) };
+  return next;
+}
+
+/**
+ * @description 删除路径指向的 LIST 参数中指定下标的元素组。
+ * @param rows 当前层入参行。
+ * @param path 指向 LIST 节点的序号路径。
+ * @param itemIndex 要删除的元素下标。
+ * @returns 更新后的入参行。
+ */
+export function removeOntologyFunctionScriptTestListItem(
+  rows: OntologyFunctionScriptTestInputRow[],
+  path: number[],
+  itemIndex: number,
+): OntologyFunctionScriptTestInputRow[] {
+  const [index, ...rest] = path;
+  if (index === undefined || !Number.isInteger(index) || index < 0 || index >= rows.length) {
+    return rows;
+  }
+  const current = rows[index];
+  if (!current) {
+    return rows;
+  }
+  const next = [...rows];
+  if (rest.length === 0) {
+    if (!current.listItems || !Number.isInteger(itemIndex) || itemIndex < 0 || itemIndex >= current.listItems.length) {
+      return rows;
+    }
+    next[index] = { ...current, listItems: current.listItems.filter((_, listIndex) => listIndex !== itemIndex) };
+    return next;
+  }
+  if (current.listItems) {
+    const [nestedItemIndex, ...itemRest] = rest;
+    if (nestedItemIndex === undefined || !Number.isInteger(nestedItemIndex) || nestedItemIndex < 0 || nestedItemIndex >= current.listItems.length) {
+      return rows;
+    }
+    const itemRows = current.listItems[nestedItemIndex] ?? [];
+    const nextListItems = current.listItems.map((item, listIndex) =>
+      listIndex === nestedItemIndex ? removeOntologyFunctionScriptTestListItem(itemRows, itemRest, itemIndex) : item,
+    );
+    next[index] = { ...current, listItems: nextListItems };
+    return next;
+  }
+  next[index] = { ...current, fields: removeOntologyFunctionScriptTestListItem(current.fields ?? [], rest, itemIndex) };
+  return next;
+}
+
+/**
+ * @description 按 paramType 将表单字符串转为测试请求标量值。
+ * @param paramType 参数类型。
+ * @param raw 表单原始字符串。
+ * @returns 类型化值；无法转换时回落为原字符串。
+ */
+function coerceOntologyFunctionScriptTestScalarValue(paramType: string, raw: string): unknown {
+  const normalized = paramType.trim().toUpperCase();
+  const trimmed = raw.trim();
+  if (normalized === "INTEGER" || normalized === "LONG" || normalized === "SHORT" || normalized === "BYTE") {
+    if (!trimmed) return raw;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? Math.trunc(parsed) : raw;
+  }
+  if (normalized === "DOUBLE" || normalized === "FLOAT" || normalized === "NUMBER") {
+    if (!trimmed) return raw;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : raw;
+  }
+  if (normalized === "BOOL" || normalized === "BOOLEAN") {
+    const lower = trimmed.toLowerCase();
+    if (lower === "true") return true;
+    if (lower === "false") return false;
+    return raw;
+  }
+  if (isOntologyFunctionScriptTestListType(normalized) && trimmed.startsWith("[")) {
+    try {
+      return JSON.parse(trimmed) as unknown;
+    } catch {
+      return raw;
+    }
+  }
+  return raw;
+}
+
+/**
+ * @description 将一组字段树展平为普通对象（LIST 为数组，OBJECT 为嵌套对象）。
+ * @param rows 字段行。
+ * @returns 普通对象。
+ */
+function mapScriptTestRowsToPlainObject(rows: OntologyFunctionScriptTestInputRow[]): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const row of rows) {
+    const paramName = row.paramName.trim();
+    if (!paramName) continue;
+    result[paramName] = mapScriptTestRowToPlainValue(row);
+  }
+  return result;
+}
+
+/**
+ * @description 将单行测试入参转为普通 JSON 值。
+ * @param row 入参行。
+ * @returns 普通 JSON 值。
+ */
+function mapScriptTestRowToPlainValue(row: OntologyFunctionScriptTestInputRow): unknown {
+  if (row.listItems) {
+    return row.listItems.map((item) => mapScriptTestRowsToPlainObject(item));
+  }
+  if (row.fields && row.fields.length > 0) {
+    return mapScriptTestRowsToPlainObject(row.fields);
+  }
+  return coerceOntologyFunctionScriptTestScalarValue(row.paramType, row.paramValue ?? "");
+}
+
+/**
+ * @description 将脚本测试入参树转换为测试请求 parameters：带 paramType，标量/LIST/OBJECT 均写入 paramValue。
  * @param rows 表单入参行。
  * @returns 测试接口 parameters。
  */
 function mapScriptTestRowsToParameters(rows: OntologyFunctionScriptTestInputRow[]): TestOntologyFunctionParameterItem[] {
   return rows.map((row) => {
     const paramName = row.paramName.trim();
-    if (row.fields && row.fields.length > 0) {
-      return { paramName, fields: mapScriptTestRowsToParameters(row.fields) };
-    }
-    return { paramName, paramValue: row.paramValue ?? "" };
+    const paramType = row.paramType.trim();
+    return {
+      paramName,
+      ...(paramType ? { paramType } : {}),
+      paramValue: mapScriptTestRowToPlainValue(row),
+    };
   });
 }
 

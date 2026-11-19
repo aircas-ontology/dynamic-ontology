@@ -59,7 +59,14 @@
           <div class="function-operator-script-ide__label">测试参数</div>
           <div class="function-operator-script-ide__test-params">
             <p v-if="ideTestInputRows.length === 0" class="function-operator-script-ide__empty">请先保存以生成测试参数</p>
-            <FunctionOperatorScriptTestParamTree v-else :rows="ideTestInputRows" ariaLabel="脚本 IDE 测试入参" @update-param="updateIdeTestParamValue" />
+            <FunctionOperatorScriptTestParamTree
+              v-else
+              :rows="ideTestInputRows"
+              ariaLabel="脚本 IDE 测试入参"
+              @update-param="updateIdeTestParamValue"
+              @add-list-item="addIdeTestListItem"
+              @remove-list-item="removeIdeTestListItem"
+            />
           </div>
           <p class="function-operator-script-ide__status">{{ ideTestStatusText }}</p>
         </div>
@@ -93,8 +100,10 @@ import {
 } from "@/types";
 import { mapScriptLanguageToApi } from "@/utils/mapFunctionOperatorScriptLanguage";
 import {
+  addOntologyFunctionScriptTestListItem,
   buildOntologyFunctionScriptTestInputRowsFromParsed,
   buildOntologyFunctionScriptTestRequest,
+  removeOntologyFunctionScriptTestListItem,
   writeOntologyFunctionScriptTestParamValue,
   type OntologyFunctionScriptTestInputRow,
 } from "@/utils/mapOntologyFunctionTest";
@@ -287,6 +296,23 @@ function goBackPreviousStep(): void {
  */
 function updateIdeTestParamValue(path: number[], paramValue: string): void {
   ideTestInputRows.value = writeOntologyFunctionScriptTestParamValue(ideTestInputRows.value, path, paramValue);
+}
+
+/**
+ * @description 为路径指向的 LIST 测试参数追加一组空元素。
+ * @param path 指向 LIST 节点的序号路径。
+ */
+function addIdeTestListItem(path: number[]): void {
+  ideTestInputRows.value = addOntologyFunctionScriptTestListItem(ideTestInputRows.value, path);
+}
+
+/**
+ * @description 删除路径指向的 LIST 测试参数中指定元素组。
+ * @param path 指向 LIST 节点的序号路径。
+ * @param itemIndex 元素下标。
+ */
+function removeIdeTestListItem(path: number[], itemIndex: number): void {
+  ideTestInputRows.value = removeOntologyFunctionScriptTestListItem(ideTestInputRows.value, path, itemIndex);
 }
 
 /**

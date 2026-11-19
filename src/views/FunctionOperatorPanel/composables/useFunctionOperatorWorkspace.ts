@@ -35,10 +35,12 @@ import { mapScriptLanguageFromApi } from "@/utils/mapFunctionOperatorScriptLangu
 import { mapFunctionOperatorTypeToApi } from "@/utils/mapFunctionOperatorTypeToApi";
 import { mapOntologyFunctionListItem } from "@/utils/mapOntologyFunctionList";
 import {
+  addOntologyFunctionScriptTestListItem,
   buildOntologyFunctionScriptTestInputRows,
   buildOntologyFunctionScriptTestRequest,
   buildOntologyFunctionTestBindingRows,
   buildOntologyFunctionTestRequest,
+  removeOntologyFunctionScriptTestListItem,
   writeOntologyFunctionScriptTestParamValue,
   type OntologyFunctionScriptTestInputRow,
   type OntologyFunctionTestBindingRow,
@@ -1074,6 +1076,23 @@ export function useFunctionOperatorWorkspace() {
   }
 
   /**
+   * @description 为路径指向的 LIST 脚本测试参数追加一组空元素。
+   * @param path 指向 LIST 节点的序号路径。
+   */
+  function addScriptTestListItem(path: number[]): void {
+    scriptTestInputRows.value = addOntologyFunctionScriptTestListItem(scriptTestInputRows.value, path);
+  }
+
+  /**
+   * @description 删除路径指向的 LIST 脚本测试参数中指定元素组。
+   * @param path 指向 LIST 节点的序号路径。
+   * @param itemIndex 元素下标。
+   */
+  function removeScriptTestListItem(path: number[], itemIndex: number): void {
+    scriptTestInputRows.value = removeOntologyFunctionScriptTestListItem(scriptTestInputRows.value, path, itemIndex);
+  }
+
+  /**
    * @description 解析预览 JSON 并调用函数测试接口；将完整响应写入输出结果文本框。
    */
   async function runTest(): Promise<void> {
@@ -1288,6 +1307,8 @@ export function useFunctionOperatorWorkspace() {
     updateTestPropertyBinding,
     runTest,
     updateScriptTestParamValue,
+    addScriptTestListItem,
+    removeScriptTestListItem,
     runScriptTest,
   };
 }

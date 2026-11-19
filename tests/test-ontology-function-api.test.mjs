@@ -3,12 +3,14 @@ import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import {
+  addOntologyFunctionScriptTestListItem,
   buildOntologyFunctionScriptTestInputRows,
   buildOntologyFunctionScriptTestInputRowsFromParsed,
   buildOntologyFunctionScriptTestRequest,
   buildOntologyFunctionTestBindingKeys,
   buildOntologyFunctionTestBindingRows,
   buildOntologyFunctionTestRequest,
+  removeOntologyFunctionScriptTestListItem,
   writeOntologyFunctionScriptTestParamValue,
 } from "../src/utils/mapOntologyFunctionTest.ts";
 
@@ -36,7 +38,8 @@ test("test ontology function types expose documented request fields and null dat
   assert.match(source, /pageSize\?: number/);
   assert.match(source, /export interface TestOntologyFunctionParameterItem/);
   assert.match(source, /paramName: string/);
-  assert.match(source, /paramValue\?: string/);
+  assert.match(source, /paramType\?: string/);
+  assert.match(source, /paramValue\?: unknown/);
   assert.match(source, /fields\?: TestOntologyFunctionParameterItem\[\]/);
   assert.match(source, /export type TestOntologyFunctionData = null/);
   const detail = readSource("../src/types/apis/getOntologyFunctionDetailType.ts");
@@ -169,6 +172,33 @@ test("buildOntologyFunctionScriptTestInputRows keeps nested fields and leaf valu
   ]);
 });
 
+test("buildOntologyFunctionScriptTestInputRows initializes LIST fields as one empty list item", () => {
+  const rows = buildOntologyFunctionScriptTestInputRows([
+    {
+      paramName: "orders",
+      paramType: "LIST",
+      category: "INPUT",
+      paramOrder: 1,
+      fields: [
+        { paramName: "id", paramType: "STRING", category: "INPUT", paramOrder: 1 },
+        { paramName: "amount", paramType: "DOUBLE", category: "INPUT", paramOrder: 2 },
+      ],
+    },
+  ]);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]?.paramName, "orders");
+  assert.equal(rows[0]?.paramType, "LIST");
+  assert.deepEqual(rows[0]?.fields, [
+    { paramName: "id", paramType: "STRING", paramValue: "" },
+    { paramName: "amount", paramType: "DOUBLE", paramValue: "" },
+  ]);
+  assert.equal(rows[0]?.listItems?.length, 1);
+  assert.deepEqual(rows[0]?.listItems?.[0], [
+    { paramName: "id", paramType: "STRING", paramValue: "" },
+    { paramName: "amount", paramType: "DOUBLE", paramValue: "" },
+  ]);
+});
+
 test("buildOntologyFunctionScriptTestRequest keeps nested fields and leaf values", () => {
   const request = buildOntologyFunctionScriptTestRequest({
     functionApi: "smoke.hello.ts",
@@ -191,7 +221,8 @@ test("buildOntologyFunctionScriptTestRequest keeps nested fields and leaf values
   assert.deepEqual(request.parameters, [
     {
       paramName: "input",
-      fields: [{ paramName: "a", fields: [{ paramName: "aa", paramValue: "leaf" }] }],
+      paramType: "OBJECT",
+      paramValue: { a: { aa: "leaf" } },
     },
   ]);
 });
@@ -207,8 +238,185 @@ test("buildOntologyFunctionScriptTestRequest assembles functionApi version and p
     functionApi: "smoke.hello.py",
     version: "1.0.0",
     ontologySpaceId: 7,
-    parameters: [{ paramName: "name", paramValue: "foundry" }],
+    parameters: [{ paramName: "name", paramType: "STRING", paramValue: "foundry" }],
   });
+});
+
+test("buildOntologyFunctionScriptTestRequest serializes LIST items and typed scalars", () => {
+  const request = buildOntologyFunctionScriptTestRequest({
+    functionApi: "customer_bill",
+    version: "1.0.0",
+    ontologySpaceId: 1,
+    rows: [
+      {
+        paramName: "orders",
+        paramType: "LIST",
+        fields: [
+          { paramName: "id", paramType: "STRING", paramValue: "" },
+          { paramName: "customerName", paramType: "STRING", paramValue: "" },
+          { paramName: "amount", paramType: "DOUBLE", paramValue: "" },
+        ],
+        listItems: [
+          [
+            { paramName: "id", paramType: "STRING", paramValue: "o1" },
+            { paramName: "customerName", paramType: "STRING", paramValue: "客户A" },
+            { paramName: "amount", paramType: "DOUBLE", paramValue: "35.5" },
+          ],
+          [
+            { paramName: "id", paramType: "STRING", paramValue: "o2" },
+            { paramName: "customerName", paramType: "STRING", paramValue: "客户B" },
+            { paramName: "amount", paramType: "DOUBLE", paramValue: "20" },
+          ],
+        ],
+      },
+      { paramName: "minOrders", paramType: "INTEGER", paramValue: "2" },
+      { paramName: "labelPrefix", paramType: "STRING", paramValue: "VIP-" },
+      { paramName: "applyDiscount", paramType: "BOOL", paramValue: "true" },
+    ],
+  });
+  assert.deepEqual(request.parameters, [
+    {
+      paramName: "orders",
+      paramType: "LIST",
+      paramValue: [
+        { id: "o1", customerName: "客户A", amount: 35.5 },
+        { id: "o2", customerName: "客户B", amount: 20 },
+      ],
+    },
+    { paramName: "minOrders", paramType: "INTEGER", paramValue: 2 },
+    { paramName: "labelPrefix", paramType: "STRING", paramValue: "VIP-" },
+    { paramName: "applyDiscount", paramType: "BOOL", paramValue: true },
+  ]);
+});
+
+test("add and remove OntologyFunctionScriptTestListItem clones template fields", () => {
+  const initial = buildOntologyFunctionScriptTestInputRows([
+    {
+      paramName: "orders",
+      paramType: "LIST",
+      category: "INPUT",
+      paramOrder: 1,
+      fields: [
+        { paramName: "id", paramType: "STRING", category: "INPUT", paramOrder: 1 },
+        { paramName: "amount", paramType: "DOUBLE", category: "INPUT", paramOrder: 2 },
+      ],
+    },
+  ]);
+  const withValue = writeOntologyFunctionScriptTestParamValue(initial, [0, 0, 0], "o1");
+  const added = addOntologyFunctionScriptTestListItem(withValue, [0]);
+  assert.equal(added[0]?.listItems?.length, 2);
+  assert.equal(added[0]?.listItems?.[0]?.[0]?.paramValue, "o1");
+  assert.equal(added[0]?.listItems?.[1]?.[0]?.paramValue, "");
+  const removed = removeOntologyFunctionScriptTestListItem(added, [0], 0);
+  assert.equal(removed[0]?.listItems?.length, 1);
+  assert.equal(removed[0]?.listItems?.[0]?.[0]?.paramValue, "");
+  assert.equal(addOntologyFunctionScriptTestListItem(initial, [9]), initial);
+  assert.equal(removeOntologyFunctionScriptTestListItem(initial, [0], 9), initial);
+  assert.equal(writeOntologyFunctionScriptTestParamValue(initial, [0, 9, 0], "x"), initial);
+});
+
+test("nested LIST inside OBJECT supports add remove and typed leaf coercion edges", () => {
+  const rows = buildOntologyFunctionScriptTestInputRows([
+    {
+      paramName: "payload",
+      paramType: "OBJECT",
+      category: "INPUT",
+      paramOrder: 1,
+      fields: [
+        {
+          paramName: "orders",
+          paramType: "LIST",
+          category: "INPUT",
+          paramOrder: 1,
+          fields: [
+            { paramName: "id", paramType: "STRING", category: "INPUT", paramOrder: 1 },
+            { paramName: "amount", paramType: "DOUBLE", category: "INPUT", paramOrder: 2 },
+          ],
+        },
+      ],
+    },
+    { paramName: "flag", paramType: "BOOLEAN", category: "INPUT", paramOrder: 2 },
+    { paramName: "rawList", paramType: "LIST", category: "INPUT", paramOrder: 3 },
+    { paramName: "count", paramType: "LONG", category: "INPUT", paramOrder: 4 },
+  ]);
+  const added = addOntologyFunctionScriptTestListItem(rows, [0, 0]);
+  assert.equal(added[0]?.fields?.[0]?.listItems?.length, 2);
+  const written = writeOntologyFunctionScriptTestParamValue(added, [0, 0, 1, 0], "nested-id");
+  assert.equal(written[0]?.fields?.[0]?.listItems?.[1]?.[0]?.paramValue, "nested-id");
+  const removed = removeOntologyFunctionScriptTestListItem(written, [0, 0], 0);
+  assert.equal(removed[0]?.fields?.[0]?.listItems?.length, 1);
+  const withScalars = writeOntologyFunctionScriptTestParamValue(
+    writeOntologyFunctionScriptTestParamValue(writeOntologyFunctionScriptTestParamValue(removed, [1], "false"), [2], "[1,2"),
+    [3],
+    "",
+  );
+  const withValidList = writeOntologyFunctionScriptTestParamValue(withScalars, [2], "[1,2]");
+  const withBadNumber = writeOntologyFunctionScriptTestParamValue(withValidList, [3], "NaN-like");
+  const request = buildOntologyFunctionScriptTestRequest({
+    functionApi: "nested.list",
+    version: "1.0.0",
+    ontologySpaceId: 3,
+    rows: withBadNumber,
+  });
+  assert.deepEqual(request.parameters?.[1], { paramName: "flag", paramType: "BOOLEAN", paramValue: false });
+  assert.deepEqual(request.parameters?.[2], { paramName: "rawList", paramType: "LIST", paramValue: [1, 2] });
+  assert.deepEqual(request.parameters?.[3], { paramName: "count", paramType: "LONG", paramValue: "NaN-like" });
+  const invalidJson = writeOntologyFunctionScriptTestParamValue(withBadNumber, [2], "[1,");
+  const invalidRequest = buildOntologyFunctionScriptTestRequest({
+    functionApi: "nested.list",
+    version: "1.0.0",
+    ontologySpaceId: 3,
+    rows: invalidJson,
+  });
+  assert.equal(invalidRequest.parameters?.[2]?.paramValue, "[1,");
+});
+
+test("LIST nested under another LIST item can add and remove groups", () => {
+  const rows = buildOntologyFunctionScriptTestInputRows([
+    {
+      paramName: "batches",
+      paramType: "LIST",
+      category: "INPUT",
+      paramOrder: 1,
+      fields: [
+        {
+          paramName: "orders",
+          paramType: "LIST",
+          category: "INPUT",
+          paramOrder: 1,
+          fields: [{ paramName: "id", paramType: "STRING", category: "INPUT", paramOrder: 1 }],
+        },
+      ],
+    },
+  ]);
+  const addedInner = addOntologyFunctionScriptTestListItem(rows, [0, 0, 0]);
+  assert.equal(addedInner[0]?.listItems?.[0]?.[0]?.listItems?.length, 2);
+  const removedInner = removeOntologyFunctionScriptTestListItem(addedInner, [0, 0, 0], 1);
+  assert.equal(removedInner[0]?.listItems?.[0]?.[0]?.listItems?.length, 1);
+  assert.equal(removeOntologyFunctionScriptTestListItem(rows, [0, 9], 0), rows);
+  assert.equal(addOntologyFunctionScriptTestListItem(rows, [0, 9]), rows);
+  const sparse = [];
+  sparse.length = 1;
+  assert.equal(writeOntologyFunctionScriptTestParamValue(sparse, [0], "x"), sparse);
+  assert.equal(addOntologyFunctionScriptTestListItem(sparse, [0]), sparse);
+  assert.equal(removeOntologyFunctionScriptTestListItem(sparse, [0], 0), sparse);
+  const emptyNumber = buildOntologyFunctionScriptTestRequest({
+    functionApi: "edges",
+    version: "1.0.0",
+    ontologySpaceId: 1,
+    rows: [
+      { paramName: "i", paramType: "INTEGER", paramValue: "" },
+      { paramName: "d", paramType: "DOUBLE", paramValue: "" },
+      { paramName: "b", paramType: "BOOL", paramValue: "maybe" },
+      { paramName: "f", paramType: "FLOAT", paramValue: "not-a-number" },
+    ],
+  });
+  assert.deepEqual(emptyNumber.parameters, [
+    { paramName: "i", paramType: "INTEGER", paramValue: "" },
+    { paramName: "d", paramType: "DOUBLE", paramValue: "" },
+    { paramName: "b", paramType: "BOOL", paramValue: "maybe" },
+    { paramName: "f", paramType: "FLOAT", paramValue: "not-a-number" },
+  ]);
 });
 
 test("buildOntologyFunctionScriptTestInputRowsFromParsed keeps INPUT tree for ide test form", () => {
@@ -263,9 +471,24 @@ test("function operator script ide test uses param tree and list-style request",
   assert.match(scriptIdeSource, /testOntologyFunctionInterface/);
   assert.match(scriptIdeSource, /async function runScriptIdeTest/);
   assert.match(scriptIdeSource, /refreshIdeTestInputRows/);
+  assert.match(scriptIdeSource, /addOntologyFunctionScriptTestListItem/);
+  assert.match(scriptIdeSource, /removeOntologyFunctionScriptTestListItem/);
   assert.doesNotMatch(scriptIdeSource, /notifyScriptFeatureUnavailable\(['"]测试['"]\)/);
   assert.doesNotMatch(scriptIdeSource, /update:testParams/);
   assert.doesNotMatch(scriptIdeSource, /type:\s*["']CUSTOMIZE["']/);
+});
+
+test("script test param tree supports list item add and remove events", () => {
+  const treeSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptTestParamTree.vue");
+  assert.match(treeSource, /add-list-item/);
+  assert.match(treeSource, /remove-list-item/);
+  assert.match(treeSource, /listItems/);
+  assert.match(treeSource, /添加一组/);
+  assert.match(treeSource, /toggleScriptTestListItemCollapse/);
+  assert.match(treeSource, /ArrowDown/);
+  assert.match(treeSource, /ArrowRight/);
+  assert.match(treeSource, /折叠第 \$\{itemIndex \+ 1\} 组参数/);
+  assert.match(treeSource, /v-show="!isScriptTestListItemCollapsed/);
 });
 
 test("function operator openTest loads detail and runTest shows output panel", () => {
