@@ -145,6 +145,7 @@ export type { DeleteOntologySpaceData, DeleteOntologySpaceParams } from "./apis/
 export type { DisableFunctionRateLimitTemplateParams } from "./apis/disableFunctionRateLimitTemplateType";
 export type { EnableFunctionRateLimitTemplateParams } from "./apis/enableFunctionRateLimitTemplateType";
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
+export type { ExportApiDocFile, ExportApiDocParams } from "./apis/exportApiDocType";
 export type { ExportOntologySpaceFile, ExportOntologySpaceParams, OntologySpaceExportType } from "./apis/exportOntologySpaceType";
 export type { ExportOntologyFile, ExportOntologyParams, OntologyExportType } from "./apis/exportOntologyType";
 export type { FunctionOperatorTemplateLanguage, FunctionOperatorTemplateParams, FunctionOperatorTemplate } from "./apis/functionOperatorTemplateType";

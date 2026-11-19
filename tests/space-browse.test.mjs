@@ -93,12 +93,14 @@ for (const viewMode of ["card", "table"]) {
     assert.doesNotMatch(html, /进入/);
     assert.doesNotMatch(html, /导出/);
     assert.match(html, /应用展示/);
+    assert.match(html, /获取接口文档/);
     assert.doesNotMatch(html, /新建空间|编辑|更多|打开新手引导/);
     const management = await renderPageTemplate("../src/views/ThemeSpaceManagement/index.vue", { ...context, browseOnly: false });
     assert.match(management, /进入/);
     assert.match(management, /编辑/);
     assert.match(management, /更多/);
     assert.match(management, /新建空间/);
+    assert.match(management, /获取接口文档/);
     assert.doesNotMatch(management, /应用展示/);
   });
 }
@@ -131,6 +133,9 @@ test("browse descriptions omit export and theme app display stays unavailable", 
   const welcome = readFileSync(new URL("../src/views/OntologySpaceManagement/components/WelcomePanel.vue", import.meta.url), "utf8");
   const toolbar = readFileSync(new URL("../src/views/OntologySpaceManagement/components/SectionToolbar.vue", import.meta.url), "utf8");
   assert.match(theme, /@click="notifyUnavailable\('应用展示'\)"/);
+  assert.match(theme, /downloadThemeSpaceApiDoc/);
+  assert.match(theme, /getExportApiDocInterface/);
+  assert.match(theme, /获取接口文档/);
   assert.match(theme, /<el-dialog v-model="exportDialogVisible" title="导出主题"/);
   assert.doesNotMatch(theme, /<el-dialog v-if="!browseOnly" v-model="exportDialogVisible"/);
   assert.match(ontology, /<SpaceCommandDialogs[\s\S]*v-model:export-visible="exportVisible"/);
@@ -139,6 +144,16 @@ test("browse descriptions omit export and theme app display stays unavailable", 
   assert.match(toolbar, /支持搜索、排序与进入空间/);
   assert.doesNotMatch(welcome, /支持搜索、排序、导出与进入空间/);
   assert.doesNotMatch(toolbar, /支持搜索、排序、导出与进入空间/);
+});
+
+test("theme space api doc export uses ontology api_doc export blob endpoint", () => {
+  const apiSource = readFileSync(new URL("../src/apis/ontologyManageApi.ts", import.meta.url), "utf8");
+  const typeSource = readFileSync(new URL("../src/types/apis/exportApiDocType.ts", import.meta.url), "utf8");
+  assert.match(apiSource, /getExportApiDocInterface/);
+  assert.match(apiSource, /\/ontology\/api_doc\/export/);
+  assert.match(apiSource, /responseType:\s*"blob"/);
+  assert.match(typeSource, /ExportApiDocParams/);
+  assert.match(typeSource, /ExportApiDocFile/);
 });
 
 test("object browsing opens detail from the card or row and hides the detail button", () => {
