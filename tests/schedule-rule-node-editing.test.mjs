@@ -56,16 +56,14 @@ test("node dialog dropdown layers stay above both dialogs without changing outsi
   const exports = {};
   const layers = [];
   const empty = Vue.defineComponent({ render: () => null });
-  new Function("require", "exports", outputText)((id) => {
-    if (id === "vue") return Vue;
-    if (id === "vue-router") return { useRoute: () => ({ params: { spaceId: "7" } }) };
-    if (id.includes("useRuleActionParameters")) return { useRuleActionParameters: createRuleParameterStub };
-    if (id.includes("filterRuleBehaviorsByObject")) return { filterBehaviorsByObjects };
-    if (id.includes("restoreRuleScheduleDetail")) return { buildSavedActionEntityJson };
-    if (id === "element-plus") return { ElConfigProvider, ElMessage: {}, ElMessageBox: {} };
-    if (id.includes("scheduleRuleFlowFactory")) return { cloneRuleFlowValue };
-    return { default: empty };
-  }, exports);
+  const dialogProbe = Vue.defineComponent({
+    /** @description 在画布 ElConfigProvider 内分配真实 Element Plus 菜单层级。 @returns {Function} 空渲染。 */
+    setup() {
+      const { nextZIndex } = useZIndex();
+      layers.push(nextZIndex(), nextZIndex());
+      return () => null;
+    },
+  });
   const probe = Vue.defineComponent({
     /** @description 分配真实 Element Plus 菜单层级。 @returns {Function} 空渲染。 */
     setup() {
@@ -74,6 +72,17 @@ test("node dialog dropdown layers stay above both dialogs without changing outsi
       return () => null;
     },
   });
+  new Function("require", "exports", outputText)((id) => {
+    if (id === "vue") return Vue;
+    if (id === "vue-router") return { useRoute: () => ({ params: { spaceId: "7" } }) };
+    if (id.includes("useRuleActionParameters")) return { useRuleActionParameters: createRuleParameterStub };
+    if (id.includes("filterRuleBehaviorsByObject")) return { filterBehaviorsByObjects };
+    if (id.includes("restoreRuleScheduleDetail")) return { buildSavedActionEntityJson };
+    if (id === "element-plus") return { ElConfigProvider, ElMessage: {}, ElMessageBox: {} };
+    if (id.includes("scheduleRuleFlowFactory")) return { cloneRuleFlowValue };
+    if (id.includes("ScheduleRuleConditionEditorDialog")) return { __esModule: true, default: dialogProbe };
+    return { default: empty };
+  }, exports);
   const app = Vue.createSSRApp({
     render: () =>
       Vue.h(
@@ -86,7 +95,6 @@ test("node dialog dropdown layers stay above both dialogs without changing outsi
   });
   app.provide(ZINDEX_INJECTION_KEY, { current: 0 });
   app.component("el-config-provider", ElConfigProvider);
-  app.component("el-dialog", probe);
   app.config.warnHandler = () => {};
   await renderToString(app);
   assert.equal(layers.length, 6);
@@ -219,7 +227,9 @@ async function createDesignerHarness(readonly = false) {
     if (id.includes("filterRuleBehaviorsByObject")) return { filterBehaviorsByObjects };
     if (id.includes("scheduleRuleFlowGraphSession")) return { ScheduleRuleFlowGraphSession: GraphSession };
     if (id.includes("scheduleRuleFlowFactory")) return { cloneRuleFlowValue };
-    if (id === "element-plus") return { ElMessage: { warning() {} }, ElMessageBox: {} };
+    if (id.includes("ScheduleRuleConditionEditorDialog") || id.includes("ScheduleRuleActionEditorDialog") || id.includes("ScheduleRuleSwitchEditorDialog"))
+      return { __esModule: true, default: {} };
+    if (id === "element-plus") return { ElMessage: { warning() {} }, ElMessageBox: {}, ElConfigProvider: {} };
     return {};
   }, exports);
   const scope = Vue.effectScope();
@@ -256,8 +266,8 @@ test("read-only designer opens node details but never writes changes or handles 
   const h = await createDesignerHarness(true);
   assert.equal(h.mountRecord.readonlyMode, true);
   h.callbacks.onNodeDoubleClick("condition", "condition");
-  assert.equal(h.page.nodeEditorVisible.value, true);
-  h.page.confirmNodeEditor();
+  assert.equal(h.page.conditionEditorVisible.value, true);
+  h.page.confirmConditionEditor();
   h.page.onCanvasKeydown({
     key: "Delete",
     preventDefault() {
@@ -271,33 +281,80 @@ test("read-only designer opens node details but never writes changes or handles 
 test("double clicking condition clones data, cancel preserves original and confirm updates only its node", async () => {
   const h = await createDesignerHarness();
   h.callbacks.onNodeDoubleClick("condition", "condition");
-  assert.equal(h.page.nodeEditorVisible.value, true);
-  h.page.editingNode.value.condition.children[0].left.text = "left";
+  assert.equal(h.page.conditionEditorVisible.value, true);
+  h.page.editingConditionNode.value.condition.children[0].left.text = "left";
   assert.equal(h.nodes.get("condition").condition.children[0].left.text, "");
-  h.page.nodeEditorVisible.value = false;
+  h.page.conditionEditorVisible.value = false;
   assert.equal(h.updates.length, 0);
   h.callbacks.onNodeDoubleClick("condition", "condition");
-  assert.equal(h.page.editingNode.value.condition.children[0].left.text, "");
-  h.page.editingNode.value.condition.children[0].right.text = "42";
-  h.page.confirmNodeEditor();
+  assert.equal(h.page.editingConditionNode.value.condition.children[0].left.text, "");
+  h.page.editingConditionNode.value.condition.children[0].right.text = "42";
+  h.page.confirmConditionEditor();
   assert.equal(h.updates[0].id, "condition");
   assert.equal(h.nodes.get("condition").condition.children[0].right.text, "42");
-  assert.equal(h.page.nodeEditorVisible.value, false);
+  assert.equal(h.page.conditionEditorVisible.value, false);
   h.scope.stop();
+});
+
+test("action editor may open a read-only condition companion, but condition editor blocks opening action", async () => {
+  const h = await createDesignerHarness();
+  h.callbacks.onNodeDoubleClick("condition", "condition");
+  assert.equal(h.page.conditionEditorVisible.value, true);
+  assert.equal(h.page.conditionEditorReadonly.value, false);
+  h.callbacks.onNodeDoubleClick("unconnected-action", "action");
+  assert.equal(h.page.actionEditorVisible.value, false);
+  assert.equal(h.page.conditionEditorVisible.value, true);
+
+  h.page.conditionEditorVisible.value = false;
+  h.callbacks.onNodeDoubleClick("unconnected-action", "action");
+  assert.equal(h.page.actionEditorVisible.value, true);
+  h.callbacks.onNodeDoubleClick("condition", "condition");
+  assert.equal(h.page.conditionEditorVisible.value, true);
+  assert.equal(h.page.actionEditorVisible.value, true);
+  assert.equal(h.page.conditionEditorReadonly.value, true);
+  h.page.editingConditionNode.value.condition.children[0].right.text = "should-not-save";
+  h.page.confirmConditionEditor();
+  assert.equal(h.page.conditionEditorVisible.value, false);
+  assert.equal(h.nodes.get("condition").condition.children[0].right.text, "");
+  assert.equal(h.page.actionEditorVisible.value, true);
+  h.scope.stop();
+});
+
+test("condition and action editor dialogs are draggable without modal masks", () => {
+  const designerSource = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleFlowDesigner.vue", import.meta.url), "utf8");
+  const conditionSource = readFileSync(
+    new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleConditionEditorDialog.vue", import.meta.url),
+    "utf8",
+  );
+  const actionSource = readFileSync(
+    new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleActionEditorDialog.vue", import.meta.url),
+    "utf8",
+  );
+  assert.match(designerSource, /ScheduleRuleConditionEditorDialog/);
+  assert.match(designerSource, /ScheduleRuleActionEditorDialog/);
+  assert.match(designerSource, /conditionEditorReadonly/);
+  assert.match(conditionSource, /\bdraggable\b/);
+  assert.match(conditionSource, /:modal="false"/);
+  assert.match(conditionSource, /modal-penetrable/);
+  assert.match(actionSource, /\bdraggable\b/);
+  assert.match(actionSource, /:modal="false"/);
+  assert.match(actionSource, /modal-penetrable/);
+  assert.doesNotMatch(conditionSource, /fullscreen/);
+  assert.doesNotMatch(actionSource, /fullscreen/);
 });
 
 test("double clicking switch edits a copy, cancels unchanged, and confirms its case and default configuration", async () => {
   const h = await createDesignerHarness();
   h.callbacks.onNodeDoubleClick("switch", "switch");
-  assert.equal(h.page.nodeEditorVisible.value, true);
+  assert.equal(h.page.switchEditorVisible.value, true);
   const original = structuredClone(h.nodes.get("switch"));
-  h.page.editingNode.value.switchStep.cases[0].value.text = "取消的值";
-  h.page.nodeEditorVisible.value = false;
+  h.page.editingSwitchNode.value.switchStep.cases[0].value.text = "取消的值";
+  h.page.switchEditorVisible.value = false;
   assert.deepEqual(h.nodes.get("switch"), original);
   h.callbacks.onNodeDoubleClick("switch", "switch");
-  h.page.editingNode.value.switchStep.cases[0].value.text = "有效值";
-  h.page.editingNode.value.switchStep.defaultSteps = null;
-  h.page.confirmNodeEditor();
+  h.page.editingSwitchNode.value.switchStep.cases[0].value.text = "有效值";
+  h.page.editingSwitchNode.value.switchStep.defaultSteps = null;
+  h.page.confirmSwitchEditor();
   assert.equal(h.updates[0].id, "switch");
   assert.equal(h.nodes.get("switch").switchStep.cases[0].value.text, "有效值");
   assert.equal(h.nodes.get("switch").switchStep.defaultSteps, null);
@@ -313,9 +370,9 @@ test("action selection filters upstream object union and never commits a mismatc
     ["b"],
   );
   h.page.changeNodeBehavior("c");
-  assert.notEqual(h.page.editingNode.value.action.behaviorId, "c");
+  assert.notEqual(h.page.editingActionNode.value.action.behaviorId, "c");
   h.page.changeNodeBehavior("b");
-  h.page.confirmNodeEditor();
+  h.page.confirmActionEditor();
   assert.equal(h.nodes.get("unconnected-action").action.behaviorId, "b");
   h.setObjectIds(["o", "other"]);
   h.callbacks.onNodeDoubleClick("unconnected-action", "action");
@@ -328,20 +385,21 @@ test("action selection filters upstream object union and never commits a mismatc
 
 test("opening a node editor resets the content scroll so its title and condition context remain visible", async () => {
   const h = await createDesignerHarness();
-  h.page.nodeEditorRef.value = { scrollTop: 240 };
+  h.page.actionEditorRef.value = { scrollTop: 240 };
   h.callbacks.onNodeDoubleClick("unconnected-action", "action");
   await Vue.nextTick();
-  assert.equal(h.page.nodeEditorRef.value.scrollTop, 0);
+  assert.equal(h.page.actionEditorRef.value.scrollTop, 0);
   h.scope.stop();
 });
 
 test("double clicking an unconnected action supports current-space selection and ignores start nodes", async () => {
   const h = await createDesignerHarness();
   h.callbacks.onNodeDoubleClick("start", "start");
-  assert.equal(h.page.nodeEditorVisible.value, false);
+  assert.equal(h.page.actionEditorVisible.value, false);
+  assert.equal(h.page.conditionEditorVisible.value, false);
   h.callbacks.onNodeDoubleClick("unconnected-action", "action");
   h.page.changeNodeBehavior("b");
-  h.page.confirmNodeEditor();
+  h.page.confirmActionEditor();
   assert.equal(h.nodes.get("unconnected-action").action.behaviorName, "行为 B");
   assert.equal(h.nodes.get("unconnected-action").action.behaviorId, "b");
   h.cleanup.forEach((fn) => fn());
@@ -352,22 +410,22 @@ test("double clicking an unconnected action supports current-space selection and
 test("node confirmation rejects removed condition and action values until explicitly replaced", async () => {
   const h = await createDesignerHarness();
   h.callbacks.onNodeDoubleClick("condition", "condition");
-  const leaf = h.page.editingNode.value.condition.children[0];
+  const leaf = h.page.editingConditionNode.value.condition.children[0];
   leaf.left = { kind: "function", fn: "max", argKind: "collection", arg: { kind: "input", text: "42" } };
-  h.page.confirmNodeEditor();
+  h.page.confirmConditionEditor();
   assert.equal(h.updates.length, 0);
-  assert.equal(h.page.nodeEditorVisible.value, true);
+  assert.equal(h.page.conditionEditorVisible.value, true);
   leaf.left = { kind: "input", text: "42" };
-  h.page.confirmNodeEditor();
+  h.page.confirmConditionEditor();
   assert.equal(h.updates.length, 1);
   h.callbacks.onNodeDoubleClick("unconnected-action", "action");
   h.page.changeNodeBehavior("b");
-  h.page.editingNode.value.action.params = [{ paramName: "test", value: { kind: "expression", terms: [] } }];
-  h.page.confirmNodeEditor();
+  h.page.editingActionNode.value.action.params = [{ paramName: "test", value: { kind: "expression", terms: [] } }];
+  h.page.confirmActionEditor();
   assert.equal(h.updates.length, 1);
-  assert.equal(h.page.nodeEditorVisible.value, true);
-  h.page.editingNode.value.action.params[0].value = { kind: "input", text: "" };
-  h.page.confirmNodeEditor();
+  assert.equal(h.page.actionEditorVisible.value, true);
+  h.page.editingActionNode.value.action.params[0].value = { kind: "input", text: "" };
+  h.page.confirmActionEditor();
   assert.equal(h.updates.length, 2);
   h.scope.stop();
 });
@@ -382,7 +440,7 @@ test("editable action restores matching saved request and skips it after switchi
   h.page.changeNodeBehavior("c");
   assert.equal(h.savedJson(), "");
   h.page.changeNodeBehavior("b");
-  h.page.editingNode.value.action.behaviorParameters = { values: { name: "changed" } };
+  h.page.editingActionNode.value.action.behaviorParameters = { values: { name: "changed" } };
   assert.equal(h.savedJson(), "");
   h.scope.stop();
 });

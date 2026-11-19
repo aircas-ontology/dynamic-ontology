@@ -15,6 +15,13 @@ const readSource = (relativePath) => {
   return readFileSync(fileUrl, "utf8");
 };
 
+test("property metadata accepts JSON strings and retains legacy objects", () => {
+  const metadata = { selectedRecords: [{ id: "1", name: "说明" }] };
+  assert.deepEqual(attributeHelpers.mapOntologyPropertyItem({ metadata: JSON.stringify(metadata) }, "object").metadata, metadata);
+  assert.deepEqual(attributeHelpers.mapOntologyPropertyItem({ metadata }, "object").metadata, metadata);
+  assert.deepEqual(attributeHelpers.mapOntologyPropertyItem({ metadata: "invalid" }, "object").metadata, {});
+});
+
 test("storage group help is available in both attribute editors", () => {
   for (const path of [
     "../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue",
@@ -258,6 +265,32 @@ test("attribute category is required when creating or editing a property", () =>
 test("attribute API name is disabled only while editing", () => {
   const source = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
   assert.match(source, /v-model="draft\.apiName"[\s\S]*?:disabled="editingAttributeId !== null \|\| draft\.isPrimary"/);
+});
+
+test("removing a metadata tag updates the selected records, including the last tag", () => {
+  const source = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
+  const match = source.match(/function removeSelectedMetadata\(id: string\): void \{[\s\S]*?\n\}/);
+  assert.ok(match);
+  const emitted = [];
+  const props = { draft: { metadata: { selectedRecords: [{ id: "1" }, { id: "2" }] } } };
+  const code = match[0].replace(": string", "").replace(": void", "");
+  const remove = new Function("props", "emit", `${code}; return removeSelectedMetadata;`)(props, (_event, records) => emitted.push(records));
+  remove("1");
+  assert.deepEqual(emitted[0], [{ id: "2" }]);
+  props.draft.metadata.selectedRecords = emitted[0];
+  remove("2");
+  assert.deepEqual(emitted[1], []);
+});
+
+test("attribute form aligns type and storage fields and provides local metadata selection tags", () => {
+  const source = readFileSync(new URL("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue", import.meta.url), "utf8");
+  assert.match(source, /ontology-object-attribute-panel__aligned-item/);
+  assert.match(source, /el-tree-select[\s\S]*@update:model-value="handleMetadataSelect"/);
+  assert.doesNotMatch(source, /show-checkbox/);
+  assert.match(source, /label="元数据"[\s\S]*typeLabel/);
+  assert.match(source, /metadataTreeOptions/);
+  assert.match(source, /selectedMetadataRecords/);
+  assert.doesNotMatch(source, /getMetadataSchemaInterface|postMetadataSchemaInterface|putMetadataSchemaInterface/);
 });
 
 test("bound datasource attributes allow name, category and description edits", () => {

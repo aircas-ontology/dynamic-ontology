@@ -26,6 +26,9 @@ function countSourceLines(source) {
 const vueFiles = [
   "../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleRuleConfigDialog.vue",
   "../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleFlowDesigner.vue",
+  "../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleConditionEditorDialog.vue",
+  "../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleActionEditorDialog.vue",
+  "../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleSwitchEditorDialog.vue",
   "../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleFlowPalette.vue",
   "../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleFlowToolbar.vue",
   "../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue",

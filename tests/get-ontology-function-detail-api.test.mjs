@@ -505,7 +505,7 @@ test("mapOntologyFunctionDetailToOperator falls back to list version when detail
 
 test("function operator openDetail fetches detail for drawer", () => {
   const workspace = readSource("../src/views/FunctionOperatorPanel/composables/useFunctionOperatorWorkspace.ts");
-  const drawer = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorDetailDrawer.vue");
+  const drawer = readSource("../src/components/FunctionOperatorDetailDrawer/FunctionOperatorDetailDrawer.vue");
   const panel = readSource("../src/views/FunctionOperatorPanel/index.vue");
   assert.match(workspace, /async function openDetail/);
   assert.match(workspace, /mapOntologyFunctionDetailToOperator/);
@@ -520,7 +520,7 @@ test("function operator openDetail fetches detail for drawer", () => {
   assert.match(drawer, /输出参数/);
   assert.match(drawer, /FunctionOperatorScriptParamTree/);
   assert.match(drawer, /mapOperatorParametersToScriptParamTree/);
-  const paramTree = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptParamTree.vue");
+  const paramTree = readSource("../src/components/FunctionOperatorDetailDrawer/FunctionOperatorScriptParamTree.vue");
   assert.match(paramTree, /item\.description/);
   assert.match(paramTree, /function-operator-script-param-tree__description/);
   const parseType = readSource("../src/types/apis/parseOntologyFunctionParamsType.ts");
@@ -532,6 +532,8 @@ test("function operator openDetail fetches detail for drawer", () => {
   assert.match(drawer, /change-version/);
   assert.match(drawer, /typeLabel\(operator\)[\s\S]*operator\.status/);
   assert.match(drawer, /function-operator-detail__actions/);
+  assert.match(drawer, /v-if="!readonly"/);
+  assert.match(drawer, /readonly\?: boolean/);
   assert.match(drawer, /emit\(["']edit["']\)/);
   assert.match(drawer, /emit\(["']toggle-publish["']\)/);
   assert.match(drawer, /emit\(["']delete["']\)/);

@@ -3,7 +3,7 @@
     <el-empty class="relation-graph-2d-view__empty" v-if="!safeItems.length" :description="emptyDescription" :image-size="72" />
     <div v-show="safeItems.length" ref="canvasRef" class="relation-graph-2d-view__canvas" aria-label="关系二维图" />
     <div v-if="safeItems.length" class="relation-graph-2d-view__hint">
-      拖拽平移 / 节点拖动 · 滚轮缩放 · 悬停查看关系<span v-if="!readonly"> · 右键连线编辑</span>
+      拖拽平移 / 节点拖动 · 点击节点收起或展开 · 滚轮缩放 · 悬停查看关系<span v-if="!readonly"> · 右键连线编辑</span>
     </div>
     <div
       v-if="!readonly && contextMenu.visible"

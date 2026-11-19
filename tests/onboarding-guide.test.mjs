@@ -57,7 +57,7 @@ const CHAIN_STEP_IDS = [
 ];
 
 /** 六个大步骤（chain）名称，按引导顺序排列。 */
-const CHAIN_NAMES = ["新建对象空间", "新建对象", "新建关系", "新建属性", "属性关联数据源", "自动关联数据源"];
+const CHAIN_NAMES = ["新建空间", "新建对象", "新建关系", "新建属性", "属性关联数据源", "自动关联数据源"];
 
 test("onboarding guide overlay renders step description with mock fallback and keyboard escape", () => {
   const source = readSource("../src/components/OnboardingGuide/OnboardingGuideOverlay.vue");
@@ -188,7 +188,7 @@ test("unified step config defines the six-chain 39-step flow with page ownership
   for (const id of CHAIN_STEP_IDS) {
     assert.match(source, new RegExp(`id: "${id}"`), `missing step id: ${id}`);
   }
-  assert.match(source, /export const CHAIN_CREATE_SPACE = "新建对象空间";/);
+  assert.match(source, /export const CHAIN_CREATE_SPACE = "新建空间";/);
   assert.match(source, /chain: CHAIN_CREATE_SPACE/);
   for (const chain of CHAIN_NAMES.slice(1)) {
     assert.match(source, new RegExp(`chain: "${chain}"`), `missing chain: ${chain}`);
@@ -234,7 +234,7 @@ test("unified step config defines the six-chain 39-step flow with page ownership
   assert.equal(advanceCount, 36);
   assert.match(
     source,
-    /id: "space-create-open"[\s\S]*?targetSelector: "\.welcome-panel__create"[\s\S]*?advanceOnTargetClick: true[\s\S]*?mockLabel: "新建对象空间"/,
+    /id: "space-create-open"[\s\S]*?targetSelector: "\.welcome-panel__create"[\s\S]*?advanceOnTargetClick: true[\s\S]*?mockLabel: "新建空间"/,
   );
   assert.match(source, /id: "associate-auto"[\s\S]*?advanceOnTargetClick: true[\s\S]*?mockLabel: "自动关联数据源"/);
 });

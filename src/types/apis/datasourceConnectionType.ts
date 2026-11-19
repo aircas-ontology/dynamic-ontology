@@ -81,6 +81,10 @@ export type ListDatasourceTableColumnsParams = ListDatasourceTablesParams & {
   tableNames: string[];
 };
 
+export interface ListDatasourceTableColumnsByDatasourceParams extends ListDatasourceTablesByDatasourceParams {
+  tableNames: string[];
+}
+
 export interface DatasourceSchema {
   schemaName: string;
   catalogName?: string;
@@ -94,3 +98,8 @@ export interface ListDatasourceSchemasParams {
 export type ListDatasourceTablesParams = ({ datasourceId: number; spaceId?: never } | { spaceId: number; datasourceId?: never }) & {
   schemaName: string;
 };
+
+export interface ListDatasourceTablesByDatasourceParams {
+  id: number;
+  schemaName: string;
+}

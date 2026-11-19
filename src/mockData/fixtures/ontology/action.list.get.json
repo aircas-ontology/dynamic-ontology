@@ -18,6 +18,7 @@
         "operation": "CREATE",
         "storageGroup": "weapon",
         "functionApi": null,
+        "functionName": null,
         "functionDescription": null,
         "outputMode": null
       },
@@ -35,6 +36,7 @@
         "operation": "CREATE",
         "storageGroup": "main",
         "functionApi": null,
+        "functionName": null,
         "functionDescription": null,
         "outputMode": null
       }

@@ -9,6 +9,7 @@ export interface UpdateOntologyPropertyParams {
   defaultValue?: string;
   storageGroup: string;
   categoryId?: number;
+  metadata?: string;
 }
 
 export type UpdateOntologyPropertyData = undefined;

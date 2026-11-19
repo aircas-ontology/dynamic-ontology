@@ -69,9 +69,9 @@ import {
   resolveCompositeWorkflowParamsFromSnapshotAndDetail,
 } from "../utils/compositeWorkflowGraph.ts";
 import { compareCompositeWorkflowParamTypes } from "../utils/compositeWorkflowParamType.ts";
-import { mapCompositeParamBriefsToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
+import { mapCompositeParamBriefsToScriptParamTree } from "@/utils/mapOperatorParametersToScriptParamTree";
 import FunctionOperatorCompositeInputBindingTree from "./FunctionOperatorCompositeInputBindingTree.vue";
-import FunctionOperatorScriptParamTree from "./FunctionOperatorScriptParamTree.vue";
+import FunctionOperatorScriptParamTree from "@/components/FunctionOperatorDetailDrawer/FunctionOperatorScriptParamTree.vue";
 
 const props = defineProps<{
   modelValue: boolean;

@@ -6,7 +6,7 @@
       <section class="left-panel">
         <header class="brand">
           <div class="brand-logo">
-            <img :src="logoImage" alt="动态对象平台图标" />
+            <img :src="logoImage" alt="动态本体平台图标" />
           </div>
           <div>
             <h1>空天 · 灵枢</h1>
@@ -40,7 +40,7 @@
 
       <aside class="login-card">
         <h3>欢迎登录</h3>
-        <!-- <p class="sub-title">动态对象平台</p> -->
+        <!-- <p class="sub-title">动态本体平台</p> -->
 
         <form class="login-form" novalidate @submit.prevent="onSubmit">
           <label class="field">
@@ -148,7 +148,7 @@
       </aside>
     </main>
 
-    <footer class="copyright">© 2026 动态对象平台 · 中国科学院空天信息创新研究院</footer>
+    <footer class="copyright">© 2026 动态本体平台 · 中国科学院空天信息创新研究院</footer>
   </section>
 </template>
 

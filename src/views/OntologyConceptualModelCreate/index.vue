@@ -239,7 +239,7 @@ interface Relation {
 const router = useRouter();
 const route = useRoute();
 const graphCanvasRef = ref<{ zoomBy: (delta: number) => void; fit: () => void } | null>(null);
-const spaceDisplayName = ref("新建对象空间");
+const spaceDisplayName = ref("新建空间");
 const spaceApiName = ref("");
 const routeSpaceId = computed(() => {
   const parsed = Number(route.query.spaceId);

@@ -1,5 +1,13 @@
 <template>
-  <el-dialog :model-value="modelValue" width="760px" append-to-body destroy-on-close :close-on-click-modal="false" @close="emit('update:modelValue', false)">
+  <el-dialog
+    :model-value="modelValue"
+    class="behavior-test-dialog"
+    width="min(1200px, 94vw)"
+    append-to-body
+    destroy-on-close
+    :close-on-click-modal="false"
+    @close="emit('update:modelValue', false)"
+  >
     <template #header>
       <div class="behavior-test-dialog__header">
         <span class="behavior-test-dialog__title">{{ dialogTitle }}</span>
@@ -9,161 +17,232 @@
     </template>
     <p v-if="dialogHint" class="behavior-test-dialog__hint">{{ dialogHint }}</p>
 
-    <BehaviorParameterConfig v-if="isApplicationTest" :controller="parameterConfig" :readonly="submitLoading" />
+    <div class="behavior-test-dialog__layout">
+      <aside class="behavior-test-dialog__detail" aria-label="行为详情">
+        <h4 class="behavior-test-dialog__section-title">行为详情</h4>
+        <p v-if="detailSummaryLoading" class="behavior-test-dialog__state" role="status">正在加载行为详情…</p>
+        <p v-else-if="detailSummaryError" class="behavior-test-dialog__state" role="alert">{{ detailSummaryError }}</p>
+        <template v-else-if="actionInfoViewState">
+          <p class="behavior-test-dialog__description" :title="actionInfoViewState.description || '暂无描述'">
+            {{ actionInfoViewState.description || "暂无描述" }}
+          </p>
+          <el-descriptions class="behavior-test-dialog__summary" :column="1" border size="small">
+            <el-descriptions-item label="行为名称">{{ actionInfoViewState.displayName || "—" }}</el-descriptions-item>
+            <el-descriptions-item label="行为 API">{{ actionInfoViewState.actionApi || "—" }}</el-descriptions-item>
+            <el-descriptions-item label="状态">{{ SPACE_BEHAVIOR_STATUS_LABELS[actionInfoViewState.status] }}</el-descriptions-item>
+            <el-descriptions-item label="行为类别">{{ actionInfoViewState.actionKindLabel || "—" }}</el-descriptions-item>
+            <el-descriptions-item v-if="actionInfoViewState.subjectTypeLabel !== '—'" label="行为类型">
+              {{ actionInfoViewState.subjectTypeLabel }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="actionInfoViewState.operationLabel !== '—'" label="基础操作">
+              {{ actionInfoViewState.operationLabel }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="actionInfoViewState.functionApi" label="挂载函数">
+              <div class="behavior-test-dialog__function-summary">
+                <div class="behavior-test-dialog__field-with-desc">
+                  <span :title="mountedFunctionDisplayName">名称：{{ mountedFunctionDisplayName }}</span>
+                  <span class="behavior-test-dialog__field-desc" :title="mountedFunctionApi">函数 API：{{ mountedFunctionApi }}</span>
+                  <span class="behavior-test-dialog__field-desc" :title="mountedFunctionDescription || undefined">
+                    描述：{{ mountedFunctionDescription || "暂无描述" }}
+                  </span>
+                  <span v-if="mountedFunctionTypeText" class="behavior-test-dialog__field-desc" :title="mountedFunctionTypeText">
+                    {{ mountedFunctionTypeText }}
+                  </span>
+                </div>
+                <p v-if="mountedFunctionProtocolText" class="behavior-test-dialog__field-desc" :title="mountedFunctionProtocolText">
+                  {{ mountedFunctionProtocolText }}
+                </p>
+                <p v-if="mountedFunctionVersionText" class="behavior-test-dialog__field-desc" :title="mountedFunctionVersionText">
+                  {{ mountedFunctionVersionText }}
+                </p>
+                <p v-if="mountedFunctionLoading" class="behavior-test-dialog__field-desc" role="status">正在加载函数详情…</p>
+                <p v-else-if="mountedFunctionError" class="behavior-test-dialog__field-error" role="alert">
+                  {{ mountedFunctionError }}
+                </p>
+                <div class="behavior-test-dialog__function-footer">
+                  <span class="behavior-test-dialog__field-desc" :title="mountedFunctionUpdatedAt || undefined">
+                    更新时间：{{ mountedFunctionUpdatedAt || "—" }}
+                  </span>
+                  <el-button
+                    class="behavior-test-dialog__function-detail-btn"
+                    text
+                    type="primary"
+                    :disabled="!canOpenMountedFunctionDetail"
+                    @click="openMountedFunctionDetail"
+                  >
+                    详情
+                  </el-button>
+                </div>
+              </div>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="actionInfoViewState.storageGroup" label="存储分组">{{ actionInfoViewState.storageGroup }}</el-descriptions-item>
+            <el-descriptions-item v-if="actionInfoViewState.outputMode" label="输出方式">{{ actionInfoViewState.outputMode }}</el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ actionInfoViewState.createTime || "—" }}</el-descriptions-item>
+            <el-descriptions-item label="更新时间">{{ behaviorUpdatedAt || "—" }}</el-descriptions-item>
+            <el-descriptions-item v-if="actionInfoViewState.linkRelationId" label="关系标识">{{ actionInfoViewState.linkRelationId }}</el-descriptions-item>
+            <el-descriptions-item v-if="actionInfoViewState.linkTargetStatus" label="关系状态">{{ actionInfoViewState.linkTargetStatus }}</el-descriptions-item>
+          </el-descriptions>
+        </template>
+        <p v-else class="behavior-test-dialog__state" role="status">暂无行为详情</p>
+      </aside>
 
-    <BehaviorParameterConfig v-if="!isApplicationTest && showRelationLinkForm" :controller="parameterConfig" :readonly="submitLoading" />
+      <div class="behavior-test-dialog__execution">
+        <h4 class="behavior-test-dialog__section-title">行为参数</h4>
+        <BehaviorParameterConfig v-if="isApplicationTest" :controller="parameterConfig" :readonly="submitLoading" />
 
-    <section v-if="isApplicationTest && applicationTestResultText" class="behavior-test-dialog__section">
-      <h4 class="behavior-test-dialog__section-title">测试结果</h4>
-      <el-input class="behavior-test-dialog__result" type="textarea" :model-value="applicationTestResultText" :rows="10" readonly resize="vertical" />
-    </section>
+        <BehaviorParameterConfig v-if="!isApplicationTest && showRelationLinkForm" :controller="parameterConfig" :readonly="submitLoading" />
 
-    <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
-      <p v-if="basicFunctionDetailLoading" class="behavior-test-dialog__state" role="status">正在加载行为详情…</p>
-      <p v-else-if="basicFunctionDetailError" class="behavior-test-dialog__state" role="alert">{{ basicFunctionDetailError }}</p>
-      <template v-else-if="showBasicFunctionEntityPicker">
-        <h4 class="behavior-test-dialog__section-title">选择实体实例（可选）</h4>
-        <p v-if="entityLoading && !entityRows.length" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
-        <p v-else-if="entityError && !entityRows.length" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
-        <el-select
-          v-else
-          class="behavior-test-dialog__entity-select"
-          :model-value="selectedEntityRowKey"
-          filterable
-          clearable
-          :loading="entityLoading"
-          placeholder="不选则查询全部实例"
-          @update:model-value="updateBasicOperatorEntitySelection"
-        >
-          <el-option
-            v-for="option in listBasicOperatorEntitySelectOptions()"
-            :key="option.rowKey"
-            :label="formatBasicOperatorEntityOptionLabel(option)"
-            :value="option.rowKey"
+        <section v-if="isApplicationTest && applicationTestResultText" class="behavior-test-dialog__section">
+          <h4 class="behavior-test-dialog__section-title">测试结果</h4>
+          <el-input class="behavior-test-dialog__result" type="textarea" :model-value="applicationTestResultText" :rows="10" readonly resize="vertical" />
+        </section>
+
+        <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
+          <template v-if="showBasicFunctionEntityPicker">
+            <h4 class="behavior-test-dialog__section-title">选择实体实例（可选）</h4>
+            <p v-if="entityLoading && !entityRows.length" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
+            <p v-else-if="entityError && !entityRows.length" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
+            <el-select
+              v-else
+              class="behavior-test-dialog__entity-select"
+              :model-value="selectedEntityRowKey"
+              filterable
+              clearable
+              :loading="entityLoading"
+              placeholder="不选则查询全部实例"
+              @update:model-value="updateBasicOperatorEntitySelection"
+            >
+              <el-option
+                v-for="option in listBasicOperatorEntitySelectOptions()"
+                :key="option.rowKey"
+                :label="formatBasicOperatorEntityOptionLabel(option)"
+                :value="option.rowKey"
+              />
+              <template #footer>
+                <div v-if="entityTotal > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
+                  <el-pagination
+                    small
+                    layout="total, prev, pager, next"
+                    :total="entityTotal"
+                    :current-page="entityPage"
+                    :page-size="entityPageSize"
+                    @current-change="changeEntityPage"
+                  />
+                </div>
+                <p v-else-if="entityError" class="behavior-test-dialog__select-footer-error" role="alert">{{ entityError }}</p>
+              </template>
+            </el-select>
+          </template>
+          <p v-else-if="basicFunctionOntologyIds.length > 1" class="behavior-test-dialog__state" role="status">
+            多对象基础函数测试无需选择实例，将按行为定义执行。
+          </p>
+        </section>
+
+        <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
+          <el-input
+            class="behavior-test-dialog__result"
+            type="textarea"
+            :model-value="basicOperatorTestResultText"
+            :rows="10"
+            readonly
+            resize="vertical"
+            placeholder="开始测试后将在此展示接口返回 data"
           />
-          <template #footer>
-            <div v-if="entityTotal > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
+        </section>
+
+        <section v-if="isAttributeValueTest" class="behavior-test-dialog__section">
+          <h4 class="behavior-test-dialog__section-title">选择实体实例</h4>
+          <p v-if="entityLoading" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
+          <p v-else-if="entityError" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
+          <template v-else>
+            <el-table
+              class="behavior-test-dialog__table"
+              :data="entityRows"
+              row-key="rowKey"
+              size="small"
+              highlight-current-row
+              :empty-text="entityRows.length ? undefined : '暂无实体实例'"
+              @row-click="handleEntityRowClick"
+            >
+              <el-table-column width="48" align="center">
+                <template #default="{ row }">
+                  <el-radio :model-value="selectedEntityRowKey" :value="asEntityRow(row).rowKey" @change="selectEntityRow(asEntityRow(row))" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="displayName" label="实体名称" min-width="160" show-overflow-tooltip />
+              <el-table-column prop="primaryKeyLabel" label="实体主键" min-width="160" show-overflow-tooltip />
+              <el-table-column prop="ontologyName" label="对象名称" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="propertySummary" label="主属性摘要" min-width="200" show-overflow-tooltip />
+            </el-table>
+            <div class="behavior-test-dialog__pagination">
               <el-pagination
-                small
-                layout="total, prev, pager, next"
+                background
+                layout="total, prev, pager, next, sizes"
                 :total="entityTotal"
                 :current-page="entityPage"
                 :page-size="entityPageSize"
+                :page-sizes="[10, 20, 50]"
                 @current-change="changeEntityPage"
+                @size-change="changeEntityPageSize"
               />
             </div>
-            <p v-else-if="entityError" class="behavior-test-dialog__select-footer-error" role="alert">{{ entityError }}</p>
           </template>
-        </el-select>
-      </template>
-      <p v-else-if="basicFunctionOntologyIds.length > 1" class="behavior-test-dialog__state" role="status">
-        多对象基础函数测试无需选择实例，将按行为定义执行。
-      </p>
-    </section>
+        </section>
 
-    <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
-      <el-input
-        class="behavior-test-dialog__result"
-        type="textarea"
-        :model-value="basicOperatorTestResultText"
-        :rows="10"
-        readonly
-        resize="vertical"
-        placeholder="开始测试后将在此展示接口返回 data"
-      />
-    </section>
-
-    <section v-if="isAttributeValueTest" class="behavior-test-dialog__section">
-      <h4 class="behavior-test-dialog__section-title">选择实体实例</h4>
-      <p v-if="entityLoading" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
-      <p v-else-if="entityError" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
-      <template v-else>
-        <el-table
-          class="behavior-test-dialog__table"
-          :data="entityRows"
-          row-key="rowKey"
-          size="small"
-          highlight-current-row
-          :empty-text="entityRows.length ? undefined : '暂无实体实例'"
-          @row-click="handleEntityRowClick"
-        >
-          <el-table-column width="48" align="center">
-            <template #default="{ row }">
-              <el-radio :model-value="selectedEntityRowKey" :value="asEntityRow(row).rowKey" @change="selectEntityRow(asEntityRow(row))" />
-            </template>
-          </el-table-column>
-          <el-table-column prop="displayName" label="实体名称" min-width="160" show-overflow-tooltip />
-          <el-table-column prop="primaryKeyLabel" label="实体主键" min-width="160" show-overflow-tooltip />
-          <el-table-column prop="ontologyName" label="对象名称" min-width="140" show-overflow-tooltip />
-          <el-table-column prop="propertySummary" label="主属性摘要" min-width="200" show-overflow-tooltip />
-        </el-table>
-        <div class="behavior-test-dialog__pagination">
-          <el-pagination
-            background
-            layout="total, prev, pager, next, sizes"
-            :total="entityTotal"
-            :current-page="entityPage"
-            :page-size="entityPageSize"
-            :page-sizes="[10, 20, 50]"
-            @current-change="changeEntityPage"
-            @size-change="changeEntityPageSize"
-          />
-        </div>
-      </template>
-    </section>
-
-    <section v-if="isAttributeValueTest && needsDataRowSelection" class="behavior-test-dialog__section">
-      <h4 class="behavior-test-dialog__section-title">选择数据行</h4>
-      <p v-if="selectedEntityPrimaryKey === null" class="behavior-test-dialog__state" role="status">请先选择实体实例以加载行数据</p>
-      <p v-else-if="groupRowLoading" class="behavior-test-dialog__state" role="status">正在加载实体行数据…</p>
-      <p v-else-if="groupRowError" class="behavior-test-dialog__state" role="alert">{{ groupRowError }}</p>
-      <el-table
-        v-else
-        class="behavior-test-dialog__table"
-        :data="groupDataRows"
-        row-key="rowKey"
-        size="small"
-        highlight-current-row
-        :empty-text="groupDataRows.length ? undefined : '暂无数据行'"
-        @row-click="handleGroupDataRowClick"
-      >
-        <el-table-column width="48" align="center">
-          <template #default="{ row }">
-            <el-radio
-              :model-value="selectedGroupDataRowKey"
-              :value="asGroupDataRow(row).rowKey"
-              :disabled="isMainGroupDataRowLocked"
-              @change="selectGroupDataRow(asGroupDataRow(row))"
+        <section v-if="isAttributeValueTest && needsDataRowSelection" class="behavior-test-dialog__section">
+          <h4 class="behavior-test-dialog__section-title">选择数据行</h4>
+          <p v-if="selectedEntityPrimaryKey === null" class="behavior-test-dialog__state" role="status">请先选择实体实例以加载行数据</p>
+          <p v-else-if="groupRowLoading" class="behavior-test-dialog__state" role="status">正在加载实体行数据…</p>
+          <p v-else-if="groupRowError" class="behavior-test-dialog__state" role="alert">{{ groupRowError }}</p>
+          <el-table
+            v-else
+            class="behavior-test-dialog__table"
+            :data="groupDataRows"
+            row-key="rowKey"
+            size="small"
+            highlight-current-row
+            :empty-text="groupDataRows.length ? undefined : '暂无数据行'"
+            @row-click="handleGroupDataRowClick"
+          >
+            <el-table-column width="48" align="center">
+              <template #default="{ row }">
+                <el-radio
+                  :model-value="selectedGroupDataRowKey"
+                  :value="asGroupDataRow(row).rowKey"
+                  :disabled="isMainGroupDataRowLocked"
+                  @change="selectGroupDataRow(asGroupDataRow(row))"
+                />
+              </template>
+            </el-table-column>
+            <el-table-column prop="storageGroup" label="存储分组" min-width="120" show-overflow-tooltip />
+            <el-table-column prop="dataPrimaryKeyLabel" label="数据行主键" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="propertySummary" label="属性数量" min-width="220" show-overflow-tooltip />
+          </el-table>
+          <div v-if="selectedEntityPrimaryKey !== null && !groupRowLoading && !groupRowError" class="behavior-test-dialog__pagination">
+            <el-pagination
+              background
+              layout="total, prev, pager, next, sizes"
+              :total="groupRowTotal"
+              :current-page="groupRowPage"
+              :page-size="groupRowPageSize"
+              :page-sizes="[10, 20, 50]"
+              @current-change="changeGroupDataRowPage"
+              @size-change="changeGroupDataRowPageSize"
             />
-          </template>
-        </el-table-column>
-        <el-table-column prop="storageGroup" label="存储分组" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="dataPrimaryKeyLabel" label="数据行主键" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="propertySummary" label="属性数量" min-width="220" show-overflow-tooltip />
-      </el-table>
-      <div v-if="selectedEntityPrimaryKey !== null && !groupRowLoading && !groupRowError" class="behavior-test-dialog__pagination">
-        <el-pagination
-          background
-          layout="total, prev, pager, next, sizes"
-          :total="groupRowTotal"
-          :current-page="groupRowPage"
-          :page-size="groupRowPageSize"
-          :page-sizes="[10, 20, 50]"
-          @current-change="changeGroupDataRowPage"
-          @size-change="changeGroupDataRowPageSize"
-        />
+          </div>
+        </section>
+
+        <p v-if="(isCreateTest || isUpdateTest) && detailError" class="behavior-test-dialog__state" role="alert">{{ detailError }}</p>
+
+        <p v-if="submitError && !isUpdateTest && !isCreateTest" class="behavior-test-dialog__state" role="alert">{{ submitError }}</p>
       </div>
-    </section>
-
-    <p v-if="(isCreateTest || isUpdateTest) && detailError" class="behavior-test-dialog__state" role="alert">{{ detailError }}</p>
-
-    <p v-if="submitError && !isUpdateTest && !isCreateTest" class="behavior-test-dialog__state" role="alert">{{ submitError }}</p>
+    </div>
 
     <template #footer>
       <el-button v-if="isRelationInstanceTest" :disabled="submitLoading" @click="openEntityLinkData">查看实例关系数据</el-button>
       <el-button v-else-if="isAttributeValueTest" :disabled="submitLoading" @click="openEntityRowDetail">查看实例数据</el-button>
       <el-button :disabled="submitLoading" @click="emit('update:modelValue', false)">关闭</el-button>
-      <el-button v-if="!isUpdateTest && !isCreateTest" type="primary" :loading="submitLoading" @click="submitBehaviorTest">开始测试</el-button>
+      <el-button v-if="!isUpdateTest && !isCreateTest" type="primary" :loading="submitLoading" @click="submitBehaviorTest">执行</el-button>
     </template>
   </el-dialog>
 
@@ -194,20 +273,37 @@
     :query-params="entityLinkDataQueryParams"
     :query-links="apis.postOntologyEntityAllLinkInterface"
   />
+
+  <FunctionOperatorDetailDrawer
+    readonly
+    v-model="mountedFunctionDetailVisible"
+    :operator="mountedFunctionOperator"
+    :loading="mountedFunctionDetailLoading"
+    :versions="mountedFunctionVersions"
+    :detail-version="mountedFunctionDetailVersion"
+    :versions-loading="mountedFunctionVersionsLoading"
+    @change-version="changeMountedFunctionDetailVersion"
+  />
 </template>
 
 <script setup lang="ts">
 import BehaviorParameterConfig from "@/components/BehaviorParameterConfig/BehaviorParameterConfig.vue";
+import FunctionOperatorDetailDrawer from "@/components/FunctionOperatorDetailDrawer/FunctionOperatorDetailDrawer.vue";
 import { useBehaviorParameters } from "@/composables/behavior/useBehaviorParameters";
 import type { BehaviorTestEntityRow, BehaviorTestEntityDataRow } from "@/types";
 import { computed, onScopeDispose, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import type * as BehaviorTestApis from "@/apis";
+import { getOntologyFunctionDetailInterface, getOntologyFunctionVersionsInterface } from "@/apis";
 import { mergeBehaviorTestEntityRows } from "@/utils/behaviorParameters/createBehaviorTestInitialEntity";
+import { mapOntologyFunctionDetailToOperator } from "@/utils/mapOntologyFunctionDetail";
 import {
+  FUNCTION_OPERATOR_TYPE_LABELS,
   SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
   SPACE_BEHAVIOR_KIND_LABELS,
+  SPACE_BEHAVIOR_STATUS_LABELS,
   SPACE_BEHAVIOR_VALUE_TYPE_LABELS,
+  type FunctionOperator,
   type OntologyEntityRowDetailPageData,
   type OntologyEntityRowDetailVO,
   type PostOntologyEntityAllLinkParams,
@@ -220,7 +316,6 @@ import {
   mapOntologyEntityRowDetailPageToDataRows,
   mapOntologyEntityRowDetailPageToViewDetail,
 } from "@/utils/behaviorParameters/mapOntologyEntityRowDetailToDataRows";
-import { mapOntologyActionInfoToViewState } from "@/utils/behaviorParameters/mapOntologyActionInfoToViewState";
 import { isMainStorageGroup } from "@/utils/behaviorParameters/resolveAttributeValueSelection";
 
 const props = defineProps<{
@@ -254,12 +349,14 @@ const parameterConfig = useBehaviorParameters(props, {
   postGetOntologyEntityRowDetailPageInterface,
 });
 const {
+  applyActionInfoViewState,
   loadApplicationTestForm,
   loadRelationTestContext,
   updateParamValue,
   isApplicationTest,
   detailLoading,
   detailError,
+  actionInfoViewState,
   paramValues,
   showRelationLinkForm,
   relationContextLoading,
@@ -314,6 +411,16 @@ const basicFunctionTestOntologyId = ref("");
 const basicFunctionDetailLoading = ref(false);
 const basicFunctionDetailError = ref("");
 let basicFunctionDetailLoadToken = 0;
+/** 左栏挂载函数详情（摘要与只读抽屉共用）。 */
+const mountedFunctionOperator = ref<FunctionOperator | null>(null);
+const mountedFunctionLoading = ref(false);
+const mountedFunctionError = ref("");
+const mountedFunctionVersions = ref<string[]>([]);
+const mountedFunctionDetailVersion = ref("");
+const mountedFunctionVersionsLoading = ref(false);
+const mountedFunctionDetailVisible = ref(false);
+const mountedFunctionDetailLoading = ref(false);
+let mountedFunctionLoadToken = 0;
 let submitToken = 0;
 let contextToken = 0;
 
@@ -341,6 +448,64 @@ let groupRowLoadToken = 0;
 const dialogTitle = computed(() => {
   const name = props.behavior?.displayName.trim() || "行为";
   return `测试行为 · ${name}`;
+});
+
+/** @description 列表或卡片带回的更新时间，详情接口无该字段时作为回退。 */
+const behaviorUpdatedAt = computed(() => props.behavior?.updatedAt?.trim() || "");
+
+/** @description 挂载函数主展示名：优先详情 displayName；回退时避免把行为描述当成函数名。 */
+const mountedFunctionDisplayName = computed(() => {
+  const fromDetail = mountedFunctionOperator.value?.name.trim() || "";
+  if (fromDetail) return fromDetail;
+  const view = actionInfoViewState.value;
+  const name = (view?.functionDescription || "").trim();
+  const api = (view?.functionApi || "").trim();
+  const behaviorDescription = (view?.description || "").trim();
+  if (name && name !== behaviorDescription) return name;
+  return api || "—";
+});
+
+/** @description 挂载函数 API：优先详情 functionApi，否则回退行为详情字段。 */
+const mountedFunctionApi = computed(() => {
+  const fromDetail = mountedFunctionOperator.value?.functionApi.trim() || "";
+  if (fromDetail) return fromDetail;
+  return (actionInfoViewState.value?.functionApi || "").trim() || "—";
+});
+
+/** @description 挂载函数描述：优先详情 description。 */
+const mountedFunctionDescription = computed(() => {
+  const fromDetail = mountedFunctionOperator.value?.description.trim() || "";
+  if (fromDetail) return fromDetail;
+  return (actionInfoViewState.value?.functionDescription || "").trim();
+});
+
+/** @description 挂载函数类型行；详情未加载或无类型时不展示。 */
+const mountedFunctionTypeText = computed(() => {
+  const type = mountedFunctionOperator.value?.type;
+  if (!type) return "";
+  const label = FUNCTION_OPERATOR_TYPE_LABELS[type] || type;
+  return label ? `类型：${label}` : "";
+});
+
+/** @description 挂载函数协议行；无协议时不展示。 */
+const mountedFunctionProtocolText = computed(() => {
+  const protocol = mountedFunctionOperator.value?.protocol.trim() || "";
+  return protocol ? `协议：${protocol}` : "";
+});
+
+/** @description 挂载函数版本行。 */
+const mountedFunctionVersionText = computed(() => {
+  const version = (mountedFunctionOperator.value?.version || mountedFunctionDetailVersion.value).trim();
+  return version ? `版本：${version}` : "";
+});
+
+/** @description 挂载函数更新时间；详情无值时为空。 */
+const mountedFunctionUpdatedAt = computed(() => mountedFunctionOperator.value?.updatedAt.trim() || "");
+
+/** @description 可否打开挂载函数只读详情抽屉。 */
+const canOpenMountedFunctionDetail = computed(() => {
+  const functionApi = (actionInfoViewState.value?.functionApi || mountedFunctionOperator.value?.functionApi || "").trim();
+  return Boolean(functionApi) && !mountedFunctionLoading.value;
 });
 
 /**
@@ -375,6 +540,19 @@ const isDeleteTest = computed(() => isAttributeValueTest.value && props.behavior
 const needsDataRowSelection = computed(() => isUpdateTest.value || isDeleteTest.value);
 /** 属性值-编辑且存储分组为 main 时，数据行默认勾选且不可取消。 */
 const isMainGroupDataRowLocked = computed(() => isUpdateTest.value && isMainStorageGroup(resolvedStorageGroup.value));
+
+/** @description 左侧行为详情摘要加载态：合并各测试路径的详情请求状态。 */
+const detailSummaryLoading = computed(
+  () => detailLoading.value || basicFunctionDetailLoading.value || (isRelationInstanceTest.value && relationContextLoading.value),
+);
+
+/** @description 左侧行为详情摘要错误文案。 */
+const detailSummaryError = computed(() => {
+  if (isBasicFunctionOperatorTest.value && basicFunctionDetailError.value) return basicFunctionDetailError.value;
+  if (isRelationInstanceTest.value && relationContextError.value && !actionInfoViewState.value) return relationContextError.value;
+  if (detailError.value && !actionInfoViewState.value) return detailError.value;
+  return "";
+});
 
 const dialogHint = computed(() => {
   if (isApplicationTest.value && applicationHasLinkMapping.value) {
@@ -604,6 +782,147 @@ function clearBasicFunctionTestContext(): void {
 }
 
 /**
+ * @description 清空左栏挂载函数详情与只读抽屉状态。
+ */
+function clearMountedFunctionDetailState(): void {
+  mountedFunctionOperator.value = null;
+  mountedFunctionLoading.value = false;
+  mountedFunctionError.value = "";
+  mountedFunctionVersions.value = [];
+  mountedFunctionDetailVersion.value = "";
+  mountedFunctionVersionsLoading.value = false;
+  mountedFunctionDetailVisible.value = false;
+  mountedFunctionDetailLoading.value = false;
+}
+
+/**
+ * @description 合并版本列表并保证当前版本在选项中。
+ * @param versions 接口版本列表。
+ * @param currentVersion 当前版本。
+ * @returns 去重后的版本列表。
+ */
+function mergeMountedFunctionVersionOptions(versions: string[], currentVersion: string): string[] {
+  const normalized = versions.map((item) => item.trim()).filter(Boolean);
+  const current = currentVersion.trim();
+  if (!current) return Array.from(new Set(normalized));
+  if (!normalized.includes(current)) return [current, ...Array.from(new Set(normalized))];
+  return Array.from(new Set(normalized));
+}
+
+/**
+ * @description 解析挂载函数版本：优先行为项版本，否则取 versions 列表末项。
+ * @param functionApi 函数 API。
+ * @returns 版本号；无法解析时为空串。
+ */
+async function resolveMountedFunctionVersion(functionApi: string): Promise<string> {
+  const fromBehavior = props.behavior?.functionOperatorVersion.trim() || "";
+  if (fromBehavior) return fromBehavior;
+  const spaceId = props.spaceId.trim();
+  if (!spaceId) return "";
+  const response = await getOntologyFunctionVersionsInterface({ functionApi, spaceId });
+  if (response.code !== 200 || !Array.isArray(response.data)) {
+    throw new Error(response.message || "函数版本列表加载失败");
+  }
+  const versions = response.data.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean);
+  mountedFunctionVersions.value = versions;
+  return versions[versions.length - 1] ?? "";
+}
+
+/**
+ * @description 按 functionApi 与版本拉取挂载函数详情，供左栏摘要与只读抽屉使用。
+ * @param functionApi 函数 API。
+ * @param version 目标版本；空则先解析版本。
+ * @param options 是否同步更新抽屉 loading。
+ */
+async function loadMountedFunctionDetail(functionApi: string, version = "", options: { forDrawer?: boolean } = {}): Promise<void> {
+  const api = functionApi.trim();
+  const spaceId = props.spaceId.trim();
+  if (!api || !spaceId) {
+    clearMountedFunctionDetailState();
+    return;
+  }
+  const requestToken = ++mountedFunctionLoadToken;
+  mountedFunctionLoading.value = true;
+  mountedFunctionError.value = "";
+  if (options.forDrawer) mountedFunctionDetailLoading.value = true;
+  try {
+    let resolvedVersion = version.trim();
+    if (!resolvedVersion) {
+      mountedFunctionVersionsLoading.value = true;
+      try {
+        resolvedVersion = await resolveMountedFunctionVersion(api);
+      } finally {
+        if (requestToken === mountedFunctionLoadToken) mountedFunctionVersionsLoading.value = false;
+      }
+    }
+    if (requestToken !== mountedFunctionLoadToken) return;
+    if (!resolvedVersion) throw new Error("缺少函数版本，无法加载函数详情");
+    if (!mountedFunctionVersions.value.includes(resolvedVersion)) {
+      mountedFunctionVersions.value = mergeMountedFunctionVersionOptions(mountedFunctionVersions.value, resolvedVersion);
+    }
+    const response = await getOntologyFunctionDetailInterface({ functionApi: api, version: resolvedVersion, spaceId });
+    if (requestToken !== mountedFunctionLoadToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "函数详情加载失败");
+    mountedFunctionOperator.value = mapOntologyFunctionDetailToOperator(response.data, mountedFunctionOperator.value);
+    mountedFunctionDetailVersion.value = mountedFunctionOperator.value.version.trim() || resolvedVersion;
+    mountedFunctionVersions.value = mergeMountedFunctionVersionOptions(mountedFunctionVersions.value, mountedFunctionDetailVersion.value);
+  } catch (error) {
+    if (requestToken !== mountedFunctionLoadToken) return;
+    mountedFunctionOperator.value = null;
+    mountedFunctionError.value = error instanceof Error ? error.message : "函数详情加载失败";
+  } finally {
+    if (requestToken === mountedFunctionLoadToken) {
+      mountedFunctionLoading.value = false;
+      if (options.forDrawer) mountedFunctionDetailLoading.value = false;
+    }
+  }
+}
+
+/**
+ * @description 打开挂载函数只读详情抽屉；必要时补拉详情。
+ */
+function openMountedFunctionDetail(): void {
+  const functionApi = (actionInfoViewState.value?.functionApi || mountedFunctionOperator.value?.functionApi || "").trim();
+  if (!functionApi) {
+    ElMessage.warning("缺少函数 API，无法查看详情");
+    return;
+  }
+  mountedFunctionDetailVisible.value = true;
+  if (!mountedFunctionOperator.value || mountedFunctionError.value) {
+    void loadMountedFunctionDetail(functionApi, mountedFunctionDetailVersion.value, { forDrawer: true });
+    return;
+  }
+  if (!mountedFunctionVersions.value.length) {
+    void (async () => {
+      const snapshotToken = mountedFunctionLoadToken;
+      mountedFunctionVersionsLoading.value = true;
+      try {
+        const response = await getOntologyFunctionVersionsInterface({ functionApi, spaceId: props.spaceId.trim() });
+        if (snapshotToken !== mountedFunctionLoadToken) return;
+        if (response.code === 200 && Array.isArray(response.data)) {
+          const versions = response.data.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean);
+          mountedFunctionVersions.value = mergeMountedFunctionVersionOptions(versions, mountedFunctionDetailVersion.value);
+        }
+      } finally {
+        if (snapshotToken === mountedFunctionLoadToken) mountedFunctionVersionsLoading.value = false;
+      }
+    })();
+  }
+}
+
+/**
+ * @description 只读详情抽屉切换版本并重新拉取详情。
+ * @param version 目标版本。
+ */
+async function changeMountedFunctionDetailVersion(version: string): Promise<void> {
+  const nextVersion = version.trim();
+  const functionApi = (mountedFunctionOperator.value?.functionApi || actionInfoViewState.value?.functionApi || "").trim();
+  if (!functionApi || !nextVersion || nextVersion === mountedFunctionDetailVersion.value.trim()) return;
+  mountedFunctionDetailVersion.value = nextVersion;
+  await loadMountedFunctionDetail(functionApi, nextVersion, { forDrawer: true });
+}
+
+/**
  * @description 规范化详情返回的基础函数对象 id 列表。
  * @param raw 原始 ontologyIdentifiers。
  * @returns 去空白后的唯一 id 列表。
@@ -645,6 +964,7 @@ async function loadBasicFunctionTestContext(): Promise<void> {
     const response = await getOntologyActionInfoInterface({ actionApi, ontologySpaceId });
     if (requestToken !== basicFunctionDetailLoadToken) return;
     if (response.code !== 200 || !response.data) throw new Error(response.message || "行为详情加载失败");
+    applyActionInfoViewState(response.data, actionApi);
     const ontologyIds = normalizeBasicFunctionOntologyIds(response.data.basicFunction?.ontologyIdentifiers);
     basicFunctionOntologyIds.value = ontologyIds;
     if (ontologyIds.length === 1) {
@@ -655,6 +975,7 @@ async function loadBasicFunctionTestContext(): Promise<void> {
     if (requestToken !== basicFunctionDetailLoadToken) return;
     basicFunctionOntologyIds.value = [];
     basicFunctionTestOntologyId.value = "";
+    actionInfoViewState.value = null;
     basicFunctionDetailError.value = error instanceof Error ? error.message : "行为详情加载失败";
   } finally {
     if (requestToken === basicFunctionDetailLoadToken) basicFunctionDetailLoading.value = false;
@@ -822,9 +1143,7 @@ async function loadBehaviorDetailParams(): Promise<void> {
     const response = await getOntologyActionInfoInterface({ actionApi, ontologySpaceId });
     if (requestToken !== detailLoadToken.value) return;
     if (response.code !== 200 || !response.data) throw new Error(response.message || "行为详情加载失败");
-    const viewState = mapOntologyActionInfoToViewState(response.data);
-    resolvedActionApi.value = viewState.actionApi || actionApi;
-    resolvedStorageGroup.value = viewState.storageGroup.trim();
+    const viewState = applyActionInfoViewState(response.data, actionApi);
     const rows = mapExternalParamRows(viewState.inputRows);
     paramRows.value = rows;
     resetParamValues(rows);
@@ -1202,6 +1521,7 @@ function disposeBehaviorTest(): void {
   entityLoadToken += 1;
   groupRowLoadToken += 1;
   basicFunctionDetailLoadToken += 1;
+  mountedFunctionLoadToken += 1;
   submitToken += 1;
 }
 
@@ -1244,6 +1564,7 @@ watch(
       detailLoadToken.value += 1;
       groupRowLoadToken += 1;
       basicFunctionDetailLoadToken += 1;
+      mountedFunctionLoadToken += 1;
       relationContextLoadToken.value += 1;
       fromEntityLoadToken.value += 1;
       toEntityLoadToken.value += 1;
@@ -1267,6 +1588,7 @@ watch(
       clearRelationTestState();
       clearBasicOperatorTestResult();
       clearBasicFunctionTestContext();
+      clearMountedFunctionDetailState();
       entityPage.value = 1;
       entityPageSize.value = 10;
       groupRowPage.value = 1;
@@ -1287,6 +1609,7 @@ watch(
     clearRelationTestState();
     clearBasicOperatorTestResult();
     clearBasicFunctionTestContext();
+    clearMountedFunctionDetailState();
     if (isBasicFunctionOperatorTest.value) {
       void loadBasicFunctionTestContext();
       return;
@@ -1294,6 +1617,19 @@ watch(
     void initializeBehaviorTestContext(token);
   },
   { immediate: true },
+);
+
+watch(
+  () => [props.modelValue, actionInfoViewState.value?.functionApi, props.spaceId, props.behavior?.functionOperatorVersion] as const,
+  ([visible, functionApi]) => {
+    if (!visible) return;
+    const api = typeof functionApi === "string" ? functionApi.trim() : "";
+    if (!api) {
+      clearMountedFunctionDetailState();
+      return;
+    }
+    void loadMountedFunctionDetail(api);
+  },
 );
 </script>
 
@@ -1312,10 +1648,142 @@ watch(
   line-height: 1.4;
 }
 .behavior-test-dialog__hint {
+  flex-shrink: 0;
   margin: 0 0 12px;
   color: var(--aircas-color-text-secondary);
   font-size: 13px;
   line-height: 1.6;
+}
+.behavior-test-dialog__layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: min(70vh, 720px);
+  max-height: min(70vh, 720px);
+  overflow: hidden;
+}
+@media (max-width: 900px) {
+  .behavior-test-dialog__layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    max-height: none;
+  }
+  .behavior-test-dialog__detail {
+    max-height: 280px;
+  }
+  .behavior-test-dialog__execution {
+    max-height: min(55vh, 520px);
+  }
+}
+.behavior-test-dialog__detail,
+.behavior-test-dialog__execution {
+  min-width: 0;
+  min-height: 0;
+  padding: 12px;
+  border: 1px solid var(--aircas-color-border);
+  border-radius: 8px;
+  background: var(--aircas-color-panel-background);
+}
+.behavior-test-dialog__detail {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.behavior-test-dialog__execution {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.behavior-test-dialog__description {
+  margin: 0 0 12px;
+  color: var(--aircas-color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+.behavior-test-dialog__field-with-desc {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.behavior-test-dialog__field-with-desc > span:first-child {
+  color: var(--aircas-color-text-primary);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+.behavior-test-dialog__field-desc {
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+.behavior-test-dialog__field-error {
+  margin: 0;
+  color: var(--aircas-color-danger);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.behavior-test-dialog__function-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.behavior-test-dialog__function-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.behavior-test-dialog__function-footer .behavior-test-dialog__field-desc {
+  flex: 1;
+  min-width: 0;
+}
+.behavior-test-dialog__function-detail-btn {
+  flex-shrink: 0;
+  padding: 0;
+  height: auto;
+  min-height: 0;
+  font-size: 12px;
+  line-height: 1.2;
+
+  :deep(span) {
+    font-size: 12px;
+  }
+}
+.behavior-test-dialog__summary {
+  width: 100%;
+  max-width: 100%;
+
+  :deep(.el-descriptions__body),
+  :deep(.el-descriptions__table),
+  :deep(table) {
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+  }
+
+  :deep(.el-descriptions__label) {
+    width: 88px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  :deep(.el-descriptions__content) {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
 }
 .behavior-test-dialog__section {
   margin-bottom: 16px;
@@ -1433,5 +1901,27 @@ watch(
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   line-height: 1.5;
+}
+</style>
+
+<style lang="scss">
+.behavior-test-dialog.el-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: min(92vh, 960px);
+  margin-top: 4vh !important;
+  overflow: hidden;
+}
+.behavior-test-dialog.el-dialog .el-dialog__header,
+.behavior-test-dialog.el-dialog .el-dialog__footer {
+  flex-shrink: 0;
+}
+.behavior-test-dialog.el-dialog .el-dialog__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 </style>

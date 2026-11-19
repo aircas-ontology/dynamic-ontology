@@ -9,19 +9,29 @@
         <h2>历史连接</h2>
         <el-input v-model="connectionKeyword" placeholder="搜索连接名称或类型" clearable ariaLabel="搜索历史连接" :disabled="busy" />
         <div class="datasource-build-dialog__history-list">
-          <button
-            v-for="item in filteredConnections"
-            :key="item.id"
-            type="button"
-            class="datasource-build-dialog__history-item"
-            :class="{ 'is-active': connectionMode === 'existing' && datasourceId === item.id }"
-            :disabled="busy"
-            :aria-pressed="connectionMode === 'existing' && datasourceId === item.id"
-            @click="chooseHistoricalConnection(item.id)"
-          >
-            <strong :title="item.name">{{ item.name }}</strong
-            ><span>{{ item.dbType }}</span>
-          </button>
+          <div v-for="item in filteredConnections" :key="item.id" class="datasource-build-dialog__history-row">
+            <button
+              type="button"
+              class="datasource-build-dialog__history-item"
+              :class="{ 'is-active': connectionMode === 'existing' && datasourceId === item.id }"
+              :disabled="busy"
+              :aria-pressed="connectionMode === 'existing' && datasourceId === item.id"
+              @click="chooseHistoricalConnection(item.id)"
+            >
+              <strong :title="item.name">{{ item.name }}</strong
+              ><span>{{ item.dbType }}</span>
+            </button>
+            <button
+              type="button"
+              class="datasource-build-dialog__history-delete"
+              :disabled="busy"
+              :aria-label="`删除连接 ${item.name}`"
+              :title="`删除连接 ${item.name}`"
+              @click.stop="deleteHistoricalConnection(item.id)"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
           <el-empty v-if="connectionReady && !filteredConnections.length" :description="connections.length ? '暂无匹配连接' : '暂无历史连接，请在右侧新建'" />
         </div>
         <el-button v-if="error" :disabled="busy" @click="loadConnections">重新查询连接</el-button>
@@ -29,7 +39,6 @@
       <div class="datasource-build-dialog__new-connection" @input="invalidateConnectionTest" @change="invalidateConnectionTest">
         <header>
           <h2>新建连接</h2>
-          <el-button :disabled="busy" :type="connectionMode === 'new' ? 'primary' : 'default'" @click="activateNewConnection">使用新建连接</el-button>
         </header>
         <el-form label-position="top" :disabled="busy">
           <el-form-item label="数据库类型" required>
@@ -198,14 +207,17 @@
 </template>
 <script setup lang="ts">
 import { computed, reactive, ref, watch, onBeforeUnmount } from "vue";
-import { ElLoading } from "element-plus";
+import { ElLoading, ElMessageBox } from "element-plus";
 import {
+  deleteDatasourceConnectionInterface,
   getDatasourceConnectionListInterface,
   postDatasourceConnectionInterface,
   postDatasourceConnectionTestInterface,
   getDatasourceSchemaListByDatasourceInterface,
   getDatasourceSchemaListInterface,
+  getDatasourceTableColumnsByDatasourceInterface,
   getDatasourceTableColumnsInterface,
+  getDatasourceTableListByDatasourceInterface,
   getDatasourceTableListInterface,
 } from "@/apis";
 import type { DatasourceBuildSelection, DatasourceConnectionItem, DatasourceConnectionParam, DatasourceSchema, DatasourceTable } from "@/types";
@@ -415,6 +427,36 @@ async function chooseHistoricalConnection(id: number): Promise<void> {
   if (dialogToken !== dialogGeneration || datasourceId.value !== id || error.value || !schemaName.value) return;
   if (step.value === -1) step.value = 0;
 }
+/**
+ * @description 确认后物理删除历史连接，清理被删除的当前选择并忽略关闭后的响应。
+ * @param id 待删除的历史连接标识。
+ * @returns 删除或取消操作完成。
+ */
+async function deleteHistoricalConnection(id: number): Promise<void> {
+  if (busy.value) return;
+  const connection = connections.value.find((item) => item.id === id);
+  if (!connection) return;
+  const token = ++generation;
+  busy.value = true;
+  error.value = "";
+  try {
+    await ElMessageBox.confirm(`确定物理删除连接“${connection.name}”吗？此操作不可撤销。`, "删除历史连接", {
+      confirmButtonText: "删除",
+      cancelButtonText: "取消",
+      type: "warning",
+    });
+    if (token !== generation || !visible.value) return;
+    const response = await deleteDatasourceConnectionInterface(id);
+    if (token !== generation || !visible.value) return;
+    if (response.code !== 200) throw new Error(response.message || "连接删除失败");
+    connections.value = connections.value.filter((item) => item.id !== id);
+    if (datasourceId.value === id) changeConnectionMode();
+  } catch (cause) {
+    if (token === generation && visible.value && cause !== "cancel" && cause !== "close") error.value = cause instanceof Error ? cause.message : "连接删除失败";
+  } finally {
+    if (token === generation) busy.value = false;
+  }
+}
 /** @description 选用右侧新建表单，清理原连接的下游选择。 */
 function activateNewConnection(): void {
   if (busy.value || connectionMode.value === "new") return;
@@ -567,7 +609,15 @@ async function nextStep(): Promise<void> {
         error.value = "请选择或新建数据源连接";
         return;
       }
-      const response = await getDatasourceTableListInterface({ ...getDatasourceTarget(), schemaName: schemaName.value });
+      const selectedDatasourceId = datasourceId.value;
+      if (!hasBoundConnection.value && (!selectedDatasourceId || !Number.isInteger(selectedDatasourceId) || selectedDatasourceId <= 0)) {
+        error.value = "请选择有效的数据源连接";
+        return;
+      }
+      const response =
+        !hasBoundConnection.value && selectedDatasourceId !== undefined
+          ? await getDatasourceTableListByDatasourceInterface({ id: selectedDatasourceId, schemaName: schemaName.value })
+          : await getDatasourceTableListInterface({ ...getDatasourceTarget(), schemaName: schemaName.value });
       if (token !== generation) return;
       if (response.code !== 200) throw new Error(response.message || "数据表加载失败");
       const previousTables = new Map(tables.value.map((table) => [table.name, table]));
@@ -599,11 +649,19 @@ async function nextStep(): Promise<void> {
         error.value = "请输入所选数据表的入库表名";
         return;
       }
-      const response = await getDatasourceTableColumnsInterface({
-        ...getDatasourceTarget(),
+      const selectedDatasourceId = datasourceId.value;
+      if (!hasBoundConnection.value && (!selectedDatasourceId || !Number.isInteger(selectedDatasourceId) || selectedDatasourceId <= 0)) {
+        error.value = "请选择有效的数据源连接";
+        return;
+      }
+      const columnParams = {
         schemaName: schemaName.value,
         tableNames: selectedTables.value.map((table) => table.name),
-      });
+      };
+      const response =
+        !hasBoundConnection.value && selectedDatasourceId !== undefined
+          ? await getDatasourceTableColumnsByDatasourceInterface({ id: selectedDatasourceId, ...columnParams })
+          : await getDatasourceTableColumnsInterface({ ...getDatasourceTarget(), ...columnParams });
       if (token !== generation) return;
       if (response.code !== 200) throw new Error(response.message || "字段加载失败");
       const details = new Map(response.data.map((detail) => [detail.tableName, detail]));
@@ -694,6 +752,11 @@ function clearFields(): void {
 }
 </script>
 <style scoped lang="scss">
+.datasource-build-dialog__connections,
+.datasource-build-dialog__tables,
+.datasource-build-dialog__fields {
+  --el-mask-color: var(--aircas-color-overlay-light);
+}
 .datasource-build-dialog__connections {
   display: grid;
   grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.6fr);
@@ -722,13 +785,50 @@ function clearFields(): void {
   flex: 1;
   overflow: auto;
 }
+.datasource-build-dialog__history-row {
+  position: relative;
+  margin-bottom: 8px;
+}
+.datasource-build-dialog__history-delete {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 6px;
+  color: var(--aircas-color-text-secondary);
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.datasource-build-dialog__history-delete:hover:not(:disabled),
+.datasource-build-dialog__history-delete:active:not(:disabled) {
+  color: var(--aircas-color-danger);
+  background: var(--aircas-color-effect-primary-soft);
+}
+.datasource-build-dialog__history-delete:focus-visible {
+  outline: 2px solid var(--aircas-color-primary);
+  outline-offset: 2px;
+}
+.datasource-build-dialog__history-delete:disabled {
+  color: var(--aircas-color-text-disabled);
+  cursor: not-allowed;
+}
 .datasource-build-dialog__history-item {
+  min-width: 0;
+  flex: 1;
   display: flex;
   width: 100%;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 8px;
-  padding: 12px;
+  padding: 12px 52px 12px 12px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 6px;
   color: var(--aircas-color-text-secondary);

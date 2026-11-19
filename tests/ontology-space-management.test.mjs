@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { filterSpaces, saveSpace, removeSpace, parseSpaceImport, serializeSpace } from "../src/views/OntologySpaceManagement/utils/spaceOperations.ts";
@@ -56,7 +56,7 @@ test("workspace child route resolves to the space management page under the layo
     route.matched.map((record) => record.name),
     ["Workspace", "OntologySpaceManagement"],
   );
-  assert.equal(route.meta.title, "对象空间管理");
+  assert.equal(route.meta.title, "空间管理");
 });
 
 test("theme space management route and navigation item are registered below object spaces", () => {
@@ -65,7 +65,7 @@ test("theme space management route and navigation item are registered below obje
   assert.equal(route.path, "/workspace/theme-space-management");
   assert.equal(route.meta.title, "主题管理");
   const navigationSource = readFileSync(new URL("../src/layout/components/NavigationMenu.vue", import.meta.url), "utf8");
-  assert.match(navigationSource, /对象空间浏览[\s\S]*对象空间管理[\s\S]*主题空间浏览[\s\S]*主题管理[\s\S]*全文检索[\s\S]*应用管理/);
+  assert.match(navigationSource, /空间浏览[\s\S]*空间管理[\s\S]*主题空间浏览[\s\S]*主题管理[\s\S]*全文检索[\s\S]*应用管理/);
   assert.match(navigationSource, /<Monitor\s*\/>/);
   assert.match(navigationSource, /<Files\s*\/>/);
   assert.doesNotMatch(navigationSource, /<View\s*\/>/);

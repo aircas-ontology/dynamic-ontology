@@ -13,7 +13,16 @@
     </div>
     <el-empty v-else-if="!items.length" description="当前对象暂无行为" :image-size="64" />
     <div v-else class="entity-detail-behaviors__grid">
-      <article v-for="item in items" :key="item.id" class="entity-detail-behavior-card">
+      <article
+        v-for="item in items"
+        :key="item.id"
+        class="entity-detail-behavior-card"
+        role="button"
+        tabindex="0"
+        @click="emit('execute', item)"
+        @keydown.enter.prevent="emit('execute', item)"
+        @keydown.space.prevent="emit('execute', item)"
+      >
         <header class="entity-detail-behavior-card__header">
           <span class="entity-detail-behavior-card__icon" aria-hidden="true"
             ><el-icon><Operation /></el-icon
@@ -30,14 +39,14 @@
             </div>
             <div>
               <dt>挂载函数</dt>
-              <dd :title="item.functionApi || ''">{{ item.functionApi || "—" }}</dd>
+              <dd :title="formatMountedFunctionName(item)">{{ formatMountedFunctionName(item) }}</dd>
             </div>
             <div>
               <dt>更新时间</dt>
               <dd :title="item.updateTime || ''">{{ item.updateTime || "—" }}</dd>
             </div>
           </dl>
-          <el-button class="entity-detail-behavior-card__execute" type="primary" size="small" @click="emit('execute', item)">执行</el-button>
+          <el-button class="entity-detail-behavior-card__detail" type="primary" size="small" @click.stop="emit('execute', item)">详情</el-button>
         </div>
       </article>
     </div>
@@ -72,6 +81,19 @@ const emit = defineEmits<{ retry: []; "page-change": [page: number]; execute: [b
 function formatActionKind(kind: string): string {
   return actionKindLabels[kind] || kind || "行为";
 }
+
+/**
+ * @description 挂载函数展示名称：优先 functionName，无值时回退 functionApi。
+ * @param item 行为列表记录。
+ * @returns 展示名称；无可用值时为 —。
+ */
+function formatMountedFunctionName(item: ListOntologyActionRecord): string {
+  const name = typeof item.functionName === "string" ? item.functionName.trim() : "";
+  if (name) return name;
+  const api = typeof item.functionApi === "string" ? item.functionApi.trim() : "";
+  return api || "—";
+}
+
 </script>
 
 <style scoped lang="scss">
@@ -127,13 +149,16 @@ function formatActionKind(kind: string): string {
   border: 1px solid var(--aircas-color-border-soft);
   border-radius: 5px;
   background: var(--aircas-color-card-background);
+  cursor: pointer;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
 }
-.entity-detail-behavior-card:hover {
+.entity-detail-behavior-card:hover,
+.entity-detail-behavior-card:focus-visible {
   border-color: var(--aircas-color-border-highlight);
   box-shadow: 0 0 14px var(--aircas-color-effect-primary-shadow);
+  outline: none;
 }
 .entity-detail-behavior-card__header {
   display: grid;
@@ -181,7 +206,7 @@ function formatActionKind(kind: string): string {
   margin-top: auto;
   padding-right: 12px;
 }
-.entity-detail-behavior-card__execute {
+.entity-detail-behavior-card__detail {
   flex-shrink: 0;
   margin-bottom: 12px;
 }
@@ -195,7 +220,7 @@ function formatActionKind(kind: string): string {
 }
 .entity-detail-behavior-card__meta > div {
   display: grid;
-  grid-template-columns: 60px minmax(0, 1fr);
+  grid-template-columns: 64px minmax(0, 1fr);
   gap: 8px;
   align-items: center;
   font-size: 12px;

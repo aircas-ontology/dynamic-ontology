@@ -10,10 +10,21 @@ import type {
   DatasourceTableSummary,
   ListDatasourceConnectionsParams,
   ListDatasourceSchemasParams,
+  ListDatasourceTableColumnsByDatasourceParams,
   ListDatasourceTableColumnsParams,
+  ListDatasourceTablesByDatasourceParams,
   ListDatasourceTablesParams,
 } from "@/types";
 import { request } from "@/utils/request";
+
+/**
+ * @description DELETE /ontology/datasource/connection 物理删除历史数据源连接。
+ * @param id 待删除的数据源连接 ID。
+ * @returns 删除操作的标准响应。
+ */
+export function deleteDatasourceConnectionInterface(id: number): Promise<ApiResponse<void>> {
+  return request<void>({ url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/datasource/connection", method: "delete", params: { id } });
+}
 
 /** @description 分页查询数据源连接列表。 */
 export function getDatasourceConnectionListInterface(params?: ListDatasourceConnectionsParams): Promise<ApiResponse<DatasourceConnectionPage>> {
@@ -41,6 +52,19 @@ export function postDatasourceConnectionTestInterface(data: DatasourceConnection
 }
 
 /**
+ * @description GET /ontology/datasource/connection/table/list_by_datasource 查询未绑定空间所选数据源的表摘要。
+ * @param params 数据源连接 id 及外部数据库 schemaName。
+ * @returns 表名、说明及字段数量列表。
+ */
+export function getDatasourceTableListByDatasourceInterface(params: ListDatasourceTablesByDatasourceParams): Promise<ApiResponse<DatasourceTableSummary[]>> {
+  return request<DatasourceTableSummary[]>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/datasource/connection/table/list_by_datasource",
+    method: "get",
+    params,
+  });
+}
+
+/**
  * @description GET /ontology/datasource/connection/table/list 查询数据源所选 schema 中的表摘要。
  * @param params 数据源 ID（兼容空间 ID）和 schema 名称。
  * @returns 表名、说明及字段数量。
@@ -50,6 +74,21 @@ export function getDatasourceTableListInterface(params: ListDatasourceTablesPara
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/datasource/connection/table/list",
     method: "get",
     params,
+  });
+}
+
+/**
+ * @description GET /ontology/datasource/connection/table/columns_by_datasource 查询未绑定空间所选数据表的字段及外键候选。
+ * @param params 数据源连接 id、schemaName 及所选 tableNames（请求时以逗号连接，保留大小写）。
+ * @returns 数据表字段、主键及外键候选列表。
+ */
+export function getDatasourceTableColumnsByDatasourceInterface(
+  params: ListDatasourceTableColumnsByDatasourceParams,
+): Promise<ApiResponse<DatasourceTableDetail[]>> {
+  return request<DatasourceTableDetail[]>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/datasource/connection/table/columns_by_datasource",
+    method: "get",
+    params: { ...params, tableNames: params.tableNames.join(",") },
   });
 }
 

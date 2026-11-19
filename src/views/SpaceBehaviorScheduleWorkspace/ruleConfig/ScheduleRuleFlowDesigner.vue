@@ -39,69 +39,37 @@
       </section>
     </div>
     <ElConfigProvider :z-index="5300">
-      <el-dialog
-        v-model="nodeEditorVisible"
-        :title="editingNode?.kind === 'condition' ? '配置条件' : editingNode?.kind === 'switch' ? '配置 Switch 分支' : '配置参数'"
-        :width="editingNode?.action ? 'min(1100px, 94vw)' : '880px'"
-        append-to-body
-        destroy-on-close
-        :z-index="5100"
-        :close-on-click-modal="false"
-      >
-        <div ref="nodeEditorRef" class="rule-flow-designer__node-editor">
-          <el-form v-if="editingNode?.condition" :disabled="readonly"><ScheduleRuleConditionWireSurface :condition="editingNode.condition" /></el-form>
-          <el-form v-if="editingNode?.switchStep" :disabled="readonly"><ScheduleRuleSwitchConfig :step="editingNode.switchStep" /></el-form>
-          <el-form v-if="editingNode?.action" label-width="100px">
-            <ScheduleRuleConditionInstances ref="conditionInstancesRef" :key="editingNodeId" :paths="actionConditionPaths" :readonly="readonly" />
-            <h3 class="rule-flow-designer__section-title">执行行为配置</h3>
-            <el-form-item label="行为">
-              <el-select
-                :model-value="selectedActionOption?.id || editingNode.action.behaviorId"
-                :disabled="readonly"
-                filterable
-                placeholder="请选择行为"
-                :no-data-text="actionObjectIds.length ? '条件对象没有关联行为' : '暂无可选行为'"
-                @update:model-value="changeNodeBehavior"
-              >
-                <el-option v-for="option in filteredBehaviorOptions" :key="option.id" :value="option.id" :label="option.displayName" />
-                <el-option
-                  v-if="readonly && selectedActionOption && !filteredBehaviorOptions.some((option) => option.id === selectedActionOption?.id)"
-                  :value="selectedActionOption.id"
-                  :label="selectedActionOption.displayName"
-                />
-              </el-select>
-            </el-form-item>
-            <section class="rule-flow-designer__parameters" aria-label="行为参数">
-              <h3 class="rule-flow-designer__parameters-title">行为参数</h3>
-              <el-alert
-                v-if="
-                  readonly &&
-                  !actionDetails?.[editingNode.action.id]?.entityJson &&
-                  !editingNode.action.treeParameters &&
-                  !editingNode.action.behaviorParameters
-                "
-                title="未保存行为参数"
-                type="info"
-                :closable="false"
-              />
-              <p v-if="readonly && actionDetails?.[editingNode.action.id]?.entityId">目标实例：{{ actionDetails[editingNode.action.id]?.entityId }}</p>
-              <BehaviorParameterConfig
-                v-if="selectedActionOption?.kind === 'application'"
-                :controller="parameterConfig"
-                :readonly="readonly || parameterBusy"
-              />
-              <ScheduleTreeParametersPanel v-else-if="selectedActionOption?.kind === 'behaviorTree'" :tree-parameters="treeParameters" />
-              <p v-else>请选择行为以配置参数</p>
-              <el-alert v-if="parameterError" :title="parameterError" type="error" :closable="false" />
-              <el-button v-if="parameterError" :disabled="parameterBusy" link @click="initializeActionParameters">重新加载行为参数</el-button>
-            </section>
-          </el-form>
-        </div>
-        <template #footer
-          ><el-button @click="nodeEditorVisible = false">{{ readonly ? "关闭" : "取消" }}</el-button
-          ><el-button v-if="!readonly" type="primary" :disabled="!!editingNode?.action && parameterBusy" @click="confirmNodeEditor">确定</el-button></template
-        >
-      </el-dialog>
+      <ScheduleRuleConditionEditorDialog
+        v-model="conditionEditorVisible"
+        :condition="editingConditionNode?.condition ?? null"
+        :readonly="conditionEditorReadonly"
+        @confirm="confirmConditionEditor"
+      />
+      <ScheduleRuleActionEditorDialog
+        ref="actionDialogRef"
+        v-model="actionEditorVisible"
+        :action="editingActionNode?.action ?? null"
+        :action-node-id="actionNodeId"
+        :paths="actionConditionPaths"
+        :readonly="readonly"
+        :filtered-behavior-options="filteredBehaviorOptions"
+        :selected-action-option="selectedActionOption"
+        :action-object-ids="actionObjectIds"
+        :action-detail="editingActionNode?.action ? actionDetails?.[editingActionNode.action.id] : undefined"
+        :parameter-config="parameterConfig"
+        :tree-parameters="treeParameters"
+        :parameter-busy="parameterBusy"
+        :parameter-error="parameterError"
+        @confirm="confirmActionEditor"
+        @change-behavior="changeNodeBehavior"
+        @reload-parameters="initializeActionParameters"
+      />
+      <ScheduleRuleSwitchEditorDialog
+        v-model="switchEditorVisible"
+        :step="editingSwitchNode?.switchStep ?? null"
+        :readonly="readonly"
+        @confirm="confirmSwitchEditor"
+      />
     </ElConfigProvider>
   </div>
 </template>
@@ -113,17 +81,15 @@ import { ElConfigProvider, ElMessage, ElMessageBox } from "element-plus";
 import type { RuleConditionNode, ScheduleBehaviorOption, ScheduleRuleDetailGroup, ScheduleRuleFlowDocument } from "@/types";
 import type { ScheduleRuleGraphNodeData } from "../utils/scheduleRuleFlowGraphCells";
 import { cloneRuleFlowValue } from "../utils/scheduleRuleFlowFactory";
-import ScheduleRuleConditionWireSurface from "./ScheduleRuleConditionWireSurface.vue";
-import ScheduleRuleSwitchConfig from "./ScheduleRuleSwitchConfig.vue";
-import BehaviorParameterConfig from "@/components/BehaviorParameterConfig/BehaviorParameterConfig.vue";
-import ScheduleTreeParametersPanel from "../components/ScheduleTreeParametersPanel.vue";
 import { useRuleActionParameters } from "../composables/useRuleActionParameters";
 import { filterBehaviorsByObjects } from "../utils/filterRuleBehaviorsByObject";
 import { buildSavedActionEntityJson } from "../utils/restoreRuleScheduleDetail";
 import { ScheduleRuleFlowGraphSession, type ScheduleRulePaletteKind } from "../utils/scheduleRuleFlowGraphSession";
 import ScheduleRuleFlowPalette from "./ScheduleRuleFlowPalette.vue";
 import ScheduleRuleFlowToolbar from "./ScheduleRuleFlowToolbar.vue";
-import ScheduleRuleConditionInstances from "./ScheduleRuleConditionInstances.vue";
+import ScheduleRuleConditionEditorDialog from "./ScheduleRuleConditionEditorDialog.vue";
+import ScheduleRuleActionEditorDialog from "./ScheduleRuleActionEditorDialog.vue";
+import ScheduleRuleSwitchEditorDialog from "./ScheduleRuleSwitchEditorDialog.vue";
 import type { ActionConditionSource } from "../utils/ruleConditionInstanceBindings";
 
 const PALETTE_MIME = "application/x-rule-node";
@@ -141,7 +107,8 @@ const emit = defineEmits<{
 }>();
 
 const canvasRef = ref<HTMLElement | null>(null);
-const nodeEditorRef = ref<HTMLElement | null>(null);
+const actionDialogRef = ref<InstanceType<typeof ScheduleRuleActionEditorDialog> | null>(null);
+const actionEditorRef = ref<HTMLElement | null>(null);
 const connectionMessage = ref("");
 const selectedRemovable = ref(false);
 const disconnectedCount = ref(0);
@@ -149,16 +116,27 @@ const canvasEmpty = ref(true);
 let session: ScheduleRuleFlowGraphSession | null = null;
 let disposed = false;
 const savedBehaviorIds = new Map<string, string>();
-const nodeEditorVisible = ref(false);
-const editingNode = ref<ScheduleRuleGraphNodeData | null>(null);
+
+const conditionEditorVisible = ref(false);
+const editingConditionNode = ref<ScheduleRuleGraphNodeData | null>(null);
+const conditionCompanionReadonly = ref(false);
+let conditionNodeId = "";
+const conditionEditorReadonly = computed(() => Boolean(props.readonly) || conditionCompanionReadonly.value);
+
+const actionEditorVisible = ref(false);
+const editingActionNode = ref<ScheduleRuleGraphNodeData | null>(null);
+const actionNodeId = ref("");
 const actionConditionPaths = ref<ActionConditionSource[][]>([]);
-const conditionInstancesRef = ref<InstanceType<typeof ScheduleRuleConditionInstances> | null>(null);
-let editingNodeId = "";
 const actionObjectIds = ref<string[]>([]);
+
+const switchEditorVisible = ref(false);
+const editingSwitchNode = ref<ScheduleRuleGraphNodeData | null>(null);
+let switchNodeId = "";
+
 const filteredBehaviorOptions = computed(() => filterBehaviorsByObjects(props.behaviorOptions, actionObjectIds.value));
 const route = useRoute();
 const selectedActionOption = computed(() => {
-  const action = editingNode.value?.action;
+  const action = editingActionNode.value?.action;
   if (!action) return undefined;
   const option = props.behaviorOptions.find((item) => item.id === action.behaviorId);
   if (option || !props.readonly) return option;
@@ -177,18 +155,22 @@ const { parameterConfig, treeParameters, parameterBusy, parameterError, clearAct
   useRuleActionParameters(
     () => String(route.params.spaceId ?? ""),
     () => selectedActionOption.value,
-    () => editingNode.value?.action,
-    () => nodeEditorVisible.value,
+    () => editingActionNode.value?.action,
+    () => actionEditorVisible.value,
     () => {
-      const action = editingNode.value?.action;
+      const action = editingActionNode.value?.action;
       if (!action || action.behaviorParameters || action.treeParameters) return "";
       const detail = props.actionDetails?.[action.id];
       if (!detail || detail.actionApi !== selectedActionOption.value?.actionApi) return "";
       return buildSavedActionEntityJson(detail);
     },
   );
-watch(nodeEditorVisible, (visible) => {
+
+watch(actionEditorVisible, (visible) => {
   if (!visible) clearActionParameters();
+});
+watch(conditionEditorVisible, (visible) => {
+  if (!visible) conditionCompanionReadonly.value = false;
 });
 watch(
   () => route.params.spaceId,
@@ -197,41 +179,80 @@ watch(
   },
 );
 
-/** @description 双击时读取图节点副本，取消编辑不影响原图。 @param nodeId 双击节点标识。 */
-function openNodeEditor(nodeId: string): void {
-  const data = session?.getNodeData(nodeId);
-  if (!data || (data.kind !== "condition" && data.kind !== "action" && data.kind !== "switch")) return;
-  clearActionParameters();
-  editingNodeId = nodeId;
-  editingNode.value = cloneRuleFlowValue(data);
-  actionConditionPaths.value = data.action ? (session?.getActionConditionPaths(nodeId) ?? []) : [];
-  void nextTick(() => {
-    if (nodeEditorRef.value) nodeEditorRef.value.scrollTop = 0;
-  });
-  if (props.readonly) {
-    nodeEditorVisible.value = true;
-    if (data.action) void initializeActionParameters();
+/**
+ * @description 打开条件配置弹窗；行为参数已打开时以只读对照打开，可并存。
+ * @param nodeId 条件节点标识。
+ * @param data 节点数据副本。
+ */
+function openConditionEditor(nodeId: string, data: ScheduleRuleGraphNodeData): void {
+  conditionNodeId = nodeId;
+  editingConditionNode.value = cloneRuleFlowValue(data);
+  conditionCompanionReadonly.value = actionEditorVisible.value;
+  conditionEditorVisible.value = true;
+}
+
+/**
+ * @description 打开行为参数弹窗；条件配置已打开时拒绝打开，避免反向并存编辑。
+ * @param nodeId 行为节点标识。
+ * @param data 节点数据副本。
+ */
+function openActionEditor(nodeId: string, data: ScheduleRuleGraphNodeData): void {
+  if (conditionEditorVisible.value && !actionEditorVisible.value) {
+    ElMessage.warning("请先关闭条件配置后再打开行为参数");
     return;
   }
-  actionObjectIds.value = data.action ? (session?.getActionConditionObjectIds(nodeId) ?? []) : [];
-  if (editingNode.value.action?.behaviorId && actionObjectIds.value.length) {
-    const selected = props.behaviorOptions.find((option) => option.id === editingNode.value?.action?.behaviorId);
-    if (selected && !filteredBehaviorOptions.value.some((option) => option.id === selected.id)) {
-      editingNode.value.action.behaviorId = "";
-      editingNode.value.action.behaviorName = "";
-      editingNode.value.action.params = [];
-      editingNode.value.action.behaviorParameters = undefined;
-      ElMessage.warning("已选行为与条件对象不匹配，请重新选择");
+  clearActionParameters();
+  actionNodeId.value = nodeId;
+  editingActionNode.value = cloneRuleFlowValue(data);
+  actionConditionPaths.value = session?.getActionConditionPaths(nodeId) ?? [];
+  void nextTick(() => {
+    if (actionEditorRef.value) actionEditorRef.value.scrollTop = 0;
+  });
+  if (!props.readonly) {
+    actionObjectIds.value = session?.getActionConditionObjectIds(nodeId) ?? [];
+    if (editingActionNode.value.action?.behaviorId && actionObjectIds.value.length) {
+      const selected = props.behaviorOptions.find((option) => option.id === editingActionNode.value?.action?.behaviorId);
+      if (selected && !filteredBehaviorOptions.value.some((option) => option.id === selected.id)) {
+        editingActionNode.value.action.behaviorId = "";
+        editingActionNode.value.action.behaviorName = "";
+        editingActionNode.value.action.params = [];
+        editingActionNode.value.action.behaviorParameters = undefined;
+        ElMessage.warning("已选行为与条件对象不匹配，请重新选择");
+      }
     }
   }
-  nodeEditorVisible.value = true;
-  if (data.action) void initializeActionParameters();
+  actionEditorVisible.value = true;
+  void initializeActionParameters();
+}
+
+/** @description 打开 Switch 配置弹窗，保持原有单独编辑行为。 @param nodeId Switch 节点标识。 @param data 节点数据副本。 */
+function openSwitchEditor(nodeId: string, data: ScheduleRuleGraphNodeData): void {
+  switchNodeId = nodeId;
+  editingSwitchNode.value = cloneRuleFlowValue(data);
+  switchEditorVisible.value = true;
+}
+
+/** @description 双击节点时按非对称规则打开条件或行为弹窗。 @param nodeId 双击节点标识。 */
+function openNodeEditor(nodeId: string): void {
+  const data = session?.getNodeData(nodeId);
+  if (!data) return;
+  if (data.kind === "condition") {
+    openConditionEditor(nodeId, data);
+    return;
+  }
+  if (data.kind === "action") {
+    openActionEditor(nodeId, data);
+    return;
+  }
+  if (data.kind === "switch") {
+    openSwitchEditor(nodeId, data);
+  }
 }
 
 /** @description 使用当前空间行为更新节点行为标识及展示名称。 @param value 行为选项标识。 */
 function changeNodeBehavior(value: unknown): void {
   const option = filteredBehaviorOptions.value.find((item) => item.id === value);
-  const action = editingNode.value?.action;
+  const action = editingActionNode.value?.action;
   if (!action || !option) return;
   if (action.behaviorId === option.id) return;
   action.params = [];
@@ -247,33 +268,55 @@ function hasUnsupportedConditionValue(condition: RuleConditionNode): boolean {
   return [condition.left, condition.right].some((value) => value.kind !== "input" && value.kind !== "variable");
 }
 
-/** @description 拦截未重新选择的停用值，确认后仅更新目标节点，保留位置和边。 */
-function confirmNodeEditor(): void {
-  if (props.readonly) return;
-  if (!editingNode.value) return;
-  const { condition, action, switchStep } = editingNode.value;
-  if (action && !filteredBehaviorOptions.value.some((option) => option.id === action.behaviorId)) {
-    ElMessage.warning("请选择与条件对象匹配的行为");
+/** @description 确认条件配置并写回目标条件节点；只读对照态仅关闭不写回。 */
+function confirmConditionEditor(): void {
+  if (conditionEditorReadonly.value || !editingConditionNode.value?.condition) {
+    conditionEditorVisible.value = false;
     return;
   }
-  if (
-    (condition && hasUnsupportedConditionValue(condition)) ||
-    action?.params.some((param) => param.value.kind !== "input" && param.value.kind !== "variable") ||
-    (switchStep && [switchStep.switchOn, ...switchStep.cases.map((item) => item.value)].some((value) => value.kind !== "input" && value.kind !== "variable"))
-  ) {
+  if (hasUnsupportedConditionValue(editingConditionNode.value.condition)) {
     ElMessage.warning("存在已停用的值类型，请重新选择输入值或变量后再确定");
     return;
   }
-  if (action) {
-    const bindingError = conditionInstancesRef.value?.validateInstances();
-    if (bindingError) {
-      ElMessage.warning(bindingError);
-      return;
-    }
-    if (!captureActionParameters()) return;
-    session?.updateActionWithConditions(editingNodeId, cloneRuleFlowValue(editingNode.value), actionConditionPaths.value);
-  } else session?.updateNodeData(editingNodeId, cloneRuleFlowValue(editingNode.value));
-  nodeEditorVisible.value = false;
+  session?.updateNodeData(conditionNodeId, cloneRuleFlowValue(editingConditionNode.value));
+  conditionEditorVisible.value = false;
+}
+
+/** @description 确认行为参数配置并写回目标行为节点。 */
+function confirmActionEditor(): void {
+  if (props.readonly || !editingActionNode.value?.action) return;
+  const action = editingActionNode.value.action;
+  if (!filteredBehaviorOptions.value.some((option) => option.id === action.behaviorId)) {
+    ElMessage.warning("请选择与条件对象匹配的行为");
+    return;
+  }
+  if (action.params.some((param) => param.value.kind !== "input" && param.value.kind !== "variable")) {
+    ElMessage.warning("存在已停用的值类型，请重新选择输入值或变量后再确定");
+    return;
+  }
+  const exposedInstances = actionDialogRef.value?.conditionInstancesRef as
+    { validateInstances?: () => string | undefined } | { value?: { validateInstances?: () => string | undefined } | null } | null | undefined;
+  const instances = exposedInstances && typeof exposedInstances === "object" && "value" in exposedInstances ? exposedInstances.value : exposedInstances;
+  const bindingError = instances?.validateInstances?.();
+  if (bindingError) {
+    ElMessage.warning(bindingError);
+    return;
+  }
+  if (!captureActionParameters()) return;
+  session?.updateActionWithConditions(actionNodeId.value, cloneRuleFlowValue(editingActionNode.value), actionConditionPaths.value);
+  actionEditorVisible.value = false;
+}
+
+/** @description 确认 Switch 配置并写回目标节点。 */
+function confirmSwitchEditor(): void {
+  if (props.readonly || !editingSwitchNode.value?.switchStep) return;
+  const switchStep = editingSwitchNode.value.switchStep;
+  if ([switchStep.switchOn, ...switchStep.cases.map((item) => item.value)].some((value) => value.kind !== "input" && value.kind !== "variable")) {
+    ElMessage.warning("存在已停用的值类型，请重新选择输入值或变量后再确定");
+    return;
+  }
+  session?.updateNodeData(switchNodeId, cloneRuleFlowValue(editingSwitchNode.value));
+  switchEditorVisible.value = false;
 }
 
 /**
@@ -285,30 +328,22 @@ function commitRuleFlowDocument(doc: ScheduleRuleFlowDocument) {
   emit("update:modelValue", doc);
 }
 
-/**
- * @description 对当前画布执行自动布局。
- */
+/** @description 对当前画布执行自动布局。 */
 function autoLayoutCanvas() {
   session?.autoLayout();
 }
 
-/**
- * @description 缩放画布使节点可见。
- */
+/** @description 缩放画布使节点可见。 */
 function fitCanvas() {
   session?.fitGraph();
 }
 
-/**
- * @description 删除当前选中的节点或边。
- */
+/** @description 删除当前选中的节点或边。 */
 function removeSelectedCanvasCells() {
   session?.removeSelected();
 }
 
-/**
- * @description 确认后清空为只剩规则开始。
- */
+/** @description 确认后清空为只剩规则开始。 */
 async function confirmClearCanvas() {
   if (canvasEmpty.value) return;
   try {
@@ -397,31 +432,6 @@ onBeforeUnmount(() => {
   min-height: 0;
   height: 100%;
   flex-direction: column;
-}
-.rule-flow-designer__node-editor {
-  min-height: 240px;
-  max-height: 62vh;
-  padding: 4px;
-  overflow: auto;
-}
-.rule-flow-designer__parameters {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px solid var(--aircas-color-border-soft);
-  border-radius: 8px;
-  background: var(--aircas-color-panel-background-deep);
-}
-.rule-flow-designer__parameters-title {
-  margin: 0 0 12px;
-  color: var(--aircas-color-text-primary);
-  font-size: 14px;
-  font-weight: 600;
-}
-.rule-flow-designer__section-title {
-  margin: 0 0 8px;
-  color: var(--aircas-color-text-primary);
-  font-size: 16px;
-  font-weight: 600;
 }
 
 .rule-flow-designer__main {

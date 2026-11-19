@@ -108,7 +108,7 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(formSource, /FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS/);
   assert.doesNotMatch(formSource, /v-for="item in FUNCTION_OPERATOR_TYPE_OPTIONS"/);
   {
-    const detailSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorDetailDrawer.vue");
+    const detailSource = readSource("../src/components/FunctionOperatorDetailDrawer/FunctionOperatorDetailDrawer.vue");
     assert.match(panelSource, /class="function-operator-card__actions"[\s\S]*@click="openTest\(operator\)">测试<\/el-button>/);
     assert.doesNotMatch(panelSource, /v-if="!browseOnly"[^\n]*class="function-operator-card__actions"/);
     assert.match(panelSource, /label="操作"[\s\S]*@click\.stop="openTest\(asOperator\(row\)\)">测试<\/el-button>/);
@@ -465,7 +465,7 @@ test("function operator panel wires workspace composable and basic form", () => 
   assert.match(filterSource, /<el-input-number/);
   assert.match(formSource, /validateBasicFilterDocument/);
   assert.match(formSource, /请填写过滤条件的变量名|validateBasicFilterDocument/);
-  const drawerSource = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorDetailDrawer.vue");
+  const drawerSource = readSource("../src/components/FunctionOperatorDetailDrawer/FunctionOperatorDetailDrawer.vue");
   assert.match(drawerSource, /class="function-operator-detail"/);
   assert.match(drawerSource, /class="function-operator-detail__meta"/);
   assert.match(drawerSource, /<el-descriptions/);

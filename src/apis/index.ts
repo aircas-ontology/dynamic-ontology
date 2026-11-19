@@ -65,12 +65,16 @@ import {
   updateOntologyFunctionInterface,
 } from "./functionApi";
 import { postLoginInterface } from "./loginApi";
+import { deleteMetadataSchemaInterface, getMetadataSchemaInterface, postMetadataSchemaInterface, putMetadataSchemaInterface } from "./metadataSchemaApi";
 import {
+  deleteDatasourceConnectionInterface,
   getDatasourceConnectionDetailInterface,
   getDatasourceConnectionListInterface,
   getDatasourceSchemaListByDatasourceInterface,
   getDatasourceSchemaListInterface,
+  getDatasourceTableColumnsByDatasourceInterface,
   getDatasourceTableColumnsInterface,
+  getDatasourceTableListByDatasourceInterface,
   getDatasourceTableListInterface,
   postDatasourceConnectionInterface,
   postDatasourceConnectionTestInterface,
@@ -144,11 +148,14 @@ import {
 } from "./ontologyPropertyApi";
 
 export {
+  deleteDatasourceConnectionInterface,
   getDatasourceConnectionDetailInterface,
   getDatasourceConnectionListInterface,
   getDatasourceSchemaListByDatasourceInterface,
   getDatasourceSchemaListInterface,
+  getDatasourceTableColumnsByDatasourceInterface,
   getDatasourceTableColumnsInterface,
+  getDatasourceTableListByDatasourceInterface,
   getDatasourceTableListInterface,
   postDatasourceConnectionInterface,
   postDatasourceConnectionTestInterface,
@@ -244,6 +251,10 @@ export {
   postImportOntologiesInterface,
   postImportOntologySpaceInterface,
   postLoginInterface,
+  deleteMetadataSchemaInterface,
+  getMetadataSchemaInterface,
+  postMetadataSchemaInterface,
+  putMetadataSchemaInterface,
   postOntologyFunctionPublishInterface,
   postOntologyFunctionUnpublishInterface,
   postOntologyGlobalSearchInterface,

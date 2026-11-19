@@ -664,7 +664,7 @@ import FunctionOperatorScriptIdeDialog from "./FunctionOperatorScriptIdeDialog.v
 import { createDefaultScriptFunctionCode, DEFAULT_SCRIPT_FUNCTION_LANGUAGE } from "../utils/scriptFunctionStarters";
 import { buildCreateOntologyExternalFunctionParams } from "../utils/buildCreateOntologyExternalFunctionParams";
 import { buildCreateOntologyFunctionContainerParams } from "../utils/buildCreateOntologyFunctionContainerParams";
-import { mapOperatorParametersToScriptParamTree } from "../utils/mapOperatorParametersToScriptParamTree";
+import { mapOperatorParametersToScriptParamTree } from "@/utils/mapOperatorParametersToScriptParamTree";
 
 const PROTOCOL_OPTIONS: ReadonlyArray<Extract<FunctionOperatorProtocol, "HTTP">> = ["HTTP"];
 const EXTERNAL_API_METHOD_OPTIONS = ["GET", "POST", "PUT", "DELETE"] as const;

@@ -113,7 +113,8 @@
                       {{ isExpanded(tableNodeId(table.databaseId, table.table.id)) ? "−" : "+" }}
                     </button>
                     <span class="mind-node__badge">{{ tableRoleLabel(table.table) }}</span>
-                    <strong>{{ table.table.name }}</strong>
+                    <strong :title="table.table.name">{{ table.table.name }}</strong>
+                    <span class="mind-node__description" :title="table.table.description || undefined">{{ table.table.description || "—" }}</span>
                     <span
                       v-if="!isExpanded(tableNodeId(table.databaseId, table.table.id)) && parentMappedCount(tableNodeId(table.databaseId, table.table.id)) > 0"
                       class="mind-node__map-count"
@@ -269,6 +270,7 @@ interface OntologyDataSourceTable {
   id: string;
   name: string;
   schemaName: string;
+  description: string;
   fields: OntologyDataSourceField[];
 }
 
@@ -1182,6 +1184,7 @@ onBeforeUnmount(() => {
 }
 
 .mind-node-table {
+  max-width: 100%;
   border-color: var(--aircas-color-primary);
 }
 
@@ -1249,9 +1252,23 @@ onBeforeUnmount(() => {
 }
 
 .mind-node strong {
+  flex-shrink: 0;
+  max-width: 55%;
+  overflow: hidden;
   color: var(--aircas-color-text-primary);
   font-size: 13px;
   font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mind-node__description {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .field-list,

@@ -47,8 +47,9 @@ function mapPropertyTreeNode(item: OntologyPropertyInfo): OntologyAttributePrope
  * @returns 属性列表项
  */
 export function mapOntologyPropertyItem(item: OntologyPropertyInfo, ontologyUniqueIdentifier: string): OntologyAttributeItem {
-  const metadataApiName = typeof item.metadata?.apiName === "string" ? item.metadata.apiName : "";
-  const metadataDataType = typeof item.metadata?.dataType === "string" ? item.metadata.dataType : "";
+  const metadata = parsePropertyMetadata(item.metadata);
+  const metadataApiName = typeof metadata.apiName === "string" ? metadata.apiName : "";
+  const metadataDataType = typeof metadata.dataType === "string" ? metadata.dataType : "";
   return {
     uniqueIdentifier: item.uniqueIdentifier ?? "",
     ontologyUniqueIdentifier: item.ontologyUniqueIdentifier ?? ontologyUniqueIdentifier,
@@ -63,7 +64,23 @@ export function mapOntologyPropertyItem(item: OntologyPropertyInfo, ontologyUniq
     isNameKey: item.isTitleKey === true,
     datasourceId: item.datasourceId ?? "",
     datasourceColumnName: item.datasourceColumnName ?? "",
+    metadata,
   };
+}
+
+/**
+ * @description 解析属性元数据字符串并兼容旧的对象数据。
+ * @param value 接口返回的元数据。
+ * @returns 可供表单使用的元数据对象。
+ */
+function parsePropertyMetadata(value: string | Record<string, unknown> | undefined): Record<string, unknown> {
+  if (typeof value !== "string") return value ?? {};
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed) ? Object.fromEntries(Object.entries(parsed)) : {};
+  } catch {
+    return {};
+  }
 }
 
 /** @description 将服务端存储分组显示名称转换为表单使用的存储分组值。 */

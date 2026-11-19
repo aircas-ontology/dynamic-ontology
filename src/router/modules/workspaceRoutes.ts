@@ -12,7 +12,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
         name: "OntologySpaceBrowse",
         component: () => import("@/views/OntologySpaceManagement/index.vue"),
         props: { browseOnly: true },
-        meta: { title: "对象空间浏览" },
+        meta: { title: "空间浏览" },
       },
       {
         path: "theme-space-browse",
@@ -25,7 +25,7 @@ export const workspaceRoutes: RouteRecordRaw[] = [
         path: "ontology-space-management",
         name: "OntologySpaceManagement",
         component: () => import("@/views/OntologySpaceManagement/index.vue"),
-        meta: { title: "对象空间管理" },
+        meta: { title: "空间管理" },
       },
       {
         path: "theme-space-management",

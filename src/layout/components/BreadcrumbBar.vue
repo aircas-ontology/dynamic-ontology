@@ -47,7 +47,7 @@ const isSubspaceCreate = computed(() => route.name === "OntologySubspaceCreate")
 
 const isFromThemeSpace = computed(() => route.query.from === "theme-space-management");
 
-const spaceEntryLabel = computed(() => (isFromThemeSpace.value ? "主题管理" : "对象空间管理"));
+const spaceEntryLabel = computed(() => (isFromThemeSpace.value ? "主题管理" : "空间管理"));
 
 const spaceEntryTarget = computed(() => (isFromThemeSpace.value ? { name: "ThemeSpaceManagement" } : { name: "OntologySpaceManagement" }));
 
