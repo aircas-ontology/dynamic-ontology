@@ -372,7 +372,6 @@ const {
   relationContextLoadToken,
   ontologyUniqueIdentifierFrom,
   ontologyUniqueIdentifierTo,
-  relationMountSide,
   selectedFromEntityRows,
   selectedToEntityRows,
   buildExternalParamsPayload,
@@ -538,23 +537,11 @@ const selectedEntityPrimaryKey = computed(() => {
 
 const selectedEntityDisplayName = computed(() => selectedEntityRow.value?.displayName ?? "");
 
-const selectedMountEntityRow = computed(() => {
-  if (relationMountSide.value === "from") return selectedFromEntityRows.value[0] ?? null;
-  if (relationMountSide.value === "to") return selectedToEntityRows.value[0] ?? null;
-  return null;
-});
-
-const selectedOppositeEntityRow = computed(() => {
-  if (relationMountSide.value === "from") return selectedToEntityRows.value[0] ?? null;
-  if (relationMountSide.value === "to") return selectedFromEntityRows.value[0] ?? null;
-  return null;
-});
-
 const detailOntologyUniqueIdentifier = computed(() => behaviorOntologyUniqueIdentifier.value);
 
 const detailEntityPrimaryKey = computed(() => {
   if (isRelationInstanceTest.value) {
-    const primaryKey = selectedMountEntityRow.value?.primaryKey;
+    const primaryKey = selectedFromEntityRows.value[0]?.primaryKey;
     if (primaryKey === undefined || primaryKey === null || primaryKey === "") return null;
     return primaryKey;
   }
@@ -562,7 +549,7 @@ const detailEntityPrimaryKey = computed(() => {
 });
 
 const detailEntityDisplayName = computed(() => {
-  if (isRelationInstanceTest.value) return selectedMountEntityRow.value?.displayName ?? "";
+  if (isRelationInstanceTest.value) return selectedFromEntityRows.value[0]?.displayName ?? "";
   return selectedEntityDisplayName.value;
 });
 
@@ -1460,14 +1447,14 @@ async function submitBehaviorTest(): Promise<void> {
       ElMessage.warning("请等待关系信息加载完成后再测试");
       return;
     }
-    const mountRow = selectedMountEntityRow.value;
-    const oppositeRow = selectedOppositeEntityRow.value;
-    if (!mountRow || mountRow.primaryKey === "") {
-      ElMessage.warning("请先选择挂载侧实体实例");
+    const fromRow = selectedFromEntityRows.value[0] ?? null;
+    const toRow = selectedToEntityRows.value[0] ?? null;
+    if (!fromRow || fromRow.primaryKey === "") {
+      ElMessage.warning(`请先选择 ${ontologyNameFrom.value || "From"} 实例`);
       return;
     }
-    if (!oppositeRow || oppositeRow.primaryKey === "") {
-      ElMessage.warning("请先选择对端实体实例");
+    if (!toRow || toRow.primaryKey === "") {
+      ElMessage.warning(`请先选择 ${ontologyNameTo.value || "To"} 实例`);
       return;
     }
     const actionApi = resolvedActionApi.value.trim() || (props.behavior.behaviorApiName ?? "").trim();
@@ -1482,8 +1469,8 @@ async function submitBehaviorTest(): Promise<void> {
       const response = await postTestOntologyActionInterface({
         ontologySpaceId,
         actionApi,
-        entityPrimaryKey: mountRow.savedPrimaryKey ?? mountRow.primaryKey,
-        linkEntityPrimaryKey: oppositeRow.savedPrimaryKey ?? oppositeRow.primaryKey,
+        entityPrimaryKey: fromRow.savedPrimaryKey ?? fromRow.primaryKey,
+        linkEntityPrimaryKey: toRow.savedPrimaryKey ?? toRow.primaryKey,
       });
       if (requestToken !== submitToken) return;
       if (response.code !== 200) throw new Error(response.message || "行为测试失败");

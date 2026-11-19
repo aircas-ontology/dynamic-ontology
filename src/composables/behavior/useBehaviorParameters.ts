@@ -1355,7 +1355,7 @@ export function useBehaviorParameters(
   }
 
   /**
-   * @description 加载关系实例测试上下文：行为详情取 link id，再查关系两端并加载实体列表。
+   * @description 加载关系实例测试上下文：行为详情取 link id，再查关系两端并加载实体列表（不强制挂载侧匹配）。
    */
   async function loadRelationTestContext(): Promise<void> {
     const actionApi = (props.behavior?.behaviorApiName ?? "").trim();
@@ -1396,7 +1396,6 @@ export function useBehaviorParameters(
         relationMountSide.value = "to";
       } else {
         relationMountSide.value = "";
-        throw new Error("行为挂载对象与关系两端不匹配，无法确定挂载侧实例");
       }
       fromEntityPage.value = 1;
       toEntityPage.value = 1;

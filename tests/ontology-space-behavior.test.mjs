@@ -360,6 +360,12 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /ontologyLinkUniqIdentifier/);
   assert.match(testDialogSource, /linkEntityPrimaryKey/);
   assert.match(testDialogSource, /loadRelationTestContext/);
+  assert.match(testDialogSource, /不强制挂载侧匹配/);
+  assert.doesNotMatch(testDialogSource, /行为挂载对象与关系两端不匹配，无法确定挂载侧实例/);
+  assert.doesNotMatch(testDialogSource, /请先选择挂载侧实体实例/);
+  assert.doesNotMatch(testDialogSource, /selectedMountEntityRow/);
+  assert.match(testDialogSource, /entityPrimaryKey: fromRow\.savedPrimaryKey \?\? fromRow\.primaryKey/);
+  assert.match(testDialogSource, /linkEntityPrimaryKey: toRow\.savedPrimaryKey \?\? toRow\.primaryKey/);
   assert.doesNotMatch(testDialogSource, /v-if="isAttributeValueTest && isCreateTest"/);
   assert.match(testDialogSource, /v-if="!isUpdateTest && !isCreateTest"/);
   assert.match(testDialogSource, /enable-update-test="isUpdateTest"/);
