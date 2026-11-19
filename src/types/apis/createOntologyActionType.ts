@@ -40,6 +40,8 @@ export interface CreateOntologyActionBasicFunctionWriteBackBinding {
 export interface CreateOntologyActionBasicFunctionWriteBack {
   /** 回写目标对象 uniqueIdentifier。 */
   targetOntologyIdentifier: string;
+  /** 详情回显：回写目标对象名称；创建/更新请求不传。 */
+  targetOntologyName?: string;
   /** 回写子表时必填；回写主表（main）时不传。 */
   targetStorageGroup?: string;
   bindings: CreateOntologyActionBasicFunctionWriteBackBinding[];
@@ -48,6 +50,8 @@ export interface CreateOntologyActionBasicFunctionWriteBack {
 /** 基础函数行为 basicFunction 配置。 */
 export interface CreateOntologyActionBasicFunction {
   ontologyIdentifiers: string[];
+  /** 详情回显：与 ontologyIdentifiers 同序的对象名称；创建/更新请求不传。 */
+  ontologyNames?: string[];
   mode: CreateOntologyActionBasicFunctionMode;
   aggFunc?: string;
   targetField?: string;

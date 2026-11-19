@@ -75,7 +75,7 @@ function normalizeWriteFieldBinding(binding: SpaceBehaviorBasicFunctionWriteFiel
  * @description 由查询模式写入字段组装 writeBack。
  * @param selectFields 展示字段 apiName 列表。
  * @param writeFields 展示字段 → 写入绑定。
- * @returns writeBack 或错误；全空时返回 null。
+ * @returns writeBack 或错误；无完整绑定或全空时返回 null。
  */
 function buildQueryWriteBack(
   selectFields: string[],
@@ -85,17 +85,12 @@ function buildQueryWriteBack(
   const ontologyIds = new Set<string>();
   const storageGroups = new Set<string>();
   let filledCount = 0;
-  let incomplete = false;
 
   for (const selectField of selectFields) {
     const binding = normalizeWriteFieldBinding(writeFields[selectField]);
     const hasOntology = Boolean(binding.ontologyUniqueIdentifier);
     const hasProperty = Boolean(binding.propertyUniqueIdentifier);
-    if (!hasOntology && !hasProperty) continue;
-    if (!hasOntology || !hasProperty) {
-      incomplete = true;
-      break;
-    }
+    if (!hasOntology || !hasProperty) continue;
     filledCount += 1;
     ontologyIds.add(binding.ontologyUniqueIdentifier);
     storageGroups.add(binding.storageGroup || "");
@@ -105,9 +100,7 @@ function buildQueryWriteBack(
     });
   }
 
-  if (incomplete) return { error: "请完善写入字段" };
   if (filledCount === 0) return null;
-  if (filledCount !== selectFields.length) return { error: "请完善写入字段" };
   if (ontologyIds.size !== 1) return { error: "写入字段须选择同一目标对象" };
   if (storageGroups.size !== 1) return { error: "写入字段须属于同一存储分组" };
 
@@ -126,7 +119,7 @@ function buildQueryWriteBack(
 /**
  * @description 由多对象聚合写入字段组装 writeBack。
  * @param multiWriteField 单行写入绑定。
- * @returns writeBack 或错误；全空时返回 null。
+ * @returns writeBack 或错误；空/半填时返回 null。
  */
 function buildAggregateWriteBack(
   multiWriteField: SpaceBehaviorBasicFunctionWriteFieldBinding | undefined,
@@ -134,8 +127,7 @@ function buildAggregateWriteBack(
   const binding = normalizeWriteFieldBinding(multiWriteField);
   const hasOntology = Boolean(binding.ontologyUniqueIdentifier);
   const hasProperty = Boolean(binding.propertyUniqueIdentifier);
-  if (!hasOntology && !hasProperty) return null;
-  if (!hasOntology || !hasProperty) return { error: "请完善写入字段" };
+  if (!hasOntology || !hasProperty) return null;
   return {
     targetOntologyIdentifier: binding.ontologyUniqueIdentifier,
     bindings: [{ targetPropertyIdentifier: binding.propertyUniqueIdentifier }],

@@ -330,6 +330,9 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /basicFunctionOntologyIds/);
   assert.match(testDialogSource, /basicFunctionTestOntologyId/);
   assert.match(testDialogSource, /basicFunction\?\.ontologyIdentifiers/);
+  assert.match(testDialogSource, /basicFunction\?\.ontologyNames/);
+  assert.match(testDialogSource, /targetOntologyName/);
+  assert.match(testDialogSource, /basicFunctionOntologyNameById/);
   assert.match(testDialogSource, /basicFunctionWriteBackOntologyId/);
   assert.match(testDialogSource, /writeBackEntityPrimaryKey/);
   assert.match(testDialogSource, /回写目标实例/);
@@ -340,9 +343,13 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.doesNotMatch(testDialogSource, /为每个对象选择实体实例/);
   assert.doesNotMatch(testDialogSource, /请选择该对象实例/);
   assert.match(testDialogSource, /不选则查询全部实例/);
+  assert.match(testDialogSource, /formatBasicFunctionOntologyLabel/);
+  assert.match(testDialogSource, /basicFunctionOntologyNameById\.value\[ontologyId\]/);
   assert.match(testDialogSource, /updateBasicOperatorEntitySelection/);
   assert.match(testDialogSource, /listBasicOperatorEntitySelectOptions/);
   assert.match(testDialogSource, /formatBasicOperatorEntityOptionLabel/);
+  assert.match(readSource("../src/types/apis/createOntologyActionType.ts"), /ontologyNames\?: string\[\]/);
+  assert.match(readSource("../src/types/apis/createOntologyActionType.ts"), /targetOntologyName\?: string/);
   assert.match(testDialogSource, /v-if="dialogHint"/);
   assert.match(testDialogSource, /buildBasicFunctionTestRequestParams/);
   assert.match(testDialogSource, /basicOperatorTestResultText/);
@@ -840,8 +847,11 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /\$\{withType\} · \$\{storageGroup\}/);
   assert.match(formSource, /选择写入属性/);
   assert.match(formSource, /当前对象暂无子表属性/);
-  assert.match(formSource, /请完善写入字段/);
+  assert.doesNotMatch(formSource, /请完善写入字段/);
   assert.match(formSource, /请选择聚合参数名/);
+  assert.match(formSource, /clearable/);
+  assert.match(readSource("../src/views/SpaceBehaviorWorkspace/utils/buildBasicFunctionCreateActionParams.ts"), /filledCount === 0/);
+  assert.doesNotMatch(readSource("../src/views/SpaceBehaviorWorkspace/utils/buildBasicFunctionCreateActionParams.ts"), /请完善写入字段/);
   assert.match(formSource, /getOntologyObjectArrTypeTreeInterface/);
   assert.match(formSource, /label="参数配置"/);
   assert.match(formSource, /property-placeholder="选择属性名"/);
@@ -3014,6 +3024,68 @@ test("space behavior builds basic-function createAction params for aggregate and
       bindings: [{ targetPropertyIdentifier: "prop-main" }],
     });
     assert.equal("targetStorageGroup" in aggregateWriteBack.basicFunction.writeBack, false);
+  }
+
+  const queryPartialWriteBack = buildBasicOperatorCreateActionParams({
+    ...baseDraft,
+    basicFunctionAggFunc: "",
+    basicFunctionTargetField: "",
+    basicFunctionSelectFields: ["name", "speed"],
+    basicFunctionWriteFields: {
+      name: { ontologyUniqueIdentifier: "onto-target", propertyUniqueIdentifier: "prop-name", storageGroup: "track" },
+      speed: { ontologyUniqueIdentifier: "", propertyUniqueIdentifier: "", storageGroup: "" },
+    },
+  });
+  assert.equal("error" in queryPartialWriteBack, false);
+  if (!("error" in queryPartialWriteBack)) {
+    assert.deepEqual(queryPartialWriteBack.basicFunction.writeBack, {
+      targetOntologyIdentifier: "onto-target",
+      targetStorageGroup: "track",
+      bindings: [{ sourceField: "name", targetPropertyIdentifier: "prop-name" }],
+    });
+  }
+
+  const queryIncompleteWriteBack = buildBasicOperatorCreateActionParams({
+    ...baseDraft,
+    basicFunctionAggFunc: "",
+    basicFunctionTargetField: "",
+    basicFunctionSelectFields: ["name", "speed"],
+    basicFunctionWriteFields: {
+      name: { ontologyUniqueIdentifier: "onto-target", propertyUniqueIdentifier: "", storageGroup: "" },
+      speed: { ontologyUniqueIdentifier: "", propertyUniqueIdentifier: "prop-speed", storageGroup: "track" },
+    },
+  });
+  assert.equal("error" in queryIncompleteWriteBack, false);
+  if (!("error" in queryIncompleteWriteBack)) {
+    assert.equal("writeBack" in queryIncompleteWriteBack.basicFunction, false);
+  }
+
+  const aggregateEmptyWriteBack = buildBasicOperatorCreateActionParams({
+    ...baseDraft,
+    ontologyIdentifiers: ["onto-a", "onto-b"],
+    basicFunctionMultiWriteField: {
+      ontologyUniqueIdentifier: "",
+      propertyUniqueIdentifier: "",
+      storageGroup: "",
+    },
+  });
+  assert.equal("error" in aggregateEmptyWriteBack, false);
+  if (!("error" in aggregateEmptyWriteBack)) {
+    assert.equal("writeBack" in aggregateEmptyWriteBack.basicFunction, false);
+  }
+
+  const aggregateIncompleteWriteBack = buildBasicOperatorCreateActionParams({
+    ...baseDraft,
+    ontologyIdentifiers: ["onto-a", "onto-b"],
+    basicFunctionMultiWriteField: {
+      ontologyUniqueIdentifier: "onto-target",
+      propertyUniqueIdentifier: "",
+      storageGroup: "",
+    },
+  });
+  assert.equal("error" in aggregateIncompleteWriteBack, false);
+  if (!("error" in aggregateIncompleteWriteBack)) {
+    assert.equal("writeBack" in aggregateIncompleteWriteBack.basicFunction, false);
   }
 
   assert.equal(

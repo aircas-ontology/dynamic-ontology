@@ -114,6 +114,7 @@
                   <el-select
                     :model-value="readBasicFunctionWriteFieldBinding(selectField).ontologyUniqueIdentifier"
                     filterable
+                    clearable
                     :loading="objectLoading"
                     :disabled="objectLoading || objectError !== ''"
                     :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
@@ -125,6 +126,7 @@
                   <el-select
                     :model-value="readBasicFunctionWriteFieldBinding(selectField).propertyUniqueIdentifier"
                     filterable
+                    clearable
                     :loading="isApplicationPropertyLoading(readBasicFunctionWriteFieldBinding(selectField).ontologyUniqueIdentifier)"
                     :disabled="!readBasicFunctionWriteFieldBinding(selectField).ontologyUniqueIdentifier"
                     :placeholder="
@@ -189,6 +191,7 @@
                   <el-select
                     :model-value="basicFunctionMultiWriteField.ontologyUniqueIdentifier"
                     filterable
+                    clearable
                     :loading="objectLoading"
                     :disabled="objectLoading || objectError !== ''"
                     :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
@@ -200,6 +203,7 @@
                   <el-select
                     :model-value="basicFunctionMultiWriteField.propertyUniqueIdentifier"
                     filterable
+                    clearable
                     :loading="isBasicFunctionMainPropertyLoading(basicFunctionMultiWriteField.ontologyUniqueIdentifier)"
                     :disabled="!basicFunctionMultiWriteField.ontologyUniqueIdentifier"
                     :placeholder="
@@ -2498,13 +2502,6 @@ function submitBehaviorForm(action: "save" | "copy"): void {
         ElMessage.warning("请选择展示字段");
         return;
       }
-      for (const selectField of basicFunctionSelectFields.value) {
-        const binding = readBasicFunctionWriteFieldBinding(selectField);
-        if (!binding.ontologyUniqueIdentifier.trim() || !binding.propertyUniqueIdentifier.trim()) {
-          ElMessage.warning("请完善写入字段");
-          return;
-        }
-      }
     } else {
       if (basicFunctionOntologyIds.value.length > 1 && !basicFunctionAggFunc.value) {
         ElMessage.warning("多对象时请选择聚合类型");
@@ -2513,13 +2510,6 @@ function submitBehaviorForm(action: "save" | "copy"): void {
       if (basicFunctionAggFunc.value) {
         if (!basicFunctionTargetField.value.trim()) {
           ElMessage.warning("请选择聚合参数名");
-          return;
-        }
-      }
-      if (showBasicFunctionMultiWriteField.value) {
-        const multiWrite = basicFunctionMultiWriteField.value;
-        if (!multiWrite.ontologyUniqueIdentifier.trim() || !multiWrite.propertyUniqueIdentifier.trim()) {
-          ElMessage.warning("请完善写入字段");
           return;
         }
       }

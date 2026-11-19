@@ -400,6 +400,8 @@ const submitError = ref("");
 const basicOperatorTestResultText = ref("");
 /** 基础函数详情中的对象 id 列表。 */
 const basicFunctionOntologyIds = ref<string[]>([]);
+/** 基础函数详情对象 id → 展示名称（来自 ontologyNames / targetOntologyName）。 */
+const basicFunctionOntologyNameById = ref<Record<string, string>>({});
 /** 单对象测试时用于拉实体列表的对象 id。 */
 const basicFunctionTestOntologyId = ref("");
 /** 基础函数回写目标对象 id；空表示无 writeBack。 */
@@ -734,6 +736,7 @@ function clearBasicFunctionMultiEntityPickers(): void {
  */
 function clearBasicFunctionTestContext(): void {
   basicFunctionOntologyIds.value = [];
+  basicFunctionOntologyNameById.value = {};
   basicFunctionTestOntologyId.value = "";
   basicFunctionWriteBackOntologyId.value = "";
   clearBasicFunctionMultiEntityPickers();
@@ -743,13 +746,31 @@ function clearBasicFunctionTestContext(): void {
 }
 
 /**
- * @description 格式化基础函数对象标识展示文案。
+ * @description 按标识与同序名称列表构建对象名称映射。
+ * @param ontologyIdentifiers 对象唯一标识列表。
+ * @param ontologyNames 与标识同序的对象名称；缺失项跳过。
+ * @returns identifier → name。
+ */
+function buildBasicFunctionOntologyNameMap(ontologyIdentifiers: string[], ontologyNames: unknown): Record<string, string> {
+  const names = Array.isArray(ontologyNames) ? ontologyNames : [];
+  const map: Record<string, string> = {};
+  ontologyIdentifiers.forEach((ontologyId, index) => {
+    const name = typeof names[index] === "string" ? names[index].trim() : "";
+    if (ontologyId && name) map[ontologyId] = name;
+  });
+  return map;
+}
+
+/**
+ * @description 格式化基础函数对象标识展示文案；优先详情返回的对象名称。
  * @param ontologyUniqueIdentifier 对象唯一标识。
  * @returns 展示文案。
  */
 function formatBasicFunctionOntologyLabel(ontologyUniqueIdentifier: string): string {
   const ontologyId = ontologyUniqueIdentifier.trim();
   if (!ontologyId) return "未命名对象";
+  const named = basicFunctionOntologyNameById.value[ontologyId]?.trim() ?? "";
+  if (named) return named;
   return ontologyId.length > 12 ? `对象 ${ontologyId.slice(0, 8)}…` : `对象 ${ontologyId}`;
 }
 
@@ -1020,10 +1041,17 @@ async function loadBasicFunctionTestContext(): Promise<void> {
     if (response.code !== 200 || !response.data) throw new Error(response.message || "行为详情加载失败");
     const ontologyIds = normalizeBasicFunctionOntologyIds(response.data.basicFunction?.ontologyIdentifiers);
     basicFunctionOntologyIds.value = ontologyIds;
+    const ontologyNameById = buildBasicFunctionOntologyNameMap(ontologyIds, response.data.basicFunction?.ontologyNames);
     const writeBackOntologyId =
       typeof response.data.basicFunction?.writeBack?.targetOntologyIdentifier === "string"
         ? response.data.basicFunction.writeBack.targetOntologyIdentifier.trim()
         : "";
+    const writeBackOntologyName =
+      typeof response.data.basicFunction?.writeBack?.targetOntologyName === "string" ? response.data.basicFunction.writeBack.targetOntologyName.trim() : "";
+    if (writeBackOntologyId && writeBackOntologyName) {
+      ontologyNameById[writeBackOntologyId] = writeBackOntologyName;
+    }
+    basicFunctionOntologyNameById.value = ontologyNameById;
     basicFunctionWriteBackOntologyId.value = writeBackOntologyId;
     const loadTasks: Array<Promise<void>> = [];
     if (ontologyIds.length === 1) {
@@ -1041,6 +1069,7 @@ async function loadBasicFunctionTestContext(): Promise<void> {
   } catch (error) {
     if (requestToken !== basicFunctionDetailLoadToken) return;
     basicFunctionOntologyIds.value = [];
+    basicFunctionOntologyNameById.value = {};
     basicFunctionTestOntologyId.value = "";
     basicFunctionWriteBackOntologyId.value = "";
     clearBasicFunctionMultiEntityPickers();
