@@ -82,6 +82,14 @@
             <div class="theme-space-actions">
               <el-button v-if="!browseOnly" type="primary" plain size="small" data-onboarding="theme-enter" @click="enterThemeSpace(space)">→ 进入</el-button
               ><el-button v-if="browseOnly" type="primary" plain size="small" @click="notifyUnavailable('应用展示')">应用展示</el-button
+              ><el-button
+                type="primary"
+                plain
+                size="small"
+                :loading="apiDocDownloadingSpaceId === space.id"
+                :disabled="apiDocDownloadingSpaceId !== null && apiDocDownloadingSpaceId !== space.id"
+                @click.stop="downloadThemeSpaceApiDoc(space)"
+                >获取接口文档</el-button
               ><el-button v-if="!browseOnly" type="primary" plain size="small" @click="openEditThemeSpaceDialog(space)">✎ 编辑</el-button
               ><el-dropdown v-if="!browseOnly" trigger="click" @command="(command) => handleThemeSpaceCommand(command, space)"
                 ><el-button type="primary" plain size="small"
@@ -134,12 +142,20 @@
         >
         <el-table-column prop="createdTime" label="创建时间" width="180" />
         <el-table-column prop="updatedTime" label="更新时间" width="180" />
-        <el-table-column label="操作" :width="browseOnly ? 120 : 230" fixed="right"
+        <el-table-column label="操作" :width="browseOnly ? 260 : 360" fixed="right"
           ><template #default="{ row }"
             ><div class="theme-space-actions">
               <el-button v-if="!browseOnly" type="primary" plain size="small" data-onboarding="theme-enter" @click="enterThemeSpace(asThemeSpace(row))"
                 >→ 进入</el-button
               ><el-button v-if="browseOnly" type="primary" plain size="small" @click="notifyUnavailable('应用展示')">应用展示</el-button
+              ><el-button
+                type="primary"
+                plain
+                size="small"
+                :loading="apiDocDownloadingSpaceId === asThemeSpace(row).id"
+                :disabled="apiDocDownloadingSpaceId !== null && apiDocDownloadingSpaceId !== asThemeSpace(row).id"
+                @click.stop="downloadThemeSpaceApiDoc(asThemeSpace(row))"
+                >获取接口文档</el-button
               ><el-button v-if="!browseOnly" type="primary" plain size="small" @click="openEditThemeSpaceDialog(asThemeSpace(row))">✎ 编辑</el-button
               ><el-dropdown v-if="!browseOnly" trigger="click" @command="(command) => handleThemeSpaceCommand(command, asThemeSpace(row))"
                 ><el-button type="primary" plain size="small"
@@ -237,6 +253,7 @@ import { ElMessage } from "element-plus";
 import { useRoute, useRouter } from "vue-router";
 import {
   deleteOntologySpaceInterface,
+  getExportApiDocInterface,
   getExportOntologySpaceInterface,
   getOntologyOverviewCountInterface,
   getOntologySpaceListInterface,
@@ -298,6 +315,8 @@ const exportSpace = ref<OntologySpaceItem | null>(null);
 const exportType = ref<OntologySpaceExportType>("INSTANCE");
 const exportBusy = ref(false);
 const exportError = ref("");
+/** 正在下载接口文档的主题 id；空表示空闲。 */
+const apiDocDownloadingSpaceId = ref<string | null>(null);
 const filteredSpaces = computed(() =>
   [...themeSpaces.value]
     .filter((space) => !keyword.value.trim() || `${space.displayName}${space.apiName}`.toLowerCase().includes(keyword.value.trim().toLowerCase()))
@@ -313,6 +332,48 @@ const stats = computed<OntologySpaceSummary[]>(() => [
 /** @description 提示主题功能尚未接入。 @param action 被点击的操作名称。 */
 function notifyUnavailable(action: string): void {
   ElMessage.info(`${action}功能暂未接入`);
+}
+
+/**
+ * @description 解析接口文档下载文件名；优先响应头，否则 api-doc-{apiName|spaceId}.html。
+ * @param input 响应头与空间信息。
+ * @returns 下载文件名。
+ */
+function resolveExportApiDocFileName(input: { contentDisposition: string; contentType: string; apiName: string; spaceId: number }): string {
+  const resolved = resolveExportOntologySpaceFileName(input);
+  if (/\.(html?|htm)$/i.test(resolved)) return resolved;
+  if (resolved.includes(".")) return resolved;
+  const suffix = input.apiName.trim() || String(input.spaceId);
+  return `api-doc-${suffix}.html`;
+}
+
+/**
+ * @description 调用接口文档导出并触发浏览器下载。
+ * @param space 当前主题空间。
+ */
+async function downloadThemeSpaceApiDoc(space: OntologySpaceItem): Promise<void> {
+  if (apiDocDownloadingSpaceId.value !== null) return;
+  const spaceId = Number(space.id);
+  if (!Number.isInteger(spaceId)) {
+    ElMessage.warning("缺少空间 id，无法获取接口文档");
+    return;
+  }
+  apiDocDownloadingSpaceId.value = space.id;
+  try {
+    const file = await getExportApiDocInterface({ spaceId });
+    const fileName = resolveExportApiDocFileName({
+      contentDisposition: file.contentDisposition,
+      contentType: file.contentType || "text/html",
+      apiName: space.apiName,
+      spaceId,
+    });
+    downloadSpaceFile(fileName, file.blob);
+    ElMessage.success("接口文档已开始下载");
+  } catch (cause) {
+    ElMessage.error(cause instanceof Error ? cause.message : "接口文档导出失败，请重试");
+  } finally {
+    apiDocDownloadingSpaceId.value = null;
+  }
 }
 /**
  * @description 打开主题导出弹窗，并恢复默认导出类型。

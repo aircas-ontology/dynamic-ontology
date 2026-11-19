@@ -199,6 +199,28 @@ POST /ontology/action
 | `targetField`         | String   | 聚合时 | 聚合目标属性 apiName；`mode=AGGREGATE` 时必填             |
 | `selectFields`        | String[] | 查询时 | 查询返回的属性 apiName 列表；`mode=QUERY` 时必填          |
 | `filters`             | Object   | 否     | 过滤树：`logic` + `children`（`FILTER` / `GROUP` 嵌套）   |
+| `writeBack`           | Object   | 否     | 结果回写配置；需要把查询/聚合结果写回目标对象属性时传入   |
+
+**`writeBack` 字段**：
+
+| 字段                       | 类型   | 必填     | 说明                                                                             |
+| -------------------------- | ------ | -------- | -------------------------------------------------------------------------------- |
+| `targetOntologyIdentifier` | String | **是**   | 回写目标对象唯一标识                                                             |
+| `targetStorageGroup`       | String | 条件必填 | 回写目标存储分组；回写**子表**时必填（如 `"track"`）；回写**主表（main）**时不传 |
+| `bindings`                 | Array  | **是**   | 回写绑定列表；至少 1 条                                                          |
+
+**`writeBack.bindings[]` 字段**：
+
+| 字段                       | 类型   | 必填     | 说明                                                                                            |
+| -------------------------- | ------ | -------- | ----------------------------------------------------------------------------------------------- |
+| `sourceField`              | String | 条件必填 | 来源字段 apiName；`mode=QUERY` 回写时必填，且应属于 `selectFields`；`mode=AGGREGATE` 回写时不传 |
+| `targetPropertyIdentifier` | String | **是**   | 回写目标属性唯一标识（property uniqueIdentifier）                                               |
+
+**语义规则**：
+
+- **无回写**：不传 `writeBack`
+- **聚合 + 回写主表**：`mode=AGGREGATE`；`writeBack` 不传 `targetStorageGroup`；`bindings` 通常 1 条，只填 `targetPropertyIdentifier`
+- **查询 + 回写子表**：`mode=QUERY`；`writeBack.targetStorageGroup` 填子表分组名；`bindings` 按展示字段逐条映射 `sourceField` → `targetPropertyIdentifier`
 
 **示例 1：单对象 · 聚合**
 
@@ -274,6 +296,62 @@ POST /ontology/action
     "filters": {
       "logic": "AND",
       "children": [{ "type": "FILTER", "filter": { "propertyApiName": "status", "op": "IS_NOT_NULL" } }]
+    }
+  }
+}
+```
+
+**示例 4：聚合 + 回写主表**
+
+```json
+{
+  "actionKind": "BASE",
+  "subjectType": "BASIC_FUNCTION",
+  "actionApi": "count_active_satellite_writeback",
+  "displayName": "统计在轨卫星数量并回写",
+  "description": "统计后把条数写回目标实例的主表属性",
+  "categoryId": 12,
+  "basicFunction": {
+    "ontologyIdentifiers": ["3f2a9c1e-7b4d-4a86-9e21-5c8d1f0a6b34"],
+    "mode": "AGGREGATE",
+    "aggFunc": "COUNT",
+    "targetField": "id",
+    "filters": {
+      "logic": "AND",
+      "children": [{ "type": "FILTER", "filter": { "propertyApiName": "status", "op": "EQ", "value": "on_orbit" } }]
+    },
+    "writeBack": {
+      "targetOntologyIdentifier": "3f2a9c1e-7b4d-48ce-b029-8ab05dae780c",
+      "bindings": [{ "targetPropertyIdentifier": "5e7b9c2d-1a4f-4c63-8d90-2f6a1b7e3c58" }]
+    }
+  }
+}
+```
+
+**示例 5：查询 + 回写子表**
+
+```json
+{
+  "actionKind": "BASE",
+  "subjectType": "BASIC_FUNCTION",
+  "actionApi": "query_satellite_speed_writeback",
+  "displayName": "查询卫星速度并追加到轨迹表",
+  "categoryId": 12,
+  "basicFunction": {
+    "ontologyIdentifiers": ["3f2a9c1e-7b4d-4a86-9e21-5c8d1f0a6b34"],
+    "mode": "QUERY",
+    "selectFields": ["name", "speed"],
+    "filters": {
+      "logic": "AND",
+      "children": [{ "type": "FILTER", "filter": { "propertyApiName": "status", "op": "NE", "value": "scrap" } }]
+    },
+    "writeBack": {
+      "targetOntologyIdentifier": "3f2a9c1e-7b4d-48ce-b029-8ab05dae780c",
+      "targetStorageGroup": "track",
+      "bindings": [
+        { "sourceField": "name", "targetPropertyIdentifier": "b4d0c6f1-2a83-4e57-9c19-7d5e3f8a1264" },
+        { "sourceField": "speed", "targetPropertyIdentifier": "8c1f4b2a-3d6e-4f70-9a5b-21ce6d8f0477" }
+      ]
     }
   }
 }

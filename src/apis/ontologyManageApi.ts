@@ -33,6 +33,8 @@ import type {
   GetOntologySpaceCanvasContentParams,
   DeleteOntologySpaceData,
   DeleteOntologySpaceParams,
+  ExportApiDocFile,
+  ExportApiDocParams,
   ExportOntologySpaceFile,
   ExportOntologySpaceParams,
   UpdateOntologySpaceData,
@@ -284,6 +286,33 @@ export async function getExportOntologySpaceInterface(params: ExportOntologySpac
   });
   if (!(response.data instanceof Blob)) {
     throw new RequestError("导出失败，请重试。");
+  }
+  return {
+    blob: response.data,
+    contentDisposition: readExportResponseHeader(response.headers, "content-disposition"),
+    contentType: readExportResponseHeader(response.headers, "content-type"),
+  };
+}
+
+/**
+ * @description 导出对象空间接口文档 HTML 文件。
+ *
+ * 请求方式：GET `/ontology/api_doc/export`
+ *
+ * 成功结果按文件字节返回，不按普通业务 JSON 解析。
+ * @param params 查询参数。
+ * @param {number} params.spaceId 对象空间 id，必填。
+ * @returns 文件内容和用于命名的响应头。
+ */
+export async function getExportApiDocInterface(params: ExportApiDocParams): Promise<ExportApiDocFile> {
+  const response = await requestFull<Blob>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/api_doc/export",
+    method: "get",
+    params,
+    responseType: "blob",
+  });
+  if (!(response.data instanceof Blob)) {
+    throw new RequestError("接口文档导出失败，请重试。");
   }
   return {
     blob: response.data,

@@ -22,14 +22,15 @@ export interface TestOntologyActionParams {
   actionApi: string;
   /**
    * 行为挂载侧实体主键。
-   * 属性值/关系实例等场景必填；基础函数算子测试可选，未选实例时不传。
+   * 属性值/关系实例等场景必填；基础函数单对象测试可选，未选实例时不传。
    */
   entityPrimaryKey?: string | number | boolean | Record<string, unknown>;
   /**
-   * 关系两端实例主键：`from` / `to` 均为数组。
-   * 应用行为仅在有 linkMapping 时传关系两端。
+   * 实例主键映射：
+   * - 应用行为关系两端：`{ from: [], to: [] }`
+   * - 基础函数多对象：对象唯一标识 → 实例主键
    */
-  entityPrimaryKeys?: TestOntologyActionLinkEntityPrimaryKeys;
+  entityPrimaryKeys?: TestOntologyActionLinkEntityPrimaryKeys | Record<string, string | number | boolean | Record<string, unknown>>;
   /**
    * 应用行为测试入参绑定：参数名 → 实例绑定数组（可多选）。
    */
@@ -42,6 +43,8 @@ export interface TestOntologyActionParams {
   dataPrimaryKey?: string | number | boolean | Record<string, unknown>;
   /** 关系对端实体主键；实例关系行为必填。 */
   linkEntityPrimaryKey?: string | number | boolean | Record<string, unknown>;
+  /** 基础函数回写目标实例主键；创建时配置了 writeBack 时传。 */
+  writeBackEntityPrimaryKey?: string | number | boolean | Record<string, unknown>;
   /** 外部输入参数取值（参数名 -> 值）。 */
   params?: Record<string, unknown>;
 }

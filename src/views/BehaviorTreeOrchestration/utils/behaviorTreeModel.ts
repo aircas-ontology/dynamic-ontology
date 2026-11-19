@@ -160,7 +160,14 @@ export function createDefaultBehaviorTreeConfig(kind: BehaviorTreeNodeKind): Beh
     case "CONDITION":
       return { expression: "" };
     case "ACTION":
-      return { actionApi: "", timeoutSeconds: "", retryTimes: "", inputBindings: [], outputBindings: [] };
+      return {
+        actionApi: "",
+        timeoutSeconds: "",
+        retryTimes: "",
+        inputBindings: [],
+        outputBindings: [],
+        successCondition: { outputKey: "", op: "EQ", value: "" },
+      };
     default:
       return null;
   }

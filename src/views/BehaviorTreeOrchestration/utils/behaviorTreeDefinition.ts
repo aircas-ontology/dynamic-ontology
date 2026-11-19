@@ -1,4 +1,5 @@
 import type {
+  ActionTreeBindableAction,
   BehaviorTreeDefinition,
   BehaviorTreeKindMeta,
   BehaviorTreeModel,
@@ -17,10 +18,15 @@ import {
 } from "../../../utils/behaviorTreeBlackboard.ts";
 import { behaviorTreeEmptyToNull, behaviorTreeIntOrNull, behaviorTreeValueToText, parseBehaviorTreeTypedValue } from "../../../utils/behaviorTreeTypedValue.ts";
 import {
+  findBehaviorTreeBindableAction,
+  listBehaviorTreeBindableOutputs,
   mapBehaviorTreeInputBindingsToDraft,
   mapBehaviorTreeOutputBindingsToDraft,
+  mapBehaviorTreeSuccessConditionToDraft,
+  readBehaviorTreeSuccessConditionDraft,
   serializeBehaviorTreeInputBindings,
   serializeBehaviorTreeOutputBindings,
+  serializeBehaviorTreeSuccessCondition,
 } from "./behaviorTreeActionBindings.ts";
 import { isBehaviorTreeValueLessOp } from "./behaviorTreeConstants.ts";
 import { createDefaultBehaviorTreeConfig } from "./behaviorTreeModel.ts";
@@ -29,11 +35,13 @@ import { createDefaultBehaviorTreeConfig } from "./behaviorTreeModel.ts";
  * @description 将草稿配置转为序列化 config。
  * @param node 节点草稿。
  * @param blackboardTypeOf 查黑板类型。
+ * @param availableActions 可绑定行为目录，用于成功条件比较值按出参类型解析。
  * @returns 序列化 config。
  */
 export function buildBehaviorTreeNodeConfig(
   node: BehaviorTreeNodeDraft,
   blackboardTypeOf: (key: string) => BehaviorTreeValueType | null,
+  availableActions: ActionTreeBindableAction[] = [],
 ): Record<string, unknown> | null {
   const draft = node.config || {};
   /**
@@ -85,6 +93,14 @@ export function buildBehaviorTreeNodeConfig(
       const outputBindings = serializeBehaviorTreeOutputBindings(Array.isArray(draft.outputBindings) ? draft.outputBindings : []);
       if (inputBindings) config.inputBindings = inputBindings;
       if (outputBindings) config.outputBindings = outputBindings;
+      const successDraft = readBehaviorTreeSuccessConditionDraft(draft);
+      const action = findBehaviorTreeBindableAction(availableActions, textOf("actionApi"));
+      const outputType =
+        listBehaviorTreeBindableOutputs(action)
+          .find((item) => item.name === successDraft.outputKey.trim())
+          ?.type?.trim() || null;
+      const successCondition = serializeBehaviorTreeSuccessCondition(successDraft, outputType, parseBehaviorTreeTypedValue);
+      if (successCondition) config.successCondition = successCondition;
       return config;
     }
     default:
@@ -131,6 +147,7 @@ export function behaviorTreeConfigToDraft(kind: BehaviorTreeNodeKind, config: Re
         retryTimes: asText(cfg.retryTimes),
         inputBindings: mapBehaviorTreeInputBindingsToDraft(cfg.inputBindings),
         outputBindings: mapBehaviorTreeOutputBindingsToDraft(cfg.outputBindings),
+        successCondition: mapBehaviorTreeSuccessConditionToDraft(cfg.successCondition),
       };
     default:
       return createDefaultBehaviorTreeConfig(kind);
@@ -142,20 +159,22 @@ export function behaviorTreeConfigToDraft(kind: BehaviorTreeNodeKind, config: Re
  * @param node 草稿节点。
  * @param kindMeta kind 元信息。
  * @param blackboardTypeOf 黑板类型查询。
+ * @param availableActions 可绑定行为目录。
  * @returns 序列化节点。
  */
 export function serializeBehaviorTreeNode(
   node: BehaviorTreeNodeDraft,
   kindMeta: Record<BehaviorTreeNodeKind, BehaviorTreeKindMeta>,
   blackboardTypeOf: (key: string) => BehaviorTreeValueType | null,
+  availableActions: ActionTreeBindableAction[] = [],
 ): BehaviorTreeSerializedNode {
   const out: BehaviorTreeSerializedNode = {
     id: node.id,
     kind: node.kind,
     displayName: node.displayName || kindMeta[node.kind].name,
     enabled: node.enabled !== false,
-    config: buildBehaviorTreeNodeConfig(node, blackboardTypeOf),
-    children: node.children.map((child) => serializeBehaviorTreeNode(child, kindMeta, blackboardTypeOf)),
+    config: buildBehaviorTreeNodeConfig(node, blackboardTypeOf, availableActions),
+    children: node.children.map((child) => serializeBehaviorTreeNode(child, kindMeta, blackboardTypeOf, availableActions)),
   };
   if (node.skipIf.trim()) out.skipIf = node.skipIf.trim();
   if (node.whileCondition.trim()) out.whileCondition = node.whileCondition.trim();
@@ -166,9 +185,14 @@ export function serializeBehaviorTreeNode(
  * @description 由模型构建 treeDefinition。
  * @param model 编辑模型。
  * @param kindMeta kind 元信息。
+ * @param availableActions 可绑定行为目录。
  * @returns 树定义。
  */
-export function buildBehaviorTreeDefinition(model: BehaviorTreeModel, kindMeta: Record<BehaviorTreeNodeKind, BehaviorTreeKindMeta>): BehaviorTreeDefinition {
+export function buildBehaviorTreeDefinition(
+  model: BehaviorTreeModel,
+  kindMeta: Record<BehaviorTreeNodeKind, BehaviorTreeKindMeta>,
+  availableActions: ActionTreeBindableAction[] = [],
+): BehaviorTreeDefinition {
   const blackboardTypeOf = (key: string): BehaviorTreeValueType | null => {
     const found = model.blackboard.find((item) => item.key.trim() === key);
     return found ? found.valueType : null;
@@ -206,7 +230,7 @@ export function buildBehaviorTreeDefinition(model: BehaviorTreeModel, kindMeta: 
           defaultValue: parsed.ok ? parsed.value : null,
         };
       }),
-    roots: model.roots.map((root) => serializeBehaviorTreeNode(root, kindMeta, blackboardTypeOf)),
+    roots: model.roots.map((root) => serializeBehaviorTreeNode(root, kindMeta, blackboardTypeOf, availableActions)),
   };
 }
 
@@ -215,12 +239,14 @@ export function buildBehaviorTreeDefinition(model: BehaviorTreeModel, kindMeta: 
  * @param model 模型。
  * @param kindMeta kind 元信息。
  * @param meta 编排元数据。
+ * @param availableActions 可绑定行为目录。
  * @returns 请求体。
  */
 export function buildBehaviorTreeSavePayload(
   model: BehaviorTreeModel,
   kindMeta: Record<BehaviorTreeNodeKind, BehaviorTreeKindMeta>,
   meta: BehaviorTreeOrchestrationMeta,
+  availableActions: ActionTreeBindableAction[] = [],
 ): BehaviorTreeSavePayload {
   return {
     ontologySpaceId: Number(meta.spaceId),
@@ -229,7 +255,7 @@ export function buildBehaviorTreeSavePayload(
     description: behaviorTreeEmptyToNull(meta.description),
     categoryId: meta.categoryId.trim() ? Number(meta.categoryId) : null,
     actionKind: "TREE",
-    treeDefinition: buildBehaviorTreeDefinition(model, kindMeta),
+    treeDefinition: buildBehaviorTreeDefinition(model, kindMeta, availableActions),
   };
 }
 

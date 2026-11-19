@@ -98,8 +98,11 @@
         </section>
 
         <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
-          <template v-if="showBasicFunctionEntityPicker">
-            <h4 class="behavior-test-dialog__section-title">选择实体实例（可选）</h4>
+          <p v-if="basicFunctionDetailLoading" class="behavior-test-dialog__state" role="status">正在加载行为详情…</p>
+          <p v-else-if="basicFunctionDetailError" class="behavior-test-dialog__state" role="alert">{{ basicFunctionDetailError }}</p>
+          <template v-else>
+            <template v-if="showBasicFunctionEntityPicker">
+              <h4 class="behavior-test-dialog__section-title">选择实体实例（可选）</h4>
             <p v-if="entityLoading && !entityRows.length" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
             <p v-else-if="entityError && !entityRows.length" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
             <el-select
@@ -133,24 +136,100 @@
               </template>
             </el-select>
           </template>
-          <p v-else-if="basicFunctionOntologyIds.length > 1" class="behavior-test-dialog__state" role="status">
-            多对象基础函数测试无需选择实例，将按行为定义执行。
-          </p>
-        </section>
 
-        <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
-          <el-input
-            class="behavior-test-dialog__result"
-            type="textarea"
-            :model-value="basicOperatorTestResultText"
-            :rows="10"
-            readonly
-            resize="vertical"
-            placeholder="开始测试后将在此展示接口返回 data"
-          />
-        </section>
+          <template v-if="showBasicFunctionMultiEntityPickers">
+            <h4 class="behavior-test-dialog__section-title">选择各对象实体实例（可选）</h4>
+            <div v-for="picker in basicFunctionMultiEntityPickers" :key="picker.ontologyUniqueIdentifier" class="behavior-test-dialog__multi-entity-picker">
+              <p class="behavior-test-dialog__multi-entity-picker-label">{{ formatBasicFunctionOntologyLabel(picker.ontologyUniqueIdentifier) }}</p>
+              <p v-if="picker.loading && !picker.rows.length" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
+              <p v-else-if="picker.error && !picker.rows.length" class="behavior-test-dialog__state" role="alert">{{ picker.error }}</p>
+              <el-select
+                v-else
+                class="behavior-test-dialog__entity-select"
+                :model-value="picker.selectedRowKey"
+                filterable
+                clearable
+                :loading="picker.loading"
+                placeholder="不选则查询全部实例"
+                @update:model-value="(value) => updateBasicFunctionMultiEntitySelection(picker.ontologyUniqueIdentifier, value)"
+              >
+                <el-option
+                  v-for="option in listBasicFunctionMultiEntitySelectOptions(picker)"
+                  :key="option.rowKey"
+                  :label="formatBasicOperatorEntityOptionLabel(option)"
+                  :value="option.rowKey"
+                />
+                <template #footer>
+                  <div v-if="picker.total > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
+                    <el-pagination
+                      small
+                      layout="total, prev, pager, next"
+                      :total="picker.total"
+                      :current-page="picker.page"
+                      :page-size="picker.pageSize"
+                      @current-change="(page) => changeBasicFunctionMultiEntityPage(picker.ontologyUniqueIdentifier, page)"
+                    />
+                  </div>
+                  <p v-else-if="picker.error" class="behavior-test-dialog__select-footer-error" role="alert">{{ picker.error }}</p>
+                </template>
+              </el-select>
+            </div>
+          </template>
 
-        <section v-if="isAttributeValueTest" class="behavior-test-dialog__section">
+          <template v-if="showBasicFunctionWriteBackEntityPicker">
+            <h4 class="behavior-test-dialog__section-title">回写目标实例</h4>
+            <p class="behavior-test-dialog__multi-entity-picker-label">
+              {{ formatBasicFunctionOntologyLabel(basicFunctionWriteBackOntologyId) }}
+            </p>
+            <p v-if="writeBackEntityLoading && !writeBackEntityRows.length" class="behavior-test-dialog__state" role="status">正在加载回写实体列表…</p>
+            <p v-else-if="writeBackEntityError && !writeBackEntityRows.length" class="behavior-test-dialog__state" role="alert">{{ writeBackEntityError }}</p>
+            <el-select
+              v-else
+              class="behavior-test-dialog__entity-select"
+              :model-value="selectedWriteBackEntityRowKey"
+              filterable
+              clearable
+              :loading="writeBackEntityLoading"
+              placeholder="请选择回写目标实例"
+              @update:model-value="updateBasicFunctionWriteBackEntitySelection"
+            >
+              <el-option
+                v-for="option in listBasicFunctionWriteBackEntitySelectOptions()"
+                :key="option.rowKey"
+                :label="formatBasicOperatorEntityOptionLabel(option)"
+                :value="option.rowKey"
+              />
+              <template #footer>
+                <div v-if="writeBackEntityTotal > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
+                  <el-pagination
+                    small
+                    layout="total, prev, pager, next"
+                    :total="writeBackEntityTotal"
+                    :current-page="writeBackEntityPage"
+                    :page-size="writeBackEntityPageSize"
+                    @current-change="changeWriteBackEntityPage"
+                  />
+                </div>
+                <p v-else-if="writeBackEntityError" class="behavior-test-dialog__select-footer-error" role="alert">{{ writeBackEntityError }}</p>
+              </template>
+            </el-select>
+          </template>
+        </template>
+      </section>
+
+      <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
+        <el-input
+          class="behavior-test-dialog__result"
+          type="textarea"
+          :model-value="basicOperatorTestResultText"
+          :rows="10"
+          readonly
+          resize="vertical"
+          placeholder="开始测试后将在此展示接口返回 data"
+        />
+      </section>
+
+      <section v-if="isAttributeValueTest" class="behavior-test-dialog__section">
           <h4 class="behavior-test-dialog__section-title">选择实体实例</h4>
           <p v-if="entityLoading" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
           <p v-else-if="entityError" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
@@ -309,7 +388,22 @@ import {
   type PostOntologyEntityAllLinkParams,
   type SpaceBehaviorItem,
   type TestOntologyActionData,
+  type TestOntologyActionParams,
 } from "@/types";
+
+/** 基础函数多对象测试：按对象缓存的实体下拉状态。 */
+interface BasicFunctionMultiEntityPickerState {
+  ontologyUniqueIdentifier: string;
+  rows: BehaviorTestEntityRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  loading: boolean;
+  error: string;
+  selectedRowKey: string;
+  selectedSnapshot: BehaviorTestEntityRow | null;
+  loadToken: number;
+}
 import BehaviorEntityLinkDataDialog from "./BehaviorEntityLinkDataDialog.vue";
 import BehaviorEntityRowDetailDialog from "./BehaviorEntityRowDetailDialog.vue";
 import {
@@ -377,7 +471,6 @@ const {
   relationContextLoadToken,
   ontologyUniqueIdentifierFrom,
   ontologyUniqueIdentifierTo,
-  relationMountSide,
   selectedFromEntityRows,
   selectedToEntityRows,
   buildExternalParamsPayload,
@@ -408,6 +501,19 @@ const basicOperatorTestResultText = ref("");
 const basicFunctionOntologyIds = ref<string[]>([]);
 /** 单对象测试时用于拉实体列表的对象 id。 */
 const basicFunctionTestOntologyId = ref("");
+/** 基础函数回写目标对象 id；空表示无 writeBack。 */
+const basicFunctionWriteBackOntologyId = ref("");
+/** 多对象基础函数：各对象实体下拉。 */
+const basicFunctionMultiEntityPickers = ref<BasicFunctionMultiEntityPickerState[]>([]);
+const writeBackEntityLoading = ref(false);
+const writeBackEntityError = ref("");
+const writeBackEntityRows = ref<BehaviorTestEntityRow[]>([]);
+const writeBackEntityTotal = ref(0);
+const writeBackEntityPage = ref(1);
+const writeBackEntityPageSize = ref(10);
+const selectedWriteBackEntityRowKey = ref("");
+const selectedWriteBackEntitySnapshot = ref<BehaviorTestEntityRow | null>(null);
+let writeBackEntityLoadToken = 0;
 const basicFunctionDetailLoading = ref(false);
 const basicFunctionDetailError = ref("");
 let basicFunctionDetailLoadToken = 0;
@@ -533,6 +639,20 @@ const behaviorBasicActionLabel = computed(() => {
 const isBasicFunctionOperatorTest = computed(() => !isApplicationTest.value && props.behavior?.valueType === "basicFunctionOperator");
 /** 基础函数仅绑定单个对象时，测试弹窗展示可选实例。 */
 const showBasicFunctionEntityPicker = computed(() => isBasicFunctionOperatorTest.value && basicFunctionOntologyIds.value.length === 1);
+/** 基础函数多对象时，按对象展示实例下拉。 */
+const showBasicFunctionMultiEntityPickers = computed(() => isBasicFunctionOperatorTest.value && basicFunctionOntologyIds.value.length > 1);
+/** 基础函数配置了 writeBack 时展示回写目标实例。 */
+const showBasicFunctionWriteBackEntityPicker = computed(() => isBasicFunctionOperatorTest.value && Boolean(basicFunctionWriteBackOntologyId.value.trim()));
+const selectedWriteBackEntityRow = computed(() => {
+  const onPage = writeBackEntityRows.value.find((item) => item.rowKey === selectedWriteBackEntityRowKey.value) ?? null;
+  if (onPage) return onPage;
+  if (selectedWriteBackEntitySnapshot.value?.rowKey === selectedWriteBackEntityRowKey.value) return selectedWriteBackEntitySnapshot.value;
+  return null;
+});
+const selectedWriteBackEntityPrimaryKey = computed(() => {
+  const primaryKey = selectedWriteBackEntityRow.value?.savedPrimaryKey ?? selectedWriteBackEntityRow.value?.primaryKey;
+  return primaryKey === undefined || primaryKey === null || primaryKey === "" ? null : primaryKey;
+});
 const isAttributeValueTest = computed(() => !isApplicationTest.value && props.behavior?.valueType === "attributeValue");
 const isCreateTest = computed(() => isAttributeValueTest.value && props.behavior?.basicAction === "create");
 const isUpdateTest = computed(() => isAttributeValueTest.value && props.behavior?.basicAction === "update");
@@ -563,8 +683,14 @@ const dialogHint = computed(() => {
   if (isBasicFunctionOperatorTest.value) {
     if (basicFunctionDetailLoading.value) return "正在加载基础函数测试上下文…";
     if (basicFunctionDetailError.value) return basicFunctionDetailError.value;
+    if (showBasicFunctionWriteBackEntityPicker.value && showBasicFunctionMultiEntityPickers.value) {
+      return "可选择各对象实体实例（可选），并选择回写目标实例后开始测试。";
+    }
+    if (showBasicFunctionWriteBackEntityPicker.value && showBasicFunctionEntityPicker.value) {
+      return "可选择查询实例（可选），并选择回写目标实例后开始测试。";
+    }
     if (showBasicFunctionEntityPicker.value) return "可选择单个实体实例后开始测试；不选则查询全部。";
-    if (basicFunctionOntologyIds.value.length > 1) return "多对象基础函数无需选择实例，确认后直接执行测试。";
+    if (showBasicFunctionMultiEntityPickers.value) return "可选择各对象实体实例后开始测试；不选则查询全部。";
     return "确认后直接执行基础函数测试。";
   }
   if (isUpdateTest.value) return "选择实体实例与数据行后，在「查看实例数据」中填写测试参数并开始测试。";
@@ -591,23 +717,11 @@ const selectedEntityPrimaryKey = computed(() => {
 
 const selectedEntityDisplayName = computed(() => selectedEntityRow.value?.displayName ?? "");
 
-const selectedMountEntityRow = computed(() => {
-  if (relationMountSide.value === "from") return selectedFromEntityRows.value[0] ?? null;
-  if (relationMountSide.value === "to") return selectedToEntityRows.value[0] ?? null;
-  return null;
-});
-
-const selectedOppositeEntityRow = computed(() => {
-  if (relationMountSide.value === "from") return selectedToEntityRows.value[0] ?? null;
-  if (relationMountSide.value === "to") return selectedFromEntityRows.value[0] ?? null;
-  return null;
-});
-
 const detailOntologyUniqueIdentifier = computed(() => behaviorOntologyUniqueIdentifier.value);
 
 const detailEntityPrimaryKey = computed(() => {
   if (isRelationInstanceTest.value) {
-    const primaryKey = selectedMountEntityRow.value?.primaryKey;
+    const primaryKey = selectedFromEntityRows.value[0]?.primaryKey;
     if (primaryKey === undefined || primaryKey === null || primaryKey === "") return null;
     return primaryKey;
   }
@@ -615,7 +729,7 @@ const detailEntityPrimaryKey = computed(() => {
 });
 
 const detailEntityDisplayName = computed(() => {
-  if (isRelationInstanceTest.value) return selectedMountEntityRow.value?.displayName ?? "";
+  if (isRelationInstanceTest.value) return selectedFromEntityRows.value[0]?.displayName ?? "";
   return selectedEntityDisplayName.value;
 });
 
@@ -772,11 +886,38 @@ function clearBasicOperatorTestResult(): void {
 }
 
 /**
- * @description 清空基础函数测试上下文（详情对象 id 与加载态）。
+ * @description 清空基础函数回写实体列表与选中态。
+ */
+function clearBasicFunctionWriteBackEntityState(): void {
+  writeBackEntityLoadToken += 1;
+  writeBackEntityRows.value = [];
+  writeBackEntityTotal.value = 0;
+  writeBackEntityError.value = "";
+  writeBackEntityLoading.value = false;
+  writeBackEntityPage.value = 1;
+  selectedWriteBackEntityRowKey.value = "";
+  selectedWriteBackEntitySnapshot.value = null;
+}
+
+/**
+ * @description 清空基础函数多对象实体下拉状态。
+ */
+function clearBasicFunctionMultiEntityPickers(): void {
+  for (const picker of basicFunctionMultiEntityPickers.value) {
+    picker.loadToken += 1;
+  }
+  basicFunctionMultiEntityPickers.value = [];
+}
+
+/**
+ * @description 清空基础函数测试上下文（详情对象 id、回写与多对象选择态）。
  */
 function clearBasicFunctionTestContext(): void {
   basicFunctionOntologyIds.value = [];
   basicFunctionTestOntologyId.value = "";
+  basicFunctionWriteBackOntologyId.value = "";
+  clearBasicFunctionMultiEntityPickers();
+  clearBasicFunctionWriteBackEntityState();
   basicFunctionDetailLoading.value = false;
   basicFunctionDetailError.value = "";
 }
@@ -923,6 +1064,240 @@ async function changeMountedFunctionDetailVersion(version: string): Promise<void
 }
 
 /**
+ * @description 格式化基础函数对象标识展示文案。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @returns 展示文案。
+ */
+function formatBasicFunctionOntologyLabel(ontologyUniqueIdentifier: string): string {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  if (!ontologyId) return "未命名对象";
+  return ontologyId.length > 12 ? `对象 ${ontologyId.slice(0, 8)}…` : `对象 ${ontologyId}`;
+}
+
+/**
+ * @description 创建空的多对象实体下拉状态。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @returns 下拉状态。
+ */
+function createBasicFunctionMultiEntityPickerState(ontologyUniqueIdentifier: string): BasicFunctionMultiEntityPickerState {
+  return {
+    ontologyUniqueIdentifier: ontologyUniqueIdentifier.trim(),
+    rows: [],
+    total: 0,
+    page: 1,
+    pageSize: 10,
+    loading: false,
+    error: "",
+    selectedRowKey: "",
+    selectedSnapshot: null,
+    loadToken: 0,
+  };
+}
+
+/**
+ * @description 读取多对象下拉选项；已选不在当前页时前置保留。
+ * @param picker 下拉状态。
+ * @returns 选项列表。
+ */
+function listBasicFunctionMultiEntitySelectOptions(picker: BasicFunctionMultiEntityPickerState): BehaviorTestEntityRow[] {
+  const selected = picker.selectedSnapshot;
+  if (!selected || !picker.selectedRowKey) return picker.rows;
+  if (picker.rows.some((item) => item.rowKey === selected.rowKey)) return picker.rows;
+  return [selected, ...picker.rows];
+}
+
+/**
+ * @description 更新多对象某一对象的实体选中值。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @param selectedRowKey 选中行键。
+ */
+function updateBasicFunctionMultiEntitySelection(ontologyUniqueIdentifier: string, selectedRowKey: string | number | null | undefined): void {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  const nextKey = String(selectedRowKey ?? "").trim();
+  basicFunctionMultiEntityPickers.value = basicFunctionMultiEntityPickers.value.map((picker) => {
+    if (picker.ontologyUniqueIdentifier !== ontologyId) return picker;
+    if (!nextKey) {
+      return { ...picker, selectedRowKey: "", selectedSnapshot: null };
+    }
+    const matched =
+      listBasicFunctionMultiEntitySelectOptions(picker).find((item) => item.rowKey === nextKey) ?? picker.rows.find((item) => item.rowKey === nextKey) ?? null;
+    return { ...picker, selectedRowKey: nextKey, selectedSnapshot: matched };
+  });
+}
+
+/**
+ * @description 切换多对象某一对象的实体分页。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @param page 目标页码。
+ */
+function changeBasicFunctionMultiEntityPage(ontologyUniqueIdentifier: string, page: number): void {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  const nextPage = Number(page);
+  if (!Number.isFinite(nextPage) || nextPage < 1) return;
+  const picker = basicFunctionMultiEntityPickers.value.find((item) => item.ontologyUniqueIdentifier === ontologyId);
+  if (!picker || picker.page === nextPage) return;
+  picker.page = nextPage;
+  void loadBasicFunctionMultiEntityList(ontologyId);
+}
+
+/**
+ * @description 按对象分页加载多对象基础函数实体列表。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ */
+async function loadBasicFunctionMultiEntityList(ontologyUniqueIdentifier: string): Promise<void> {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  const pickerIndex = basicFunctionMultiEntityPickers.value.findIndex((item) => item.ontologyUniqueIdentifier === ontologyId);
+  if (pickerIndex < 0) return;
+  const picker = basicFunctionMultiEntityPickers.value[pickerIndex];
+  if (!picker) return;
+  const requestToken = picker.loadToken + 1;
+  picker.loadToken = requestToken;
+  picker.loading = true;
+  picker.error = "";
+  try {
+    const response = await getOntologyEntitiesInterface({
+      ontologyUniqueIdentifier: ontologyId,
+      pageNum: picker.page,
+      pageSize: picker.pageSize,
+    });
+    if (picker.loadToken !== requestToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "实体列表加载失败");
+    const records = Array.isArray(response.data.records) ? response.data.records : [];
+    const rows = records.map((item, index) => mapEntityRecordToRow(item, index));
+    picker.rows = rows;
+    picker.total = Number(response.data.total) || records.length;
+    if (picker.selectedRowKey) {
+      const onPage = rows.find((item) => item.rowKey === picker.selectedRowKey) ?? null;
+      if (onPage) picker.selectedSnapshot = onPage;
+    }
+  } catch (error) {
+    if (picker.loadToken !== requestToken) return;
+    picker.rows = [];
+    picker.total = 0;
+    picker.error = error instanceof Error ? error.message : "实体列表加载失败";
+  } finally {
+    if (picker.loadToken === requestToken) picker.loading = false;
+  }
+}
+
+/**
+ * @description 读取回写实体下拉选项；已选不在当前页时前置保留。
+ * @returns 选项列表。
+ */
+function listBasicFunctionWriteBackEntitySelectOptions(): BehaviorTestEntityRow[] {
+  const selected = selectedWriteBackEntityRow.value;
+  if (!selected || !selectedWriteBackEntityRowKey.value) return writeBackEntityRows.value;
+  if (writeBackEntityRows.value.some((item) => item.rowKey === selected.rowKey)) return writeBackEntityRows.value;
+  return [selected, ...writeBackEntityRows.value];
+}
+
+/**
+ * @description 更新回写目标实体选中值。
+ * @param selectedRowKey 选中行键。
+ */
+function updateBasicFunctionWriteBackEntitySelection(selectedRowKey: string | number | null | undefined): void {
+  const nextKey = String(selectedRowKey ?? "").trim();
+  if (!nextKey) {
+    selectedWriteBackEntityRowKey.value = "";
+    selectedWriteBackEntitySnapshot.value = null;
+    return;
+  }
+  const matched =
+    listBasicFunctionWriteBackEntitySelectOptions().find((item) => item.rowKey === nextKey) ??
+    writeBackEntityRows.value.find((item) => item.rowKey === nextKey) ??
+    null;
+  selectedWriteBackEntityRowKey.value = nextKey;
+  selectedWriteBackEntitySnapshot.value = matched;
+}
+
+/**
+ * @description 切换回写实体分页。
+ * @param page 目标页码。
+ */
+function changeWriteBackEntityPage(page: number): void {
+  const nextPage = Number(page);
+  if (!Number.isFinite(nextPage) || nextPage < 1 || nextPage === writeBackEntityPage.value) return;
+  writeBackEntityPage.value = nextPage;
+  void loadBasicFunctionWriteBackEntityList();
+}
+
+/**
+ * @description 按 writeBack 目标对象加载回写实体列表。
+ */
+async function loadBasicFunctionWriteBackEntityList(): Promise<void> {
+  const ontologyUniqueIdentifier = basicFunctionWriteBackOntologyId.value.trim();
+  if (!ontologyUniqueIdentifier) {
+    clearBasicFunctionWriteBackEntityState();
+    return;
+  }
+  const requestToken = ++writeBackEntityLoadToken;
+  writeBackEntityLoading.value = true;
+  writeBackEntityError.value = "";
+  try {
+    const response = await getOntologyEntitiesInterface({
+      ontologyUniqueIdentifier,
+      pageNum: writeBackEntityPage.value,
+      pageSize: writeBackEntityPageSize.value,
+    });
+    if (requestToken !== writeBackEntityLoadToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "回写实体列表加载失败");
+    const records = Array.isArray(response.data.records) ? response.data.records : [];
+    const rows = records.map((item, index) => mapEntityRecordToRow(item, index));
+    writeBackEntityRows.value = rows;
+    writeBackEntityTotal.value = Number(response.data.total) || records.length;
+    if (selectedWriteBackEntityRowKey.value) {
+      const onPage = rows.find((item) => item.rowKey === selectedWriteBackEntityRowKey.value) ?? null;
+      if (onPage) selectedWriteBackEntitySnapshot.value = onPage;
+    }
+  } catch (error) {
+    if (requestToken !== writeBackEntityLoadToken) return;
+    writeBackEntityRows.value = [];
+    writeBackEntityTotal.value = 0;
+    writeBackEntityError.value = error instanceof Error ? error.message : "回写实体列表加载失败";
+  } finally {
+    if (requestToken === writeBackEntityLoadToken) writeBackEntityLoading.value = false;
+  }
+}
+
+/**
+ * @description 组装基础函数测试请求参数。
+ * @returns 请求体；校验失败时返回 error。
+ */
+function buildBasicFunctionTestRequestParams(): TestOntologyActionParams | { error: string } {
+  const actionApi = (props.behavior?.behaviorApiName ?? "").trim();
+  const ontologySpaceId = props.spaceId.trim();
+  if (!actionApi || !ontologySpaceId) {
+    return { error: "缺少行为 api 或对象空间 id，无法测试" };
+  }
+  const request: TestOntologyActionParams = { ontologySpaceId, actionApi };
+  if (showBasicFunctionEntityPicker.value) {
+    const selectedPrimaryKey = selectedEntityPrimaryKey.value;
+    if (selectedPrimaryKey !== null) request.entityPrimaryKey = selectedPrimaryKey;
+  }
+  if (showBasicFunctionMultiEntityPickers.value) {
+    const entityPrimaryKeys: Record<string, string | number | boolean | Record<string, unknown>> = {};
+    for (const picker of basicFunctionMultiEntityPickers.value) {
+      const primaryKey = picker.selectedSnapshot?.savedPrimaryKey ?? picker.selectedSnapshot?.primaryKey;
+      if (primaryKey === undefined || primaryKey === null || primaryKey === "" || !picker.selectedRowKey) {
+        continue;
+      }
+      entityPrimaryKeys[picker.ontologyUniqueIdentifier] = primaryKey;
+    }
+    if (Object.keys(entityPrimaryKeys).length > 0) {
+      request.entityPrimaryKeys = entityPrimaryKeys;
+    }
+  }
+  if (showBasicFunctionWriteBackEntityPicker.value) {
+    const writeBackPrimaryKey = selectedWriteBackEntityPrimaryKey.value;
+    if (writeBackPrimaryKey === null) {
+      return { error: "请选择回写目标实例" };
+    }
+    request.writeBackEntityPrimaryKey = writeBackPrimaryKey;
+  }
+  return request;
+}
+
+/**
  * @description 规范化详情返回的基础函数对象 id 列表。
  * @param raw 原始 ontologyIdentifiers。
  * @returns 去空白后的唯一 id 列表。
@@ -942,7 +1317,7 @@ function normalizeBasicFunctionOntologyIds(raw: unknown): string[] {
 }
 
 /**
- * @description 打开基础函数测试时加载行为详情，按 ontologyIdentifiers 决定是否展示可选实例。
+ * @description 打开基础函数测试时加载行为详情，按 ontologyIdentifiers / writeBack 初始化实例选择。
  */
 async function loadBasicFunctionTestContext(): Promise<void> {
   clearEntityListState();
@@ -967,15 +1342,32 @@ async function loadBasicFunctionTestContext(): Promise<void> {
     applyActionInfoViewState(response.data, actionApi);
     const ontologyIds = normalizeBasicFunctionOntologyIds(response.data.basicFunction?.ontologyIdentifiers);
     basicFunctionOntologyIds.value = ontologyIds;
+    const writeBackOntologyId =
+      typeof response.data.basicFunction?.writeBack?.targetOntologyIdentifier === "string"
+        ? response.data.basicFunction.writeBack.targetOntologyIdentifier.trim()
+        : "";
+    basicFunctionWriteBackOntologyId.value = writeBackOntologyId;
+    const loadTasks: Array<Promise<void>> = [];
     if (ontologyIds.length === 1) {
       basicFunctionTestOntologyId.value = ontologyIds[0] ?? "";
-      await loadEntityList();
+      loadTasks.push(loadEntityList());
+    } else if (ontologyIds.length > 1) {
+      basicFunctionMultiEntityPickers.value = ontologyIds.map((ontologyId) => createBasicFunctionMultiEntityPickerState(ontologyId));
+      loadTasks.push(...ontologyIds.map((ontologyId) => loadBasicFunctionMultiEntityList(ontologyId)));
     }
+    if (writeBackOntologyId) {
+      writeBackEntityPage.value = 1;
+      loadTasks.push(loadBasicFunctionWriteBackEntityList());
+    }
+    await Promise.all(loadTasks);
   } catch (error) {
     if (requestToken !== basicFunctionDetailLoadToken) return;
     basicFunctionOntologyIds.value = [];
     basicFunctionTestOntologyId.value = "";
     actionInfoViewState.value = null;
+    basicFunctionWriteBackOntologyId.value = "";
+    clearBasicFunctionMultiEntityPickers();
+    clearBasicFunctionWriteBackEntityState();
     basicFunctionDetailError.value = error instanceof Error ? error.message : "行为详情加载失败";
   } finally {
     if (requestToken === basicFunctionDetailLoadToken) basicFunctionDetailLoading.value = false;
@@ -1376,14 +1768,14 @@ async function submitBehaviorTest(): Promise<void> {
       ElMessage.warning("请等待关系信息加载完成后再测试");
       return;
     }
-    const mountRow = selectedMountEntityRow.value;
-    const oppositeRow = selectedOppositeEntityRow.value;
-    if (!mountRow || mountRow.primaryKey === "") {
-      ElMessage.warning("请先选择挂载侧实体实例");
+    const fromRow = selectedFromEntityRows.value[0] ?? null;
+    const toRow = selectedToEntityRows.value[0] ?? null;
+    if (!fromRow || fromRow.primaryKey === "") {
+      ElMessage.warning(`请先选择 ${ontologyNameFrom.value || "From"} 实例`);
       return;
     }
-    if (!oppositeRow || oppositeRow.primaryKey === "") {
-      ElMessage.warning("请先选择对端实体实例");
+    if (!toRow || toRow.primaryKey === "") {
+      ElMessage.warning(`请先选择 ${ontologyNameTo.value || "To"} 实例`);
       return;
     }
     const actionApi = resolvedActionApi.value.trim() || (props.behavior.behaviorApiName ?? "").trim();
@@ -1398,8 +1790,8 @@ async function submitBehaviorTest(): Promise<void> {
       const response = await postTestOntologyActionInterface({
         ontologySpaceId,
         actionApi,
-        entityPrimaryKey: mountRow.savedPrimaryKey ?? mountRow.primaryKey,
-        linkEntityPrimaryKey: oppositeRow.savedPrimaryKey ?? oppositeRow.primaryKey,
+        entityPrimaryKey: fromRow.savedPrimaryKey ?? fromRow.primaryKey,
+        linkEntityPrimaryKey: toRow.savedPrimaryKey ?? toRow.primaryKey,
       });
       if (requestToken !== submitToken) return;
       if (response.code !== 200) throw new Error(response.message || "行为测试失败");
@@ -1419,22 +1811,16 @@ async function submitBehaviorTest(): Promise<void> {
       ElMessage.warning("请等待基础函数测试上下文加载完成后再测试");
       return;
     }
-    const actionApi = (props.behavior.behaviorApiName ?? "").trim();
-    const ontologySpaceId = props.spaceId.trim();
-    if (!actionApi || !ontologySpaceId) {
-      submitError.value = "缺少行为 api 或对象空间 id，无法测试";
+    const requestParams = buildBasicFunctionTestRequestParams();
+    if ("error" in requestParams) {
+      ElMessage.warning(requestParams.error);
       return;
     }
     const requestToken = ++submitToken;
     submitLoading.value = true;
     basicOperatorTestResultText.value = "";
     try {
-      const selectedPrimaryKey = showBasicFunctionEntityPicker.value ? selectedEntityPrimaryKey.value : null;
-      const response = await postTestOntologyActionInterface({
-        ontologySpaceId,
-        actionApi,
-        ...(selectedPrimaryKey === null ? {} : { entityPrimaryKey: selectedPrimaryKey }),
-      });
+      const response = await postTestOntologyActionInterface(requestParams);
       if (requestToken !== submitToken) return;
       if (response.code !== 200) throw new Error(response.message || "行为测试失败");
       basicOperatorTestResultText.value = formatBasicOperatorTestResultData(response.data);
@@ -1565,6 +1951,7 @@ watch(
       groupRowLoadToken += 1;
       basicFunctionDetailLoadToken += 1;
       mountedFunctionLoadToken += 1;
+      writeBackEntityLoadToken += 1;
       relationContextLoadToken.value += 1;
       fromEntityLoadToken.value += 1;
       toEntityLoadToken.value += 1;
@@ -1880,6 +2267,32 @@ watch(
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.behavior-test-dialog__multi-entity-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.behavior-test-dialog__multi-entity-picker-label {
+  margin: 0;
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.behavior-test-dialog__multi-entity-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.behavior-test-dialog__multi-entity-picker-label {
+  margin: 0;
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 .behavior-test-dialog__entity-select {
   width: 100%;

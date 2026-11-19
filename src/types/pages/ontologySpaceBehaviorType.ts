@@ -50,6 +50,16 @@ export interface SpaceBehaviorApplicationOutputBinding {
   propertyUniqueIdentifier: string;
 }
 
+/** 基础函数展示字段对应的写入字段绑定（对齐应用行为 WRITE_PROPERTY 选对象+属性）。 */
+export interface SpaceBehaviorBasicFunctionWriteFieldBinding {
+  /** 写入目标对象 uniqueIdentifier。 */
+  ontologyUniqueIdentifier: string;
+  /** 写入目标属性 uniqueIdentifier。 */
+  propertyUniqueIdentifier: string;
+  /** 写入目标属性 storageGroup；用于组装 writeBack.targetStorageGroup。 */
+  storageGroup?: string;
+}
+
 /** 应用行为提交用参数行快照（非对象叶子）。 */
 export interface SpaceBehaviorApplicationParamRowSnapshot {
   rowKey: string;
@@ -164,6 +174,10 @@ export interface SpaceBehaviorDraft {
   basicFunctionTargetField: string;
   /** 基础函数：展示字段 apiName 列表（QUERY）。 */
   basicFunctionSelectFields: string[];
+  /** 基础函数：展示字段 apiName → 写入字段绑定；本轮仅表单，创建接口后续接入。 */
+  basicFunctionWriteFields: Record<string, SpaceBehaviorBasicFunctionWriteFieldBinding>;
+  /** 基础函数：多对象写入字段（单行）；本轮仅表单，创建接口后续接入。 */
+  basicFunctionMultiWriteField: SpaceBehaviorBasicFunctionWriteFieldBinding;
   /** 基础函数：参数配置序列化 JSON（filters 表单）。 */
   basicFunctionParameterConfig: string;
   /** 基础函数算子：参数名 → 属性 apiName。 */

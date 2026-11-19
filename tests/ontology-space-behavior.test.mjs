@@ -75,6 +75,8 @@ const EMPTY_APPLICATION_DRAFT_FIELDS = {
   basicFunctionAggFunc: "",
   basicFunctionTargetField: "",
   basicFunctionSelectFields: [],
+  basicFunctionWriteFields: {},
+  basicFunctionMultiWriteField: { ontologyUniqueIdentifier: "", propertyUniqueIdentifier: "", storageGroup: "" },
   basicFunctionParameterConfig: "",
   applicationInputRows: [],
   applicationOutputRows: [],
@@ -363,18 +365,29 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /v-if="showRelationLinkForm"/);
   assert.match(testDialogSource, /选择实体实例（可选）/);
   assert.match(testDialogSource, /showBasicFunctionEntityPicker/);
+  assert.match(testDialogSource, /showBasicFunctionWriteBackEntityPicker/);
+  assert.match(testDialogSource, /showBasicFunctionMultiEntityPickers/);
+  assert.match(testDialogSource, /选择各对象实体实例（可选）/);
+  assert.match(testDialogSource, /可选择各对象实体实例后开始测试；不选则查询全部。/);
   assert.match(testDialogSource, /loadBasicFunctionTestContext/);
   assert.match(testDialogSource, /basicFunctionOntologyIds/);
   assert.match(testDialogSource, /basicFunctionTestOntologyId/);
   assert.match(testDialogSource, /basicFunction\?\.ontologyIdentifiers/);
-  assert.match(testDialogSource, /多对象基础函数测试无需选择实例/);
+  assert.match(testDialogSource, /basicFunctionWriteBackOntologyId/);
+  assert.match(testDialogSource, /writeBackEntityPrimaryKey/);
+  assert.match(testDialogSource, /回写目标实例/);
+  assert.match(testDialogSource, /entityPrimaryKeys/);
+  assert.match(testDialogSource, /Object\.keys\(entityPrimaryKeys\)\.length > 0/);
+  assert.doesNotMatch(testDialogSource, /多对象基础函数测试无需选择实例/);
+  assert.doesNotMatch(testDialogSource, /请为 \$\{formatBasicFunctionOntologyLabel\(picker\.ontologyUniqueIdentifier\)\} 选择实体实例/);
+  assert.doesNotMatch(testDialogSource, /为每个对象选择实体实例/);
+  assert.doesNotMatch(testDialogSource, /请选择该对象实例/);
   assert.match(testDialogSource, /不选则查询全部实例/);
   assert.match(testDialogSource, /updateBasicOperatorEntitySelection/);
   assert.match(testDialogSource, /listBasicOperatorEntitySelectOptions/);
   assert.match(testDialogSource, /formatBasicOperatorEntityOptionLabel/);
   assert.match(testDialogSource, /v-if="dialogHint"/);
-  assert.match(testDialogSource, /showBasicFunctionEntityPicker\.value \? selectedEntityPrimaryKey\.value : null/);
-  assert.match(testDialogSource, /selectedPrimaryKey === null \? \{\} : \{ entityPrimaryKey: selectedPrimaryKey \}/);
+  assert.match(testDialogSource, /buildBasicFunctionTestRequestParams/);
   assert.match(testDialogSource, /basicOperatorTestResultText/);
   assert.doesNotMatch(testDialogSource, /可选择实体实例后开始基础函数算子测试/);
   assert.doesNotMatch(testDialogSource, /确认后直接执行基础函数算子测试/);
@@ -390,6 +403,12 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /ontologyLinkUniqIdentifier/);
   assert.match(testDialogSource, /linkEntityPrimaryKey/);
   assert.match(testDialogSource, /loadRelationTestContext/);
+  assert.match(testDialogSource, /不强制挂载侧匹配/);
+  assert.doesNotMatch(testDialogSource, /行为挂载对象与关系两端不匹配，无法确定挂载侧实例/);
+  assert.doesNotMatch(testDialogSource, /请先选择挂载侧实体实例/);
+  assert.doesNotMatch(testDialogSource, /selectedMountEntityRow/);
+  assert.match(testDialogSource, /entityPrimaryKey: fromRow\.savedPrimaryKey \?\? fromRow\.primaryKey/);
+  assert.match(testDialogSource, /linkEntityPrimaryKey: toRow\.savedPrimaryKey \?\? toRow\.primaryKey/);
   assert.doesNotMatch(testDialogSource, /v-if="isAttributeValueTest && isCreateTest"/);
   assert.match(testDialogSource, /v-if="!isUpdateTest && !isCreateTest"/);
   assert.match(testDialogSource, /enable-update-test="isUpdateTest"/);
@@ -833,18 +852,46 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /label="聚合类型"/);
   assert.match(formSource, /label="聚合参数名"/);
   assert.match(formSource, /请选择聚合类型/);
-  assert.match(formSource, /例如：target/);
+  assert.match(formSource, /选择聚合参数名/);
+  assert.doesNotMatch(formSource, /例如：target/);
+  assert.match(formSource, /v-model="basicFunctionTargetField"/);
+  assert.match(formSource, /basicFunctionSelectFieldOptions/);
+  assert.match(formSource, /clearBasicFunctionTargetField/);
   assert.match(formSource, /showBasicFunctionSelectFields/);
+  assert.match(formSource, /!showBasicFunctionSelectFields/);
   assert.match(formSource, /basicFunctionSelectFields/);
   assert.match(formSource, /basicFunctionSelectFieldOptions/);
   assert.match(formSource, /loadBasicFunctionSelectFieldOptions/);
+  assert.match(formSource, /basicFunctionOntologyIds\.value\.length >= 1/);
   assert.match(formSource, /label="展示字段"/);
+  assert.match(formSource, /basicFunctionWriteFields/);
+  assert.match(formSource, /basicFunctionMultiWriteField/);
+  assert.match(formSource, /showBasicFunctionMultiWriteField/);
+  assert.match(formSource, /syncBasicFunctionWriteFieldsBySelectFields/);
+  assert.match(formSource, /clearBasicFunctionMultiWriteField/);
+  assert.match(formSource, /ensureBasicFunctionMainPropertyOptions/);
+  assert.match(formSource, /readBasicFunctionMainPropertyOptions/);
+  assert.match(formSource, /isMainStorageGroup/);
+  assert.match(formSource, /cachePropertyStorageGroup/);
+  assert.match(formSource, /storageGroup/);
+  assert.match(readSource("../src/views/SpaceBehaviorWorkspace/utils/buildBasicFunctionCreateActionParams.ts"), /writeBack/);
+  assert.match(readSource("../src/types/apis/createOntologyActionType.ts"), /CreateOntologyActionBasicFunctionWriteBack/);
+  assert.match(formSource, /label="写入字段"/);
+  assert.match(formSource, /readBasicFunctionChildPropertyOptions/);
+  assert.match(formSource, /pruneBasicFunctionWriteFieldsToChildProperties/);
+  assert.match(formSource, /\$\{item\.label\} · \$\{storageGroup\}/);
+  assert.match(formSource, /\$\{withType\} · \$\{storageGroup\}/);
+  assert.match(formSource, /选择写入属性/);
+  assert.match(formSource, /当前对象暂无子表属性/);
+  assert.match(formSource, /请完善写入字段/);
+  assert.match(formSource, /请选择聚合参数名/);
   assert.match(formSource, /getOntologyObjectArrTypeTreeInterface/);
   assert.match(formSource, /label="参数配置"/);
-  assert.match(formSource, /property-placeholder="输入属性名"/);
+  assert.match(formSource, /property-placeholder="选择属性名"/);
+  assert.doesNotMatch(formSource, /property-placeholder="输入属性名"/);
   assert.match(formSource, /:property-options="basicFunctionFilterPropertyOptions"/);
   assert.match(formSource, /basicFunctionFilterPropertyOptions/);
-  assert.match(formSource, /showBasicFunctionSelectFields[\s\S]*?选择聚合参数/);
+  assert.match(formSource, /showBasicFunctionOperatorSection\.value && basicFunctionOntologyIds\.value\.length >= 1/);
   assert.match(formSource, /label="选择对象"/);
   assert.match(formSource, /el-tree-select/);
   assert.match(formSource, /show-checkbox/);
@@ -2967,8 +3014,65 @@ test("space behavior builds basic-function createAction params for aggregate and
     assert.deepEqual(queryDraft.basicFunction.selectFields, ["name", "speed"]);
     assert.equal("aggFunc" in queryDraft.basicFunction, false);
     assert.equal("filters" in queryDraft.basicFunction, false);
+    assert.equal("writeBack" in queryDraft.basicFunction, false);
     assert.equal("description" in queryDraft, false);
   }
+
+  const queryWriteBack = buildBasicOperatorCreateActionParams({
+    ...baseDraft,
+    basicFunctionAggFunc: "",
+    basicFunctionTargetField: "",
+    basicFunctionSelectFields: ["name", "speed"],
+    basicFunctionParameterConfig: "",
+    basicFunctionWriteFields: {
+      name: { ontologyUniqueIdentifier: "onto-target", propertyUniqueIdentifier: "prop-name", storageGroup: "track" },
+      speed: { ontologyUniqueIdentifier: "onto-target", propertyUniqueIdentifier: "prop-speed", storageGroup: "track" },
+    },
+  });
+  assert.equal("error" in queryWriteBack, false);
+  if (!("error" in queryWriteBack)) {
+    assert.deepEqual(queryWriteBack.basicFunction.writeBack, {
+      targetOntologyIdentifier: "onto-target",
+      targetStorageGroup: "track",
+      bindings: [
+        { sourceField: "name", targetPropertyIdentifier: "prop-name" },
+        { sourceField: "speed", targetPropertyIdentifier: "prop-speed" },
+      ],
+    });
+  }
+
+  const aggregateWriteBack = buildBasicOperatorCreateActionParams({
+    ...baseDraft,
+    ontologyIdentifiers: ["onto-a", "onto-b"],
+    basicFunctionMultiWriteField: {
+      ontologyUniqueIdentifier: "onto-target",
+      propertyUniqueIdentifier: "prop-main",
+      storageGroup: "main",
+    },
+  });
+  assert.equal("error" in aggregateWriteBack, false);
+  if (!("error" in aggregateWriteBack)) {
+    assert.deepEqual(aggregateWriteBack.basicFunction.writeBack, {
+      targetOntologyIdentifier: "onto-target",
+      bindings: [{ targetPropertyIdentifier: "prop-main" }],
+    });
+    assert.equal("targetStorageGroup" in aggregateWriteBack.basicFunction.writeBack, false);
+  }
+
+  assert.equal(
+    "error" in
+      buildBasicOperatorCreateActionParams({
+        ...baseDraft,
+        basicFunctionAggFunc: "",
+        basicFunctionTargetField: "",
+        basicFunctionSelectFields: ["name", "speed"],
+        basicFunctionWriteFields: {
+          name: { ontologyUniqueIdentifier: "onto-1", propertyUniqueIdentifier: "prop-name", storageGroup: "track" },
+          speed: { ontologyUniqueIdentifier: "onto-2", propertyUniqueIdentifier: "prop-speed", storageGroup: "track" },
+        },
+      }),
+    true,
+  );
 
   assert.equal(isBasicOperatorActionCreateDraft({ ...baseDraft, kind: "application" }), false);
   assert.equal(isBasicOperatorActionCreateDraft({ ...baseDraft, valueType: "attributeValue" }), false);

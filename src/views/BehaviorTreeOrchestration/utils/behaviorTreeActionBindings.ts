@@ -6,8 +6,10 @@ import type {
   BehaviorTreeNodeConfigDraft,
   BehaviorTreeNodeDraft,
   BehaviorTreeOutputBindingDraft,
+  BehaviorTreeSuccessConditionDraft,
 } from "@/types";
 import { resolveBehaviorTreeBlackboardSource } from "../../../utils/behaviorTreeBlackboard.ts";
+import { isBehaviorTreeValueLessOp } from "./behaviorTreeConstants.ts";
 
 /** 入参取值来源选项。 */
 export const BEHAVIOR_TREE_INPUT_FROM_OPTIONS = [
@@ -337,4 +339,85 @@ export function findBehaviorTreeBindableAction(availableActions: ActionTreeBinda
   const api = actionApi.trim();
   if (!api) return null;
   return availableActions.find((item) => item.actionApi === api) || null;
+}
+
+/**
+ * @description 读取 ACTION 执行成功条件草稿。
+ * @param config 节点配置。
+ * @returns 成功条件草稿。
+ */
+export function readBehaviorTreeSuccessConditionDraft(config: BehaviorTreeNodeConfigDraft | null | undefined): BehaviorTreeSuccessConditionDraft {
+  const raw = config?.successCondition;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { outputKey: "", op: "EQ", value: "" };
+  }
+  return {
+    outputKey: typeof raw.outputKey === "string" ? raw.outputKey : String(raw.outputKey ?? ""),
+    op: typeof raw.op === "string" && raw.op ? raw.op : "EQ",
+    value: typeof raw.value === "string" ? raw.value : raw.value == null ? "" : String(raw.value),
+  };
+}
+
+/**
+ * @description 更新 ACTION 执行成功条件草稿；清空出参时删除条件。
+ * @param config 节点配置。
+ * @param patch 字段补丁。
+ */
+export function patchBehaviorTreeSuccessCondition(config: BehaviorTreeNodeConfigDraft, patch: Partial<BehaviorTreeSuccessConditionDraft>): void {
+  const next = { ...readBehaviorTreeSuccessConditionDraft(config), ...patch };
+  if (isBehaviorTreeValueLessOp(next.op)) next.value = "";
+  if (!next.outputKey.trim()) {
+    delete config.successCondition;
+    return;
+  }
+  config.successCondition = {
+    outputKey: next.outputKey,
+    op: next.op || "EQ",
+    value: next.value,
+  };
+}
+
+/**
+ * @description 将后端 successCondition 转为草稿。
+ * @param raw 序列化对象。
+ * @returns 草稿；未配置时返回空草稿。
+ */
+export function mapBehaviorTreeSuccessConditionToDraft(raw: unknown): BehaviorTreeSuccessConditionDraft {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { outputKey: "", op: "EQ", value: "" };
+  }
+  const record = raw as Record<string, unknown>;
+  return {
+    outputKey: typeof record.outputKey === "string" ? record.outputKey : String(record.outputKey ?? ""),
+    op: typeof record.op === "string" && record.op ? record.op : "EQ",
+    value: record.value == null ? "" : String(record.value),
+  };
+}
+
+/**
+ * @description 将成功条件草稿序列化为保存对象；无出参时返回 null。
+ * @param draft 草稿。
+ * @param outputType 出参声明类型。
+ * @param parseValue 按类型解析比较值。
+ * @returns 序列化对象或 null。
+ */
+export function serializeBehaviorTreeSuccessCondition(
+  draft: BehaviorTreeSuccessConditionDraft | null | undefined,
+  outputType: string | null,
+  parseValue: (text: string, type: string) => { ok: boolean; value: unknown },
+): Record<string, unknown> | null {
+  const outputKey = String(draft?.outputKey || "").trim();
+  if (!outputKey) return null;
+  const op = String(draft?.op || "EQ").trim() || "EQ";
+  const successCondition: Record<string, unknown> = { outputKey, op };
+  if (!isBehaviorTreeValueLessOp(op)) {
+    const text = String(draft?.value ?? "").trim();
+    if (outputType) {
+      const parsed = parseValue(text, outputType);
+      successCondition.value = parsed.ok ? parsed.value : text;
+    } else {
+      successCondition.value = text;
+    }
+  }
+  return successCondition;
 }

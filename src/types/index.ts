@@ -50,6 +50,8 @@ export type {
   CreateOntologyActionBasicFunctionFilterNode,
   CreateOntologyActionBasicFunctionFilters,
   CreateOntologyActionBasicFunctionMode,
+  CreateOntologyActionBasicFunctionWriteBack,
+  CreateOntologyActionBasicFunctionWriteBackBinding,
   CreateOntologyActionKind,
   CreateOntologyActionLinkMapping,
   CreateOntologyActionMappingCategory,
@@ -145,6 +147,7 @@ export type { DeleteOntologySpaceData, DeleteOntologySpaceParams } from "./apis/
 export type { DisableFunctionRateLimitTemplateParams } from "./apis/disableFunctionRateLimitTemplateType";
 export type { EnableFunctionRateLimitTemplateParams } from "./apis/enableFunctionRateLimitTemplateType";
 export type { ExampleData, ExampleItem, ExampleParams } from "./apis/exampleType";
+export type { ExportApiDocFile, ExportApiDocParams } from "./apis/exportApiDocType";
 export type { ExportOntologySpaceFile, ExportOntologySpaceParams, OntologySpaceExportType } from "./apis/exportOntologySpaceType";
 export type { ExportOntologyFile, ExportOntologyParams, OntologyExportType } from "./apis/exportOntologyType";
 export type { FunctionOperatorTemplateLanguage, FunctionOperatorTemplateParams, FunctionOperatorTemplate } from "./apis/functionOperatorTemplateType";
@@ -415,6 +418,7 @@ export type {
   BehaviorTreeSavePayload,
   BehaviorTreeSaveStatus,
   BehaviorTreeSerializedNode,
+  BehaviorTreeSuccessConditionDraft,
   BehaviorTreeValueType,
 } from "./pages/behaviorTreeOrchestrationType";
 export type { DatasourceBuildSelection, DatasourceConnection, DatasourceDbType, DatasourceField, DatasourceTable } from "./pages/datasourceBuildType";
@@ -680,6 +684,7 @@ export type {
   SpaceBehaviorApplicationOutputMode,
   SpaceBehaviorApplicationParamRowSnapshot,
   SpaceBehaviorBasicAction,
+  SpaceBehaviorBasicFunctionWriteFieldBinding,
   SpaceBehaviorCategoryNode,
   SpaceBehaviorCategoryNodeKind,
   SpaceBehaviorDeletePreflight,
