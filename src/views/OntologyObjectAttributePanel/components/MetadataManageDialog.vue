@@ -46,6 +46,7 @@
     <MetadataRuleFormDialog
       :visible="formVisible"
       :editing="!!editingId"
+      :parent-locked="parentLocked"
       :name="formName"
       :parent-id="formParentId"
       :parent-tree="parentTree"
@@ -83,7 +84,13 @@ import {
   type OntologyAttributeMetadataWorkspaceData,
 } from "@/types";
 
-import { buildMetadataParentSelectTree, buildMetadataTree, formatMetadataValueSummary, resolveMetadataValueTypeLabel } from "../utils/metadataOperations";
+import {
+  buildMetadataParentSelectTree,
+  buildMetadataTree,
+  collectMetadataDescendantIds,
+  formatMetadataValueSummary,
+  resolveMetadataValueTypeLabel,
+} from "../utils/metadataOperations";
 import { parseMetadataSchema, serializeMetadataValue } from "../utils/metadataSchemaAdapter";
 import MetadataRuleFormDialog from "./MetadataRuleFormDialog.vue";
 
@@ -134,7 +141,12 @@ const formEnumValues = ref<string[]>([]);
 const formSubmitting = ref(false);
 const formError = ref("");
 
-const parentTree = computed(() => buildMetadataParentSelectTree(workspace.value.items));
+const parentLocked = computed(
+  () => !!editingId.value && workspace.value.items.find((item) => item.id === editingId.value)?.parentId === ROOT_METADATA_PARENT_ID,
+);
+const parentTree = computed(() =>
+  buildMetadataParentSelectTree(workspace.value.items, editingId.value ? collectMetadataDescendantIds(workspace.value.items, editingId.value) : new Set()),
+);
 
 /**
  * @description 将树节点映射为表格行。
@@ -173,7 +185,7 @@ async function handleDialogOpened(): Promise<void> {
 }
 
 /**
- * @description 回填已有元数据以编辑，父级保持不变。
+ * @description 回填已有元数据以编辑。
  * @param itemId 元数据节点 ID。
  */
 function openMetadataEdit(itemId: string): void {
@@ -239,6 +251,14 @@ async function confirmMetadataCreate(): Promise<void> {
   try {
     const name = formName.value.trim();
     if (!name) throw new Error("请输入元数据名称");
+    if (
+      editingId.value &&
+      !parentLocked.value &&
+      (!formParentId.value ||
+        collectMetadataDescendantIds(workspace.value.items, editingId.value).has(formParentId.value) ||
+        !workspace.value.items.some((item) => item.id === formParentId.value))
+    )
+      throw new Error("请选择有效的父级节点");
     if (formValueType.value === "range" && (formRangeMin.value === null) !== (formRangeMax.value === null)) throw new Error("请同时填写范围最小值和最大值");
     const rangeValue = formRangeMin.value !== null && formRangeMax.value !== null ? { min: formRangeMin.value, max: formRangeMax.value } : null;
     const payload =
@@ -248,7 +268,13 @@ async function confirmMetadataCreate(): Promise<void> {
           ? serializeMetadataValue({ valueType: "enum", value: formEnumValues.value })
           : serializeMetadataValue({ valueType: "range", value: rangeValue });
     const response = editingId.value
-      ? await putMetadataSchemaInterface({ ontologyIdentifier, metadataSchemaId: Number(editingId.value), name, ...payload })
+      ? await putMetadataSchemaInterface({
+          ontologyIdentifier,
+          metadataSchemaId: Number(editingId.value),
+          name,
+          ...(!parentLocked.value ? { parentId: Number(formParentId.value) } : {}),
+          ...payload,
+        })
       : await postMetadataSchemaInterface({ ontologyIdentifier, parentId: Number(formParentId.value || 0), name, ...payload });
     if (revision !== queryRevision) return;
     if (response.code !== 200) throw new Error(response.message || "保存元数据失败");

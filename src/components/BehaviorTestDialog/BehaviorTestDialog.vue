@@ -2,7 +2,8 @@
   <el-dialog
     :model-value="modelValue"
     class="behavior-test-dialog"
-    width="min(1200px, 94vw)"
+    :class="{ 'behavior-test-dialog--with-detail': showBehaviorDetailPanel }"
+    :width="showBehaviorDetailPanel ? 'min(1200px, 94vw)' : 'min(960px, 94vw)'"
     append-to-body
     destroy-on-close
     :close-on-click-modal="false"
@@ -17,8 +18,8 @@
     </template>
     <p v-if="dialogHint" class="behavior-test-dialog__hint">{{ dialogHint }}</p>
 
-    <div class="behavior-test-dialog__layout">
-      <aside class="behavior-test-dialog__detail" aria-label="行为详情">
+    <div class="behavior-test-dialog__layout" :class="{ 'behavior-test-dialog__layout--params-only': !showBehaviorDetailPanel }">
+      <aside v-if="showBehaviorDetailPanel" class="behavior-test-dialog__detail" aria-label="行为详情">
         <h4 class="behavior-test-dialog__section-title">行为详情</h4>
         <p v-if="detailSummaryLoading" class="behavior-test-dialog__state" role="status">正在加载行为详情…</p>
         <p v-else-if="detailSummaryError" class="behavior-test-dialog__state" role="alert">{{ detailSummaryError }}</p>
@@ -103,133 +104,133 @@
           <template v-else>
             <template v-if="showBasicFunctionEntityPicker">
               <h4 class="behavior-test-dialog__section-title">选择实体实例（可选）</h4>
-            <p v-if="entityLoading && !entityRows.length" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
-            <p v-else-if="entityError && !entityRows.length" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
-            <el-select
-              v-else
-              class="behavior-test-dialog__entity-select"
-              :model-value="selectedEntityRowKey"
-              filterable
-              clearable
-              :loading="entityLoading"
-              placeholder="不选则查询全部实例"
-              @update:model-value="updateBasicOperatorEntitySelection"
-            >
-              <el-option
-                v-for="option in listBasicOperatorEntitySelectOptions()"
-                :key="option.rowKey"
-                :label="formatBasicOperatorEntityOptionLabel(option)"
-                :value="option.rowKey"
-              />
-              <template #footer>
-                <div v-if="entityTotal > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
-                  <el-pagination
-                    small
-                    layout="total, prev, pager, next"
-                    :total="entityTotal"
-                    :current-page="entityPage"
-                    :page-size="entityPageSize"
-                    @current-change="changeEntityPage"
-                  />
-                </div>
-                <p v-else-if="entityError" class="behavior-test-dialog__select-footer-error" role="alert">{{ entityError }}</p>
-              </template>
-            </el-select>
-          </template>
-
-          <template v-if="showBasicFunctionMultiEntityPickers">
-            <h4 class="behavior-test-dialog__section-title">选择各对象实体实例（可选）</h4>
-            <div v-for="picker in basicFunctionMultiEntityPickers" :key="picker.ontologyUniqueIdentifier" class="behavior-test-dialog__multi-entity-picker">
-              <p class="behavior-test-dialog__multi-entity-picker-label">{{ formatBasicFunctionOntologyLabel(picker.ontologyUniqueIdentifier) }}</p>
-              <p v-if="picker.loading && !picker.rows.length" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
-              <p v-else-if="picker.error && !picker.rows.length" class="behavior-test-dialog__state" role="alert">{{ picker.error }}</p>
+              <p v-if="entityLoading && !entityRows.length" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
+              <p v-else-if="entityError && !entityRows.length" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
               <el-select
                 v-else
                 class="behavior-test-dialog__entity-select"
-                :model-value="picker.selectedRowKey"
+                :model-value="selectedEntityRowKey"
                 filterable
                 clearable
-                :loading="picker.loading"
+                :loading="entityLoading"
                 placeholder="不选则查询全部实例"
-                @update:model-value="(value) => updateBasicFunctionMultiEntitySelection(picker.ontologyUniqueIdentifier, value)"
+                @update:model-value="updateBasicOperatorEntitySelection"
               >
                 <el-option
-                  v-for="option in listBasicFunctionMultiEntitySelectOptions(picker)"
+                  v-for="option in listBasicOperatorEntitySelectOptions()"
                   :key="option.rowKey"
                   :label="formatBasicOperatorEntityOptionLabel(option)"
                   :value="option.rowKey"
                 />
                 <template #footer>
-                  <div v-if="picker.total > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
+                  <div v-if="entityTotal > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
                     <el-pagination
                       small
                       layout="total, prev, pager, next"
-                      :total="picker.total"
-                      :current-page="picker.page"
-                      :page-size="picker.pageSize"
-                      @current-change="(page) => changeBasicFunctionMultiEntityPage(picker.ontologyUniqueIdentifier, page)"
+                      :total="entityTotal"
+                      :current-page="entityPage"
+                      :page-size="entityPageSize"
+                      @current-change="changeEntityPage"
                     />
                   </div>
-                  <p v-else-if="picker.error" class="behavior-test-dialog__select-footer-error" role="alert">{{ picker.error }}</p>
+                  <p v-else-if="entityError" class="behavior-test-dialog__select-footer-error" role="alert">{{ entityError }}</p>
                 </template>
               </el-select>
-            </div>
-          </template>
+            </template>
 
-          <template v-if="showBasicFunctionWriteBackEntityPicker">
-            <h4 class="behavior-test-dialog__section-title">回写目标实例</h4>
-            <p class="behavior-test-dialog__multi-entity-picker-label">
-              {{ formatBasicFunctionOntologyLabel(basicFunctionWriteBackOntologyId) }}
-            </p>
-            <p v-if="writeBackEntityLoading && !writeBackEntityRows.length" class="behavior-test-dialog__state" role="status">正在加载回写实体列表…</p>
-            <p v-else-if="writeBackEntityError && !writeBackEntityRows.length" class="behavior-test-dialog__state" role="alert">{{ writeBackEntityError }}</p>
-            <el-select
-              v-else
-              class="behavior-test-dialog__entity-select"
-              :model-value="selectedWriteBackEntityRowKey"
-              filterable
-              clearable
-              :loading="writeBackEntityLoading"
-              placeholder="请选择回写目标实例"
-              @update:model-value="updateBasicFunctionWriteBackEntitySelection"
-            >
-              <el-option
-                v-for="option in listBasicFunctionWriteBackEntitySelectOptions()"
-                :key="option.rowKey"
-                :label="formatBasicOperatorEntityOptionLabel(option)"
-                :value="option.rowKey"
-              />
-              <template #footer>
-                <div v-if="writeBackEntityTotal > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
-                  <el-pagination
-                    small
-                    layout="total, prev, pager, next"
-                    :total="writeBackEntityTotal"
-                    :current-page="writeBackEntityPage"
-                    :page-size="writeBackEntityPageSize"
-                    @current-change="changeWriteBackEntityPage"
+            <template v-if="showBasicFunctionMultiEntityPickers">
+              <h4 class="behavior-test-dialog__section-title">选择各对象实体实例（可选）</h4>
+              <div v-for="picker in basicFunctionMultiEntityPickers" :key="picker.ontologyUniqueIdentifier" class="behavior-test-dialog__multi-entity-picker">
+                <p class="behavior-test-dialog__multi-entity-picker-label">{{ formatBasicFunctionOntologyLabel(picker.ontologyUniqueIdentifier) }}</p>
+                <p v-if="picker.loading && !picker.rows.length" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
+                <p v-else-if="picker.error && !picker.rows.length" class="behavior-test-dialog__state" role="alert">{{ picker.error }}</p>
+                <el-select
+                  v-else
+                  class="behavior-test-dialog__entity-select"
+                  :model-value="picker.selectedRowKey"
+                  filterable
+                  clearable
+                  :loading="picker.loading"
+                  placeholder="不选则查询全部实例"
+                  @update:model-value="(value) => updateBasicFunctionMultiEntitySelection(picker.ontologyUniqueIdentifier, value)"
+                >
+                  <el-option
+                    v-for="option in listBasicFunctionMultiEntitySelectOptions(picker)"
+                    :key="option.rowKey"
+                    :label="formatBasicOperatorEntityOptionLabel(option)"
+                    :value="option.rowKey"
                   />
-                </div>
-                <p v-else-if="writeBackEntityError" class="behavior-test-dialog__select-footer-error" role="alert">{{ writeBackEntityError }}</p>
-              </template>
-            </el-select>
+                  <template #footer>
+                    <div v-if="picker.total > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
+                      <el-pagination
+                        small
+                        layout="total, prev, pager, next"
+                        :total="picker.total"
+                        :current-page="picker.page"
+                        :page-size="picker.pageSize"
+                        @current-change="(page) => changeBasicFunctionMultiEntityPage(picker.ontologyUniqueIdentifier, page)"
+                      />
+                    </div>
+                    <p v-else-if="picker.error" class="behavior-test-dialog__select-footer-error" role="alert">{{ picker.error }}</p>
+                  </template>
+                </el-select>
+              </div>
+            </template>
+
+            <template v-if="showBasicFunctionWriteBackEntityPicker">
+              <h4 class="behavior-test-dialog__section-title">回写目标实例</h4>
+              <p class="behavior-test-dialog__multi-entity-picker-label">
+                {{ formatBasicFunctionOntologyLabel(basicFunctionWriteBackOntologyId) }}
+              </p>
+              <p v-if="writeBackEntityLoading && !writeBackEntityRows.length" class="behavior-test-dialog__state" role="status">正在加载回写实体列表…</p>
+              <p v-else-if="writeBackEntityError && !writeBackEntityRows.length" class="behavior-test-dialog__state" role="alert">{{ writeBackEntityError }}</p>
+              <el-select
+                v-else
+                class="behavior-test-dialog__entity-select"
+                :model-value="selectedWriteBackEntityRowKey"
+                filterable
+                clearable
+                :loading="writeBackEntityLoading"
+                placeholder="请选择回写目标实例"
+                @update:model-value="updateBasicFunctionWriteBackEntitySelection"
+              >
+                <el-option
+                  v-for="option in listBasicFunctionWriteBackEntitySelectOptions()"
+                  :key="option.rowKey"
+                  :label="formatBasicOperatorEntityOptionLabel(option)"
+                  :value="option.rowKey"
+                />
+                <template #footer>
+                  <div v-if="writeBackEntityTotal > 0" class="behavior-test-dialog__select-footer" @mousedown.prevent>
+                    <el-pagination
+                      small
+                      layout="total, prev, pager, next"
+                      :total="writeBackEntityTotal"
+                      :current-page="writeBackEntityPage"
+                      :page-size="writeBackEntityPageSize"
+                      @current-change="changeWriteBackEntityPage"
+                    />
+                  </div>
+                  <p v-else-if="writeBackEntityError" class="behavior-test-dialog__select-footer-error" role="alert">{{ writeBackEntityError }}</p>
+                </template>
+              </el-select>
+            </template>
           </template>
-        </template>
-      </section>
+        </section>
 
-      <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
-        <el-input
-          class="behavior-test-dialog__result"
-          type="textarea"
-          :model-value="basicOperatorTestResultText"
-          :rows="10"
-          readonly
-          resize="vertical"
-          placeholder="开始测试后将在此展示接口返回 data"
-        />
-      </section>
+        <section v-if="isBasicFunctionOperatorTest" class="behavior-test-dialog__section">
+          <el-input
+            class="behavior-test-dialog__result"
+            type="textarea"
+            :model-value="basicOperatorTestResultText"
+            :rows="10"
+            readonly
+            resize="vertical"
+            placeholder="开始测试后将在此展示接口返回 data"
+          />
+        </section>
 
-      <section v-if="isAttributeValueTest" class="behavior-test-dialog__section">
+        <section v-if="isAttributeValueTest" class="behavior-test-dialog__section">
           <h4 class="behavior-test-dialog__section-title">选择实体实例</h4>
           <p v-if="entityLoading" class="behavior-test-dialog__state" role="status">正在加载实体列表…</p>
           <p v-else-if="entityError" class="behavior-test-dialog__state" role="alert">{{ entityError }}</p>
@@ -412,21 +413,26 @@ import {
 } from "@/utils/behaviorParameters/mapOntologyEntityRowDetailToDataRows";
 import { isMainStorageGroup } from "@/utils/behaviorParameters/resolveAttributeValueSelection";
 
-const props = defineProps<{
-  apis: Pick<
-    typeof BehaviorTestApis,
-    | "getOntologyActionInfoInterface"
-    | "getOntologyEntitiesInterface"
-    | "getOntologyLinkByUniqueIdentifierInterface"
-    | "postGetOntologyEntityRowDetailPageInterface"
-    | "postTestOntologyActionInterface"
-    | "postOntologyEntityAllLinkInterface"
-  >;
-  initialEntity?: BehaviorTestEntityRow;
-  modelValue: boolean;
-  spaceId: string;
-  behavior: SpaceBehaviorItem | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    apis: Pick<
+      typeof BehaviorTestApis,
+      | "getOntologyActionInfoInterface"
+      | "getOntologyEntitiesInterface"
+      | "getOntologyLinkByUniqueIdentifierInterface"
+      | "postGetOntologyEntityRowDetailPageInterface"
+      | "postTestOntologyActionInterface"
+      | "postOntologyEntityAllLinkInterface"
+    >;
+    initialEntity?: BehaviorTestEntityRow;
+    modelValue: boolean;
+    spaceId: string;
+    behavior: SpaceBehaviorItem | null;
+    /** 为 true 时展示左侧行为详情栏；仅空间浏览行为详情使用，管理侧测试默认关闭。 */
+    showBehaviorDetailPanel?: boolean;
+  }>(),
+  { showBehaviorDetailPanel: false },
+);
 
 const {
   getOntologyActionInfoInterface,
@@ -2050,6 +2056,9 @@ watch(
   height: min(70vh, 720px);
   max-height: min(70vh, 720px);
   overflow: hidden;
+}
+.behavior-test-dialog__layout--params-only {
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (max-width: 900px) {
   .behavior-test-dialog__layout {

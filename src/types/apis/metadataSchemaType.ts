@@ -10,10 +10,11 @@ export interface MetadataSchemaCreateParams {
   value: string;
 }
 
-/** 修改元数据请求，不支持移动父级。 */
+/** 修改元数据请求。 */
 export interface MetadataSchemaUpdateParams {
   ontologyIdentifier: string;
   metadataSchemaId: number;
+  parentId?: number;
   name: string;
   valueType: MetadataSchemaValueType;
   value: string | null;

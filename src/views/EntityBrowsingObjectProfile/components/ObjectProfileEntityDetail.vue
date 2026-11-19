@@ -205,6 +205,7 @@
       :space-id="spaceId"
       :behavior="activeBehavior"
       :initial-entity="initialBehaviorEntity"
+      show-behavior-detail-panel
     />
     <BehaviorTreeTestDialog
       v-if="activeBehavior && activeBehavior.kind === 'behaviorTree'"
@@ -213,6 +214,7 @@
       :space-id="spaceId"
       :behavior="activeBehavior"
       :initial-entity="initialBehaviorEntity"
+      show-behavior-detail-panel
     />
   </section>
 </template>

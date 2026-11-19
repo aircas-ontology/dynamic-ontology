@@ -264,13 +264,18 @@ test("tree execution prefills only matching blackboard, node input, relationship
   };
   const component = compileExecutionComponent("components/BehaviorTreeTestDialog.vue", (id) => {
     if (id === "vue") return Vue;
+    if (id === "@/apis") return { getOntologyActionInfoInterface: async () => ({ code: 200, data: null }) };
+    if (id === "@/types") return { SPACE_BEHAVIOR_STATUS_LABELS: { published: "已发布", draft: "草稿", disabled: "已失效" } };
     if (id.includes("useBehaviorTreeExecution")) return { useBehaviorTreeExecution: () => execution };
+    if (id.includes("mapOntologyActionInfoToViewState")) return { mapOntologyActionInfoToViewState: (data) => data };
+    if (id.includes("mapOntologyObjectsToRelationOptions")) return { mapOntologyObjectsToRelationOptions: (items) => items };
     return { __esModule: true, default: {} };
   });
   const props = Vue.reactive({
     modelValue: false,
     spaceId: "23",
     behavior: { id: "tree", behaviorApiName: "tree" },
+    showBehaviorDetailPanel: false,
     initialEntity: initialEntityUtils.createBehaviorTestInitialEntity("ship", "001", "当前实例"),
   });
   const scope = Vue.effectScope();

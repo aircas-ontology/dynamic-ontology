@@ -28,7 +28,7 @@
           check-strictly
           filterable
           :render-after-expand="false"
-          :disabled="submitting || editing"
+          :disabled="submitting || parentLocked"
           placeholder="请选择父级"
           style="width: 100%"
         />
@@ -103,6 +103,7 @@ import type { OntologyAttributeMetadataParentSelectNode } from "../utils/metadat
 const props = defineProps<{
   visible: boolean;
   editing: boolean;
+  parentLocked: boolean;
   name: string;
   parentId: string;
   parentTree: OntologyAttributeMetadataParentSelectNode[];

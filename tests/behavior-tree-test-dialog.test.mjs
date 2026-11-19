@@ -14,6 +14,14 @@ function createTreeDialogHarness(query = async () => ({ code: 200, data: [] })) 
   const exports = {};
   new Function("require", "exports", outputText)((id) => {
     if (id === "vue") return Vue;
+    if (id === "@/apis")
+      return {
+        getOntologyActionInfoInterface: async () => ({
+          code: 200,
+          data: { actionApi: "tree", displayName: "行为树", status: 1, actionKind: "TREE", createTime: "2026-01-01" },
+        }),
+      };
+    if (id === "@/types") return { SPACE_BEHAVIOR_STATUS_LABELS: { published: "已发布", draft: "草稿", disabled: "已失效" } };
     if (id.includes("useBehaviorTreeExecution"))
       return {
         useBehaviorTreeExecution: () => ({
@@ -26,6 +34,17 @@ function createTreeDialogHarness(query = async () => ({ code: 200, data: [] })) 
           loadBehaviorTreeExecutePlan: async (force) => calls.push(["plan", force]),
         }),
       };
+    if (id.includes("mapOntologyActionInfoToViewState"))
+      return {
+        mapOntologyActionInfoToViewState: (data) => ({
+          actionApi: data.actionApi,
+          displayName: data.displayName,
+          description: "",
+          status: "published",
+          actionKindLabel: "行为树",
+          createTime: data.createTime || "",
+        }),
+      };
     if (id.includes("mapOntologyObjectsToRelationOptions")) return { mapOntologyObjectsToRelationOptions: (items) => items };
     return { __esModule: true, default: {} };
   }, exports);
@@ -34,6 +53,7 @@ function createTreeDialogHarness(query = async () => ({ code: 200, data: [] })) 
     spaceId: "23",
     behavior: { id: "1", behaviorApiName: "tree", displayName: "行为树" },
     queryObjectCatalog: query,
+    showBehaviorDetailPanel: false,
   });
   const scope = Vue.effectScope();
   const state = scope.run(() => exports.default.setup(props, { expose() {}, emit() {} }));
@@ -44,6 +64,15 @@ function createTreeDialogHarness(query = async () => ({ code: 200, data: [] })) 
 async function settleTreeDialog() {
   for (let index = 0; index < 8; index += 1) await Vue.nextTick();
 }
+
+test("tree dialog detail panel is opt-in and defaults off", () => {
+  const source = readFileSync(new URL("../src/components/BehaviorTreeTestDialog.vue", import.meta.url), "utf8");
+  assert.match(source, /showBehaviorDetailPanel/);
+  assert.match(source, /showBehaviorDetailPanel:\s*false/);
+  assert.match(source, /v-if="showBehaviorDetailPanel"/);
+  assert.match(source, /BehaviorTreeExecPanel/);
+  assert.match(source, /getOntologyActionInfoInterface/);
+});
 
 test("shared tree dialog queries its injected catalog then loads the execution plan", async () => {
   const queries = [];

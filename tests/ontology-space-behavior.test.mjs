@@ -246,7 +246,11 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /behaviorBasicActionLabel/);
   assert.match(testDialogSource, /SPACE_BEHAVIOR_KIND_LABELS/);
   assert.match(testDialogSource, /SPACE_BEHAVIOR_BASIC_ACTION_LABELS/);
-  assert.match(testDialogSource, /width="min\(1200px, 94vw\)"/);
+  assert.match(testDialogSource, /showBehaviorDetailPanel/);
+  assert.match(testDialogSource, /showBehaviorDetailPanel:\s*false/);
+  assert.match(testDialogSource, /showBehaviorDetailPanel \? 'min\(1200px, 94vw\)' : 'min\(960px, 94vw\)'/);
+  assert.match(testDialogSource, /v-if="showBehaviorDetailPanel"/);
+  assert.match(testDialogSource, /behavior-test-dialog__layout--params-only/);
   assert.match(testDialogSource, /behavior-test-dialog__layout/);
   assert.match(testDialogSource, /behavior-test-dialog__detail/);
   assert.match(testDialogSource, /behavior-test-dialog__execution/);
@@ -267,6 +271,8 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.match(testDialogSource, /behavior-test-dialog__function-summary/);
   assert.doesNotMatch(testDialogSource, /label="算子 API"/);
   assert.match(testDialogSource, /behavior-test-dialog__function-footer/);
+  const spaceBehaviorPage = readFileSync(new URL("../src/views/SpaceBehaviorWorkspace/index.vue", import.meta.url), "utf8");
+  assert.doesNotMatch(spaceBehaviorPage, /show-behavior-detail-panel|showBehaviorDetailPanel/);
   assert.match(testDialogSource, /behavior-test-dialog__function-detail-btn/);
   assert.match(testDialogSource, /名称：\{\{ mountedFunctionDisplayName \}\}/);
   assert.match(testDialogSource, /函数 API：\{\{ mountedFunctionApi \}\}/);

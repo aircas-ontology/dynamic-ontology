@@ -4,6 +4,10 @@ import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { computed, reactive, ref, watch, nextTick } from "vue";
 import { parseMetadataSchema, serializeMetadataValue } from "../src/views/OntologyObjectAttributePanel/utils/metadataSchemaAdapter.ts";
+const operationsSource = readFileSync(new URL("../src/views/OntologyObjectAttributePanel/utils/metadataOperations.ts", import.meta.url), "utf8");
+const operations = {};
+new Function("exports", "require", ts.transpile(operationsSource, { module: ts.ModuleKind.CommonJS }))(operations, () => ({ ROOT_METADATA_PARENT_ID: "" }));
+const { buildMetadataParentSelectTree, collectMetadataDescendantIds } = operations;
 
 test("query accepts nested root object and multiple roots with three value types", () => {
   const root = {
@@ -86,7 +90,7 @@ function createDialog(overrides = {}) {
   const source = readFileSync(new URL("../src/views/OntologyObjectAttributePanel/components/MetadataManageDialog.vue", import.meta.url), "utf8");
   const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
   const code = ts.transpile(
-    `${script}\nreturn { workspace, queryLoading, queryError, formVisible, formName, formParentId, formValueType, formInputValue, formEnumValues, formSubmitting, formError, editingId, handleDialogOpened, openMetadataCreate, openMetadataEdit, confirmMetadataCreate, handleRemoveMetadata };`,
+    `${script}\nreturn { workspace, queryLoading, queryError, formVisible, formName, formParentId, formValueType, formInputValue, formEnumValues, formSubmitting, formError, editingId, parentTree, parentLocked, handleDialogOpened, openMetadataCreate, openMetadataEdit, confirmMetadataCreate, handleRemoveMetadata };`,
     { target: ts.ScriptTarget.ES2022 },
   );
   const props = reactive({ visible: false, ontologyIdentifier: "object" });
@@ -103,7 +107,8 @@ function createDialog(overrides = {}) {
     METADATA_VALUE_TYPE_OPTIONS: [],
     parseMetadataSchema,
     serializeMetadataValue,
-    buildMetadataParentSelectTree: () => [],
+    buildMetadataParentSelectTree,
+    collectMetadataDescendantIds,
     buildMetadataTree: () => [],
     formatMetadataValueSummary: () => "",
     resolveMetadataValueTypeLabel: () => "",
@@ -117,6 +122,39 @@ function createDialog(overrides = {}) {
   };
   return { dialog: new Function(...Object.keys(deps), code)(...Object.values(deps)), props, messages };
 }
+
+test("editing metadata permits moving under a root while excluding descendants", async () => {
+  const writes = [];
+  const { dialog } = createDialog({
+    getMetadataSchemaInterface: async () => ({
+      code: 200,
+      data: [
+        { schemaId: 1, name: "root", children: [{ schemaId: 2, name: "child", children: [{ schemaId: 3, name: "grandchild" }] }] },
+        { schemaId: 4, name: "other root" },
+      ],
+    }),
+    putMetadataSchemaInterface: async (payload) => {
+      writes.push(payload);
+      return { code: 200 };
+    },
+  });
+  await dialog.handleDialogOpened();
+  dialog.openMetadataEdit("1");
+  assert.equal(dialog.parentLocked.value, true);
+  dialog.openMetadataEdit("2");
+  assert.equal(dialog.parentLocked.value, false);
+  assert.deepEqual(
+    dialog.parentTree.value.map((node) => node.id),
+    ["1", "4"],
+  );
+  assert.deepEqual(dialog.parentTree.value[0].children, []);
+  dialog.formParentId.value = "3";
+  await dialog.confirmMetadataCreate();
+  assert.equal(writes.length, 0);
+  dialog.formParentId.value = "4";
+  await dialog.confirmMetadataCreate();
+  assert.equal(writes[0].parentId, 4);
+});
 
 test("query ignores stale response and reports unsupported response structure", async () => {
   const pending = [];
