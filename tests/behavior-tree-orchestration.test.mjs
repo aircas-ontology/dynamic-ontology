@@ -865,14 +865,18 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(inspectorSource, /behavior-tree-node-inspector__child-order/);
   assert.match(inspectorSource, /入参取值/);
   assert.match(inspectorSource, /出参回传黑板/);
+  assert.match(inspectorSource, /执行成功条件/);
   assert.match(inspectorSource, /patch-input-binding/);
   assert.match(inspectorSource, /patch-output-binding/);
+  assert.match(inspectorSource, /patch-success-condition/);
   assert.doesNotMatch(inspectorSource, /同级顺序/);
   assert.doesNotMatch(inspectorSource, /补全.*黑板键/);
   assert.doesNotMatch(inspectorSource, /add-external-keys/);
   assert.doesNotMatch(dialogSource, /handleAddExternalKeys/);
   assert.match(dialogSource, /handlePatchInputBinding/);
   assert.match(dialogSource, /handlePatchOutputBinding/);
+  assert.match(dialogSource, /handlePatchSuccessCondition/);
+  assert.match(dialogSource, /delete node\.config\.successCondition/);
 });
 
 test("behavior tree ACTION bindings serialize, restore, and validate previous action", async () => {
@@ -996,6 +1000,142 @@ test("behavior tree ACTION bindings serialize, restore, and validate previous ac
     options.some((item) => item.value === "ghost"),
     true,
   );
+});
+
+test("behavior tree ACTION successCondition serializes, restores, and validates", async () => {
+  const kindMeta = createBehaviorTreeKindMetaMap();
+  const defaultAction = createDefaultBehaviorTreeConfig("ACTION");
+  assert.equal(defaultAction.successCondition.outputKey, "");
+  assert.equal(defaultAction.successCondition.op, "EQ");
+  const model = createEmptyBehaviorTreeModel();
+  const actionNode = makeNode({
+    id: "act_ok",
+    kind: "ACTION",
+    displayName: "带成功条件",
+    config: {
+      actionApi: "act.ok",
+      timeoutSeconds: "",
+      retryTimes: "",
+      inputBindings: [],
+      outputBindings: [],
+      successCondition: { outputKey: "startTime", op: "EQ", value: "2024-01-01" },
+    },
+  });
+  model.roots.push(actionNode);
+  const availableActions = [
+    {
+      actionApi: "act.ok",
+      bindableOutputs: [{ name: "startTime", type: "DATE", fieldName: "start", description: "Time" }],
+    },
+  ];
+  assert.equal(collectBehaviorTreeErrors(model, kindMeta, {}, availableActions).length, 0);
+  const definition = buildBehaviorTreeDefinition(model, kindMeta, availableActions);
+  assert.deepEqual(definition.roots[0].config.successCondition, {
+    outputKey: "startTime",
+    op: "EQ",
+    value: "2024-01-01",
+  });
+  const restored = importBehaviorTreeDefinition(definition);
+  assert.equal(restored.roots[0].config.successCondition.outputKey, "startTime");
+  assert.equal(restored.roots[0].config.successCondition.op, "EQ");
+  assert.equal(restored.roots[0].config.successCondition.value, "2024-01-01");
+
+  actionNode.config.successCondition = { outputKey: "", op: "EQ", value: "x" };
+  const withoutCond = buildBehaviorTreeDefinition(model, kindMeta, availableActions);
+  assert.equal(withoutCond.roots[0].config.successCondition, undefined);
+
+  actionNode.config.successCondition = { outputKey: "startTime", op: "GT", value: "1" };
+  assert.match(collectBehaviorTreeErrors(model, kindMeta, {}, availableActions).join("|"), /只支持数值类型/);
+
+  actionNode.config.successCondition = { outputKey: "startTime", op: "EQ", value: "" };
+  assert.match(collectBehaviorTreeErrors(model, kindMeta, {}, availableActions).join("|"), /必须填写比较值/);
+
+  actionNode.config.successCondition = { outputKey: "startTime", op: "IS_EMPTY", value: "x" };
+  assert.match(collectBehaviorTreeErrors(model, kindMeta, {}, availableActions).join("|"), /不需要填比较值/);
+
+  actionNode.config.successCondition = { outputKey: "missing", op: "EQ", value: "1" };
+  assert.match(collectBehaviorTreeErrors(model, kindMeta, {}, availableActions).join("|"), /成功条件出参/);
+
+  const emptyOpModel = createEmptyBehaviorTreeModel();
+  emptyOpModel.roots.push(
+    makeNode({
+      id: "act_empty_op",
+      kind: "ACTION",
+      config: {
+        actionApi: "act.ok",
+        timeoutSeconds: "",
+        retryTimes: "",
+        inputBindings: [],
+        outputBindings: [],
+        successCondition: { outputKey: "startTime", op: "IS_EMPTY", value: "" },
+      },
+    }),
+  );
+  const emptyOpDefinition = buildBehaviorTreeDefinition(emptyOpModel, kindMeta, availableActions);
+  assert.deepEqual(emptyOpDefinition.roots[0].config.successCondition, { outputKey: "startTime", op: "IS_EMPTY" });
+  assert.equal(collectBehaviorTreeErrors(emptyOpModel, kindMeta, {}, availableActions).length, 0);
+
+  const {
+    patchBehaviorTreeSuccessCondition,
+    mapBehaviorTreeSuccessConditionToDraft,
+    serializeBehaviorTreeSuccessCondition,
+    readBehaviorTreeSuccessConditionDraft,
+  } = await import("../src/views/BehaviorTreeOrchestration/utils/behaviorTreeActionBindings.ts");
+  const patchConfig = { actionApi: "act.ok" };
+  patchBehaviorTreeSuccessCondition(patchConfig, { outputKey: "startTime", op: "EQ", value: "2024-01-01" });
+  assert.equal(patchConfig.successCondition.outputKey, "startTime");
+  patchBehaviorTreeSuccessCondition(patchConfig, { op: "IS_EMPTY" });
+  assert.equal(patchConfig.successCondition.value, "");
+  patchBehaviorTreeSuccessCondition(patchConfig, { outputKey: "" });
+  assert.equal(patchConfig.successCondition, undefined);
+  assert.deepEqual(readBehaviorTreeSuccessConditionDraft({ successCondition: [] }), { outputKey: "", op: "EQ", value: "" });
+  assert.deepEqual(readBehaviorTreeSuccessConditionDraft({ successCondition: { outputKey: 12, op: "", value: 3 } }), {
+    outputKey: "12",
+    op: "EQ",
+    value: "3",
+  });
+  assert.deepEqual(mapBehaviorTreeSuccessConditionToDraft(null), { outputKey: "", op: "EQ", value: "" });
+  assert.deepEqual(mapBehaviorTreeSuccessConditionToDraft({ outputKey: 9, op: "", value: null }), { outputKey: "9", op: "EQ", value: "" });
+  assert.equal(serializeBehaviorTreeSuccessCondition(null, null, parseBehaviorTreeTypedValue), null);
+  assert.deepEqual(serializeBehaviorTreeSuccessCondition({ outputKey: "n", op: "EQ", value: "7" }, "INTEGER", parseBehaviorTreeTypedValue), {
+    outputKey: "n",
+    op: "EQ",
+    value: 7,
+  });
+  assert.deepEqual(serializeBehaviorTreeSuccessCondition({ outputKey: "n", op: "EQ", value: "bad" }, "INTEGER", parseBehaviorTreeTypedValue), {
+    outputKey: "n",
+    op: "EQ",
+    value: "bad",
+  });
+  assert.deepEqual(serializeBehaviorTreeSuccessCondition({ outputKey: "n", op: "EQ", value: "x" }, null, parseBehaviorTreeTypedValue), {
+    outputKey: "n",
+    op: "EQ",
+    value: "x",
+  });
+
+  const noOutputModel = createEmptyBehaviorTreeModel();
+  noOutputModel.roots.push(
+    makeNode({
+      id: "act_no_out",
+      kind: "ACTION",
+      config: {
+        actionApi: "act.noout",
+        timeoutSeconds: "",
+        retryTimes: "",
+        inputBindings: [],
+        outputBindings: [],
+        successCondition: { outputKey: "x", op: "EQ", value: "1" },
+      },
+    }),
+  );
+  assert.match(collectBehaviorTreeErrors(noOutputModel, kindMeta, {}, [{ actionApi: "act.noout", bindableOutputs: [] }]).join("|"), /没有可判断的出参/);
+
+  actionNode.config.successCondition = { outputKey: "startTime", op: "CONTAINS", value: "a" };
+  assert.match(collectBehaviorTreeErrors(model, kindMeta, {}, availableActions).join("|"), /只支持字符串和列表/);
+
+  const intActions = [{ actionApi: "act.ok", bindableOutputs: [{ name: "count", type: "INTEGER" }] }];
+  actionNode.config.successCondition = { outputKey: "count", op: "EQ", value: "abc" };
+  assert.match(collectBehaviorTreeErrors(model, kindMeta, {}, intActions).join("|"), /类型 INTEGER 不匹配/);
 });
 
 test("behavior tree execute plan builds payload and reports missing fields", () => {

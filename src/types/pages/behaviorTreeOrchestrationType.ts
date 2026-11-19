@@ -61,6 +61,13 @@ export interface BehaviorTreeOutputBindingDraft {
   blackboardKey: string;
 }
 
+/** ACTION 执行成功条件草稿。 */
+export interface BehaviorTreeSuccessConditionDraft {
+  outputKey: string;
+  op: string;
+  value: string;
+}
+
 /** 对象属性目录项（黑板 PROPERTY 来源下拉）。 */
 export interface BehaviorTreeObjectPropertyOption {
   id: string;
@@ -69,9 +76,9 @@ export interface BehaviorTreeObjectPropertyOption {
   propertyType: string;
 }
 
-/** 节点配置草稿：标量字段为字符串，ACTION 绑定为数组。 */
+/** 节点配置草稿：标量字段为字符串，ACTION 绑定为数组，成功条件为对象。 */
 export interface BehaviorTreeNodeConfigDraft {
-  [key: string]: string | BehaviorTreeInputBindingDraft[] | BehaviorTreeOutputBindingDraft[] | undefined;
+  [key: string]: string | BehaviorTreeInputBindingDraft[] | BehaviorTreeOutputBindingDraft[] | BehaviorTreeSuccessConditionDraft | undefined;
   runMode?: string;
   policy?: string;
   maxConcurrency?: string;
@@ -93,6 +100,7 @@ export interface BehaviorTreeNodeConfigDraft {
   retryTimes?: string;
   inputBindings?: BehaviorTreeInputBindingDraft[];
   outputBindings?: BehaviorTreeOutputBindingDraft[];
+  successCondition?: BehaviorTreeSuccessConditionDraft;
 }
 
 /** 行为树节点草稿。 */

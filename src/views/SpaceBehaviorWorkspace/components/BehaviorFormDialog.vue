@@ -99,11 +99,57 @@
                   : basicFunctionSelectFieldError || (basicFunctionSelectFieldOptions.length ? '选择展示字段' : '当前对象暂无属性')
               "
               style="width: 100%"
+              @change="syncBasicFunctionWriteFieldsBySelectFields"
             >
               <el-option v-for="item in basicFunctionSelectFieldOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
-          <div v-if="showBasicFunctionOperatorSection" class="behavior-form-dialog__grid">
+          <el-form-item v-if="showBasicFunctionSelectFields && basicFunctionSelectFields.length" label="写入字段">
+            <div class="behavior-form-dialog__basic-function-write-fields">
+              <div v-for="selectField in basicFunctionSelectFields" :key="selectField" class="behavior-form-dialog__basic-function-write-field">
+                <div class="behavior-form-dialog__basic-function-write-field-title">
+                  {{ resolveBasicFunctionSelectFieldLabel(selectField) }}
+                </div>
+                <div class="behavior-form-dialog__object-property-pickers">
+                  <el-select
+                    :model-value="readBasicFunctionWriteFieldBinding(selectField).ontologyUniqueIdentifier"
+                    filterable
+                    :loading="objectLoading"
+                    :disabled="objectLoading || objectError !== ''"
+                    :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
+                    style="width: 100%"
+                    @change="(value) => updateBasicFunctionWriteFieldOntologyId(selectField, value)"
+                  >
+                    <el-option v-for="item in objectOptions" :key="item.value" :label="item.label" :value="item.value" />
+                  </el-select>
+                  <el-select
+                    :model-value="readBasicFunctionWriteFieldBinding(selectField).propertyUniqueIdentifier"
+                    filterable
+                    :loading="isApplicationPropertyLoading(readBasicFunctionWriteFieldBinding(selectField).ontologyUniqueIdentifier)"
+                    :disabled="!readBasicFunctionWriteFieldBinding(selectField).ontologyUniqueIdentifier"
+                    :placeholder="
+                      !readBasicFunctionWriteFieldBinding(selectField).ontologyUniqueIdentifier
+                        ? '请先选择对象'
+                        : readApplicationPropertyError(readBasicFunctionWriteFieldBinding(selectField).ontologyUniqueIdentifier) ||
+                          (readBasicFunctionChildPropertyOptions(readBasicFunctionWriteFieldBinding(selectField).ontologyUniqueIdentifier).length
+                            ? '选择写入属性'
+                            : '当前对象暂无子表属性')
+                    "
+                    style="width: 100%"
+                    @change="(value) => updateBasicFunctionWriteFieldPropertyId(selectField, value)"
+                  >
+                    <el-option
+                      v-for="item in readBasicFunctionChildPropertyOptions(readBasicFunctionWriteFieldBinding(selectField).ontologyUniqueIdentifier)"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.value"
+                    />
+                  </el-select>
+                </div>
+              </div>
+            </div>
+          </el-form-item>
+          <div v-if="showBasicFunctionOperatorSection && !showBasicFunctionSelectFields" class="behavior-form-dialog__grid">
             <el-form-item label="聚合类型">
               <el-select
                 v-model="basicFunctionAggFunc"
@@ -118,24 +164,70 @@
             </el-form-item>
             <el-form-item label="聚合参数名">
               <el-select
-                v-if="showBasicFunctionSelectFields"
                 v-model="basicFunctionTargetField"
                 filterable
                 clearable
-                placeholder="选择聚合参数"
-                style="width: 100%"
+                :disabled="!basicFunctionAggFunc"
                 :loading="basicFunctionSelectFieldLoading"
-                :disabled="!basicFunctionAggFunc || basicFunctionSelectFieldLoading || basicFunctionSelectFieldError !== ''"
+                :placeholder="
+                  !basicFunctionAggFunc
+                    ? '请先选择聚合类型'
+                    : basicFunctionSelectFieldLoading
+                      ? '正在加载属性'
+                      : basicFunctionSelectFieldError || (basicFunctionSelectFieldOptions.length ? '选择聚合参数名' : '当前对象暂无属性')
+                "
+                style="width: 100%"
               >
                 <el-option v-for="item in basicFunctionSelectFieldOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
-              <el-input v-else v-model="basicFunctionTargetField" maxlength="64" placeholder="例如：target" :disabled="!basicFunctionAggFunc" />
             </el-form-item>
           </div>
+          <el-form-item v-if="showBasicFunctionMultiWriteField" label="写入字段">
+            <div class="behavior-form-dialog__basic-function-write-fields">
+              <div class="behavior-form-dialog__basic-function-write-field behavior-form-dialog__basic-function-write-field--multi">
+                <div class="behavior-form-dialog__object-property-pickers">
+                  <el-select
+                    :model-value="basicFunctionMultiWriteField.ontologyUniqueIdentifier"
+                    filterable
+                    :loading="objectLoading"
+                    :disabled="objectLoading || objectError !== ''"
+                    :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
+                    style="width: 100%"
+                    @change="updateBasicFunctionMultiWriteFieldOntologyId"
+                  >
+                    <el-option v-for="item in objectOptions" :key="item.value" :label="item.label" :value="item.value" />
+                  </el-select>
+                  <el-select
+                    :model-value="basicFunctionMultiWriteField.propertyUniqueIdentifier"
+                    filterable
+                    :loading="isBasicFunctionMainPropertyLoading(basicFunctionMultiWriteField.ontologyUniqueIdentifier)"
+                    :disabled="!basicFunctionMultiWriteField.ontologyUniqueIdentifier"
+                    :placeholder="
+                      !basicFunctionMultiWriteField.ontologyUniqueIdentifier
+                        ? '请先选择对象'
+                        : readBasicFunctionMainPropertyError(basicFunctionMultiWriteField.ontologyUniqueIdentifier) ||
+                          (readBasicFunctionMainPropertyOptions(basicFunctionMultiWriteField.ontologyUniqueIdentifier).length
+                            ? '选择写入属性'
+                            : '当前对象暂无 main 属性')
+                    "
+                    style="width: 100%"
+                    @change="updateBasicFunctionMultiWriteFieldPropertyId"
+                  >
+                    <el-option
+                      v-for="item in readBasicFunctionMainPropertyOptions(basicFunctionMultiWriteField.ontologyUniqueIdentifier)"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.value"
+                    />
+                  </el-select>
+                </div>
+              </div>
+            </div>
+          </el-form-item>
           <el-form-item v-if="showBasicFunctionOperatorSection" label="参数配置">
             <FunctionOperatorBasicFilterBuilder
               v-model="basicFunctionParameterConfig"
-              property-placeholder="输入属性名"
+              property-placeholder="选择属性名"
               :property-options="basicFunctionFilterPropertyOptions"
               :show-value-type-select="false"
             />
@@ -585,6 +677,7 @@ import type {
   SpaceBehaviorApplicationOutputMode,
   SpaceBehaviorApplicationParamRowSnapshot,
   SpaceBehaviorBasicAction,
+  SpaceBehaviorBasicFunctionWriteFieldBinding,
   SpaceBehaviorCategoryNode,
   SpaceBehaviorDraft,
   SpaceBehaviorItem,
@@ -698,11 +791,23 @@ const basicFunctionAggFunc = ref<FunctionOperatorAggFunc | "">("");
 const basicFunctionTargetField = ref("");
 /** 基础函数展示字段（apiName 列表，对应 selectFields）。 */
 const basicFunctionSelectFields = ref<string[]>([]);
+/** 基础函数展示字段 → 写入字段绑定。 */
+const basicFunctionWriteFields = ref<Record<string, SpaceBehaviorBasicFunctionWriteFieldBinding>>({});
+/** 基础函数多对象写入字段（单行）。 */
+const basicFunctionMultiWriteField = ref<SpaceBehaviorBasicFunctionWriteFieldBinding>({
+  ontologyUniqueIdentifier: "",
+  propertyUniqueIdentifier: "",
+});
 /** 单对象展示字段选项。 */
 const basicFunctionSelectFieldOptions = ref<SpaceRelationObjectOption[]>([]);
 const basicFunctionSelectFieldLoading = ref(false);
 const basicFunctionSelectFieldError = ref("");
 let basicFunctionSelectFieldLoadToken = 0;
+/** 多对象写入字段：按对象缓存仅 storageGroup=main 的属性选项。 */
+const basicFunctionMainPropertyOptionsByOntology = ref<Record<string, SpaceRelationObjectOption[]>>({});
+const basicFunctionMainPropertyLoadingByOntology = ref<Record<string, boolean>>({});
+const basicFunctionMainPropertyErrorByOntology = ref<Record<string, string>>({});
+const basicFunctionMainPropertyLoadTokens: Record<string, number> = {};
 
 /**
  * @description 重置基础函数参数配置为默认空过滤文档。
@@ -738,7 +843,7 @@ function resetBasicFunctionAggFields(): void {
 }
 
 /**
- * @description 清空基础函数展示字段选择与选项状态。
+ * @description 清空基础函数展示字段选择与选项状态，并同步清空写入字段。
  */
 function resetBasicFunctionSelectFields(): void {
   basicFunctionSelectFieldLoadToken += 1;
@@ -746,6 +851,313 @@ function resetBasicFunctionSelectFields(): void {
   basicFunctionSelectFieldOptions.value = [];
   basicFunctionSelectFieldLoading.value = false;
   basicFunctionSelectFieldError.value = "";
+  clearBasicFunctionWriteFields();
+}
+
+/**
+ * @description 清空基础函数写入字段绑定。
+ */
+function clearBasicFunctionWriteFields(): void {
+  basicFunctionWriteFields.value = {};
+}
+
+/**
+ * @description 清空基础函数多对象写入字段绑定。
+ */
+function clearBasicFunctionMultiWriteField(): void {
+  basicFunctionMultiWriteField.value = {
+    ontologyUniqueIdentifier: "",
+    propertyUniqueIdentifier: "",
+    storageGroup: "",
+  };
+}
+
+/**
+ * @description 读取多对象写入字段的 main 属性选项。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @returns 属性选项。
+ */
+function readBasicFunctionMainPropertyOptions(ontologyUniqueIdentifier: string): SpaceRelationObjectOption[] {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  if (!ontologyId) return [];
+  return basicFunctionMainPropertyOptionsByOntology.value[ontologyId] ?? [];
+}
+
+/**
+ * @description 多对象写入字段属性选项是否加载中。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @returns 加载中为 true。
+ */
+function isBasicFunctionMainPropertyLoading(ontologyUniqueIdentifier: string): boolean {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  if (!ontologyId) return false;
+  return Boolean(basicFunctionMainPropertyLoadingByOntology.value[ontologyId]);
+}
+
+/**
+ * @description 读取多对象写入字段属性加载错误。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @returns 错误文案。
+ */
+function readBasicFunctionMainPropertyError(ontologyUniqueIdentifier: string): string {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  if (!ontologyId) return "";
+  return basicFunctionMainPropertyErrorByOntology.value[ontologyId] ?? "";
+}
+
+/**
+ * @description 按对象加载并缓存 storageGroup=main 的属性选项；已缓存则跳过。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ */
+async function ensureBasicFunctionMainPropertyOptions(ontologyUniqueIdentifier: string): Promise<void> {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  if (!ontologyId) return;
+  if (Object.prototype.hasOwnProperty.call(basicFunctionMainPropertyOptionsByOntology.value, ontologyId)) return;
+  if (basicFunctionMainPropertyLoadingByOntology.value[ontologyId]) return;
+  const requestToken = (basicFunctionMainPropertyLoadTokens[ontologyId] ?? 0) + 1;
+  basicFunctionMainPropertyLoadTokens[ontologyId] = requestToken;
+  basicFunctionMainPropertyLoadingByOntology.value = {
+    ...basicFunctionMainPropertyLoadingByOntology.value,
+    [ontologyId]: true,
+  };
+  basicFunctionMainPropertyErrorByOntology.value = {
+    ...basicFunctionMainPropertyErrorByOntology.value,
+    [ontologyId]: "",
+  };
+  try {
+    const response = await getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier: ontologyId });
+    if (basicFunctionMainPropertyLoadTokens[ontologyId] !== requestToken) return;
+    if (response.code !== 200 || !response.data) throw new Error(response.message || "属性列表加载失败");
+    const options = new Map<string, SpaceRelationObjectOption>();
+    for (const item of response.data) {
+      if (!isMainStorageGroup(item.storageGroup)) continue;
+      const value = typeof item.uniqueIdentifier === "string" ? item.uniqueIdentifier.trim() : "";
+      if (!value || options.has(value)) continue;
+      const apiName = typeof item.apiName === "string" ? item.apiName.trim() : "";
+      const displayName = typeof item.displayName === "string" ? item.displayName.trim() : "";
+      const propertyType = typeof item.propertyType === "string" ? item.propertyType.trim() : "";
+      const nameLabel = displayName ? (apiName ? `${displayName}（${apiName}）` : displayName) : apiName || value;
+      const storageGroup = normalizeStorageGroup(item.storageGroup) || "main";
+      const withType = propertyType ? `${nameLabel} · ${propertyType}` : nameLabel;
+      const label = `${withType} · ${storageGroup}`;
+      options.set(value, { value, label });
+      cachePropertyStorageGroup(ontologyId, value, storageGroup);
+    }
+    basicFunctionMainPropertyOptionsByOntology.value = {
+      ...basicFunctionMainPropertyOptionsByOntology.value,
+      [ontologyId]: [...options.values()].sort((left, right) => left.label.localeCompare(right.label, "zh-CN") || left.value.localeCompare(right.value)),
+    };
+  } catch (error) {
+    if (basicFunctionMainPropertyLoadTokens[ontologyId] !== requestToken) return;
+    basicFunctionMainPropertyErrorByOntology.value = {
+      ...basicFunctionMainPropertyErrorByOntology.value,
+      [ontologyId]: error instanceof Error ? error.message : "属性列表加载失败",
+    };
+  } finally {
+    if (basicFunctionMainPropertyLoadTokens[ontologyId] === requestToken) {
+      basicFunctionMainPropertyLoadingByOntology.value = {
+        ...basicFunctionMainPropertyLoadingByOntology.value,
+        [ontologyId]: false,
+      };
+    }
+  }
+}
+
+/**
+ * @description 更新多对象写入字段目标对象并清空已选属性。
+ * @param value 对象唯一标识。
+ */
+function updateBasicFunctionMultiWriteFieldOntologyId(value: string | number | boolean | undefined): void {
+  const ontologyUniqueIdentifier = String(value ?? "").trim();
+  basicFunctionMultiWriteField.value = {
+    ontologyUniqueIdentifier,
+    propertyUniqueIdentifier: "",
+    storageGroup: "",
+  };
+  if (ontologyUniqueIdentifier) {
+    void ensureBasicFunctionMainPropertyOptions(ontologyUniqueIdentifier);
+  }
+}
+
+/**
+ * @description 更新多对象写入字段目标属性。
+ * @param value 属性唯一标识。
+ */
+function updateBasicFunctionMultiWriteFieldPropertyId(value: string | number | boolean | undefined): void {
+  const propertyUniqueIdentifier = String(value ?? "").trim();
+  const ontologyUniqueIdentifier = basicFunctionMultiWriteField.value.ontologyUniqueIdentifier.trim();
+  basicFunctionMultiWriteField.value = {
+    ontologyUniqueIdentifier,
+    propertyUniqueIdentifier,
+    storageGroup: propertyUniqueIdentifier ? readCachedPropertyStorageGroup(ontologyUniqueIdentifier, propertyUniqueIdentifier) || "main" : "",
+  };
+}
+
+/**
+ * @description 读取展示字段对应的写入绑定；缺失时返回空绑定。
+ * @param selectField 展示字段 apiName。
+ * @returns 写入绑定。
+ */
+function readBasicFunctionWriteFieldBinding(selectField: string): SpaceBehaviorBasicFunctionWriteFieldBinding {
+  return (
+    basicFunctionWriteFields.value[selectField] ?? {
+      ontologyUniqueIdentifier: "",
+      propertyUniqueIdentifier: "",
+      storageGroup: "",
+    }
+  );
+}
+
+/**
+ * @description 读取已缓存的属性 storageGroup。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @param propertyUniqueIdentifier 属性唯一标识。
+ * @returns storageGroup；缺失时为空串。
+ */
+function readCachedPropertyStorageGroup(ontologyUniqueIdentifier: string, propertyUniqueIdentifier: string): string {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  const propertyId = propertyUniqueIdentifier.trim();
+  if (!ontologyId || !propertyId) return "";
+  return applicationPropertyStorageGroupByOntology.value[ontologyId]?.[propertyId] ?? "";
+}
+
+/**
+ * @description 解析展示字段下拉展示文案。
+ * @param selectField 展示字段 apiName。
+ * @returns 选项 label，缺失时回退 apiName。
+ */
+function resolveBasicFunctionSelectFieldLabel(selectField: string): string {
+  const matched = basicFunctionSelectFieldOptions.value.find((item) => item.value === selectField);
+  return matched?.label || selectField;
+}
+
+/**
+ * @description 读取单对象写入字段可用的子表属性选项（排除 storageGroup=main）。
+ * @param ontologyUniqueIdentifier 对象唯一标识。
+ * @returns 子表属性选项。
+ */
+function readBasicFunctionChildPropertyOptions(ontologyUniqueIdentifier: string): SpaceRelationObjectOption[] {
+  const ontologyId = ontologyUniqueIdentifier.trim();
+  if (!ontologyId) return [];
+  return readApplicationPropertyOptions(ontologyId)
+    .filter((item) => {
+      const storageGroup = readCachedPropertyStorageGroup(ontologyId, item.value);
+      return Boolean(storageGroup) && !isMainStorageGroup(storageGroup);
+    })
+    .map((item) => {
+      const storageGroup = readCachedPropertyStorageGroup(ontologyId, item.value);
+      return {
+        ...item,
+        label: storageGroup ? `${item.label} · ${storageGroup}` : item.label,
+      };
+    });
+}
+
+/**
+ * @description 清空单对象写入字段中已选的 main / 非法属性，仅保留子表属性。
+ * @param ontologyUniqueIdentifier 可选，仅处理该对象；空则处理全部。
+ */
+function pruneBasicFunctionWriteFieldsToChildProperties(ontologyUniqueIdentifier?: string): void {
+  if (!showBasicFunctionSelectFields.value) return;
+  const scopedOntologyId = ontologyUniqueIdentifier?.trim() ?? "";
+  let changed = false;
+  const next: Record<string, SpaceBehaviorBasicFunctionWriteFieldBinding> = { ...basicFunctionWriteFields.value };
+  for (const [field, binding] of Object.entries(next)) {
+    const ontologyId = binding.ontologyUniqueIdentifier.trim();
+    if (scopedOntologyId && ontologyId !== scopedOntologyId) continue;
+    const propertyId = binding.propertyUniqueIdentifier.trim();
+    if (!ontologyId || !propertyId) continue;
+    if (!Object.prototype.hasOwnProperty.call(applicationPropertyOptionsByOntology.value, ontologyId)) continue;
+    const storageGroup = binding.storageGroup?.trim() || readCachedPropertyStorageGroup(ontologyId, propertyId);
+    if (storageGroup && !isMainStorageGroup(storageGroup)) {
+      if (binding.storageGroup?.trim() !== storageGroup) {
+        next[field] = { ...binding, storageGroup };
+        changed = true;
+      }
+      continue;
+    }
+    next[field] = {
+      ontologyUniqueIdentifier: ontologyId,
+      propertyUniqueIdentifier: "",
+      storageGroup: "",
+    };
+    changed = true;
+  }
+  if (changed) basicFunctionWriteFields.value = next;
+}
+
+/**
+ * @description 按展示字段列表同步写入字段行；新增行预填当前单对象并加载属性选项。
+ */
+function syncBasicFunctionWriteFieldsBySelectFields(): void {
+  if (!showBasicFunctionSelectFields.value) {
+    clearBasicFunctionWriteFields();
+    return;
+  }
+  const defaultOntologyId = basicFunctionOntologyIds.value[0]?.trim() ?? "";
+  const next: Record<string, SpaceBehaviorBasicFunctionWriteFieldBinding> = {};
+  for (const selectField of basicFunctionSelectFields.value) {
+    const field = selectField.trim();
+    if (!field) continue;
+    const previous = basicFunctionWriteFields.value[field];
+    const ontologyUniqueIdentifier = (previous?.ontologyUniqueIdentifier || defaultOntologyId).trim();
+    let propertyUniqueIdentifier = previous?.propertyUniqueIdentifier?.trim() ?? "";
+    let storageGroup = propertyUniqueIdentifier
+      ? previous?.storageGroup?.trim() || readCachedPropertyStorageGroup(ontologyUniqueIdentifier, propertyUniqueIdentifier)
+      : "";
+    if (propertyUniqueIdentifier && (!storageGroup || isMainStorageGroup(storageGroup))) {
+      if (storageGroup && isMainStorageGroup(storageGroup)) {
+        propertyUniqueIdentifier = "";
+        storageGroup = "";
+      } else if (Object.prototype.hasOwnProperty.call(applicationPropertyOptionsByOntology.value, ontologyUniqueIdentifier)) {
+        propertyUniqueIdentifier = "";
+        storageGroup = "";
+      }
+    }
+    next[field] = {
+      ontologyUniqueIdentifier,
+      propertyUniqueIdentifier,
+      storageGroup,
+    };
+    if (ontologyUniqueIdentifier) void ensureApplicationPropertyOptions(ontologyUniqueIdentifier);
+  }
+  basicFunctionWriteFields.value = next;
+}
+
+/**
+ * @description 更新写入字段目标对象并清空已选属性。
+ * @param selectField 展示字段 apiName。
+ * @param value 对象 uniqueIdentifier。
+ */
+function updateBasicFunctionWriteFieldOntologyId(selectField: string, value: string | number | boolean | undefined): void {
+  const ontologyUniqueIdentifier = typeof value === "string" ? value.trim() : "";
+  basicFunctionWriteFields.value = {
+    ...basicFunctionWriteFields.value,
+    [selectField]: {
+      ontologyUniqueIdentifier,
+      propertyUniqueIdentifier: "",
+      storageGroup: "",
+    },
+  };
+  if (ontologyUniqueIdentifier) void ensureApplicationPropertyOptions(ontologyUniqueIdentifier);
+}
+
+/**
+ * @description 更新写入字段目标属性。
+ * @param selectField 展示字段 apiName。
+ * @param value 属性 uniqueIdentifier。
+ */
+function updateBasicFunctionWriteFieldPropertyId(selectField: string, value: string | number | boolean | undefined): void {
+  const propertyUniqueIdentifier = typeof value === "string" ? value.trim() : "";
+  const previous = readBasicFunctionWriteFieldBinding(selectField);
+  basicFunctionWriteFields.value = {
+    ...basicFunctionWriteFields.value,
+    [selectField]: {
+      ontologyUniqueIdentifier: previous.ontologyUniqueIdentifier,
+      propertyUniqueIdentifier,
+      storageGroup: propertyUniqueIdentifier ? readCachedPropertyStorageGroup(previous.ontologyUniqueIdentifier, propertyUniqueIdentifier) : "",
+    },
+  };
 }
 
 /**
@@ -782,13 +1194,13 @@ async function loadBasicFunctionSelectFieldOptions(ontologyUniqueIdentifier: str
     if (currentTarget && !options.has(currentTarget)) {
       basicFunctionTargetField.value = "";
     }
+    syncBasicFunctionWriteFieldsBySelectFields();
   } catch (error) {
     if (requestToken !== basicFunctionSelectFieldLoadToken) return;
     basicFunctionSelectFieldOptions.value = [];
     basicFunctionSelectFields.value = [];
-    if (showBasicFunctionSelectFields.value) {
-      basicFunctionTargetField.value = "";
-    }
+    clearBasicFunctionWriteFields();
+    clearBasicFunctionTargetField();
     basicFunctionSelectFieldError.value = error instanceof Error ? error.message : "属性列表加载失败";
   } finally {
     if (requestToken === basicFunctionSelectFieldLoadToken) {
@@ -798,15 +1210,29 @@ async function loadBasicFunctionSelectFieldOptions(ontologyUniqueIdentifier: str
 }
 
 /**
- * @description 按当前基础函数对象选择同步展示字段可见性与加载。
+ * @description 按当前基础函数对象选择同步属性选项：单对象加载展示字段并清空聚合表单；多对象加载首对象属性并清空聚合参数名；无对象时清空选项。
  */
 function syncBasicFunctionSelectFieldsByOntologySelection(): void {
-  if (!showBasicFunctionOperatorSection.value || basicFunctionOntologyIds.value.length !== 1) {
+  if (!showBasicFunctionOperatorSection.value || basicFunctionOntologyIds.value.length === 0) {
     resetBasicFunctionSelectFields();
+    clearBasicFunctionTargetField();
+    clearBasicFunctionMultiWriteField();
     return;
   }
-  const ontologyId = basicFunctionOntologyIds.value[0]?.trim() ?? "";
-  void loadBasicFunctionSelectFieldOptions(ontologyId);
+  if (basicFunctionOntologyIds.value.length === 1) {
+    resetBasicFunctionAggFields();
+    clearBasicFunctionMultiWriteField();
+    const ontologyId = basicFunctionOntologyIds.value[0]?.trim() ?? "";
+    void loadBasicFunctionSelectFieldOptions(ontologyId);
+    syncBasicFunctionWriteFieldsBySelectFields();
+    return;
+  }
+  clearBasicFunctionTargetField();
+  clearBasicFunctionMultiWriteField();
+  basicFunctionSelectFields.value = [];
+  clearBasicFunctionWriteFields();
+  const firstOntologyId = basicFunctionOntologyIds.value[0]?.trim() ?? "";
+  void loadBasicFunctionSelectFieldOptions(firstOntologyId);
 }
 const attributeRows = ref<OntologyPropertyInfo[]>([]);
 const attributeLoading = ref(false);
@@ -1070,15 +1496,38 @@ function updateApplicationOutputPropertyId(rowKey: string, value: string | numbe
 
 /** 应用行为按对象缓存的属性选项（value=uniqueIdentifier）。 */
 const applicationPropertyOptionsByOntology = ref<Record<string, SpaceRelationObjectOption[]>>({});
+/** 按对象缓存属性 uniqueIdentifier → storageGroup，供基础函数 writeBack 组装。 */
+const applicationPropertyStorageGroupByOntology = ref<Record<string, Record<string, string>>>({});
 const applicationPropertyLoadingByOntology = ref<Record<string, boolean>>({});
 const applicationPropertyErrorByOntology = ref<Record<string, string>>({});
 const applicationPropertyLoadTokens: Record<string, number> = {};
+
+/**
+ * @description 写入属性 storageGroup 缓存。
+ * @param ontologyId 对象唯一标识。
+ * @param propertyId 属性唯一标识。
+ * @param storageGroup 存储分组。
+ */
+function cachePropertyStorageGroup(ontologyId: string, propertyId: string, storageGroup: string): void {
+  const ontologyKey = ontologyId.trim();
+  const propertyKey = propertyId.trim();
+  if (!ontologyKey || !propertyKey) return;
+  const previous = applicationPropertyStorageGroupByOntology.value[ontologyKey] ?? {};
+  applicationPropertyStorageGroupByOntology.value = {
+    ...applicationPropertyStorageGroupByOntology.value,
+    [ontologyKey]: {
+      ...previous,
+      [propertyKey]: normalizeStorageGroup(storageGroup),
+    },
+  };
+}
 
 /**
  * @description 清空应用行为属性选项缓存。
  */
 function clearApplicationPropertyOptionCache(): void {
   applicationPropertyOptionsByOntology.value = {};
+  applicationPropertyStorageGroupByOntology.value = {};
   applicationPropertyLoadingByOntology.value = {};
   applicationPropertyErrorByOntology.value = {};
   for (const key of Object.keys(applicationPropertyLoadTokens)) delete applicationPropertyLoadTokens[key];
@@ -1150,11 +1599,13 @@ async function ensureApplicationPropertyOptions(ontologyUniqueIdentifier: string
       const nameLabel = displayName ? (apiName ? `${displayName}（${apiName}）` : displayName) : apiName || value;
       const label = propertyType ? `${nameLabel} · ${propertyType}` : nameLabel;
       options.set(value, { value, label });
+      cachePropertyStorageGroup(ontologyId, value, item.storageGroup ?? "");
     }
     applicationPropertyOptionsByOntology.value = {
       ...applicationPropertyOptionsByOntology.value,
       [ontologyId]: [...options.values()].sort((left, right) => left.label.localeCompare(right.label, "zh-CN") || left.value.localeCompare(right.value)),
     };
+    pruneBasicFunctionWriteFieldsToChildProperties(ontologyId);
   } catch (error) {
     if (applicationPropertyLoadTokens[ontologyId] !== requestToken) return;
     applicationPropertyErrorByOntology.value = {
@@ -1194,8 +1645,12 @@ const showRelationInstanceSection = computed(() => kind.value === "basic" && val
 const showBasicFunctionOperatorSection = computed(() => kind.value === "basic" && valueType.value === "basicFunctionOperator");
 /** 基础函数仅选中单个对象时展示「展示字段」。 */
 const showBasicFunctionSelectFields = computed(() => showBasicFunctionOperatorSection.value && basicFunctionOntologyIds.value.length === 1);
-/** 单对象时参数配置属性列使用展示字段同源选项；多对象为空以保持文本输入。 */
-const basicFunctionFilterPropertyOptions = computed(() => (showBasicFunctionSelectFields.value ? basicFunctionSelectFieldOptions.value : []));
+/** 基础函数多对象时展示单行「写入字段」。 */
+const showBasicFunctionMultiWriteField = computed(() => showBasicFunctionOperatorSection.value && basicFunctionOntologyIds.value.length > 1);
+/** 已选对象时参数配置属性列使用首对象属性选项（与聚合参数名同源）。 */
+const basicFunctionFilterPropertyOptions = computed(() =>
+  showBasicFunctionOperatorSection.value && basicFunctionOntologyIds.value.length >= 1 ? basicFunctionSelectFieldOptions.value : [],
+);
 const basicFunctionSelectedCategoryId = computed(() => {
   const firstId = basicFunctionOntologyIds.value[0]?.trim() ?? "";
   if (!firstId) return null;
@@ -1563,6 +2018,7 @@ function handleValueTypeChange(value: string | number | boolean | undefined): vo
     resetBasicFunctionParameterConfig();
     resetBasicFunctionAggFields();
     resetBasicFunctionSelectFields();
+    clearBasicFunctionMultiWriteField();
     applyLockedBasicFunctionOntologyIds();
     return;
   }
@@ -1570,6 +2026,7 @@ function handleValueTypeChange(value: string | number | boolean | undefined): vo
   resetBasicFunctionParameterConfig();
   resetBasicFunctionAggFields();
   resetBasicFunctionSelectFields();
+  clearBasicFunctionMultiWriteField();
   if (value === "attributeValue") {
     applyLockedOntologyIdentifier();
   }
@@ -1835,6 +2292,10 @@ function buildBehaviorDraft(nextStatus: SpaceBehaviorStatus): SpaceBehaviorDraft
     basicFunctionAggFunc: showBasicFunctionOperatorSection.value ? basicFunctionAggFunc.value || "" : "",
     basicFunctionTargetField: showBasicFunctionOperatorSection.value ? (basicFunctionTargetField.value ?? "").trim() : "",
     basicFunctionSelectFields: showBasicFunctionOperatorSection.value ? [...(basicFunctionSelectFields.value ?? [])] : [],
+    basicFunctionWriteFields: showBasicFunctionOperatorSection.value ? { ...basicFunctionWriteFields.value } : {},
+    basicFunctionMultiWriteField: showBasicFunctionOperatorSection.value
+      ? { ...basicFunctionMultiWriteField.value }
+      : { ontologyUniqueIdentifier: "", propertyUniqueIdentifier: "", storageGroup: "" },
     basicFunctionParameterConfig: showBasicFunctionOperatorSection.value ? basicFunctionParameterConfig.value || "" : "",
     operatorParamBindings: {},
     operatorParamIds: {},
@@ -1900,12 +2361,27 @@ async function hydrateActionInfoSections(state: SpaceBehaviorActionInfoFormState
     basicFunctionAggFunc.value = matchedAgg ? matchedAgg.value : "";
     basicFunctionTargetField.value = state.basicFunctionTargetField;
     basicFunctionSelectFields.value = [...state.basicFunctionSelectFields];
+    basicFunctionWriteFields.value = { ...(state.basicFunctionWriteFields ?? {}) };
+    basicFunctionMultiWriteField.value = {
+      ontologyUniqueIdentifier: state.basicFunctionMultiWriteField?.ontologyUniqueIdentifier?.trim() ?? "",
+      propertyUniqueIdentifier: state.basicFunctionMultiWriteField?.propertyUniqueIdentifier?.trim() ?? "",
+    };
     basicFunctionParameterConfig.value = state.basicFunctionParameterConfig || stringifyBasicFilterConfig(createBlankBasicFilterDocument());
     if (basicFunctionOntologyIds.value.length === 1) {
+      resetBasicFunctionAggFields();
+      clearBasicFunctionMultiWriteField();
       void loadBasicFunctionSelectFieldOptions(basicFunctionOntologyIds.value[0] ?? "");
+      syncBasicFunctionWriteFieldsBySelectFields();
+    } else if (basicFunctionOntologyIds.value.length >= 1) {
+      basicFunctionSelectFields.value = [];
+      clearBasicFunctionWriteFields();
+      void loadBasicFunctionSelectFieldOptions(basicFunctionOntologyIds.value[0] ?? "");
+      if (basicFunctionMultiWriteField.value.ontologyUniqueIdentifier) {
+        void ensureBasicFunctionMainPropertyOptions(basicFunctionMultiWriteField.value.ontologyUniqueIdentifier);
+      }
     } else {
       resetBasicFunctionSelectFields();
-      basicFunctionSelectFields.value = [...state.basicFunctionSelectFields];
+      clearBasicFunctionMultiWriteField();
     }
     return;
   }
@@ -2017,18 +2493,36 @@ function submitBehaviorForm(action: "save" | "copy"): void {
       ElMessage.warning("请选择对象");
       return;
     }
-    if (basicFunctionOntologyIds.value.length > 1 && !basicFunctionAggFunc.value) {
-      ElMessage.warning("多对象时请选择聚合类型");
-      return;
-    }
-    if (basicFunctionAggFunc.value) {
-      if (!basicFunctionTargetField.value.trim()) {
-        ElMessage.warning("请填写聚合参数名");
+    if (showBasicFunctionSelectFields.value) {
+      if (!basicFunctionSelectFields.value.length) {
+        ElMessage.warning("请选择展示字段");
         return;
       }
-    } else if (!basicFunctionSelectFields.value.length) {
-      ElMessage.warning("请选择展示字段");
-      return;
+      for (const selectField of basicFunctionSelectFields.value) {
+        const binding = readBasicFunctionWriteFieldBinding(selectField);
+        if (!binding.ontologyUniqueIdentifier.trim() || !binding.propertyUniqueIdentifier.trim()) {
+          ElMessage.warning("请完善写入字段");
+          return;
+        }
+      }
+    } else {
+      if (basicFunctionOntologyIds.value.length > 1 && !basicFunctionAggFunc.value) {
+        ElMessage.warning("多对象时请选择聚合类型");
+        return;
+      }
+      if (basicFunctionAggFunc.value) {
+        if (!basicFunctionTargetField.value.trim()) {
+          ElMessage.warning("请选择聚合参数名");
+          return;
+        }
+      }
+      if (showBasicFunctionMultiWriteField.value) {
+        const multiWrite = basicFunctionMultiWriteField.value;
+        if (!multiWrite.ontologyUniqueIdentifier.trim() || !multiWrite.propertyUniqueIdentifier.trim()) {
+          ElMessage.warning("请完善写入字段");
+          return;
+        }
+      }
     }
     const filterError = validateBasicFilterDocument(parseBasicFilterConfig(basicFunctionParameterConfig.value));
     if (filterError) {
@@ -2266,6 +2760,7 @@ watch(
     resetBasicFunctionParameterConfig();
     resetBasicFunctionAggFields();
     resetBasicFunctionSelectFields();
+    clearBasicFunctionMultiWriteField();
     detailError.value = "";
     unsupportedEditReason.value = "";
     if (props.behavior) {
@@ -2339,6 +2834,42 @@ defineExpose({
   :deep(.el-select__selection) {
     flex-wrap: wrap;
   }
+}
+
+.behavior-form-dialog__basic-function-write-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 12px;
+  width: 100%;
+}
+
+.behavior-form-dialog__basic-function-write-field {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.9fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.behavior-form-dialog__basic-function-write-field--multi {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.behavior-form-dialog__basic-function-write-field .behavior-form-dialog__object-property-pickers {
+  display: contents;
+}
+
+.behavior-form-dialog__basic-function-write-field-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--aircas-color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .behavior-form-dialog__section h3,
@@ -2502,6 +3033,11 @@ defineExpose({
 @media (max-width: 900px) {
   .behavior-form-dialog__grid {
     grid-template-columns: 1fr;
+  }
+
+  .behavior-form-dialog__basic-function-write-field {
+    grid-template-columns: 1fr;
+    align-items: stretch;
   }
 
   .behavior-form-dialog__attribute-head {

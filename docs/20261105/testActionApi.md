@@ -167,6 +167,7 @@
 - **不传实例**：默认查全部
 - **单对象**：传 `entityPrimaryKey` 查单个实例
 - **多对象**：传 `entityPrimaryKeys`（对象唯一标识 → 实例主键）
+- **带回写**：创建时配置了 `basicFunction.writeBack` 时，额外传 `writeBackEntityPrimaryKey`（回写目标实例主键）
 
 **4.1 不传实例（默认查全部）**
 
@@ -193,6 +194,31 @@
 }
 ```
 
+**4.4 单对象回写**
+
+```json
+{
+  "ontologySpaceId": 1,
+  "actionApi": "query_satellite_speed_writeback",
+  "entityPrimaryKey": 101,
+  "writeBackEntityPrimaryKey": 301
+}
+```
+
+**4.5 多对象聚合 + 回写**
+
+```json
+{
+  "ontologySpaceId": 1,
+  "actionApi": "sum_cost_fly_objects_writeback",
+  "entityPrimaryKeys": {
+    "3f2a9c1e-7b4d-4a86-9e21-5c8d1f0a6b34": 101,
+    "a5e8c206-3f17-4d92-8b74-1c6f9d3e5028": 205
+  },
+  "writeBackEntityPrimaryKey": 301
+}
+```
+
 ---
 
 #### 5.3.4 测试应用行为
@@ -203,15 +229,16 @@
 
 ### 5.1 请求体（`ActionTestParam`）
 
-| 字段名                 | 类型                  | 必填 | 说明                                                                                                 |
-| ---------------------- | --------------------- | ---- | ---------------------------------------------------------------------------------------------------- |
-| `ontologySpaceId`      | Integer               | 是   | 对象空间 id                                                                                          |
-| `actionApi`            | String                | 是   | 行为 api                                                                                             |
-| `entityPrimaryKey`     | Object                | 否   | 单个实例主键；**仅当行为本身带顶层 `ontologyIdentifier` 时生效**。新建的应用行为一般不带对象，见 5.6 |
-| `entityPrimaryKeys`    | Map\<String, Object\> | 否   | 对象唯一标识 → 实例主键。映射涉及多个对象、或行为没有顶层对象时用它                                  |
-| `linkEntityPrimaryKey` | Object                | 否   | 关系对端实例主键。传了只跑这一对；不传则遍历对端对象的**全部实例**                                   |
-| `params`               | Map\<String, Object\> | 否   | 仅 `sourceType=EXTERNAL` 的入参，key 为 `parameterName`（不填时默认算子参数名）                      |
-| `dataPrimaryKey`       | Object                | 否   | **应用行为不使用**；只有基础行为-属性值-修改/删除需要                                                |
+| 字段名                      | 类型                  | 必填 | 说明                                                                                                 |
+| --------------------------- | --------------------- | ---- | ---------------------------------------------------------------------------------------------------- |
+| `ontologySpaceId`           | Integer               | 是   | 对象空间 id                                                                                          |
+| `actionApi`                 | String                | 是   | 行为 api                                                                                             |
+| `entityPrimaryKey`          | Object                | 否   | 单个实例主键；**仅当行为本身带顶层 `ontologyIdentifier` 时生效**。新建的应用行为一般不带对象，见 5.6 |
+| `entityPrimaryKeys`         | Map\<String, Object\> | 否   | 对象唯一标识 → 实例主键。映射涉及多个对象、或行为没有顶层对象时用它                                  |
+| `writeBackEntityPrimaryKey` | Object                | 否   | 回写目标实例主键；**基础函数**创建时配置了 `basicFunction.writeBack` 时传                            |
+| `linkEntityPrimaryKey`      | Object                | 否   | 关系对端实例主键。传了只跑这一对；不传则遍历对端对象的**全部实例**                                   |
+| `params`                    | Map\<String, Object\> | 否   | 仅 `sourceType=EXTERNAL` 的入参，key 为 `parameterName`（不填时默认算子参数名）                      |
+| `dataPrimaryKey`            | Object                | 否   | **应用行为不使用**；只有基础行为-属性值-修改/删除需要                                                |
 
 > 每个字段的详细作用、`params` 支持的全部值类型、10 种场景的完整请求示例，见
 > [api-application-action-test-params.md](./api-application-action-test-params.md)。

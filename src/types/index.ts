@@ -50,6 +50,8 @@ export type {
   CreateOntologyActionBasicFunctionFilterNode,
   CreateOntologyActionBasicFunctionFilters,
   CreateOntologyActionBasicFunctionMode,
+  CreateOntologyActionBasicFunctionWriteBack,
+  CreateOntologyActionBasicFunctionWriteBackBinding,
   CreateOntologyActionKind,
   CreateOntologyActionLinkMapping,
   CreateOntologyActionMappingCategory,
@@ -412,6 +414,7 @@ export type {
   BehaviorTreeSavePayload,
   BehaviorTreeSaveStatus,
   BehaviorTreeSerializedNode,
+  BehaviorTreeSuccessConditionDraft,
   BehaviorTreeValueType,
 } from "./pages/behaviorTreeOrchestrationType";
 export type { DatasourceBuildSelection, DatasourceConnection, DatasourceDbType, DatasourceField, DatasourceTable } from "./pages/datasourceBuildType";
@@ -666,6 +669,7 @@ export type {
   SpaceBehaviorApplicationOutputMode,
   SpaceBehaviorApplicationParamRowSnapshot,
   SpaceBehaviorBasicAction,
+  SpaceBehaviorBasicFunctionWriteFieldBinding,
   SpaceBehaviorCategoryNode,
   SpaceBehaviorCategoryNodeKind,
   SpaceBehaviorDeletePreflight,

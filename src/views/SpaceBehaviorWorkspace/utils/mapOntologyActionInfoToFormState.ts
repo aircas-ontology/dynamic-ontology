@@ -1,6 +1,8 @@
 import type {
+  CreateOntologyActionBasicFunctionWriteBack,
   GetOntologyActionInfoData,
   SpaceBehaviorBasicAction,
+  SpaceBehaviorBasicFunctionWriteFieldBinding,
   SpaceBehaviorKind,
   SpaceBehaviorRelationTargetStatus,
   SpaceBehaviorRelationVisibilityWindow,
@@ -13,6 +15,68 @@ import {
   stringifyBasicFilterConfig,
 } from "../../../utils/functionOperatorBasicFilter.ts";
 import { mapApplicationActionInfoBindingSeeds, type SpaceBehaviorApplicationBindingSeed } from "./applyApplicationActionInfoBindings.ts";
+
+/** 基础函数 writeBack 回填表单结果。 */
+interface BasicFunctionWriteBackFormState {
+  basicFunctionWriteFields: Record<string, SpaceBehaviorBasicFunctionWriteFieldBinding>;
+  basicFunctionMultiWriteField: SpaceBehaviorBasicFunctionWriteFieldBinding;
+}
+
+/**
+ * @description 空的基础函数写入字段回填状态。
+ * @returns 空写入绑定。
+ */
+function emptyBasicFunctionWriteBackFormState(): BasicFunctionWriteBackFormState {
+  return {
+    basicFunctionWriteFields: {},
+    basicFunctionMultiWriteField: { ontologyUniqueIdentifier: "", propertyUniqueIdentifier: "", storageGroup: "" },
+  };
+}
+
+/**
+ * @description 将详情 writeBack 映射为表单写入字段（查询按 sourceField，聚合按单行）。
+ * @param writeBack 详情回写配置。
+ * @param selectFields 展示字段 apiName 列表。
+ * @returns 表单写入字段状态。
+ */
+function mapBasicFunctionWriteBackToFormState(
+  writeBack: CreateOntologyActionBasicFunctionWriteBack | null | undefined,
+  selectFields: string[],
+): BasicFunctionWriteBackFormState {
+  const empty = emptyBasicFunctionWriteBackFormState();
+  if (!writeBack || typeof writeBack !== "object") return empty;
+  const targetOntologyIdentifier = typeof writeBack.targetOntologyIdentifier === "string" ? writeBack.targetOntologyIdentifier.trim() : "";
+  const targetStorageGroup = typeof writeBack.targetStorageGroup === "string" ? writeBack.targetStorageGroup.trim() : "";
+  const bindings = Array.isArray(writeBack.bindings) ? writeBack.bindings : [];
+  if (!targetOntologyIdentifier || !bindings.length) return empty;
+
+  if (selectFields.length) {
+    const writeFields: Record<string, SpaceBehaviorBasicFunctionWriteFieldBinding> = {};
+    for (const binding of bindings) {
+      const sourceField = typeof binding?.sourceField === "string" ? binding.sourceField.trim() : "";
+      const targetPropertyIdentifier = typeof binding?.targetPropertyIdentifier === "string" ? binding.targetPropertyIdentifier.trim() : "";
+      if (!sourceField || !targetPropertyIdentifier) continue;
+      writeFields[sourceField] = {
+        ontologyUniqueIdentifier: targetOntologyIdentifier,
+        propertyUniqueIdentifier: targetPropertyIdentifier,
+        storageGroup: targetStorageGroup,
+      };
+    }
+    return { ...empty, basicFunctionWriteFields: writeFields };
+  }
+
+  const firstBinding = bindings[0];
+  const targetPropertyIdentifier = typeof firstBinding?.targetPropertyIdentifier === "string" ? firstBinding.targetPropertyIdentifier.trim() : "";
+  if (!targetPropertyIdentifier) return empty;
+  return {
+    ...empty,
+    basicFunctionMultiWriteField: {
+      ontologyUniqueIdentifier: targetOntologyIdentifier,
+      propertyUniqueIdentifier: targetPropertyIdentifier,
+      storageGroup: targetStorageGroup || "main",
+    },
+  };
+}
 
 /** 行为详情映射后的表单回填状态。 */
 export interface SpaceBehaviorActionInfoFormState {
@@ -30,6 +94,10 @@ export interface SpaceBehaviorActionInfoFormState {
   basicFunctionAggFunc: string;
   basicFunctionTargetField: string;
   basicFunctionSelectFields: string[];
+  /** 写入字段表单状态；接口未返回前回填为空对象。 */
+  basicFunctionWriteFields: Record<string, SpaceBehaviorBasicFunctionWriteFieldBinding>;
+  /** 多对象写入字段；接口未返回前回填为空绑定。 */
+  basicFunctionMultiWriteField: SpaceBehaviorBasicFunctionWriteFieldBinding;
   basicFunctionParameterConfig: string;
   functionOperatorId: string;
   functionOperatorName: string;
@@ -185,6 +253,10 @@ export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData
     subjectType === "BASIC_FUNCTION" && Array.isArray(basicFunction?.selectFields)
       ? basicFunction.selectFields.map((item) => String(item ?? "").trim()).filter(Boolean)
       : [];
+  const mappedWriteBack =
+    subjectType === "BASIC_FUNCTION"
+      ? mapBasicFunctionWriteBackToFormState(basicFunction?.writeBack, basicFunctionSelectFields)
+      : emptyBasicFunctionWriteBackFormState();
   const basicFunctionParameterConfig =
     subjectType === "BASIC_FUNCTION"
       ? stringifyBasicFilterConfig(mapActionFiltersToBasicFilterDocument(basicFunction?.filters ?? null))
@@ -220,6 +292,8 @@ export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData
     basicFunctionAggFunc,
     basicFunctionTargetField,
     basicFunctionSelectFields,
+    basicFunctionWriteFields: mappedWriteBack.basicFunctionWriteFields,
+    basicFunctionMultiWriteField: mappedWriteBack.basicFunctionMultiWriteField,
     basicFunctionParameterConfig,
     functionOperatorId,
     functionOperatorName,

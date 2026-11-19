@@ -512,7 +512,7 @@ export function useBehaviorTreeOrchestration(meta: BehaviorTreeOrchestrationMeta
     const token = ++saveToken;
     saveStatus.value = "submitting";
     const method = resolveBehaviorTreeSaveMethod(hasPersisted.value);
-    const payload = buildBehaviorTreeSavePayload(model, kindMeta, meta);
+    const payload = buildBehaviorTreeSavePayload(model, kindMeta, meta, availableActions.value);
     try {
       const response = method === "POST" ? await postCreateBehaviorTreeActionInterface(payload) : await putUpdateBehaviorTreeActionInterface(payload);
       if (token !== saveToken) return;

@@ -67,6 +67,7 @@
                 @patch-config="handlePatchConfig"
                 @patch-input-binding="handlePatchInputBinding"
                 @patch-output-binding="handlePatchOutputBinding"
+                @patch-success-condition="handlePatchSuccessCondition"
                 @reorder="reorderBehaviorTreeChild"
                 @detach-root="detachBehaviorTreeNodeToRoot"
                 @delete-node="deleteBehaviorTreeNode"
@@ -126,10 +127,16 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import type { BehaviorTreeInputBindingDraft, BehaviorTreeNodeDraft, BehaviorTreeOrchestrationMeta, BehaviorTreePersistMode } from "@/types";
+import type {
+  BehaviorTreeInputBindingDraft,
+  BehaviorTreeNodeDraft,
+  BehaviorTreeOrchestrationMeta,
+  BehaviorTreePersistMode,
+  BehaviorTreeSuccessConditionDraft,
+} from "@/types";
 import { useBehaviorTreeExecution } from "@/composables/behaviorTree/useBehaviorTreeExecution";
 import BehaviorTreeExecPanel from "@/components/BehaviorTreeExecPanel.vue";
-import { patchBehaviorTreeInputBinding, patchBehaviorTreeOutputBinding } from "./utils/behaviorTreeActionBindings";
+import { patchBehaviorTreeInputBinding, patchBehaviorTreeOutputBinding, patchBehaviorTreeSuccessCondition } from "./utils/behaviorTreeActionBindings";
 import { findBehaviorTreeNode } from "./utils/behaviorTreeModel";
 import { useBehaviorTreeGraph } from "./composables/useBehaviorTreeGraph";
 import { useBehaviorTreeOrchestration } from "./composables/useBehaviorTreeOrchestration";
@@ -303,6 +310,7 @@ function handlePatchConfig(id: string, field: string, value: string): void {
   if (field === "actionApi") {
     node.config.inputBindings = [];
     node.config.outputBindings = [];
+    delete node.config.successCondition;
   }
   bumpRevision();
 }
@@ -336,6 +344,19 @@ function handlePatchOutputBinding(id: string, outputName: string, blackboardKey:
   if (!node) return;
   node.config = node.config || {};
   patchBehaviorTreeOutputBinding(node.config, outputName, blackboardKey);
+  bumpRevision();
+}
+
+/**
+ * @description 更新 ACTION 执行成功条件。
+ * @param id 节点 id。
+ * @param patch 条件补丁。
+ */
+function handlePatchSuccessCondition(id: string, patch: Partial<BehaviorTreeSuccessConditionDraft>): void {
+  const node = findBehaviorTreeNode(model.roots, id);
+  if (!node) return;
+  node.config = node.config || {};
+  patchBehaviorTreeSuccessCondition(node.config, patch);
   bumpRevision();
 }
 

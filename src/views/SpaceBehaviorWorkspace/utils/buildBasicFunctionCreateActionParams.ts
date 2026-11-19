@@ -1,10 +1,19 @@
-import type { CreateOntologyActionBasicFunction, CreateOntologyActionParams, FunctionOperatorAggFunc, SpaceBehaviorDraft } from "@/types";
+import type {
+  CreateOntologyActionBasicFunction,
+  CreateOntologyActionBasicFunctionWriteBack,
+  CreateOntologyActionBasicFunctionWriteBackBinding,
+  CreateOntologyActionParams,
+  FunctionOperatorAggFunc,
+  SpaceBehaviorBasicFunctionWriteFieldBinding,
+  SpaceBehaviorDraft,
+} from "@/types";
 import {
   createBlankBasicFilterDocument,
   mapBasicFilterDocumentToActionFilters,
   parseBasicFilterConfig,
   validateBasicFilterDocument,
 } from "../../../utils/functionOperatorBasicFilter.ts";
+import { isMainStorageGroup, normalizeStorageGroup } from "../../../utils/behaviorParameters/resolveAttributeValueSelection.ts";
 
 export type BuildBasicFunctionCreateActionParamsResult = CreateOntologyActionParams | { error: string };
 
@@ -50,6 +59,90 @@ function resolveAggFunc(value: unknown): FunctionOperatorAggFunc | "" {
 }
 
 /**
+ * @description 读取写入字段绑定；缺失字段按空串处理。
+ * @param binding 原始绑定。
+ * @returns 规范化绑定。
+ */
+function normalizeWriteFieldBinding(binding: SpaceBehaviorBasicFunctionWriteFieldBinding | undefined): SpaceBehaviorBasicFunctionWriteFieldBinding {
+  return {
+    ontologyUniqueIdentifier: readTrimmedText(binding?.ontologyUniqueIdentifier),
+    propertyUniqueIdentifier: readTrimmedText(binding?.propertyUniqueIdentifier),
+    storageGroup: normalizeStorageGroup(binding?.storageGroup),
+  };
+}
+
+/**
+ * @description 由查询模式写入字段组装 writeBack。
+ * @param selectFields 展示字段 apiName 列表。
+ * @param writeFields 展示字段 → 写入绑定。
+ * @returns writeBack 或错误；全空时返回 null。
+ */
+function buildQueryWriteBack(
+  selectFields: string[],
+  writeFields: Record<string, SpaceBehaviorBasicFunctionWriteFieldBinding>,
+): CreateOntologyActionBasicFunctionWriteBack | null | { error: string } {
+  const bindings: CreateOntologyActionBasicFunctionWriteBackBinding[] = [];
+  const ontologyIds = new Set<string>();
+  const storageGroups = new Set<string>();
+  let filledCount = 0;
+  let incomplete = false;
+
+  for (const selectField of selectFields) {
+    const binding = normalizeWriteFieldBinding(writeFields[selectField]);
+    const hasOntology = Boolean(binding.ontologyUniqueIdentifier);
+    const hasProperty = Boolean(binding.propertyUniqueIdentifier);
+    if (!hasOntology && !hasProperty) continue;
+    if (!hasOntology || !hasProperty) {
+      incomplete = true;
+      break;
+    }
+    filledCount += 1;
+    ontologyIds.add(binding.ontologyUniqueIdentifier);
+    storageGroups.add(binding.storageGroup || "");
+    bindings.push({
+      sourceField: selectField,
+      targetPropertyIdentifier: binding.propertyUniqueIdentifier,
+    });
+  }
+
+  if (incomplete) return { error: "请完善写入字段" };
+  if (filledCount === 0) return null;
+  if (filledCount !== selectFields.length) return { error: "请完善写入字段" };
+  if (ontologyIds.size !== 1) return { error: "写入字段须选择同一目标对象" };
+  if (storageGroups.size !== 1) return { error: "写入字段须属于同一存储分组" };
+
+  const targetOntologyIdentifier = [...ontologyIds][0] ?? "";
+  const targetStorageGroup = [...storageGroups][0] ?? "";
+  const writeBack: CreateOntologyActionBasicFunctionWriteBack = {
+    targetOntologyIdentifier,
+    bindings,
+  };
+  if (targetStorageGroup && !isMainStorageGroup(targetStorageGroup)) {
+    writeBack.targetStorageGroup = targetStorageGroup;
+  }
+  return writeBack;
+}
+
+/**
+ * @description 由多对象聚合写入字段组装 writeBack。
+ * @param multiWriteField 单行写入绑定。
+ * @returns writeBack 或错误；全空时返回 null。
+ */
+function buildAggregateWriteBack(
+  multiWriteField: SpaceBehaviorBasicFunctionWriteFieldBinding | undefined,
+): CreateOntologyActionBasicFunctionWriteBack | null | { error: string } {
+  const binding = normalizeWriteFieldBinding(multiWriteField);
+  const hasOntology = Boolean(binding.ontologyUniqueIdentifier);
+  const hasProperty = Boolean(binding.propertyUniqueIdentifier);
+  if (!hasOntology && !hasProperty) return null;
+  if (!hasOntology || !hasProperty) return { error: "请完善写入字段" };
+  return {
+    targetOntologyIdentifier: binding.ontologyUniqueIdentifier,
+    bindings: [{ targetPropertyIdentifier: binding.propertyUniqueIdentifier }],
+  };
+}
+
+/**
  * @description 按基础函数创建约定组装 POST/PUT /ontology/action 请求体。
  * @param draft 行为草稿。
  * @returns 请求体；校验失败时返回带 error 的对象。
@@ -89,9 +182,10 @@ export function buildBasicFunctionCreateActionParams(draft: SpaceBehaviorDraft):
   }
 
   let basicFunction: CreateOntologyActionBasicFunction;
+  let writeBackResult: CreateOntologyActionBasicFunctionWriteBack | null | { error: string };
   if (aggFunc) {
     if (!targetField) {
-      return { error: "请填写聚合参数名" };
+      return { error: "请选择聚合参数名" };
     }
     basicFunction = {
       ontologyIdentifiers,
@@ -99,6 +193,7 @@ export function buildBasicFunctionCreateActionParams(draft: SpaceBehaviorDraft):
       aggFunc,
       targetField,
     };
+    writeBackResult = buildAggregateWriteBack(draft.basicFunctionMultiWriteField);
   } else {
     if (!selectFields.length) {
       return { error: "请选择展示字段" };
@@ -108,6 +203,14 @@ export function buildBasicFunctionCreateActionParams(draft: SpaceBehaviorDraft):
       mode: "QUERY",
       selectFields,
     };
+    writeBackResult = buildQueryWriteBack(selectFields, draft.basicFunctionWriteFields ?? {});
+  }
+
+  if (writeBackResult && "error" in writeBackResult) {
+    return { error: writeBackResult.error };
+  }
+  if (writeBackResult) {
+    basicFunction = { ...basicFunction, writeBack: writeBackResult };
   }
 
   const filters = mapBasicFilterDocumentToActionFilters(filterDoc);

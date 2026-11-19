@@ -28,6 +28,23 @@ export interface CreateOntologyActionBasicFunctionFilters {
   children: CreateOntologyActionBasicFunctionFilterNode[];
 }
 
+/** 基础函数行为 writeBack.bindings 单项。 */
+export interface CreateOntologyActionBasicFunctionWriteBackBinding {
+  /** 查询回写时必填；对应 selectFields 中的 apiName。 */
+  sourceField?: string;
+  /** 回写目标属性 uniqueIdentifier。 */
+  targetPropertyIdentifier: string;
+}
+
+/** 基础函数行为结果回写配置。 */
+export interface CreateOntologyActionBasicFunctionWriteBack {
+  /** 回写目标对象 uniqueIdentifier。 */
+  targetOntologyIdentifier: string;
+  /** 回写子表时必填；回写主表（main）时不传。 */
+  targetStorageGroup?: string;
+  bindings: CreateOntologyActionBasicFunctionWriteBackBinding[];
+}
+
 /** 基础函数行为 basicFunction 配置。 */
 export interface CreateOntologyActionBasicFunction {
   ontologyIdentifiers: string[];
@@ -36,6 +53,8 @@ export interface CreateOntologyActionBasicFunction {
   targetField?: string;
   selectFields?: string[];
   filters?: CreateOntologyActionBasicFunctionFilters;
+  /** 结果回写；无回写时不传。 */
+  writeBack?: CreateOntologyActionBasicFunctionWriteBack;
 }
 
 /** 创建行为请求中的基础操作。 */
