@@ -48,6 +48,7 @@ import {
   collectBehaviorTreeExecMissingFields,
   createBehaviorTreeNodeExecDraft,
   findBehaviorTreeExecuteNodePlan,
+  isBehaviorTreeListPropertyMultiRowParam,
   listBehaviorTreeBlackboardStorageGroups,
   listBehaviorTreeExecuteNodePlans,
   listBehaviorTreeExecPlanInstanceRequirements,
@@ -837,8 +838,14 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(execPanelSource, /ensure-group-rows/);
   assert.match(execPanelSource, /PROPERTY/);
   assert.match(execPanelSource, /EXTERNAL/);
+  assert.match(execPanelSource, /isBehaviorTreeListPropertyMultiRowParam|isListPropertyMultiRowParam/);
+  assert.match(execPanelSource, /multiple/);
+  assert.match(execPanelSource, /rowKeys/);
+  assert.match(execPanelSource, /update-node-input-rows/);
+  assert.match(execPlanUtilSource, /isBehaviorTreeListPropertyMultiRowParam/);
+  assert.match(execPlanUtilSource, /paramName/);
   assert.match(execPanelSource, /target\.mode === 'DATA_PRIMARY_KEY' \|\| target\.rowRequired/);
-  assert.doesNotMatch(execPanelSource, /storageGroup !== 'main'/);
+  assert.match(execPanelSource, /storageGroup/);
   assert.match(execPanelSource, /block\.actionDisplayName/);
   assert.doesNotMatch(execPanelSource, /block\.actionApi/);
   assert.doesNotMatch(execPanelSource, /<code>\{\{\s*block\.nodeId\s*\}\}<\/code>/);
@@ -1256,6 +1263,165 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
   assert.equal(built.payload.nodeExecutes?.node_action_1?.dataPrimaryKey, "row-9");
   assert.deepEqual(built.payload.nodeExecutes?.node_action_1?.inputParams?.speed, { entityPrimaryKey: "tank-9" });
   assert.equal(built.payload.nodeExecutes?.node_action_1?.params?.fixedRate, undefined);
+
+  assert.equal(
+    isBehaviorTreeListPropertyMultiRowParam({
+      key: "longitude",
+      paramName: "orbitPoints",
+      valueType: "LIST",
+      sourceType: "PROPERTY",
+      storageGroup: "orbit_point",
+    }),
+    true,
+  );
+  assert.equal(isBehaviorTreeListPropertyMultiRowParam(null), false);
+  assert.equal(isBehaviorTreeListPropertyMultiRowParam({ key: "x", valueType: "STRING", sourceType: "PROPERTY", storageGroup: "orbit_point" }), false);
+  assert.equal(isBehaviorTreeListPropertyMultiRowParam({ key: "x", valueType: "LIST", sourceType: "PROPERTY", storageGroup: "" }), false);
+  assert.equal(
+    isBehaviorTreeListPropertyMultiRowParam({
+      key: "longitude",
+      valueType: "LIST",
+      sourceType: "PROPERTY",
+      storageGroup: "main",
+    }),
+    false,
+  );
+  assert.equal(
+    isBehaviorTreeListPropertyMultiRowParam({
+      key: "longitude",
+      valueType: "LIST",
+      sourceType: "LIST",
+      storageGroup: "orbit_point",
+    }),
+    false,
+  );
+
+  const listDraft = createBehaviorTreeNodeExecDraft();
+  listDraft.inputParams.longitude = {
+    entityPrimaryKey: "sat-1",
+    entityPrimaryKeys: [],
+    rows: {},
+    rowKeys: ["11", "12"],
+  };
+  const listSingleDraft = createBehaviorTreeNodeExecDraft();
+  listSingleDraft.inputParams.longitude = {
+    entityPrimaryKey: "sat-1",
+    entityPrimaryKeys: [],
+    rows: {},
+    rowKeys: ["11"],
+  };
+  const listPlan = {
+    nodes: [
+      {
+        nodeId: "node_list_1",
+        inputParams: [
+          {
+            key: "longitude",
+            paramName: "orbitPoints",
+            valueType: "LIST",
+            sourceType: "PROPERTY",
+            storageGroup: "orbit_point",
+            objectIdentifier: "obj.sat",
+          },
+        ],
+      },
+    ],
+  };
+  const listMultiBuilt = buildBehaviorTreeTestPayload({
+    spaceId: "100",
+    treeApi: "tree.list",
+    plan: listPlan,
+    blackboard: [],
+    objectProperties: {},
+    externalInputDraft: {},
+    blackboardObjectKeys: {},
+    nodeDrafts: { node_list_1: listDraft },
+  });
+  assert.equal("payload" in listMultiBuilt, true);
+  if ("payload" in listMultiBuilt) {
+    assert.equal(listMultiBuilt.payload.nodeExecutes?.node_list_1?.inputParams?.longitude, undefined);
+    assert.deepEqual(listMultiBuilt.payload.nodeExecutes?.node_list_1?.inputParams?.orbitPoints, [
+      { entityPrimaryKey: "sat-1", dataPrimaryKeys: { orbit_point: "11" } },
+      { entityPrimaryKey: "sat-1", dataPrimaryKeys: { orbit_point: "12" } },
+    ]);
+  }
+  const listSingleBuilt = buildBehaviorTreeTestPayload({
+    spaceId: "100",
+    treeApi: "tree.list",
+    plan: listPlan,
+    blackboard: [],
+    objectProperties: {},
+    externalInputDraft: {},
+    blackboardObjectKeys: {},
+    nodeDrafts: { node_list_1: listSingleDraft },
+  });
+  assert.equal("payload" in listSingleBuilt, true);
+  if ("payload" in listSingleBuilt) {
+    assert.deepEqual(listSingleBuilt.payload.nodeExecutes?.node_list_1?.inputParams?.orbitPoints, {
+      entityPrimaryKey: "sat-1",
+      dataPrimaryKeys: { orbit_point: "11" },
+    });
+  }
+  const listEmptyRowsDraft = createBehaviorTreeNodeExecDraft();
+  listEmptyRowsDraft.inputParams.longitude = {
+    entityPrimaryKey: "sat-1",
+    entityPrimaryKeys: [],
+    rows: {},
+    rowKeys: [],
+  };
+  const listEmptyRowsBuilt = buildBehaviorTreeTestPayload({
+    spaceId: "100",
+    treeApi: "tree.list",
+    plan: listPlan,
+    blackboard: [],
+    objectProperties: {},
+    externalInputDraft: {},
+    blackboardObjectKeys: {},
+    nodeDrafts: { node_list_1: listEmptyRowsDraft },
+  });
+  assert.equal("payload" in listEmptyRowsBuilt, true);
+  if ("payload" in listEmptyRowsBuilt) {
+    assert.equal(listEmptyRowsBuilt.payload.nodeExecutes?.node_list_1, undefined);
+  }
+  const listFallbackKeyDraft = createBehaviorTreeNodeExecDraft();
+  listFallbackKeyDraft.inputParams.longitude = {
+    entityPrimaryKey: "sat-2",
+    entityPrimaryKeys: [],
+    rows: {},
+    rowKeys: ["21"],
+  };
+  const listFallbackKeyBuilt = buildBehaviorTreeTestPayload({
+    spaceId: "100",
+    treeApi: "tree.list",
+    plan: {
+      nodes: [
+        {
+          nodeId: "node_list_1",
+          inputParams: [
+            {
+              key: "longitude",
+              valueType: "LIST",
+              sourceType: "PROPERTY",
+              storageGroup: "orbit_point",
+              objectIdentifier: "obj.sat",
+            },
+          ],
+        },
+      ],
+    },
+    blackboard: [],
+    objectProperties: {},
+    externalInputDraft: {},
+    blackboardObjectKeys: {},
+    nodeDrafts: { node_list_1: listFallbackKeyDraft },
+  });
+  assert.equal("payload" in listFallbackKeyBuilt, true);
+  if ("payload" in listFallbackKeyBuilt) {
+    assert.deepEqual(listFallbackKeyBuilt.payload.nodeExecutes?.node_list_1?.inputParams?.longitude, {
+      entityPrimaryKey: "sat-2",
+      dataPrimaryKeys: { orbit_point: "21" },
+    });
+  }
   assert.deepEqual(built.payload.nodeExecutes?.node_link_1?.entityPrimaryKeys, { from: "tank-1", to: "base-2" });
   assert.deepEqual(built.payload.nodeExecutes?.node_multi_1?.entityPrimaryKeys, { "obj.a": "a1", "obj.b": "b2" });
   assert.deepEqual(built.payload.nodeExecutes?.node_multi_1?.outputParams?.["prop.out"], {

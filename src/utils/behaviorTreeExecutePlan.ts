@@ -432,6 +432,63 @@ export function collectBehaviorTreeExecMissingFields(options: {
 }
 
 /**
+ * @description 判断入参是否为 LIST 对象属性子表多行（详情三字段同时满足）。
+ * @param param 节点入参定义。
+ * @returns 是否允许多选子表行。
+ */
+export function isBehaviorTreeListPropertyMultiRowParam(
+  param: Pick<BehaviorTreeExecuteInputParam, "valueType" | "sourceType" | "storageGroup"> | null | undefined,
+): boolean {
+  if (!param) return false;
+  const valueType = String(param.valueType || "")
+    .trim()
+    .toUpperCase();
+  const sourceType = String(param.sourceType || "")
+    .trim()
+    .toUpperCase();
+  const storageGroup = String(param.storageGroup || "").trim();
+  return valueType === "LIST" && sourceType === "PROPERTY" && storageGroup !== "" && storageGroup !== "main";
+}
+
+/**
+ * @description 解析节点入参写入 inputParams 的请求键（优先 paramName）。
+ * @param param 节点入参定义。
+ * @returns 请求键。
+ */
+export function resolveBehaviorTreeInputParamRequestKey(param: Pick<BehaviorTreeExecuteInputParam, "key" | "paramName"> | null | undefined): string {
+  if (!param) return "";
+  return String(param.paramName || param.key || "").trim();
+}
+
+/**
+ * @description 组装节点入参读位置（实例 + 可选分组行）。
+ * @param entityPrimaryKey 实体主键。
+ * @param rows 分组名到行主键。
+ * @returns 请求位置对象。
+ */
+function buildBehaviorTreeInputParamLocation(
+  entityPrimaryKey: string,
+  rows: Record<string, string>,
+): {
+  entityPrimaryKey: string;
+  dataPrimaryKeys?: Record<string, string | number>;
+} {
+  const location: {
+    entityPrimaryKey: string;
+    dataPrimaryKeys?: Record<string, string | number>;
+  } = { entityPrimaryKey };
+  const dataPrimaryKeys: Record<string, string | number> = {};
+  for (const [group, row] of Object.entries(rows)) {
+    const groupName = group.trim();
+    const rowText = String(row ?? "").trim();
+    if (!groupName || !rowText) continue;
+    dataPrimaryKeys[groupName] = rowText;
+  }
+  if (Object.keys(dataPrimaryKeys).length) location.dataPrimaryKeys = dataPrimaryKeys;
+  return location;
+}
+
+/**
  * @description 组装试跑请求体。
  * @param options 组装上下文。
  * @returns 请求体；解析失败时返回 error。
@@ -507,13 +564,29 @@ export function buildBehaviorTreeTestPayload(options: {
 
     const inputParams: NonNullable<BehaviorTreeNodeExecuteData["inputParams"]> = {};
     for (const param of listBehaviorTreeNodeInputParams(plan, nodeId)) {
-      const key = (param.key || "").trim();
-      if (!key) continue;
+      const draftKey = (param.key || "").trim();
+      if (!draftKey) continue;
       const source = (param.sourceType || "EXTERNAL").trim();
       if (!source || source === "EXTERNAL" || source === "FIXED") continue;
-      const instanceText = (draft.inputParams[key]?.entityPrimaryKey || "").trim();
+      const requestKey = resolveBehaviorTreeInputParamRequestKey(param);
+      if (!requestKey) continue;
+      const draftItem = draft.inputParams[draftKey];
+      const instanceText = (draftItem?.entityPrimaryKey || "").trim();
       if (!instanceText) continue;
-      inputParams[key] = { entityPrimaryKey: instanceText };
+      if (isBehaviorTreeListPropertyMultiRowParam(param)) {
+        const storageGroup = String(param.storageGroup || "").trim();
+        const rowKeys = (draftItem?.rowKeys ?? []).map((item) => String(item ?? "").trim()).filter(Boolean);
+        if (!rowKeys.length) continue;
+        const locations = rowKeys.map((rowId) =>
+          buildBehaviorTreeInputParamLocation(instanceText, {
+            [storageGroup]: rowId,
+          }),
+        );
+        inputParams[requestKey] = locations.length === 1 ? locations[0]! : locations;
+        continue;
+      }
+      const rows = draftItem?.rows ?? {};
+      inputParams[requestKey] = buildBehaviorTreeInputParamLocation(instanceText, rows);
     }
     if (Object.keys(inputParams).length) entry.inputParams = inputParams;
 

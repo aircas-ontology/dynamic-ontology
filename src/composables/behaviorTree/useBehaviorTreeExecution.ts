@@ -318,10 +318,11 @@ export function useBehaviorTreeExecution(options: {
    * @description 加载对象实例下指定分组的行候选。
    * @param objectId 对象标识。
    * @param storageGroup 可选；缺省时加载该对象全部所需分组。
+   * @param entityPrimaryKey 可选；优先于黑板实例主键（节点 LIST 属性入参）。
    */
-  async function loadBehaviorTreeGroupRowOptions(objectId: string, storageGroup = ""): Promise<void> {
+  async function loadBehaviorTreeGroupRowOptions(objectId: string, storageGroup = "", entityPrimaryKey = ""): Promise<void> {
     const id = objectId.trim();
-    const instance = (blackboardObjectKeys[id] || "").trim();
+    const instance = String(entityPrimaryKey || "").trim() || (blackboardObjectKeys[id] || "").trim();
     if (!id || !instance) return;
     const groups = storageGroup.trim() ? [storageGroup.trim()] : listBehaviorTreeBlackboardStorageGroups(execPlan.value, id);
     await Promise.all(
@@ -462,21 +463,37 @@ export function useBehaviorTreeExecution(options: {
   }
 
   /**
-   * @description 更新节点入参读实例草稿。
+   * @description 更新节点入参读实例/子表行草稿。
    * @param nodeId 节点 id。
-   * @param key 参数名。
+   * @param key 参数草稿键（详情 key）。
    * @param field 字段。
-   * @param value 值。
-   * @param group 分组名（行主键时）。
+   * @param value 单值或行主键数组。
+   * @param group 分组名（单行主键时）。
    */
-  function updateNodeInputParamDraft(nodeId: string, key: string, field: "entityPrimaryKey" | "row", value: string, group = ""): void {
+  function updateNodeInputParamDraft(nodeId: string, key: string, field: "entityPrimaryKey" | "row" | "rowKeys", value: string | string[], group = ""): void {
     const draft = ensureBehaviorTreeNodeExecDraft(nodeId);
-    if (!draft.inputParams[key]) draft.inputParams[key] = { entityPrimaryKey: "", rows: {} };
+    if (!draft.inputParams[key]) {
+      draft.inputParams[key] = { entityPrimaryKey: "", entityPrimaryKeys: [], rows: {}, rowKeys: [] };
+    }
     if (field === "entityPrimaryKey") {
-      draft.inputParams[key].entityPrimaryKey = value;
+      const text = String(Array.isArray(value) ? (value[0] ?? "") : (value ?? "")).trim();
+      const previous = draft.inputParams[key].entityPrimaryKey;
+      draft.inputParams[key].entityPrimaryKey = text;
+      draft.inputParams[key].entityPrimaryKeys = text ? [text] : [];
+      if (previous !== text) draft.inputParams[key].rowKeys = [];
       return;
     }
-    if (group) draft.inputParams[key].rows[group] = value;
+    if (field === "rowKeys") {
+      draft.inputParams[key].rowKeys = Array.isArray(value)
+        ? value.map((item) => String(item ?? "").trim()).filter(Boolean)
+        : String(value ?? "")
+            .trim()
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+      return;
+    }
+    if (group) draft.inputParams[key].rows[group] = String(value ?? "");
   }
 
   /**

@@ -870,8 +870,14 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /v-model="basicFunctionTargetField"/);
   assert.match(formSource, /basicFunctionSelectFieldOptions/);
   assert.match(formSource, /clearBasicFunctionTargetField/);
+  assert.match(formSource, /basicFunctionSingleResultMode/);
+  assert.match(formSource, /showBasicFunctionSingleResultModeToggle/);
   assert.match(formSource, /showBasicFunctionSelectFields/);
-  assert.match(formSource, /!showBasicFunctionSelectFields/);
+  assert.match(formSource, /showBasicFunctionAggregateFields/);
+  assert.match(formSource, /handleBasicFunctionSingleResultModeChange/);
+  assert.match(formSource, /label="结果配置"/);
+  assert.match(formSource, />展示字段</);
+  assert.match(formSource, />聚合</);
   assert.match(formSource, /basicFunctionSelectFields/);
   assert.match(formSource, /basicFunctionSelectFieldOptions/);
   assert.match(formSource, /loadBasicFunctionSelectFieldOptions/);
@@ -880,8 +886,10 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /basicFunctionWriteFields/);
   assert.match(formSource, /basicFunctionMultiWriteField/);
   assert.match(formSource, /showBasicFunctionMultiWriteField/);
+  assert.match(formSource, /showBasicFunctionAggregateFields\.value/);
   assert.match(formSource, /syncBasicFunctionWriteFieldsBySelectFields/);
   assert.match(formSource, /clearBasicFunctionMultiWriteField/);
+  assert.match(formSource, /单对象聚合时请选择聚合类型|请选择聚合类型/);
   assert.match(formSource, /ensureBasicFunctionMainPropertyOptions/);
   assert.match(formSource, /readBasicFunctionMainPropertyOptions/);
   assert.match(formSource, /isMainStorageGroup/);

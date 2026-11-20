@@ -158,7 +158,7 @@ export interface BehaviorTreeNodeExecDraft {
   params: Record<string, string>;
   entityPrimaryKey: string;
   entityPrimaryKeys: Record<string, string>;
-  inputParams: Record<string, { entityPrimaryKey: string; rows: Record<string, string> }>;
+  inputParams: Record<string, { entityPrimaryKey: string; entityPrimaryKeys: string[]; rows: Record<string, string>; rowKeys: string[] }>;
   outputParams: Record<string, { entityPrimaryKey: string; rowKey: string }>;
   dataPrimaryKey: string;
 }

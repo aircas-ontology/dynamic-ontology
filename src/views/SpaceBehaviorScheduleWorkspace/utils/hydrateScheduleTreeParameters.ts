@@ -88,10 +88,41 @@ export function hydrateScheduleTreeParameters(
       }
       if (isRecord(raw.inputParams)) {
         for (const [key, value] of Object.entries(raw.inputParams)) {
+          if (Array.isArray(value)) {
+            const records = value.filter(isRecord);
+            const entityPrimaryKey = records.length ? formatPrimaryKeyText(records[0]?.entityPrimaryKey) : "";
+            const rowKeys = records
+              .map((item) => {
+                if (!isRecord(item.dataPrimaryKeys)) return "";
+                const first = Object.values(item.dataPrimaryKeys)[0];
+                return formatPrimaryKeyText(first);
+              })
+              .filter(Boolean);
+            draft.inputParams[key] = {
+              entityPrimaryKey,
+              entityPrimaryKeys: entityPrimaryKey ? [entityPrimaryKey] : [],
+              rows: {},
+              rowKeys,
+            };
+            continue;
+          }
           if (!isRecord(value)) continue;
+          const entityPrimaryKey = formatPrimaryKeyText(value.entityPrimaryKey);
+          const rowKeys: string[] = [];
+          const rows: Record<string, string> = {};
+          if (isRecord(value.dataPrimaryKeys)) {
+            for (const [group, row] of Object.entries(value.dataPrimaryKeys)) {
+              const text = formatPrimaryKeyText(row);
+              if (!group.trim() || !text) continue;
+              rows[group.trim()] = text;
+              rowKeys.push(text);
+            }
+          }
           draft.inputParams[key] = {
-            entityPrimaryKey: formatPrimaryKeyText(value.entityPrimaryKey),
-            rows: {},
+            entityPrimaryKey,
+            entityPrimaryKeys: entityPrimaryKey ? [entityPrimaryKey] : [],
+            rows,
+            rowKeys,
           };
         }
       }

@@ -84,6 +84,12 @@
               />
             </el-form-item>
           </div>
+          <el-form-item v-if="showBasicFunctionSingleResultModeToggle" label="结果配置">
+            <el-radio-group :model-value="basicFunctionSingleResultMode" @update:model-value="handleBasicFunctionSingleResultModeChange">
+              <el-radio-button value="query">展示字段</el-radio-button>
+              <el-radio-button value="aggregate">聚合</el-radio-button>
+            </el-radio-group>
+          </el-form-item>
           <el-form-item v-if="showBasicFunctionSelectFields" label="展示字段">
             <el-select
               class="behavior-form-dialog__basic-function-select-fields"
@@ -151,7 +157,7 @@
               </div>
             </div>
           </el-form-item>
-          <div v-if="showBasicFunctionOperatorSection && !showBasicFunctionSelectFields" class="behavior-form-dialog__grid">
+          <div v-if="showBasicFunctionAggregateFields" class="behavior-form-dialog__grid">
             <el-form-item label="聚合类型">
               <el-select
                 v-model="basicFunctionAggFunc"
@@ -789,6 +795,10 @@ let objectLoadToken = 0;
 const basicFunctionOntologyIds = ref<string[]>([]);
 /** 基础函数参数配置（过滤表达式序列化 JSON）。 */
 const basicFunctionParameterConfig = ref(stringifyBasicFilterConfig(createBlankBasicFilterDocument()));
+/** 单对象基础函数结果配置：展示字段（QUERY）或聚合（AGGREGATE）。 */
+type BasicFunctionSingleResultMode = "query" | "aggregate";
+/** 单对象时展示字段 / 聚合二选一；多对象忽略该值。 */
+const basicFunctionSingleResultMode = ref<BasicFunctionSingleResultMode>("query");
 /** 基础函数聚合类型；空表示未选（对应查询模式）。 */
 const basicFunctionAggFunc = ref<FunctionOperatorAggFunc | "">("");
 /** 基础函数聚合参数名（对应创建契约 targetField）。 */
@@ -844,6 +854,22 @@ function handleBasicFunctionAggFuncChange(value: string | number | boolean | und
 function resetBasicFunctionAggFields(): void {
   basicFunctionAggFunc.value = "";
   clearBasicFunctionTargetField();
+}
+
+/**
+ * @description 切换单对象结果配置：展示字段与聚合互斥清理。
+ * @param value 目标模式。
+ */
+function handleBasicFunctionSingleResultModeChange(value: string | number | boolean | undefined): void {
+  const nextMode: BasicFunctionSingleResultMode = value === "aggregate" ? "aggregate" : "query";
+  basicFunctionSingleResultMode.value = nextMode;
+  if (nextMode === "aggregate") {
+    basicFunctionSelectFields.value = [];
+    clearBasicFunctionWriteFields();
+    return;
+  }
+  resetBasicFunctionAggFields();
+  clearBasicFunctionMultiWriteField();
 }
 
 /**
@@ -1214,16 +1240,18 @@ async function loadBasicFunctionSelectFieldOptions(ontologyUniqueIdentifier: str
 }
 
 /**
- * @description 按当前基础函数对象选择同步属性选项：单对象加载展示字段并清空聚合表单；多对象加载首对象属性并清空聚合参数名；无对象时清空选项。
+ * @description 按当前基础函数对象选择同步属性选项：单对象默认展示字段模式；多对象走聚合并清空展示字段；无对象时清空选项。
  */
 function syncBasicFunctionSelectFieldsByOntologySelection(): void {
   if (!showBasicFunctionOperatorSection.value || basicFunctionOntologyIds.value.length === 0) {
+    basicFunctionSingleResultMode.value = "query";
     resetBasicFunctionSelectFields();
-    clearBasicFunctionTargetField();
+    resetBasicFunctionAggFields();
     clearBasicFunctionMultiWriteField();
     return;
   }
   if (basicFunctionOntologyIds.value.length === 1) {
+    basicFunctionSingleResultMode.value = "query";
     resetBasicFunctionAggFields();
     clearBasicFunctionMultiWriteField();
     const ontologyId = basicFunctionOntologyIds.value[0]?.trim() ?? "";
@@ -1231,6 +1259,7 @@ function syncBasicFunctionSelectFieldsByOntologySelection(): void {
     syncBasicFunctionWriteFieldsBySelectFields();
     return;
   }
+  basicFunctionSingleResultMode.value = "aggregate";
   clearBasicFunctionTargetField();
   clearBasicFunctionMultiWriteField();
   basicFunctionSelectFields.value = [];
@@ -1647,10 +1676,18 @@ const dialogTitle = computed(() => {
 const showAttributeValueObjectSection = computed(() => kind.value === "basic" && valueType.value === "attributeValue");
 const showRelationInstanceSection = computed(() => kind.value === "basic" && valueType.value === "relationInstance");
 const showBasicFunctionOperatorSection = computed(() => kind.value === "basic" && valueType.value === "basicFunctionOperator");
-/** 基础函数仅选中单个对象时展示「展示字段」。 */
-const showBasicFunctionSelectFields = computed(() => showBasicFunctionOperatorSection.value && basicFunctionOntologyIds.value.length === 1);
-/** 基础函数多对象时展示单行「写入字段」。 */
-const showBasicFunctionMultiWriteField = computed(() => showBasicFunctionOperatorSection.value && basicFunctionOntologyIds.value.length > 1);
+/** 基础函数仅选中单个对象时展示「展示字段 / 聚合」二选一切换。 */
+const showBasicFunctionSingleResultModeToggle = computed(() => showBasicFunctionOperatorSection.value && basicFunctionOntologyIds.value.length === 1);
+/** 单对象且结果配置为展示字段时展示 selectFields。 */
+const showBasicFunctionSelectFields = computed(() => showBasicFunctionSingleResultModeToggle.value && basicFunctionSingleResultMode.value === "query");
+/** 多对象，或单对象选择聚合时展示聚合表单。 */
+const showBasicFunctionAggregateFields = computed(
+  () =>
+    showBasicFunctionOperatorSection.value &&
+    (basicFunctionOntologyIds.value.length > 1 || (basicFunctionOntologyIds.value.length === 1 && basicFunctionSingleResultMode.value === "aggregate")),
+);
+/** 聚合模式下展示单行回写写入字段（多对象或单对象聚合）。 */
+const showBasicFunctionMultiWriteField = computed(() => showBasicFunctionAggregateFields.value);
 /** 已选对象时参数配置属性列使用首对象属性选项（与聚合参数名同源）。 */
 const basicFunctionFilterPropertyOptions = computed(() =>
   showBasicFunctionOperatorSection.value && basicFunctionOntologyIds.value.length >= 1 ? basicFunctionSelectFieldOptions.value : [],
@@ -2019,6 +2056,7 @@ function handleValueTypeChange(value: string | number | boolean | undefined): vo
     clearObjectInfoSelection();
     clearSelectedOperator();
     basicFunctionOntologyIds.value = [];
+    basicFunctionSingleResultMode.value = "query";
     resetBasicFunctionParameterConfig();
     resetBasicFunctionAggFields();
     resetBasicFunctionSelectFields();
@@ -2027,6 +2065,7 @@ function handleValueTypeChange(value: string | number | boolean | undefined): vo
     return;
   }
   basicFunctionOntologyIds.value = [];
+  basicFunctionSingleResultMode.value = "query";
   resetBasicFunctionParameterConfig();
   resetBasicFunctionAggFields();
   resetBasicFunctionSelectFields();
@@ -2372,11 +2411,23 @@ async function hydrateActionInfoSections(state: SpaceBehaviorActionInfoFormState
     };
     basicFunctionParameterConfig.value = state.basicFunctionParameterConfig || stringifyBasicFilterConfig(createBlankBasicFilterDocument());
     if (basicFunctionOntologyIds.value.length === 1) {
-      resetBasicFunctionAggFields();
-      clearBasicFunctionMultiWriteField();
-      void loadBasicFunctionSelectFieldOptions(basicFunctionOntologyIds.value[0] ?? "");
-      syncBasicFunctionWriteFieldsBySelectFields();
+      if (basicFunctionAggFunc.value) {
+        basicFunctionSingleResultMode.value = "aggregate";
+        basicFunctionSelectFields.value = [];
+        clearBasicFunctionWriteFields();
+        void loadBasicFunctionSelectFieldOptions(basicFunctionOntologyIds.value[0] ?? "");
+        if (basicFunctionMultiWriteField.value.ontologyUniqueIdentifier) {
+          void ensureBasicFunctionMainPropertyOptions(basicFunctionMultiWriteField.value.ontologyUniqueIdentifier);
+        }
+      } else {
+        basicFunctionSingleResultMode.value = "query";
+        resetBasicFunctionAggFields();
+        clearBasicFunctionMultiWriteField();
+        void loadBasicFunctionSelectFieldOptions(basicFunctionOntologyIds.value[0] ?? "");
+        syncBasicFunctionWriteFieldsBySelectFields();
+      }
     } else if (basicFunctionOntologyIds.value.length >= 1) {
+      basicFunctionSingleResultMode.value = "aggregate";
       basicFunctionSelectFields.value = [];
       clearBasicFunctionWriteFields();
       void loadBasicFunctionSelectFieldOptions(basicFunctionOntologyIds.value[0] ?? "");
@@ -2384,6 +2435,7 @@ async function hydrateActionInfoSections(state: SpaceBehaviorActionInfoFormState
         void ensureBasicFunctionMainPropertyOptions(basicFunctionMultiWriteField.value.ontologyUniqueIdentifier);
       }
     } else {
+      basicFunctionSingleResultMode.value = "query";
       resetBasicFunctionSelectFields();
       clearBasicFunctionMultiWriteField();
     }
@@ -2502,16 +2554,15 @@ function submitBehaviorForm(action: "save" | "copy"): void {
         ElMessage.warning("请选择展示字段");
         return;
       }
-    } else {
-      if (basicFunctionOntologyIds.value.length > 1 && !basicFunctionAggFunc.value) {
-        ElMessage.warning("多对象时请选择聚合类型");
+    }
+    if (showBasicFunctionAggregateFields.value) {
+      if (!basicFunctionAggFunc.value) {
+        ElMessage.warning(basicFunctionOntologyIds.value.length > 1 ? "多对象时请选择聚合类型" : "请选择聚合类型");
         return;
       }
-      if (basicFunctionAggFunc.value) {
-        if (!basicFunctionTargetField.value.trim()) {
-          ElMessage.warning("请选择聚合参数名");
-          return;
-        }
+      if (!basicFunctionTargetField.value.trim()) {
+        ElMessage.warning("请选择聚合参数名");
+        return;
       }
     }
     const filterError = validateBasicFilterDocument(parseBasicFilterConfig(basicFunctionParameterConfig.value));
@@ -2747,6 +2798,7 @@ watch(
     clearObjectInfoSelection();
     clearRelationSelection();
     basicFunctionOntologyIds.value = [];
+    basicFunctionSingleResultMode.value = "query";
     resetBasicFunctionParameterConfig();
     resetBasicFunctionAggFields();
     resetBasicFunctionSelectFields();

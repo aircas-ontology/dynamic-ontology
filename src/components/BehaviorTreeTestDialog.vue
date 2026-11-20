@@ -67,6 +67,7 @@
           @update-node-param="updateNodeParamDraft"
           @update-node-entity="updateNodeEntityKeyDraft"
           @update-node-input-instance="(nodeId, key, value) => updateNodeInputParamDraft(nodeId, key, 'entityPrimaryKey', value)"
+          @update-node-input-rows="(nodeId, key, value) => updateNodeInputParamDraft(nodeId, key, 'rowKeys', value)"
           @update-node-output="updateNodeOutputDraft"
         />
       </div>

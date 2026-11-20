@@ -69,6 +69,8 @@ export type BehaviorTreeExecuteInputSourceType = "EXTERNAL" | "PROPERTY" | "FIXE
 /** 行为树执行要求：节点级算子入参。 */
 export interface BehaviorTreeExecuteInputParam {
   key: string;
+  /** 试跑/提交时 inputParams 的键；缺省回退 key。 */
+  paramName?: string;
   valueType?: string;
   required?: boolean;
   description?: string | null;
@@ -77,6 +79,8 @@ export interface BehaviorTreeExecuteInputParam {
   /** PROPERTY/OBJECT/LIST 时按该对象选实例。 */
   objectIdentifier?: string;
   propertyDisplayName?: string | null;
+  /** 属性存储分组；LIST+PROPERTY 且非 main 时用于多选子表行。 */
+  storageGroup?: string | null;
   /** 旧扁平结构兼容字段；新格式由所属 node 提供。 */
   nodeIds?: string[];
   actionApis?: string[];

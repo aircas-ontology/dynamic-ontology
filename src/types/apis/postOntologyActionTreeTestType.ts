@@ -6,13 +6,17 @@ export interface BehaviorTreeNodeExecuteData {
   entityPrimaryKey?: string | number;
   /** 多对象或关系两端实例；关系保留键 from / to。 */
   entityPrimaryKeys?: Record<string, string | number>;
-  /** 取对象属性的入参按参数指定读实例/行。 */
+  /** 取对象属性的入参按参数指定读实例/行；LIST 多实例时为对象数组。 */
   inputParams?: Record<
     string,
-    {
-      entityPrimaryKey?: string | number;
-      dataPrimaryKeys?: Record<string, string | number>;
-    }
+    | {
+        entityPrimaryKey?: string | number;
+        dataPrimaryKeys?: Record<string, string | number>;
+      }
+    | Array<{
+        entityPrimaryKey?: string | number;
+        dataPrimaryKeys?: Record<string, string | number>;
+      }>
   >;
   /** 写回属性出参位置。 */
   outputParams?: Record<

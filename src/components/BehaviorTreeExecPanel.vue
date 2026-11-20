@@ -104,6 +104,50 @@
                   @update:model-value="emit('update-node-param', block.nodeId, param.key, String($event ?? ''))"
                 />
                 <p v-else-if="resolveInputSource(param.sourceType) === 'FIXED'" class="behavior-tree-exec__muted">固定值，执行时取行为里声明的值</p>
+                <template v-else-if="isListPropertyMultiRowParam(param)">
+                  <el-select
+                    :model-value="nodeDrafts[block.nodeId]?.inputParams[param.key]?.entityPrimaryKey ?? ''"
+                    filterable
+                    clearable
+                    allow-create
+                    default-first-option
+                    style="width: 100%"
+                    :loading="Boolean(param.objectIdentifier && instanceLoadingIds[param.objectIdentifier])"
+                    :placeholder="param.objectIdentifier ? `选择 ${param.propertyDisplayName || resolveObjectLabel(param.objectIdentifier)}` : '没有对象标识'"
+                    :disabled="!param.objectIdentifier"
+                    @visible-change="(open: boolean) => open && param.objectIdentifier && emit('ensure-instances', param.objectIdentifier)"
+                    @update:model-value="emit('update-node-input-instance', block.nodeId, param.key, String($event ?? ''))"
+                  >
+                    <el-option
+                      v-for="option in (param.objectIdentifier && instanceOptions[param.objectIdentifier]) || []"
+                      :key="`${param.key}-inst-${option.value}`"
+                      :label="option.label"
+                      :value="option.value"
+                    />
+                  </el-select>
+                  <el-select
+                    class="behavior-tree-exec__input-rows"
+                    :model-value="nodeDrafts[block.nodeId]?.inputParams[param.key]?.rowKeys ?? []"
+                    multiple
+                    filterable
+                    clearable
+                    allow-create
+                    default-first-option
+                    style="width: 100%; margin-top: 8px"
+                    :loading="isInputParamRowLoading(param, block.nodeId)"
+                    :placeholder="resolveInputParamRowPlaceholder(param, block.nodeId)"
+                    :disabled="!resolveInputParamInstance(param, block.nodeId)"
+                    @visible-change="(open: boolean) => open && ensureInputParamRows(param, block.nodeId)"
+                    @update:model-value="emit('update-node-input-rows', block.nodeId, param.key, normalizeInputInstanceValues($event))"
+                  >
+                    <el-option
+                      v-for="option in resolveInputParamRowOptions(param, block.nodeId)"
+                      :key="`${param.key}-row-${option.value}`"
+                      :label="option.label"
+                      :value="option.value"
+                    />
+                  </el-select>
+                </template>
                 <el-select
                   v-else
                   :model-value="nodeDrafts[block.nodeId]?.inputParams[param.key]?.entityPrimaryKey ?? ''"
@@ -282,7 +326,11 @@ import type {
   BehaviorTreeNodeExecDraft,
 } from "@/types";
 import type { BehaviorTreeEntityOption, BehaviorTreeExecPlanStatus, BehaviorTreeExecTestStatus } from "@/composables/behaviorTree/useBehaviorTreeExecution";
-import { resolveBehaviorTreeBbGroupRowStateKey, resolveBehaviorTreeOutputDraftKey } from "@/utils/behaviorTreeExecutePlan";
+import {
+  isBehaviorTreeListPropertyMultiRowParam,
+  resolveBehaviorTreeBbGroupRowStateKey,
+  resolveBehaviorTreeOutputDraftKey,
+} from "@/utils/behaviorTreeExecutePlan";
 
 const props = withDefaults(
   defineProps<{
@@ -333,12 +381,13 @@ const emit = defineEmits<{
   "run-test": [];
   "clear-logs": [];
   "ensure-instances": [objectId: string];
-  "ensure-group-rows": [objectId: string, storageGroup: string];
+  "ensure-group-rows": [objectId: string, storageGroup: string, entityPrimaryKey?: string];
   "update-blackboard-instance": [objectId: string, value: string];
   "update-blackboard-group-row": [objectId: string, storageGroup: string, value: string];
   "update-node-param": [nodeId: string, key: string, value: string];
   "update-node-entity": [nodeId: string, objectOrRole: string, value: string];
   "update-node-input-instance": [nodeId: string, key: string, value: string];
+  "update-node-input-rows": [nodeId: string, key: string, value: string[]];
   "update-node-output": [nodeId: string, mapKey: string, field: "entityPrimaryKey" | "rowKey", value: string];
 }>();
 
@@ -388,6 +437,95 @@ function resolveGroupRowOptions(objectId: string, storageGroup: string): Behavio
 function isGroupRowLoading(objectId: string, storageGroup: string): boolean {
   const instance = (props.blackboardObjectKeys[objectId] || "").trim();
   if (!instance) return false;
+  return Boolean(props.groupRowLoadingIds?.[`${objectId}|${instance}|${storageGroup}`]);
+}
+
+/**
+ * @description 归一化多选行主键值为字符串数组。
+ * @param value 选择器原始值。
+ * @returns 主键数组。
+ */
+function normalizeInputInstanceValues(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item ?? "").trim()).filter(Boolean);
+}
+
+/**
+ * @description 是否 LIST 对象属性子表多行入参。
+ * @param param 入参定义。
+ * @returns 是否多行。
+ */
+function isListPropertyMultiRowParam(param: BehaviorTreeExecuteInputParam): boolean {
+  return isBehaviorTreeListPropertyMultiRowParam(param);
+}
+
+/**
+ * @description 读取入参已选实例主键。
+ * @param param 入参定义。
+ * @param nodeId 节点 id。
+ * @returns 实例主键。
+ */
+function resolveInputParamInstance(param: BehaviorTreeExecuteInputParam, nodeId: string): string {
+  return (props.nodeDrafts[nodeId]?.inputParams[param.key]?.entityPrimaryKey || "").trim();
+}
+
+/**
+ * @description 入参子表行下拉占位文案。
+ * @param param 入参定义。
+ * @param nodeId 节点 id。
+ * @returns 占位文案。
+ */
+function resolveInputParamRowPlaceholder(param: BehaviorTreeExecuteInputParam, nodeId: string): string {
+  const group = String(param.storageGroup || "").trim();
+  if (!resolveInputParamInstance(param, nodeId)) return "先选实例";
+  return group ? `多选 ${group} 行` : "多选行主键";
+}
+
+/**
+ * @description 打开入参子表行下拉时加载候选。
+ * @param param 入参定义。
+ * @param nodeId 节点 id。
+ */
+function ensureInputParamRows(param: BehaviorTreeExecuteInputParam, nodeId: string): void {
+  const objectId = String(param.objectIdentifier || "").trim();
+  const storageGroup = String(param.storageGroup || "").trim();
+  const instance = resolveInputParamInstance(param, nodeId);
+  if (!objectId || !storageGroup || !instance) return;
+  emit("ensure-group-rows", objectId, storageGroup, instance);
+}
+
+/**
+ * @description 读取入参子表行候选。
+ * @param param 入参定义。
+ * @param nodeId 节点 id。
+ * @returns 选项列表。
+ */
+function resolveInputParamRowOptions(param: BehaviorTreeExecuteInputParam, nodeId: string): BehaviorTreeEntityOption[] {
+  const objectId = String(param.objectIdentifier || "").trim();
+  const storageGroup = String(param.storageGroup || "").trim();
+  const instance = resolveInputParamInstance(param, nodeId);
+  if (!objectId || !storageGroup || !instance) return [];
+  const options = props.groupRowOptions?.[`${objectId}|${instance}|${storageGroup}`] || [];
+  const selected = props.nodeDrafts[nodeId]?.inputParams[param.key]?.rowKeys ?? [];
+  const extras = selected
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean)
+    .filter((value) => !options.some((option) => option.value === value))
+    .map((value) => ({ value, label: `行 ${value}` }));
+  return extras.length ? [...extras, ...options] : options;
+}
+
+/**
+ * @description 入参子表行是否加载中。
+ * @param param 入参定义。
+ * @param nodeId 节点 id。
+ * @returns 是否加载中。
+ */
+function isInputParamRowLoading(param: BehaviorTreeExecuteInputParam, nodeId: string): boolean {
+  const objectId = String(param.objectIdentifier || "").trim();
+  const storageGroup = String(param.storageGroup || "").trim();
+  const instance = resolveInputParamInstance(param, nodeId);
+  if (!objectId || !storageGroup || !instance) return false;
   return Boolean(props.groupRowLoadingIds?.[`${objectId}|${instance}|${storageGroup}`]);
 }
 
