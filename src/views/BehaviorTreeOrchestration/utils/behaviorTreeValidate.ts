@@ -21,7 +21,6 @@ import {
   listBehaviorTreeBindableOutputs,
   listBehaviorTreeInputBindingDrafts,
   listBehaviorTreeOutputBindingDrafts,
-  readBehaviorTreeSuccessConditionDraft,
 } from "./behaviorTreeActionBindings.ts";
 import {
   BEHAVIOR_TREE_BLACKBOARD_SOURCE_LABELS,
@@ -239,7 +238,6 @@ function validateBehaviorTreeNode(
       }
       intField(readBehaviorTreeConfigText(draft, "retryTimes"), `${label} 的重试次数`, false, 0);
       validateBehaviorTreeActionBindings(node, label, model, availableActions, errors);
-      validateBehaviorTreeSuccessCondition(node, label, availableActions, errors);
       break;
     }
     case "INVERTER":
@@ -249,57 +247,6 @@ function validateBehaviorTreeNode(
       errors.push(`${label} 未知节点类型`);
   }
   node.children.forEach((child) => validateBehaviorTreeNode(child, types, errors, seen, kindMeta, model, availableActions));
-}
-
-/**
- * @description 校验 ACTION 执行成功条件（可选）。
- * @param node 节点。
- * @param label 节点标签。
- * @param availableActions 可绑定行为。
- * @param errors 错误收集。
- */
-function validateBehaviorTreeSuccessCondition(
-  node: BehaviorTreeNodeDraft,
-  label: string,
-  availableActions: ActionTreeBindableAction[],
-  errors: string[],
-): void {
-  const cond = readBehaviorTreeSuccessConditionDraft(node.config);
-  const outputKey = cond.outputKey.trim();
-  if (!outputKey) return;
-  const actionApi = readBehaviorTreeConfigText(node.config || {}, "actionApi").trim();
-  const action = findBehaviorTreeBindableAction(availableActions, actionApi);
-  const outputs = listBehaviorTreeBindableOutputs(action);
-  const output = outputs.find((item) => item.name === outputKey);
-  if (action && !outputs.length) {
-    errors.push(`${label} 绑的行为没有可判断的出参，成功条件配不上：不需要判定就把判断出参留空`);
-    return;
-  }
-  if (action && !output) {
-    errors.push(`${label} 的成功条件出参 ${outputKey} 在该行为上不存在，请重新选择`);
-  }
-  const op = cond.op.trim();
-  if (!op) {
-    errors.push(`${label} 的成功条件必须选择比较方式`);
-    return;
-  }
-  const declared = output?.type?.trim() || null;
-  if (declared) {
-    if (["GT", "GE", "LT", "LE"].includes(op) && !BEHAVIOR_TREE_NUMBER_TYPES.includes(declared as (typeof BEHAVIOR_TREE_NUMBER_TYPES)[number])) {
-      errors.push(`${label} 的成功条件${resolveBehaviorTreeOpLabel(op)}只支持数值类型，出参类型是 ${declared}`);
-    }
-    if (["CONTAINS", "NOT_CONTAINS"].includes(op) && declared !== "STRING" && declared !== "LIST") {
-      errors.push(`${label} 的成功条件${resolveBehaviorTreeOpLabel(op)}只支持字符串和列表，出参类型是 ${declared}`);
-    }
-  }
-  const valueText = cond.value.trim();
-  if (isBehaviorTreeValueLessOp(op)) {
-    if (valueText !== "") errors.push(`${label} 的成功条件是${resolveBehaviorTreeOpLabel(op)}，不需要填比较值`);
-  } else if (valueText === "") {
-    errors.push(`${label} 的成功条件必须填写比较值`);
-  } else if (declared && !parseBehaviorTreeTypedValue(cond.value, declared as BehaviorTreeValueType).ok) {
-    errors.push(`${label} 的成功条件比较值与出参 ${outputKey} 的类型 ${declared} 不匹配`);
-  }
 }
 
 /**

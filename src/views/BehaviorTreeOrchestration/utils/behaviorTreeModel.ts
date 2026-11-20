@@ -166,7 +166,7 @@ export function createDefaultBehaviorTreeConfig(kind: BehaviorTreeNodeKind): Beh
         retryTimes: "",
         inputBindings: [],
         outputBindings: [],
-        successCondition: { outputKey: "", op: "EQ", value: "" },
+        successCondition: { expression: "" },
       };
     default:
       return null;

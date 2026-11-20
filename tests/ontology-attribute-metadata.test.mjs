@@ -134,12 +134,15 @@ test("metadata dialog uses unified tree table without category panel", () => {
   assert.match(formSource, /元数据名称/);
   assert.match(formSource, /label="父级"/);
   assert.match(formSource, /el-tree-select/);
-  assert.match(formSource, /输入值/);
   assert.match(formSource, /枚举/);
-  assert.match(formSource, /范围|最小值/);
   assert.match(formSource, /el-tag/);
   assert.match(formSource, /添加枚举值/);
   assert.match(formSource, /keyup\.enter/);
   assert.doesNotMatch(formSource, /update-enum-value/);
+  assert.doesNotMatch(formSource, /最小值/);
+  assert.doesNotMatch(formSource, /最大值/);
+  assert.doesNotMatch(formSource, /ariaLabel="输入值"/);
+  assert.doesNotMatch(formSource, /valueType === 'input'/);
+  assert.doesNotMatch(formSource, /valueType === 'range'/);
   assert.equal(existsSync(new URL("../src/views/OntologyObjectAttributePanel/components/MetadataCategoryFormDialog.vue", import.meta.url)), false);
 });

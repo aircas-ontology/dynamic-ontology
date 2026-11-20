@@ -53,25 +53,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="元数据" class="ontology-object-attribute-panel__form-full">
-          <el-tree-select
-            v-model="pendingMetadataId"
-            :data="metadataTreeOptions"
-            node-key="id"
-            check-strictly
-            default-expand-all
-            :render-after-expand="false"
-            :props="{ label: 'name', children: 'children' }"
-            placeholder="请选择元数据"
-            v-on="metadataSelectListeners"
-            :loading="metadataLoading"
-            style="width: 100%"
-          />
-          <p v-if="metadataError" class="ontology-object-attribute-panel__metadata-error" role="alert">{{ metadataError }}</p>
-          <div v-if="selectedMetadataRecords.length" class="ontology-object-attribute-panel__metadata-tags">
-            <el-tag v-for="item in selectedMetadataRecords" :key="item.id" type="info" closable @close="removeSelectedMetadata(item.id)">
-              {{ item.name }}（{{ item.typeLabel }}）：{{ item.valueSummary }}
-            </el-tag>
-          </div>
+          <el-button @click="metadataSelectVisible = true">选择元数据</el-button>
         </el-form-item>
         <el-form-item label="默认值" prop="defaultValue" class="ontology-object-attribute-panel__form-full">
           <el-input v-model="draft.defaultValue" placeholder="可选" :disabled="datasourceLocked" />
@@ -111,18 +93,23 @@
       <el-button :loading="saving" data-onboarding="attribute-create-save" @click="confirmSave">保存</el-button>
     </template>
   </el-dialog>
+  <AttributeMetadataSelectDialog
+    v-model:visible="metadataSelectVisible"
+    :ontology-identifier="ontologyIdentifier"
+    :metadata-source="draft.metadata"
+    @confirm="applySelectedMetadataRecords"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { ref } from "vue";
 import { QuestionFilled } from "@element-plus/icons-vue";
 import type { FormInstance, FormRules } from "element-plus";
 import type { OntologyAttributeCategoryNode, OntologyAttributeDraft, OntologyAttributeStorageGroupOption } from "@/types";
-import { getMetadataSchemaInterface } from "@/apis";
-import { buildMetadataTree, formatMetadataValueSummary, resolveMetadataValueTypeLabel } from "../utils/metadataOperations";
-import { parseMetadataSchema } from "../utils/metadataSchemaAdapter";
+import { isAttributeMetadataDraftState, type AttributeMetadataDraftState } from "../utils/attributeMetadataSelection";
+import AttributeMetadataSelectDialog from "./AttributeMetadataSelectDialog.vue";
 
-const props = defineProps<{
+defineProps<{
   visible: boolean;
   ontologyIdentifier: string;
   editingAttributeId: string | null;
@@ -141,87 +128,21 @@ const emit = defineEmits<{
   "update:visible": [value: boolean];
   "update-primary": [enabled: boolean];
   "update-name-key": [enabled: boolean];
-  "update-metadata": [records: unknown[]];
+  "update-metadata": [state: AttributeMetadataDraftState];
   confirm: [];
 }>();
 
 const formRef = ref<FormInstance>();
-const metadataRecords = ref<ReturnType<typeof parseMetadataSchema>>([]);
-const metadataLoading = ref(false);
-const metadataError = ref("");
-let metadataRevision = 0;
-const selectedMetadataIds = computed(() => {
-  const selected = props.draft.metadata.selectedRecords;
-  if (!Array.isArray(selected)) return [];
-  return selected.flatMap((item) => (item && typeof item === "object" && "id" in item && typeof item.id === "string" ? [item.id] : []));
-});
-const pendingMetadataId = ref("");
-const metadataSelectListeners = { change: handleMetadataSelect };
-const metadataTreeOptions = computed(() => buildMetadataTree(metadataRecords.value));
-const selectedMetadataRecords = computed(() =>
-  metadataRecords.value
-    .filter((item) => selectedMetadataIds.value.includes(item.id))
-    .map((item) => ({
-      id: item.id,
-      name: item.name,
-      typeLabel: resolveMetadataValueTypeLabel(item.valueType),
-      valueSummary: formatMetadataValueSummary(item),
-    })),
-);
+const metadataSelectVisible = ref(false);
 
 /**
- * @description 将下拉框单选项加入下方卡片，并清空选择框。
- * @param value 选中的元数据 ID。
+ * @description 将弹窗确认的元数据选择写回属性草稿。
+ * @param state 含 selectedRecords 与 nested 的草稿状态。
  */
-function handleMetadataSelect(value: string | number | boolean | Record<string, unknown> | undefined): void {
-  const id = value == null || value === false ? "" : String(value);
-  if (id && !selectedMetadataIds.value.includes(id)) {
-    const record = metadataRecords.value.find((item) => item.id === id);
-    if (record) emit("update-metadata", [...(Array.isArray(props.draft.metadata.selectedRecords) ? props.draft.metadata.selectedRecords : []), { ...record }]);
-  }
-  pendingMetadataId.value = "";
+function applySelectedMetadataRecords(state: AttributeMetadataDraftState): void {
+  if (!isAttributeMetadataDraftState(state)) return;
+  emit("update-metadata", state);
 }
-
-/**
- * @description 从属性草稿中移除指定的元数据选择。
- * @param id 待移除的元数据 ID。
- */
-function removeSelectedMetadata(id: string): void {
-  const selected = props.draft.metadata.selectedRecords;
-  const records = Array.isArray(selected) ? selected : [];
-  emit(
-    "update-metadata",
-    records.filter((item) => !item || typeof item !== "object" || !("id" in item) || item.id !== id),
-  );
-}
-
-/** @description 打开属性表单时查询当前对象的元数据树。 */
-async function loadMetadataRecords(): Promise<void> {
-  const revision = ++metadataRevision;
-  metadataRecords.value = [];
-  metadataLoading.value = false;
-  metadataError.value = "";
-  if (!props.visible) return;
-  if (!props.ontologyIdentifier.trim()) {
-    metadataError.value = "缺少对象标识，无法查询元数据";
-    return;
-  }
-  metadataLoading.value = true;
-  try {
-    const response = await getMetadataSchemaInterface(props.ontologyIdentifier.trim());
-    if (revision !== metadataRevision) return;
-    if (response.code !== 200) throw new Error(response.message || "查询元数据失败");
-    metadataRecords.value = parseMetadataSchema(response.data);
-  } catch (cause) {
-    if (revision !== metadataRevision) return;
-    metadataRecords.value = [];
-    metadataError.value = cause instanceof Error ? cause.message : "查询元数据失败";
-  } finally {
-    if (revision === metadataRevision) metadataLoading.value = false;
-  }
-}
-
-watch(() => [props.visible, props.ontologyIdentifier], loadMetadataRecords, { immediate: true });
 
 /**
  * @description 校验属性表单后向父组件发出确认保存事件。
@@ -236,12 +157,6 @@ async function confirmSave() {
 <style scoped lang="scss">
 .ontology-object-attribute-panel__dialog-error {
   margin: 8px 0 0;
-  color: var(--aircas-color-danger);
-  font-size: 12px;
-}
-
-.ontology-object-attribute-panel__metadata-error {
-  margin: 4px 0 0;
   color: var(--aircas-color-danger);
   font-size: 12px;
 }
@@ -263,20 +178,6 @@ async function confirmSave() {
 .ontology-object-attribute-panel__aligned-item :deep(.el-form-item__label) {
   height: var(--aircas-size-button);
   align-items: center;
-}
-
-.ontology-object-attribute-panel__metadata-tags {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.ontology-object-attribute-panel__metadata-tags :deep(.el-tag) {
-  --el-tag-text-color: var(--aircas-color-text-primary);
-  --el-tag-bg-color: var(--aircas-color-hover);
-  --el-tag-border-color: var(--aircas-color-border);
-  --el-tag-hover-color: var(--aircas-color-primary);
 }
 
 .ontology-object-attribute-panel__switches {

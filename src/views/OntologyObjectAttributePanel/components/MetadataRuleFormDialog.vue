@@ -39,41 +39,7 @@
         </el-select>
       </el-form-item>
 
-      <el-form-item v-if="valueType === 'input'" label="值">
-        <el-input
-          type="textarea"
-          :rows="3"
-          maxlength="200"
-          ariaLabel="输入值"
-          placeholder="请输入值"
-          :model-value="inputValue"
-          :disabled="submitting"
-          @update:model-value="$emit('update:inputValue', $event)"
-        />
-      </el-form-item>
-
-      <template v-else-if="valueType === 'range'">
-        <el-form-item label="最小值">
-          <el-input-number
-            :model-value="rangeMin"
-            :controls="false"
-            :disabled="submitting"
-            ariaLabel="范围最小值"
-            @update:model-value="$emit('update:rangeMin', $event ?? null)"
-          />
-        </el-form-item>
-        <el-form-item label="最大值">
-          <el-input-number
-            :model-value="rangeMax"
-            :controls="false"
-            :disabled="submitting"
-            ariaLabel="范围最大值"
-            @update:model-value="$emit('update:rangeMax', $event ?? null)"
-          />
-        </el-form-item>
-      </template>
-
-      <el-form-item v-else label="值">
+      <el-form-item v-if="valueType === 'enum'" label="值">
         <div class="metadata-rule-form__enum-list">
           <div class="metadata-rule-form__enum-tags" aria-label="已添加枚举值">
             <el-tag v-for="(value, index) in enumValues" :key="`enum-${index}`" closable :disable-transitions="true" @close="$emit('remove-enum-value', index)">

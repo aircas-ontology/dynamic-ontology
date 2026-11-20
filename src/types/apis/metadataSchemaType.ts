@@ -7,7 +7,7 @@ export interface MetadataSchemaCreateParams {
   parentId: number;
   name: string;
   valueType: MetadataSchemaValueType;
-  value: string;
+  value?: string;
 }
 
 /** 修改元数据请求。 */
@@ -17,7 +17,7 @@ export interface MetadataSchemaUpdateParams {
   parentId?: number;
   name: string;
   valueType: MetadataSchemaValueType;
-  value: string | null;
+  value?: string | null;
 }
 
 /** 删除元数据请求。 */

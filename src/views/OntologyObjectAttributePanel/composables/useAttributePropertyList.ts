@@ -25,6 +25,12 @@ import {
   resolveAttributeFormCategoryId,
   type AttributeKeyKind,
 } from "../utils/attributePanelHelpers";
+import {
+  buildAttributeMetadataDraftState,
+  isAttributeMetadataDraftState,
+  listAttributeMetadataSelectedRecords,
+  resolveAttributeMetadataApiPayload,
+} from "../utils/attributeMetadataSelection";
 
 /**
  * @description 属性列表状态与交互：从分类树读取属性、新增/编辑表单与删除。
@@ -144,6 +150,7 @@ export function useAttributePropertyList(options: {
   /** @description 组装创建属性接口请求参数。 */
   function buildCreatePropertyParams(ontologyIdentifier: string): CreateOntologyPropertyParams {
     const categoryId = getDraftCategoryId();
+    const metadataPayload = resolveAttributeMetadataApiPayload(draft.metadata);
     return {
       ontologyIdentifier,
       schemaName: "",
@@ -158,7 +165,7 @@ export function useAttributePropertyList(options: {
       defaultValue: draft.defaultValue,
       storageGroup: draft.storageGroup,
       ...(categoryId === undefined ? {} : { categoryId }),
-      ...(Object.keys(draft.metadata).length ? { metadata: JSON.stringify(draft.metadata) } : {}),
+      ...(metadataPayload ? { metadata: metadataPayload } : {}),
     };
   }
 
@@ -169,13 +176,14 @@ export function useAttributePropertyList(options: {
    */
   function buildUpdatePropertyParams(uniqueIdentifier: string): UpdateOntologyPropertyParams {
     const categoryId = getDraftCategoryId();
+    const metadataPayload = resolveAttributeMetadataApiPayload(draft.metadata);
     if (datasourceLocked.value && originalEditParams) {
       return {
         ...originalEditParams,
         displayName: draft.displayName.trim(),
         description: draft.description,
         ...(categoryId === undefined ? {} : { categoryId }),
-        ...(Object.keys(draft.metadata).length ? { metadata: JSON.stringify(draft.metadata) } : {}),
+        ...(metadataPayload ? { metadata: metadataPayload } : {}),
       };
     }
     return {
@@ -189,7 +197,7 @@ export function useAttributePropertyList(options: {
       defaultValue: draft.defaultValue,
       storageGroup: draft.storageGroup,
       ...(categoryId === undefined ? {} : { categoryId }),
-      ...(Object.keys(draft.metadata).length ? { metadata: JSON.stringify(draft.metadata) } : {}),
+      ...(metadataPayload ? { metadata: metadataPayload } : {}),
     };
   }
 
@@ -238,7 +246,7 @@ export function useAttributePropertyList(options: {
       description: value.description,
       isPrimary: value.isPrimary,
       isNameKey: value.isNameKey,
-      metadata: value.metadata,
+      metadata: value.metadata ?? {},
     });
     attributeCommandError.value = "";
     originalEditParams = null;
@@ -352,11 +360,30 @@ export function useAttributePropertyList(options: {
   }
 
   /**
-   * @description 更新属性草稿中的元数据选择结果。
-   * @param records 当前表单选择的元数据记录。
+   * @description 更新属性草稿中的元数据选择结果与提交用嵌套 JSON。
+   * @param payload 弹窗确认的草稿状态，或标签移除后的选中记录列表。
    */
-  function updateDraftMetadata(records: unknown[]) {
-    draft.metadata = { selectedRecords: records };
+  function updateDraftMetadata(payload: unknown) {
+    if (isAttributeMetadataDraftState(payload)) {
+      draft.metadata = {
+        selectedRecords: payload.selectedRecords,
+        catalog: payload.catalog,
+        nested: payload.nested,
+      };
+      return;
+    }
+    if (!Array.isArray(payload)) {
+      draft.metadata = {};
+      return;
+    }
+    const selectedRecords = listAttributeMetadataSelectedRecords(payload);
+    const catalog = Array.isArray(draft.metadata.catalog) ? listAttributeMetadataSelectedRecords(draft.metadata.catalog) : [];
+    const next = buildAttributeMetadataDraftState(selectedRecords, catalog);
+    draft.metadata = {
+      selectedRecords: next.selectedRecords,
+      catalog: next.catalog,
+      nested: next.nested,
+    };
   }
 
   return {

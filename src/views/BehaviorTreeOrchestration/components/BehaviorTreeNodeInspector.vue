@@ -212,40 +212,14 @@
         <p v-else-if="hasOrphanOutputBindings" class="behavior-tree-node-inspector__hint">该行为没有可回传的出参，请先去掉节点上配的出参回传。</p>
 
         <div class="behavior-tree-node-inspector__subtitle">执行成功条件</div>
-        <template v-if="boundActionOutputs.length">
-          <el-form-item label="选择参数">
-            <el-select
-              :model-value="successCondition.outputKey"
-              clearable
-              filterable
-              style="width: 100%"
-              placeholder="不配：行为没报错就算成功"
-              @change="handleSuccessConditionOutputChange(String($event || ''))"
-            >
-              <el-option v-for="item in successConditionOutputOptions" :key="item.value || 'none'" :label="item.label" :value="item.value" />
-            </el-select>
-          </el-form-item>
-          <template v-if="successCondition.outputKey">
-            <el-form-item label="比较方式">
-              <el-select
-                :model-value="successCondition.op"
-                style="width: 100%"
-                @change="emit('patch-success-condition', node.id, { op: String($event || 'EQ') })"
-              >
-                <el-option v-for="item in BEHAVIOR_TREE_OP_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
-              </el-select>
-            </el-form-item>
-            <el-form-item v-if="!isBehaviorTreeValueLessOp(successCondition.op)" label="比较值">
-              <el-input
-                :model-value="successCondition.value"
-                :placeholder="successConditionValuePlaceholder"
-                @update:model-value="emit('patch-success-condition', node.id, { value: String($event) })"
-              />
-            </el-form-item>
-            <p v-else class="behavior-tree-node-inspector__hint">当前比较方式不需要比较值，执行时只看这次出参是否为空。</p>
-          </template>
-        </template>
-        <p v-else class="behavior-tree-node-inspector__hint">{{ successConditionUnavailableHint }}</p>
+        <el-form-item label="表达式">
+          <el-input
+            :model-value="successCondition.expression"
+            clearable
+            placeholder="不配：行为没报错就算成功，例如 aaa > 2"
+            @update:model-value="handleSuccessConditionExpressionChange(String($event || ''))"
+          />
+        </el-form-item>
       </template>
     </el-form>
 
@@ -387,38 +361,6 @@ const hasOrphanOutputBindings = computed(() => listBehaviorTreeOutputBindingDraf
 
 const successCondition = computed(() => readBehaviorTreeSuccessConditionDraft(props.node?.config));
 
-const successConditionOutputOptions = computed(() => {
-  const outputs = boundActionOutputs.value;
-  const options = [
-    { value: "", label: "（不配：行为没报错就算成功）" },
-    ...outputs.map((item) => ({
-      value: item.name,
-      label: `${item.fieldName || item.name} · ${item.description || ""} (${item.type || ""})`,
-    })),
-  ];
-  const current = successCondition.value.outputKey.trim();
-  if (current && !outputs.some((item) => item.name === current)) {
-    options.push({ value: current, label: `${current}（该出参已不在当前行为上）` });
-  }
-  return options;
-});
-
-const successConditionValuePlaceholder = computed(() => {
-  const output = boundActionOutputs.value.find((item) => item.name === successCondition.value.outputKey.trim());
-  return output?.type ? `按 ${output.type} 解析` : "按出参类型填";
-});
-
-const successConditionUnavailableHint = computed(() => {
-  const boundApi = configText("actionApi").trim();
-  if (boundAction.value) {
-    return "该行为没有可判断的出参（不绑算子或没有出参绑定行），不能配成功条件；不配就是行为没报错算成功。";
-  }
-  if (boundApi) {
-    return `行为目录里没有 ${boundApi}（可能未发布或属于其他空间），请先同步节点目录再选出参；已配的成功条件会原样保存。`;
-  }
-  return "先绑定行为，再选择要判断的出参。";
-});
-
 /**
  * @description 解析子节点展示名。
  * @param child 子节点。
@@ -533,12 +475,12 @@ function handleInputOutputChange(paramName: string, output: string): void {
 }
 
 /**
- * @description 更新成功条件选择参数。
- * @param outputKey 出参标识；空则清除条件。
+ * @description 更新成功条件表达式；空则清除条件。
+ * @param expression 表达式文本。
  */
-function handleSuccessConditionOutputChange(outputKey: string): void {
+function handleSuccessConditionExpressionChange(expression: string): void {
   if (!props.node) return;
-  emit("patch-success-condition", props.node.id, { outputKey });
+  emit("patch-success-condition", props.node.id, { expression });
 }
 </script>
 

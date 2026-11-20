@@ -158,7 +158,7 @@ function mapTreeToTableRows(nodes: OntologyAttributeMetadataTreeNode[]): Metadat
     id: node.id,
     name: node.name,
     valueTypeLabel: resolveMetadataValueTypeLabel(node.valueType),
-    valueSummary: formatMetadataValueSummary(node),
+    valueSummary: node.valueType === "enum" ? formatMetadataValueSummary(node) : "—",
     children: mapTreeToTableRows(node.children),
   }));
 }
@@ -259,14 +259,10 @@ async function confirmMetadataCreate(): Promise<void> {
         !workspace.value.items.some((item) => item.id === formParentId.value))
     )
       throw new Error("请选择有效的父级节点");
-    if (formValueType.value === "range" && (formRangeMin.value === null) !== (formRangeMax.value === null)) throw new Error("请同时填写范围最小值和最大值");
-    const rangeValue = formRangeMin.value !== null && formRangeMax.value !== null ? { min: formRangeMin.value, max: formRangeMax.value } : null;
     const payload =
-      formValueType.value === "input"
-        ? serializeMetadataValue({ valueType: "input", value: formInputValue.value })
-        : formValueType.value === "enum"
-          ? serializeMetadataValue({ valueType: "enum", value: formEnumValues.value })
-          : serializeMetadataValue({ valueType: "range", value: rangeValue });
+      formValueType.value === "enum"
+        ? serializeMetadataValue({ valueType: "enum", value: formEnumValues.value })
+        : { valueType: formValueType.value === "input" ? ("INPUT" as const) : ("RANGE" as const) };
     const response = editingId.value
       ? await putMetadataSchemaInterface({
           ontologyIdentifier,

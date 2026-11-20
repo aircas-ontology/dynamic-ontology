@@ -18,8 +18,6 @@ import {
 } from "../../../utils/behaviorTreeBlackboard.ts";
 import { behaviorTreeEmptyToNull, behaviorTreeIntOrNull, behaviorTreeValueToText, parseBehaviorTreeTypedValue } from "../../../utils/behaviorTreeTypedValue.ts";
 import {
-  findBehaviorTreeBindableAction,
-  listBehaviorTreeBindableOutputs,
   mapBehaviorTreeInputBindingsToDraft,
   mapBehaviorTreeOutputBindingsToDraft,
   mapBehaviorTreeSuccessConditionToDraft,
@@ -35,13 +33,13 @@ import { createDefaultBehaviorTreeConfig } from "./behaviorTreeModel.ts";
  * @description 将草稿配置转为序列化 config。
  * @param node 节点草稿。
  * @param blackboardTypeOf 查黑板类型。
- * @param availableActions 可绑定行为目录，用于成功条件比较值按出参类型解析。
+ * @param availableActions 可绑定行为目录（保留参数以兼容调用方）。
  * @returns 序列化 config。
  */
 export function buildBehaviorTreeNodeConfig(
   node: BehaviorTreeNodeDraft,
   blackboardTypeOf: (key: string) => BehaviorTreeValueType | null,
-  availableActions: ActionTreeBindableAction[] = [],
+  _availableActions: ActionTreeBindableAction[] = [],
 ): Record<string, unknown> | null {
   const draft = node.config || {};
   /**
@@ -93,13 +91,7 @@ export function buildBehaviorTreeNodeConfig(
       const outputBindings = serializeBehaviorTreeOutputBindings(Array.isArray(draft.outputBindings) ? draft.outputBindings : []);
       if (inputBindings) config.inputBindings = inputBindings;
       if (outputBindings) config.outputBindings = outputBindings;
-      const successDraft = readBehaviorTreeSuccessConditionDraft(draft);
-      const action = findBehaviorTreeBindableAction(availableActions, textOf("actionApi"));
-      const outputType =
-        listBehaviorTreeBindableOutputs(action)
-          .find((item) => item.name === successDraft.outputKey.trim())
-          ?.type?.trim() || null;
-      const successCondition = serializeBehaviorTreeSuccessCondition(successDraft, outputType, parseBehaviorTreeTypedValue);
+      const successCondition = serializeBehaviorTreeSuccessCondition(readBehaviorTreeSuccessConditionDraft(draft));
       if (successCondition) config.successCondition = successCondition;
       return config;
     }

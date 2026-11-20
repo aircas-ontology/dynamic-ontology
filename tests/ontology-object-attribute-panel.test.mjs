@@ -4,6 +4,7 @@ import test from "node:test";
 import * as vue from "vue";
 import { transpileModule, ModuleKind } from "typescript";
 import * as attributeHelpers from "../src/views/OntologyObjectAttributePanel/utils/attributePanelHelpers.ts";
+import * as attributeMetadataSelection from "../src/views/OntologyObjectAttributePanel/utils/attributeMetadataSelection.ts";
 import * as attributeValidation from "../src/utils/validateAttributeDefaultValue.ts";
 import * as apiNameValidation from "../src/utils/validateApiName.ts";
 import { createMemoryHistory, createRouter } from "vue-router";
@@ -267,30 +268,180 @@ test("attribute API name is disabled only while editing", () => {
   assert.match(source, /v-model="draft\.apiName"[\s\S]*?:disabled="editingAttributeId !== null \|\| draft\.isPrimary"/);
 });
 
-test("removing a metadata tag updates the selected records, including the last tag", () => {
-  const source = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
-  const match = source.match(/function removeSelectedMetadata\(id: string\): void \{[\s\S]*?\n\}/);
-  assert.ok(match);
-  const emitted = [];
-  const props = { draft: { metadata: { selectedRecords: [{ id: "1" }, { id: "2" }] } } };
-  const code = match[0].replace(": string", "").replace(": void", "");
-  const remove = new Function("props", "emit", `${code}; return removeSelectedMetadata;`)(props, (_event, records) => emitted.push(records));
-  remove("1");
-  assert.deepEqual(emitted[0], [{ id: "2" }]);
-  props.draft.metadata.selectedRecords = emitted[0];
-  remove("2");
-  assert.deepEqual(emitted[1], []);
+test("attribute form opens metadata select dialog instead of tree-select click-to-add", () => {
+  const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
+  const dialogSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeMetadataSelectDialog.vue");
+  assert.match(formSource, /ontology-object-attribute-panel__aligned-item/);
+  assert.match(formSource, /选择元数据/);
+  assert.match(formSource, /AttributeMetadataSelectDialog/);
+  assert.doesNotMatch(formSource, /handleMetadataSelect/);
+  assert.doesNotMatch(formSource, /pendingMetadataId/);
+  assert.doesNotMatch(formSource, /placeholder="请选择元数据"/);
+  assert.doesNotMatch(formSource, /selectedMetadataRecords/);
+  assert.doesNotMatch(formSource, /removeSelectedMetadata/);
+  assert.doesNotMatch(formSource, /ontology-object-attribute-panel__metadata-tags/);
+  assert.doesNotMatch(formSource, /getMetadataSchemaInterface/);
+  assert.match(dialogSource, /show-checkbox/);
+  assert.match(dialogSource, /check-strictly/);
+  assert.match(dialogSource, /attribute-metadata-select__layout/);
+  assert.match(dialogSource, /attribute-metadata-select__tree-pane/);
+  assert.match(dialogSource, /attribute-metadata-select__selected-pane/);
+  assert.match(dialogSource, /attribute-metadata-select__selected-list/);
+  assert.match(dialogSource, /disabled:\s*children\.length\s*>\s*0|disabled:\s*.*\.children\.length\s*>\s*0/);
+  assert.match(dialogSource, /resolveMetadataValueTypeLabel/);
+  assert.match(dialogSource, /valueType === ['"]input['"]/);
+  assert.match(dialogSource, /valueType === ['"]enum['"]/);
+  assert.match(dialogSource, /valueType === ['"]range['"]/);
+  assert.match(dialogSource, /aria-label="最小值"/);
+  assert.match(dialogSource, /aria-label="最大值"/);
+  assert.doesNotMatch(dialogSource, /attribute-metadata-select__row-number/);
+  assert.doesNotMatch(dialogSource, /rowNumberById/);
+  assert.doesNotMatch(dialogSource, /@node-click/);
+  assert.doesNotMatch(dialogSource, /handleMetadataSelect/);
+  {
+    const treeBlock = dialogSource.match(/<el-tree[\s\S]*?<\/el-tree>/);
+    assert.ok(treeBlock, "missing el-tree");
+    assert.doesNotMatch(treeBlock[0], /<el-input/);
+    assert.doesNotMatch(treeBlock[0], /<el-select/);
+    assert.doesNotMatch(treeBlock[0], /<el-input-number/);
+  }
 });
 
-test("attribute form aligns type and storage fields and provides local metadata selection tags", () => {
-  const source = readFileSync(new URL("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue", import.meta.url), "utf8");
-  assert.match(source, /ontology-object-attribute-panel__aligned-item/);
-  assert.match(source, /el-tree-select[\s\S]*@update:model-value="handleMetadataSelect"/);
-  assert.doesNotMatch(source, /show-checkbox/);
-  assert.match(source, /label="元数据"[\s\S]*typeLabel/);
-  assert.match(source, /metadataTreeOptions/);
-  assert.match(source, /selectedMetadataRecords/);
-  assert.doesNotMatch(source, /getMetadataSchemaInterface|postMetadataSchemaInterface|putMetadataSchemaInterface/);
+test("attribute metadata selection helpers assemble edited drafts for checked nodes", async () => {
+  const { buildSelectedAttributeMetadataRecords, createAttributeMetadataValueDraft, initializeAttributeMetadataValueDrafts, listSelectedAttributeMetadataIds } =
+    await import("../src/views/OntologyObjectAttributePanel/utils/attributeMetadataSelection.ts");
+  const catalog = [
+    { id: "1", name: "说明", parentId: "", valueType: "input", value: "" },
+    { id: "2", name: "级别", parentId: "", valueType: "enum", value: ["高", "低"] },
+    { id: "3", name: "区间", parentId: "", valueType: "range", value: null },
+  ];
+  assert.deepEqual(listSelectedAttributeMetadataIds([{ id: "2" }, { bad: true }]), ["2"]);
+  assert.deepEqual(createAttributeMetadataValueDraft(catalog[1]), { valueType: "enum", value: ["高", "低"] });
+  const drafts = initializeAttributeMetadataValueDrafts(catalog, [
+    { id: "1", name: "说明", parentId: "", valueType: "input", value: "A" },
+    { id: "3", name: "区间", parentId: "", valueType: "range", value: { min: 1, max: 2 } },
+  ]);
+  assert.equal(drafts["1"].value, "A");
+  assert.deepEqual(drafts["3"], { valueType: "range", min: 1, max: 2 });
+  drafts["2"] = { valueType: "enum", value: ["高"] };
+  assert.deepEqual(buildSelectedAttributeMetadataRecords(["1", "2", "3"], catalog, drafts), [
+    { id: "1", name: "说明", parentId: "", valueType: "input", value: "A" },
+    { id: "2", name: "级别", parentId: "", valueType: "enum", value: ["高"] },
+    { id: "3", name: "区间", parentId: "", valueType: "range", value: { min: 1, max: 2 } },
+  ]);
+  assert.deepEqual(buildSelectedAttributeMetadataRecords(["missing", "1"], catalog, { 1: { valueType: "enum", value: ["x"] } }), [
+    { id: "1", name: "说明", parentId: "", valueType: "input", value: "" },
+  ]);
+  assert.deepEqual(buildSelectedAttributeMetadataRecords(["2"], catalog, { 2: { valueType: "input", value: "x" } }), [
+    { id: "2", name: "级别", parentId: "", valueType: "enum", value: [] },
+  ]);
+  assert.deepEqual(buildSelectedAttributeMetadataRecords(["3"], catalog, { 3: { valueType: "range", min: 1, max: null } }), [
+    { id: "3", name: "区间", parentId: "", valueType: "range", value: null },
+  ]);
+  assert.deepEqual(listSelectedAttributeMetadataIds(null), []);
+  assert.deepEqual(initializeAttributeMetadataValueDrafts(catalog, null)["2"], { valueType: "enum", value: ["高", "低"] });
+});
+
+test("attribute metadata nested json preserves tree paths and leaf value formats", async () => {
+  const {
+    ATTRIBUTE_METADATA_NESTED_ROOT_KEY,
+    buildAttributeMetadataDraftState,
+    buildAttributeMetadataNestedJson,
+    formatAttributeMetadataLeafValue,
+    resolveAttributeMetadataApiPayload,
+  } = await import("../src/views/OntologyObjectAttributePanel/utils/attributeMetadataSelection.ts");
+  const catalog = [
+    { id: "root", name: "元数据", parentId: "", valueType: "input", value: "" },
+    { id: "aaa", name: "aaa", parentId: "root", valueType: "input", value: "" },
+    { id: "rrr", name: "rrr", parentId: "aaa", valueType: "input", value: "" },
+    { id: "ddddd", name: "ddddd", parentId: "aaa", valueType: "range", value: null },
+    { id: "enum-group", name: "枚举类", parentId: "root", valueType: "enum", value: [] },
+    { id: "required", name: "是否必填", parentId: "enum-group", valueType: "enum", value: ["是", "否"] },
+  ];
+  const selected = [
+    { id: "rrr", name: "rrr", parentId: "aaa", valueType: "input", value: "3" },
+    { id: "ddddd", name: "ddddd", parentId: "aaa", valueType: "range", value: { min: 1, max: 2 } },
+    { id: "required", name: "是否必填", parentId: "enum-group", valueType: "enum", value: ["是", "否"] },
+  ];
+  assert.equal(formatAttributeMetadataLeafValue(selected[0]), "3");
+  assert.equal(formatAttributeMetadataLeafValue(selected[1]), "1,2");
+  assert.equal(formatAttributeMetadataLeafValue(selected[2]), "是,否");
+  assert.equal(formatAttributeMetadataLeafValue({ id: "x", name: "x", parentId: "", valueType: "range", value: null }), "");
+  assert.deepEqual(buildAttributeMetadataNestedJson(selected, catalog), {
+    [ATTRIBUTE_METADATA_NESTED_ROOT_KEY]: {
+      aaa: { rrr: "3", ddddd: "1,2" },
+      枚举类: { 是否必填: "是,否" },
+    },
+  });
+  assert.deepEqual(
+    buildAttributeMetadataNestedJson(
+      [{ id: "1", name: "说明", parentId: "", valueType: "input", value: "A" }],
+      [{ id: "1", name: "说明", parentId: "", valueType: "input", value: "" }],
+    ),
+    {
+      [ATTRIBUTE_METADATA_NESTED_ROOT_KEY]: { 说明: "A" },
+    },
+  );
+  const draftState = buildAttributeMetadataDraftState(selected, catalog);
+  assert.equal(resolveAttributeMetadataApiPayload(draftState), JSON.stringify(draftState.nested));
+  assert.equal(resolveAttributeMetadataApiPayload({ selectedRecords: selected }), undefined);
+  assert.equal(resolveAttributeMetadataApiPayload({ nested: { [ATTRIBUTE_METADATA_NESTED_ROOT_KEY]: {} } }), undefined);
+  assert.equal(
+    resolveAttributeMetadataApiPayload({ [ATTRIBUTE_METADATA_NESTED_ROOT_KEY]: { 说明: "A" } }),
+    JSON.stringify({ [ATTRIBUTE_METADATA_NESTED_ROOT_KEY]: { 说明: "A" } }),
+  );
+});
+
+test("attribute property save uses nested metadata json payload", () => {
+  const source = readSource("../src/views/OntologyObjectAttributePanel/composables/useAttributePropertyList.ts");
+  assert.match(source, /resolveAttributeMetadataApiPayload/);
+  assert.match(source, /buildAttributeMetadataDraftState/);
+  assert.doesNotMatch(source, /JSON\.stringify\(draft\.metadata\)/);
+  assert.match(source, /metadataPayload/);
+});
+
+test("attribute metadata nested selection echoes leaf paths against catalog tree", async () => {
+  const { ATTRIBUTE_METADATA_NESTED_ROOT_KEY, parseAttributeMetadataNestedSelection, resolveAttributeMetadataSelectionEcho } =
+    await import("../src/views/OntologyObjectAttributePanel/utils/attributeMetadataSelection.ts");
+  const catalog = [
+    { id: "root", name: "元数据", parentId: "", valueType: "input", value: "" },
+    { id: "aaa", name: "aaa", parentId: "root", valueType: "input", value: "" },
+    { id: "rrr", name: "rrr", parentId: "aaa", valueType: "input", value: "" },
+    { id: "rrr-2", name: "rrr", parentId: "aaa", valueType: "input", value: "" },
+    { id: "ddddd", name: "ddddd", parentId: "aaa", valueType: "range", value: null },
+    { id: "enum-group", name: "枚举类", parentId: "root", valueType: "enum", value: [] },
+    { id: "required", name: "是否必填", parentId: "enum-group", valueType: "enum", value: ["是", "否"] },
+  ];
+  const nested = {
+    [ATTRIBUTE_METADATA_NESTED_ROOT_KEY]: {
+      aaa: { rrr: "3", ddddd: "1,2" },
+      枚举类: { 是否必填: "是,否" },
+    },
+  };
+  assert.deepEqual(parseAttributeMetadataNestedSelection(nested, catalog), [
+    { id: "rrr", name: "rrr", parentId: "aaa", valueType: "input", value: "3" },
+    { id: "ddddd", name: "ddddd", parentId: "aaa", valueType: "range", value: { min: 1, max: 2 } },
+    { id: "required", name: "是否必填", parentId: "enum-group", valueType: "enum", value: ["是", "否"] },
+  ]);
+  assert.deepEqual(
+    parseAttributeMetadataNestedSelection({ [ATTRIBUTE_METADATA_NESTED_ROOT_KEY]: { 说明: "A" } }, [
+      { id: "1", name: "说明", parentId: "", valueType: "input", value: "" },
+    ]),
+    [{ id: "1", name: "说明", parentId: "", valueType: "input", value: "A" }],
+  );
+  assert.deepEqual(parseAttributeMetadataNestedSelection({}, catalog), []);
+  const selectedRecords = [{ id: "required", name: "是否必填", parentId: "enum-group", valueType: "enum", value: ["是"] }];
+  assert.deepEqual(resolveAttributeMetadataSelectionEcho({ selectedRecords, nested, catalog }, catalog), selectedRecords);
+  assert.deepEqual(resolveAttributeMetadataSelectionEcho(nested, catalog), parseAttributeMetadataNestedSelection(nested, catalog));
+});
+
+test("attribute metadata select dialog echoes nested metadata into checked leaves", () => {
+  const formSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributePropertyFormDialog.vue");
+  const dialogSource = readSource("../src/views/OntologyObjectAttributePanel/components/AttributeMetadataSelectDialog.vue");
+  assert.match(formSource, /:metadata-source="draft\.metadata"/);
+  assert.doesNotMatch(formSource, /:selected-records="draft\.metadata\.selectedRecords"/);
+  assert.match(dialogSource, /resolveAttributeMetadataSelectionEcho/);
+  assert.match(dialogSource, /metadataSource/);
 });
 
 test("bound datasource attributes allow name, category and description edits", () => {
@@ -336,6 +487,7 @@ function createAttributeEditor(updateProperty) {
     "element-plus": { ElMessage: { success() {}, error() {}, warning() {} }, ElMessageBox: {} },
     "@/apis": { updateOntologyPropertyInterface: updateProperty },
     "../utils/attributePanelHelpers": attributeHelpers,
+    "../utils/attributeMetadataSelection": attributeMetadataSelection,
     "@/utils/validateAttributeDefaultValue": attributeValidation,
     "@/utils/validateApiName": apiNameValidation,
   };

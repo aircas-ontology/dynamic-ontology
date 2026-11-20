@@ -9,7 +9,6 @@ import type {
   BehaviorTreeSuccessConditionDraft,
 } from "@/types";
 import { resolveBehaviorTreeBlackboardSource } from "../../../utils/behaviorTreeBlackboard.ts";
-import { isBehaviorTreeValueLessOp } from "./behaviorTreeConstants.ts";
 
 /** 入参取值来源选项。 */
 export const BEHAVIOR_TREE_INPUT_FROM_OPTIONS = [
@@ -348,76 +347,51 @@ export function findBehaviorTreeBindableAction(availableActions: ActionTreeBinda
  */
 export function readBehaviorTreeSuccessConditionDraft(config: BehaviorTreeNodeConfigDraft | null | undefined): BehaviorTreeSuccessConditionDraft {
   const raw = config?.successCondition;
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { outputKey: "", op: "EQ", value: "" };
+  if (!raw || typeof raw !== "object" || Array.isArray(raw) || !("expression" in raw)) {
+    return { expression: "" };
   }
-  return {
-    outputKey: typeof raw.outputKey === "string" ? raw.outputKey : String(raw.outputKey ?? ""),
-    op: typeof raw.op === "string" && raw.op ? raw.op : "EQ",
-    value: typeof raw.value === "string" ? raw.value : raw.value == null ? "" : String(raw.value),
-  };
+  const expression = raw.expression;
+  return { expression: typeof expression === "string" ? expression : expression == null ? "" : String(expression) };
 }
 
 /**
- * @description 更新 ACTION 执行成功条件草稿；清空出参时删除条件。
+ * @description 更新 ACTION 执行成功条件草稿；表达式为空时删除条件。
  * @param config 节点配置。
  * @param patch 字段补丁。
  */
 export function patchBehaviorTreeSuccessCondition(config: BehaviorTreeNodeConfigDraft, patch: Partial<BehaviorTreeSuccessConditionDraft>): void {
   const next = { ...readBehaviorTreeSuccessConditionDraft(config), ...patch };
-  if (isBehaviorTreeValueLessOp(next.op)) next.value = "";
-  if (!next.outputKey.trim()) {
+  const expression = next.expression.trim();
+  if (!expression) {
     delete config.successCondition;
     return;
   }
-  config.successCondition = {
-    outputKey: next.outputKey,
-    op: next.op || "EQ",
-    value: next.value,
-  };
+  config.successCondition = { expression };
 }
 
 /**
- * @description 将后端 successCondition 转为草稿。
+ * @description 将后端 successCondition 转为草稿；旧 outputKey/op/value 格式视为未配置。
  * @param raw 序列化对象。
  * @returns 草稿；未配置时返回空草稿。
  */
 export function mapBehaviorTreeSuccessConditionToDraft(raw: unknown): BehaviorTreeSuccessConditionDraft {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { outputKey: "", op: "EQ", value: "" };
+    return { expression: "" };
   }
   const record = raw as Record<string, unknown>;
-  return {
-    outputKey: typeof record.outputKey === "string" ? record.outputKey : String(record.outputKey ?? ""),
-    op: typeof record.op === "string" && record.op ? record.op : "EQ",
-    value: record.value == null ? "" : String(record.value),
-  };
+  if (!("expression" in record)) {
+    return { expression: "" };
+  }
+  return { expression: record.expression == null ? "" : String(record.expression) };
 }
 
 /**
- * @description 将成功条件草稿序列化为保存对象；无出参时返回 null。
+ * @description 将成功条件草稿序列化为保存对象；空表达式返回 null。
  * @param draft 草稿。
- * @param outputType 出参声明类型。
- * @param parseValue 按类型解析比较值。
  * @returns 序列化对象或 null。
  */
-export function serializeBehaviorTreeSuccessCondition(
-  draft: BehaviorTreeSuccessConditionDraft | null | undefined,
-  outputType: string | null,
-  parseValue: (text: string, type: string) => { ok: boolean; value: unknown },
-): Record<string, unknown> | null {
-  const outputKey = String(draft?.outputKey || "").trim();
-  if (!outputKey) return null;
-  const op = String(draft?.op || "EQ").trim() || "EQ";
-  const successCondition: Record<string, unknown> = { outputKey, op };
-  if (!isBehaviorTreeValueLessOp(op)) {
-    const text = String(draft?.value ?? "").trim();
-    if (outputType) {
-      const parsed = parseValue(text, outputType);
-      successCondition.value = parsed.ok ? parsed.value : text;
-    } else {
-      successCondition.value = text;
-    }
-  }
-  return successCondition;
+export function serializeBehaviorTreeSuccessCondition(draft: BehaviorTreeSuccessConditionDraft | null | undefined): Record<string, unknown> | null {
+  const expression = String(draft?.expression || "").trim();
+  if (!expression) return null;
+  return { expression };
 }

@@ -63,9 +63,7 @@ export interface BehaviorTreeOutputBindingDraft {
 
 /** ACTION 执行成功条件草稿。 */
 export interface BehaviorTreeSuccessConditionDraft {
-  outputKey: string;
-  op: string;
-  value: string;
+  expression: string;
 }
 
 /** 对象属性目录项（黑板 PROPERTY 来源下拉）。 */

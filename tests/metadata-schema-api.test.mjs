@@ -7,7 +7,8 @@ import { parseMetadataSchema, serializeMetadataValue } from "../src/views/Ontolo
 const operationsSource = readFileSync(new URL("../src/views/OntologyObjectAttributePanel/utils/metadataOperations.ts", import.meta.url), "utf8");
 const operations = {};
 new Function("exports", "require", ts.transpile(operationsSource, { module: ts.ModuleKind.CommonJS }))(operations, () => ({ ROOT_METADATA_PARENT_ID: "" }));
-const { buildMetadataParentSelectTree, collectMetadataDescendantIds } = operations;
+const { buildMetadataParentSelectTree, buildMetadataTree, collectMetadataDescendantIds, formatMetadataValueSummary, resolveMetadataValueTypeLabel } =
+  operations;
 
 test("query accepts nested root object and multiple roots with three value types", () => {
   const root = {
@@ -90,7 +91,7 @@ function createDialog(overrides = {}) {
   const source = readFileSync(new URL("../src/views/OntologyObjectAttributePanel/components/MetadataManageDialog.vue", import.meta.url), "utf8");
   const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
   const code = ts.transpile(
-    `${script}\nreturn { workspace, queryLoading, queryError, formVisible, formName, formParentId, formValueType, formInputValue, formEnumValues, formSubmitting, formError, editingId, parentTree, parentLocked, handleDialogOpened, openMetadataCreate, openMetadataEdit, confirmMetadataCreate, handleRemoveMetadata };`,
+    `${script}\nreturn { workspace, queryLoading, queryError, formVisible, formName, formParentId, formValueType, formInputValue, formEnumValues, formSubmitting, formError, editingId, parentTree, parentLocked, tableRows, handleDialogOpened, openMetadataCreate, openMetadataEdit, confirmMetadataCreate, handleRemoveMetadata };`,
     { target: ts.ScriptTarget.ES2022 },
   );
   const props = reactive({ visible: false, ontologyIdentifier: "object" });
@@ -109,9 +110,9 @@ function createDialog(overrides = {}) {
     serializeMetadataValue,
     buildMetadataParentSelectTree,
     collectMetadataDescendantIds,
-    buildMetadataTree: () => [],
-    formatMetadataValueSummary: () => "",
-    resolveMetadataValueTypeLabel: () => "",
+    buildMetadataTree,
+    formatMetadataValueSummary,
+    resolveMetadataValueTypeLabel,
     getMetadataSchemaInterface: async () => success,
     postMetadataSchemaInterface: async () => success,
     putMetadataSchemaInterface: async () => success,
@@ -154,6 +155,28 @@ test("editing metadata permits moving under a root while excluding descendants",
   dialog.formParentId.value = "4";
   await dialog.confirmMetadataCreate();
   assert.equal(writes[0].parentId, 4);
+});
+
+test("metadata manage table shows value summary only for enum rows", async () => {
+  const { dialog } = createDialog({
+    getMetadataSchemaInterface: async () => ({
+      code: 200,
+      data: [
+        { schemaId: 1, name: "input", valueType: "INPUT", value: "文字" },
+        { schemaId: 2, name: "range", valueType: "RANGE", value: "1,2" },
+        { schemaId: 3, name: "enum", valueType: "ENUM", value: "是,否" },
+      ],
+    }),
+  });
+  await dialog.handleDialogOpened();
+  const byName = Object.fromEntries(dialog.tableRows.value.map((row) => [row.name, row]));
+  assert.equal(byName.input.valueSummary, "—");
+  assert.equal(byName.range.valueSummary, "—");
+  assert.equal(byName.enum.valueSummary, "是 / 否");
+  assert.match(
+    readFileSync(new URL("../src/views/OntologyObjectAttributePanel/components/MetadataManageDialog.vue", import.meta.url), "utf8"),
+    /valueType === "enum"/,
+  );
 });
 
 test("query ignores stale response and reports unsupported response structure", async () => {
@@ -214,10 +237,16 @@ test("edit, create and delete send payloads, prevent repeated writes and refresh
   dialog.formName.value = "child";
   dialog.formParentId.value = "3";
   await dialog.confirmMetadataCreate();
+  assert.deepEqual(writes[1], ["post", { ontologyIdentifier: "object", parentId: 3, name: "child", valueType: "INPUT" }]);
+  dialog.openMetadataCreate();
+  dialog.formName.value = "span";
+  dialog.formParentId.value = "3";
+  dialog.formValueType.value = "range";
+  await dialog.confirmMetadataCreate();
+  assert.deepEqual(writes[2], ["post", { ontologyIdentifier: "object", parentId: 3, name: "span", valueType: "RANGE" }]);
   await dialog.handleRemoveMetadata("3");
-  assert.deepEqual(writes[1], ["post", { ontologyIdentifier: "object", parentId: 3, name: "child", valueType: "INPUT", value: "" }]);
-  assert.deepEqual(writes[2], ["delete", { ontologyIdentifier: "object", metadataSchemaId: 3 }]);
-  assert.equal(queries, 4);
+  assert.deepEqual(writes[3], ["delete", { ontologyIdentifier: "object", metadataSchemaId: 3 }]);
+  assert.equal(queries, 5);
 });
 
 test("command failures retain form and show error; canceled delete sends no request", async () => {
