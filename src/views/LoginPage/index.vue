@@ -201,7 +201,7 @@ async function onSubmit() {
     if (response.code !== 200) {
       throw new Error(response.message || "登录失败，请检查账号密码后重试。");
     }
-    const failure = await router.push({ name: "OntologySpaceManagement" });
+    const failure = await router.push({ name: "IntelligenceTaskThemes" });
     if (failure) throw new Error("进入系统失败，请稍后重试。");
     loginStatus.value = "success";
   } catch (error) {

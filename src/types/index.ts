@@ -497,6 +497,7 @@ export type {
   EntityBrowsingRouteName,
   EntityBrowsingTab,
 } from "./pages/entityBrowsingType";
+export type { IntelligenceTaskTheme } from "./pages/intelligenceFusionType";
 export { METADATA_VALUE_TYPE_OPTIONS, ROOT_METADATA_PARENT_ID } from "./pages/ontologyAttributeMetadataType";
 export type {
   OntologyAttributeMetadataEnumRecord,

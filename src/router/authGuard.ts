@@ -6,7 +6,7 @@ import { hasLoginToken } from "../utils/authToken.ts";
 export const LOGIN_ROUTE_NAME = "Login";
 
 /** 登录成功后的业务首页路由名称。 */
-export const AUTH_HOME_ROUTE_NAME = "OntologySpaceManagement";
+export const AUTH_HOME_ROUTE_NAME = "IntelligenceTaskThemes";
 
 /** 守卫判断所需的最小路由结构。 */
 type GuardRouteLocation = Pick<RouteLocationNormalized, "name">;

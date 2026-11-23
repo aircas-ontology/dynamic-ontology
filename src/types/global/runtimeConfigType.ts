@@ -5,6 +5,8 @@ declare global {
     readonly ontology_server: string;
     readonly MAP_SERVER_WMTS_URL: string;
     readonly MAP_SERVER_TMS_URL: string;
+    /** 新增任务区域选点使用的 XYZ 瓦片地址。 */
+    readonly TASK_MAP_TILE_URL: string;
     readonly OCEAN_SERVER_URL: string;
     readonly OCEAN_ANALYSIS_SERVER_URL: string;
     readonly LOGIN_URL: string;
