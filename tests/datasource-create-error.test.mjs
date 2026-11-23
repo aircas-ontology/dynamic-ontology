@@ -49,6 +49,19 @@ const selection = {
 };
 const draft = { categoryId: "1", displayName: "舰船", apiName: "ship" };
 
+for (const datasourceId of [undefined, 7]) {
+  test(`datasource creation ${datasourceId === undefined ? "omits absent" : "includes selected"} datasourceId`, async () => {
+    let payload;
+    const state = createActions(async (value) => {
+      payload = value;
+      return { code: 200, data: {} };
+    });
+    await state.actions.createOntologyObjectFromDatasource({ ...selection, datasourceId }, draft);
+    assert.equal(Object.hasOwn(payload, "datasourceId"), datasourceId !== undefined);
+    assert.equal(payload.datasourceId, datasourceId);
+  });
+}
+
 for (const [name, request, expected] of [
   ["business failure", async () => ({ code: 500, message: "对象 APIName 已存在" }), "对象 APIName 已存在"],
   [

@@ -32,6 +32,8 @@ export interface DatasourceConnection {
 }
 
 export interface DatasourceBuildSelection {
+  /** 所选连接 ID，按空间查询的已绑定数据源可省略。 */
+  datasourceId?: number;
   schemaName: string;
   primaryTableId: string;
   selectedTableIds: string[];
