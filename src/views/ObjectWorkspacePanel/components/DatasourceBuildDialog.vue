@@ -1,9 +1,10 @@
 <template>
   <el-dialog v-model="visible" class="datasource-build-dialog" title="数据源构建对象" width="min(980px, 92vw)" append-to-body destroy-on-close>
-    <el-steps :active="activeStep" align-center class="datasource-build-dialog__steps">
+    <el-steps v-if="step >= -1" :active="activeStep" align-center class="datasource-build-dialog__steps">
       <el-step v-for="title in stepTitles" :key="title" :title="title" />
     </el-steps>
     <el-alert v-if="error" :title="error" type="error" :closable="false" />
+    <p v-if="step === -2 && busy" role="status">正在查询空间 Schema…</p>
     <section v-if="step === -1" v-loading="busy" class="datasource-build-dialog__connections">
       <aside class="datasource-build-dialog__history" aria-label="历史连接">
         <h2>历史连接</h2>
@@ -93,9 +94,9 @@
           />
         </el-form-item>
       </el-form>
-      <p v-if="datasourceId && !isSqlite">选择数据源 schema</p>
+      <p v-if="showSchemaSelection">选择数据源 schema</p>
       <el-select
-        v-if="datasourceId && !isSqlite"
+        v-if="showSchemaSelection"
         v-model="schemaName"
         placeholder="请选择 schema"
         :ariaLabel="'选择 schema'"
@@ -130,7 +131,7 @@
         ></el-table
       >
     </section>
-    <section v-else v-loading="busy" class="datasource-build-dialog__fields">
+    <section v-else-if="step === 2" v-loading="busy" class="datasource-build-dialog__fields">
       <aside class="datasource-build-dialog__field-nav">
         <button
           v-for="table in selectedTables"
@@ -199,7 +200,8 @@
         <div class="datasource-build-dialog__footer-actions">
           <el-button @click="visible = false">取消</el-button>
           <el-button v-if="activeStep > 0" :disabled="busy" @click="step -= 1">上一步</el-button>
-          <el-button type="primary" :loading="busy" @click="nextStep">{{ step === 2 ? "创建" : "下一步" }}</el-button>
+          <el-button v-if="step === -2 && error" type="primary" @click="initializeDatasourceBuild">重新查询 Schema</el-button>
+          <el-button v-else-if="step >= -1" type="primary" :loading="busy" @click="nextStep">{{ step === 2 ? "创建" : "下一步" }}</el-button>
         </div>
       </div>
     </template>
@@ -252,6 +254,7 @@ const filteredConnections = computed(() =>
 const connectionForm = reactive<DatasourceConnectionParam>({ name: "", dbType: "POSTGRESQL", jdbcUrl: "", username: "", password: "", schemaName: "public" });
 const isConnectionTested = computed(() => testedConnection.value !== "" && testedConnection.value === JSON.stringify(getConnectionPayload()));
 const isSqlite = computed(() => connections.value.find((item) => item.id === datasourceId.value)?.dbType.toUpperCase() === "SQLITE");
+const showSchemaSelection = computed(() => hasBoundConnection.value || (datasourceId.value !== undefined && !isSqlite.value));
 const tables = ref<DatasourceTable[]>([]);
 let generation = 0;
 let dialogGeneration = 0;
@@ -332,12 +335,12 @@ watch(
     datasourceId.value = undefined;
     connectionReady.value = false;
     hasBoundConnection.value = false;
-    step.value = -1;
+    step.value = -2;
     connectionKeyword.value = "";
     testedConnection.value = "";
     connectionMode.value = "existing";
     Object.assign(connectionForm, { name: "", dbType: "POSTGRESQL", jdbcUrl: "", username: "", password: "", schemaName: "public" });
-    if (opened) void loadConnections();
+    if (opened) void initializeDatasourceBuild();
   },
   { immediate: true },
 );
@@ -351,7 +354,18 @@ onBeforeUnmount(() => {
 function getDatasourceTarget() {
   return datasourceId.value === undefined ? { spaceId: Number(props.spaceId) } : { datasourceId: datasourceId.value };
 }
-/** @description 完整读取连接分页并优先选择历史空间关联，忽略关闭后的响应。 */
+/** @description 按空间 Schema 查询结果选择向导入口。 */
+async function initializeDatasourceBuild(): Promise<void> {
+  if (busy.value) return;
+  hasBoundConnection.value = true;
+  const token = generation + 1;
+  await loadSchemas();
+  if (token !== generation || error.value) return;
+  hasBoundConnection.value = schemas.value.length > 0;
+  step.value = hasBoundConnection.value ? 0 : -1;
+  if (!hasBoundConnection.value) await loadConnections();
+}
+/** @description 读取未绑定空间可选择的历史连接，忽略关闭后的响应。 */
 async function loadConnections(): Promise<void> {
   if (busy.value) return;
   const token = ++generation;
@@ -372,13 +386,6 @@ async function loadConnections(): Promise<void> {
     }
     connections.value = items;
     connectionReady.value = true;
-    busy.value = false;
-    const historical = items.find((item) => item.spaceId === Number(props.spaceId));
-    if (step.value <= 0) {
-      hasBoundConnection.value = Boolean(historical);
-      step.value = historical ? 0 : -1;
-    }
-    if (historical) await selectConnection(historical.id);
   } catch (cause) {
     if (token === generation) error.value = cause instanceof Error ? cause.message : "连接查询失败";
   } finally {
@@ -559,13 +566,19 @@ async function loadSchemas(): Promise<void> {
         : await getDatasourceSchemaListInterface({ spaceId });
     if (token !== generation) return;
     if (response.code !== 200) throw new Error(response.message || "Schema 查询失败");
+    if (!Array.isArray(response.data)) throw new Error("Schema 查询返回格式异常");
     schemas.value = response.data;
     if (datasourceId.value !== undefined && !schemas.value.length) {
       schemas.value = [{ schemaName: "public" }];
       schemaName.value = "public";
     }
   } catch (cause) {
-    if (token === generation) error.value = cause instanceof Error ? cause.message : "Schema 查询失败";
+    if (token === generation) {
+      const message = cause instanceof Error ? cause.message : "Schema 查询失败";
+      const isUnconfiguredSpace = step.value === -2 && datasourceId.value === undefined && /^该对象空间未配置数据源(?:[：:]|$)/.test(message.trim());
+      if (isUnconfiguredSpace) schemas.value = [];
+      else error.value = message;
+    }
   } finally {
     if (token === generation) busy.value = false;
   }
@@ -707,6 +720,7 @@ async function nextStep(): Promise<void> {
     emit(
       "submit",
       {
+        ...(datasourceId.value !== undefined ? { datasourceId: datasourceId.value } : {}),
         schemaName: schemaName.value,
         primaryTableId: primary.value,
         selectedTableIds: [...selected.value],

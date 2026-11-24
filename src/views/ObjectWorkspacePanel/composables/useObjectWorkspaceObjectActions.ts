@@ -245,6 +245,7 @@ export function useObjectWorkspaceObjectActions(options: {
     });
     const payload: BuildObjectFromDatasourceParams = {
       spaceId: numericSpaceId,
+      ...(selection.datasourceId !== undefined ? { datasourceId: selection.datasourceId } : {}),
       categoryId: numericCategoryId,
       displayName: draft.displayName,
       apiName: draft.apiName,

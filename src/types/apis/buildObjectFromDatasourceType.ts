@@ -22,6 +22,8 @@ export interface BuildObjectFromDatasourceForeignKey {
 
 export interface BuildObjectFromDatasourceParams {
   spaceId: number;
+  /** 所选数据源连接 ID，未提供时使用空间已绑定的数据源。 */
+  datasourceId?: number;
   categoryId?: number;
   displayName: string;
   apiName: string;

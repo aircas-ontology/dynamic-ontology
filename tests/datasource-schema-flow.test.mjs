@@ -14,7 +14,7 @@ function createWizard(api = {}) {
   const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
   const code = ts.transpile(
     script +
-      "\nreturn { deleteHistoricalConnection, invalidateConnectionTest, chooseHistoricalConnection, activateNewConnection, filteredConnections, connectionKeyword, hasBoundConnection, activeStep, stepTitles, connectionMode, testConnection, isConnectionTested, connections, datasourceId, connectionForm, createConnection, selectConnection, loadConnections, objectName, categoryId, nextStep, loadSchemas, step, schemas, schemaName, tables, selected, primary, error, busy, resetTableSelection, fieldIdsByTable, foreignKeys, visible };",
+      "\nreturn { showSchemaSelection, initializeDatasourceBuild, deleteHistoricalConnection, invalidateConnectionTest, chooseHistoricalConnection, activateNewConnection, filteredConnections, connectionKeyword, hasBoundConnection, activeStep, stepTitles, connectionMode, testConnection, isConnectionTested, connections, datasourceId, connectionForm, createConnection, selectConnection, loadConnections, objectName, categoryId, nextStep, loadSchemas, step, schemas, schemaName, tables, selected, primary, error, busy, resetTableSelection, fieldIdsByTable, foreignKeys, visible };",
     { target: ts.ScriptTarget.ES2022 },
   );
   const dependencies = {
@@ -36,6 +36,51 @@ function createWizard(api = {}) {
   wizard.objectName.value = "舰船";
   wizard.categoryId.value = "3";
   return wizard;
+}
+
+test("opening checks space Schema before looking up historical connections", async () => {
+  let open;
+  const wizard = createWizard({
+    watch: (_, callback) => {
+      open = callback;
+    },
+    getDatasourceSchemaListInterface: async (params) => {
+      assert.deepEqual(params, { spaceId: 42 });
+      return { code: 200, data: [{ schemaName: "bound" }] };
+    },
+    getDatasourceConnectionListInterface: () => assert.fail("bound space must skip history"),
+  });
+  open([true]);
+  await new Promise(setImmediate);
+  assert.equal(wizard.step.value, 0);
+  assert.deepEqual(wizard.schemas.value, [{ schemaName: "bound" }]);
+  assert.equal(wizard.showSchemaSelection.value, true);
+});
+
+for (const rejects of [false, true]) {
+  test(`unconfigured space enters connection selection for ${rejects ? "HTTP error" : "business response"}`, async () => {
+    let open;
+    const wizard = createWizard({
+      watch: (_, callback) => {
+        open = callback;
+      },
+      getDatasourceSchemaListInterface: async () => {
+        const message = "该对象空间未配置数据源：spaceId=42";
+        if (rejects) throw new Error(message);
+        return { code: 500, message };
+      },
+      getDatasourceConnectionListInterface: async () => ({ code: 200, data: { records: [{ id: 7, name: "db", dbType: "SQLITE" }], total: 1 } }),
+    });
+    open([true]);
+    await new Promise(setImmediate);
+    assert.equal(wizard.step.value, -1);
+    assert.equal(wizard.hasBoundConnection.value, false);
+    assert.equal(wizard.error.value, "");
+    assert.equal(wizard.connections.value.length, 1);
+    await wizard.chooseHistoricalConnection(7);
+    assert.equal(wizard.step.value, 0);
+    assert.equal(wizard.datasourceId.value, 7);
+  });
 }
 
 test("first step validates object information and retains it when schema changes", async () => {
@@ -181,9 +226,30 @@ test("columns and submission retain selected schema and edited field description
   wizard.tables.value[0].fields[0].propertyName = "object_id";
   await wizard.nextStep();
   assert.equal(emitted.schemaName, "public");
+  assert.equal(Object.hasOwn(emitted, "datasourceId"), false);
   assert.deepEqual(objectInfo, { displayName: "舰船", categoryId: "3" });
   assert.equal(emitted.selectedTables[0].fields[0].description, "编辑说明");
   assert.equal(wizard.visible.value, false);
+});
+
+test("wizard submission includes the selected datasource id", async () => {
+  let emitted;
+  const wizard = createWizard({
+    defineEmits: () => (_, value) => {
+      emitted = value;
+    },
+  });
+  wizard.datasourceId.value = 7;
+  wizard.schemaName.value = "public";
+  wizard.step.value = 2;
+  wizard.tables.value = [
+    { id: "ship", name: "ship", storageName: "ship", comment: "", fields: [{ id: "id", name: "id", propertyName: "id", dataType: "Int" }] },
+  ];
+  wizard.selected.value = ["ship"];
+  wizard.primary.value = "ship";
+  wizard.fieldIdsByTable.ship = ["id"];
+  await wizard.nextStep();
+  assert.equal(emitted.datasourceId, 7);
 });
 
 test("field metadata retains primary key flags for every table after reload", async () => {
@@ -250,11 +316,20 @@ test("datasource APIs send space/schema and comma-separated table names to docum
   assert.equal(api.postBuildObjectFromDatasourceInterface(payload).data, payload);
 });
 
-test("connection list selects historical association without writing space binding", async () => {
+test("empty space Schema leaves history selectable even when a record matches the space", async () => {
+  let open;
   const wizard = createWizard({
+    watch: (_, callback) => {
+      open = callback;
+    },
+    getDatasourceSchemaListInterface: async () => ({ code: 200, data: [] }),
     getDatasourceConnectionListInterface: async () => ({ code: 200, data: { records: [{ id: 7, name: "db", dbType: "SQLITE", spaceId: 42 }], total: 1 } }),
   });
-  await wizard.loadConnections();
+  open([true]);
+  await new Promise(setImmediate);
+  assert.equal(wizard.step.value, -1);
+  assert.equal(wizard.datasourceId.value, undefined);
+  await wizard.chooseHistoricalConnection(7);
   assert.equal(wizard.datasourceId.value, 7);
   assert.equal(wizard.schemaName.value, "public");
 });
@@ -289,13 +364,16 @@ test("connection pagination finds association on later pages and uses datasource
       assert.deepEqual(params, { spaceId: 42 });
       return { code: 200, data: [] };
     },
-    getDatasourceTableListInterface: async (params) => {
-      assert.deepEqual(params, { datasourceId: 2, schemaName: "public" });
+    getDatasourceTableListByDatasourceInterface: async (params) => {
+      assert.deepEqual(params, { id: 2, schemaName: "public" });
       return { code: 200, data: [] };
     },
   });
   await wizard.loadConnections();
   assert.deepEqual(pages, [1, 2]);
+  wizard.hasBoundConnection.value = false;
+  wizard.step.value = -1;
+  await wizard.chooseHistoricalConnection(2);
   await wizard.nextStep();
   assert.equal(wizard.step.value, 1);
 });
@@ -398,7 +476,7 @@ test("clearing connection discards pending schema default", async () => {
   assert.equal(wizard.schemaName.value, "");
 });
 
-test("selected datasource supplies columns but is excluded from build selection", async () => {
+test("selected datasource supplies columns and its id is included in build selection", async () => {
   let selection;
   const wizard = createWizard({
     getDatasourceTableColumnsByDatasourceInterface: () => assert.fail("bound space must keep original columns API"),
@@ -419,7 +497,7 @@ test("selected datasource supplies columns but is excluded from build selection"
   await wizard.nextStep();
   await wizard.nextStep();
   assert.equal(selection.schemaName, "public");
-  assert.equal(Object.hasOwn(selection, "datasourceId"), false);
+  assert.equal(selection.datasourceId, 7);
   assert.equal(Object.hasOwn(selection, "password"), false);
 });
 
@@ -483,6 +561,8 @@ test("unbound space has four steps and connection step needs no object informati
     getDatasourceConnectionListInterface: async () => ({ code: 200, data: { total: 1, records: [{ id: 5, name: "sqlite", dbType: "SQLITE" }] } }),
   });
   await wizard.loadConnections();
+  wizard.hasBoundConnection.value = false;
+  wizard.step.value = -1;
   assert.deepEqual(wizard.stepTitles.value, ["连接数据源", "对象信息", "选择数据库表", "字段与外键"]);
   assert.equal(wizard.step.value, -1);
   assert.equal(wizard.activeStep.value, 0);
@@ -495,15 +575,33 @@ test("unbound space has four steps and connection step needs no object informati
   assert.match(wizard.error.value, /对象名称/);
 });
 
-test("bound space skips connection step and starts with object information", async () => {
+test("failed space Schema query can retry and ignores a response after close", async () => {
+  let open;
+  let resolveSchema;
+  let calls = 0;
   const wizard = createWizard({
-    getDatasourceConnectionListInterface: async () => ({ code: 200, data: { total: 1, records: [{ id: 5, name: "bound", dbType: "SQLITE", spaceId: 42 }] } }),
+    watch: (_, callback) => {
+      open = callback;
+    },
+    getDatasourceSchemaListInterface: () => {
+      calls++;
+      return new Promise((resolve) => {
+        resolveSchema = resolve;
+      });
+    },
   });
-  await wizard.loadConnections();
-  assert.deepEqual(wizard.stepTitles.value, ["对象信息", "选择数据库表", "字段与外键"]);
-  assert.equal(wizard.step.value, 0);
-  assert.equal(wizard.activeStep.value, 0);
-  assert.equal(wizard.datasourceId.value, 5);
+  open([true]);
+  resolveSchema({ code: 500, message: "查询失败" });
+  await new Promise(setImmediate);
+  assert.equal(wizard.step.value, -2);
+  assert.equal(wizard.error.value, "查询失败");
+  const pending = wizard.initializeDatasourceBuild();
+  assert.equal(calls, 2);
+  open([false]);
+  resolveSchema({ code: 200, data: [{ schemaName: "stale" }] });
+  await pending;
+  assert.equal(wizard.step.value, -2);
+  assert.deepEqual(wizard.schemas.value, []);
 });
 
 test("testing never creates connection and next step creates exactly once", async () => {
@@ -517,6 +615,8 @@ test("testing never creates connection and next step creates exactly once", asyn
     },
   });
   await wizard.loadConnections();
+  wizard.hasBoundConnection.value = false;
+  wizard.step.value = -1;
   Object.assign(wizard.connectionForm, { name: "local", dbType: "SQLITE", jdbcUrl: "jdbc:sqlite:/data/db" });
   await wizard.testConnection();
   assert.equal(creations, 0);
