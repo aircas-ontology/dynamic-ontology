@@ -10,6 +10,8 @@ import type {
   GetOntologyEntityRowDetailParams,
   PostOntologyEntityAllLinkData,
   PostOntologyEntityAllLinkParams,
+  PostOntologyEntityIdsQueryData,
+  PostOntologyEntityIdsQueryParams,
 } from "@/types";
 import { request } from "@/utils/request";
 
@@ -23,6 +25,22 @@ export function getOntologyEntitiesInterface(params: GetOntologyEntitiesParams):
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/entity/list",
     method: "get",
     params,
+  });
+}
+
+/**
+ * @description 根据多个对象下多个实体 id 查询实体主属性信息。
+ *
+ * 请求方式：POST `/ontology/entity/query`
+ *
+ * @param params 批量查询项数组。
+ * @returns 标准 API 响应；data 为按对象分组的实体主属性列表。
+ */
+export function postOntologyEntityIdsQueryInterface(params: PostOntologyEntityIdsQueryParams): Promise<ApiResponse<PostOntologyEntityIdsQueryData>> {
+  return request<PostOntologyEntityIdsQueryData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/entity/query",
+    method: "post",
+    data: params,
   });
 }
 

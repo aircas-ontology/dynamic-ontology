@@ -1,8 +1,10 @@
-import { computed, onScopeDispose, ref, watch, type Ref } from "vue";
+import { computed, onScopeDispose, reactive, ref, watch, type Ref } from "vue";
 import {
   getListOntologyActionInterface,
   getOntologyObjectArrTypeTreeInterface,
-  postGetOntologyEntityRowDetailInterface,
+  getOntologyPropertyByOntologyIdInterface,
+  postGetOntologyEntityRowDetailPageInterface,
+  postOntologyEntityIdsQueryInterface,
   postOntologyEntityLinksInterface,
 } from "@/apis";
 import type {
@@ -16,18 +18,40 @@ import {
   buildEntityRelationRows,
   buildEntityListPropertyRows,
   buildEntityCategoryTree,
-  buildEntityPropertyRows,
+  buildEntityMainPropertyRows,
+  buildEntityPagedGroupPropertyRows,
   filterEntityPropertyRows,
+  listNonMainStorageGroups,
   parseEntityPrimaryKey,
 } from "../utils/entityDetailData";
 
-/** @description 独立管理实体关系、属性、对象分类和对象行为请求，屏蔽重复请求、过期响应和卸载后的更新。 @param identity 当前实体身份。 @returns 详情各区域数据与重试方法。 */
+/** 子表分页默认每页条数。 */
+const SUBTABLE_PAGE_SIZE = 10;
+
+/** 单个子表分页状态。 */
+export interface ObjectProfileSubtableState {
+  page: number;
+  pageSize: number;
+  total: number;
+  status: "loading" | "ready" | "empty" | "error";
+  error: string;
+  rows: ObjectProfileEntityProperty[];
+}
+
+/**
+ * @description 独立管理实体关系、属性、对象分类和对象行为请求，屏蔽重复请求、过期响应和卸载后的更新。
+ * @param identity 当前实体身份。
+ * @returns 详情各区域数据与重试方法。
+ */
 export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityIdentity>) {
   const relations = ref<OntologyRelationClass[]>([]);
   const relationStatus = ref<"loading" | "ready" | "empty" | "error">("loading");
   const relationError = ref("");
   let relationPending = "";
-  const properties = ref<ObjectProfileEntityProperty[]>([]);
+  const mainProperties = ref<ObjectProfileEntityProperty[]>([]);
+  const subtables = reactive<Record<string, ObjectProfileSubtableState>>({});
+  const storageGroups = ref<string[]>([]);
+  const properties = computed(() => [...mainProperties.value, ...storageGroups.value.flatMap((group) => subtables[group]?.rows ?? [])]);
   const categories = ref<ObjectProfileEntityCategory[]>([]);
   const behaviors = ref<ListOntologyActionRecord[]>([]);
   const selectedCategoryId = ref("all");
@@ -52,8 +76,101 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
   let categoryPending = "";
   let behaviorPending = "";
   let behaviorRevision = 0;
+  const subtablePending = new Map<string, string>();
 
-  /** @description 查询当前实体属性，重复调用时保留进行中的请求。 */
+  /**
+   * @description 清空主表与子表属性状态，保留传入的分组名列表。
+   * @param groups 待保留的子表分组。
+   */
+  function resetPropertyState(groups: string[] = []): void {
+    mainProperties.value = [];
+    storageGroups.value = groups;
+    for (const key of Object.keys(subtables)) delete subtables[key];
+    for (const group of groups) {
+      subtables[group] = {
+        page: 1,
+        pageSize: SUBTABLE_PAGE_SIZE,
+        total: 0,
+        status: "loading",
+        error: "",
+        rows: [],
+      };
+    }
+  }
+
+  /**
+   * @description 解析当前实体主键，优先使用列表保留的原始主键。
+   * @param current 实体身份。
+   * @returns 接口主键。
+   */
+  function resolveEntityPrimaryKey(current: ObjectProfileEntityIdentity) {
+    return current.entityPrimaryKey ?? parseEntityPrimaryKey(current.instanceId);
+  }
+
+  /**
+   * @description 加载单个子表指定页，拒绝过期响应并更新该组状态。
+   * @param storageGroup 存储分组名。
+   * @param page 页码。
+   * @param requestGeneration 发起时的 generation。
+   */
+  async function loadSubtablePageInternal(storageGroup: string, page: number, requestGeneration: number): Promise<void> {
+    const current = { ...identity.value };
+    const key = JSON.stringify([current.objectId, current.instanceId, current.entityPrimaryKey, storageGroup, page]);
+    if (subtablePending.get(storageGroup) === key) return;
+    subtablePending.set(storageGroup, key);
+    if (!subtables[storageGroup]) {
+      subtables[storageGroup] = {
+        page,
+        pageSize: SUBTABLE_PAGE_SIZE,
+        total: 0,
+        status: "loading",
+        error: "",
+        rows: [],
+      };
+    } else {
+      subtables[storageGroup].status = "loading";
+      subtables[storageGroup].error = "";
+      subtables[storageGroup].page = page;
+    }
+    try {
+      const response = await postGetOntologyEntityRowDetailPageInterface({
+        ontologyUniqueIdentifier: current.objectId,
+        entityPrimaryKey: resolveEntityPrimaryKey(current),
+        sort: "DESC",
+        storageGroup,
+        pageNum: page,
+        pageSize: SUBTABLE_PAGE_SIZE,
+      });
+      if (disposed || requestGeneration !== generation) return;
+      if (response.code !== 200) throw new Error(response.message || `子表 ${storageGroup} 加载失败`);
+      const rows = buildEntityPagedGroupPropertyRows(storageGroup, response.data);
+      subtables[storageGroup].rows = rows;
+      subtables[storageGroup].total = response.data?.total ?? 0;
+      subtables[storageGroup].page = response.data?.current ?? page;
+      subtables[storageGroup].pageSize = response.data?.size ?? SUBTABLE_PAGE_SIZE;
+      subtables[storageGroup].status = rows.length ? "ready" : "empty";
+      subtables[storageGroup].error = "";
+    } catch (cause) {
+      if (disposed || requestGeneration !== generation) return;
+      subtables[storageGroup].rows = [];
+      subtables[storageGroup].status = "error";
+      subtables[storageGroup].error = cause instanceof Error ? cause.message : `子表 ${storageGroup} 加载失败`;
+    } finally {
+      if (subtablePending.get(storageGroup) === key) subtablePending.delete(storageGroup);
+    }
+  }
+
+  /**
+   * @description 切换子表分页并刷新当前分组。
+   * @param storageGroup 存储分组名。
+   * @param page 目标页码。
+   */
+  async function loadSubtablePage(storageGroup: string, page: number): Promise<void> {
+    if (disposed || !storageGroup.trim() || page < 1) return;
+    await loadSubtablePageInternal(storageGroup, page, generation);
+  }
+
+  /** @description 查询当前实体主表属性与子表首屏，重复调用时保留进行中的请求。 */
   async function loadEntityProperties(): Promise<void> {
     if (disposed) return;
     const current = { ...identity.value };
@@ -63,22 +180,59 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
     const request = generation;
     propertyStatus.value = "loading";
     propertyError.value = "";
-    properties.value = [];
+    resetPropertyState();
+    subtablePending.clear();
     try {
       if (!current.objectId.trim()) throw new Error("缺少对象标识");
-      const response = await postGetOntologyEntityRowDetailInterface({
-        ontologyUniqueIdentifier: current.objectId,
-        entityPrimaryKey: current.entityPrimaryKey ?? parseEntityPrimaryKey(current.instanceId),
-        sort: "DESC",
-      });
+      const primaryKey = resolveEntityPrimaryKey(current);
+      const [mainResponse, propertyMetaResponse] = await Promise.all([
+        postOntologyEntityIdsQueryInterface([
+          {
+            ontologyUniqueIdentifier: current.objectId,
+            entityPrimaryKeys: [primaryKey],
+          },
+        ]),
+        getOntologyPropertyByOntologyIdInterface({ ontologyUniqueIdentifier: current.objectId }),
+      ]);
       if (disposed || request !== generation) return;
-      if (response.code !== 200) throw new Error(response.message || "实体属性加载失败");
-      properties.value = buildEntityPropertyRows(response.data);
-      propertyStatus.value = properties.value.length ? "ready" : "empty";
+      if (mainResponse.code !== 200) throw new Error(mainResponse.message || "实体属性加载失败");
+      const matchedGroup = (mainResponse.data ?? []).find((item) => item.ontologyUniqueIdentifier === current.objectId) ?? mainResponse.data?.[0];
+      const matchedEntity =
+        matchedGroup?.entityList?.find((item) => Object.is(item.primaryKey, primaryKey)) ??
+        matchedGroup?.entityList?.find((item) => String(item.primaryKey) === String(primaryKey)) ??
+        matchedGroup?.entityList?.[0];
+      if (propertyMetaResponse.code !== 200) throw new Error(propertyMetaResponse.message || "对象属性定义加载失败");
+      const propertyDefinitions = propertyMetaResponse.data ?? [];
+      mainProperties.value = buildEntityMainPropertyRows(matchedEntity, propertyDefinitions);
+      const groups = listNonMainStorageGroups(propertyDefinitions);
+      storageGroups.value = groups;
+      for (const group of groups) {
+        subtables[group] = {
+          page: 1,
+          pageSize: SUBTABLE_PAGE_SIZE,
+          total: 0,
+          status: "loading",
+          error: "",
+          rows: [],
+        };
+      }
+      await Promise.all(groups.map((group) => loadSubtablePageInternal(group, 1, request)));
+      if (disposed || request !== generation) return;
+      const hasSubtableError = groups.some((group) => subtables[group]?.status === "error");
+      if (hasSubtableError && !mainProperties.value.length) {
+        propertyError.value = groups.map((group) => subtables[group]?.error).find(Boolean) || "实体属性加载失败";
+        propertyStatus.value = "error";
+        return;
+      }
+      propertyStatus.value = mainProperties.value.length || groups.some((group) => (subtables[group]?.rows.length ?? 0) > 0) ? "ready" : "empty";
+      propertyError.value = "";
     } catch (cause) {
       if (disposed || request !== generation) return;
       propertyError.value = cause instanceof Error ? cause.message : "实体属性加载失败";
       propertyStatus.value = "error";
+      mainProperties.value = [];
+      storageGroups.value = [];
+      for (const keyName of Object.keys(subtables)) delete subtables[keyName];
     } finally {
       if (request === generation) propertyPending = "";
     }
@@ -110,7 +264,10 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
     }
   }
 
-  /** @description 按对象查询行为卡片，分页切换时仅接受最新响应。 @param page 行为页码。 */
+  /**
+   * @description 按对象查询行为卡片，分页切换时仅接受最新响应。
+   * @param page 行为页码。
+   */
   async function loadEntityBehaviors(page = behaviorPage.value): Promise<void> {
     if (disposed) return;
     const current = { ...identity.value };
@@ -163,7 +320,7 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
       if (!current.objectId.trim()) throw new Error("缺少对象标识");
       const response = await postOntologyEntityLinksInterface({
         ontologyUniqueIdentifier: current.objectId,
-        entityPrimaryKey: current.entityPrimaryKey ?? parseEntityPrimaryKey(current.instanceId),
+        entityPrimaryKey: resolveEntityPrimaryKey(current),
       });
       if (disposed || revision !== generation) return;
       if (response.code !== 200) throw new Error(response.message || "实体关系加载失败");
@@ -184,6 +341,7 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
     () => {
       generation += 1;
       propertyPending = categoryPending = behaviorPending = relationPending = "";
+      subtablePending.clear();
       selectedCategoryId.value = "all";
       selectedBehaviorCategoryId.value = "all";
       behaviorPage.value = 1;
@@ -209,6 +367,9 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
     relationError,
     loadEntityRelations,
     properties,
+    mainProperties,
+    subtables,
+    storageGroups,
     categories,
     behaviors,
     selectedCategoryId,
@@ -226,6 +387,7 @@ export function useObjectProfileEntityDetail(identity: Ref<ObjectProfileEntityId
     behaviorPageSize,
     behaviorTotal,
     loadEntityProperties,
+    loadSubtablePage,
     loadPropertyCategories,
     loadEntityBehaviors,
   };

@@ -14,6 +14,8 @@ import type {
   ListDatasourceTableColumnsParams,
   ListDatasourceTablesByDatasourceParams,
   ListDatasourceTablesParams,
+  UploadSqliteDatabaseData,
+  UploadSqliteDatabaseParams,
 } from "@/types";
 import { request } from "@/utils/request";
 
@@ -48,6 +50,26 @@ export function postDatasourceConnectionTestInterface(data: DatasourceConnection
     method: "post",
     params: id === undefined ? undefined : { id },
     data,
+  });
+}
+
+/**
+ * @description 上传 SQLite 数据库文件，返回可提交的 JDBC URL。
+ *
+ * 请求方式：POST `/ontology/datasource/connection/sqlite/upload`
+ *
+ * @param params 上传参数。
+ * @param params.file 必填 SQLite 数据库文件。
+ * @returns 标准 API 响应，data 含 jdbcUrl、schemaName、path、fileName、size、tableCount。
+ */
+export function postUploadSqliteDatabaseInterface(params: UploadSqliteDatabaseParams): Promise<ApiResponse<UploadSqliteDatabaseData>> {
+  const formData = new FormData();
+  formData.append("file", params.file);
+  return request<UploadSqliteDatabaseData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/datasource/connection/sqlite/upload",
+    method: "post",
+    data: formData,
+    headers: { "Content-Type": "multipart/form-data" },
   });
 }
 

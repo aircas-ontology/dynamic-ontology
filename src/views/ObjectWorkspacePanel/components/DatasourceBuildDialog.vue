@@ -43,7 +43,7 @@
         </header>
         <el-form label-position="top" :disabled="busy">
           <el-form-item label="数据库类型" required>
-            <el-select v-model="connectionForm.dbType" ariaLabel="数据库类型" @change="invalidateConnectionTest">
+            <el-select v-model="connectionForm.dbType" ariaLabel="数据库类型" @change="handleConnectionDbTypeChange">
               <el-option label="达梦" value="DM" /><el-option label="SQLite" value="SQLITE" /><el-option label="PostgreSQL" value="POSTGRESQL" />
             </el-select>
           </el-form-item>
@@ -51,15 +51,25 @@
           <el-form-item label="JDBC URL" required
             ><el-input
               v-model="connectionForm.jdbcUrl"
+              :readonly="connectionForm.dbType === 'SQLITE'"
               :placeholder="
                 connectionForm.dbType === 'SQLITE'
-                  ? 'jdbc:sqlite:/path/database.sqlite'
+                  ? '请先上传 SQLite 文件'
                   : connectionForm.dbType === 'DM'
                     ? 'jdbc:dm://host:5236'
                     : 'jdbc:postgresql://host:5432/database'
               "
               ariaLabel="JDBC URL"
           /></el-form-item>
+          <el-form-item v-if="connectionForm.dbType === 'SQLITE'" label="上传 SQLite 文件" required>
+            <div class="datasource-build-dialog__sqlite-upload">
+              <el-upload :auto-upload="false" :show-file-list="false" accept=".db,.sqlite,.sqlite3" :disabled="busy" :on-change="onSqliteUploadFileChange">
+                <el-button :loading="busy" :disabled="busy">选择文件</el-button>
+              </el-upload>
+              <span v-if="sqliteSelectedFileName" class="datasource-build-dialog__sqlite-file-name">{{ sqliteSelectedFileName }}</span>
+              <span v-if="sqliteUploadHint" class="datasource-build-dialog__sqlite-hint" role="status">{{ sqliteUploadHint }}</span>
+            </div>
+          </el-form-item>
           <template v-if="connectionForm.dbType !== 'SQLITE'">
             <el-form-item label="用户名" required><el-input v-model="connectionForm.username" autocomplete="off" ariaLabel="用户名" /></el-form-item>
             <el-form-item label="密码" required
@@ -210,11 +220,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch, onBeforeUnmount } from "vue";
 import { ElLoading, ElMessageBox } from "element-plus";
+import type { UploadFile } from "element-plus";
 import {
   deleteDatasourceConnectionInterface,
   getDatasourceConnectionListInterface,
   postDatasourceConnectionInterface,
   postDatasourceConnectionTestInterface,
+  postUploadSqliteDatabaseInterface,
   getDatasourceSchemaListByDatasourceInterface,
   getDatasourceSchemaListInterface,
   getDatasourceTableColumnsByDatasourceInterface,
@@ -255,9 +267,12 @@ const connectionForm = reactive<DatasourceConnectionParam>({ name: "", dbType: "
 const isConnectionTested = computed(() => testedConnection.value !== "" && testedConnection.value === JSON.stringify(getConnectionPayload()));
 const isSqlite = computed(() => connections.value.find((item) => item.id === datasourceId.value)?.dbType.toUpperCase() === "SQLITE");
 const showSchemaSelection = computed(() => hasBoundConnection.value || (datasourceId.value !== undefined && !isSqlite.value));
+const sqliteSelectedFileName = ref("");
+const sqliteUploadHint = ref("");
 const tables = ref<DatasourceTable[]>([]);
 let generation = 0;
 let dialogGeneration = 0;
+const SQLITE_FILE_NAME_PATTERN = /\.(db|sqlite|sqlite3)$/i;
 const selected = ref<string[]>([]);
 const primary = ref("");
 const activeTableId = ref("");
@@ -339,6 +354,7 @@ watch(
     connectionKeyword.value = "";
     testedConnection.value = "";
     connectionMode.value = "existing";
+    clearSqliteUploadState();
     Object.assign(connectionForm, { name: "", dbType: "POSTGRESQL", jdbcUrl: "", username: "", password: "", schemaName: "public" });
     if (opened) void initializeDatasourceBuild();
   },
@@ -404,7 +420,7 @@ async function selectConnection(id: number | undefined): Promise<void> {
   const connection = connections.value.find((item) => item.id === id);
   if (!connection) return;
   if (connection.dbType.toUpperCase() === "SQLITE") {
-    schemaName.value = "public";
+    schemaName.value = "main";
     return;
   }
   const token = generation + 1;
@@ -475,6 +491,73 @@ function invalidateConnectionTest(): void {
   testedConnection.value = "";
   activateNewConnection();
 }
+/** @description 清空 SQLite 上传文件名与提示，不影响 JDBC URL。 */
+function clearSqliteUploadState(): void {
+  sqliteSelectedFileName.value = "";
+  sqliteUploadHint.value = "";
+}
+/**
+ * @description 切换数据库类型时清空 SQLite 上传结果，并在 SQLITE 下要求重新上传文件。
+ */
+function handleConnectionDbTypeChange(): void {
+  clearSqliteUploadState();
+  connectionForm.jdbcUrl = "";
+  if (connectionForm.dbType === "SQLITE") connectionForm.schemaName = "main";
+  invalidateConnectionTest();
+}
+/**
+ * @description 校验 SQLite 文件扩展名是否为 .db / .sqlite / .sqlite3。
+ * @param fileName 原始文件名。
+ * @returns 扩展名合法时为 true。
+ */
+function isSupportedSqliteFileName(fileName: string): boolean {
+  return SQLITE_FILE_NAME_PATTERN.test(fileName.trim());
+}
+/**
+ * @description 上传 SQLite 文件并将返回的 jdbcUrl 回填到只读 JDBC URL。
+ * @param file 待上传文件；测试可传入仅含 name/size 的类 File 对象。
+ */
+async function uploadSqliteDatabaseFile(file: Pick<File, "name" | "size"> & Partial<File>): Promise<void> {
+  if (busy.value || connectionForm.dbType !== "SQLITE") return;
+  activateNewConnection();
+  error.value = "";
+  sqliteUploadHint.value = "";
+  if (!isSupportedSqliteFileName(file.name)) {
+    error.value = "请选择 .db、.sqlite 或 .sqlite3 文件";
+    return;
+  }
+  const token = ++generation;
+  busy.value = true;
+  try {
+    const response = await postUploadSqliteDatabaseInterface({ file: file as File });
+    if (token !== generation || !visible.value) return;
+    if (response.code !== 200) throw new Error(response.message?.trim() || "SQLite 文件上传失败，请重试。");
+    const data = response.data;
+    if (!data?.jdbcUrl?.trim()) throw new Error("上传成功但未返回 JDBC URL，请重试。");
+    connectionForm.jdbcUrl = data.jdbcUrl.trim();
+    connectionForm.schemaName = data.schemaName?.trim() || "main";
+    sqliteSelectedFileName.value = data.fileName?.trim() || file.name;
+    sqliteUploadHint.value = data.tableCount === 0 ? "数据库可连接，但未扫描到用户表" : "";
+    testedConnection.value = "";
+  } catch (cause) {
+    if (token === generation && visible.value) {
+      error.value = cause instanceof Error && cause.message.trim() ? cause.message : "SQLite 文件上传失败，请重试。";
+      connectionForm.jdbcUrl = "";
+      clearSqliteUploadState();
+    }
+  } finally {
+    if (token === generation) busy.value = false;
+  }
+}
+/**
+ * @description 处理 el-upload 选中的 SQLite 文件并触发上传。
+ * @param upload 上传组件文件对象。
+ */
+function onSqliteUploadFileChange(upload: UploadFile): void {
+  const raw = upload.raw;
+  if (!raw) return;
+  void uploadSqliteDatabaseFile(raw);
+}
 /** @description 规范化当前连接配置，不包含空间绑定。
  * @returns 测试及创建共用的连接参数。
  */
@@ -486,7 +569,7 @@ function getConnectionPayload(): DatasourceConnectionParam {
     jdbcUrl: connectionForm.jdbcUrl.trim(),
     username: sqlite ? "" : connectionForm.username.trim(),
     password: sqlite ? "" : connectionForm.password,
-    schemaName: sqlite ? "public" : connectionForm.schemaName?.trim() || "public",
+    schemaName: sqlite ? "main" : connectionForm.schemaName?.trim() || "public",
   };
 }
 /** @description 仅测试新建连接；配置变化后测试结果自动失效，测试成功不落库。 */
@@ -497,7 +580,7 @@ async function testConnection(): Promise<void> {
   error.value = "";
   const sqlite = connectionForm.dbType === "SQLITE";
   if (!connectionForm.name.trim() || !connectionForm.jdbcUrl.trim() || (!sqlite && (!connectionForm.username.trim() || !connectionForm.password))) {
-    error.value = "请填写连接名称、JDBC URL，以及非 SQLite 连接的用户名和密码";
+    error.value = sqlite ? "请填写连接名称，并先上传 SQLite 文件以获取 JDBC URL" : "请填写连接名称、JDBC URL，以及非 SQLite 连接的用户名和密码";
     return;
   }
   const token = ++generation;
@@ -976,6 +1059,21 @@ function clearFields(): void {
 }
 .datasource-build-dialog__field-content {
   padding: 18px;
+}
+.datasource-build-dialog__sqlite-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.datasource-build-dialog__sqlite-file-name,
+.datasource-build-dialog__sqlite-hint {
+  color: var(--aircas-color-text-secondary);
+  font-size: 12px;
+}
+.datasource-build-dialog__sqlite-hint {
+  width: 100%;
 }
 .datasource-build-dialog__field-content header {
   display: flex;

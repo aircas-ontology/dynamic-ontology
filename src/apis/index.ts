@@ -80,6 +80,7 @@ import {
   postDatasourceConnectionInterface,
   postDatasourceConnectionTestInterface,
   postBuildObjectFromDatasourceInterface,
+  postUploadSqliteDatabaseInterface,
 } from "./datasourceConnectionApi";
 import { getOntologyDatasourceColumnsInterface, getOntologyDatasourceTablesInterface } from "./ontologyDatasourceApi";
 import { getOntologyApiDocsInterface } from "./ontologyDocApi";
@@ -88,6 +89,7 @@ import {
   postGetOntologyEntityRowDetailInterface,
   postGetOntologyEntityRowDetailPageInterface,
   postOntologyEntityAllLinkInterface,
+  postOntologyEntityIdsQueryInterface,
   postOntologyEntityLinksInterface,
 } from "./ontologyEntityApi";
 import { getOntologyInheritanceTreeInterface } from "./ontologyInheritanceTreeApi";
@@ -162,6 +164,7 @@ export {
   postDatasourceConnectionInterface,
   postDatasourceConnectionTestInterface,
   postBuildObjectFromDatasourceInterface,
+  postUploadSqliteDatabaseInterface,
   deleteFunctionRateLimitTemplateInterface,
   getListFunctionRateLimitTemplateInterface,
   postCreateFunctionRateLimitTemplateInterface,
@@ -236,6 +239,7 @@ export {
   postGetOntologyEntityRowDetailInterface,
   postGetOntologyEntityRowDetailPageInterface,
   postOntologyEntityAllLinkInterface,
+  postOntologyEntityIdsQueryInterface,
   postOntologyEntityLinksInterface,
   getOntologyInheritanceTreeInterface,
   getOntologyInstanceUrlListInterface,

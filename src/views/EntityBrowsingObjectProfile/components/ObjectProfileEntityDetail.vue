@@ -92,14 +92,34 @@
                 </dl>
               </div>
             </template>
-            <el-table v-else :data="group.table.rows" row-key="id" class="object-profile-entity-detail__subtable" border>
-              <el-table-column prop="dataPrimaryKey" label="数据主键" min-width="100" show-overflow-tooltip />
-              <el-table-column v-for="(column, columnIndex) in group.table.columns" :key="column.id" :label="column.label" min-width="140">
-                <template #default="{ row }"
-                  ><span class="object-profile-entity-detail__subtable-value">{{ row.cells[columnIndex] }}</span></template
-                >
-              </el-table-column>
-            </el-table>
+            <template v-else>
+              <div v-if="subtables[group.name]?.status === 'loading'" class="object-profile-entity-detail__state" role="status">
+                <AircasLoading>正在加载 {{ group.name }}…</AircasLoading>
+              </div>
+              <div v-else-if="subtables[group.name]?.status === 'error'" class="object-profile-entity-detail__state" role="alert">
+                <p>{{ subtables[group.name]?.error }}</p>
+                <el-button @click="loadSubtablePage(group.name, subtables[group.name]?.page || 1)">重试</el-button>
+              </div>
+              <template v-else>
+                <el-table :data="group.table.rows" row-key="id" class="object-profile-entity-detail__subtable" border>
+                  <el-table-column prop="dataPrimaryKey" label="数据主键" min-width="100" show-overflow-tooltip />
+                  <el-table-column v-for="(column, columnIndex) in group.table.columns" :key="column.id" :label="column.label" min-width="140">
+                    <template #default="{ row }"
+                      ><span class="object-profile-entity-detail__subtable-value">{{ row.cells[columnIndex] }}</span></template
+                    >
+                  </el-table-column>
+                </el-table>
+                <div v-if="(subtables[group.name]?.total ?? 0) > 0" class="object-profile-entity-detail__subtable-pagination">
+                  <el-pagination
+                    layout="total, prev, pager, next"
+                    :total="subtables[group.name]?.total ?? 0"
+                    :page-size="subtables[group.name]?.pageSize ?? 10"
+                    :current-page="subtables[group.name]?.page ?? 1"
+                    @current-change="(page: number) => loadSubtablePage(group.name, page)"
+                  />
+                </div>
+              </template>
+            </template>
           </section>
         </div>
       </section>
@@ -366,8 +386,11 @@ const {
   behaviorPageSize,
   behaviorTotal,
   loadEntityProperties,
+  loadSubtablePage,
   loadPropertyCategories,
   loadEntityBehaviors,
+  subtables,
+  storageGroups,
 } = useObjectProfileEntityDetail(identity);
 const rawRelations = computed(() => props.relations ?? entityRelations.value);
 const resolvedRelations = computed(() => enrichEntityRelationCategories(rawRelations.value, relationCategoryCatalog.value));
@@ -377,9 +400,23 @@ const treeRef = ref<InstanceType<typeof ElTree> | null>(null);
 const categorySearch = ref("");
 const treeProps = { children: "children", label: "label" };
 const categoryTree = computed(() => categories.value);
-const propertyGroups = computed(() =>
-  groupEntityPropertyRows(filteredProperties.value).map((group) => ({ ...group, table: buildEntityPropertyTable(group.records) })),
-);
+const propertyGroups = computed(() => {
+  const grouped = groupEntityPropertyRows(filteredProperties.value);
+  const byName = new Map(grouped.map((group) => [group.name, group]));
+  for (const name of storageGroups.value) {
+    if (!byName.has(name)) byName.set(name, { name, records: [] });
+  }
+  const ordered: typeof grouped = [];
+  if (byName.has("main")) ordered.push(byName.get("main")!);
+  for (const name of storageGroups.value) {
+    const group = byName.get(name);
+    if (group) ordered.push(group);
+  }
+  for (const group of grouped) {
+    if (group.name !== "main" && !storageGroups.value.includes(group.name)) ordered.push(group);
+  }
+  return ordered.map((group) => ({ ...group, table: buildEntityPropertyTable(group.records) }));
+});
 
 /** @description 分类树按名称搜索，保留父子结构。 @param keyword 搜索关键字。 @param node 分类节点。 @returns 是否匹配。 */
 function filterCategoryNode(keyword: string, node: unknown): boolean {
@@ -490,6 +527,11 @@ watch([categorySearch, categories], () => treeRef.value?.filter(categorySearch.v
 }
 .object-profile-entity-detail__subtable {
   width: 100%;
+}
+.object-profile-entity-detail__subtable-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 .object-profile-entity-detail__subtable-value {
   white-space: pre-wrap;

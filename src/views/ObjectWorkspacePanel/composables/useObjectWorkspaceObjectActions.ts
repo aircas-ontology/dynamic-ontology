@@ -226,6 +226,7 @@ export function useObjectWorkspaceObjectActions(options: {
             columnName: field.propertyName?.trim() || field.name,
             displayName: field.description?.trim() || field.name,
             description: field.description?.trim() ?? "",
+            dataType: field.dataType,
           })),
       };
     });

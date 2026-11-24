@@ -1,6 +1,9 @@
 import type {
   GetOntologyObjectArrTypeTreeData,
   OntologyEntityLinkItem,
+  OntologyEntityIdsQueryEntityInfo,
+  OntologyEntityRowDetailPageData,
+  OntologyPropertyInfo,
   OntologyRelationClass,
   GetOntologyEntityRowDetailData,
   GetOntologyEntityRowDetailParams,
@@ -13,6 +16,74 @@ import type {
 function formatEntityValue(value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
   return typeof value === "object" ? JSON.stringify(value) : String(value);
+}
+
+/**
+ * @description 从对象属性定义中汇总非 main 的存储分组名，去重且保持首次出现顺序。
+ * @param properties 对象属性列表。
+ * @returns 子表 storageGroup 列表。
+ */
+export function listNonMainStorageGroups(properties: OntologyPropertyInfo[] | null | undefined): string[] {
+  const groups: string[] = [];
+  const seen = new Set<string>();
+  for (const property of properties ?? []) {
+    const group = property?.storageGroup?.trim() ?? "";
+    if (!group || group === "main" || seen.has(group)) continue;
+    seen.add(group);
+    groups.push(group);
+  }
+  return groups;
+}
+
+/**
+ * @description 将主属性查询结果映射为 storageGroup=main 的详情展示行。
+ * @param entity 单个实体主属性信息。
+ * @param propertyMeta 可选对象属性定义，用于补齐分类与属性 id。
+ * @returns 主表属性行。
+ */
+export function buildEntityMainPropertyRows(
+  entity: OntologyEntityIdsQueryEntityInfo | null | undefined,
+  propertyMeta: OntologyPropertyInfo[] | null | undefined = [],
+): ObjectProfileEntityProperty[] {
+  const metaByApi = new Map((propertyMeta ?? []).map((item) => [item.apiName, item]));
+  const metaByName = new Map((propertyMeta ?? []).map((item) => [item.displayName, item]));
+  return (entity?.properties ?? []).map((property, propertyIndex) => {
+    const meta = metaByApi.get(property.propertyApiName) ?? metaByName.get(property.propertyDisplayName || property.propertyName || "");
+    return {
+      id: `main-0-${propertyIndex}`,
+      recordId: "main-0",
+      propertyId: meta?.uniqueIdentifier ?? "",
+      name: property.propertyDisplayName || property.propertyName || property.propertyApiName || "未命名属性",
+      value: formatEntityValue(property.propertyValue),
+      categoryId: meta?.categoryId === null || meta?.categoryId === undefined ? "" : String(meta.categoryId),
+      storageGroup: "main",
+      dataPrimaryKey: formatEntityValue(entity?.primaryKey),
+    };
+  });
+}
+
+/**
+ * @description 将分页子表响应映射为指定 storageGroup 的详情展示行。
+ * @param storageGroup 存储分组名。
+ * @param pageData 分页属性行数据。
+ * @returns 子表属性行。
+ */
+export function buildEntityPagedGroupPropertyRows(
+  storageGroup: string,
+  pageData: OntologyEntityRowDetailPageData | null | undefined,
+): ObjectProfileEntityProperty[] {
+  return (pageData?.records ?? []).flatMap((record, recordIndex) =>
+    (record.props ?? []).map((property, propertyIndex) => ({
+      id: `${storageGroup}-${recordIndex}-${propertyIndex}`,
+      recordId: `${storageGroup}-${recordIndex}`,
+      propertyId: property.propertyUniqIdentifier ?? "",
+      name: property.propertyDisplayName || property.propertyApiName || property.propertyUniqIdentifier || "未命名属性",
+      value: formatEntityValue(property.propertyValue),
+      categoryId: property.categoryId === null || property.categoryId === undefined ? "" : String(property.categoryId),
+      storageGroup,
+      dataPrimaryKey: formatEntityValue(record.dataPrimaryKey),
+    })),
+  );
 }
 
 /** @description 展开存储分组和动态属性行，不合并重复属性。 @param detail 实体详情。 @returns 属性展示行。 */

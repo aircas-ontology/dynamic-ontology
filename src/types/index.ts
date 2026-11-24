@@ -315,6 +315,14 @@ export type {
   PostOntologyEntityAllLinkVisibilityWindow,
 } from "./apis/postOntologyEntityAllLinkType";
 export type {
+  OntologyEntityIdsQueryEntityInfo,
+  OntologyEntityIdsQueryItem,
+  OntologyEntityIdsQueryParam,
+  OntologyEntityIdsQueryProperty,
+  PostOntologyEntityIdsQueryData,
+  PostOntologyEntityIdsQueryParams,
+} from "./apis/postOntologyEntityIdsQueryType";
+export type {
   OntologyEntityLinkItem,
   OntologyEntityLinkVisibilityWindow,
   PostOntologyEntityLinksData,
@@ -369,6 +377,7 @@ export type { UpdateOntologySpaceData, UpdateOntologySpaceParams } from "./apis/
 export type { UploadOntologyFunctionContainerDocData, UploadOntologyFunctionContainerDocParams } from "./apis/uploadOntologyFunctionContainerDocType";
 export type { UploadOntologyFunctionContainerImageData, UploadOntologyFunctionContainerImageParams } from "./apis/uploadOntologyFunctionContainerImageType";
 export type { UploadOntologyThumbnailData, UploadOntologyThumbnailParams } from "./apis/uploadOntologyThumbnailType";
+export type { UploadSqliteDatabaseData, UploadSqliteDatabaseParams } from "./apis/uploadSqliteDatabaseType";
 export type { LoginCredentials } from "./auth/credentialsType";
 export type {
   ApplicationInputBindingRecord,

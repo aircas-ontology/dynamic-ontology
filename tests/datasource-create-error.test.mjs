@@ -111,9 +111,15 @@ test("datasource column displayName uses trimmed field description and falls bac
           storageName: "  aircraftApi  ",
           comment: "舰船表说明",
           fields: [
-            { id: "displacement", name: "displacement", propertyName: "weight", description: "  排水量  " },
-            { id: "shipname", name: "shipname", propertyName: "name", description: "   " },
-            { id: "skipped", name: "skipped", description: "未选用" },
+            {
+              id: "displacement",
+              name: "displacement",
+              propertyName: "weight",
+              dataType: "Double",
+              description: "  排水量  ",
+            },
+            { id: "shipname", name: "shipname", propertyName: "name", dataType: "String", description: "   " },
+            { id: "skipped", name: "skipped", dataType: "String", description: "未选用" },
           ],
         },
       ],
@@ -123,8 +129,20 @@ test("datasource column displayName uses trimmed field description and falls bac
     draft,
   );
   assert.deepEqual(payload.tables[0].columns, [
-    { sourceColumnName: "displacement", columnName: "weight", displayName: "排水量", description: "排水量" },
-    { sourceColumnName: "shipname", columnName: "name", displayName: "shipname", description: "" },
+    {
+      sourceColumnName: "displacement",
+      columnName: "weight",
+      displayName: "排水量",
+      description: "排水量",
+      dataType: "Double",
+    },
+    {
+      sourceColumnName: "shipname",
+      columnName: "name",
+      displayName: "shipname",
+      description: "",
+      dataType: "String",
+    },
   ]);
   assert.equal(payload.tables[0].sourceTableName, "demo_destroyer");
   assert.equal(payload.tables[0].tableName, "destroyer");

@@ -124,8 +124,11 @@ test("entity detail renders tab panels with readonly relations and object behavi
     behaviorPageSize: 8,
     behaviorTotal: Vue.ref(1),
     loadEntityProperties() {},
+    loadSubtablePage() {},
     loadPropertyCategories() {},
     loadEntityBehaviors() {},
+    subtables: {},
+    storageGroups: Vue.ref([]),
   };
   const component = compileProfileComponent(
     "ObjectProfileEntityDetail",
@@ -377,6 +380,9 @@ test("detail teleports its three text-only tabs into the supplied header and rem
     behaviorPageSize: 8,
     behaviorTotal: Vue.ref(0),
     usingListProperties: Vue.ref(false),
+    subtables: {},
+    storageGroups: Vue.ref([]),
+    loadSubtablePage() {},
   });
   const empty = Vue.defineComponent({ render: () => null });
   const component = compileProfileComponent(
@@ -384,6 +390,7 @@ test("detail teleports its three text-only tabs into the supplied header and rem
     (id) => {
       if (id === "vue") return Vue;
       if (id.includes("useObjectProfileEntityDetail")) return { useObjectProfileEntityDetail: () => state };
+      if (id.includes("entityDetailData")) return { buildEntityPropertyTable, groupEntityPropertyRows };
       return { __esModule: true, default: empty };
     },
     true,
@@ -577,8 +584,16 @@ test("entity category tree contains only API nodes and updates selection without
     if (id === "vue") return Vue;
     if (id.includes("useObjectProfileEntityDetail"))
       return {
-        useObjectProfileEntityDetail: () => ({ categories, selectedCategoryId, relations: Vue.ref([]) }),
+        useObjectProfileEntityDetail: () => ({
+          categories,
+          selectedCategoryId,
+          relations: Vue.ref([]),
+          filteredProperties: Vue.ref([]),
+          storageGroups: Vue.ref([]),
+          subtables: {},
+        }),
       };
+    if (id.includes("entityDetailData")) return { buildEntityPropertyTable, groupEntityPropertyRows };
     return {};
   });
   const scope = Vue.effectScope();

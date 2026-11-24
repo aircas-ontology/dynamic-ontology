@@ -1,0 +1,12 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": {
+    "jdbcUrl": "jdbc:sqlite:/sqlite-data/xxx-app.db",
+    "schemaName": "main",
+    "path": "/sqlite-data/xxx-app.db",
+    "fileName": "app.db",
+    "size": 102400,
+    "tableCount": 3
+  }
+}

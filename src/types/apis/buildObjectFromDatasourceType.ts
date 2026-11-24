@@ -4,6 +4,8 @@ export interface BuildObjectFromDatasourceSelectedColumn {
   displayName?: string;
   /** 数据源字段说明。 */
   description?: string;
+  /** 本体属性数据类型，对应向导「数据类型」列。 */
+  dataType: string;
 }
 
 export interface BuildObjectFromDatasourceSelectedTable {

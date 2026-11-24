@@ -276,6 +276,11 @@
   },
   {
     "method": "POST",
+    "path": "/ontology/entity/query",
+    "file": "fixtures/ontology/entity/query.post.json"
+  },
+  {
+    "method": "POST",
     "path": "/ontology/entity/row_detail",
     "file": "fixtures/ontology/entity/rowDetail.post.json"
   },
@@ -438,5 +443,10 @@
     "method": "GET",
     "path": "/ontology/datasource/connection/schema/list",
     "file": "fixtures/ontology/datasource/schemas.get.json"
+  },
+  {
+    "method": "POST",
+    "path": "/ontology/datasource/connection/sqlite/upload",
+    "file": "fixtures/ontology/datasource/connection/sqlite/upload.post.json"
   }
 ]

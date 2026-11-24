@@ -14,7 +14,7 @@ function createWizard(api = {}) {
   const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/import[\s\S]*?from\s+"[^"]+";/g, "");
   const code = ts.transpile(
     script +
-      "\nreturn { showSchemaSelection, initializeDatasourceBuild, deleteHistoricalConnection, invalidateConnectionTest, chooseHistoricalConnection, activateNewConnection, filteredConnections, connectionKeyword, hasBoundConnection, activeStep, stepTitles, connectionMode, testConnection, isConnectionTested, connections, datasourceId, connectionForm, createConnection, selectConnection, loadConnections, objectName, categoryId, nextStep, loadSchemas, step, schemas, schemaName, tables, selected, primary, error, busy, resetTableSelection, fieldIdsByTable, foreignKeys, visible };",
+      "\nreturn { showSchemaSelection, initializeDatasourceBuild, deleteHistoricalConnection, invalidateConnectionTest, handleConnectionDbTypeChange, chooseHistoricalConnection, activateNewConnection, filteredConnections, connectionKeyword, hasBoundConnection, activeStep, stepTitles, connectionMode, testConnection, isConnectionTested, connections, datasourceId, connectionForm, createConnection, selectConnection, loadConnections, objectName, categoryId, nextStep, loadSchemas, step, schemas, schemaName, tables, selected, primary, error, busy, resetTableSelection, fieldIdsByTable, foreignKeys, visible, uploadSqliteDatabaseFile, sqliteUploadHint, sqliteSelectedFileName };",
     { target: ts.ScriptTarget.ES2022 },
   );
   const dependencies = {
@@ -30,6 +30,17 @@ function createWizard(api = {}) {
     defineEmits: () => () => {},
     getDatasourceSchemaListInterface: async () => ({ code: 200, data: [{ schemaName: "public" }] }),
     getDatasourceSchemaListByDatasourceInterface: async () => ({ code: 200, data: [{ schemaName: "public" }] }),
+    postUploadSqliteDatabaseInterface: async () => ({
+      code: 200,
+      data: {
+        jdbcUrl: "jdbc:sqlite:/sqlite-data/xxx-app.db",
+        schemaName: "main",
+        path: "/sqlite-data/xxx-app.db",
+        fileName: "app.db",
+        size: 102400,
+        tableCount: 3,
+      },
+    }),
     ...api,
   };
   const wizard = new Function(...Object.keys(dependencies), code)(...Object.values(dependencies));
@@ -331,9 +342,9 @@ test("empty space Schema leaves history selectable even when a record matches th
   assert.equal(wizard.datasourceId.value, undefined);
   await wizard.chooseHistoricalConnection(7);
   assert.equal(wizard.datasourceId.value, 7);
-  assert.equal(wizard.schemaName.value, "public");
+  assert.equal(wizard.schemaName.value, "main");
 });
-test("new SQLite connection omits spaceId and uses public", async () => {
+test("new SQLite connection omits spaceId and uses main", async () => {
   let body;
   const wizard = createWizard({
     postDatasourceConnectionTestInterface: async (data) => {
@@ -349,8 +360,65 @@ test("new SQLite connection omits spaceId and uses public", async () => {
   await wizard.testConnection();
   await wizard.createConnection();
   assert.equal(Object.hasOwn(body, "spaceId"), false);
-  assert.equal(body.schemaName, "public");
+  assert.equal(body.schemaName, "main");
   assert.equal(wizard.datasourceId.value, 9);
+});
+
+test("sqlite file upload fills jdbc url and uses main schema hint", async () => {
+  let uploaded;
+  const wizard = createWizard({
+    postUploadSqliteDatabaseInterface: async (params) => {
+      uploaded = params;
+      return {
+        code: 200,
+        data: {
+          jdbcUrl: "jdbc:sqlite:/sqlite-data/ship.db",
+          schemaName: "main",
+          path: "/sqlite-data/ship.db",
+          fileName: "ship.db",
+          size: 2048,
+          tableCount: 0,
+        },
+      };
+    },
+  });
+  wizard.connectionForm.dbType = "SQLITE";
+  await wizard.uploadSqliteDatabaseFile({ name: "ship.db", size: 2048 });
+  assert.equal(uploaded.file.name, "ship.db");
+  assert.equal(wizard.connectionForm.jdbcUrl, "jdbc:sqlite:/sqlite-data/ship.db");
+  assert.equal(wizard.connectionForm.schemaName, "main");
+  assert.equal(wizard.sqliteSelectedFileName.value, "ship.db");
+  assert.match(wizard.sqliteUploadHint.value, /未扫描到用户表|没有用户表|无用户表/);
+});
+
+test("sqlite upload rejects unsupported extension and upload errors", async () => {
+  const wizard = createWizard({
+    postUploadSqliteDatabaseInterface: async () => {
+      assert.fail("invalid extension must not upload");
+    },
+  });
+  wizard.connectionForm.dbType = "SQLITE";
+  await wizard.uploadSqliteDatabaseFile({ name: "notes.txt", size: 10 });
+  assert.match(wizard.error.value, /\.db|\.sqlite|扩展名|文件/);
+  assert.equal(wizard.connectionForm.jdbcUrl, "");
+  const failing = createWizard({
+    postUploadSqliteDatabaseInterface: async () => ({ code: 400, message: "非法 SQLite 文件" }),
+  });
+  failing.connectionForm.dbType = "SQLITE";
+  await failing.uploadSqliteDatabaseFile({ name: "bad.db", size: 10 });
+  assert.equal(failing.error.value, "非法 SQLite 文件");
+  assert.equal(failing.connectionForm.jdbcUrl, "");
+});
+
+test("leaving sqlite clears uploaded jdbc url", async () => {
+  const wizard = createWizard();
+  wizard.connectionForm.dbType = "SQLITE";
+  await wizard.uploadSqliteDatabaseFile({ name: "app.db", size: 100 });
+  assert.match(wizard.connectionForm.jdbcUrl, /jdbc:sqlite:/);
+  wizard.connectionForm.dbType = "POSTGRESQL";
+  wizard.handleConnectionDbTypeChange();
+  assert.equal(wizard.connectionForm.jdbcUrl, "");
+  assert.equal(wizard.sqliteSelectedFileName.value, "");
 });
 
 test("connection pagination finds association on later pages and uses datasource queries", async () => {
@@ -395,7 +463,7 @@ test("switching connection ignores schema result for previous connection", async
   finish({ code: 200, data: [{ schemaName: "old" }] });
   await pending;
   assert.equal(wizard.datasourceId.value, 2);
-  assert.equal(wizard.schemaName.value, "public");
+  assert.equal(wizard.schemaName.value, "main");
   assert.deepEqual(wizard.schemas.value, []);
 });
 
@@ -484,7 +552,7 @@ test("selected datasource supplies columns and its id is included in build selec
       selection = value;
     },
     getDatasourceTableColumnsInterface: async (params) => {
-      assert.deepEqual(params, { datasourceId: 7, schemaName: "public", tableNames: ["ship"] });
+      assert.deepEqual(params, { datasourceId: 7, schemaName: "main", tableNames: ["ship"] });
       return { code: 200, data: [{ tableName: "ship", columns: [{ columnName: "id", nativeType: "int", ontologyDataType: "Int", isPrimaryKey: true }] }] };
     },
   });
@@ -496,7 +564,7 @@ test("selected datasource supplies columns and its id is included in build selec
   wizard.step.value = 1;
   await wizard.nextStep();
   await wizard.nextStep();
-  assert.equal(selection.schemaName, "public");
+  assert.equal(selection.schemaName, "main");
   assert.equal(selection.datasourceId, 7);
   assert.equal(Object.hasOwn(selection, "password"), false);
 });

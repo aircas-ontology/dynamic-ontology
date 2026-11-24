@@ -9,8 +9,11 @@ import {
   groupEntityPropertyRows,
   buildEntityPropertyTable,
   buildEntityPropertyRows,
+  buildEntityMainPropertyRows,
+  buildEntityPagedGroupPropertyRows,
   buildEntityCategoryTree,
   filterEntityPropertyRows,
+  listNonMainStorageGroups,
   parseEntityPrimaryKey,
 } from "../src/views/EntityBrowsingObjectProfile/utils/entityDetailData.ts";
 
@@ -35,6 +38,34 @@ const detail = {
       groupDataList: [{ dataPrimaryKey: 1, props: [{ propertyUniqIdentifier: "p", propertyApiName: "enabled", propertyValue: true, categoryId: 3 }] }],
     },
   ],
+};
+const mainQueryData = [
+  {
+    ontologyUniqueIdentifier: "object-a",
+    entityList: [
+      {
+        ontologyUniqueIdentifier: "object-a",
+        primaryKey: 0,
+        properties: [
+          { propertyApiName: "enabled", propertyDisplayName: "启用", propertyValue: false },
+          { propertyApiName: "count", propertyDisplayName: "数量", propertyValue: 0 },
+          { propertyApiName: "missing", propertyValue: null },
+        ],
+      },
+    ],
+  },
+];
+const propertyMeta = [
+  { apiName: "enabled", displayName: "启用", uniqueIdentifier: "p", storageGroup: "main", categoryId: 3 },
+  { apiName: "count", displayName: "数量", uniqueIdentifier: "n", storageGroup: "main", categoryId: 2 },
+  { apiName: "missing", storageGroup: "main" },
+  { apiName: "enabled", displayName: "启用", uniqueIdentifier: "p", storageGroup: "history", categoryId: 3 },
+];
+const historyPageData = {
+  records: [{ dataPrimaryKey: 1, props: [{ propertyUniqIdentifier: "p", propertyApiName: "enabled", propertyValue: true, categoryId: 3 }] }],
+  total: 1,
+  size: 10,
+  current: 1,
 };
 
 test("subtable pivots records into property columns without losing repeated values or missing cells", () => {
@@ -152,9 +183,17 @@ test("entity primary keys retain string semantics and parse composite keys safel
 /** @description 使用真实 Vue 响应式与真实业务映射，隔离 HTTP 边界。 @param {object} apis HTTP 替身。 @returns {object} 数据控制器。 */
 function createDetailHarness(apis = {}) {
   const requests = [];
-  const properties = async (params) => {
+  const mainQuery = async (params) => {
     requests.push(["properties", params]);
-    return { code: 200, data: detail };
+    return { code: 200, data: mainQueryData };
+  };
+  const propertyMetaQuery = async (params) => {
+    requests.push(["propertyMeta", params]);
+    return { code: 200, data: propertyMeta };
+  };
+  const subtablePage = async (params) => {
+    requests.push(["subtable", params]);
+    return { code: 200, data: historyPageData };
   };
   const category = async (params) => {
     requests.push(["categories", params]);
@@ -171,7 +210,9 @@ function createDetailHarness(apis = {}) {
     if (id === "vue") return Vue;
     if (id === "@/apis")
       return {
-        postGetOntologyEntityRowDetailInterface: properties,
+        postOntologyEntityIdsQueryInterface: mainQuery,
+        getOntologyPropertyByOntologyIdInterface: propertyMetaQuery,
+        postGetOntologyEntityRowDetailPageInterface: subtablePage,
         getOntologyObjectArrTypeTreeInterface: category,
         getListOntologyActionInterface: behaviors,
         postOntologyEntityLinksInterface: async () => ({ code: 200, data: [] }),
@@ -181,14 +222,17 @@ function createDetailHarness(apis = {}) {
       return {
         buildEntityRelationRows,
         buildEntityPropertyRows,
+        buildEntityMainPropertyRows,
+        buildEntityPagedGroupPropertyRows,
         buildEntityCategoryTree,
         filterEntityPropertyRows,
         parseEntityPrimaryKey,
         buildEntityListPropertyRows,
+        listNonMainStorageGroups,
       };
     throw new Error(id);
   }, exports);
-  const identity = Vue.ref({ objectId: "object-a", instanceId: "0", spaceId: "156" });
+  const identity = Vue.ref({ objectId: "object-a", instanceId: "0", spaceId: "156", entityPrimaryKey: 0 });
   const scope = Vue.effectScope();
   const state = scope.run(() => exports.useObjectProfileEntityDetail(identity));
   return { identity, scope, state, requests };
@@ -242,7 +286,9 @@ test("detail queries selected entity and object-scoped behaviors, supports categ
     await settleDetailRequests();
     assert.equal(h.state.propertyStatus.value, "ready");
     assert.equal(h.state.behaviorStatus.value, "ready");
-    assert.deepEqual(h.requests.find(([kind]) => kind === "properties")[1], { ontologyUniqueIdentifier: "object-a", entityPrimaryKey: "0", sort: "DESC" });
+    assert.deepEqual(h.requests.find(([kind]) => kind === "properties")[1], [{ ontologyUniqueIdentifier: "object-a", entityPrimaryKeys: [0] }]);
+    assert.deepEqual(h.requests.find(([kind]) => kind === "propertyMeta")[1], { ontologyUniqueIdentifier: "object-a" });
+    assert.deepEqual(h.requests.find(([kind]) => kind === "subtable")[1].storageGroup, "history");
     const params = h.requests.find(([kind]) => kind === "behaviors")[1];
     assert.equal(params.ontologyId, "object-a");
     assert.equal(params.ontologySpaceId, 156);
@@ -269,10 +315,11 @@ test("detail queries selected entity and object-scoped behaviors, supports categ
 test("property failures are independent from behavior data and can retry", async () => {
   let fail = true;
   const h = createDetailHarness({
-    postGetOntologyEntityRowDetailInterface: async () => {
+    postOntologyEntityIdsQueryInterface: async () => {
       if (fail) throw new Error("属性失败");
-      return { code: 200, data: null };
+      return { code: 200, data: [] };
     },
+    getOntologyPropertyByOntologyIdInterface: async () => ({ code: 200, data: [] }),
   });
   try {
     await settleDetailRequests();
@@ -289,21 +336,24 @@ test("property failures are independent from behavior data and can retry", async
 
 test("identity changes discard old responses, repeated loads coalesce, disposal blocks late updates", async () => {
   const pending = [];
-  const h = createDetailHarness({ postGetOntologyEntityRowDetailInterface: (params) => new Promise((resolve) => pending.push({ params, resolve })) });
+  const h = createDetailHarness({
+    postOntologyEntityIdsQueryInterface: (params) => new Promise((resolve) => pending.push({ params, resolve })),
+    getOntologyPropertyByOntologyIdInterface: async () => ({ code: 200, data: [] }),
+  });
   await settleDetailRequests();
   void h.state.loadEntityProperties();
   assert.equal(pending.length, 1);
   h.identity.value = { ...h.identity.value, objectId: "object-b" };
   await settleDetailRequests();
   assert.equal(pending.length, 2);
-  pending[1].resolve({ code: 200, data: null });
+  pending[1].resolve({ code: 200, data: [] });
   await settleDetailRequests();
-  pending[0].resolve({ code: 200, data: detail });
+  pending[0].resolve({ code: 200, data: mainQueryData });
   await settleDetailRequests();
   assert.equal(h.state.propertyStatus.value, "empty");
   void h.state.loadEntityProperties();
   h.scope.stop();
-  pending[2].resolve({ code: 200, data: detail });
+  pending[2].resolve({ code: 200, data: mainQueryData });
   await settleDetailRequests();
   assert.equal(h.state.properties.value.length, 0);
 });
@@ -364,7 +414,7 @@ test("detail uses preserved numeric boolean and composite keys without convertin
       await settleDetailRequests();
       h.identity.value = { ...h.identity.value, entityPrimaryKey: key };
       await settleDetailRequests();
-      assert.deepEqual(h.requests.filter(([kind]) => kind === "properties").at(-1)[1].entityPrimaryKey, key);
+      assert.deepEqual(h.requests.filter(([kind]) => kind === "properties").at(-1)[1][0].entityPrimaryKeys, [key]);
     } finally {
       h.scope.stop();
     }
@@ -374,10 +424,11 @@ test("detail uses preserved numeric boolean and composite keys without convertin
 test("failed full detail displays actual selected-list values, keeps error, filters categories and recovers on retry", async () => {
   let fail = true;
   const h = createDetailHarness({
-    postGetOntologyEntityRowDetailInterface: async () => {
+    postOntologyEntityIdsQueryInterface: async () => {
       if (fail) throw new Error("字段类型不一致（请求号：example）");
-      return { code: 200, data: detail };
+      return { code: 200, data: mainQueryData };
     },
+    getOntologyPropertyByOntologyIdInterface: async () => ({ code: 200, data: propertyMeta }),
     getOntologyObjectArrTypeTreeInterface: async () => ({
       code: 200,
       data: { categoryId: 1, name: "全部", children: [{ categoryId: 2, name: "基本", propertyInfos: [{ uniqueIdentifier: "name", displayName: "名称" }] }] },
@@ -408,6 +459,59 @@ test("failed full detail displays actual selected-list values, keeps error, filt
     assert.equal(h.state.propertyStatus.value, "ready");
     assert.equal(h.state.propertyError.value, "");
     assert.ok(h.state.filteredProperties.value.every((row) => row.value !== "阵风F4"));
+  } finally {
+    h.scope.stop();
+  }
+});
+
+test("main query and paged subtable mapping keep storage groups and page totals", () => {
+  assert.deepEqual(listNonMainStorageGroups(propertyMeta), ["history"]);
+  assert.deepEqual(listNonMainStorageGroups([{ storageGroup: "main" }, { storageGroup: "  " }, null]), []);
+  const mainRows = buildEntityMainPropertyRows(mainQueryData[0].entityList[0]);
+  assert.equal(mainRows.length, 3);
+  assert.equal(mainRows[0].storageGroup, "main");
+  assert.equal(mainRows[0].value, "false");
+  assert.equal(mainRows[1].value, "0");
+  const pageRows = buildEntityPagedGroupPropertyRows("history", historyPageData);
+  assert.equal(pageRows.length, 1);
+  assert.equal(pageRows[0].storageGroup, "history");
+  assert.equal(pageRows[0].dataPrimaryKey, "1");
+});
+
+test("subtable page changes only refresh the selected storage group", async () => {
+  const pages = [];
+  const h = createDetailHarness({
+    postGetOntologyEntityRowDetailPageInterface: async (params) => {
+      pages.push(params);
+      return {
+        code: 200,
+        data: {
+          records: [
+            {
+              dataPrimaryKey: params.pageNum,
+              props: [{ propertyUniqIdentifier: "p", propertyApiName: "enabled", propertyValue: true, categoryId: 3 }],
+            },
+          ],
+          total: 25,
+          size: 10,
+          current: params.pageNum,
+        },
+      };
+    },
+  });
+  try {
+    await settleDetailRequests();
+    assert.equal(h.state.subtables.history.total, 25);
+    await h.state.loadSubtablePage("history", 2);
+    assert.equal(h.state.subtables.history.page, 2);
+    assert.equal(h.state.subtables.history.rows[0].dataPrimaryKey, "2");
+    assert.deepEqual(
+      pages.map((item) => ({ storageGroup: item.storageGroup, pageNum: item.pageNum })),
+      [
+        { storageGroup: "history", pageNum: 1 },
+        { storageGroup: "history", pageNum: 2 },
+      ],
+    );
   } finally {
     h.scope.stop();
   }
