@@ -31,6 +31,17 @@
       :relation-rows="relationRows"
       :relation-load-status="relationLoadStatus"
       :relation-load-error="relationLoadError"
+      v-model:selected-function-apis="selectedFunctionApis"
+      :function-rows="functionRows"
+      :function-load-status="functionLoadStatus"
+      :function-load-error="functionLoadError"
+      :function-page="functionPage"
+      :function-page-size="functionPageSize"
+      :function-total="functionTotal"
+      v-model:selected-action-ids="selectedActionIds"
+      :action-rows="actionRows"
+      :action-load-status="actionLoadStatus"
+      :action-load-error="actionLoadError"
       :creating="creating"
       @back="goBackToSpaceList"
       @previous="retreatSubspaceCreateStep"
@@ -45,6 +56,10 @@
       @instance-page-size-change="loadObjectInstancePageSize"
       @instance-retry="retryObjectInstancePage"
       @relation-retry="retryParentSpaceRelations"
+      @function-page-change="loadSelectedSpaceFunctionPage"
+      @function-page-size-change="loadSelectedSpaceFunctionPageSize"
+      @function-retry="retrySelectedSpaceFunctions"
+      @action-retry="retrySelectedSpaceActions"
       @update:property-filters="propertyFilters = $event"
     />
     <OnboardingGuideOverlay
@@ -69,7 +84,9 @@ import { ElMessage } from "element-plus";
 import { useRoute, useRouter } from "vue-router";
 import {
   createOntologySubspaceInterface,
+  getOntologyActionSelectableInterface,
   getOntologyEntitiesInterface,
+  getOntologyFunctionListInterface,
   getOntologyPropertyByOntologyIdInterface,
   getOntologyRelationCategoryTreeInterface,
 } from "@/apis";
@@ -85,7 +102,7 @@ import {
 } from "@/mocks/ontologySubspaceCreateGuideMock/ontologySubspaceCreateGuideMock";
 import { ONBOARDING_GUIDE_ENTRY_IDS, THEME_ONBOARDING_GUIDE_STEPS } from "@/views/onboardingGuideSteps";
 import { QuestionFilled } from "@element-plus/icons-vue";
-import type { ApiResponse, OntologyRelationCategoryTreeData } from "@/types";
+import type { ApiResponse, GetOntologyActionSelectableItem, GetOntologyFunctionListItem, OntologyRelationCategoryTreeData } from "@/types";
 import { listSubspaceCreateObjectsMissingProperties, mapSubspaceCreateObjectPropertyGroup } from "./utils/mapSubspaceCreateObjectProperty";
 import type { SubspaceCreateObjectPropertyGroup } from "./utils/mapSubspaceCreateObjectProperty";
 import { mapSubspaceCreateSelectedInstances, SUBSPACE_CREATE_INSTANCE_PAGE_SIZE } from "./utils/mapSubspaceCreateSelectedInstance";
@@ -119,6 +136,19 @@ const relationRows = ref<SubspaceCreateSelectedRelation[]>([]);
 const relationLoadStatus = ref<"idle" | "loading" | "success" | "empty" | "error">("idle");
 const relationLoadError = ref("");
 let relationRequestGeneration = 0;
+const selectedFunctionApis = ref<string[]>([]);
+const functionRows = ref<GetOntologyFunctionListItem[]>([]);
+const functionLoadStatus = ref<"idle" | "loading" | "success" | "empty" | "error">("idle");
+const functionLoadError = ref("");
+const functionPage = ref(1);
+const functionPageSize = ref(8);
+const functionTotal = ref(0);
+let functionRequestGeneration = 0;
+const selectedActionIds = ref<number[]>([]);
+const actionRows = ref<GetOntologyActionSelectableItem[]>([]);
+const actionLoadStatus = ref<"idle" | "loading" | "success" | "empty" | "error">("idle");
+const actionLoadError = ref("");
+let actionRequestGeneration = 0;
 const creating = ref(false);
 const createProgress = ref(0);
 let createProgressTimer: number | null = null;
@@ -275,7 +305,7 @@ function toggleObjectProperty(propertyId: string, checked: boolean) {
 }
 
 /**
- * @description 校验当前步骤后进入下一步；关系选择是最后一步。
+ * @description 校验当前步骤后进入下一步；行为选择是最后一步。
  */
 async function advanceSubspaceCreateStep() {
   if (!spaceName.value.trim() || !apiName.value.trim()) {
@@ -313,6 +343,20 @@ async function advanceSubspaceCreateStep() {
     if (relationLoadStatus.value === "error") return;
     if (isGuideDemoMode.value) selectAllObjectRelations();
     currentStepIndex.value = 3;
+    return;
+  }
+  if (currentStepIndex.value === 3) {
+    if (functionLoadStatus.value === "loading") return;
+    await loadSelectedSpaceFunctions();
+    if (functionLoadStatus.value === "error") return;
+    currentStepIndex.value = 4;
+    return;
+  }
+  if (currentStepIndex.value === 4) {
+    if (actionLoadStatus.value === "loading") return;
+    await loadSelectedSpaceActions();
+    if (actionLoadStatus.value === "error") return;
+    currentStepIndex.value = 5;
   }
 }
 
@@ -386,6 +430,110 @@ async function retryParentSpaceRelations() {
     if (isGuideDemoMode.value) selectAllObjectRelations();
     currentStepIndex.value = 3;
   }
+}
+
+/**
+ * @description 查询父空间 EXTERNAL/CUSTOMIZE 函数列表当前页。
+ */
+async function loadSelectedSpaceFunctions(): Promise<void> {
+  await loadSelectedSpaceFunctionPage(functionPage.value || 1);
+}
+
+/**
+ * @description 按页码加载父空间函数列表。
+ * @param page 目标页码。
+ */
+async function loadSelectedSpaceFunctionPage(page: number): Promise<void> {
+  const requestGeneration = ++functionRequestGeneration;
+  const spaceId = Number(parentSpaceId.value);
+  functionPage.value = Math.max(1, page);
+  functionLoadStatus.value = "loading";
+  functionLoadError.value = "";
+  functionRows.value = [];
+  if (!Number.isFinite(spaceId) || spaceId <= 0) {
+    functionLoadStatus.value = "empty";
+    functionTotal.value = 0;
+    return;
+  }
+  try {
+    const response = await getOntologyFunctionListInterface({
+      ontologySpaceId: spaceId,
+      pageNum: functionPage.value,
+      pageSize: functionPageSize.value,
+      types: "EXTERNAL,CUSTOMIZE",
+    });
+    if (requestGeneration !== functionRequestGeneration) return;
+    if (response.code !== 200 && response.code !== 0) throw new Error(response.message || "函数列表查询失败");
+    const records = Array.isArray(response.data?.records) ? response.data.records : [];
+    functionRows.value = records;
+    functionTotal.value = typeof response.data?.total === "number" ? response.data.total : records.length;
+    functionLoadStatus.value = records.length ? "success" : "empty";
+  } catch (cause) {
+    if (requestGeneration !== functionRequestGeneration) return;
+    functionLoadStatus.value = "error";
+    functionLoadError.value = cause instanceof Error && cause.message.trim() ? cause.message : "函数列表查询失败，请重试。";
+    functionTotal.value = 0;
+  }
+}
+
+/**
+ * @description 调整函数列表每页条数并回到第一页。
+ * @param pageSize 每页条数。
+ */
+async function loadSelectedSpaceFunctionPageSize(pageSize: number): Promise<void> {
+  functionPageSize.value = Math.max(1, pageSize);
+  await loadSelectedSpaceFunctionPage(1);
+}
+
+/**
+ * @description 重试函数列表查询。
+ */
+async function retrySelectedSpaceFunctions(): Promise<void> {
+  await loadSelectedSpaceFunctions();
+  if (functionLoadStatus.value !== "error") currentStepIndex.value = 4;
+}
+
+/**
+ * @description 按已选对象与已选函数查询可选已发布行为列表。
+ */
+async function loadSelectedSpaceActions(): Promise<void> {
+  const requestGeneration = ++actionRequestGeneration;
+  const spaceId = Number(parentSpaceId.value);
+  actionLoadStatus.value = "loading";
+  actionLoadError.value = "";
+  actionRows.value = [];
+  if (!Number.isFinite(spaceId) || spaceId <= 0) {
+    actionLoadStatus.value = "empty";
+    return;
+  }
+  const ontologyIdentifiers = selectedObjects.value.map((object) => object.id.trim()).filter(Boolean);
+  const functionApis = selectedFunctionApis.value.map((api) => api.trim()).filter(Boolean);
+  try {
+    const response = await getOntologyActionSelectableInterface({
+      ontologySpaceId: spaceId,
+      ...(ontologyIdentifiers.length ? { ontologyIdentifiers } : {}),
+      ...(functionApis.length ? { functionApis } : {}),
+    });
+    if (requestGeneration !== actionRequestGeneration) return;
+    if (response.code !== 200 && response.code !== 0) throw new Error(response.message || "行为列表查询失败");
+    const rows = Array.isArray(response.data) ? response.data.filter((row) => typeof row.id === "number" && Number.isFinite(row.id)) : [];
+    actionRows.value = rows;
+    const validIds = new Set(rows.map((row) => row.id as number));
+    selectedActionIds.value = selectedActionIds.value.filter((id) => validIds.has(id));
+    actionLoadStatus.value = rows.length ? "success" : "empty";
+  } catch (cause) {
+    if (requestGeneration !== actionRequestGeneration) return;
+    actionLoadStatus.value = "error";
+    actionLoadError.value = cause instanceof Error && cause.message.trim() ? cause.message : "行为列表查询失败，请重试。";
+  }
+}
+
+/**
+ * @description 重试可选已发布行为列表查询。
+ */
+async function retrySelectedSpaceActions(): Promise<void> {
+  await loadSelectedSpaceActions();
+  if (actionLoadStatus.value !== "error") currentStepIndex.value = 5;
 }
 
 /** @description 按选中对象逐个查询对象属性列表。 */
@@ -576,6 +724,8 @@ async function createSubspace() {
         propertyFilters: propertyFilters.value,
         selectedRelationIds: selectedRelationIds.value,
         relationRows: relationRows.value,
+        selectedFunctionApis: selectedFunctionApis.value,
+        selectedActionIds: selectedActionIds.value,
       }),
     );
     if (response.code !== 200) throw new Error(response.message || "子空间创建失败");

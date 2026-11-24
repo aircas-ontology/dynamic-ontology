@@ -16,6 +16,8 @@ import type {
   EditOntologyActionParams,
   GetOntologyActionInfoData,
   GetOntologyActionInfoParams,
+  GetOntologyActionSelectableData,
+  GetOntologyActionSelectableParams,
   ListBehaviorSchedulingData,
   ListBehaviorSchedulingParams,
   ListOntologyActionData,
@@ -188,6 +190,45 @@ export function getListOntologyActionInterface(params: ListOntologyActionParams)
     method: "get",
     params,
   });
+}
+
+/**
+ * @description 主题新建：按对象编号和函数编号查询已发布行为（同编号去重）。
+ *
+ * 请求方式：GET `/ontology/action/selectable`
+ *
+ * @param params 查询参数。
+ * @param params.ontologySpaceId 对象空间 id，必填。
+ * @param params.ontologyIdentifiers 对象编号，可选。
+ * @param params.functionApis 函数 api，可选。
+ * @returns 标准 API 响应，data 为已发布行为列表。
+ */
+export function getOntologyActionSelectableInterface(params: GetOntologyActionSelectableParams): Promise<ApiResponse<GetOntologyActionSelectableData>> {
+  const ontologyIdentifiers = normalizeSelectableQueryList(params.ontologyIdentifiers);
+  const functionApis = normalizeSelectableQueryList(params.functionApis);
+  return request<GetOntologyActionSelectableData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action/selectable",
+    method: "get",
+    params: {
+      ontologySpaceId: params.ontologySpaceId,
+      ...(ontologyIdentifiers ? { ontologyIdentifiers } : {}),
+      ...(functionApis ? { functionApis } : {}),
+    },
+  });
+}
+
+/**
+ * @description 将可选已发布行为的数组或字符串 query 归一为逗号分隔字符串。
+ * @param value 原始 query 值。
+ * @returns 非空逗号分隔字符串；无有效项时返回 undefined。
+ */
+function normalizeSelectableQueryList(value: string | string[] | undefined): string | undefined {
+  const items = (Array.isArray(value) ? value : value ? [value] : [])
+    .flatMap((item) => item.split(","))
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (!items.length) return undefined;
+  return [...new Set(items)].join(",");
 }
 
 /**

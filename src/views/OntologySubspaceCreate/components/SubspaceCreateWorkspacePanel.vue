@@ -86,13 +86,6 @@
         <span>{{ propertyLoadError }}</span>
         <el-button class="aircas-button" @click="emit('property-retry')">重试</el-button>
       </div>
-      <div v-else-if="currentStepIndex === 2 && relationLoadStatus === 'loading'" class="subspace-create-workspace__state" role="status">
-        正在加载父空间关系…
-      </div>
-      <div v-else-if="currentStepIndex === 2 && relationLoadStatus === 'error'" class="subspace-create-workspace__state" role="alert">
-        <span>{{ relationLoadError }}</span>
-        <el-button class="aircas-button" @click="emit('relation-retry')">重试关系查询</el-button>
-      </div>
       <div
         v-else-if="currentStepIndex === 2 && propertyGroups.some((group) => group.properties.length)"
         class="subspace-create-workspace__properties"
@@ -207,6 +200,13 @@
           </el-table>
         </section>
       </div>
+      <div v-else-if="currentStepIndex === 3 && relationLoadStatus === 'loading'" class="subspace-create-workspace__state" role="status">
+        正在加载父空间关系…
+      </div>
+      <div v-else-if="currentStepIndex === 3 && relationLoadStatus === 'error'" class="subspace-create-workspace__state" role="alert">
+        <span>{{ relationLoadError }}</span>
+        <el-button class="aircas-button" @click="emit('relation-retry')">重试</el-button>
+      </div>
       <el-table
         v-else-if="currentStepIndex === 3 && relationRows.length"
         ref="relationTableRef"
@@ -223,10 +223,33 @@
         <el-table-column prop="sourceLabel" label="源对象" min-width="220" show-overflow-tooltip />
         <el-table-column prop="targetLabel" label="目标对象" min-width="220" show-overflow-tooltip />
       </el-table>
+      <SubspaceCreateFunctionPanel
+        v-else-if="currentStepIndex === 4"
+        :rows="functionRows"
+        :selected-function-apis="selectedFunctionApis"
+        :load-status="functionLoadStatus"
+        :load-error="functionLoadError"
+        :page="functionPage"
+        :page-size="functionPageSize"
+        :total="functionTotal"
+        @update:selected-function-apis="emit('update:selectedFunctionApis', $event)"
+        @page-change="emit('function-page-change', $event)"
+        @page-size-change="emit('function-page-size-change', $event)"
+        @retry="emit('function-retry')"
+      />
+      <SubspaceCreateActionPanel
+        v-else-if="currentStepIndex === 5"
+        :rows="actionRows"
+        :selected-action-ids="selectedActionIds"
+        :load-status="actionLoadStatus"
+        :load-error="actionLoadError"
+        @update:selected-action-ids="emit('update:selectedActionIds', $event)"
+        @retry="emit('action-retry')"
+      />
       <el-empty
         v-else-if="shouldShowStepEmpty()"
         class="aircas-empty"
-        data-onboarding="subspace-create-relation-panel"
+        :data-onboarding="currentStepIndex === 3 ? 'subspace-create-relation-panel' : undefined"
         :description="resolveEmptyDescription()"
       />
     </section>
@@ -241,10 +264,13 @@ import type { SubspaceCreateObjectProperty, SubspaceCreateObjectPropertyGroup } 
 import { resolveSubspaceCreatePropertyFilterKind } from "../utils/resolveSubspaceCreatePropertyFilterKind";
 import type { SubspaceCreatePropertyFilterKind } from "../utils/resolveSubspaceCreatePropertyFilterKind";
 import SubspaceCreateInstancePanel from "./SubspaceCreateInstancePanel.vue";
+import SubspaceCreateFunctionPanel from "./SubspaceCreateFunctionPanel.vue";
+import SubspaceCreateActionPanel from "./SubspaceCreateActionPanel.vue";
 import type { SubspaceCreateInstanceGroup } from "../utils/mapSubspaceCreateSelectedInstance";
 import type { SubspaceCreateSelectedRelation } from "../utils/mapSubspaceCreateSelectedRelation";
 import type { SubspaceCreateSelectedObject } from "../utils/mapSubspaceCreateSelectedObject";
 import type { SubspaceCreatePropertyFilterState } from "../utils/mapSubspaceCreateRequest";
+import type { GetOntologyActionSelectableItem, GetOntologyFunctionListItem } from "@/types";
 
 const props = defineProps<{
   spaceName: string;
@@ -266,6 +292,17 @@ const props = defineProps<{
   selectedRelationIds: string[];
   relationLoadStatus: "idle" | "loading" | "success" | "empty" | "error";
   relationLoadError: string;
+  functionRows: GetOntologyFunctionListItem[];
+  selectedFunctionApis: string[];
+  functionLoadStatus: "idle" | "loading" | "success" | "empty" | "error";
+  functionLoadError: string;
+  functionPage: number;
+  functionPageSize: number;
+  functionTotal: number;
+  actionRows: GetOntologyActionSelectableItem[];
+  selectedActionIds: number[];
+  actionLoadStatus: "idle" | "loading" | "success" | "empty" | "error";
+  actionLoadError: string;
   creating: boolean;
 }>();
 
@@ -274,6 +311,8 @@ const emit = defineEmits<{
   "update:apiName": [value: string];
   "update:selectedInstanceIds": [value: string[]];
   "update:selectedRelationIds": [value: string[]];
+  "update:selectedFunctionApis": [value: string[]];
+  "update:selectedActionIds": [value: number[]];
   "instance-page-change": [objectId: string, page: number];
   "instance-page-size-change": [objectId: string, pageSize: number];
   "instance-retry": [objectId: string];
@@ -283,6 +322,10 @@ const emit = defineEmits<{
   toggleProperty: [propertyId: string, checked: boolean];
   "property-retry": [];
   "relation-retry": [];
+  "function-page-change": [page: number];
+  "function-page-size-change": [pageSize: number];
+  "function-retry": [];
+  "action-retry": [];
   "update:propertyFilters": [value: Record<string, SubspaceCreatePropertyFilterState>];
   back: [];
   previous: [];
@@ -290,7 +333,7 @@ const emit = defineEmits<{
   create: [];
 }>();
 
-const flowSteps = ["选择对象", "选择实例", "配置属性", "配置关系"];
+const flowSteps = ["选择对象", "选择实例", "配置属性", "配置关系", "选择函数", "选择行为"];
 const relationTableRef = ref<TableInstance>();
 let isApplyingRelationSelection = false;
 const stepPanelCopy = computed(() => resolveStepPanelCopy());
@@ -387,10 +430,24 @@ function resolveStepPanelCopy() {
       summary: "",
     };
   }
+  if (props.currentStepIndex === 3) {
+    return {
+      title: "第四步：选择关系",
+      description: "选择纳入子空间的对象关系。",
+      summary: `${props.selectedRelationIds.length} 个关系`,
+    };
+  }
+  if (props.currentStepIndex === 4) {
+    return {
+      title: "第五步：选择函数",
+      description: "选择纳入主题的函数，可多选，也可以跳过本步。",
+      summary: `${props.selectedFunctionApis.length} 个函数`,
+    };
+  }
   return {
-    title: "第四步：选择关系",
-    description: "选择纳入子空间的对象关系。",
-    summary: `${props.selectedRelationIds.length} 个关系`,
+    title: "第六步：选择行为",
+    description: "选择纳入主题的已发布行为，可多选，也可以跳过本步。",
+    summary: `${props.selectedActionIds.length} 个行为`,
   };
 }
 
@@ -406,15 +463,12 @@ function shouldShowStepEmpty() {
     return props.instanceGroups.length === 0 && props.instanceLoadStatus !== "loading" && props.instanceLoadStatus !== "error";
   }
   if (props.currentStepIndex === 2) {
-    return (
-      !props.propertyGroups.some((group) => group.properties.length) &&
-      props.propertyLoadStatus !== "loading" &&
-      props.propertyLoadStatus !== "error" &&
-      props.relationLoadStatus !== "loading" &&
-      props.relationLoadStatus !== "error"
-    );
+    return !props.propertyGroups.some((group) => group.properties.length) && props.propertyLoadStatus !== "loading" && props.propertyLoadStatus !== "error";
   }
-  return props.relationRows.length === 0;
+  if (props.currentStepIndex === 3) {
+    return props.relationRows.length === 0 && props.relationLoadStatus !== "loading" && props.relationLoadStatus !== "error";
+  }
+  return false;
 }
 
 /**

@@ -80,6 +80,10 @@ export interface CreateOntologySubspaceParams {
   iconUrl?: string;
   selectedOntologies: CreateOntologySubspaceSelectedOntology[];
   selectedLinks?: CreateOntologySubspaceSelectedLink[];
+  /** 选中的函数 api 名称列表。 */
+  selectedFunctionApis?: string[];
+  /** 选中的行为 id 列表。 */
+  selectedActionIds?: number[];
 }
 
 /** 创建子空间接口响应 data。 */

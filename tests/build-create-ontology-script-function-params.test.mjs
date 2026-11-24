@@ -39,6 +39,7 @@ test("buildCreateOntologyScriptFunctionParams builds CUSTOMIZE payload with para
         category: "INPUT",
         paramOrder: 1,
         referenceType: "",
+        description: "入参对象",
         fields: [
           {
             paramName: "b",
@@ -53,6 +54,7 @@ test("buildCreateOntologyScriptFunctionParams builds CUSTOMIZE payload with para
             category: "INPUT",
             paramOrder: 1,
             referenceType: "",
+            description: "字段 a",
           },
         ],
       },
@@ -69,6 +71,7 @@ test("buildCreateOntologyScriptFunctionParams builds CUSTOMIZE payload with para
             category: "OUTPUT",
             paramOrder: 1,
             referenceType: "",
+            description: "编号",
           },
         ],
       },
@@ -93,9 +96,10 @@ test("buildCreateOntologyScriptFunctionParams builds CUSTOMIZE payload with para
       category: "INPUT",
       paramOrder: 1,
       referenceType: "",
+      description: "入参对象",
       fields: [
-        { paramName: "a", paramType: "STRING", category: "INPUT", paramOrder: 1, referenceType: "" },
-        { paramName: "b", paramType: "LIST", category: "INPUT", paramOrder: 2, referenceType: "" },
+        { paramName: "a", paramType: "STRING", category: "INPUT", paramOrder: 1, referenceType: "", description: "字段 a" },
+        { paramName: "b", paramType: "LIST", category: "INPUT", paramOrder: 2, referenceType: "", description: "" },
       ],
     },
     {
@@ -104,7 +108,8 @@ test("buildCreateOntologyScriptFunctionParams builds CUSTOMIZE payload with para
       category: "OUTPUT",
       paramOrder: 1,
       referenceType: "",
-      fields: [{ paramName: "id", paramType: "DOUBLE", category: "OUTPUT", paramOrder: 1, referenceType: "" }],
+      description: "",
+      fields: [{ paramName: "id", paramType: "DOUBLE", category: "OUTPUT", paramOrder: 1, referenceType: "", description: "编号" }],
     },
   ]);
 });

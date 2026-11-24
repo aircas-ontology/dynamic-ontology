@@ -231,7 +231,7 @@ test("unified step config defines the six-chain 39-step flow with page ownership
   assert.equal(leaveClickCount, 6);
   assert.match(source, /id: "space-create-manual"[\s\S]*?leaveClickSelector: "\[data-onboarding='space-enter'\]"/);
   const advanceCount = source.match(/advanceOnTargetClick: true/g)?.length ?? 0;
-  assert.equal(advanceCount, 36);
+  assert.equal(advanceCount, 38);
   assert.match(
     source,
     /id: "space-create-open"[\s\S]*?targetSelector: "\.welcome-panel__create"[\s\S]*?advanceOnTargetClick: true[\s\S]*?mockLabel: "新建空间"/,
@@ -337,6 +337,10 @@ test("theme guide config defines theme chains and reuses object space steps", ()
     "theme-subspace-properties",
     "theme-subspace-next-properties",
     "theme-subspace-relations",
+    "theme-subspace-next-relations",
+    "theme-subspace-functions",
+    "theme-subspace-next-functions",
+    "theme-subspace-actions",
     "theme-subspace-create",
     "theme-list-enter",
   ];
@@ -397,6 +401,8 @@ test("subspace create panels expose data-onboarding anchors for the theme chain"
     ["../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", 'data-onboarding="subspace-create-instance-panel"'],
     ["../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", 'data-onboarding="subspace-create-property-panel"'],
     ["../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", 'data-onboarding="subspace-create-relation-panel"'],
+    ["../src/views/OntologySubspaceCreate/components/SubspaceCreateFunctionPanel.vue", 'data-onboarding="subspace-create-function-panel"'],
+    ["../src/views/OntologySubspaceCreate/components/SubspaceCreateActionPanel.vue", 'data-onboarding="subspace-create-action-panel"'],
     ["../src/views/OntologySubspaceCreate/components/SubspaceCreateWorkspacePanel.vue", 'data-onboarding="subspace-create-create"'],
   ];
   for (const [file, anchor] of anchors) {

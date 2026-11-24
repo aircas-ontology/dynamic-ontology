@@ -59,6 +59,7 @@ import {
   mapBehaviorTreeBoundActionApis,
   mapBehaviorTreeEntityRecordOption,
   resolveBehaviorTreeBbGroupRowStateKey,
+  resolveBehaviorTreeInputParamRequestKey,
   resolveBehaviorTreeNodeDisplayName,
   resolveBehaviorTreeNodeLinkEnds,
   resolveBehaviorTreeOutputDraftKey,
@@ -843,6 +844,8 @@ test("behavior tree orchestration phase-two save load and persist wiring exist",
   assert.match(execPanelSource, /rowKeys/);
   assert.match(execPanelSource, /update-node-input-rows/);
   assert.match(execPlanUtilSource, /isBehaviorTreeListPropertyMultiRowParam/);
+  assert.match(execPlanUtilSource, /resolveBehaviorTreeInputParamRequestKey/);
+  assert.match(execPlanUtilSource, /param\.key \|\| param\.paramName/);
   assert.match(execPlanUtilSource, /paramName/);
   assert.match(execPanelSource, /target\.mode === 'DATA_PRIMARY_KEY' \|\| target\.rowRequired/);
   assert.match(execPanelSource, /storageGroup/);
@@ -1264,6 +1267,9 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
   assert.deepEqual(built.payload.nodeExecutes?.node_action_1?.inputParams?.speed, { entityPrimaryKey: "tank-9" });
   assert.equal(built.payload.nodeExecutes?.node_action_1?.params?.fixedRate, undefined);
 
+  assert.equal(resolveBehaviorTreeInputParamRequestKey({ key: "longitude", paramName: "trajectories" }), "longitude");
+  assert.equal(resolveBehaviorTreeInputParamRequestKey({ key: "", paramName: "trajectories" }), "trajectories");
+  assert.equal(resolveBehaviorTreeInputParamRequestKey(null), "");
   assert.equal(
     isBehaviorTreeListPropertyMultiRowParam({
       key: "longitude",
@@ -1339,8 +1345,8 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
   });
   assert.equal("payload" in listMultiBuilt, true);
   if ("payload" in listMultiBuilt) {
-    assert.equal(listMultiBuilt.payload.nodeExecutes?.node_list_1?.inputParams?.longitude, undefined);
-    assert.deepEqual(listMultiBuilt.payload.nodeExecutes?.node_list_1?.inputParams?.orbitPoints, [
+    assert.equal(listMultiBuilt.payload.nodeExecutes?.node_list_1?.inputParams?.orbitPoints, undefined);
+    assert.deepEqual(listMultiBuilt.payload.nodeExecutes?.node_list_1?.inputParams?.longitude, [
       { entityPrimaryKey: "sat-1", dataPrimaryKeys: { orbit_point: "11" } },
       { entityPrimaryKey: "sat-1", dataPrimaryKeys: { orbit_point: "12" } },
     ]);
@@ -1357,7 +1363,7 @@ test("behavior tree execute plan builds payload and reports missing fields", () 
   });
   assert.equal("payload" in listSingleBuilt, true);
   if ("payload" in listSingleBuilt) {
-    assert.deepEqual(listSingleBuilt.payload.nodeExecutes?.node_list_1?.inputParams?.orbitPoints, {
+    assert.deepEqual(listSingleBuilt.payload.nodeExecutes?.node_list_1?.inputParams?.longitude, {
       entityPrimaryKey: "sat-1",
       dataPrimaryKeys: { orbit_point: "11" },
     });

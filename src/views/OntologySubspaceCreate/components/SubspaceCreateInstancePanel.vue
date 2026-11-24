@@ -15,7 +15,14 @@
         ><el-button class="aircas-button" size="small" @click="emit('retry', group.objectId)">重试</el-button>
       </div>
       <div v-else-if="group.status === 'empty'" class="subspace-create-instance-panel__state">暂无实例</div>
-      <el-table v-else class="aircas-table aircas-table--flat subspace-create-instance-panel__table" :data="group.instances" row-key="id" stripe height="100%">
+      <el-table
+        v-else
+        class="aircas-table aircas-table--flat subspace-create-instance-panel__table"
+        :data="group.instances"
+        row-key="id"
+        stripe
+        :max-height="INSTANCE_TABLE_MAX_HEIGHT"
+      >
         <el-table-column width="48">
           <template #header
             ><el-checkbox
@@ -52,6 +59,9 @@ import type { CheckboxValueType } from "element-plus";
 import type { SubspaceCreateInstanceGroup, SubspaceCreateSelectedInstance } from "../utils/mapSubspaceCreateSelectedInstance";
 import { selectAllSubspaceCreateInstances, toggleSubspaceCreateInstanceSelection } from "../utils/mapSubspaceCreateSelectedInstance";
 
+/** 有实例数据时表格最大高度，超出后表内滚动，避免依赖父级百分比高度塌缩。 */
+const INSTANCE_TABLE_MAX_HEIGHT = 320;
+
 const props = defineProps<{ instanceGroups: SubspaceCreateInstanceGroup[]; selectedInstanceIds: string[] }>();
 const emit = defineEmits<{
   "update:selectedInstanceIds": [value: string[]];
@@ -61,9 +71,9 @@ const emit = defineEmits<{
 }>();
 
 /**
- * @description 判断对象分组是否应撑满剩余高度。
+ * @description 判断对象分组是否含可展示的实例行，用于应用最小高度样式。
  * @param group 对象实例分组。
- * @returns 是否为可撑满的分组。
+ * @returns 是否为有数据分组。
  */
 function canFillInstanceGroup(group: SubspaceCreateInstanceGroup) {
   return group.status === "success" && group.instances.length > 0;
@@ -122,7 +132,8 @@ function toggleInstance(row: unknown, checked: CheckboxValueType) {
   border-radius: 8px;
 }
 .subspace-create-instance-panel__group.is-filled {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
+  min-height: 180px;
 }
 .subspace-create-instance-panel__group.is-compact {
   flex: 0 0 auto;
@@ -145,8 +156,6 @@ function toggleInstance(row: unknown, checked: CheckboxValueType) {
 }
 .subspace-create-instance-panel__table {
   width: 100%;
-  min-height: 0;
-  flex: 1;
 }
 .subspace-create-instance-panel__state {
   display: flex;

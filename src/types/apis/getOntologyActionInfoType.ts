@@ -69,7 +69,7 @@ export type BehaviorTreeExecuteInputSourceType = "EXTERNAL" | "PROPERTY" | "FIXE
 /** 行为树执行要求：节点级算子入参。 */
 export interface BehaviorTreeExecuteInputParam {
   key: string;
-  /** 试跑/提交时 inputParams 的键；缺省回退 key。 */
+  /** 算子侧参数名；试跑 inputParams 优先使用 key（入参名），缺省时回退本字段。 */
   paramName?: string;
   valueType?: string;
   required?: boolean;

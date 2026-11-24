@@ -451,13 +451,13 @@ export function isBehaviorTreeListPropertyMultiRowParam(
 }
 
 /**
- * @description 解析节点入参写入 inputParams 的请求键（优先 paramName）。
+ * @description 解析节点入参写入 inputParams 的请求键（优先入参名 key，缺省回退 paramName）。
  * @param param 节点入参定义。
  * @returns 请求键。
  */
 export function resolveBehaviorTreeInputParamRequestKey(param: Pick<BehaviorTreeExecuteInputParam, "key" | "paramName"> | null | undefined): string {
   if (!param) return "";
-  return String(param.paramName || param.key || "").trim();
+  return String(param.key || param.paramName || "").trim();
 }
 
 /**

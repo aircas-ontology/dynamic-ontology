@@ -184,6 +184,15 @@ export type {
   GetOntologyActionInfoVisibilityWindow,
 } from "./apis/getOntologyActionInfoType";
 export type {
+  GetOntologyActionSelectableData,
+  GetOntologyActionSelectableItem,
+  GetOntologyActionSelectableParams,
+  OntologyActionSelectableActionKind,
+  OntologyActionSelectableOperation,
+  OntologyActionSelectableOutputMode,
+  OntologyActionSelectableSubjectType,
+} from "./apis/getOntologyActionSelectableType";
+export type {
   GetOntologyDatasourceColumnsData,
   GetOntologyDatasourceColumnsParams,
   OntologyDatasourceColumnDescVO,

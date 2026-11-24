@@ -179,11 +179,29 @@ test("subspace create workspace panel uses public form empty and actions", () =>
   assert.match(source, /class="aircas-tag"/);
   assert.match(source, /function selectObjectProperties/);
   assert.match(source, /第四步：选择关系/);
+  assert.match(source, /第五步：选择函数/);
+  assert.match(source, /第六步：选择行为/);
+  assert.match(source, /选择函数/);
+  assert.match(source, /选择行为/);
+  assert.match(source, /\["选择对象", "选择实例", "配置属性", "配置关系", "选择函数", "选择行为"\]/);
   assert.match(source, /选择纳入子空间的对象关系/);
   assert.match(source, /关系名称/);
   assert.match(source, /源对象/);
   assert.match(source, /目标对象/);
   assert.match(source, /function applyRelationTableSelection/);
+  assert.match(source, /SubspaceCreateFunctionPanel/);
+  assert.match(source, /SubspaceCreateActionPanel/);
+  assert.match(source, /selectedFunctionApis/);
+  assert.match(source, /selectedActionIds/);
+  const functionPanelSource = readSource("../src/views/OntologySubspaceCreate/components/SubspaceCreateFunctionPanel.vue");
+  assert.match(functionPanelSource, /subspace-create-function-panel/);
+  assert.match(functionPanelSource, /functionApi/);
+  assert.match(functionPanelSource, /reserve-selection/);
+  const actionPanelSource = readSource("../src/views/OntologySubspaceCreate/components/SubspaceCreateActionPanel.vue");
+  assert.match(actionPanelSource, /subspace-create-action-panel/);
+  assert.match(actionPanelSource, /actionApi/);
+  assert.match(actionPanelSource, /selectedActionIds/);
+  assert.match(actionPanelSource, /reserve-selection/);
   assert.match(source, /\.subspace-create-workspace__header \{[\s\S]*height: 61\.33px/);
   assert.match(source, /\.subspace-create-workspace__steps \{[\s\S]*height: 47\.33px/);
   assert.match(source, /\.subspace-create-workspace__empty \{[\s\S]*flex: 1/);
@@ -360,6 +378,8 @@ test("subspace create maps selected page state to the create request", () => {
         description: "关系描述",
       },
     ],
+    selectedFunctionApis: ["switch_test", "switch_test", ""],
+    selectedActionIds: [135, 135, Number.NaN],
   });
   assert.deepEqual(request, {
     parentSpaceId: 92,
@@ -377,7 +397,32 @@ test("subspace create maps selected page state to the create request", () => {
       },
     ],
     selectedLinks: [{ sourceLinkUniqueIdentifier: "link-1", name: "护航", apiName: "escort", type: "OTHER", description: "关系描述" }],
+    selectedFunctionApis: ["switch_test"],
+    selectedActionIds: [135],
   });
+  const withoutOptionalSelections = mapSubspaceCreateRequest({
+    parentSpaceId: "92",
+    displayName: "无函数",
+    apiName: "nofn",
+    selectedObjects: [{ id: "carrier", label: "航空母舰", apiName: "carrier" }],
+    instanceGroups: [],
+    selectedInstanceIds: [],
+    selectedPropertyIds: ["property-1"],
+    propertyGroups: [
+      {
+        objectId: "carrier",
+        objectLabel: "航空母舰",
+        properties: [{ id: "property-1", objectId: "carrier", objectLabel: "航空母舰", displayName: "舰名", apiName: "name", dataType: "String" }],
+      },
+    ],
+    propertyFilters: {},
+    selectedRelationIds: [],
+    relationRows: [],
+    selectedFunctionApis: [],
+    selectedActionIds: [],
+  });
+  assert.equal("selectedFunctionApis" in withoutOptionalSelections, false);
+  assert.equal("selectedActionIds" in withoutOptionalSelections, false);
 });
 
 /**
@@ -407,6 +452,8 @@ function buildNumberRangeRequestInput(propertyId, numberRange) {
     },
     selectedRelationIds: [],
     relationRows: [],
+    selectedFunctionApis: [],
+    selectedActionIds: [],
   };
 }
 
@@ -417,6 +464,22 @@ test("subspace create maps one-sided number ranges to GE or LE", () => {
   assert.deepEqual(maxOnly.selectedOntologies[0]?.selectedProperties[0]?.filter, { op: "LE", value: 8, dataType: "Double" });
 });
 
+test("subspace create exposes selectable action API types and path", () => {
+  const typeSource = readSource("../src/types/apis/getOntologyActionSelectableType.ts");
+  const apiSource = readSource("../src/apis/ontologyActionApi.ts");
+  const typesIndex = readSource("../src/types/index.ts");
+  const apisIndex = readSource("../src/apis/index.ts");
+  assert.match(typeSource, /GetOntologyActionSelectableParams/);
+  assert.match(typeSource, /ontologyIdentifiers/);
+  assert.match(typeSource, /functionApis/);
+  assert.match(typeSource, /GetOntologyActionSelectableItem/);
+  assert.match(apiSource, /getOntologyActionSelectableInterface/);
+  assert.match(apiSource, /\/ontology\/action\/selectable/);
+  assert.match(apiSource, /method: "get"/);
+  assert.match(typesIndex, /getOntologyActionSelectableType/);
+  assert.match(apisIndex, /getOntologyActionSelectableInterface/);
+});
+
 test("subspace create exposes the create API path and submit wiring", () => {
   const apiSource = readSource("../src/apis/ontologySubspaceApi.ts");
   const typeSource = readSource("../src/types/apis/createOntologySubspaceType.ts");
@@ -425,12 +488,23 @@ test("subspace create exposes the create API path and submit wiring", () => {
   assert.match(apiSource, /method: "post"/);
   assert.match(typeSource, /selectedOntologies/);
   assert.match(typeSource, /selectedLinks/);
+  assert.match(typeSource, /selectedFunctionApis/);
+  assert.match(typeSource, /selectedActionIds/);
   assert.match(typeSource, /OntologySubspaceCreateVO/);
   assert.match(typeSource, /ontologyMapping/);
   assert.match(typeSource, /linkMapping/);
   assert.match(pageSource, /createOntologySubspaceInterface/);
   assert.match(pageSource, /creating/);
   assert.match(pageSource, /mapSubspaceCreateRequest/);
+  assert.match(pageSource, /getOntologyFunctionListInterface/);
+  assert.match(pageSource, /getOntologyActionSelectableInterface/);
+  assert.match(pageSource, /EXTERNAL,CUSTOMIZE/);
+  assert.match(pageSource, /selectedFunctionApis/);
+  assert.match(pageSource, /selectedActionIds/);
+  assert.match(pageSource, /loadSelectedSpaceFunctions/);
+  assert.match(pageSource, /loadSelectedSpaceActions/);
+  assert.match(pageSource, /ontologyIdentifiers/);
+  assert.match(pageSource, /functionApis/);
   assert.match(pageSource, /createProgress/);
   assert.match(pageSource, /function startCreateProgress/);
   assert.match(pageSource, /function stopCreateProgressTimer/);
@@ -472,11 +546,13 @@ test("subspace create instance panel groups rows by object and paginates", () =>
   assert.doesNotMatch(source, />全选</);
   assert.match(source, /aircas-button/);
   assert.match(source, /class="aircas-table aircas-table--flat /);
-  assert.match(source, /height="100%"/);
+  assert.match(source, /:max-height="INSTANCE_TABLE_MAX_HEIGHT"/);
+  assert.doesNotMatch(source, /height="100%"/);
   assert.match(source, /function canFillInstanceGroup/);
   assert.match(source, /is-filled/);
   assert.match(source, /is-compact/);
-  assert.match(source, /\.subspace-create-instance-panel__group\.is-filled \{[\s\S]*flex: 1/);
+  assert.match(source, /\.subspace-create-instance-panel__group\.is-filled \{[\s\S]*flex: 0 0 auto/);
+  assert.match(source, /\.subspace-create-instance-panel__group\.is-filled \{[\s\S]*min-height:/);
   assert.match(source, /class="aircas-pagination/);
   assert.match(source, /popper-class="aircas-pagination-popper"/);
   assert.match(source, /layout="total, sizes, prev, pager, next"/);
@@ -524,7 +600,9 @@ test("subspace create page orchestrates names and next-step validation", () => {
   assert.match(source, /mapSubspaceCreateRelationsFromTree/);
   assert.match(source, /relationLoadStatus/);
   assert.match(source, /currentStepIndex.value = 3/);
-  assert.match(source, /OntologySpaceManagement/);
+  assert.match(source, /currentStepIndex.value = 4/);
+  assert.match(source, /loadSelectedSpaceFunctions/);
+  assert.match(source, /ThemeSpaceManagement/);
   assert.match(source, /请填写主题名称和 API 名称/);
   assert.match(source, /请至少选择一个对象/);
   assert.match(source, /getOntologyEntitiesInterface/);

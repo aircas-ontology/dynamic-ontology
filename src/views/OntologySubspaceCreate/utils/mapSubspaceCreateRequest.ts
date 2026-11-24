@@ -24,6 +24,10 @@ export interface SubspaceCreateRequestMappingInput {
   propertyFilters: Record<string, SubspaceCreatePropertyFilterState>;
   selectedRelationIds: string[];
   relationRows: SubspaceCreateSelectedRelation[];
+  /** 已选函数 api 名称。 */
+  selectedFunctionApis: string[];
+  /** 已选行为 id。 */
+  selectedActionIds: number[];
 }
 
 /**
@@ -63,6 +67,10 @@ export function mapSubspaceCreateRequest(input: SubspaceCreateRequestMappingInpu
         type: row.type ?? "",
         description: row.description ?? "",
       })),
+    ...(input.selectedFunctionApis.length ? { selectedFunctionApis: [...new Set(input.selectedFunctionApis.map((item) => item.trim()).filter(Boolean))] } : {}),
+    ...(input.selectedActionIds.length
+      ? { selectedActionIds: [...new Set(input.selectedActionIds.filter((id) => typeof id === "number" && Number.isFinite(id)))] }
+      : {}),
   };
 }
 

@@ -38,6 +38,7 @@ function mapParsedParameters(parameters: ParseOntologyFunctionParamItem[]): Crea
       category: item.category,
       paramOrder: item.paramOrder,
       referenceType: item.referenceType,
+      description: typeof item.description === "string" ? item.description : "",
     };
     if (item.fields && item.fields.length > 0) {
       parameter.fields = mapParsedParameters(item.fields);

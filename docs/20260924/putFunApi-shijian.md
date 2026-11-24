@@ -39,7 +39,16 @@ mocks与types文件名自行语义化命名
       "targetProperty":"",
       "filters":{}
     },
-    "parameters":[],
+    "parameters":[
+      {
+        "paramName": "longitude",
+        "paramType": "DOUBLE",
+        "category": "INPUT",
+        "paramOrder": 1,
+        "referenceType": "java.lang.Double",
+        "description": "",
+      }
+    ],
   }
   ```
 

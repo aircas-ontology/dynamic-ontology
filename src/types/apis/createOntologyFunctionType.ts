@@ -88,6 +88,8 @@ export interface CreateOntologyFunctionParameter {
   paramOrder: number;
   /** 引用类型；无引用时为空字符串。 */
   referenceType: string;
+  /** 参数说明；解析缺省时提交空串。 */
+  description: string;
   /** 对象或列表的下级属性。 */
   fields?: CreateOntologyFunctionParameter[];
 }
