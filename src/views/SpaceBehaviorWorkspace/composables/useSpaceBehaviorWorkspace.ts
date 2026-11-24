@@ -12,6 +12,7 @@ import {
   putUnpublishOntologyActionInterface,
   updateActionCategoryInterface,
 } from "@/apis";
+import { useSpaceOverviewRefresh } from "@/composables/shared/useSpaceOverviewRefresh";
 import type {
   SpaceBehaviorCategoryNode,
   SpaceBehaviorDraft,
@@ -57,6 +58,7 @@ function resolveListActionCategoryIdQuery(categoryId: string, tree: SpaceBehavio
  */
 export function useSpaceBehaviorWorkspace() {
   const route = useRoute();
+  const refreshSpaceOverview = useSpaceOverviewRefresh();
   const spaceId = computed(() => resolveBehaviorSpaceId(route));
   const ontologyId = computed(() => resolveBehaviorOntologyId(route));
   const status = ref<SpaceBehaviorWorkspaceLoadStatus>("loading");
@@ -460,7 +462,7 @@ export function useSpaceBehaviorWorkspace() {
   }
 
   /**
-   * @description 删除行为；调用删除接口成功后刷新行为列表。
+   * @description 删除行为；调用删除接口成功后刷新分类树、行为列表与布局层空间统计。
    * @param behaviorId 行为 id。
    * @returns 是否成功。
    */
@@ -475,7 +477,8 @@ export function useSpaceBehaviorWorkspace() {
       const response = await deleteOntologyActionInterface({ ontologySpaceId: currentSpaceId, actionApi });
       if (response.code !== 0 && response.code !== 200) return false;
       if (page.value > 1 && behaviors.value.length <= 1) page.value -= 1;
-      await loadSpaceBehaviorList();
+      await loadSpaceBehaviorWorkspace();
+      await refreshSpaceOverview?.({ keepPrevious: true });
       return true;
     } catch (error) {
       errorMessage.value = error instanceof Error ? error.message : "行为删除失败";

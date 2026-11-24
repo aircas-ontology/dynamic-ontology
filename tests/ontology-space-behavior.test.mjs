@@ -563,6 +563,9 @@ test("space behavior workspace loads the action category tree on entry", () => {
   assert.match(source, /resolveListActionCategoryIdQuery/);
   assert.match(source, /categoryId: categoryIdQuery/);
   assert.match(source, /function selectBehaviorCategory\(categoryId: string\): void \{[\s\S]*void loadSpaceBehaviorList\(\);/);
+  assert.match(source, /async function deleteBehavior[\s\S]*await loadSpaceBehaviorWorkspace\(\)/);
+  assert.match(source, /refreshSpaceOverview\?\.\(\{\s*keepPrevious:\s*true\s*\}\)/);
+  assert.match(source, /useSpaceOverviewRefresh/);
   assert.doesNotMatch(source, /filterSpaceBehaviorsByCategory/);
   assert.match(panelSource, /isActionCategoryNode/);
   assert.match(panelSource, /parentCategoryId/);

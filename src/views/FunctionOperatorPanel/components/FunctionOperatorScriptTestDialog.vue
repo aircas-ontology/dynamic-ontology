@@ -1,5 +1,13 @@
 <template>
-  <el-dialog v-model="visible" class="function-operator-script-test" :title="dialogTitle" width="720px" append-to-body destroy-on-close>
+  <el-dialog
+    v-model="visible"
+    class="function-operator-script-test"
+    :title="dialogTitle"
+    width="720px"
+    append-to-body
+    destroy-on-close
+    :close-on-click-modal="false"
+  >
     <p class="function-operator-script-test__title">{{ operatorName }}</p>
     <div class="function-operator-script-test__body">
       <p v-if="detailLoading" class="function-operator-script-test__state" role="status">

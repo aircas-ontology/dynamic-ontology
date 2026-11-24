@@ -8,7 +8,7 @@ import { findSpaceById } from "../src/views/OntologySpaceManagementDetail/utils/
 import { tabFromRouteName, routeNameForTab } from "../src/views/OntologySpaceManagementDetail/utils/workspaceTabs.ts";
 import { useOntologySpaceDetailStore } from "../src/stores/useOntologySpaceDetailStore.ts";
 import ts from "typescript";
-import { computed, ref } from "vue";
+import { computed, provide, ref } from "vue";
 
 test("conceptual entry navigates with the currently loaded space and preserves query", () => {
   const source = readFileSync(new URL("../src/views/OntologySpaceManagementDetail/index.vue", import.meta.url), "utf8");
@@ -19,10 +19,12 @@ test("conceptual entry navigates with the currently loaded space and preserves q
   const route = { query: { from: "theme-space-management", userName: "user", spaceName: "旧名称" }, name: "OntologySpaceManagementDetailObject" };
   const dependencies = {
     computed,
+    provide,
+    SPACE_OVERVIEW_REFRESH_KEY: Symbol("spaceOverviewRefresh"),
     useRoute: () => route,
     useRouter: () => ({ push: (target) => destinations.push(target) }),
     useSpaceWorkspace: () => ({ status, space, error: ref(""), spaceId: ref("42"), activeTab: ref("object"), availableTabs: ref([]), load: () => {} }),
-    useSpaceOverview: () => ({ data: ref(null), loading: ref(false) }),
+    useSpaceOverview: () => ({ data: ref(null), loading: ref(false), loadSpaceOverview: async () => {} }),
     useOnboardingGuide: () => ({ visible: ref(false), startId: ref(""), openOnboardingGuide: () => {} }),
     ONBOARDING_GUIDE_ENTRY_IDS: {},
     ONBOARDING_GUIDE_STEPS: [],
@@ -179,6 +181,8 @@ test("space detail layout loads overview statistics once and passes counts to ta
   assert.match(source, /useSpaceOverview\(spaceId\)/);
   assert.match(source, /:counts="spaceOverviewCounts"/);
   assert.match(source, /:counts-loading="spaceOverviewCountsLoading"/);
+  assert.match(source, /provide\(SPACE_OVERVIEW_REFRESH_KEY/);
+  assert.match(source, /keepPrevious/);
   assert.doesNotMatch(source, /:space-name=/);
   assert.doesNotMatch(source, /SPACE_OVERVIEW_KEY/);
 });

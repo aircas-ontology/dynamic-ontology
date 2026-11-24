@@ -19,6 +19,15 @@ test("space overview loader does not fall back to mock data on failure", () => {
   assert.doesNotMatch(source, /ontologySpaceManagementDetailMock/);
   assert.match(source, /getOntologySpaceStatisticInterface/);
   assert.match(source, /空间统计加载失败/);
+  assert.match(source, /keepPrevious/);
+  assert.match(source, /if \(!options\.keepPrevious\) data\.value = undefined/);
+});
+
+test("space overview refresh injection key is shared for layout and child workspaces", () => {
+  const source = readFileSync(new URL("../src/composables/shared/useSpaceOverviewRefresh.ts", import.meta.url), "utf8");
+  assert.match(source, /export const SPACE_OVERVIEW_REFRESH_KEY/);
+  assert.match(source, /export function useSpaceOverviewRefresh/);
+  assert.match(source, /inject\(SPACE_OVERVIEW_REFRESH_KEY/);
 });
 
 test("overview stat formatting distinguishes zero, loading and absent data", () => {

@@ -542,6 +542,7 @@ test("function operator script test uses dedicated dialog and parameters body", 
   assert.match(workspace, /ontologySpaceId:\s*spaceId\.value/);
   assert.match(workspace, /updateScriptTestParamValue/);
   assert.match(dialog, /脚本函数测试/);
+  assert.match(dialog, /:close-on-click-modal="false"/);
   assert.match(dialog, /执行结果/);
   assert.match(dialog, /FunctionOperatorScriptTestParamTree/);
   const tree = readSource("../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptTestParamTree.vue");

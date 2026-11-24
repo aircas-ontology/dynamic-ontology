@@ -41,10 +41,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, provide } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Connection, QuestionFilled } from "@element-plus/icons-vue";
 import { useOnboardingGuide } from "@/composables/shared/useOnboardingGuide";
+import { SPACE_OVERVIEW_REFRESH_KEY } from "@/composables/shared/useSpaceOverviewRefresh";
 import OnboardingGuideOverlay from "@/components/OnboardingGuide/OnboardingGuideOverlay.vue";
 import AircasLoading from "@/components/AircasLoading.vue";
 import type { ManagementWorkspaceTab } from "@/types";
@@ -62,6 +63,7 @@ const { status, error, space, spaceId, activeTab, availableTabs, load } = useSpa
 const spaceOverview = useSpaceOverview(spaceId);
 const spaceOverviewCounts = computed(() => spaceOverview.data.value?.counts);
 const spaceOverviewCountsLoading = computed(() => spaceOverview.loading.value);
+provide(SPACE_OVERVIEW_REFRESH_KEY, (options) => spaceOverview.loadSpaceOverview({ keepPrevious: options?.keepPrevious !== false }));
 const isWorkflowPage = computed(() => route.name === "OntologyLlmBuilder" || route.name === "OntologySubspaceCreate");
 // 主题来源（from=theme-space-management）时切换为主题链步骤；对象空间来源保持原配置，行为不变。
 const isThemeSpaceGuide = computed(() => route.query.from === "theme-space-management");
