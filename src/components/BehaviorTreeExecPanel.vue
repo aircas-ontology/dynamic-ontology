@@ -331,6 +331,7 @@ import {
   resolveBehaviorTreeBbGroupRowStateKey,
   resolveBehaviorTreeOutputDraftKey,
 } from "@/utils/behaviorTreeExecutePlan";
+import { formatOntologyEntityRowDetailPageRecordLabel } from "@/utils/behaviorParameters/mapOntologyEntityRowDetailToDataRows";
 
 const props = withDefaults(
   defineProps<{
@@ -495,6 +496,24 @@ function ensureInputParamRows(param: BehaviorTreeExecuteInputParam, nodeId: stri
 }
 
 /**
+ * @description 按当前入参生成子表行选项标签。
+ * @param option 缓存选项。
+ * @param param 入参定义。
+ * @returns 带本参数属性值的选项。
+ */
+function mapInputParamRowOptionLabel(option: BehaviorTreeEntityOption, param: BehaviorTreeExecuteInputParam): BehaviorTreeEntityOption {
+  const propertyApiName = String(param.key || param.paramName || "").trim();
+  const label = formatOntologyEntityRowDetailPageRecordLabel(
+    { dataPrimaryKey: option.value, props: option.props },
+    {
+      propertyDisplayName: param.propertyDisplayName,
+      propertyApiName: propertyApiName || null,
+    },
+  );
+  return { ...option, label: label || `行 ${option.value}` };
+}
+
+/**
  * @description 读取入参子表行候选。
  * @param param 入参定义。
  * @param nodeId 节点 id。
@@ -505,7 +524,7 @@ function resolveInputParamRowOptions(param: BehaviorTreeExecuteInputParam, nodeI
   const storageGroup = String(param.storageGroup || "").trim();
   const instance = resolveInputParamInstance(param, nodeId);
   if (!objectId || !storageGroup || !instance) return [];
-  const options = props.groupRowOptions?.[`${objectId}|${instance}|${storageGroup}`] || [];
+  const options = (props.groupRowOptions?.[`${objectId}|${instance}|${storageGroup}`] || []).map((option) => mapInputParamRowOptionLabel(option, param));
   const selected = props.nodeDrafts[nodeId]?.inputParams[param.key]?.rowKeys ?? [];
   const extras = selected
     .map((item) => String(item ?? "").trim())

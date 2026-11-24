@@ -15,7 +15,7 @@
   >
     <div ref="editorRef" class="rule-condition-editor">
       <el-form v-if="condition" :disabled="readonly">
-        <ScheduleRuleConditionWireSurface :condition="condition" />
+        <ScheduleRuleConditionWireSurface :condition="condition" :readonly="readonly" />
       </el-form>
     </div>
     <template #footer>
@@ -27,12 +27,12 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type { RuleConditionNode } from "@/types";
+import type { RuleCompositeCondition } from "@/types";
 import ScheduleRuleConditionWireSurface from "./ScheduleRuleConditionWireSurface.vue";
 
 defineProps<{
   modelValue: boolean;
-  condition: RuleConditionNode | null;
+  condition: RuleCompositeCondition | null;
   readonly?: boolean;
 }>();
 

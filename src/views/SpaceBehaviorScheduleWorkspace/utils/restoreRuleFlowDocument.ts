@@ -1,6 +1,7 @@
 import type {
   RuleCompareOperator,
   RuleCompositeCondition,
+  RuleConditionMonitorType,
   RuleConditionNode,
   RuleFlowStep,
   RuleFlowThenAction,
@@ -58,14 +59,47 @@ function restoreValue(value: unknown): RuleValueNode {
   }
   throw new Error("画布值类型不支持");
 }
+/**
+ * @description 读取画布监测事件类型。
+ * @param value 外部值。
+ * @returns 监测类型或空。
+ */
+function readFlowMonitorType(value: unknown): RuleConditionMonitorType | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (value === "insert" || value === "delete") return value;
+  throw new Error("画布监测事件类型无效");
+}
+
 /** @description 恢复条件树。 @param value 外部条件。 @returns 条件节点。 */
 function restoreCondition(value: unknown): RuleConditionNode {
   if (!isRecord(value)) throw new Error("画布条件格式无效");
   const id = requireString(value.id);
-  if (value.type === "composite" && (value.logic === "and" || value.logic === "or") && Array.isArray(value.children))
-    return { id, type: "composite", logic: value.logic, children: value.children.map(restoreCondition) };
+  if (value.type === "composite" && (value.logic === "and" || value.logic === "or") && Array.isArray(value.children)) {
+    const monitorType = readFlowMonitorType(value.monitorType);
+    const restored: RuleCompositeCondition = {
+      id,
+      type: "composite",
+      logic: value.logic,
+      children: value.children.map(restoreCondition),
+    };
+    if (monitorType) restored.monitorType = monitorType;
+    return restored;
+  }
   if (value.type === "leaf" && isCompareOperator(value.operator))
     return { id, type: "leaf", left: restoreValue(value.left), right: restoreValue(value.right), operator: value.operator };
+  if (value.type === "monitor") {
+    const storageGroup = requireString(value.storageGroup).trim() || "main";
+    const monitorType = readFlowMonitorType(value.monitorType);
+    if (!monitorType) throw new Error("画布监测事件类型无效");
+    return {
+      id,
+      type: "monitor",
+      monitorType,
+      objectId: requireString(value.objectId),
+      objectName: requireString(value.objectName),
+      storageGroup,
+    };
+  }
   throw new Error("画布条件格式无效");
 }
 /** @description 恢复行为节点以及已保存的完整执行请求。 @param value 外部行为。 @param details 参数映射。 @returns 行为节点。 */

@@ -9,7 +9,7 @@ export interface ApplicationTestParamBindingSelection {
   entityPrimaryKey: string | number | boolean | Record<string, unknown>;
   /** mappingIns.storageGroup；main 或空不传 dataPrimaryKeys。 */
   storageGroup: string;
-  /** 非 main 时必填的数据行主键。 */
+  /** 非 main 时默认必填；测试允许缺省时省略的数据行主键。 */
   dataPrimaryKey?: string | number | boolean | Record<string, unknown> | null;
 }
 
@@ -35,6 +35,8 @@ export interface BuildApplicationTestRequestParamsInput {
   outputParamSelections: ApplicationTestParamBindingSelection[];
   /** 有 linkMapping 且两端已选时传入；否则 null。 */
   linkEntitySelection: ApplicationTestLinkEntitySelection | null;
+  /** 是否允许非 main 绑定省略数据行主键；默认 false。 */
+  allowMissingDataPrimaryKeys?: boolean;
 }
 
 /** 组装成功。 */
@@ -64,11 +66,13 @@ function hasUsablePrimaryKey(value: unknown): boolean {
  * @description 将单条选择快照转为实体绑定对象。
  * @param selection 选择快照。
  * @param sideLabel 错误文案侧别名。
+ * @param allowMissingDataPrimaryKeys 是否允许非 main 绑定省略数据行主键。
  * @returns 绑定对象或错误。
  */
 function mapSelectionToEntityBinding(
   selection: ApplicationTestParamBindingSelection,
   sideLabel: string,
+  allowMissingDataPrimaryKeys: boolean,
 ): { ok: true; binding: TestOntologyActionEntityBinding } | { ok: false; error: string } {
   const paramName = selection.paramName.trim();
   if (!paramName) return { ok: false, error: `${sideLabel}缺少参数名，无法测试` };
@@ -79,11 +83,14 @@ function mapSelectionToEntityBinding(
   const next: TestOntologyActionEntityBinding = { entityPrimaryKey: selection.entityPrimaryKey };
   if (!isMainStorageGroup(storageGroup) && storageGroup) {
     if (!hasUsablePrimaryKey(selection.dataPrimaryKey)) {
-      return { ok: false, error: `请先选择${sideLabel}参数「${paramName}」存储分组「${storageGroup}」的数据行` };
+      if (!allowMissingDataPrimaryKeys) {
+        return { ok: false, error: `请先选择${sideLabel}参数「${paramName}」存储分组「${storageGroup}」的数据行` };
+      }
+    } else {
+      next.dataPrimaryKeys = {
+        [storageGroup]: selection.dataPrimaryKey as string | number | boolean | Record<string, unknown>,
+      };
     }
-    next.dataPrimaryKeys = {
-      [storageGroup]: selection.dataPrimaryKey as string | number | boolean | Record<string, unknown>,
-    };
   }
   return { ok: true, binding: next };
 }
@@ -91,14 +98,16 @@ function mapSelectionToEntityBinding(
 /**
  * @description 将入参选择列表组装为 paramName → 绑定数组。
  * @param selections 选择快照（同名可多条）。
+ * @param allowMissingDataPrimaryKeys 是否允许非 main 绑定省略数据行主键。
  * @returns 成功时返回 map；失败时返回 error。
  */
 function buildInputParamBindings(
   selections: ApplicationTestParamBindingSelection[],
+  allowMissingDataPrimaryKeys: boolean,
 ): { ok: true; bindings: Record<string, TestOntologyActionEntityBinding[]> } | { ok: false; error: string } {
   const bindings: Record<string, TestOntologyActionEntityBinding[]> = {};
   for (const selection of selections) {
-    const mapped = mapSelectionToEntityBinding(selection, "入参");
+    const mapped = mapSelectionToEntityBinding(selection, "入参", allowMissingDataPrimaryKeys);
     if (!mapped.ok) return mapped;
     const paramName = selection.paramName.trim();
     const list = bindings[paramName] ?? [];
@@ -111,14 +120,16 @@ function buildInputParamBindings(
 /**
  * @description 将出参选择列表组装为 paramName → 单个绑定。
  * @param selections 选择快照。
+ * @param allowMissingDataPrimaryKeys 是否允许非 main 绑定省略数据行主键。
  * @returns 成功时返回 map；失败时返回 error。
  */
 function buildOutputParamBindings(
   selections: ApplicationTestParamBindingSelection[],
+  allowMissingDataPrimaryKeys: boolean,
 ): { ok: true; bindings: Record<string, TestOntologyActionEntityBinding> } | { ok: false; error: string } {
   const bindings: Record<string, TestOntologyActionEntityBinding> = {};
   for (const selection of selections) {
-    const mapped = mapSelectionToEntityBinding(selection, "出参");
+    const mapped = mapSelectionToEntityBinding(selection, "出参", allowMissingDataPrimaryKeys);
     if (!mapped.ok) return mapped;
     const paramName = selection.paramName.trim();
     bindings[paramName] = mapped.binding;
@@ -138,9 +149,10 @@ export function buildApplicationTestRequestParams(input: BuildApplicationTestReq
   if (!ontologySpaceId) return { ok: false, error: "缺少对象空间 id，无法测试" };
   if (!actionApi) return { ok: false, error: "缺少行为 api，无法测试" };
 
-  const inputBuilt = buildInputParamBindings(input.inputParamSelections);
+  const allowMissingDataPrimaryKeys = input.allowMissingDataPrimaryKeys === true;
+  const inputBuilt = buildInputParamBindings(input.inputParamSelections, allowMissingDataPrimaryKeys);
   if (!inputBuilt.ok) return inputBuilt;
-  const outputBuilt = buildOutputParamBindings(input.outputParamSelections);
+  const outputBuilt = buildOutputParamBindings(input.outputParamSelections, allowMissingDataPrimaryKeys);
   if (!outputBuilt.ok) return outputBuilt;
 
   const request: TestOntologyActionParams = {

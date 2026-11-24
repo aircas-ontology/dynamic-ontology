@@ -12,6 +12,7 @@ import type {
   RuleFunctionName,
   RuleLeafCondition,
   RuleLiteralValue,
+  RuleMonitorLeafCondition,
   RuleValueNode,
   ScheduleRuleFlowDocument,
 } from "@/types";
@@ -84,6 +85,22 @@ export function createEmptyLeafCondition(): RuleLeafCondition {
     left: createEmptyLiteral(),
     operator: "eq",
     right: createEmptyLiteral(),
+  };
+}
+
+/**
+ * @description 创建空白监测叶子，默认主表分组。
+ * @param monitorType 监测事件类型。
+ * @returns 未选对象的监测叶子。
+ */
+export function createEmptyMonitorLeafCondition(monitorType: "insert" | "delete" = "insert"): RuleMonitorLeafCondition {
+  return {
+    id: createRuleNodeId("monitor"),
+    type: "monitor",
+    monitorType,
+    objectId: "",
+    objectName: "",
+    storageGroup: "main",
   };
 }
 
@@ -248,6 +265,12 @@ export function summarizeValue(value: RuleValueNode): string {
 export function summarizeRuleCondition(node: RuleConditionNode): string {
   if (node.type === "leaf") {
     return `${summarizeValue(node.left)} ${RULE_COMPARE_OPERATOR_LABELS[node.operator]} ${summarizeValue(node.right)}`;
+  }
+  if (node.type === "monitor") {
+    const objectLabel = node.objectName.trim() || node.objectId.trim() || "未选对象";
+    const groupLabel = node.storageGroup.trim() || "main";
+    const prefix = node.monitorType === "delete" ? "删除" : "新增";
+    return `${prefix} · ${objectLabel} / ${groupLabel}`;
   }
   const joiner = node.logic === "and" ? " 且 " : " 或 ";
   const parts = node.children.map(summarizeRuleCondition).filter((item) => item.trim().length > 0);

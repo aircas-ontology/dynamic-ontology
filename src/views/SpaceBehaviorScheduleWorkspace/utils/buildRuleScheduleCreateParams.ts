@@ -3,6 +3,7 @@ import type {
   CreateRuleBehaviorScheduleParams,
   RuleCompareOperator,
   RuleCompositeCondition,
+  RuleConditionMonitorType,
   RuleFlowStep,
   RuleFlowThenAction,
   RuleValueNode,
@@ -49,14 +50,76 @@ function buildRuleOperand(value: RuleValueNode): ScheduleRuleOperand {
   return { type: "dynamic", OntologyId: value.objectId, entityId: value.instanceIds[0], propertyId: value.propertyId };
 }
 
-/** @description 递归展开条件组合，按首末条件叠加括号并用组逻辑连接下一项。 @param condition 条件组合。 @param nested 是否为子分组。 @returns 判断项。 */
-function buildRuleJudgeItems(condition: RuleCompositeCondition, nested = false): ScheduleRuleJudgeItem[] {
+/**
+ * @description 判断条件项是否为监测形态（无比较符与右操作数）。
+ * @param item 条件项。
+ * @returns 是否为监测项。
+ */
+function isMonitorJudgeItem(item: ScheduleRuleJudgeItem): boolean {
+  return item.condition === undefined && item.rightOperate === undefined;
+}
+
+/**
+ * @description 收集条件树中的属性比较与监测事件类型。
+ * @param condition 条件节点。
+ * @param fallback 祖先组级监测类型。
+ * @returns 是否含比较及监测类型集合。
+ */
+function collectConditionKinds(
+  condition: RuleCompositeCondition["children"][number] | RuleCompositeCondition,
+  fallback?: RuleConditionMonitorType,
+): { hasCompare: boolean; monitorTypes: Set<RuleConditionMonitorType> } {
+  if (condition.type === "composite") {
+    const monitorTypes = new Set<RuleConditionMonitorType>();
+    let hasCompare = false;
+    const nextFallback = condition.monitorType ?? fallback;
+    for (const child of condition.children) {
+      const part = collectConditionKinds(child, nextFallback);
+      hasCompare = hasCompare || part.hasCompare;
+      part.monitorTypes.forEach((item) => monitorTypes.add(item));
+    }
+    return { hasCompare, monitorTypes };
+  }
+  if (condition.type === "monitor") {
+    const monitorType = condition.monitorType ?? fallback;
+    if (!monitorType) throw new Error("请选择条件变更类型");
+    return { hasCompare: false, monitorTypes: new Set([monitorType]) };
+  }
+  return { hasCompare: true, monitorTypes: new Set() };
+}
+
+/**
+ * @description 递归展开条件组合；监测形态只输出对象与存储分组。
+ * @param condition 条件组合。
+ * @param nested 是否为子分组。
+ * @param writeItemMonitorType 是否在条件项上写 monitorType。
+ * @param fallback 祖先组级监测类型。
+ * @returns 判断项。
+ */
+function buildRuleJudgeItems(
+  condition: RuleCompositeCondition,
+  nested = false,
+  writeItemMonitorType = false,
+  fallback?: RuleConditionMonitorType,
+): ScheduleRuleJudgeItem[] {
   if (!condition.children.length) throw new Error("请至少配置一个判断条件");
   const items: ScheduleRuleJudgeItem[] = [];
+  const nextFallback = condition.monitorType ?? fallback;
   for (const child of condition.children) {
     let childItems: ScheduleRuleJudgeItem[];
-    if (child.type === "composite") childItems = buildRuleJudgeItems(child, true);
-    else {
+    if (child.type === "composite") childItems = buildRuleJudgeItems(child, true, writeItemMonitorType, nextFallback);
+    else if (child.type === "monitor") {
+      const monitorType = child.monitorType ?? nextFallback;
+      if (!monitorType) throw new Error("请选择条件变更类型");
+      if (!child.objectId.trim()) throw new Error("请选择监测对象");
+      const storageGroup = child.storageGroup.trim() || "main";
+      childItems = [
+        {
+          leftOperate: { type: "dynamic", OntologyId: child.objectId.trim(), storageGroup },
+          ...(writeItemMonitorType ? { monitorType } : {}),
+        },
+      ];
+    } else {
       const operator = compareOperators[child.operator];
       if (!operator) throw new Error("前置包含操作符已移除，请重新选择条件操作符");
       childItems = [{ leftOperate: buildRuleOperand(child.left), rightOperate: buildRuleOperand(child.right), condition: operator }];
@@ -76,10 +139,35 @@ function buildRuleJudgeItems(condition: RuleCompositeCondition, nested = false):
   return items;
 }
 
+/**
+ * @description 按条件树解析组级监测类型并生成判断项。
+ * @param condition 根组合条件。
+ * @returns 判断项与可选组级监测类型。
+ */
+function buildBranchJudgeParams(condition: RuleCompositeCondition): {
+  items: ScheduleRuleJudgeItem[];
+  monitorType?: RuleConditionMonitorType;
+  isMonitor: boolean;
+} {
+  const kinds = collectConditionKinds(condition, condition.monitorType);
+  if (kinds.hasCompare && kinds.monitorTypes.size) throw new Error("同一规则组不能混合属性比较与新增/删除监测条件");
+  if (!kinds.hasCompare && !kinds.monitorTypes.size) throw new Error("请至少配置一个判断条件");
+  if (kinds.hasCompare) return { items: buildRuleJudgeItems(condition, false, false), isMonitor: false };
+  const uniform = kinds.monitorTypes.size === 1 ? [...kinds.monitorTypes][0] : undefined;
+  const writeItemMonitorType = !uniform;
+  return {
+    items: buildRuleJudgeItems(condition, false, writeItemMonitorType, condition.monitorType),
+    monitorType: uniform,
+    isMonitor: true,
+  };
+}
+
 /** 路径中的一层判断，inverted 表示进入该分支的不成立路径。 */
 interface RulePathPredicate {
   items: ScheduleRuleJudgeItem[];
   inverted: boolean;
+  isMonitor: boolean;
+  monitorType?: RuleConditionMonitorType;
 }
 
 const inverseOperators: Record<ScheduleRuleCompareOperator, ScheduleRuleCompareOperator> = {
@@ -93,29 +181,51 @@ const inverseOperators: Record<ScheduleRuleCompareOperator, ScheduleRuleCompareO
   NOT_CONTAINS: "CONTAINS",
 };
 
-/** @description 合并路径约束，局部否定按德摩根规则下推，保留单层接口整体取反格式。 @param path 从根到行为的约束。 @returns 接口判断条件。 */
-function buildPathJudgeParams(path: RulePathPredicate[]): { judgeParams: ScheduleRuleJudgeItem[]; inverted: boolean } {
+/**
+ * @description 合并路径约束；监测项取反只翻转连接符，属性比较按德摩根下推操作符。
+ * @param path 从根到行为的约束。
+ * @returns 接口判断条件与组级监测类型。
+ */
+function buildPathJudgeParams(path: RulePathPredicate[]): {
+  judgeParams: ScheduleRuleJudgeItem[];
+  inverted: boolean;
+  monitorType?: RuleConditionMonitorType;
+} {
   const single = path[0];
   if (!single) throw new Error("规则画布需要配置条件分支或 switch 分支");
-  if (path.length === 1) return { judgeParams: single.items.map((item) => ({ ...item })), inverted: single.inverted };
+  const hasMonitor = path.some((item) => item.isMonitor);
+  const hasCompare = path.some((item) => !item.isMonitor);
+  if (hasMonitor && hasCompare) throw new Error("同一规则路径不能混合属性比较与新增/删除监测条件");
+  const monitorTypes = [...new Set(path.map((item) => item.monitorType).filter((item): item is RuleConditionMonitorType => Boolean(item)))];
+  const monitorType =
+    hasMonitor && monitorTypes.length === 1 && path.every((item) => !item.isMonitor || item.monitorType === monitorTypes[0]) ? monitorTypes[0] : undefined;
+  if (path.length === 1) return { judgeParams: single.items.map((item) => ({ ...item })), inverted: single.inverted, monitorType };
   const judgeParams: ScheduleRuleJudgeItem[] = [];
   for (const predicate of path) {
-    const items = predicate.items.map((item): ScheduleRuleJudgeItem => ({
-      ...item,
-      condition: predicate.inverted ? inverseOperators[item.condition] : item.condition,
-      ...(item.linkFlag ? { linkFlag: predicate.inverted ? (item.linkFlag === "AND" ? "OR" : "AND") : item.linkFlag } : {}),
-    }));
+    const items = predicate.items.map((item): ScheduleRuleJudgeItem => {
+      if (isMonitorJudgeItem(item)) {
+        return {
+          ...item,
+          ...(item.linkFlag ? { linkFlag: predicate.inverted ? (item.linkFlag === "AND" ? "OR" : "AND") : item.linkFlag } : {}),
+        };
+      }
+      if (!item.condition) throw new Error("请至少配置一个判断条件");
+      return {
+        ...item,
+        condition: predicate.inverted ? inverseOperators[item.condition] : item.condition,
+        ...(item.linkFlag ? { linkFlag: predicate.inverted ? (item.linkFlag === "AND" ? "OR" : "AND") : item.linkFlag } : {}),
+      };
+    });
     const first = items[0];
     const last = items.at(-1);
     if (!first || !last) throw new Error("请至少配置一个判断条件");
-    // 每层路径单独括起，避免 OR 与外层 AND 的优先级改变原意。
     first.isLeft = (first.isLeft ?? 0) + 1;
     last.isRight = (last.isRight ?? 0) + 1;
     const previous = judgeParams.at(-1);
     if (previous) previous.linkFlag = "AND";
     judgeParams.push(...items);
   }
-  return { judgeParams, inverted: false };
+  return { judgeParams, inverted: false, monitorType };
 }
 
 /** @description 验证保存的行为请求为普通对象。 @param value 外部请求。 @returns 是否为参数对象。 */
@@ -141,10 +251,10 @@ function buildRulePathGroups(
   if (steps.length > 1 && steps.some((step) => step.kind !== "actions")) throw new Error("当前接口不保证行为与后续条件的执行顺序，请使用分支内嵌套配置");
   return steps.flatMap((step): ScheduleRuleJudgeGroup[] => {
     if (step.kind === "branch") {
-      const items = buildRuleJudgeItems(step.condition);
+      const { items, monitorType, isMonitor } = buildBranchJudgeParams(step.condition);
       return [
-        ...buildRulePathGroups(step.then, [...path, { items, inverted: false }], options, spaceId, savedDetails),
-        ...buildRulePathGroups(step.otherwise ?? [], [...path, { items, inverted: true }], options, spaceId, savedDetails),
+        ...buildRulePathGroups(step.then, [...path, { items, inverted: false, isMonitor, monitorType }], options, spaceId, savedDetails),
+        ...buildRulePathGroups(step.otherwise ?? [], [...path, { items, inverted: true, isMonitor, monitorType }], options, spaceId, savedDetails),
       ];
     }
     if (step.kind === "switch") {
@@ -158,7 +268,7 @@ function buildRulePathGroups(
         ...step.cases.flatMap((item, index) => {
           const comparison = cases[index];
           if (!comparison) throw new Error("Switch 条件无效");
-          return buildRulePathGroups(item.steps, [...path, { items: [comparison], inverted: false }], options, spaceId, savedDetails);
+          return buildRulePathGroups(item.steps, [...path, { items: [comparison], inverted: false, isMonitor: false }], options, spaceId, savedDetails);
         }),
         ...buildRulePathGroups(
           step.defaultSteps ?? [],
@@ -167,6 +277,7 @@ function buildRulePathGroups(
             {
               items: cases.map((item, index) => ({ ...item, ...(index < cases.length - 1 ? { linkFlag: "OR" as const } : {}) })),
               inverted: true,
+              isMonitor: false,
             },
           ],
           options,
@@ -175,7 +286,7 @@ function buildRulePathGroups(
         ),
       ];
     }
-    const { judgeParams, inverted } = buildPathJudgeParams(path);
+    const { judgeParams, inverted, monitorType } = buildPathJudgeParams(path);
     if (!step.actions.length) throw new Error("请配置执行行为");
     return step.actions.map((action) => {
       const option = options.find((item) => item.id === action.behaviorId);
@@ -190,7 +301,12 @@ function buildRulePathGroups(
         ...(option.ontologyUniqIdentifier ? { ontology_identifier: option.ontologyUniqIdentifier } : {}),
         entity_json: JSON.stringify(actionRequest),
       };
-      return { condition: inverted, judgeParams: judgeParams.map((item) => ({ ...item })), actionParam };
+      return {
+        condition: inverted,
+        ...(monitorType ? { monitorType } : {}),
+        judgeParams: judgeParams.map((item) => ({ ...item })),
+        actionParam,
+      };
     });
   });
 }

@@ -1,4 +1,4 @@
-import type { OntologyEntityInfo, TestOntologyActionParams } from "../index";
+import type { OntologyEntityInfo, OntologyEntityRowDetailPagePropertyInfo, TestOntologyActionParams } from "../index";
 
 /** 行为查看入出参行。 */
 export interface SpaceBehaviorActionInfoViewParamRow {
@@ -30,6 +30,8 @@ export interface BehaviorTestEntityDataRow {
   dataPrimaryKey: string | number | boolean | Record<string, unknown>;
   dataPrimaryKeyLabel: string;
   propertySummary: string;
+  /** 分页行属性；下拉按当前入参匹配展示对应 propertyValue。 */
+  props?: OntologyEntityRowDetailPagePropertyInfo[];
 }
 
 /** 关系实例测试挂载侧。 */

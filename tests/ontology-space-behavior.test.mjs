@@ -65,6 +65,7 @@ import {
 } from "../src/views/SpaceBehaviorWorkspace/utils/collectApplicationPropertyOntologyPickers.ts";
 import { buildApplicationTestRequestParams } from "../src/views/SpaceBehaviorWorkspace/utils/buildApplicationTestRequestParams.ts";
 import {
+  formatOntologyEntityRowDetailPageRecordLabel,
   mapOntologyEntityRowDetailPageToDataRows,
   mapOntologyEntityRowDetailPageToViewDetail,
   mapOntologyEntityRowDetailToDataRows,
@@ -357,6 +358,7 @@ test("space behavior workspace uses shared tree and relation table surfaces", ()
   assert.doesNotMatch(testDialogSource, /propertyEntitySelections/);
   assert.doesNotMatch(testDialogSource, /topLevelOntologyUniqueIdentifier/);
   assert.match(testDialogSource, /submitApplicationBehaviorTest/);
+  assert.match(testDialogSource, /buildParameterRequest\(\{\s*skipParamValidation:\s*true\s*\}\)/);
   assert.match(testDialogSource, /buildApplicationTestRequestParams/);
   assert.match(testDialogSource, /inputParamSelections/);
   assert.match(testDialogSource, /outputParamSelections/);
@@ -1227,6 +1229,15 @@ test("space behavior maps entity row detail page records into selectable data ro
   assert.equal(rows[0]?.dataPrimaryKey, 17);
   assert.equal(rows[0]?.dataPrimaryKeyLabel, "17");
   assert.equal(rows[0]?.propertySummary, "3");
+  assert.equal(rows[0]?.props?.length, 3);
+  assert.equal(rows[0]?.props?.[0]?.propertyApiName, "mount_count");
+  assert.equal(
+    formatOntologyEntityRowDetailPageRecordLabel(
+      { dataPrimaryKey: rows[0]?.dataPrimaryKey, props: rows[0]?.props },
+      { propertyDisplayName: "武器名称", propertyApiName: "weapon_name" },
+    ),
+    "行 17 · b",
+  );
   assert.deepEqual(mapOntologyEntityRowDetailPageToDataRows(null, "weapon"), []);
   assert.deepEqual(mapOntologyEntityRowDetailPageToDataRows({ records: [], total: 0, size: 10, current: 1 }, ""), []);
 

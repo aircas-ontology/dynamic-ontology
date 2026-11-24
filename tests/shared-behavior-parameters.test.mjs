@@ -222,6 +222,34 @@ test("input records remain multiple, output stays single and external values are
   scope.stop();
 });
 
+test("behavior test execute can skip param validation while snapshots stay strict", async () => {
+  const { state, scope } = createBindingContext(true);
+  await state.loadApplicationTestForm();
+  assert.equal(state.createParameterSnapshot().ok, false);
+  assert.equal(state.buildParameterRequest().ok, false);
+  const skipped = state.buildParameterRequest({ skipParamValidation: true });
+  assert.equal(skipped.ok, true);
+  assert.equal(skipped.request.actionApi, "app");
+  assert.equal(skipped.request.ontologySpaceId, "23");
+  assert.equal(skipped.request.inputParams, undefined);
+  assert.equal(skipped.request.outputParams, undefined);
+  assert.equal(skipped.request.params, undefined);
+  assert.equal(skipped.request.entityPrimaryKeys, undefined);
+  state.updateParamValue("amount", "5");
+  state.updateApplicationOntologyEntitySelection("ships", "1", "input");
+  state.addApplicationInputBindingRecords("ships");
+  const partial = state.buildParameterRequest({ skipParamValidation: true });
+  assert.equal(partial.ok, true);
+  assert.deepEqual(partial.request.params, { amount: 5 });
+  assert.deepEqual(
+    partial.request.inputParams.ships.map((item) => item.entityPrimaryKey),
+    [1],
+  );
+  assert.equal(partial.request.outputParams, undefined);
+  assert.equal(state.createParameterSnapshot().ok, false);
+  scope.stop();
+});
+
 test("saved execution request restores property bindings, outputs, external values and link endpoints", async () => {
   const { state, scope } = createBindingContext(true);
   await state.loadApplicationTestForm();
@@ -382,11 +410,53 @@ test("non-main input stores entity and data-row bindings and survives snapshot r
   scope.stop();
 });
 
-/** @description 编译真实调度表单脚本，注入可观察的数据接口，不加载浏览器 UI。 @param initialDraft 初始草稿。 @param mode 表单模式。 @param mappingIns 参数定义。 @returns 表单状态、事件和控制台输出。 */
+test("schedule create and edit allow non-main bindings without selecting data rows", async () => {
+  const mappingIns = [{ parameterName: "ships", category: "INPUT", sourceType: "PROPERTY", ontologyUniqueIdentifier: "ship", storageGroup: "events" }];
+  const apiOverrides = {
+    getOntologyEntitiesInterface: async () => ({ code: 200, data: { records: [{ entityPrimaryKey: 1, displayName: "one" }], total: 1 } }),
+    postGetOntologyEntityRowDetailPageInterface: async () => ({ code: 200, data: { records: [{ dataPrimaryKey: 10, props: [] }], total: 1 } }),
+  };
+  const context = createScheduleFormHarness(null, "create", mappingIns, apiOverrides);
+  try {
+    context.props.modelValue = true;
+    await settleForm();
+    context.form.draft.name = "schedule";
+    context.form.draft.strategy = "周期调度";
+    context.form.selectScheduleBehavior("1");
+    await settleForm();
+    context.form.parameterConfig.updateApplicationOntologyEntitySelection("ships", "1", "input");
+    await settleForm();
+    const slot = context.form.parameterConfig.applicationStorageGroupPickers.value[0].entitySlots[0];
+    assert.equal(slot.selectedDataRow, null);
+    context.form.parameterConfig.addApplicationInputBindingRecords("ships");
+    assert.equal(context.form.parameterConfig.listApplicationInputBindingRecords("ships").length, 1);
+    context.form.submitCreateScheduleForm();
+    assert.equal(context.events[0][0], "confirm");
+    const saved = context.events[0][1];
+    assert.deepEqual(saved.behaviorParameters.request.inputParams.ships, [{ entityPrimaryKey: 1 }]);
+
+    const edit = createScheduleFormHarness(saved, "edit", mappingIns, apiOverrides);
+    try {
+      edit.props.modelValue = true;
+      await settleForm();
+      assert.equal(edit.form.parameterConfig.listApplicationInputBindingRecords("ships")[0].dataPrimaryKey, undefined);
+      edit.form.submitCreateScheduleForm();
+      assert.equal(edit.events[0][0], "confirm");
+      assert.deepEqual(edit.events[0][1].behaviorParameters.request.inputParams.ships, [{ entityPrimaryKey: 1 }]);
+    } finally {
+      edit.scope.stop();
+    }
+  } finally {
+    context.scope.stop();
+  }
+});
+
+/** @description 编译真实调度表单脚本，注入可观察的数据接口，不加载浏览器 UI。 @param initialDraft 初始草稿。 @param mode 表单模式。 @param mappingIns 参数定义。 @param apiOverrides 接口覆盖。 @returns 表单状态、事件和控制台输出。 */
 function createScheduleFormHarness(
   initialDraft = null,
   mode = "create",
   mappingIns = [{ parameterName: "amount", category: "INPUT", sourceType: "EXTERNAL", propertyType: "Int" }],
+  apiOverrides = {},
 ) {
   const source = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue", import.meta.url), "utf8");
   const { descriptor } = parse(source);
@@ -408,6 +478,7 @@ function createScheduleFormHarness(
     postTestOntologyActionInterface: () => {
       throw new Error("调度参数配置不得执行测试接口");
     },
+    ...apiOverrides,
   };
   const exports = {};
   /** @description 注入表单数据依赖和 UI 占位组件。 @param id 依赖路径。 @returns 对应模块。 */

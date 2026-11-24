@@ -23,28 +23,38 @@ export interface CreateTaskBehaviorScheduleParams {
 /** 文档支持的比较运算符；CH 明确不支持。 */
 export type ScheduleRuleCompareOperator = "LT" | "LE" | "EQ" | "NE" | "GT" | "GE" | "CONTAINS" | "NOT_CONTAINS";
 
-/** 规则操作数，变量按唯一标识取属性值；非 main 存储分组可带数据行主键。 */
+/** 监测事件类型：新增 / 更新 / 删除；前端配置条件目前仅暴露 insert 与 delete。 */
+export type ScheduleRuleMonitorType = "insert" | "update" | "delete";
+
+/** 规则操作数，变量按唯一标识取属性值；监测条件仅需对象与存储分组。 */
 export type ScheduleRuleOperand =
   | { type: "fixed"; fixValue: string }
   | {
       type: "dynamic";
       OntologyId: string;
-      entityId: string;
-      propertyId: string;
+      /** 属性比较必填；监测条件可省略。 */
+      entityId?: string;
+      /** 属性比较必填；监测条件不传。 */
+      propertyId?: string;
+      propertyName?: string;
+      /** 监测条件必填：主表 main 或子表存储分组名。 */
+      storageGroup?: string;
       /** 子表数据行主键；main 或空存储分组省略。 */
       dataPrimaryKey?: string | number | boolean | Record<string, unknown>;
     };
 
-/** 条件项，连接符指向下一项。 */
+/** 条件项，连接符指向下一项；监测条件下可不传 rightOperate 与 condition。 */
 export interface ScheduleRuleJudgeItem {
   leftOperate: ScheduleRuleOperand;
-  rightOperate: ScheduleRuleOperand;
-  condition: ScheduleRuleCompareOperator;
+  rightOperate?: ScheduleRuleOperand;
+  condition?: ScheduleRuleCompareOperator;
   /** 当前条件之前的左括号数量。 */
   isLeft?: number;
   /** 当前条件之后的右括号数量。 */
   isRight?: number;
   linkFlag?: "AND" | "OR";
+  /** 条件项级监测类型；与组级互斥且不得不一致。 */
+  monitorType?: ScheduleRuleMonitorType;
 }
 
 /** 规则执行行为。 */
@@ -57,6 +67,8 @@ export interface ScheduleRuleActionParam {
 /** 条件组合和命中行为；condition 为 true 时整体取反。 */
 export interface ScheduleRuleJudgeGroup {
   condition: boolean;
+  /** 组级监测事件；与属性比较形态互斥。 */
+  monitorType?: ScheduleRuleMonitorType;
   judgeParams: ScheduleRuleJudgeItem[];
   actionParam: ScheduleRuleActionParam;
 }

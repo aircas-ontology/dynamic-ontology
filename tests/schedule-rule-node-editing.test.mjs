@@ -14,6 +14,7 @@ import {
 } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/scheduleRuleFlowFactory.ts";
 import { filterBehaviorsByObjects } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/filterRuleBehaviorsByObject.ts";
 import { buildSavedActionEntityJson } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/restoreRuleScheduleDetail.ts";
+import { hasUnsupportedConditionValue, validateMonitorCondition } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/validateRuleConditionEditor.ts";
 
 /** @description 隔离节点组件测试的参数控制器边界，参数真实行为另行集成验证。 @returns {object} 参数控制器替身。 */
 function createRuleParameterStub() {
@@ -225,6 +226,7 @@ async function createDesignerHarness(readonly = false) {
       };
     if (id.includes("restoreRuleScheduleDetail")) return { buildSavedActionEntityJson };
     if (id.includes("filterRuleBehaviorsByObject")) return { filterBehaviorsByObjects };
+    if (id.includes("validateRuleConditionEditor")) return { hasUnsupportedConditionValue, validateMonitorCondition };
     if (id.includes("scheduleRuleFlowGraphSession")) return { ScheduleRuleFlowGraphSession: GraphSession };
     if (id.includes("scheduleRuleFlowFactory")) return { cloneRuleFlowValue };
     if (id.includes("ScheduleRuleConditionEditorDialog") || id.includes("ScheduleRuleActionEditorDialog") || id.includes("ScheduleRuleSwitchEditorDialog"))

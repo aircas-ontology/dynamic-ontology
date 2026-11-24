@@ -1,8 +1,10 @@
 import type {
   RuleCompareOperator,
   RuleCompositeCondition,
+  RuleConditionMonitorType,
   RuleConditionNode,
   RuleFlowThenAction,
+  RuleMonitorLeafCondition,
   RuleValueNode,
   RuleVariableValue,
   ScheduleBehaviorOption,
@@ -47,6 +49,38 @@ function readBracketCount(value: unknown): number {
   throw new Error("规则括号数量无效");
 }
 
+/**
+ * @description 读取监测事件类型，仅支持前端已暴露的 insert / delete。
+ * @param value 外部值。
+ * @returns 监测类型或空。
+ */
+function readConditionMonitorType(value: unknown): RuleConditionMonitorType | undefined {
+  if (value === "insert" || value === "delete") return value;
+  if (value === "update") throw new Error("暂不支持 update 监测条件回显");
+  if (value === undefined || value === null || value === "") return undefined;
+  throw new Error("规则监测事件类型无效");
+}
+
+/**
+ * @description 将监测左操作数还原为对象与存储分组叶子。
+ * @param value 操作数。
+ * @param nextId 生成节点 ID。
+ * @param monitorType 监测事件类型。
+ * @returns 监测叶子。
+ */
+function restoreMonitorLeaf(value: unknown, nextId: () => string, monitorType: RuleConditionMonitorType): RuleMonitorLeafCondition {
+  if (!isRecord(value) || value.type !== "dynamic") throw new Error("监测条件操作数无效");
+  const ontologyId =
+    typeof value.OntologyId === "string" && value.OntologyId
+      ? value.OntologyId
+      : typeof value.ontologyId === "string" && value.ontologyId
+        ? value.ontologyId
+        : "";
+  const storageGroup = typeof value.storageGroup === "string" ? value.storageGroup.trim() : "";
+  if (!ontologyId || !storageGroup) throw new Error("监测条件缺少对象或存储分组");
+  return { id: nextId(), type: "monitor", monitorType, objectId: ontologyId, objectName: ontologyId, storageGroup };
+}
+
 /** @description 将接口操作数还原成可展示的固定值或变量。 @param value 操作数。 @returns 画布值。 */
 function restoreOperand(value: unknown): RuleValueNode {
   if (!isRecord(value)) throw new Error("规则操作数缺失");
@@ -82,25 +116,41 @@ function restoreOperand(value: unknown): RuleValueNode {
   throw new Error("规则变量或固定值不完整");
 }
 
-/** @description 解析括号和 AND 优先级，重建条件树并拒绝不完整表达式。 @param value 接口判断项。 @param nextId 生成节点 ID。 @returns 根条件组合。 */
-function restoreCondition(value: unknown, nextId: () => string): RuleCompositeCondition {
+/**
+ * @description 解析括号和 AND 优先级，重建条件树；监测形态还原为对象/分组叶子。
+ * @param value 接口判断项。
+ * @param nextId 生成节点 ID。
+ * @param monitorType 组级监测事件。
+ * @returns 根条件组合。
+ */
+function restoreCondition(value: unknown, nextId: () => string, monitorType?: RuleConditionMonitorType): RuleCompositeCondition {
   if (!Array.isArray(value) || !value.length) throw new Error("规则条件为空");
   const tokens: Token[] = [];
   value.forEach((item: unknown, index) => {
-    if (!isRecord(item) || typeof item.condition !== "string" || !Object.hasOwn(operators, item.condition)) throw new Error("规则比较操作符不支持");
-    const operator = operators[item.condition];
-    if (!operator) throw new Error("规则比较操作符不支持");
+    if (!isRecord(item)) throw new Error("规则条件项无效");
+    const itemMonitorType = readConditionMonitorType(item.monitorType);
+    const effectiveMonitorType = monitorType ?? itemMonitorType;
+    const isMonitorItem = Boolean(effectiveMonitorType) || (item.condition === undefined && item.rightOperate === undefined);
     for (let count = readBracketCount(item.isLeft); count > 0; count--) tokens.push({ kind: "left" });
-    tokens.push({
-      kind: "condition",
-      value: {
-        id: nextId(),
-        type: "leaf",
-        left: restoreOperand(item.leftOperate),
-        right: restoreOperand(item.rightOperate),
-        operator,
-      },
-    });
+    if (isMonitorItem) {
+      if (!effectiveMonitorType) throw new Error("监测条件缺少事件类型");
+      if (monitorType && itemMonitorType && itemMonitorType !== monitorType) throw new Error("规则组监测事件类型不一致");
+      tokens.push({ kind: "condition", value: restoreMonitorLeaf(item.leftOperate, nextId, effectiveMonitorType) });
+    } else {
+      if (typeof item.condition !== "string" || !Object.hasOwn(operators, item.condition)) throw new Error("规则比较操作符不支持");
+      const operator = operators[item.condition];
+      if (!operator) throw new Error("规则比较操作符不支持");
+      tokens.push({
+        kind: "condition",
+        value: {
+          id: nextId(),
+          type: "leaf",
+          left: restoreOperand(item.leftOperate),
+          right: restoreOperand(item.rightOperate),
+          operator,
+        },
+      });
+    }
     for (let count = readBracketCount(item.isRight); count > 0; count--) tokens.push({ kind: "right" });
     if (index < value.length - 1) {
       if (item.linkFlag !== "AND" && item.linkFlag !== "OR") throw new Error("规则条件连接符无效");
@@ -149,7 +199,19 @@ function restoreCondition(value: unknown, nextId: () => string): RuleCompositeCo
   }
   const node = parseOr();
   if (position !== tokens.length) throw new Error("规则括号不匹配");
-  return node.type === "composite" ? node : { id: nextId(), type: "composite", logic: "and", children: [node] };
+  const root: RuleCompositeCondition = node.type === "composite" ? node : { id: nextId(), type: "composite", logic: "and", children: [node] };
+  if (monitorType) root.monitorType = monitorType;
+  else {
+    const leafTypes = new Set<RuleConditionMonitorType>();
+    /** @description 收集监测叶子事件类型。 @param current 条件节点。 */
+    function collectMonitorTypes(current: RuleConditionNode): void {
+      if (current.type === "composite") current.children.forEach(collectMonitorTypes);
+      else if (current.type === "monitor") leafTypes.add(current.monitorType);
+    }
+    collectMonitorTypes(root);
+    if (leafTypes.size === 1) root.monitorType = [...leafTypes][0];
+  }
+  return root;
 }
 
 /** @description 依据独立规则、取反标志和行为参数构建只读画布数据；不会猜测原始 switch 结构。 @param value 规则详情。 @param options 当前可用行为。 @returns 详情组或错误。 */
@@ -176,7 +238,8 @@ export function restoreRuleScheduleDetail(
       )
         throw new Error("规则或行为信息不完整");
       if (entry.condition !== undefined && typeof entry.condition !== "boolean") throw new Error("规则取反标志无效");
-      const condition = restoreCondition(entry.judgeParams, nextId);
+      const monitorType = readConditionMonitorType(entry.monitorType);
+      const condition = restoreCondition(entry.judgeParams, nextId, monitorType);
       const key = JSON.stringify(entry.judgeParams);
       let group = groups.get(key);
       if (!group) {

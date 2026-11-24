@@ -442,12 +442,16 @@ const {
   postTestOntologyActionInterface,
 } = props.apis;
 
-const parameterConfig = useBehaviorParameters(props, {
-  getOntologyActionInfoInterface,
-  getOntologyEntitiesInterface,
-  getOntologyLinkByUniqueIdentifierInterface,
-  postGetOntologyEntityRowDetailPageInterface,
-});
+const parameterConfig = useBehaviorParameters(
+  props,
+  {
+    getOntologyActionInfoInterface,
+    getOntologyEntitiesInterface,
+    getOntologyLinkByUniqueIdentifierInterface,
+    postGetOntologyEntityRowDetailPageInterface,
+  },
+  { allowEmptyDataRow: true },
+);
 const {
   applyActionInfoViewState,
   loadApplicationTestForm,
@@ -1756,7 +1760,7 @@ function openEntityLinkData(): void {
  * @description 提交应用行为测试：组装 params / inputParams / outputParams / entityPrimaryKeys.from|to。
  */
 async function submitApplicationBehaviorTest(): Promise<void> {
-  const built = parameterConfig.buildParameterRequest();
+  const built = parameterConfig.buildParameterRequest({ skipParamValidation: true });
   if (!built.ok) {
     submitError.value = built.error;
     ElMessage.warning(built.error);

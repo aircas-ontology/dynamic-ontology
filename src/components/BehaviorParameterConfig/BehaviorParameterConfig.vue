@@ -96,7 +96,7 @@
                           <el-option
                             v-for="option in listApplicationStorageGroupSlotOptions(slot)"
                             :key="option.rowKey"
-                            :label="formatApplicationStorageGroupOptionLabel(option)"
+                            :label="formatApplicationStorageGroupOptionLabel(option, asApplicationInputRow(row))"
                             :value="option.rowKey"
                           />
                           <template #footer>

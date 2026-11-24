@@ -16,7 +16,7 @@ export async function hydrateRuleDetailVariableNames(
   /** @description 收集分组条件中所有变量。 @param condition 条件节点。 */
   function collectVariables(condition: RuleConditionNode): void {
     if (condition.type === "composite") condition.children.forEach(collectVariables);
-    else for (const value of [condition.left, condition.right]) if (value.kind === "variable") variables.push(value);
+    else if (condition.type === "leaf") for (const value of [condition.left, condition.right]) if (value.kind === "variable") variables.push(value);
   }
   for (const group of groups) for (const step of group.flow.steps) if (step.kind === "branch") collectVariables(step.condition);
   if (!variables.length) return "";

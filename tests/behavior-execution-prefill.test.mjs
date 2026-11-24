@@ -348,11 +348,46 @@ test("non-main application parameters preselect the instance but require selecti
     assert.deepEqual(slot.entityPrimaryKey, { id: 0 });
     assert.equal(config.listApplicationInputBindingRecords("events").length, 0);
     await h.state.submitBehaviorTest();
-    assert.equal(h.calls.length, 0);
+    assert.equal(h.calls.length, 1);
+    assert.equal(h.calls[0].inputParams, undefined);
     config.updateApplicationStorageGroupRowSelection(picker.pickerKey, slot.entityRowKey, slot.rows[0].rowKey);
     config.addApplicationInputBindingRecords("events");
     await h.state.submitBehaviorTest();
-    assert.deepEqual(h.calls[0].inputParams.events[0], { entityPrimaryKey: { id: 0 }, dataPrimaryKeys: { events: 0 } });
+    assert.deepEqual(h.calls[1].inputParams.events[0], { entityPrimaryKey: { id: 0 }, dataPrimaryKeys: { events: 0 } });
+  } finally {
+    h.scope.stop();
+  }
+});
+
+test("non-main application parameters allow adding without selecting a data row", async () => {
+  const h = createExecutionHarness({
+    primaryKey: { id: 0 },
+    behavior: { kind: "application" },
+    apis: {
+      getOntologyActionInfoInterface: async () => ({
+        code: 200,
+        data: {
+          actionApi: "action",
+          mappingIns: [{ parameterName: "events", category: "INPUT", sourceType: "PROPERTY", ontologyUniqueIdentifier: "ship", storageGroup: "events" }],
+        },
+      }),
+      postGetOntologyEntityRowDetailPageInterface: async () => ({ code: 200, data: { records: [{ dataPrimaryKey: 0, props: [] }], total: 1 } }),
+    },
+  });
+  try {
+    h.props.modelValue = true;
+    await settleExecution();
+    const config = h.state.parameterConfig;
+    const picker = config.applicationStorageGroupPickers.value[0];
+    const slot = picker.entitySlots[0];
+    assert.equal(slot.selectedDataRow, null);
+    config.addApplicationInputBindingRecords("events");
+    assert.equal(config.listApplicationInputBindingRecords("events").length, 1);
+    assert.equal(config.listApplicationInputBindingRecords("events")[0].dataPrimaryKey, undefined);
+    await h.state.submitBehaviorTest();
+    assert.equal(h.calls.length, 1);
+    assert.deepEqual(h.calls[0].inputParams.events, [{ entityPrimaryKey: { id: 0 } }]);
+    assert.equal(h.calls[0].inputParams.events[0].dataPrimaryKeys, undefined);
   } finally {
     h.scope.stop();
   }

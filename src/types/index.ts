@@ -39,6 +39,7 @@ export type {
   ScheduleRuleCompareOperator,
   ScheduleRuleJudgeGroup,
   ScheduleRuleJudgeItem,
+  ScheduleRuleMonitorType,
   ScheduleRuleOperand,
 } from "./apis/createBehaviorScheduleType";
 export type { CreateFunctionOperatorTemplateData, CreateFunctionOperatorTemplateParams } from "./apis/createFunctionOperatorTemplateType";
@@ -641,6 +642,7 @@ export type {
   BehaviorScheduleWeekday,
   RuleCompareOperator,
   RuleCompositeCondition,
+  RuleConditionMonitorType,
   RuleConditionNode,
   RuleExprOperator,
   RuleExprTerm,
@@ -659,6 +661,7 @@ export type {
   RuleLeafCondition,
   RuleLiteralValue,
   RuleLogicOperator,
+  RuleMonitorLeafCondition,
   RuleValueKind,
   RuleValueNode,
   RuleVariableCatalogCategory,

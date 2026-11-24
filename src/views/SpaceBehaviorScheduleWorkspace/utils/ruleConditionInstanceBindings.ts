@@ -19,7 +19,7 @@ export interface ActionConditionSource {
   rows: ConditionVariableRow[];
 }
 
-/** @description 递归保留条件层级及 AND/OR 关系，分别列出左右变量引用。 @param condition 条件节点。 @param prefix 祖先层级标签。 @returns 可编辑引用。 */
+/** @description 递归保留条件层级及 AND/OR 关系，分别列出左右变量引用；监测叶子不含属性变量。 @param condition 条件节点。 @param prefix 祖先层级标签。 @returns 可编辑引用。 */
 export function collectConditionVariableRows(condition: RuleConditionNode, prefix = ""): ConditionVariableRow[] {
   if (condition.type === "composite") {
     const logic = condition.logic === "and" ? "并且" : "或者";
@@ -27,6 +27,7 @@ export function collectConditionVariableRows(condition: RuleConditionNode, prefi
       collectConditionVariableRows(child, `${prefix}${index + 1}.`).map((row) => ({ ...row, label: `${logic} / ${row.label}` })),
     );
   }
+  if (condition.type === "monitor") return [];
   return (["left", "right"] as const).flatMap((side) => {
     const value = condition[side];
     return value.kind === "variable"

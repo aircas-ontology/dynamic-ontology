@@ -201,6 +201,25 @@ export interface RuleLeafCondition {
   right: RuleValueNode;
 }
 
+/** 画布监测事件类型（对应接口 insert / delete）。 */
+export type RuleConditionMonitorType = "insert" | "delete";
+
+/** 监测叶子：仅对象与存储分组。 */
+export interface RuleMonitorLeafCondition {
+  /** 条件标识。 */
+  id: string;
+  /** 条件形态。 */
+  type: "monitor";
+  /** 行级监测事件。 */
+  monitorType: RuleConditionMonitorType;
+  /** 监测对象唯一标识。 */
+  objectId: string;
+  /** 监测对象显示名。 */
+  objectName: string;
+  /** 存储分组；主表为 main。 */
+  storageGroup: string;
+}
+
 /** 组合条件。 */
 export interface RuleCompositeCondition {
   /** 条件标识。 */
@@ -209,12 +228,14 @@ export interface RuleCompositeCondition {
   type: "composite";
   /** 逻辑运算符。 */
   logic: RuleLogicOperator;
+  /** 组级监测事件；缺省表示属性比较。 */
+  monitorType?: RuleConditionMonitorType;
   /** 子条件。 */
   children: RuleConditionNode[];
 }
 
 /** 条件节点。 */
-export type RuleConditionNode = RuleLeafCondition | RuleCompositeCondition;
+export type RuleConditionNode = RuleLeafCondition | RuleMonitorLeafCondition | RuleCompositeCondition;
 
 /** 执行行为参数值。 */
 export interface RuleFlowThenParamValue {

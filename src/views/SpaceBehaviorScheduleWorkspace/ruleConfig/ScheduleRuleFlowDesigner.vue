@@ -78,13 +78,14 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ElConfigProvider, ElMessage, ElMessageBox } from "element-plus";
-import type { RuleConditionNode, ScheduleBehaviorOption, ScheduleRuleDetailGroup, ScheduleRuleFlowDocument } from "@/types";
+import type { ScheduleBehaviorOption, ScheduleRuleDetailGroup, ScheduleRuleFlowDocument } from "@/types";
 import type { ScheduleRuleGraphNodeData } from "../utils/scheduleRuleFlowGraphCells";
 import { cloneRuleFlowValue } from "../utils/scheduleRuleFlowFactory";
 import { useRuleActionParameters } from "../composables/useRuleActionParameters";
 import { filterBehaviorsByObjects } from "../utils/filterRuleBehaviorsByObject";
 import { buildSavedActionEntityJson } from "../utils/restoreRuleScheduleDetail";
 import { ScheduleRuleFlowGraphSession, type ScheduleRulePaletteKind } from "../utils/scheduleRuleFlowGraphSession";
+import { hasUnsupportedConditionValue, validateMonitorCondition } from "../utils/validateRuleConditionEditor";
 import ScheduleRuleFlowPalette from "./ScheduleRuleFlowPalette.vue";
 import ScheduleRuleFlowToolbar from "./ScheduleRuleFlowToolbar.vue";
 import ScheduleRuleConditionEditorDialog from "./ScheduleRuleConditionEditorDialog.vue";
@@ -262,12 +263,6 @@ function changeNodeBehavior(value: unknown): void {
   void initializeActionParameters();
 }
 
-/** @description 递归检测条件中已停用的值类型。 @param condition 当前条件。 @returns 是否含停用类型。 */
-function hasUnsupportedConditionValue(condition: RuleConditionNode): boolean {
-  if (condition.type === "composite") return condition.children.some(hasUnsupportedConditionValue);
-  return [condition.left, condition.right].some((value) => value.kind !== "input" && value.kind !== "variable");
-}
-
 /** @description 确认条件配置并写回目标条件节点；只读对照态仅关闭不写回。 */
 function confirmConditionEditor(): void {
   if (conditionEditorReadonly.value || !editingConditionNode.value?.condition) {
@@ -276,6 +271,11 @@ function confirmConditionEditor(): void {
   }
   if (hasUnsupportedConditionValue(editingConditionNode.value.condition)) {
     ElMessage.warning("存在已停用的值类型，请重新选择输入值或变量后再确定");
+    return;
+  }
+  const monitorError = validateMonitorCondition(editingConditionNode.value.condition);
+  if (monitorError) {
+    ElMessage.warning(monitorError);
     return;
   }
   session?.updateNodeData(conditionNodeId, cloneRuleFlowValue(editingConditionNode.value));

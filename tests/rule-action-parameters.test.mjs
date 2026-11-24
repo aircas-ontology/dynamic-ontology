@@ -291,3 +291,55 @@ test("confirming binding-only parameters and reopening the node retains a config
   assert.match(summarizeThenAction(h.action.value), /输出 1 项/);
   h.scope.stop();
 });
+
+test("rule action adds, captures and restores non-main bindings without selecting data rows", async () => {
+  const source = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/composables/useRuleActionParameters.ts", import.meta.url), "utf8");
+  const { outputText } = transpileModule(source, { compilerOptions: { module: ModuleKind.CommonJS } });
+  const exports = {};
+  const apis = {
+    getOntologyActionInfoInterface: async () => ({
+      code: 200,
+      data: {
+        actionApi: "api",
+        mappingIns: [{ parameterName: "ships", category: "INPUT", sourceType: "PROPERTY", ontologyUniqueIdentifier: "ship", storageGroup: "events" }],
+      },
+    }),
+    getOntologyEntitiesInterface: async () => ({ code: 200, data: { records: [{ entityPrimaryKey: 1, displayName: "one" }], total: 1 } }),
+    getOntologyLinkByUniqueIdentifierInterface: async () => ({ code: 500 }),
+    postGetOntologyEntityRowDetailPageInterface: async () => ({ code: 200, data: { records: [{ dataPrimaryKey: 10, props: [] }], total: 1 } }),
+  };
+  new Function("require", "exports", outputText)((id) => {
+    if (id === "vue") return Vue;
+    if (id.includes("useBehaviorParameters")) return realParameters;
+    if (id.includes("useScheduleTreeParameters")) return { useScheduleTreeParameters: () => createScheduleTreeParametersStub() };
+    if (id.includes("restoreScheduleBehaviorParameters")) return realRestore;
+    return apis;
+  }, exports);
+  const action = Vue.ref({ id: "a", behaviorId: "b", params: [] });
+  const scope = Vue.effectScope();
+  const state = scope.run(() =>
+    exports.useRuleActionParameters(
+      () => "7",
+      () => ({ id: "b", actionApi: "api", ontologyUniqIdentifier: "ship", kind: "application" }),
+      () => action.value,
+      () => true,
+    ),
+  );
+  try {
+    await state.initializeActionParameters();
+    state.parameterConfig.updateApplicationOntologyEntitySelection("ships", "1", "input");
+    await Vue.nextTick();
+    await new Promise((resolve) => setImmediate(resolve));
+    const slot = state.parameterConfig.applicationStorageGroupPickers.value[0].entitySlots[0];
+    assert.equal(slot.selectedDataRow, null);
+    state.parameterConfig.addApplicationInputBindingRecords("ships");
+    assert.equal(state.parameterConfig.listApplicationInputBindingRecords("ships").length, 1);
+    assert.equal(state.captureActionParameters(), true);
+    assert.deepEqual(action.value.behaviorParameters.request.inputParams.ships, [{ entityPrimaryKey: 1 }]);
+    await state.initializeActionParameters();
+    assert.equal(state.parameterConfig.listApplicationInputBindingRecords("ships")[0].dataPrimaryKey, undefined);
+    assert.equal(state.captureActionParameters(), true);
+  } finally {
+    scope.stop();
+  }
+});

@@ -47,7 +47,7 @@
           >
             <template #toolbar-actions>
               <el-button @click="closeRuleConfigDialog">取消</el-button>
-              <el-button class="behavior-schedule-rule-config-dialog__save" type="success" @click="saveRuleFlowDocument">保存</el-button>
+              <el-button class="behavior-schedule-rule-config-dialog__save" type="primary" @click="saveRuleFlowDocument">保存</el-button>
             </template>
           </ScheduleRuleFlowDesigner>
         </section>
@@ -127,21 +127,10 @@ watch(
 }
 
 .behavior-schedule-rule-config-dialog .el-dialog__header {
-  position: relative;
   flex-shrink: 0;
   margin: 0;
   padding: 12px 18px;
   border-bottom: 1px solid var(--aircas-color-border-soft);
-}
-
-.behavior-schedule-rule-config-dialog .el-dialog__header::before {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 2px;
-  content: "";
-  background: linear-gradient(90deg, var(--aircas-color-accent-cyan), var(--aircas-color-accent-blue), var(--aircas-color-accent-purple));
 }
 
 .behavior-schedule-rule-config-dialog .el-dialog__body {

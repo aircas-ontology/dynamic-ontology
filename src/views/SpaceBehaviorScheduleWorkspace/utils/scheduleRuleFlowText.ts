@@ -188,7 +188,8 @@ function serializeCondition(node: RuleConditionNode, level: number): string[] {
   const pad = indent(level);
   if (node.type === "composite") {
     const logic = node.logic === "and" ? "AND" : "OR";
-    const lines = [`${pad}${logic}`];
+    const monitor = node.monitorType === "insert" ? " MONITOR INSERT" : node.monitorType === "delete" ? " MONITOR DELETE" : "";
+    const lines = [`${pad}${logic}${monitor}`];
     if (!node.children.length) {
       lines.push(`${indent(level + 1)}(empty)`);
       return lines;
@@ -197,6 +198,10 @@ function serializeCondition(node: RuleConditionNode, level: number): string[] {
       lines.push(...serializeCondition(child, level + 1));
     });
     return lines;
+  }
+  if (node.type === "monitor") {
+    const objectLabel = node.objectName.trim() || node.objectId.trim() || "未选对象";
+    return [`${pad}${objectLabel}@${node.storageGroup.trim() || "main"}`];
   }
   return [`${pad}${serializeValue(node.left)} ${COMPARE_SYMBOL[node.operator]} ${serializeValue(node.right)}`];
 }

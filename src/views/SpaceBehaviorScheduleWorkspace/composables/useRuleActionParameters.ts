@@ -38,12 +38,16 @@ export function useRuleActionParameters(
       };
     },
   });
-  const parameterConfig = useBehaviorParameters(context, {
-    getOntologyActionInfoInterface,
-    getOntologyEntitiesInterface,
-    getOntologyLinkByUniqueIdentifierInterface,
-    postGetOntologyEntityRowDetailPageInterface,
-  });
+  const parameterConfig = useBehaviorParameters(
+    context,
+    {
+      getOntologyActionInfoInterface,
+      getOntologyEntitiesInterface,
+      getOntologyLinkByUniqueIdentifierInterface,
+      postGetOntologyEntityRowDetailPageInterface,
+    },
+    { allowEmptyDataRow: true },
+  );
   const treeParameters = useScheduleTreeParameters(
     () => getSpaceId(),
     () => getOption()?.actionApi ?? "",
@@ -157,7 +161,7 @@ export function useRuleActionParameters(
       parameterError.value = `请填写行为参数「${empty.propertyDisplayName || empty.paramName}」`;
       return false;
     }
-    const result = parameterConfig.createParameterSnapshot();
+    const result = parameterConfig.createParameterSnapshot({ allowMissingDataPrimaryKeys: true });
     if (!result.ok) {
       parameterError.value = result.error;
       return false;

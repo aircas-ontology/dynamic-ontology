@@ -1,43 +1,76 @@
 <template>
   <section class="rule-condition-branch" :data-rule-node-id="node.id">
-    <article class="rule-condition-card" :class="node.type === 'composite' ? 'rule-condition-card--composite' : 'rule-condition-card--leaf'">
+    <article class="rule-condition-card" :class="conditionCardClass">
       <span class="rule-condition-port rule-condition-port--in" data-rule-port="in" aria-hidden="true"></span>
       <template v-if="node.type === 'composite'">
-        <el-select v-model="node.logic" ariaLabel="条件组合方式">
+        <el-select v-model="node.logic" ariaLabel="条件组合方式" :disabled="readonly">
           <el-option label="并且" value="and" />
           <el-option label="或者" value="or" />
         </el-select>
-        <el-button class="rule-condition-card__add rule-condition-card__add--leaf" @click="node.children.push(createEmptyLeafCondition())"
+        <el-button class="rule-condition-card__add rule-condition-card__add--leaf" :disabled="readonly" @click="appendConditionChild('leaf')"
           >添加子条件</el-button
         >
-        <el-button class="rule-condition-card__add rule-condition-card__add--composite" @click="node.children.push(createEmptyCompositeCondition())"
+        <el-button class="rule-condition-card__add rule-condition-card__add--composite" :disabled="readonly" @click="appendConditionChild('composite')"
           >添加子复合条件</el-button
         >
-        <el-button v-if="!isRoot" type="danger" @click="emit('remove')">删除</el-button>
+        <el-button v-if="!isRoot" type="danger" :disabled="readonly" @click="emit('remove')">删除</el-button>
         <span class="rule-condition-port rule-condition-port--out" data-rule-port="out" aria-hidden="true"></span>
       </template>
       <template v-else>
-        <ScheduleRuleValueEditor v-model="node.left" label="条件左值" compact />
-        <el-select v-model="node.operator" ariaLabel="比较运算符">
-          <el-option v-for="item in operators" :key="item.value" :label="item.label" :value="item.value" />
+        <el-select
+          class="rule-condition-card__change-type"
+          :model-value="changeType"
+          ariaLabel="变更类型"
+          :disabled="readonly"
+          @update:model-value="applyChangeType"
+        >
+          <el-option label="属性比较" value="compare" />
+          <el-option label="新增实例或子表行" value="insert" />
+          <el-option label="删除实例或子表行" value="delete" />
         </el-select>
-        <ScheduleRuleValueEditor v-model="node.right" label="条件右值" compact />
-        <el-button type="danger" @click="emit('remove')">删除</el-button>
+        <template v-if="node.type === 'monitor'">
+          <ScheduleRuleMonitorLeafEditor :node="node" :readonly="readonly" />
+        </template>
+        <template v-else>
+          <ScheduleRuleValueEditor v-model="node.left" label="条件左值" compact />
+          <el-select v-model="node.operator" ariaLabel="比较运算符" :disabled="readonly">
+            <el-option v-for="item in operators" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+          <ScheduleRuleValueEditor v-model="node.right" label="条件右值" compact />
+        </template>
+        <el-button type="danger" :disabled="readonly" @click="emit('remove')">删除</el-button>
       </template>
     </article>
     <div v-if="node.type === 'composite'" class="rule-condition-children">
       <p v-if="!node.children.length" class="rule-condition-children__empty">暂无子条件，请添加</p>
-      <ScheduleRuleConditionEditor v-for="(child, index) in node.children" :key="child.id" :node="child" @remove="node.children.splice(index, 1)" />
+      <ScheduleRuleConditionEditor
+        v-for="(child, index) in node.children"
+        :key="child.id"
+        :node="child"
+        :readonly="readonly"
+        @remove="node.children.splice(index, 1)"
+        @replace="(next) => (node.children[index] = next)"
+      />
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import type { RuleCompareOperator, RuleConditionNode } from "@/types";
-import { createEmptyCompositeCondition, createEmptyLeafCondition } from "@/views/SpaceBehaviorScheduleWorkspace/utils/scheduleRuleFlowFactory";
+import {
+  createEmptyCompositeCondition,
+  createEmptyLeafCondition,
+  createEmptyMonitorLeafCondition,
+} from "@/views/SpaceBehaviorScheduleWorkspace/utils/scheduleRuleFlowFactory";
+import ScheduleRuleMonitorLeafEditor from "./ScheduleRuleMonitorLeafEditor.vue";
 import ScheduleRuleValueEditor from "./ScheduleRuleValueEditor.vue";
-withDefaults(defineProps<{ node: RuleConditionNode; isRoot?: boolean }>(), { isRoot: false });
-const emit = defineEmits<{ remove: [] }>();
+
+const props = withDefaults(defineProps<{ node: RuleConditionNode; isRoot?: boolean; readonly?: boolean }>(), {
+  isRoot: false,
+  readonly: false,
+});
+const emit = defineEmits<{ remove: []; replace: [node: RuleConditionNode] }>();
 const operators: { value: RuleCompareOperator; label: string }[] = [
   { value: "eq", label: "等于" },
   { value: "neq", label: "不等于" },
@@ -48,6 +81,56 @@ const operators: { value: RuleCompareOperator; label: string }[] = [
   { value: "contains", label: "包含" },
   { value: "notContains", label: "不包含" },
 ];
+
+const conditionCardClass = computed(() => {
+  if (props.node.type === "composite") return "rule-condition-card--composite";
+  if (props.node.type === "monitor") return "rule-condition-card--monitor";
+  return "rule-condition-card--leaf";
+});
+
+const changeType = computed<"compare" | "insert" | "delete">(() => {
+  if (props.node.type === "monitor") return props.node.monitorType;
+  return "compare";
+});
+
+/**
+ * @description 切换当前条件行的变更类型并替换节点形态。
+ * @param mode 变更类型。
+ */
+function applyChangeType(mode: string | number | boolean | undefined): void {
+  if (props.readonly || props.node.type === "composite") return;
+  if (mode === "compare") {
+    if (props.node.type === "leaf") return;
+    emit("replace", { ...createEmptyLeafCondition(), id: props.node.id });
+    return;
+  }
+  if (mode === "insert" || mode === "delete") {
+    if (props.node.type === "monitor" && props.node.monitorType === mode) return;
+    const next = createEmptyMonitorLeafCondition(mode);
+    next.id = props.node.id;
+    if (props.node.type === "monitor") {
+      next.objectId = props.node.objectId;
+      next.objectName = props.node.objectName;
+      next.storageGroup = props.node.storageGroup;
+    }
+    emit("replace", next);
+  }
+}
+
+/**
+ * @description 追加属性比较子条件或子复合条件。
+ * @param kind 子节点形态。
+ */
+function appendConditionChild(kind: "leaf" | "composite"): void {
+  if (props.node.type !== "composite" || props.readonly) return;
+  if (kind === "composite") {
+    const child = createEmptyCompositeCondition(false);
+    child.children.push(createEmptyLeafCondition());
+    props.node.children.push(child);
+    return;
+  }
+  props.node.children.push(createEmptyLeafCondition());
+}
 </script>
 
 <style scoped lang="scss">
@@ -74,12 +157,18 @@ const operators: { value: RuleCompareOperator; label: string }[] = [
   border-color: var(--aircas-color-accent-cyan);
 }
 .rule-condition-card--leaf {
-  width: 550px;
+  width: 640px;
+}
+.rule-condition-card--monitor {
+  width: 560px;
 }
 .rule-condition-card--composite > .el-select {
   width: 96px;
 }
-.rule-condition-card--leaf > .el-select {
+.rule-condition-card__change-type {
+  width: 148px;
+}
+.rule-condition-card--leaf > .el-select:not(.rule-condition-card__change-type) {
   width: 128px;
 }
 .rule-condition-port {

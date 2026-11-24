@@ -66,12 +66,16 @@ export function useSchedulePeriodParameters(
       };
     },
   });
-  const parameterConfig = useBehaviorParameters(parameterContext, {
-    getOntologyActionInfoInterface,
-    getOntologyEntitiesInterface,
-    getOntologyLinkByUniqueIdentifierInterface,
-    postGetOntologyEntityRowDetailPageInterface,
-  });
+  const parameterConfig = useBehaviorParameters(
+    parameterContext,
+    {
+      getOntologyActionInfoInterface,
+      getOntologyEntitiesInterface,
+      getOntologyLinkByUniqueIdentifierInterface,
+      postGetOntologyEntityRowDetailPageInterface,
+    },
+    { allowEmptyDataRow: true },
+  );
   const treeParameters = useScheduleTreeParameters(
     () => getSpaceId(),
     () => getDraft().behaviorActionApi ?? "",
@@ -141,7 +145,7 @@ export function useSchedulePeriodParameters(
       const unfilledParam = parameterConfig.paramRows.value.find((row) => !(parameterConfig.paramValues[row.paramName] ?? "").trim());
       if (unfilledParam) return { ok: false, error: `请填写行为参数「${unfilledParam.propertyDisplayName || unfilledParam.paramName}」` };
     }
-    const result = parameterConfig.createParameterSnapshot();
+    const result = parameterConfig.createParameterSnapshot({ allowMissingDataPrimaryKeys: true });
     if (!result.ok) return result;
     draft.behaviorParameters = result.snapshot;
     draft.savedEntityJson = "";

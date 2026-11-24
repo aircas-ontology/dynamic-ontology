@@ -14,10 +14,12 @@ function collectTermObjectIds(term: RuleExprTerm, ids: Set<string>): void {
   if (term.type === "value") collectValueObjectIds(term.value, ids);
   else if (term.type === "group") term.terms.forEach((child) => collectTermObjectIds(child, ids));
 }
-/** @description 遍历组合条件和两侧的变量。 @param condition 条件节点。 @param ids 对象标识集合。 */
+/** @description 遍历组合条件、属性比较两侧变量与监测对象。 @param condition 条件节点。 @param ids 对象标识集合。 */
 function collectConditionObjectIds(condition: RuleConditionNode, ids: Set<string>): void {
   if (condition.type === "composite") condition.children.forEach((child) => collectConditionObjectIds(child, ids));
-  else {
+  else if (condition.type === "monitor") {
+    if (condition.objectId.trim()) ids.add(condition.objectId.trim());
+  } else {
     collectValueObjectIds(condition.left, ids);
     collectValueObjectIds(condition.right, ids);
   }

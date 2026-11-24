@@ -30,10 +30,19 @@ import {
   formatApplicationOutputModeLabel,
   type ApplicationOntologyPickerSide,
 } from "@/utils/behaviorParameters/collectApplicationPropertyOntologyPickers";
-import { mapOntologyEntityRowDetailPageToDataRows } from "@/utils/behaviorParameters/mapOntologyEntityRowDetailToDataRows";
+import {
+  formatOntologyEntityRowDetailPageRecordLabel,
+  mapOntologyEntityRowDetailPageToDataRows,
+} from "@/utils/behaviorParameters/mapOntologyEntityRowDetailToDataRows";
 import { mapOntologyActionInfoToViewState, type SpaceBehaviorActionInfoViewState } from "@/utils/behaviorParameters/mapOntologyActionInfoToViewState";
 import { isMainStorageGroup, normalizeStorageGroup } from "@/utils/behaviorParameters/resolveAttributeValueSelection";
-/** @description 创建独立的行为参数配置状态，销毁时使未完成请求失效。 @param props 当前空间和行为。 @param apis 调用方提供的数据查询接口，不包含测试执行接口。 @returns 参数状态、选择方法及快照校验能力。 */
+/**
+ * @description 创建独立的行为参数配置状态，销毁时使未完成请求失效。
+ * @param props 当前空间和行为。
+ * @param apis 调用方提供的数据查询接口，不包含测试执行接口。
+ * @param controllerOptions.allowEmptyDataRow 是否允许已选实例在未选数据行时添加绑定；默认 false。
+ * @returns 参数状态、选择方法及快照校验能力。
+ */
 export function useBehaviorParameters(
   props: {
     spaceId: string;
@@ -45,7 +54,9 @@ export function useBehaviorParameters(
     getOntologyLinkByUniqueIdentifierInterface: typeof BehaviorApis.getOntologyLinkByUniqueIdentifierInterface;
     postGetOntologyEntityRowDetailPageInterface: typeof BehaviorApis.postGetOntologyEntityRowDetailPageInterface;
   },
+  controllerOptions?: { allowEmptyDataRow?: boolean },
 ) {
+  const allowEmptyDataRow = controllerOptions?.allowEmptyDataRow === true;
   const {
     getOntologyActionInfoInterface,
     getOntologyEntitiesInterface,
@@ -461,12 +472,25 @@ export function useBehaviorParameters(
   }
 
   /**
-   * @description 格式化存储分组数据行下拉选项文案（仅展示数据行主键，不展示属性个数）。
+   * @description 格式化存储分组数据行下拉选项文案；按当前入参展示对应属性值。
    * @param row 数据行。
+   * @param param 可选；当前入参行，用于匹配 propertyDisplayName / paramName。
    * @returns 选项文案。
    */
-  function formatApplicationStorageGroupOptionLabel(row: BehaviorTestEntityDataRow): string {
-    return row.dataPrimaryKeyLabel.trim() || "—";
+  function formatApplicationStorageGroupOptionLabel(
+    row: BehaviorTestEntityDataRow,
+    param?: Pick<SpaceBehaviorActionInfoViewParamRow, "propertyDisplayName" | "paramName"> | null,
+  ): string {
+    const label = formatOntologyEntityRowDetailPageRecordLabel(
+      { dataPrimaryKey: row.dataPrimaryKey, props: row.props },
+      param
+        ? {
+            propertyDisplayName: param.propertyDisplayName,
+            propertyApiName: param.paramName,
+          }
+        : null,
+    );
+    return label || row.dataPrimaryKeyLabel.trim() || "—";
   }
 
   /**
@@ -619,11 +643,14 @@ export function useBehaviorParameters(
           return;
         }
         if (!slot.selectedDataRow) {
-          reportParameterError(`请先为实例「${slot.entityDisplayName}」选择存储分组「${storageGroup}」的数据行`);
-          return;
+          if (!allowEmptyDataRow) {
+            reportParameterError(`请先为实例「${slot.entityDisplayName}」选择存储分组「${storageGroup}」的数据行`);
+            return;
+          }
+        } else {
+          dataPrimaryKey = slot.selectedDataRow.dataPrimaryKey;
+          dataPrimaryKeyLabel = slot.selectedDataRow.dataPrimaryKeyLabel.trim();
         }
-        dataPrimaryKey = slot.selectedDataRow.dataPrimaryKey;
-        dataPrimaryKeyLabel = slot.selectedDataRow.dataPrimaryKeyLabel.trim();
       }
       const recordKey = buildApplicationInputBindingRecordKey(entity.savedPrimaryKey ?? entity.primaryKey, dataPrimaryKey);
       if (existingKeys.has(recordKey) || pending.some((item) => item.recordKey === recordKey)) {
@@ -820,38 +847,59 @@ export function useBehaviorParameters(
    * @description 按 PROPERTY / WRITE_PROPERTY 行组装参数绑定选择快照。
    * @param rows 参数行。
    * @param sideLabel 错误文案侧别名。
+   * @param options.skipParamValidation 为 true 时跳过未完成绑定，仅收录完整项。
+   * @param options.allowMissingDataPrimaryKeys 是否允许保留缺少非 main 数据行主键的实例绑定。
    * @returns 选择列表或错误。
    */
   function collectApplicationParamBindingSelections(
     rows: SpaceBehaviorActionInfoViewParamRow[],
     sideLabel: string,
+    options?: { skipParamValidation?: boolean; allowMissingDataPrimaryKeys?: boolean },
   ): { ok: true; selections: ApplicationTestParamBindingSelection[] } | { ok: false; error: string } {
+    const skipParamValidation = options?.skipParamValidation === true;
+    const allowMissingDataPrimaryKeys = skipParamValidation || options?.allowMissingDataPrimaryKeys === true;
     const selections: ApplicationTestParamBindingSelection[] = [];
     /** 写回出参仅选实例，不绑定非 main 数据行。 */
     const isOutputSide = sideLabel === "出参";
     const pickerSide: ApplicationOntologyPickerSide = isOutputSide ? "output" : "input";
     for (const row of rows) {
       const paramName = (row.paramName ?? "").trim();
-      if (!paramName) return { ok: false, error: `${sideLabel}缺少参数名，无法测试` };
+      if (!paramName) {
+        if (skipParamValidation) continue;
+        return { ok: false, error: `${sideLabel}缺少参数名，无法测试` };
+      }
       const ontologyId = (row.ontologyUniqueIdentifier ?? "").trim();
-      if (!ontologyId) return { ok: false, error: `${sideLabel}参数「${paramName}」缺少对象标识，无法测试` };
+      if (!ontologyId) {
+        if (skipParamValidation) continue;
+        return { ok: false, error: `${sideLabel}参数「${paramName}」缺少对象标识，无法测试` };
+      }
       const ontologyPicker = findApplicationOntologyPicker(paramName, pickerSide);
-      if (!ontologyPicker) return { ok: false, error: `${sideLabel}缺少参数「${paramName}」实例选择器` };
-      if (ontologyPicker.loading) return { ok: false, error: "请等待对象实例列表加载完成后再测试" };
+      if (!ontologyPicker) {
+        if (skipParamValidation) continue;
+        return { ok: false, error: `${sideLabel}缺少参数「${paramName}」实例选择器` };
+      }
+      if (ontologyPicker.loading) {
+        if (skipParamValidation) continue;
+        return { ok: false, error: "请等待对象实例列表加载完成后再测试" };
+      }
       const storageGroup = isOutputSide ? "" : normalizeStorageGroup(row.storageGroup);
       const needsDataRow = !isOutputSide && !isMainStorageGroup(storageGroup) && Boolean(storageGroup);
 
       if (ontologyPicker.selectionMode === "multiple") {
         const records = listApplicationInputBindingRecords(paramName);
         if (records.length === 0) {
+          if (skipParamValidation) continue;
           return { ok: false, error: `请先添加「${ontologyPicker.label || paramName}」实例绑定` };
         }
         for (const record of records) {
           if (record.entityPrimaryKey === "") {
+            if (skipParamValidation) continue;
             return { ok: false, error: `请先添加「${ontologyPicker.label || paramName}」实例绑定` };
           }
           if (needsDataRow && (record.dataPrimaryKey === undefined || record.dataPrimaryKey === null || record.dataPrimaryKey === "")) {
-            return { ok: false, error: `请先为实例「${record.entityDisplayName}」添加存储分组「${storageGroup}」的数据行绑定` };
+            if (!allowMissingDataPrimaryKeys) {
+              return { ok: false, error: `请先为实例「${record.entityDisplayName}」添加存储分组「${storageGroup}」的数据行绑定` };
+            }
           }
           selections.push({
             paramName,
@@ -866,30 +914,41 @@ export function useBehaviorParameters(
 
       const selectedEntities = ontologyPicker.selectedEntities;
       if (selectedEntities.length === 0) {
+        if (skipParamValidation) continue;
         return { ok: false, error: `请先选择「${ontologyPicker.label || paramName}」实例` };
       }
       if (selectedEntities.length > 1) {
+        if (skipParamValidation) continue;
         return { ok: false, error: `${sideLabel}参数「${paramName}」仅支持选择一个实例` };
       }
       const storagePicker = needsDataRow ? findApplicationStorageGroupPicker(buildApplicationStorageGroupPickerKey(paramName, storageGroup)) : null;
       if (needsDataRow && !storagePicker) {
+        if (skipParamValidation) continue;
         return { ok: false, error: `请先选择${sideLabel}参数「${paramName}」存储分组「${storageGroup}」的数据行` };
       }
       for (const selectedEntity of selectedEntities) {
         if (selectedEntity.primaryKey === "") {
+          if (skipParamValidation) continue;
           return { ok: false, error: `请先选择「${ontologyPicker.label || paramName}」实例` };
         }
         let dataPrimaryKey: ApplicationTestParamBindingSelection["dataPrimaryKey"];
         if (needsDataRow && storagePicker) {
           const slot = findApplicationStorageGroupEntitySlot(storagePicker, selectedEntity.rowKey);
           if (!slot) {
+            if (skipParamValidation) continue;
             return { ok: false, error: `请先选择${sideLabel}参数「${paramName}」存储分组「${storageGroup}」的数据行` };
           }
-          if (slot.loading) return { ok: false, error: "请等待数据行列表加载完成后再测试" };
-          if (!slot.selectedDataRow) {
-            return { ok: false, error: `请先为实例「${slot.entityDisplayName}」选择存储分组「${storageGroup}」的数据行` };
+          if (slot.loading) {
+            if (skipParamValidation) continue;
+            return { ok: false, error: "请等待数据行列表加载完成后再测试" };
           }
-          dataPrimaryKey = slot.selectedDataRow.dataPrimaryKey;
+          if (!slot.selectedDataRow) {
+            if (!allowMissingDataPrimaryKeys) {
+              return { ok: false, error: `请先为实例「${slot.entityDisplayName}」选择存储分组「${storageGroup}」的数据行` };
+            }
+          } else {
+            dataPrimaryKey = slot.selectedDataRow.dataPrimaryKey;
+          }
         }
         selections.push({
           paramName,
@@ -1440,41 +1499,61 @@ export function useBehaviorParameters(
 
   /**
    * @description 按属性类型组装外部输入 params；失败时返回错误文案。
+   * @param options.skipParamValidation 为 true 时跳过无法转换的外部参数。
    * @returns 成功时返回 params；失败时返回 error。
    */
-  function buildExternalParamsPayload(): { params: Record<string, unknown> } | { error: string } {
+  function buildExternalParamsPayload(options?: { skipParamValidation?: boolean }): { params: Record<string, unknown> } | { error: string } {
+    const skipParamValidation = options?.skipParamValidation === true;
     const payload: Record<string, unknown> = {};
     for (const row of paramRows.value) {
       const rawValue = paramValues[row.paramName] ?? "";
       const coerced = coerceBehaviorTestParamValue(rawValue, row.propertyType, row.propertyDisplayName || row.paramName);
-      if (!coerced.ok) return { error: coerced.error };
+      if (!coerced.ok) {
+        if (skipParamValidation) continue;
+        return { error: coerced.error };
+      }
       payload[row.paramName] = coerced.value;
     }
     return { params: payload };
   }
 
-  /** @description 校验参数配置并组装请求，不执行行为。 @returns 参数请求或校验错误。 */
-  function buildParameterRequest(): BuildApplicationTestRequestParamsResult {
+  /**
+   * @description 校验参数配置并组装请求，不执行行为。
+   * @param options.skipParamValidation 为 true 时跳过入参/出参完整性校验（行为测试执行用）。
+   * @param options.allowMissingDataPrimaryKeys 为 true 时仅允许非 main 绑定省略数据行主键。
+   * @returns 参数请求或校验错误。
+   */
+  function buildParameterRequest(options?: { skipParamValidation?: boolean; allowMissingDataPrimaryKeys?: boolean }): BuildApplicationTestRequestParamsResult {
+    const skipParamValidation = options?.skipParamValidation === true;
+    const allowMissingDataPrimaryKeys = skipParamValidation || options?.allowMissingDataPrimaryKeys === true;
     if (detailLoading.value || detailError.value || !resolvedActionApi.value) return { ok: false, error: detailError.value || "请等待行为参数加载完成" };
-    if (applicationHasLinkMapping.value && (relationContextLoading.value || relationContextError.value))
-      return { ok: false, error: relationContextError.value || "请等待关系信息加载完成" };
-    if (applicationHasLinkMapping.value && (fromEntityLoading.value || toEntityLoading.value || fromEntityError.value || toEntityError.value))
-      return { ok: false, error: fromEntityError.value || toEntityError.value || "请等待关系实例加载完成" };
-    if (
-      applicationOntologyPickers.value.some((item) => item.loading || item.error) ||
-      applicationStorageGroupPickers.value.some((item) => item.entitySlots.some((slot) => slot.loading || slot.error))
-    )
-      return { ok: false, error: "请等待实例和数据行加载完成，加载失败时请重试" };
+    if (!skipParamValidation) {
+      if (applicationHasLinkMapping.value && (relationContextLoading.value || relationContextError.value))
+        return { ok: false, error: relationContextError.value || "请等待关系信息加载完成" };
+      if (applicationHasLinkMapping.value && (fromEntityLoading.value || toEntityLoading.value || fromEntityError.value || toEntityError.value))
+        return { ok: false, error: fromEntityError.value || toEntityError.value || "请等待关系实例加载完成" };
+      if (
+        applicationOntologyPickers.value.some((item) => item.loading || item.error) ||
+        applicationStorageGroupPickers.value.some((item) => item.entitySlots.some((slot) => slot.loading || slot.error))
+      )
+        return { ok: false, error: "请等待实例和数据行加载完成，加载失败时请重试" };
+    }
     const inputSelections = collectApplicationParamBindingSelections(
       applicationInputRows.value.filter((row) => normalizeApplicationSourceType(row.sourceType) === "PROPERTY"),
       "入参",
+      { skipParamValidation, allowMissingDataPrimaryKeys },
     );
     if (!inputSelections.ok) return inputSelections;
-    const outputSelections = collectApplicationParamBindingSelections(applicationWritePropertyOutputRows.value, "出参");
+    const outputSelections = collectApplicationParamBindingSelections(applicationWritePropertyOutputRows.value, "出参", {
+      skipParamValidation,
+      allowMissingDataPrimaryKeys,
+    });
     if (!outputSelections.ok) return outputSelections;
-    if (applicationHasLinkMapping.value && (!selectedFromEntityRows.value.length || !selectedToEntityRows.value.length))
-      return { ok: false, error: "请选择关系 From 和 To 两端实例" };
-    const external = buildExternalParamsPayload();
+    const hasLinkEndpoints = selectedFromEntityRows.value.length > 0 && selectedToEntityRows.value.length > 0;
+    if (applicationHasLinkMapping.value && !hasLinkEndpoints) {
+      if (!skipParamValidation) return { ok: false, error: "请选择关系 From 和 To 两端实例" };
+    }
+    const external = buildExternalParamsPayload({ skipParamValidation });
     if ("error" in external) return { ok: false, error: external.error };
     return buildApplicationTestRequestParams({
       ontologySpaceId: props.spaceId.trim(),
@@ -1482,15 +1561,17 @@ export function useBehaviorParameters(
       params: external.params,
       inputParamSelections: inputSelections.selections,
       outputParamSelections: outputSelections.selections,
-      linkEntitySelection: applicationHasLinkMapping.value
-        ? {
-            ontologyUniqueIdentifierFrom: ontologyUniqueIdentifierFrom.value,
-            ontologyUniqueIdentifierTo: ontologyUniqueIdentifierTo.value,
-            primaryKeysFrom: selectedFromEntityRows.value.map((item) => item.savedPrimaryKey ?? item.primaryKey),
-            primaryKeysTo: selectedToEntityRows.value.map((item) => item.savedPrimaryKey ?? item.primaryKey),
-            mountSide: relationMountSide.value,
-          }
-        : null,
+      allowMissingDataPrimaryKeys,
+      linkEntitySelection:
+        applicationHasLinkMapping.value && hasLinkEndpoints
+          ? {
+              ontologyUniqueIdentifierFrom: ontologyUniqueIdentifierFrom.value,
+              ontologyUniqueIdentifierTo: ontologyUniqueIdentifierTo.value,
+              primaryKeysFrom: selectedFromEntityRows.value.map((item) => item.savedPrimaryKey ?? item.primaryKey),
+              primaryKeysTo: selectedToEntityRows.value.map((item) => item.savedPrimaryKey ?? item.primaryKey),
+              mountSide: relationMountSide.value,
+            }
+          : null,
     });
   }
 
@@ -1518,9 +1599,15 @@ export function useBehaviorParameters(
       applicationStorageGroupLoadTokens[key] = (applicationStorageGroupLoadTokens[key] ?? 0) + 1;
   }
   onScopeDispose(cancelParameterRequests);
-  /** @description 校验并复制配置快照，不触发测试。 @returns 配置快照或校验错误。 */
-  function createParameterSnapshot(): { ok: true; snapshot: BehaviorParameterSnapshot } | { ok: false; error: string } {
-    const built = buildParameterRequest();
+  /**
+   * @description 校验并复制配置快照，不触发测试。
+   * @param options.allowMissingDataPrimaryKeys 为 true 时仅允许非 main 绑定省略数据行主键。
+   * @returns 配置快照或校验错误。
+   */
+  function createParameterSnapshot(options?: {
+    allowMissingDataPrimaryKeys?: boolean;
+  }): { ok: true; snapshot: BehaviorParameterSnapshot } | { ok: false; error: string } {
+    const built = buildParameterRequest(options);
     if (!built.ok) return built;
     return {
       ok: true,

@@ -13,6 +13,7 @@ import type {
   BehaviorTreeModel,
   BehaviorTreeNodeExecDraft,
   BehaviorTreeObjectPropertyOption,
+  OntologyEntityRowDetailPagePropertyInfo,
   PostOntologyActionTreeTestData,
   SpaceRelationObjectOption,
 } from "@/types";
@@ -35,10 +36,12 @@ import {
   resolveBehaviorTreeOutputDraftKey,
 } from "@/utils/behaviorTreeExecutePlan.ts";
 
-/** 实例下拉选项。 */
+/** 实例 / 行下拉选项。 */
 export interface BehaviorTreeEntityOption {
   value: string;
   label: string;
+  /** 行属性列表；LIST 入参展示时按当前参数筛选标签。 */
+  props?: OntologyEntityRowDetailPagePropertyInfo[];
 }
 
 /** 执行面板加载态。 */
@@ -339,7 +342,7 @@ export function useBehaviorTreeExecution(options: {
             sort: "ASC",
             storageGroup: group,
             pageNum: 1,
-            pageSize: 200,
+            pageSize: 10,
           });
           if (groupRowLoadTokens[optionKey] !== requestToken) return;
           if (response.code !== 200 || !response.data) {
@@ -348,11 +351,12 @@ export function useBehaviorTreeExecution(options: {
           }
           const records = Array.isArray(response.data.records) ? response.data.records : [];
           groupRowOptions[optionKey] = records
-            .map((record) => {
+            .map((record): BehaviorTreeEntityOption | null => {
               const primary = record?.dataPrimaryKey;
               if (primary == null || primary === "") return null;
               const value = String(primary);
-              return { value, label: `行 ${value}` };
+              const rowProps = Array.isArray(record?.props) ? record.props : [];
+              return { value, label: `行 ${value}`, props: rowProps };
             })
             .filter((item): item is BehaviorTreeEntityOption => item != null);
         } catch {

@@ -4,7 +4,7 @@
       <svg class="rule-condition-wire-surface__wires" :width="size.width" :height="size.height" aria-hidden="true">
         <path v-for="(path, index) in paths" :key="index" :d="path" fill="none" />
       </svg>
-      <ScheduleRuleConditionEditor :node="condition" is-root />
+      <ScheduleRuleConditionEditor :node="condition" is-root :readonly="readonly" />
     </div>
   </div>
 </template>
@@ -12,7 +12,9 @@
 import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import type { RuleCompositeCondition, RuleConditionNode } from "@/types";
 import ScheduleRuleConditionEditor from "./ScheduleRuleConditionEditor.vue";
-const props = defineProps<{ condition: RuleCompositeCondition }>();
+const props = withDefaults(defineProps<{ condition: RuleCompositeCondition; readonly?: boolean }>(), {
+  readonly: false,
+});
 const surfaceRef = ref<HTMLElement | null>(null);
 const size = reactive({ width: 1, height: 1 });
 const paths = ref<string[]>([]);

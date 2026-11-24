@@ -1,11 +1,20 @@
 import type {
   OntologyEntityRowDetailPageData,
+  OntologyEntityRowDetailPagePropertyInfo,
   OntologyEntityRowDetailPageRecord,
   OntologyEntityRowDetailVO,
   OntologyEntityRowPropertyGroupData,
 } from "@/types";
 import type { BehaviorTestEntityDataRow } from "@/types";
 export type { BehaviorTestEntityDataRow } from "@/types";
+
+/** 行选项标签按入参匹配属性时的筛选条件。 */
+export interface FormatOntologyEntityRowDetailPageRecordLabelMatch {
+  /** 优先与 props.propertyDisplayName 比较。 */
+  propertyDisplayName?: string | null;
+  /** 与 props.propertyApiName 比较；可传 param.key / paramName。 */
+  propertyApiName?: string | null;
+}
 
 /**
  * @description 规范化存储分组名，便于同组比较。
@@ -94,6 +103,50 @@ export function mapOntologyEntityRowDetailToDataRows(
 }
 
 /**
+ * @description 按入参匹配分页属性行中的目标属性。
+ * @param props 行属性列表。
+ * @param match 显示名 / api 名匹配条件。
+ * @returns 匹配到的属性；未匹配返回 null。
+ */
+function findMatchedPageDataRowProperty(
+  props: OntologyEntityRowDetailPagePropertyInfo[],
+  match: FormatOntologyEntityRowDetailPageRecordLabelMatch | null | undefined,
+): OntologyEntityRowDetailPagePropertyInfo | null {
+  if (!match) return null;
+  const displayName = String(match.propertyDisplayName ?? "").trim();
+  if (displayName) {
+    const byDisplay = props.find((item) => String(item.propertyDisplayName ?? "").trim() === displayName);
+    if (byDisplay) return byDisplay;
+  }
+  const apiName = String(match.propertyApiName ?? "").trim();
+  if (apiName) {
+    const byApi = props.find((item) => String(item.propertyApiName ?? "").trim() === apiName);
+    if (byApi) return byApi;
+  }
+  return null;
+}
+
+/**
+ * @description 将分页属性行格式化为下拉选项标签；可按入参只展示对应属性值。
+ * @param row 分页属性行记录。
+ * @param match 可选；传入时仅拼接匹配属性的 propertyValue。
+ * @returns 标签；主键无效时返回空串。
+ */
+export function formatOntologyEntityRowDetailPageRecordLabel(
+  row: OntologyEntityRowDetailPageRecord | null | undefined,
+  match?: FormatOntologyEntityRowDetailPageRecordLabelMatch | null,
+): string {
+  if (!row) return "";
+  const primary = resolveDataPrimaryKey(row.dataPrimaryKey);
+  if (primary === null) return "";
+  const keyLabel = formatDataPrimaryKeyLabel(primary);
+  const props = Array.isArray(row.props) ? row.props : [];
+  const matched = findMatchedPageDataRowProperty(props, match);
+  if (!matched) return `行 ${keyLabel}`;
+  return `行 ${keyLabel} · ${formatDataPrimaryKeyLabel(matched.propertyValue)}`;
+}
+
+/**
  * @description 统计分页属性行的属性个数文案。
  * @param row 分页属性行记录。
  * @returns 属性个数（字符串）。
@@ -125,6 +178,7 @@ export function mapOntologyEntityRowDetailPageToDataRows(
       dataPrimaryKey,
       dataPrimaryKeyLabel: formatDataPrimaryKeyLabel(dataPrimaryKey),
       propertySummary: buildPageDataRowPropertyCount(item),
+      props: Array.isArray(item.props) ? item.props : [],
     });
   });
   return rows;
