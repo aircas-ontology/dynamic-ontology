@@ -22,6 +22,8 @@ export interface GetOntologyActionInfoMappingIn {
   parameterName?: string | null;
   /** 属性展示名称；部分详情响应会返回。 */
   displayName?: string | null;
+  /** 参数类型；部分详情响应会返回。 */
+  paramType?: string | null;
   /** 属性类型；部分详情响应会返回。 */
   propertyType?: string | null;
   /** 入出参类别；部分详情响应会返回。 */

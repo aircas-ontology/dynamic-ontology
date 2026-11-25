@@ -152,6 +152,7 @@ function mapMappingToViewRow(
   const paramPath = (item.paramPath ?? "").trim();
   const propertyDisplayName = (item.displayName ?? "").trim();
   const propertyType = (item.propertyType ?? "").trim();
+  const mappingParamType = (item.paramType ?? "").trim();
   const functionParamId = item.functionParamId;
   const rowKey =
     typeof functionParamId === "number" && Number.isInteger(functionParamId)
@@ -161,7 +162,7 @@ function mapMappingToViewRow(
     rowKey,
     paramName,
     paramPath,
-    paramType: propertyType || (functionParam?.paramType ?? "").trim() || "—",
+    paramType: mappingParamType || (functionParam?.paramType ?? "").trim() || propertyType || "—",
     propertyDisplayName,
     propertyType,
     description: (functionParam?.description ?? "").trim(),

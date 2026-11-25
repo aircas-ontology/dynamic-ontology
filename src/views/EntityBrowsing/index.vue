@@ -57,7 +57,12 @@ const { behaviorTotal, status: behaviorCountStatus } = useEntityBrowseBehaviorCo
 /** 行为 Tab 角标使用行为列表接口 total。 */
 const spaceOverviewCounts = computed(() => ({
   ...(overviewStatus.value === "success"
-    ? { object: counts.value.ontology, relation: counts.value.relation, "function-operator": counts.value.functionOperator }
+    ? {
+        object: counts.value.ontology,
+        relation: counts.value.relation,
+        "function-operator": counts.value.functionOperator,
+        "behavior-schedule": counts.value.actionScheduling,
+      }
     : {}),
   ...(behaviorCountStatus.value === "ready" ? { behavior: behaviorTotal.value } : {}),
 }));

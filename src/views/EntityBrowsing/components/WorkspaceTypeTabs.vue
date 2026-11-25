@@ -39,6 +39,7 @@ const workspaceTabs = computed(() => [
   { id: "relation" as const, label: "关系" },
   { id: "function-operator" as const, label: "函数算子" },
   { id: "behavior" as const, label: "行为" },
+  { id: "behavior-schedule" as const, label: "行为调度" },
 ]);
 
 const visibleWorkspaceTabs = computed(() => workspaceTabs.value.filter((tab) => props.availableTabs.includes(tab.id)));

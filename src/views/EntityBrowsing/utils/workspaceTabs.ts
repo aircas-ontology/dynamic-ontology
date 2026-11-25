@@ -13,8 +13,8 @@ const ROUTE_TAB_IDS = Object.fromEntries(Object.entries(TAB_ROUTE_NAMES).map(([t
   EntityBrowsingTab
 >;
 
-/** 实体浏览可用工作区 Tab（不含行为调度）。 */
-export const AVAILABLE_ENTITY_BROWSING_TABS: readonly ManagementWorkspaceTab[] = ["object", "relation", "function-operator", "behavior"];
+/** 实体浏览可用工作区 Tab。 */
+export const AVAILABLE_ENTITY_BROWSING_TABS: readonly ManagementWorkspaceTab[] = ["object", "relation", "function-operator", "behavior", "behavior-schedule"];
 
 /**
  * @description 将工作区 Tab 映射为实体浏览路由名。

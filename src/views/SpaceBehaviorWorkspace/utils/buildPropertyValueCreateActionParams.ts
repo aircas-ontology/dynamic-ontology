@@ -28,7 +28,7 @@ export function isPropertyValueActionCreateDraft(draft: SpaceBehaviorDraft): boo
 }
 
 /**
- * @description 按属性值创建约定组装 POST /ontology/action 请求体。
+ * @description 按属性值创建约定组装 POST /ontology/action 请求体；对象与属性可选，无选时省略对应字段。
  * @param draft 行为草稿。
  * @returns 请求体；校验失败时返回带 error 的对象。
  */
@@ -36,10 +36,6 @@ export function buildPropertyValueCreateActionParams(draft: SpaceBehaviorDraft):
   const categoryId = Number(draft.categoryId);
   if (!Number.isInteger(categoryId)) {
     return { error: "行为分类无效" };
-  }
-  const ontologyIdentifier = draft.ontologyIdentifier.trim();
-  if (!ontologyIdentifier) {
-    return { error: "请选择对象" };
   }
   const actionApi = draft.behaviorApiName.trim();
   if (!actionApi) {
@@ -49,30 +45,27 @@ export function buildPropertyValueCreateActionParams(draft: SpaceBehaviorDraft):
   if (!displayName) {
     return { error: "请填写行为名称" };
   }
-  const storageGroup = draft.storageGroup.trim();
-  if (!storageGroup) {
-    return { error: "请选择属性" };
-  }
-  if (!draft.selectedPropertyIds.length) {
-    return { error: "请至少选择一项属性" };
-  }
   const operation = mapBasicActionToOperation(draft.basicAction);
   if (!operation) {
     return { error: "基础操作无效" };
   }
 
-  const mappingIns: CreateOntologyActionMappingIn[] = draft.selectedPropertyIds.map((propertyId) => {
+  const ontologyIdentifier = draft.ontologyIdentifier.trim();
+  const storageGroup = draft.storageGroup.trim();
+  const selectedPropertyIds = draft.selectedPropertyIds.filter((propertyId) => propertyId.trim() !== "");
+
+  const mappingIns: CreateOntologyActionMappingIn[] = selectedPropertyIds.map((propertyId) => {
     if (operation === "DELETE") {
       return {
         propertyUniqueIdentifier: propertyId,
-        ontologyUniqueIdentifier: ontologyIdentifier,
+        ...(ontologyIdentifier ? { ontologyUniqueIdentifier: ontologyIdentifier } : {}),
       };
     }
     const parameterName = draft.selectedPropertyApiNames[propertyId]?.trim() || "";
     const mapping: CreateOntologyActionMappingIn = {
       propertyUniqueIdentifier: propertyId,
-      ontologyUniqueIdentifier: ontologyIdentifier,
       sourceType: "EXTERNAL",
+      ...(ontologyIdentifier ? { ontologyUniqueIdentifier: ontologyIdentifier } : {}),
     };
     if (parameterName) {
       mapping.parameterName = parameterName;
@@ -86,11 +79,11 @@ export function buildPropertyValueCreateActionParams(draft: SpaceBehaviorDraft):
     displayName,
     ...(description ? { description } : {}),
     categoryId,
-    ontologyIdentifier,
+    ...(ontologyIdentifier ? { ontologyIdentifier } : {}),
     actionKind: "BASE",
     subjectType: "PROPERTY_VALUE",
     operation,
-    storageGroup,
-    mappingIns,
+    ...(selectedPropertyIds.length && storageGroup ? { storageGroup } : {}),
+    ...(mappingIns.length ? { mappingIns } : {}),
   };
 }

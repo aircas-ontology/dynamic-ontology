@@ -6,6 +6,8 @@ interface BrowseStatistics {
   relation: number;
   entity: number;
   functionOperator: number;
+  /** 行为调度数量，对应统计接口 actionSchedulingCount。 */
+  actionScheduling: number;
 }
 
 type StatisticLoader = (spaceId: string) => Promise<Partial<OntologySpaceStatisticVO> | null>;
@@ -52,7 +54,7 @@ export function countSpaceEntities(tree: OntologyCategoryTreeNode | null): numbe
  * @returns 数量、查询状态和重试方法。
  */
 export function useBrowseStatistics(spaceId: Ref<string>, loadStatistic: StatisticLoader, loadCategories: CategoryLoader) {
-  const data = ref<BrowseStatistics>({ ontology: 0, relation: 0, entity: 0, functionOperator: 0 });
+  const data = ref<BrowseStatistics>({ ontology: 0, relation: 0, entity: 0, functionOperator: 0, actionScheduling: 0 });
   const status = ref<"loading" | "success" | "error">("loading");
   const error = ref("");
   let generation = 0;
@@ -67,7 +69,7 @@ export function useBrowseStatistics(spaceId: Ref<string>, loadStatistic: Statist
     pendingId = id;
     status.value = "loading";
     error.value = "";
-    data.value = { ontology: 0, relation: 0, entity: 0, functionOperator: 0 };
+    data.value = { ontology: 0, relation: 0, entity: 0, functionOperator: 0, actionScheduling: 0 };
     try {
       if (!id) throw new Error("空间标识无效，无法查询统计数据。");
       const [statistic, tree] = await Promise.all([loadStatistic(id), loadCategories(id)]);
@@ -77,6 +79,7 @@ export function useBrowseStatistics(spaceId: Ref<string>, loadStatistic: Statist
         relation: normalizeCount(statistic?.linkCount),
         entity: countSpaceEntities(tree),
         functionOperator: normalizeCount(statistic?.functionCount),
+        actionScheduling: normalizeCount(statistic?.actionSchedulingCount),
       };
       status.value = "success";
     } catch (cause) {

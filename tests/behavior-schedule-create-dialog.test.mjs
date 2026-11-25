@@ -18,6 +18,9 @@ test("workspace opens create schedule dialog with shared aircas classes", () => 
   const dialogSource = readSource("../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue");
 
   assert.match(workspaceSource, /BehaviorScheduleFormDialog/);
+  assert.match(workspaceSource, /browseOnly/);
+  assert.match(workspaceSource, /route\.meta\.browseOnly === true/);
+  assert.match(workspaceSource, /v-if="!browseOnly"/);
   assert.match(workspaceSource, /openCreateScheduleDialog/);
   assert.doesNotMatch(workspaceSource, /showPendingMessage\('新建调度'\)/);
   assert.match(dialogSource, /class="aircas-dialog/);

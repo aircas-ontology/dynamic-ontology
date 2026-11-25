@@ -245,7 +245,7 @@
 
           <section v-if="showAttributeValueObjectSection" class="behavior-form-dialog__object-section">
             <h3>对象信息</h3>
-            <el-form-item label="对象" required>
+            <el-form-item label="对象">
               <el-select
                 :model-value="ontologyIdentifier"
                 filterable
@@ -2574,15 +2574,7 @@ function submitBehaviorForm(action: "save" | "copy"): void {
     ElMessage.warning("请完整填写行为类型和基础操作");
     return;
   }
-  if (showAttributeValueObjectSection.value) {
-    if (!ontologyIdentifier.value.trim()) {
-      ElMessage.warning("请选择对象");
-      return;
-    }
-    if (selectedPropertyIds.value.length === 0) {
-      ElMessage.warning("请至少选择一项属性");
-      return;
-    }
+  if (showAttributeValueObjectSection.value && selectedPropertyIds.value.length > 0) {
     if (
       (basicAction.value === "create" || basicAction.value === "delete") &&
       (isMainStorageGroup(storageGroup.value) ||
@@ -2591,10 +2583,6 @@ function submitBehaviorForm(action: "save" | "copy"): void {
       ElMessage.warning(basicAction.value === "create" ? "新增须全选同一非 main 存储分组属性" : "删除须全选同一非 main 存储分组属性");
       return;
     }
-  }
-  if (showRelationInstanceSection.value && !selectedRelationId.value.trim()) {
-    ElMessage.warning("请选择一条关系");
-    return;
   }
   if (showRelationLinkMappingSection.value) {
     if (!relationTargetStatus.value) {

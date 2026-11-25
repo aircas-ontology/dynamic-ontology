@@ -28,7 +28,7 @@ export function isLinkActionCreateDraft(draft: SpaceBehaviorDraft): boolean {
 }
 
 /**
- * @description 按关系实例创建约定组装 POST /ontology/action 请求体。
+ * @description 按关系实例创建约定组装 POST /ontology/action 请求体；关系可选，无选时省略 linkMapping。
  * @param draft 行为草稿。
  * @returns 请求体；校验失败时返回带 error 的对象。
  */
@@ -36,10 +36,6 @@ export function buildLinkCreateActionParams(draft: SpaceBehaviorDraft): BuildLin
   const categoryId = Number(draft.categoryId);
   if (!Number.isInteger(categoryId)) {
     return { error: "行为分类无效" };
-  }
-  const ontologyIdentifier = draft.ontologyIdentifier.trim();
-  if (!ontologyIdentifier) {
-    return { error: "请选择关系" };
   }
   const actionApi = draft.behaviorApiName.trim();
   if (!actionApi) {
@@ -49,13 +45,25 @@ export function buildLinkCreateActionParams(draft: SpaceBehaviorDraft): BuildLin
   if (!displayName) {
     return { error: "请填写行为名称" };
   }
-  const ontologyLinkUniqIdentifier = draft.selectedRelationId.trim();
-  if (!ontologyLinkUniqIdentifier) {
-    return { error: "请选择一条关系" };
-  }
   const operation = mapBasicActionToOperation(draft.basicAction);
   if (!operation) {
     return { error: "基础操作无效" };
+  }
+
+  const ontologyIdentifier = draft.ontologyIdentifier.trim();
+  const ontologyLinkUniqIdentifier = draft.selectedRelationId.trim();
+  const description = draft.description.trim();
+
+  if (!ontologyLinkUniqIdentifier) {
+    return {
+      actionApi,
+      displayName,
+      ...(description ? { description } : {}),
+      categoryId,
+      actionKind: "BASE",
+      subjectType: "LINK",
+      operation,
+    };
   }
 
   let linkMapping: CreateOntologyActionLinkMapping;
@@ -92,13 +100,12 @@ export function buildLinkCreateActionParams(draft: SpaceBehaviorDraft): BuildLin
     }
   }
 
-  const description = draft.description.trim();
   return {
     actionApi,
     displayName,
     ...(description ? { description } : {}),
     categoryId,
-    ontologyIdentifier,
+    ...(ontologyIdentifier ? { ontologyIdentifier } : {}),
     actionKind: "BASE",
     subjectType: "LINK",
     operation,

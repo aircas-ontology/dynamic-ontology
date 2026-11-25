@@ -70,7 +70,12 @@ export const workspaceRoutes: RouteRecordRaw[] = [
             component: () => import("@/views/EntityBrowsingBehavior/index.vue"),
             meta: { title: "空间浏览", workspaceTab: "behavior", browseOnly: true },
           },
-          { path: "behavior-schedule", name: "EntityBrowsingBehaviorSchedule", redirect: { name: "EntityBrowsingObject" } },
+          {
+            path: "behavior-schedule",
+            name: "EntityBrowsingBehaviorSchedule",
+            component: () => import("@/views/SpaceBehaviorScheduleWorkspace/index.vue"),
+            meta: { title: "空间浏览", workspaceTab: "behavior-schedule", browseOnly: true },
+          },
         ],
       },
       {

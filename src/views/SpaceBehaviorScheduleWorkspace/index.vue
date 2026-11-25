@@ -19,7 +19,7 @@
         <el-button class="aircas-button aircas-button--tone-primary" @click="applyFilters">查询</el-button>
         <el-button class="aircas-button aircas-button--tone-ghost" @click="resetFilters">重置</el-button>
       </div>
-      <el-button class="aircas-button aircas-button--tone-primary" :icon="Plus" @click="openCreateScheduleDialog">新建调度</el-button>
+      <el-button v-if="!browseOnly" class="aircas-button aircas-button--tone-primary" :icon="Plus" @click="openCreateScheduleDialog">新建调度</el-button>
     </div>
 
     <div class="behavior-schedule-workspace__table-wrap">
@@ -50,6 +50,7 @@
         <el-table-column label="状态" width="130">
           <template #default="{ row }">
             <el-switch
+              v-if="!browseOnly"
               style="--el-switch-off-color: var(--aircas-color-danger)"
               :model-value="row.status"
               active-value="START"
@@ -63,10 +64,11 @@
               :disabled="(row.status !== 'START' && row.status !== 'STOP') || pendingScheduleStatusIds.includes(row.id)"
               @change="toggleScheduleStatus(row)"
             />
+            <span v-else>{{ row.status === "START" ? "启用" : row.status === "STOP" ? "停止" : row.status || "—" }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="160" />
-        <el-table-column label="操作" width="300">
+        <el-table-column label="操作" :width="browseOnly ? 180 : 300">
           <template #default="{ row }">
             <div class="behavior-schedule-workspace__row-actions">
               <el-button
@@ -77,6 +79,7 @@
                 >查看</el-button
               >
               <el-button
+                v-if="!browseOnly"
                 class="aircas-button aircas-button--tone-secondary"
                 size="small"
                 :disabled="createStatus === 'submitting'"
@@ -84,7 +87,9 @@
                 >编辑</el-button
               >
               <el-button class="aircas-button aircas-button--tone-ghost" size="small" @click="openInvocationLogDialog(row)">调用日志</el-button>
-              <el-button class="aircas-button aircas-button--tone-danger" type="danger" size="small" @click="openDeleteScheduleDialog(row)">删除</el-button>
+              <el-button v-if="!browseOnly" class="aircas-button aircas-button--tone-danger" type="danger" size="small" @click="openDeleteScheduleDialog(row)"
+                >删除</el-button
+              >
             </div>
           </template>
         </el-table-column>
@@ -212,6 +217,8 @@ let scheduleDeleteRequest = 0;
 const deleteStatus = ref<BehaviorScheduleCommandStatus>("idle");
 const strategies: BehaviorScheduleStrategy[] = ["规则调度", "周期调度"];
 const route = useRoute();
+/** 空间浏览只读：隐藏新建、编辑、删除与启停开关。 */
+const browseOnly = computed(() => route.meta.browseOnly === true);
 const scheduleSpaceId = computed(() => String(route.params.spaceId ?? ""));
 const behaviorOptions = ref<ScheduleBehaviorOption[]>([]);
 const behaviorLoading = ref(false);

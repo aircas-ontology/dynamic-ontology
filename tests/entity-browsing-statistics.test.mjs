@@ -46,14 +46,31 @@ test("statistics load real values and default successful missing fields to zero"
   const statistics = scope.run(() =>
     useBrowseStatistics(
       spaceId,
-      async () => ({ ontologyCount: 4, linkCount: 2 }),
+      async () => ({ ontologyCount: 4, linkCount: 2, actionSchedulingCount: 3 }),
       async () => null,
     ),
   );
   await nextTick();
   await nextTick();
   assert.equal(statistics.status.value, "success");
-  assert.deepEqual(statistics.data.value, { ontology: 4, relation: 2, entity: 0, functionOperator: 0 });
+  assert.deepEqual(statistics.data.value, { ontology: 4, relation: 2, entity: 0, functionOperator: 0, actionScheduling: 3 });
+  scope.stop();
+});
+
+test("missing actionSchedulingCount defaults to zero for behavior-schedule tab", async () => {
+  const scope = effectScope();
+  const statistics = scope.run(() =>
+    useBrowseStatistics(
+      ref("12"),
+      async () => ({ ontologyCount: 1, functionCount: 5 }),
+      async () => null,
+    ),
+  );
+  await nextTick();
+  await nextTick();
+  assert.equal(statistics.status.value, "success");
+  assert.equal(statistics.data.value.actionScheduling, 0);
+  assert.equal(statistics.data.value.functionOperator, 5);
   scope.stop();
 });
 

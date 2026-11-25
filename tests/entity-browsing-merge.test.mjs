@@ -13,16 +13,41 @@ import {
   mapObjectProfileEntityRows,
 } from "../src/views/EntityBrowsingObjectProfile/utils/mapObjectProfileEntityRows.ts";
 
+test("entity browsing exposes behavior-schedule tab and browseOnly schedule workspace", () => {
+  const tabsSource = readFileSync(new URL("../src/views/EntityBrowsing/components/WorkspaceTypeTabs.vue", import.meta.url), "utf8");
+  const workspaceTabsSource = readFileSync(new URL("../src/views/EntityBrowsing/utils/workspaceTabs.ts", import.meta.url), "utf8");
+  const browsingIndex = readFileSync(new URL("../src/views/EntityBrowsing/index.vue", import.meta.url), "utf8");
+  const browseStatistics = readFileSync(new URL("../src/views/EntityBrowsing/utils/browseStatistics.ts", import.meta.url), "utf8");
+  assert.match(tabsSource, /behavior-schedule/);
+  assert.match(tabsSource, /行为调度/);
+  assert.match(workspaceTabsSource, /"behavior-schedule"/);
+  assert.match(workspaceTabsSource, /AVAILABLE_ENTITY_BROWSING_TABS/);
+  assert.match(browseStatistics, /actionSchedulingCount/);
+  assert.match(browseStatistics, /actionScheduling/);
+  assert.match(browsingIndex, /"behavior-schedule":\s*counts\.value\.actionScheduling/);
+});
+
 test("both space kinds share the browse workspace and preserve origin in nested routes", () => {
   const router = createRouter({ history: createMemoryHistory(), routes: workspaceRoutes });
   for (const spaceType of ["0", "1"]) {
     const query = { spaceName: "示例空间", spaceType, from: spaceType === "1" ? "theme-space-browse" : "ontology-space-browse" };
-    for (const name of ["EntityBrowsingObject", "EntityBrowsingRelation", "EntityBrowsingFunctionOperator", "EntityBrowsingBehavior"]) {
+    for (const name of [
+      "EntityBrowsingObject",
+      "EntityBrowsingRelation",
+      "EntityBrowsingFunctionOperator",
+      "EntityBrowsingBehavior",
+      "EntityBrowsingBehaviorSchedule",
+    ]) {
       const resolved = router.resolve({ name, params: { spaceId: "1" }, query });
       assert.equal(resolved.meta.browseOnly, true);
       assert.deepEqual(resolved.query, query);
       assert.equal(resolved.params.spaceId, "1");
     }
+    const scheduleRoute = router.resolve({ name: "EntityBrowsingBehaviorSchedule", params: { spaceId: "1" }, query });
+    assert.equal(scheduleRoute.name, "EntityBrowsingBehaviorSchedule");
+    assert.equal(scheduleRoute.meta.workspaceTab, "behavior-schedule");
+    assert.equal(scheduleRoute.meta.browseOnly, true);
+    assert.equal(scheduleRoute.redirectedFrom, undefined);
     const profile = router.resolve({ name: "EntityBrowsingObjectProfile", params: { spaceId: "1", objectId: "abc" }, query });
     assert.deepEqual(profile.query, query);
     assert.equal(profile.meta.browseOnly, true);

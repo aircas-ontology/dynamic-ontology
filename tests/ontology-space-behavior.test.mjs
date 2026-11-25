@@ -937,7 +937,7 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /pageSize:\s*10/);
   assert.match(formSource, /relationTotal/);
   assert.match(formSource, /el-pagination/);
-  assert.match(formSource, /请选择一条关系/);
+  assert.doesNotMatch(formSource, /请选择一条关系/);
   assert.match(formSource, /请选择状态/);
   assert.match(formSource, /请至少添加一条持续时段/);
   assert.match(formSource, /添加时段/);
@@ -960,7 +960,8 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /flattenPropertyInfosFromCategoryTree/);
   assert.match(formSource, /handleAttributeSelectionChange/);
   assert.match(formSource, /请选择对象/);
-  assert.match(formSource, /请至少选择一项属性/);
+  assert.doesNotMatch(formSource, /请至少选择一项属性/);
+  assert.doesNotMatch(formSource, /label="对象" required/);
   assert.match(formSource, /ontologyIdentifier: ontologyIdentifier\.value\.trim\(\)/);
   assert.match(formSource, /selectedPropertyIds: \[\.\.\.selectedPropertyIds\.value\]/);
   assert.match(formSource, /selectedPropertyValues: buildSelectedPropertyValuesForDraft\(\)/);
@@ -1804,6 +1805,7 @@ test("space behavior maps action info detail into view drawer state", () => {
         functionParamId: null,
         parameterName: "w_range",
         displayName: "射程",
+        paramType: "List<Double>",
         propertyType: "Double",
         sourceType: "FIXED",
         sourceConfig: "120.5",
@@ -1832,10 +1834,11 @@ test("space behavior maps action info detail into view drawer state", () => {
   assert.match(propertyView.inputRows[0]?.bindSummary ?? "", /固定值 120\.5/);
   assert.equal(propertyView.inputRows[0]?.propertyDisplayName, "射程");
   assert.equal(propertyView.inputRows[0]?.propertyType, "Double");
-  assert.equal(propertyView.inputRows[0]?.paramType, "Double");
+  assert.equal(propertyView.inputRows[0]?.paramType, "List<Double>");
   assert.equal(propertyView.inputRows[1]?.paramName, "e_thrust");
   assert.equal(propertyView.inputRows[1]?.propertyDisplayName, "加力推力");
   assert.equal(propertyView.inputRows[1]?.propertyType, "Double");
+  assert.equal(propertyView.inputRows[1]?.paramType, "Double");
   assert.match(propertyView.inputRows[1]?.bindSummary ?? "", /外部输入/);
 
   const applicationView = mapOntologyActionInfoToViewState({
@@ -2381,11 +2384,20 @@ test("space behavior builds property-value createAction params for create update
   assert.equal(isPropertyValueActionCreateDraft({ ...baseDraft, basicAction: "query" }), false);
 
   assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, categoryId: "behavior-root" }), true);
-  assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, ontologyIdentifier: "  " }), true);
+  const withoutObject = buildPropertyValueCreateActionParams({
+    ...baseDraft,
+    ontologyIdentifier: "  ",
+    selectedPropertyIds: [],
+    storageGroup: "",
+  });
+  assert.equal("error" in withoutObject, false);
+  if (!("error" in withoutObject)) {
+    assert.equal("ontologyIdentifier" in withoutObject, false);
+    assert.equal("storageGroup" in withoutObject, false);
+    assert.equal("mappingIns" in withoutObject, false);
+  }
   assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, behaviorApiName: "" }), true);
   assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, displayName: " " }), true);
-  assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, storageGroup: "" }), true);
-  assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, selectedPropertyIds: [] }), true);
   assert.equal("error" in buildPropertyValueCreateActionParams({ ...baseDraft, basicAction: "query" }), true);
 
   const withoutApiName = buildPropertyValueCreateActionParams({
@@ -2513,8 +2525,20 @@ test("space behavior builds link createAction params for create update and delet
   }
 
   assert.equal(isLinkActionCreateDraft({ ...baseDraft, valueType: "attributeValue" }), false);
-  assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, selectedRelationId: " " }), true);
-  assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, ontologyIdentifier: "" }), true);
+  const withoutRelation = buildLinkCreateActionParams({
+    ...baseDraft,
+    selectedRelationId: " ",
+    ontologyIdentifier: "",
+    relationTargetStatus: "",
+    relationVisibilityWindows: [],
+  });
+  assert.equal("error" in withoutRelation, false);
+  if (!("error" in withoutRelation)) {
+    assert.equal("linkMapping" in withoutRelation, false);
+    assert.equal("ontologyIdentifier" in withoutRelation, false);
+    assert.equal(withoutRelation.subjectType, "LINK");
+    assert.equal(withoutRelation.operation, "CREATE");
+  }
   assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, relationTargetStatus: "" }), true);
   assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, relationVisibilityWindows: [] }), true);
   assert.equal("error" in buildLinkCreateActionParams({ ...baseDraft, basicAction: "update", relationTargetStatus: "" }), true);
