@@ -12,13 +12,14 @@
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="function-operator-form">
       <section v-if="!operator" class="function-operator-form__section">
         <div class="function-operator-form__section-title">函数类型</div>
-        <div class="function-operator-form__type-grid">
+        <div class="function-operator-form__type-grid" data-onboarding="function-type-grid">
           <button
             v-for="item in FUNCTION_OPERATOR_PUBLIC_TYPE_OPTIONS"
             :key="item.value"
             type="button"
             class="function-operator-form__type-card"
             :class="{ 'is-active': form.type === item.value }"
+            :data-onboarding="`function-type-${item.value}`"
             @click="changeType(item.value)"
           >
             <strong>{{ item.label }}</strong>
@@ -90,7 +91,7 @@
         </el-form-item>
       </section>
 
-      <section v-else-if="form.type === 'composite' || form.type === 'code'" class="function-operator-form__section">
+      <section v-else-if="form.type === 'composite' || form.type === 'code'" class="function-operator-form__section" data-onboarding="function-code-general">
         <template v-if="!operator">
           <div class="function-operator-form__section-title">基于已有函数 (可选)</div>
           <div class="function-operator-form__name-grid">
@@ -140,7 +141,7 @@
         </el-form-item>
       </section>
 
-      <section v-else-if="form.type === 'api'" class="function-operator-form__section">
+      <section v-else-if="form.type === 'api'" class="function-operator-form__section" data-onboarding="function-api-general">
         <template v-if="!operator">
           <div class="function-operator-form__section-title">基于已有函数 (可选)</div>
           <div class="function-operator-form__name-grid">
@@ -411,7 +412,7 @@
         </el-table>
       </section>
 
-      <section v-else-if="form.type === 'docker'" class="function-operator-form__section">
+      <section v-else-if="form.type === 'docker'" class="function-operator-form__section" data-onboarding="function-docker-general">
         <div class="function-operator-form__section-title">通用配置</div>
         <el-form-item label="函数名称" prop="name">
           <el-input v-model="form.name" maxlength="64" placeholder="例如：目标识别算子" :disabled="Boolean(operator)" />
@@ -555,11 +556,20 @@
     </el-form>
 
     <template #footer>
-      <el-button @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button v-if="form.type === 'composite' || form.type === 'code'" type="primary" :loading="loading" @click="goGeneralConfigNextStep">下一步</el-button>
+      <el-button data-onboarding="function-form-cancel" @click="emit('update:modelValue', false)">取消</el-button>
+      <el-button
+        v-if="form.type === 'composite' || form.type === 'code'"
+        type="primary"
+        data-onboarding="function-form-next"
+        :loading="loading"
+        @click="goGeneralConfigNextStep"
+      >
+        下一步
+      </el-button>
       <el-button
         v-else
         type="primary"
+        data-onboarding="function-form-save"
         :loading="loading"
         :disabled="form.type !== 'basic' && form.type !== 'api' && form.type !== 'docker'"
         @click="submitCurrentDraft"

@@ -28,7 +28,7 @@
         <div class="function-operator-panel__filter-actions">
           <el-button v-if="!browseOnly" @click="runtimeTemplateVisible = true">运行配置模板</el-button>
           <el-button v-if="!browseOnly" @click="runtimePanelVisible = true">运行配置</el-button>
-          <el-button v-if="!browseOnly" type="primary" @click="openCreate">新建函数</el-button>
+          <el-button v-if="!browseOnly" type="primary" data-onboarding="function-create-open" @click="openCreate">新建函数</el-button>
           <el-button type="primary" @click="applyFilters">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
         </div>

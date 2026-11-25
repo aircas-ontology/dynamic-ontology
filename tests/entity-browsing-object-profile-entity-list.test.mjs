@@ -229,6 +229,31 @@ test("object profile entity list tab mounts API list component", () => {
   assert.match(composable, /applyEntityListColumnConfig/);
 });
 
+test("object profile standard usage loads space-management attribute tree readonly", () => {
+  const source = readSource("../src/views/EntityBrowsingObjectProfile/components/ObjectProfileStandardUsage.vue");
+  assert.match(source, /getOntologyObjectArrTypeTreeInterface/);
+  assert.match(source, /mapCategoryTreeNode/);
+  assert.match(source, /collectPropertyItemsFromTree/);
+  assert.match(source, /findCategory/);
+  assert.match(source, /属性总数/);
+  assert.match(source, /标准引用数/);
+  assert.match(source, /标准符合度/);
+  assert.match(source, /label="属性名称"/);
+  assert.match(source, /label="数据类型"/);
+  assert.match(source, /label="属性描述"/);
+  assert.match(source, /label="是否引用标准"/);
+  assert.match(source, /label="标准名称"/);
+  assert.match(source, /label="标准符合度"/);
+  assert.match(source, /referencesStandard: false/);
+  assert.match(source, /complianceLabel: "—"/);
+  assert.match(source, /正在加载属性分类/);
+  assert.match(source, /暂无匹配属性/);
+  assert.doesNotMatch(source, /resolveEntityBrowsingObjectProfileStandardUsage/);
+  assert.doesNotMatch(source, /label="主键"|label="API"|label="存储分组"|label="默认值"|label="名称键"/);
+  assert.doesNotMatch(source, /创建分类|添加子分类|关联数据源|元数据管理|编辑属性|删除属性|label="操作"/);
+  assert.doesNotMatch(source, /\$emit\('create-attribute'|\$emit\('edit-attribute'|\$emit\('remove-attribute'/);
+});
+
 test("entity list mock fixture exposes Chinese property columns", () => {
   const fixture = JSON.parse(readSource("../src/mockData/fixtures/ontology/entity/list.get.json"));
   assert.equal(fixture.code, 200);

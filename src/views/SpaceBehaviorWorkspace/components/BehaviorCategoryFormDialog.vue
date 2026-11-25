@@ -28,8 +28,8 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button :loading="loading" @click="submitCategoryForm">确认</el-button>
+      <el-button data-onboarding="behavior-category-cancel" @click="emit('update:modelValue', false)">取消</el-button>
+      <el-button data-onboarding="behavior-category-confirm" :loading="loading" @click="submitCategoryForm">确认</el-button>
     </template>
   </el-dialog>
 </template>

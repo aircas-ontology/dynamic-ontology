@@ -13,7 +13,7 @@ const readSource = (relativePath) => {
   return readFileSync(fileUrl, "utf8");
 };
 
-/** 六步链全部 39 个小步 id，顺序与统一配置一致。 */
+/** 九步链全部 76 个小步 id，顺序与统一配置一致。 */
 const CHAIN_STEP_IDS = [
   "space-create-open",
   "space-create-manual",
@@ -37,6 +37,43 @@ const CHAIN_STEP_IDS = [
   "relation-create-open",
   "relation-create-required",
   "relation-create-confirm",
+  "function-menu",
+  "function-create-open",
+  "function-type-grid",
+  "function-type-code",
+  "function-code-general",
+  "function-code-next",
+  "function-code-ide",
+  "function-code-ide-save",
+  "function-type-api",
+  "function-api-general",
+  "function-api-save",
+  "function-type-docker",
+  "function-docker-general",
+  "function-docker-save",
+  "behavior-menu",
+  "behavior-tree-create",
+  "behavior-category-confirm",
+  "behavior-create-open",
+  "behavior-form-basic",
+  "behavior-kind-basic",
+  "behavior-basic-config",
+  "behavior-save-basic",
+  "behavior-kind-application",
+  "behavior-application-config",
+  "behavior-save-application",
+  "behavior-kind-tree",
+  "behavior-tree-open",
+  "schedule-menu",
+  "schedule-create-open",
+  "schedule-form-basic",
+  "schedule-strategy-rule",
+  "schedule-rule-config",
+  "schedule-strategy-period",
+  "schedule-period-config",
+  "schedule-period-behavior",
+  "schedule-period-params",
+  "schedule-confirm",
   "object-menu-back",
   "object-detail-open",
   "attribute-menu",
@@ -56,8 +93,8 @@ const CHAIN_STEP_IDS = [
   "associate-auto",
 ];
 
-/** 六个大步骤（chain）名称，按引导顺序排列。 */
-const CHAIN_NAMES = ["新建空间", "新建对象", "新建关系", "新建属性", "属性关联数据源", "自动关联数据源"];
+/** 九个大步骤（chain）名称，按引导顺序排列。 */
+const CHAIN_NAMES = ["新建空间", "新建对象", "新建关系", "新建函数算子", "新建行为", "新建行为调度", "新建属性", "属性关联数据源", "自动关联数据源"];
 
 test("onboarding guide overlay renders step description with mock fallback and keyboard escape", () => {
   const source = readSource("../src/components/OnboardingGuide/OnboardingGuideOverlay.vue");
@@ -153,6 +190,11 @@ test("attribute category tree keeps hover actions visible while the guide highli
   assert.match(source, /\.ontology-object-attribute-panel__tree-actions:has\(\.onboarding-guide__target-revealed\) \{/);
 });
 
+test("behavior category panel keeps hover actions visible while the guide highlights the create button", () => {
+  const source = readSource("../src/views/SpaceBehaviorWorkspace/components/BehaviorCategoryPanel.vue");
+  assert.match(source, /\.behavior-category-panel__actions:has\(\.onboarding-guide__target-revealed\) \{/);
+});
+
 test("onboarding guide overlay persists progress via session storage and clears on close", () => {
   const source = readSource("../src/components/OnboardingGuide/OnboardingGuideOverlay.vue");
   assert.match(source, /import type \{ OnboardingGuideStep \} from "@\/composables\/shared\/useOnboardingGuide";/);
@@ -183,14 +225,21 @@ test("onboarding guide composable resumes pending step for the matching page onl
   assert.match(source, /leaveClickSelector\?: string;/);
 });
 
-test("unified step config defines the six-chain 39-step flow with page ownership", () => {
+test("unified step config defines the nine-chain 76-step flow with page ownership", () => {
   const source = readSource("../src/views/onboardingGuideSteps.ts");
   for (const id of CHAIN_STEP_IDS) {
     assert.match(source, new RegExp(`id: "${id}"`), `missing step id: ${id}`);
   }
   assert.match(source, /export const CHAIN_CREATE_SPACE = "新建空间";/);
   assert.match(source, /chain: CHAIN_CREATE_SPACE/);
+  assert.match(source, /export const CHAIN_CREATE_FUNCTION = "新建函数算子";/);
+  assert.match(source, /chain: CHAIN_CREATE_FUNCTION/);
+  assert.match(source, /export const CHAIN_CREATE_BEHAVIOR = "新建行为";/);
+  assert.match(source, /chain: CHAIN_CREATE_BEHAVIOR/);
+  assert.match(source, /export const CHAIN_CREATE_BEHAVIOR_SCHEDULE = "新建行为调度";/);
+  assert.match(source, /chain: CHAIN_CREATE_BEHAVIOR_SCHEDULE/);
   for (const chain of CHAIN_NAMES.slice(1)) {
+    if (chain === "新建函数算子" || chain === "新建行为" || chain === "新建行为调度") continue;
     assert.match(source, new RegExp(`chain: "${chain}"`), `missing chain: ${chain}`);
   }
   assert.match(source, /export const ONBOARDING_GUIDE_STEPS/);
@@ -205,33 +254,53 @@ test("unified step config defines the six-chain 39-step flow with page ownership
   assert.match(source, /"space-list": "space-list-enter"/);
   assert.match(source, /id: "space-create-confirm"[\s\S]*?targetSelector: "\[data-onboarding='space-create-confirm'\]"/);
   assert.match(source, /id: "associate-auto"[\s\S]*?targetSelector: "\[data-onboarding='associate-auto'\]"/);
+  assert.match(source, /id: "function-menu"[\s\S]*?enterClickSelector: "\[data-onboarding='workspace-tab-function-operator'\]"/);
+  assert.match(source, /id: "function-type-code"[\s\S]*?enterClickSelector: "\[data-onboarding='function-type-code'\]"/);
+  assert.match(source, /id: "function-code-next"[\s\S]*?targetSelector: "\[data-onboarding='function-form-next'\]"/);
+  assert.match(source, /id: "function-code-ide-save"[\s\S]*?targetSelector: "\[data-onboarding='function-code-ide-save'\]"/);
+  assert.match(source, /id: "function-type-api"[\s\S]*?enterClickSelector: "\[data-onboarding='function-type-api'\]"/);
+  assert.match(source, /id: "function-docker-save"[\s\S]*?targetSelector: "\[data-onboarding='function-form-save'\]"/);
+  assert.match(source, /id: "behavior-menu"[\s\S]*?enterClickSelector: "\[data-onboarding='workspace-tab-behavior'\]"/);
+  assert.match(source, /id: "behavior-kind-application"[\s\S]*?enterClickSelector: "\[data-onboarding='behavior-kind-application'\]"/);
+  assert.match(source, /id: "behavior-tree-open"[\s\S]*?targetSelector: "\[data-onboarding='behavior-tree-open'\]"/);
+  assert.match(source, /id: "schedule-menu"[\s\S]*?enterClickSelector: "\[data-onboarding='workspace-tab-behavior-schedule'\]"/);
+  assert.match(source, /id: "schedule-strategy-period"[\s\S]*?enterClickSelector: "\[data-onboarding='schedule-strategy-period'\]"/);
+  assert.match(source, /id: "schedule-confirm"[\s\S]*?targetSelector: "\[data-onboarding='schedule-form-confirm'\]"/);
   const triggerCount = source.match(/enterTriggerSelector:/g)?.length ?? 0;
-  assert.equal(triggerCount, 26);
+  assert.equal(triggerCount, 56);
   assert.match(source, /id: "space-create-manual"[\s\S]*?enterTriggerSelector: "\.welcome-panel__create"/);
   assert.match(source, /id: "object-tree-child-confirm"[\s\S]*?enterTriggerSelector: "\[data-onboarding='object-tree-create'\]"/);
   assert.match(source, /id: "object-create-required"[\s\S]*?enterTriggerSelector: "\[data-onboarding='object-create-open'\]"/);
   assert.match(source, /id: "relation-create-required"[\s\S]*?enterTriggerSelector: "\[data-onboarding='relation-create-open'\]"/);
   assert.match(source, /id: "attribute-create-required"[\s\S]*?enterTriggerSelector: "\[data-onboarding='attribute-create-open'\]"/);
   assert.match(source, /id: "associate-select-datasource"[\s\S]*?enterTriggerSelector: "\[data-onboarding='associate-open'\]"/);
+  assert.match(source, /id: "function-code-general"[\s\S]*?enterTriggerSelector: "\[data-onboarding='function-create-open'\]"/);
+  assert.match(source, /id: "function-code-ide"[\s\S]*?enterTriggerSelector: "\[data-onboarding='function-form-next'\]"/);
+  assert.match(source, /id: "behavior-form-basic"[\s\S]*?enterTriggerSelector: "\[data-onboarding='behavior-create-open'\]"/);
+  assert.match(source, /id: "schedule-period-config"[\s\S]*?enterTriggerSelector: "\[data-onboarding='schedule-create-open'\]"/);
   const enterClickCount = source.match(/enterClickSelector:/g)?.length ?? 0;
-  assert.equal(enterClickCount, 10);
+  assert.equal(enterClickCount, 37);
   assert.match(source, /id: "space-create-import-mode"[\s\S]*?enterClickSelector: "\[data-onboarding='space-create-import-mode'\]"/);
   assert.match(source, /id: "object-create-import"[\s\S]*?enterClickSelector: "\[data-onboarding='object-create-mode-import'\]"/);
   assert.match(source, /id: "relation-menu"[\s\S]*?enterClickSelector: "\[data-onboarding='workspace-tab-relation'\]"/);
   assert.match(source, /id: "object-menu-back"[\s\S]*?enterClickSelector: "\[data-onboarding='workspace-tab-object'\]"/);
   assert.match(source, /id: "attribute-menu"[\s\S]*?enterClickSelector: "\[data-onboarding='object-tab-attribute'\]"/);
   const exitClickCount = source.match(/exitClickSelector:/g)?.length ?? 0;
-  assert.equal(exitClickCount, 33);
+  assert.equal(exitClickCount, 65);
   assert.match(source, /id: "space-create-open"[\s\S]*?exitClickSelector: "\[data-onboarding='space-create-cancel'\]"/);
   assert.match(source, /id: "object-tree-child-confirm"[\s\S]*?exitClickSelector: "\[data-onboarding='object-tree-child-cancel'\]"/);
   assert.match(source, /id: "relation-create-confirm"[\s\S]*?exitClickSelector: "\[data-onboarding='relation-create-cancel'\]"/);
   assert.match(source, /id: "attribute-create-save"[\s\S]*?exitClickSelector: "\[data-onboarding='attribute-create-cancel'\]"/);
   assert.match(source, /id: "associate-open"[\s\S]*?exitClickSelector: "\.property-datasource-mapping-dialog \.el-dialog__headerbtn"/);
+  assert.match(source, /id: "function-create-open"[\s\S]*?exitClickSelector: "\[data-onboarding='function-form-cancel'\]"/);
+  assert.match(source, /id: "function-code-ide-save"[\s\S]*?exitClickSelector: "\[data-onboarding='function-code-ide-back'\]"/);
+  assert.match(source, /id: "behavior-create-open"[\s\S]*?exitClickSelector: "\[data-onboarding='behavior-form-cancel'\]"/);
+  assert.match(source, /id: "schedule-create-open"[\s\S]*?exitClickSelector: "\[data-onboarding='schedule-form-cancel'\]"/);
   const leaveClickCount = source.match(/leaveClickSelector:/g)?.length ?? 0;
   assert.equal(leaveClickCount, 6);
   assert.match(source, /id: "space-create-manual"[\s\S]*?leaveClickSelector: "\[data-onboarding='space-enter'\]"/);
   const advanceCount = source.match(/advanceOnTargetClick: true/g)?.length ?? 0;
-  assert.equal(advanceCount, 38);
+  assert.equal(advanceCount, 63);
   assert.match(
     source,
     /id: "space-create-open"[\s\S]*?targetSelector: "\.welcome-panel__create"[\s\S]*?advanceOnTargetClick: true[\s\S]*?mockLabel: "新建空间"/,
@@ -296,6 +365,39 @@ test("dialog and toolbar elements expose data-onboarding anchors for the step ch
     ["../src/views/SpaceRelationWorkspace/index.vue", 'data-onboarding="relation-create-open"'],
     ["../src/views/SpaceRelationWorkspace/components/SpaceRelationFormDialog.vue", 'data-onboarding="relation-create-required"'],
     ["../src/views/SpaceRelationWorkspace/components/SpaceRelationFormDialog.vue", 'data-onboarding="relation-create-confirm"'],
+    ["../src/views/FunctionOperatorPanel/index.vue", 'data-onboarding="function-create-open"'],
+    ["../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue", 'data-onboarding="function-type-grid"'],
+    ["../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue", "function-type-${item.value}"],
+    ["../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue", 'data-onboarding="function-code-general"'],
+    ["../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue", 'data-onboarding="function-api-general"'],
+    ["../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue", 'data-onboarding="function-docker-general"'],
+    ["../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue", 'data-onboarding="function-form-cancel"'],
+    ["../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue", 'data-onboarding="function-form-next"'],
+    ["../src/views/FunctionOperatorPanel/components/FunctionOperatorFormDialog.vue", 'data-onboarding="function-form-save"'],
+    ["../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptIdeDialog.vue", 'data-onboarding="function-code-ide"'],
+    ["../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptIdeDialog.vue", 'data-onboarding="function-code-ide-save"'],
+    ["../src/views/FunctionOperatorPanel/components/FunctionOperatorScriptIdeDialog.vue", 'data-onboarding="function-code-ide-back"'],
+    ["../src/views/SpaceBehaviorWorkspace/components/BehaviorCategoryPanel.vue", 'data-onboarding="behavior-tree-create"'],
+    ["../src/views/SpaceBehaviorWorkspace/components/BehaviorCategoryFormDialog.vue", 'data-onboarding="behavior-category-confirm"'],
+    ["../src/views/SpaceBehaviorWorkspace/components/BehaviorCategoryFormDialog.vue", 'data-onboarding="behavior-category-cancel"'],
+    ["../src/views/SpaceBehaviorWorkspace/components/BehaviorListPanel.vue", 'data-onboarding="behavior-create-open"'],
+    ["../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue", 'data-onboarding="behavior-form-basic"'],
+    ["../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue", "behavior-kind-${item.value}"],
+    ["../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue", 'data-onboarding="behavior-basic-config"'],
+    ["../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue", 'data-onboarding="behavior-application-config"'],
+    ["../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue", 'data-onboarding="behavior-form-cancel"'],
+    ["../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue", 'data-onboarding="behavior-form-save"'],
+    ["../src/views/SpaceBehaviorWorkspace/components/BehaviorFormDialog.vue", 'data-onboarding="behavior-tree-open"'],
+    ["../src/views/SpaceBehaviorScheduleWorkspace/index.vue", 'data-onboarding="schedule-create-open"'],
+    ["../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue", 'data-onboarding="schedule-form-basic"'],
+    ["../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue", 'data-onboarding="schedule-strategy-rule"'],
+    ["../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue", 'data-onboarding="schedule-strategy-period"'],
+    ["../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue", 'data-onboarding="schedule-rule-config"'],
+    ["../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue", 'data-onboarding="schedule-period-config"'],
+    ["../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue", 'data-onboarding="schedule-period-behavior"'],
+    ["../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue", 'data-onboarding="schedule-period-params"'],
+    ["../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue", 'data-onboarding="schedule-form-cancel"'],
+    ["../src/views/SpaceBehaviorScheduleWorkspace/BehaviorScheduleFormDialog.vue", 'data-onboarding="schedule-form-confirm"'],
     ["../src/views/OntologyObjectDetail/components/ObjectDetailTabs.vue", "object-tab-${tab.id}"],
     ["../src/views/OntologyObjectAttributePanel/components/AttributeCategoryTree.vue", 'data-onboarding="attribute-tree-create"'],
     ["../src/views/OntologyObjectAttributePanel/components/AttributeCategoryCreateDialog.vue", 'data-onboarding="attribute-category-confirm"'],

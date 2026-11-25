@@ -10,23 +10,29 @@
     @update:model-value="emit('update:modelValue', $event)"
   >
     <el-form class="aircas-form behavior-schedule-form-dialog__form" label-position="top" :disabled="submitting" @submit.prevent>
-      <el-form-item label="调度名称" required>
+      <el-form-item label="调度名称" required data-onboarding="schedule-form-basic">
         <el-input v-model="draft.name" class="aircas-input" maxlength="64" placeholder="请输入调度名称" :disabled="formDisabled" />
       </el-form-item>
       <el-form-item label="调度策略" required>
         <el-radio-group :model-value="draft.strategy" class="aircas-radio-group" :disabled="formDisabled" @update:model-value="setScheduleStrategy">
-          <el-radio class="aircas-radio" value="规则调度">规则调度</el-radio>
-          <el-radio class="aircas-radio" value="周期调度">周期调度</el-radio>
+          <el-radio class="aircas-radio" data-onboarding="schedule-strategy-rule" value="规则调度">规则调度</el-radio>
+          <el-radio class="aircas-radio" data-onboarding="schedule-strategy-period" value="周期调度">周期调度</el-radio>
         </el-radio-group>
       </el-form-item>
 
       <el-form-item v-if="draft.strategy === '规则调度'" label="规则配置">
-        <el-button class="aircas-button aircas-button--tone-primary" native-type="button" :disabled="submitting" @click.stop="openRuleConfigDialog">
+        <el-button
+          class="aircas-button aircas-button--tone-primary"
+          data-onboarding="schedule-rule-config"
+          native-type="button"
+          :disabled="submitting"
+          @click.stop="openRuleConfigDialog"
+        >
           {{ mode === "view" ? "查看规则配置" : draft.ruleFlow ? "规则配置（已应用）" : "规则配置" }}
         </el-button>
       </el-form-item>
 
-      <section v-else class="behavior-schedule-form-dialog__period" aria-label="周期配置">
+      <section v-else class="behavior-schedule-form-dialog__period" data-onboarding="schedule-period-config" aria-label="周期配置">
         <h3 class="behavior-schedule-form-dialog__period-title">周期配置</h3>
         <el-form-item label="执行周期">
           <el-radio-group :model-value="draft.periodKind" class="aircas-radio-group" :disabled="formDisabled" @update:model-value="setSchedulePeriodKind">
@@ -72,7 +78,7 @@
       </section>
 
       <template v-if="draft.strategy === '周期调度'">
-        <el-form-item label="行为">
+        <el-form-item label="行为" data-onboarding="schedule-period-behavior">
           <el-select
             :model-value="selectedBehaviorValue"
             filterable
@@ -97,7 +103,7 @@
             {{ behaviorError }} <el-button link @click="emit('retry-behaviors')">重试</el-button>
           </p>
         </el-form-item>
-        <section class="behavior-schedule-form-dialog__parameters" aria-label="行为参数">
+        <section class="behavior-schedule-form-dialog__parameters" data-onboarding="schedule-period-params" aria-label="行为参数">
           <h3 class="behavior-schedule-form-dialog__parameters-title">行为参数</h3>
           <BehaviorParameterConfig v-if="selectedBehaviorKind === 'application'" :controller="parameterConfig" :readonly="formDisabled" />
           <ScheduleTreeParametersPanel v-else-if="selectedBehaviorKind === 'behaviorTree'" :tree-parameters="treeParameters" />
@@ -119,10 +125,22 @@
     <el-button v-if="parameterRestoreError" link @click="initializeScheduleParameters">重新加载行为参数</el-button>
     <p v-if="validationError" class="behavior-schedule-form-dialog__error" role="alert">{{ validationError }}</p>
     <template #footer>
-      <el-button class="aircas-button aircas-button--tone-ghost" :disabled="submitting" :icon="Close" @click="emit('update:modelValue', false)">{{
-        closeButtonLabel
-      }}</el-button>
-      <el-button v-if="mode !== 'view'" class="aircas-button aircas-button--tone-primary" :loading="submitting" :icon="Plus" @click="submitCreateScheduleForm">
+      <el-button
+        class="aircas-button aircas-button--tone-ghost"
+        data-onboarding="schedule-form-cancel"
+        :disabled="submitting"
+        :icon="Close"
+        @click="emit('update:modelValue', false)"
+        >{{ closeButtonLabel }}</el-button
+      >
+      <el-button
+        v-if="mode !== 'view'"
+        class="aircas-button aircas-button--tone-primary"
+        data-onboarding="schedule-form-confirm"
+        :loading="submitting"
+        :icon="Plus"
+        @click="submitCreateScheduleForm"
+      >
         确认
       </el-button>
     </template>

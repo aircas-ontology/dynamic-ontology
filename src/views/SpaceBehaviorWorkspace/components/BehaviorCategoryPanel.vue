@@ -10,7 +10,7 @@
     </el-input>
     <div class="behavior-category-panel__content">
       <div v-if="!treeData.length" class="behavior-category-panel__empty">
-        <el-button @click="emit('create', '')">添加行为分类</el-button>
+        <el-button data-onboarding="behavior-tree-create" @click="emit('create', '')">添加行为分类</el-button>
       </div>
       <el-tree
         v-else
@@ -42,6 +42,7 @@
                   <button
                     type="button"
                     class="behavior-category-panel__action behavior-category-panel__action--add"
+                    data-onboarding="behavior-tree-create"
                     aria-label="添加子分类"
                     @click="emit('create', data.id)"
                   >
@@ -275,7 +276,8 @@ watch(
   transition: opacity 0.15s ease;
 }
 .behavior-category-panel :deep(.el-tree-node__content:hover) .behavior-category-panel__actions,
-.behavior-category-panel :deep(.el-tree-node__content:focus-within) .behavior-category-panel__actions {
+.behavior-category-panel :deep(.el-tree-node__content:focus-within) .behavior-category-panel__actions,
+.behavior-category-panel__actions:has(.onboarding-guide__target-revealed) {
   opacity: 1;
   pointer-events: auto;
 }

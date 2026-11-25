@@ -14,15 +14,23 @@
           <span class="function-operator-script-ide__meta">{{ subtitleText }}</span>
         </div>
         <div class="function-operator-script-ide__actions">
-          <el-button :disabled="saving || testing" @click="goBackPreviousStep">返回上一步</el-button>
+          <el-button data-onboarding="function-code-ide-back" :disabled="saving || testing" @click="goBackPreviousStep">返回上一步</el-button>
           <el-button :disabled="saving || parsing" :loading="testing" @click="runScriptIdeTest">测试</el-button>
           <el-button :disabled="saving || testing" @click="templateDrawerVisible = true">模板管理</el-button>
-          <el-button type="primary" :loading="saving || parsing" :disabled="testing" @click="submitScriptFunctionCreate">保存</el-button>
+          <el-button
+            type="primary"
+            data-onboarding="function-code-ide-save"
+            :loading="saving || parsing"
+            :disabled="testing"
+            @click="submitScriptFunctionCreate"
+          >
+            保存
+          </el-button>
         </div>
       </div>
     </template>
 
-    <div class="function-operator-script-ide__body">
+    <div class="function-operator-script-ide__body" data-onboarding="function-code-ide">
       <aside class="function-operator-script-ide__side function-operator-script-ide__side--left">
         <div class="function-operator-script-ide__field">
           <div class="function-operator-script-ide__label">语言</div>

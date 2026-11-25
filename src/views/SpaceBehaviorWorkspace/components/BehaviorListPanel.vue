@@ -15,7 +15,7 @@
         </el-select>
         <el-button @click="emit('query')">查询</el-button>
         <el-button @click="emit('reset')">重置</el-button>
-        <el-button :icon="Plus" @click="emit('create')">新建行为</el-button>
+        <el-button :icon="Plus" data-onboarding="behavior-create-open" @click="emit('create')">新建行为</el-button>
       </div>
     </header>
 

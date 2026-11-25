@@ -16,14 +16,16 @@
     <el-alert v-if="readonly" title="已发布或已失效行为为只读" type="warning" show-icon :closable="false" />
 
     <el-form class="behavior-form-dialog__form" label-position="top" :disabled="readonly">
-      <section class="behavior-form-dialog__section">
+      <section class="behavior-form-dialog__section" data-onboarding="behavior-form-basic">
         <h3>基本信息</h3>
 
         <div class="behavior-form-dialog__grid">
           <el-form-item label="类别" required>
-            <el-select v-model="kind" placeholder="选择类别" style="width: 100%" :disabled="mode === 'edit'" @change="handleKindChange">
-              <el-option v-for="item in SPACE_BEHAVIOR_KIND_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
-            </el-select>
+            <el-radio-group data-onboarding="behavior-form-kind" :model-value="kind" :disabled="mode === 'edit'" @update:model-value="handleKindChange">
+              <el-radio v-for="item in SPACE_BEHAVIOR_KIND_OPTIONS" :key="item.value" :value="item.value" :data-onboarding="`behavior-kind-${item.value}`">
+                {{ item.label }}
+              </el-radio>
+            </el-radio-group>
           </el-form-item>
           <el-form-item label="行为名称" required>
             <el-input v-model="displayName" maxlength="64" show-word-limit placeholder="输入行为名称" />
@@ -51,7 +53,7 @@
         </el-form-item>
 
         <template v-if="kind !== 'behaviorTree'">
-          <div v-if="kind === 'basic'" class="behavior-form-dialog__grid">
+          <div v-if="kind === 'basic'" class="behavior-form-dialog__grid" data-onboarding="behavior-basic-config">
             <el-form-item label="行为类型" required>
               <el-select v-model="valueType" placeholder="选择行为类型" style="width: 100%" @change="handleValueTypeChange">
                 <el-option v-for="item in SPACE_BEHAVIOR_VALUE_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
@@ -359,285 +361,293 @@
           </section>
 
           <template v-else-if="kind === 'application'">
-            <el-form-item label="关联函数算子" required>
-              <el-select
-                :model-value="functionOperatorId"
-                filterable
-                popper-class="behavior-form-dialog__operator-popper"
-                :loading="operatorLoading"
-                :disabled="operatorLoading || operatorError !== ''"
-                :placeholder="operatorLoading ? '正在加载函数算子' : operatorError || (operatorCatalog.length ? '选择函数算子' : '当前空间暂无函数算子')"
-                style="width: 100%"
-                @change="handleOperatorChange"
-              >
-                <el-option v-for="item in operatorCatalog" :key="item.id" :label="`${item.name} · ${item.version}`" :value="item.id">
-                  <div class="behavior-form-dialog__operator-option">
-                    <span class="behavior-form-dialog__operator-option-title">{{ item.name }} · {{ item.version }}</span>
-                    <span v-if="item.description.trim()" class="behavior-form-dialog__operator-option-meta">{{ item.description }}</span>
-                    <span class="behavior-form-dialog__operator-option-meta">类型：{{ resolveOperatorTypeLabel(item.type) }}</span>
-                  </div>
-                </el-option>
-              </el-select>
-            </el-form-item>
+            <div data-onboarding="behavior-application-config">
+              <el-form-item label="关联函数算子" required>
+                <el-select
+                  :model-value="functionOperatorId"
+                  filterable
+                  popper-class="behavior-form-dialog__operator-popper"
+                  :loading="operatorLoading"
+                  :disabled="operatorLoading || operatorError !== ''"
+                  :placeholder="operatorLoading ? '正在加载函数算子' : operatorError || (operatorCatalog.length ? '选择函数算子' : '当前空间暂无函数算子')"
+                  style="width: 100%"
+                  @change="handleOperatorChange"
+                >
+                  <el-option v-for="item in operatorCatalog" :key="item.id" :label="`${item.name} · ${item.version}`" :value="item.id">
+                    <div class="behavior-form-dialog__operator-option">
+                      <span class="behavior-form-dialog__operator-option-title">{{ item.name }} · {{ item.version }}</span>
+                      <span v-if="item.description.trim()" class="behavior-form-dialog__operator-option-meta">{{ item.description }}</span>
+                      <span class="behavior-form-dialog__operator-option-meta">类型：{{ resolveOperatorTypeLabel(item.type) }}</span>
+                    </div>
+                  </el-option>
+                </el-select>
+              </el-form-item>
 
-            <template v-if="functionOperatorId">
-              <section class="behavior-form-dialog__object-section">
-                <div class="behavior-form-dialog__attribute-head">
-                  <div class="behavior-form-dialog__attribute-title">
-                    <span>输入参数</span>
-                    <el-tag size="small" effect="plain">{{ applicationInputRows.length }}项</el-tag>
+              <template v-if="functionOperatorId">
+                <section class="behavior-form-dialog__object-section">
+                  <div class="behavior-form-dialog__attribute-head">
+                    <div class="behavior-form-dialog__attribute-title">
+                      <span>输入参数</span>
+                      <el-tag size="small" effect="plain">{{ applicationInputRows.length }}项</el-tag>
+                    </div>
                   </div>
-                </div>
-                <p v-if="applicationDetailLoading" class="behavior-form-dialog__param-state" role="status">正在加载函数详情…</p>
-                <p v-else-if="applicationDetailError" class="behavior-form-dialog__param-state" role="alert">{{ applicationDetailError }}</p>
-                <el-table v-else class="behavior-form-dialog__attribute-table" :data="applicationInputRows" row-key="rowKey" empty-text="暂无输入参数">
-                  <el-table-column label="参数" min-width="160" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      <div class="behavior-form-dialog__param-name" :style="{ paddingLeft: `${row.depth * 16}px` }">
-                        <span>{{ row.paramName }}</span>
-                        <span v-if="row.paramPath" class="behavior-form-dialog__param-path">{{ row.fullPath }}</span>
-                      </div>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="类型" width="100">
-                    <template #default="{ row }">
-                      <el-tag size="small" effect="plain">{{ row.typeLabel }}</el-tag>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="输入来源" min-width="140">
-                    <template #default="{ row }">
-                      <el-select
-                        v-if="!row.isObject"
-                        :model-value="readApplicationInputBinding(row.rowKey).sourceType"
-                        placeholder="选择输入来源"
-                        style="width: 100%"
-                        @change="(value) => updateApplicationInputSourceType(row.rowKey, value)"
-                      >
-                        <el-option v-for="item in SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
-                      </el-select>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="读取属性 / 参数值" min-width="260">
-                    <template #default="{ row }">
-                      <template v-if="!row.isObject">
-                        <div v-if="readApplicationInputBinding(row.rowKey).sourceType === 'PROPERTY'" class="behavior-form-dialog__object-property-pickers">
-                          <el-select
-                            :model-value="readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier"
-                            filterable
-                            :loading="objectLoading"
-                            :disabled="isOntologySelectorLocked || objectLoading || objectError !== ''"
-                            :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
-                            style="width: 100%"
-                            @change="(value) => updateApplicationInputOntologyId(row.rowKey, value)"
-                          >
-                            <el-option v-for="item in objectOptions" :key="item.value" :label="item.label" :value="item.value" />
-                          </el-select>
-                          <el-select
-                            :model-value="readApplicationInputBinding(row.rowKey).propertyUniqueIdentifier"
-                            filterable
-                            :loading="isApplicationPropertyLoading(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier)"
-                            :disabled="!readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier"
-                            :placeholder="
-                              !readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier
-                                ? '请先选择对象'
-                                : readApplicationPropertyError(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier) ||
-                                  (readApplicationPropertyOptions(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier).length
-                                    ? '选择读取属性'
-                                    : '当前对象暂无属性')
-                            "
-                            style="width: 100%"
-                            @change="(value) => updateApplicationInputPropertyId(row.rowKey, value)"
-                          >
-                            <el-option
-                              v-for="item in readApplicationPropertyOptions(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier)"
-                              :key="item.value"
-                              :label="item.label"
-                              :value="item.value"
-                            />
-                          </el-select>
+                  <p v-if="applicationDetailLoading" class="behavior-form-dialog__param-state" role="status">正在加载函数详情…</p>
+                  <p v-else-if="applicationDetailError" class="behavior-form-dialog__param-state" role="alert">{{ applicationDetailError }}</p>
+                  <el-table v-else class="behavior-form-dialog__attribute-table" :data="applicationInputRows" row-key="rowKey" empty-text="暂无输入参数">
+                    <el-table-column label="参数" min-width="160" show-overflow-tooltip>
+                      <template #default="{ row }">
+                        <div class="behavior-form-dialog__param-name" :style="{ paddingLeft: `${row.depth * 16}px` }">
+                          <span>{{ row.paramName }}</span>
+                          <span v-if="row.paramPath" class="behavior-form-dialog__param-path">{{ row.fullPath }}</span>
                         </div>
-                        <el-input
-                          v-else-if="readApplicationInputBinding(row.rowKey).sourceType === 'FIXED'"
-                          type="textarea"
-                          :rows="2"
-                          :model-value="readApplicationInputBinding(row.rowKey).fixedValue"
-                          placeholder='例如: {"target":"A"}'
-                          @update:model-value="(value) => updateApplicationInputFixedValue(row.rowKey, value)"
-                        />
-                        <div v-else class="behavior-form-dialog__external-default">
-                          <el-checkbox
-                            :model-value="readApplicationInputBinding(row.rowKey).enableDefaultValue"
-                            @update:model-value="(value) => updateApplicationInputEnableDefaultValue(row.rowKey, value)"
-                          >
-                            启用默认值
-                          </el-checkbox>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="类型" width="100">
+                      <template #default="{ row }">
+                        <el-tag size="small" effect="plain">{{ row.typeLabel }}</el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="输入来源" min-width="140">
+                      <template #default="{ row }">
+                        <el-select
+                          v-if="!row.isObject"
+                          :model-value="readApplicationInputBinding(row.rowKey).sourceType"
+                          placeholder="选择输入来源"
+                          style="width: 100%"
+                          @change="(value) => updateApplicationInputSourceType(row.rowKey, value)"
+                        >
+                          <el-option
+                            v-for="item in SPACE_BEHAVIOR_APPLICATION_INPUT_SOURCE_OPTIONS"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value"
+                          />
+                        </el-select>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="读取属性 / 参数值" min-width="260">
+                      <template #default="{ row }">
+                        <template v-if="!row.isObject">
+                          <div v-if="readApplicationInputBinding(row.rowKey).sourceType === 'PROPERTY'" class="behavior-form-dialog__object-property-pickers">
+                            <el-select
+                              :model-value="readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier"
+                              filterable
+                              :loading="objectLoading"
+                              :disabled="isOntologySelectorLocked || objectLoading || objectError !== ''"
+                              :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
+                              style="width: 100%"
+                              @change="(value) => updateApplicationInputOntologyId(row.rowKey, value)"
+                            >
+                              <el-option v-for="item in objectOptions" :key="item.value" :label="item.label" :value="item.value" />
+                            </el-select>
+                            <el-select
+                              :model-value="readApplicationInputBinding(row.rowKey).propertyUniqueIdentifier"
+                              filterable
+                              :loading="isApplicationPropertyLoading(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier)"
+                              :disabled="!readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier"
+                              :placeholder="
+                                !readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier
+                                  ? '请先选择对象'
+                                  : readApplicationPropertyError(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier) ||
+                                    (readApplicationPropertyOptions(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier).length
+                                      ? '选择读取属性'
+                                      : '当前对象暂无属性')
+                              "
+                              style="width: 100%"
+                              @change="(value) => updateApplicationInputPropertyId(row.rowKey, value)"
+                            >
+                              <el-option
+                                v-for="item in readApplicationPropertyOptions(readApplicationInputBinding(row.rowKey).ontologyUniqueIdentifier)"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                              />
+                            </el-select>
+                          </div>
                           <el-input
-                            v-if="readApplicationInputBinding(row.rowKey).enableDefaultValue"
+                            v-else-if="readApplicationInputBinding(row.rowKey).sourceType === 'FIXED'"
                             type="textarea"
                             :rows="2"
-                            :model-value="readApplicationInputBinding(row.rowKey).defaultValue"
-                            placeholder='例如：{"target":"A"}'
-                            @update:model-value="(value) => updateApplicationInputDefaultValue(row.rowKey, value)"
+                            :model-value="readApplicationInputBinding(row.rowKey).fixedValue"
+                            placeholder='例如: {"target":"A"}'
+                            @update:model-value="(value) => updateApplicationInputFixedValue(row.rowKey, value)"
                           />
+                          <div v-else class="behavior-form-dialog__external-default">
+                            <el-checkbox
+                              :model-value="readApplicationInputBinding(row.rowKey).enableDefaultValue"
+                              @update:model-value="(value) => updateApplicationInputEnableDefaultValue(row.rowKey, value)"
+                            >
+                              启用默认值
+                            </el-checkbox>
+                            <el-input
+                              v-if="readApplicationInputBinding(row.rowKey).enableDefaultValue"
+                              type="textarea"
+                              :rows="2"
+                              :model-value="readApplicationInputBinding(row.rowKey).defaultValue"
+                              placeholder='例如：{"target":"A"}'
+                              @update:model-value="(value) => updateApplicationInputDefaultValue(row.rowKey, value)"
+                            />
+                          </div>
+                        </template>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </section>
+
+                <section class="behavior-form-dialog__object-section">
+                  <div class="behavior-form-dialog__attribute-head">
+                    <div class="behavior-form-dialog__attribute-title">
+                      <span>输出参数</span>
+                      <el-tag size="small" effect="plain">{{ applicationOutputRows.length }}项</el-tag>
+                    </div>
+                  </div>
+                  <p v-if="applicationDetailLoading" class="behavior-form-dialog__param-state" role="status">正在加载函数详情…</p>
+                  <p v-else-if="applicationDetailError" class="behavior-form-dialog__param-state" role="alert">{{ applicationDetailError }}</p>
+                  <el-table v-else class="behavior-form-dialog__attribute-table" :data="applicationOutputRows" row-key="rowKey" empty-text="暂无输出参数">
+                    <el-table-column label="参数" min-width="160" show-overflow-tooltip>
+                      <template #default="{ row }">
+                        <div class="behavior-form-dialog__param-name" :style="{ paddingLeft: `${row.depth * 16}px` }">
+                          <span>{{ row.paramName }}</span>
+                          <span v-if="row.paramPath" class="behavior-form-dialog__param-path">{{ row.fullPath }}</span>
                         </div>
                       </template>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </section>
+                    </el-table-column>
+                    <el-table-column label="类型" width="100">
+                      <template #default="{ row }">
+                        <el-tag size="small" effect="plain">{{ row.typeLabel }}</el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="输出方式" min-width="140">
+                      <template #default="{ row }">
+                        <el-select
+                          v-if="!row.isObject"
+                          :model-value="readApplicationOutputBinding(row.rowKey).outputMode"
+                          placeholder="选择输出方式"
+                          style="width: 100%"
+                          @change="(value) => updateApplicationOutputMode(row.rowKey, value)"
+                        >
+                          <el-option v-for="item in SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+                        </el-select>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="写入目标" min-width="260">
+                      <template #default="{ row }">
+                        <template v-if="!row.isObject">
+                          <p v-if="readApplicationOutputBinding(row.rowKey).outputMode === 'RESULT_ONLY'" class="behavior-form-dialog__output-target-hint">
+                            返回算子结果，不写入本体属性
+                          </p>
+                          <div v-else class="behavior-form-dialog__object-property-pickers">
+                            <el-select
+                              :model-value="readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier"
+                              filterable
+                              :loading="objectLoading"
+                              :disabled="isOntologySelectorLocked || objectLoading || objectError !== ''"
+                              :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
+                              style="width: 100%"
+                              @change="(value) => updateApplicationOutputOntologyId(row.rowKey, value)"
+                            >
+                              <el-option v-for="item in objectOptions" :key="item.value" :label="item.label" :value="item.value" />
+                            </el-select>
+                            <el-select
+                              :model-value="readApplicationOutputBinding(row.rowKey).propertyUniqueIdentifier"
+                              filterable
+                              :loading="isApplicationPropertyLoading(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier)"
+                              :disabled="!readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier"
+                              :placeholder="
+                                !readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier
+                                  ? '请先选择对象'
+                                  : readApplicationPropertyError(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier) ||
+                                    (readApplicationPropertyOptions(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier).length
+                                      ? '选择写入属性'
+                                      : '当前对象暂无属性')
+                              "
+                              style="width: 100%"
+                              @change="(value) => updateApplicationOutputPropertyId(row.rowKey, value)"
+                            >
+                              <el-option
+                                v-for="item in readApplicationPropertyOptions(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier)"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                              />
+                            </el-select>
+                          </div>
+                        </template>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </section>
+              </template>
 
-              <section class="behavior-form-dialog__object-section">
+              <section v-if="showApplicationRelationSection" class="behavior-form-dialog__object-section">
                 <div class="behavior-form-dialog__attribute-head">
                   <div class="behavior-form-dialog__attribute-title">
-                    <span>输出参数</span>
-                    <el-tag size="small" effect="plain">{{ applicationOutputRows.length }}项</el-tag>
+                    <span>绑定关系</span>
+                    <el-tag size="small" effect="plain">{{ relationTotal }}项</el-tag>
                   </div>
+                  <span class="behavior-form-dialog__attribute-hint">可选；从当前空间关系中单选一条，可再次点击取消</span>
                 </div>
-                <p v-if="applicationDetailLoading" class="behavior-form-dialog__param-state" role="status">正在加载函数详情…</p>
-                <p v-else-if="applicationDetailError" class="behavior-form-dialog__param-state" role="alert">{{ applicationDetailError }}</p>
-                <el-table v-else class="behavior-form-dialog__attribute-table" :data="applicationOutputRows" row-key="rowKey" empty-text="暂无输出参数">
-                  <el-table-column label="参数" min-width="160" show-overflow-tooltip>
+                <form class="behavior-form-dialog__relation-toolbar" @submit.prevent="searchRelationRows">
+                  <el-input
+                    v-model="relationSearchKeyword"
+                    class="behavior-form-dialog__relation-search"
+                    clearable
+                    placeholder="按关系名称搜索"
+                    @clear="searchRelationRows"
+                  />
+                  <el-button native-type="submit">查询</el-button>
+                </form>
+                <el-table
+                  class="behavior-form-dialog__attribute-table"
+                  :data="relationLoading ? [] : relationRows"
+                  row-key="id"
+                  :show-header="false"
+                  :empty-text="relationLoading ? '正在加载关系' : relationError || '暂无关系'"
+                  @row-click="handleApplicationRelationRowClick"
+                >
+                  <el-table-column width="48" align="center">
                     <template #default="{ row }">
-                      <div class="behavior-form-dialog__param-name" :style="{ paddingLeft: `${row.depth * 16}px` }">
-                        <span>{{ row.paramName }}</span>
-                        <span v-if="row.paramPath" class="behavior-form-dialog__param-path">{{ row.fullPath }}</span>
-                      </div>
+                      <el-radio
+                        :model-value="selectedRelationId"
+                        :value="row.id"
+                        :disabled="readonly || relationLoading"
+                        @click.stop="selectApplicationRelationRow(row.id)"
+                      />
                     </template>
                   </el-table-column>
-                  <el-table-column label="类型" width="100">
+                  <el-table-column min-width="140" show-overflow-tooltip>
                     <template #default="{ row }">
-                      <el-tag size="small" effect="plain">{{ row.typeLabel }}</el-tag>
+                      <span>{{ row.displayName }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="输出方式" min-width="140">
+                  <el-table-column min-width="220" show-overflow-tooltip>
                     <template #default="{ row }">
-                      <el-select
-                        v-if="!row.isObject"
-                        :model-value="readApplicationOutputBinding(row.rowKey).outputMode"
-                        placeholder="选择输出方式"
-                        style="width: 100%"
-                        @change="(value) => updateApplicationOutputMode(row.rowKey, value)"
-                      >
-                        <el-option v-for="item in SPACE_BEHAVIOR_APPLICATION_OUTPUT_MODE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
-                      </el-select>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="写入目标" min-width="260">
-                    <template #default="{ row }">
-                      <template v-if="!row.isObject">
-                        <p v-if="readApplicationOutputBinding(row.rowKey).outputMode === 'RESULT_ONLY'" class="behavior-form-dialog__output-target-hint">
-                          返回算子结果，不写入本体属性
-                        </p>
-                        <div v-else class="behavior-form-dialog__object-property-pickers">
-                          <el-select
-                            :model-value="readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier"
-                            filterable
-                            :loading="objectLoading"
-                            :disabled="isOntologySelectorLocked || objectLoading || objectError !== ''"
-                            :placeholder="objectLoading ? '正在加载对象' : objectError || (objectOptions.length ? '选择对象' : '当前空间暂无对象')"
-                            style="width: 100%"
-                            @change="(value) => updateApplicationOutputOntologyId(row.rowKey, value)"
-                          >
-                            <el-option v-for="item in objectOptions" :key="item.value" :label="item.label" :value="item.value" />
-                          </el-select>
-                          <el-select
-                            :model-value="readApplicationOutputBinding(row.rowKey).propertyUniqueIdentifier"
-                            filterable
-                            :loading="isApplicationPropertyLoading(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier)"
-                            :disabled="!readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier"
-                            :placeholder="
-                              !readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier
-                                ? '请先选择对象'
-                                : readApplicationPropertyError(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier) ||
-                                  (readApplicationPropertyOptions(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier).length
-                                    ? '选择写入属性'
-                                    : '当前对象暂无属性')
-                            "
-                            style="width: 100%"
-                            @change="(value) => updateApplicationOutputPropertyId(row.rowKey, value)"
-                          >
-                            <el-option
-                              v-for="item in readApplicationPropertyOptions(readApplicationOutputBinding(row.rowKey).ontologyUniqueIdentifier)"
-                              :key="item.value"
-                              :label="item.label"
-                              :value="item.value"
-                            />
-                          </el-select>
-                        </div>
-                      </template>
+                      <span class="behavior-form-dialog__relation-mapping">{{ formatApplicationRelationMapping(row) }}</span>
                     </template>
                   </el-table-column>
                 </el-table>
-              </section>
-            </template>
-
-            <section v-if="showApplicationRelationSection" class="behavior-form-dialog__object-section">
-              <div class="behavior-form-dialog__attribute-head">
-                <div class="behavior-form-dialog__attribute-title">
-                  <span>绑定关系</span>
-                  <el-tag size="small" effect="plain">{{ relationTotal }}项</el-tag>
-                </div>
-                <span class="behavior-form-dialog__attribute-hint">可选；从当前空间关系中单选一条，可再次点击取消</span>
-              </div>
-              <form class="behavior-form-dialog__relation-toolbar" @submit.prevent="searchRelationRows">
-                <el-input
-                  v-model="relationSearchKeyword"
-                  class="behavior-form-dialog__relation-search"
-                  clearable
-                  placeholder="按关系名称搜索"
-                  @clear="searchRelationRows"
+                <el-pagination
+                  v-if="relationTotal > 0"
+                  class="behavior-form-dialog__relation-pagination"
+                  background
+                  layout="total, prev, pager, next"
+                  :total="relationTotal"
+                  :current-page="relationPageNum"
+                  :page-size="10"
+                  @current-change="changeRelationPage"
                 />
-                <el-button native-type="submit">查询</el-button>
-              </form>
-              <el-table
-                class="behavior-form-dialog__attribute-table"
-                :data="relationLoading ? [] : relationRows"
-                row-key="id"
-                :show-header="false"
-                :empty-text="relationLoading ? '正在加载关系' : relationError || '暂无关系'"
-                @row-click="handleApplicationRelationRowClick"
-              >
-                <el-table-column width="48" align="center">
-                  <template #default="{ row }">
-                    <el-radio
-                      :model-value="selectedRelationId"
-                      :value="row.id"
-                      :disabled="readonly || relationLoading"
-                      @click.stop="selectApplicationRelationRow(row.id)"
-                    />
-                  </template>
-                </el-table-column>
-                <el-table-column min-width="140" show-overflow-tooltip>
-                  <template #default="{ row }">
-                    <span>{{ row.displayName }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column min-width="220" show-overflow-tooltip>
-                  <template #default="{ row }">
-                    <span class="behavior-form-dialog__relation-mapping">{{ formatApplicationRelationMapping(row) }}</span>
-                  </template>
-                </el-table-column>
-              </el-table>
-              <el-pagination
-                v-if="relationTotal > 0"
-                class="behavior-form-dialog__relation-pagination"
-                background
-                layout="total, prev, pager, next"
-                :total="relationTotal"
-                :current-page="relationPageNum"
-                :page-size="10"
-                @current-change="changeRelationPage"
-              />
-            </section>
+              </section>
+            </div>
           </template>
         </template>
       </section>
     </el-form>
 
     <template #footer>
-      <el-button @click="emit('update:modelValue', false)">{{ readonly ? "关闭" : "取消" }}</el-button>
+      <el-button data-onboarding="behavior-form-cancel" @click="emit('update:modelValue', false)">{{ readonly ? "关闭" : "取消" }}</el-button>
       <el-button
         v-if="!readonly && kind === 'behaviorTree'"
+        data-onboarding="behavior-tree-open"
         :disabled="detailLoading || Boolean(detailError) || Boolean(unsupportedEditReason)"
         type="primary"
         @click="openBehaviorTreeOrchestration"
@@ -646,6 +656,7 @@
       </el-button>
       <el-button
         v-else-if="!readonly"
+        data-onboarding="behavior-form-save"
         :loading="submitLoading || detailLoading"
         :disabled="detailLoading || Boolean(detailError) || Boolean(unsupportedEditReason)"
         @click="submitBehaviorForm('save')"

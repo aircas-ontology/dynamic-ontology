@@ -19,7 +19,14 @@
         <el-button class="aircas-button aircas-button--tone-primary" @click="applyFilters">查询</el-button>
         <el-button class="aircas-button aircas-button--tone-ghost" @click="resetFilters">重置</el-button>
       </div>
-      <el-button v-if="!browseOnly" class="aircas-button aircas-button--tone-primary" :icon="Plus" @click="openCreateScheduleDialog">新建调度</el-button>
+      <el-button
+        v-if="!browseOnly"
+        class="aircas-button aircas-button--tone-primary"
+        data-onboarding="schedule-create-open"
+        :icon="Plus"
+        @click="openCreateScheduleDialog"
+        >新建调度</el-button
+      >
     </div>
 
     <div class="behavior-schedule-workspace__table-wrap">
