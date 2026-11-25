@@ -35,12 +35,14 @@ const props = withDefaults(
     seedNames?: string[];
     categoryColors?: Record<string, string>;
     readonly?: boolean;
+    circularLayout?: boolean;
     emptyDescription?: string;
   }>(),
   {
     items: () => [],
     seedNames: () => [],
     readonly: false,
+    circularLayout: false,
     emptyDescription: "暂无关系类",
   },
 );
@@ -113,6 +115,7 @@ function handleDelete() {
 function syncGraph() {
   graphApi?.setData({
     items: safeItems.value,
+    circularLayout: props.circularLayout,
     seedNames: props.seedNames,
     categoryColors: props.categoryColors,
   });
@@ -153,7 +156,7 @@ onBeforeUnmount(() => {
 watch(isDark, () => graphApi?.refreshTheme());
 
 watch(
-  () => [props.items, props.seedNames, props.categoryColors] as const,
+  () => [props.items, props.seedNames, props.categoryColors, props.circularLayout] as const,
   () => {
     closeMenu();
     void nextTick(() => {

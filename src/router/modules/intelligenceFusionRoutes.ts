@@ -18,15 +18,19 @@ export const intelligenceFusionRoutes: RouteRecordRaw[] = [
       {
         path: "event-themes",
         name: "IntelligenceEventThemes",
-        component: () => import("@/views/IntelligenceFusionPlaceholder/index.vue"),
-        props: { title: "事件主题" },
+        component: () => import("@/views/IntelligenceEventThemes/index.vue"),
         meta: { title: "事件主题" },
+      },
+      {
+        path: "event-display",
+        name: "IntelligenceEventDisplay",
+        component: () => import("@/views/IntelligenceEventDisplay/index.vue"),
+        meta: { title: "事件态势" },
       },
       {
         path: "hidden-relation-mining",
         name: "IntelligenceHiddenRelationMining",
-        component: () => import("@/views/IntelligenceFusionPlaceholder/index.vue"),
-        props: { title: "隐含关系挖掘" },
+        component: () => import("@/views/IntelligenceHiddenRelationMining/index.vue"),
         meta: { title: "隐含关系挖掘" },
       },
       {

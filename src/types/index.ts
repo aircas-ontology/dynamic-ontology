@@ -273,6 +273,13 @@ export type {
   OntologyCompositeParameter,
   OntologyCompositePortMapping,
 } from "./apis/ontologyCompositeConfigType";
+export type {
+  OntologyEntityQueryData,
+  OntologyEntityQueryGroup,
+  OntologyEntityQueryItem,
+  OntologyEntityQueryProperty,
+  OntologyEntityQueryRecord,
+} from "./apis/ontologyEntityQueryType";
 export { ONTOLOGY_GLOBAL_SEARCH_TYPE_OPTIONS } from "./apis/ontologyGlobalSearchType";
 export type {
   OntologyGlobalSearchData,
@@ -338,6 +345,14 @@ export type {
   StreamAgentChatSelectionOption,
   StreamAgentChatSelectionScenario,
 } from "./apis/streamAgentChatType";
+export type {
+  TaskTopicCreateParams,
+  TaskTopicDetail,
+  TaskTopicDictionaryItem,
+  TaskTopicEventStage,
+  TaskTopicItem,
+  TaskTopicUpdateParams,
+} from "./apis/taskTopicType";
 export type {
   TestOntologyActionData,
   TestOntologyActionEntityBinding,
@@ -497,7 +512,17 @@ export type {
   EntityBrowsingRouteName,
   EntityBrowsingTab,
 } from "./pages/entityBrowsingType";
-export type { IntelligenceTaskTheme } from "./pages/intelligenceFusionType";
+export type {
+  ImplicitRelationProgress,
+  ImplicitRelationSummaryCard,
+  ImplicitRelationSummaryTone,
+  ImplicitRelationTask,
+  ImplicitRelationVerificationRow,
+  ImplicitRelationVerifyStatus,
+} from "./pages/implicitRelationType";
+export type { EventDisplayEvent, EventDisplayTarget, EventDisplayTargetCategory, EventDisplayTargetCountry } from "./pages/intelligenceEventDisplayType";
+export type { IntelligenceEventTheme, IntelligenceEventThemeCategory } from "./pages/intelligenceEventThemeType";
+export type { IntelligenceTaskEvent, IntelligenceTaskTheme } from "./pages/intelligenceFusionType";
 export { METADATA_VALUE_TYPE_OPTIONS, ROOT_METADATA_PARENT_ID } from "./pages/ontologyAttributeMetadataType";
 export type {
   OntologyAttributeMetadataEnumRecord,

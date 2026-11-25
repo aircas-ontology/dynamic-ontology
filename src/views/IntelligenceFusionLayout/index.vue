@@ -6,9 +6,13 @@
         <h1>灵境-天枢</h1>
       </div>
       <div class="intelligence-layout__time">
-        <span>天文时间<br /><b>2026-11-23 02:26:15 UTC</b></span>
+        <span
+          >天文时间<br /><b>{{ astronomicalTime }}</b></span
+        >
         <h2>情报融合分析平台</h2>
-        <span>作战时间<br /><b>2026-11-23 10:26:15</b></span>
+        <span
+          >作战时间<br /><b>{{ operationTime }}</b></span
+        >
       </div>
       <button type="button" @click="logout">退出登录</button>
     </header>
@@ -18,18 +22,27 @@
           ><el-icon :size="24"><component :is="item.icon" /></el-icon>{{ item.label }}</RouterLink
         ><button type="button" class="collapse">≪ 收缩</button>
       </nav>
-      <main class="intelligence-layout__content" :class="{ 'intelligence-layout__content--map': route.name === 'IntelligenceTaskDisplay' }">
+      <main
+        class="intelligence-layout__content"
+        :class="{ 'intelligence-layout__content--map': route.name === 'IntelligenceTaskDisplay' || route.name === 'IntelligenceEventDisplay' }"
+      >
         <RouterView />
       </main>
     </div>
   </div>
 </template>
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Connection, Document, MagicStick, Tickets } from "@element-plus/icons-vue";
 import { clearLoginToken } from "@/utils/authToken";
 const route = useRoute();
 const router = useRouter();
+const astronomicalTime = ref("");
+const operationTime = ref("--");
+let taskStart = NaN;
+let enteredAt = 0;
+let timeTimer: ReturnType<typeof setInterval> | undefined;
 const menu = [
   { name: "IntelligenceTaskThemes", label: "任务主题", icon: Tickets },
   { name: "IntelligenceEventThemes", label: "事件主题", icon: Document },
@@ -40,6 +53,50 @@ function logout(): void {
   clearLoginToken();
   void router.replace({ name: "Login" });
 }
+/** @description 格式化时间并刷新顶部天文时间和作战时间。 */
+function updateLayoutTimes(): void {
+  const now = new Date();
+  const format = (value: Date, timeZone?: string): string =>
+    new Intl.DateTimeFormat("zh-CN", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    })
+      .format(value)
+      .replaceAll("/", "-")
+      .replace(", ", " ");
+  astronomicalTime.value = `${format(now, "UTC")} UTC`;
+  operationTime.value = Number.isFinite(taskStart) ? format(new Date(taskStart + performance.now() - enteredAt), "Asia/Shanghai") : "--";
+}
+watch(
+  [() => route.name, () => route.query.taskId, () => route.query.startTime],
+  ([name, taskId, startTime]) => {
+    taskStart = NaN;
+    if (
+      name === "IntelligenceTaskDisplay" &&
+      typeof taskId === "string" &&
+      typeof startTime === "string" &&
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(startTime)
+    ) {
+      taskStart = Date.parse(startTime.replace(" ", "T") + "+08:00");
+    }
+    enteredAt = performance.now();
+    updateLayoutTimes();
+  },
+  { immediate: true },
+);
+onMounted(() => {
+  updateLayoutTimes();
+  timeTimer = setInterval(updateLayoutTimes, 1000);
+});
+onBeforeUnmount(() => {
+  if (timeTimer) clearInterval(timeTimer);
+});
 </script>
 <style scoped lang="scss">
 .intelligence-layout {

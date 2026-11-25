@@ -144,3 +144,23 @@ export function layoutRelationGraph2dPositions(
 
   return result;
 }
+
+/** @description 为任务圆环布局按父节点分配事件扇区，避免跨环连线交叉。 @param nodes 图节点。 @param links 有向关系。 @returns 圆环坐标。 */
+export function layoutTaskGraphRingPositions(
+  nodes: RelationGraph2dNode[],
+  links: Array<Pick<RelationGraph2dLink, "source" | "target">>,
+): Map<string, RelationGraph2dLayoutPosition> {
+  const positions = layoutRelationGraph2dPositions(nodes, links);
+  const parents = nodes.filter((node) => positions.get(node.id)?.hop === 1);
+  parents.forEach((parent, index) => {
+    const angle = (index * Math.PI * 2) / parents.length - Math.PI / 2;
+    positions.set(parent.id, { x: Math.cos(angle) * 105, y: Math.sin(angle) * 105, hop: 1 });
+    const children = links.filter((link) => link.source === parent.id && positions.get(link.target)?.hop === 2);
+    children.forEach((child, childIndex) => {
+      const spread = ((Math.PI * 2) / parents.length) * 0.72;
+      const childAngle = angle + (children.length > 1 ? (childIndex / (children.length - 1) - 0.5) * spread : 0);
+      positions.set(child.target, { x: Math.cos(childAngle) * 225, y: Math.sin(childAngle) * 225, hop: 2 });
+    });
+  });
+  return positions;
+}

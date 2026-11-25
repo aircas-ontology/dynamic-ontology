@@ -8,7 +8,7 @@ import {
   type RelationGraph2dLink,
   type RelationGraph2dNode,
 } from "./graphData";
-import { layoutRelationGraph2dPositions } from "./layoutRelationGraph2d";
+import { layoutRelationGraph2dPositions, layoutTaskGraphRingPositions } from "./layoutRelationGraph2d";
 import { themeColor } from "./themeColor";
 
 /** 同步预热 tick 次数：首屏接近稳态后再渲染。 */
@@ -24,7 +24,7 @@ interface SimulationLink extends Omit<RelationGraph2dLink, "source" | "target">,
 }
 
 export interface RelationGraph2dApi {
-  setData: (data: { items: OntologyRelationClass[]; seedNames: string[]; categoryColors?: Record<string, string> }) => void;
+  setData: (data: { items: OntologyRelationClass[]; seedNames: string[]; categoryColors?: Record<string, string>; circularLayout?: boolean }) => void;
   resize: () => void;
   refreshTheme: () => void;
   dispose: () => void;
@@ -70,6 +70,7 @@ export function createRelationGraph2d(options: {
   const collapsedNodes = new Set<string>();
   const nodePositions = new Map<string, SimulationNode>();
   let categoryColors: Record<string, string> = {};
+  let circularLayout = false;
   let hoveredRelationId: string | null = null;
 
   const zoomBehavior = d3
@@ -130,7 +131,12 @@ export function createRelationGraph2d(options: {
     width = Math.max(container.clientWidth, 1);
     height = Math.max(container.clientHeight, 1);
     root
-      .attr("viewBox", `${-width / 2} ${-height / 2} ${width} ${height}`)
+      .attr(
+        "viewBox",
+        circularLayout
+          ? `${-Math.max(720, width) / 2} ${-Math.max(660, height) / 2} ${Math.max(720, width)} ${Math.max(660, height)}`
+          : `${-width / 2} ${-height / 2} ${width} ${height}`,
+      )
       .attr("width", width)
       .attr("height", height);
   }
@@ -214,6 +220,7 @@ export function createRelationGraph2d(options: {
       .data(links, (link) => link.id)
       .join("text")
       .attr("class", "relation-graph-2d__edge-label")
+      .attr("display", circularLayout ? "none" : null)
       .attr("text-anchor", "middle")
       .attr("dy", "-0.35em")
       .text((link) => (link.label.length > 10 ? `${link.label.slice(0, 9)}…` : link.label));
@@ -221,17 +228,22 @@ export function createRelationGraph2d(options: {
     const dragBehavior = d3
       .drag<SVGGElement, SimulationNode>()
       .on("start", (event, node) => {
-        if (!event.active) simulation.alphaTarget(0.28).restart();
+        if (!circularLayout && !event.active) simulation.alphaTarget(0.28).restart();
         node.fx = node.x;
         node.fy = node.y;
       })
       .on("drag", (event, node) => {
         node.fx = event.x;
         node.fy = event.y;
+        if (circularLayout) {
+          node.x = event.x;
+          node.y = event.y;
+          renderPositions();
+        }
       })
       .on("end", (event, node) => {
-        if (!event.active) simulation.alphaTarget(0);
-        if (!node.isSeed) {
+        if (!circularLayout && !event.active) simulation.alphaTarget(0);
+        if (!circularLayout && !node.isSeed) {
           node.fx = null;
           node.fy = null;
         }
@@ -265,12 +277,12 @@ export function createRelationGraph2d(options: {
       });
     nodeSelection
       .select<SVGCircleElement>(".relation-graph-2d__node-halo")
-      .attr("r", (node) => (node.isSeed ? 28 : 0))
+      .attr("r", (node) => (node.isSeed ? (circularLayout ? 34 : 28) : 0))
       .attr("fill", themeColor("--aircas-color-effect-primary-soft") || "transparent")
       .style("display", (node) => (node.isSeed ? null : "none"));
     nodeSelection
       .select<SVGCircleElement>(".relation-graph-2d__node-bg")
-      .attr("r", (node) => (node.isSeed ? 16 : 11))
+      .attr("r", (node) => (circularLayout ? (node.isSeed ? 22 : 16) : node.isSeed ? 16 : 11))
       .attr("fill", (node) =>
         node.isSeed ? themeColor("--aircas-color-primary") || "currentColor" : themeColor("--aircas-color-panel-background-deep") || "transparent",
       )
@@ -286,7 +298,7 @@ export function createRelationGraph2d(options: {
       .text((node) => (collapsedNodes.has(node.id) ? "+" : "−"));
     nodeSelection
       .select<SVGTextElement>(".relation-graph-2d__node-label")
-      .attr("dy", (node) => (node.isSeed ? 30 : 24))
+      .attr("dy", (node) => (circularLayout ? (node.isSeed ? 37 : 30) : node.isSeed ? 30 : 24))
       .attr("text-anchor", "middle")
       .attr("fill", themeColor("--aircas-color-text-primary") || "currentColor")
       .text((node) => (node.label.length > 14 ? `${node.label.slice(0, 13)}…` : node.label));
@@ -297,7 +309,7 @@ export function createRelationGraph2d(options: {
     simulation.nodes(nodes);
     linkForce.links(links);
 
-    const layoutSeeds = layoutRelationGraph2dPositions(
+    const layoutSeeds = (circularLayout ? layoutTaskGraphRingPositions : layoutRelationGraph2dPositions)(
       nodes.map((node) => ({ id: node.id, label: node.label, isSeed: node.isSeed, degree: node.degree })),
       links.map((link) => ({
         source: typeof link.source === "string" ? link.source : link.source.id,
@@ -307,6 +319,15 @@ export function createRelationGraph2d(options: {
 
     nodes.forEach((node) => {
       const layout = layoutSeeds.get(node.id);
+      if (circularLayout && layout) {
+        node.x = layout.x;
+        node.y = layout.y;
+        node.fx = layout.x;
+        node.fy = layout.y;
+        node.vx = 0;
+        node.vy = 0;
+        return;
+      }
       if (node.isSeed) {
         node.fx = 0;
         node.fy = 0;
@@ -326,10 +347,15 @@ export function createRelationGraph2d(options: {
       node.fy = null;
     });
 
-    simulation.alpha(1);
-    simulation.tick(LAYOUT_WARMUP_TICKS);
-    renderPositions();
-    simulation.alpha(0.12).restart();
+    if (circularLayout) {
+      simulation.stop();
+      renderPositions();
+    } else {
+      simulation.alpha(1);
+      simulation.tick(LAYOUT_WARMUP_TICKS);
+      renderPositions();
+      simulation.alpha(0.12).restart();
+    }
     applyHoverState();
   }
 
@@ -359,7 +385,8 @@ export function createRelationGraph2d(options: {
    * @description 用关系列表重建图数据并刷新渲染。
    * @param data 关系项、种子名与可选分类色。
    */
-  function setData(data: { items: OntologyRelationClass[]; seedNames: string[]; categoryColors?: Record<string, string> }): void {
+  function setData(data: { items: OntologyRelationClass[]; seedNames: string[]; categoryColors?: Record<string, string>; circularLayout?: boolean }): void {
+    circularLayout = data.circularLayout ?? false;
     categoryColors = data.categoryColors ?? {};
     fullGraph = buildRelationGraph2dData(data.items, data.seedNames);
     const ids = new Set(fullGraph.nodes.map((node) => node.id));

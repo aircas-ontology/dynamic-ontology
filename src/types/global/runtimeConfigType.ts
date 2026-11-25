@@ -11,6 +11,8 @@ declare global {
     readonly OCEAN_ANALYSIS_SERVER_URL: string;
     readonly LOGIN_URL: string;
     readonly ONTOLOGYMANAGE_URL: string;
+    /** 任务主题服务地址，由开发人员在 domainConfig.js 中维护。 */
+    readonly THEME_URL: string;
     /** Agent 对话服务地址，由开发人员在 domainConfig.js 中维护。 */
     readonly AGENT_URL?: string;
     /** 本地 HTTP Mock 服务地址，由开发人员在 domainConfig.js 中维护。 */

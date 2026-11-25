@@ -13,11 +13,11 @@
         <el-form-item label="任务名称" required><el-input v-model="draft.name" maxlength="80" show-word-limit placeholder="请输入任务名称" /></el-form-item>
         <el-form-item label="任务类型" required
           ><el-select v-model="draft.category" placeholder="请选择任务类型"
-            ><el-option v-for="item in categories" :key="item" :label="item" :value="item" /></el-select
+            ><el-option v-for="item in categories" :key="item.id" :label="item.dictName" :value="item.id" /></el-select
         ></el-form-item>
         <el-form-item label="任务区域" required
           ><el-select v-model="draft.region" filterable allow-create default-first-option placeholder="请选择或输入任务区域"
-            ><el-option v-for="item in regions" :key="item" :label="item" :value="item" /></el-select
+            ><el-option v-for="item in regions" :key="item.id" :label="item.dictName" :value="item.id" /></el-select
         ></el-form-item>
         <el-form-item label="区域点位">
           <div class="task-create__area">
@@ -65,15 +65,15 @@
 </template>
 <script setup lang="ts">
 import { onScopeDispose, reactive, ref, watch } from "vue";
-import { getOntologySpaceListInterface } from "@/apis";
-import type { OntologySpaceListItem } from "@/types";
+import { getOntologySpaceListInterface, getTaskTopicDictionaryInterface } from "@/apis";
+import type { OntologySpaceListItem, TaskTopicDictionaryItem } from "@/types";
 import TaskAreaMap from "./TaskAreaMap.vue";
 import { validateTaskDraft, type TaskDraft } from "../utils/taskDraft";
 
 const props = defineProps<{ visible: boolean; initialDraft?: TaskDraft | null }>();
 const emit = defineEmits<{ "update:visible": [value: boolean]; create: [draft: TaskDraft] }>();
-const categories = ["军事作战", "演习演练", "情报侦察", "综合保障", "其它"];
-const regions = ["西太平洋", "南海海域", "东海海域", "第一岛链", "关岛周边", "乌克兰东部", "波斯湾", "台湾岛"];
+const categories = ref<TaskTopicDictionaryItem[]>([]);
+const regions = ref<TaskTopicDictionaryItem[]>([]);
 const draft = reactive<TaskDraft>({
   name: "",
   category: "",
@@ -111,6 +111,22 @@ async function loadTaskSpaces(): Promise<void> {
     if (current === revision) spaceLoading.value = false;
   }
 }
+/** @description 查询任务类型和任务区域字典。 */
+async function loadTaskDictionaries(): Promise<void> {
+  try {
+    const [categoryResponse, regionResponse] = await Promise.all([
+      getTaskTopicDictionaryInterface("task_type"),
+      getTaskTopicDictionaryInterface("task_region"),
+    ]);
+    if (categoryResponse.code !== 200 || regionResponse.code !== 200) throw new Error(categoryResponse.message || regionResponse.message || "查询任务字典失败");
+    categories.value = categoryResponse.data ?? [];
+    regions.value = regionResponse.data ?? [];
+  } catch (cause) {
+    categories.value = [];
+    regions.value = [];
+    formError.value = cause instanceof Error ? cause.message : "查询任务字典失败";
+  }
+}
 /** @description 将地图选中的经纬度加入任务区域。 @param point 经度和纬度。 */
 function addTaskPoint(point: [number, number]): void {
   draft.points.push(point);
@@ -120,7 +136,6 @@ function confirmTaskDraft(): void {
   formError.value = validateTaskDraft(draft);
   if (formError.value) return;
   emit("create", { ...draft, points: draft.points.map((point) => [...point]) });
-  emit("update:visible", false);
 }
 watch(
   () => props.visible,
@@ -138,6 +153,7 @@ watch(
     formError.value = "";
     spaces.value = [];
     void loadTaskSpaces();
+    void loadTaskDictionaries();
   },
 );
 onScopeDispose(() => {

@@ -1,3 +1,5 @@
+import type { IntelligenceTaskEvent } from "@/types";
+
 export const taskDisplayTitle = "台湾地区“汉光42号”演习监测分析";
 export const taskDisplayArea: [number, number][] = [
   [119.6, 21.5],
@@ -62,9 +64,33 @@ export const taskDisplayTargets = [
     space: "air",
   },
 ];
-export const taskDisplayEvents = [
+const eventPhases = [
   { name: "筹划准备", period: "2026-08-05", events: ["预警探测", "战斗机群战备转场", "P-3C转入联合警戒"] },
   { name: "兵力机动", period: "2026-08-05 ~ 2026-08-07", events: ["发现主战坦克", "台北港航道演练", "导弹发射单元机动"] },
   { name: "演习实施", period: "2026-08-07 ~ 2026-08-12", events: ["联合海域打击", "防空拦截演练", "重点目标跟踪"] },
   { name: "总结评估", period: "2026-08-12", events: ["演习效果评估", "装备撤收"] },
 ];
+
+export const taskDisplayEvents: { name: string; period: string; events: IntelligenceTaskEvent[] }[] = eventPhases.map((phase, phaseIndex) => ({
+  name: phase.name,
+  period: phase.period,
+  events: phase.events.map((name, eventIndex) => ({
+    id: `event-${phaseIndex + 1}-${eventIndex + 1}`,
+    name,
+    status: "已完成",
+    time: `${phase.period.slice(0, 10)} 12:00`,
+    progress: phase.name,
+    location: "台湾地区",
+    coordinates: "暂无数据",
+    sourceType: "模拟数据",
+    sourcePlatform: "情报融合分析平台",
+    confidence: 90,
+    description: `模拟事件：${name}。`,
+    targets: taskDisplayTargets
+      .slice((phaseIndex + eventIndex) % taskDisplayTargets.length, ((phaseIndex + eventIndex) % taskDisplayTargets.length) + 1)
+      .map((target) => ({
+        name: target.name,
+        category: target.category,
+      })),
+  })),
+}));

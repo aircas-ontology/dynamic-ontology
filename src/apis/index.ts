@@ -30,6 +30,14 @@ import {
   putUnpublishOntologyActionInterface,
 } from "./ontologyActionApi";
 import { getExampleInterface } from "./exampleApi";
+import { getTaskTopicDictionaryInterface } from "./dictionaryApi";
+import {
+  deleteTaskTopicInterface,
+  getTaskTopicDetailInterface,
+  getTaskTopicListInterface,
+  postTaskTopicInterface,
+  putTaskTopicInterface,
+} from "./taskTopicApi";
 import {
   deleteFunctionRateLimitTemplateInterface,
   getListFunctionRateLimitTemplateInterface,
@@ -89,6 +97,7 @@ import {
   postOntologyEntityAllLinkInterface,
   postOntologyEntityLinksInterface,
 } from "./ontologyEntityApi";
+import { postOntologyEntityQueryInterface } from "./ontologyEntityQueryApi";
 import { getOntologyInheritanceTreeInterface } from "./ontologyInheritanceTreeApi";
 import { getOntologyInstanceUrlListInterface } from "./ontologyInstanceUrlApi";
 import { postOntologyGlobalSearchInterface } from "./ontologySearchApi";
@@ -211,6 +220,12 @@ export {
   deleteOntologyPropertyInterface,
   getActionCategoryTreeInterface,
   getExampleInterface,
+  getTaskTopicDictionaryInterface,
+  deleteTaskTopicInterface,
+  getTaskTopicDetailInterface,
+  getTaskTopicListInterface,
+  postTaskTopicInterface,
+  putTaskTopicInterface,
   getExportApiDocInterface,
   getExportOntologyInterface,
   getExportOntologySpaceInterface,
@@ -235,6 +250,7 @@ export {
   postGetOntologyEntityRowDetailPageInterface,
   postOntologyEntityAllLinkInterface,
   postOntologyEntityLinksInterface,
+  postOntologyEntityQueryInterface,
   getOntologyInheritanceTreeInterface,
   getOntologyInstanceUrlListInterface,
   getOntologyMetaStatisticInterface,

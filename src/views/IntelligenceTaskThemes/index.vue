@@ -1,5 +1,7 @@
 <template>
   <section class="task-themes">
+    <el-alert v-if="requestError" :title="requestError" type="error" show-icon closable @close="requestError = ''" />
+    <el-alert v-if="typeError" :title="typeError" type="warning" show-icon closable @close="typeError = ''" />
     <header class="task-themes__toolbar">
       <div>
         <h2>
@@ -7,11 +9,13 @@
         </h2>
       </div>
       <div v-if="!deleteMode">
-        <el-button plain @click="openCreateTask">＋ 新建任务主题</el-button><el-button type="danger" plain @click="deleteMode = true">♧ 删除</el-button>
+        <el-button plain :loading="requestLoading" @click="openCreateTask">＋ 新建任务主题</el-button
+        ><el-button type="danger" plain :disabled="requestLoading" @click="deleteMode = true">♧ 删除</el-button>
       </div>
       <div v-else>
-        <el-button type="danger" plain :disabled="!selectedTaskIds.length" @click="confirmTaskDeletion">确认删除（{{ selectedTaskIds.length }}）</el-button
-        ><el-button plain @click="cancelTaskDeletion">取消</el-button>
+        <el-button type="danger" plain :loading="requestSubmitting" :disabled="!selectedTaskIds.length" @click="confirmTaskDeletion"
+          >确认删除（{{ selectedTaskIds.length }}）</el-button
+        ><el-button plain :disabled="requestSubmitting" @click="cancelTaskDeletion">取消</el-button>
       </div>
     </header>
     <div class="task-themes__grid">
@@ -45,10 +49,10 @@
           >
         </div>
         <footer>
-          <strong>{{ task.category }} · {{ task.period }}</strong>
+          <strong>{{ typeNames.get(String(task.category)) ?? task.category }} · {{ task.period }}</strong>
           <div class="task-card__actions">
             <el-button v-if="!deleteMode" size="small" plain @click.stop="openEditTask(task)">编辑</el-button
-            ><el-button size="small" plain @click.stop="enterTask">进入任务 →</el-button>
+            ><el-button size="small" plain @click.stop="enterTask(task)">进入任务 →</el-button>
           </div>
         </footer>
       </article>
@@ -58,21 +62,28 @@
 </template>
 <script setup lang="ts">
 import { ref } from "vue";
+import { onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { intelligenceTaskThemes } from "@/mocks/intelligenceFusionTaskThemes";
+import { deleteTaskTopicInterface, getTaskTopicDictionaryInterface, getTaskTopicListInterface, postTaskTopicInterface, putTaskTopicInterface } from "@/apis";
 import type { IntelligenceTaskTheme } from "@/types";
+import type { TaskTopicCreateParams, TaskTopicItem } from "@/types";
 import TaskCreateDialog from "./components/TaskCreateDialog.vue";
 import type { TaskDraft } from "./utils/taskDraft";
-import { taskThemeToDraft, updateTaskTheme } from "./utils/taskDraft";
-import { removeSelectedTasks, toggleTaskSelection } from "./utils/taskSelection";
+import { formatBeijingDateTime, parseRegionPoints, stringifyRegionPoints, taskThemeToDraft } from "./utils/taskDraft";
+import { toggleTaskSelection } from "./utils/taskSelection";
 
 const taskDialogVisible = ref(false);
 const router = useRouter();
-/** @description 进入独立的任务展示页面。 */
-function enterTask(): void {
-  if (!deleteMode.value) void router.push({ name: "IntelligenceTaskDisplay" });
+/** @description 携带所选任务的北京时间进入态势页。 @param task 当前任务。 */
+function enterTask(task: IntelligenceTaskTheme): void {
+  if (deleteMode.value) return;
+  const [startTime] = task.period.split(" ~ ");
+  void router.push({ name: "IntelligenceTaskDisplay", query: { taskId: task.id, startTime, spaceId: task.spaceId ?? undefined } });
 }
-const taskThemes = ref([...intelligenceTaskThemes]);
+const taskThemes = ref<IntelligenceTaskTheme[]>([]);
+const requestError = ref("");
+const requestLoading = ref(false);
+const requestSubmitting = ref(false);
 const editingId = ref<string | null>(null);
 const editingDraft = ref<TaskDraft | null>(null);
 /** @description 打开空白任务表单。 */
@@ -101,27 +112,108 @@ function cancelTaskDeletion(): void {
 /** @description 从当前页面移除选中的任务。 */
 function confirmTaskDeletion(): void {
   if (!selectedTaskIds.value.length) return;
-  taskThemes.value = removeSelectedTasks(taskThemes.value, selectedTaskIds.value);
-  cancelTaskDeletion();
+  void deleteSelectedTaskThemes();
 }
-/** @description 在当前页面中展示新建的任务草稿。 @param draft 已校验的任务草稿。 */
-function saveTaskTheme(draft: TaskDraft): void {
-  if (editingId.value !== null) {
-    taskThemes.value = taskThemes.value.map((task) => (task.id === editingId.value ? updateTaskTheme(task, draft) : task));
-    return;
-  }
-  taskThemes.value.push({
-    id: `local-${Date.now()}`,
-    title: draft.name,
-    region: draft.region,
+/** @description 将接口任务记录转换为页面卡片模型。 @param item 接口任务记录。 @returns 页面任务主题。 */
+function mapTaskTopic(item: TaskTopicItem): IntelligenceTaskTheme {
+  return {
+    id: String(item.id),
+    title: item.taskName,
+    region: item.taskRegion,
+    points: parseRegionPoints(item.regionPoint),
+    description: item.description ?? "",
+    category: item.taskType,
+    spaceId: Number(item.ontologySpace) || null,
+    period: `${formatBeijingDateTime(item.startTime)} ~ ${formatBeijingDateTime(item.endTime)}`,
+    counts: { target: item.targetCount ?? 0, sea: item.seaCount ?? 0, air: item.airCount ?? 0, land: item.landCount ?? 0, event: item.eventCount ?? 0 },
+  };
+}
+/** @description 将页面草稿转换为任务主题接口参数。 @param draft 已确认草稿。 @returns 接口请求参数。 */
+function mapTaskDraftToRequest(draft: TaskDraft): TaskTopicCreateParams {
+  return {
+    taskName: draft.name,
+    taskType: String(draft.category),
+    taskRegion: String(draft.region),
+    regionPoint: stringifyRegionPoints(draft.points),
+    startTime: draft.startTime,
+    endTime: draft.ongoing ? "" : draft.endTime,
     description: draft.description,
-    category: draft.category,
-    spaceId: draft.spaceId,
-    points: draft.points.map(([lng, lat]) => [lng, lat]),
-    period: `${draft.startTime} ~ ${draft.ongoing ? "至今" : draft.endTime}`,
-    counts: { target: 0, sea: 0, air: 0, land: 0, event: 0 },
-  });
+    ontologySpace: draft.spaceId === null ? "" : String(draft.spaceId),
+    status: 0,
+  };
 }
+/** @description 查询任务主题列表并刷新页面卡片。 */
+async function loadTaskThemes(): Promise<void> {
+  requestLoading.value = true;
+  requestError.value = "";
+  try {
+    const response = await getTaskTopicListInterface();
+    if (response.code !== 200) throw new Error(response.message || "查询任务主题失败");
+    taskThemes.value = (response.data ?? []).map(mapTaskTopic);
+  } catch (cause) {
+    taskThemes.value = [];
+    requestError.value = cause instanceof Error ? cause.message : "查询任务主题失败";
+  } finally {
+    requestLoading.value = false;
+  }
+}
+/** @description 提交新建或编辑任务主题并刷新列表。 @param draft 已确认草稿。 */
+async function saveTaskTheme(draft: TaskDraft): Promise<void> {
+  requestSubmitting.value = true;
+  requestError.value = "";
+  try {
+    const payload = mapTaskDraftToRequest(draft);
+    const response =
+      editingId.value === null
+        ? await postTaskTopicInterface(payload)
+        : await putTaskTopicInterface({
+            ...payload,
+            id: editingId.value,
+          });
+    if (response.code !== 200) throw new Error(response.message || (editingId.value === null ? "创建任务主题失败" : "编辑任务主题失败"));
+    taskDialogVisible.value = false;
+    await loadTaskThemes();
+  } catch (cause) {
+    requestError.value = cause instanceof Error ? cause.message : "保存任务主题失败";
+  } finally {
+    requestSubmitting.value = false;
+  }
+}
+/** @description 删除选中的任务主题并刷新列表。 */
+async function deleteSelectedTaskThemes(): Promise<void> {
+  requestSubmitting.value = true;
+  requestError.value = "";
+  try {
+    for (const id of selectedTaskIds.value) {
+      const response = await deleteTaskTopicInterface(id);
+      if (response.code !== 200) throw new Error(response.message || "删除任务主题失败");
+    }
+    cancelTaskDeletion();
+    await loadTaskThemes();
+  } catch (cause) {
+    requestError.value = cause instanceof Error ? cause.message : "删除任务主题失败";
+  } finally {
+    requestSubmitting.value = false;
+  }
+}
+const typeNames = ref(new Map<string, string>());
+const typeError = ref("");
+/** @description 查询任务类型，在当前列表页按字典 ID 缓存显示名称。 */
+async function loadTaskTypeNames(): Promise<void> {
+  try {
+    const response = await getTaskTopicDictionaryInterface("task_type");
+    if (response.code !== 200) throw new Error(response.message || "任务类型字典加载失败");
+    for (const item of response.data ?? []) {
+      if (item.dictName) typeNames.value.set(String(item.id), item.dictName);
+    }
+  } catch (error) {
+    typeError.value = error instanceof Error ? error.message : "任务类型字典加载失败";
+  }
+}
+onMounted(() => {
+  void loadTaskThemes();
+  void loadTaskTypeNames();
+});
 </script>
 <style scoped lang="scss">
 .task-themes__toolbar {
