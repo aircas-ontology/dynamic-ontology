@@ -251,7 +251,11 @@ async function fetchScheduleList(force = false): Promise<void> {
   scheduleListLoading.value = true;
   scheduleListError.value = "";
   try {
-    const params: ListBehaviorSchedulingParams = { pageNum: schedulePage.value, pageSize: schedulePageSize.value, spaceId: Number(scheduleSpaceId.value) };
+    const params: ListBehaviorSchedulingParams = {
+      pageNum: schedulePage.value,
+      pageSize: schedulePageSize.value,
+      ontologySpaceId: Number(scheduleSpaceId.value),
+    };
     if (appliedKeyword.value) params.name = appliedKeyword.value;
     if (appliedStrategy.value) params.type = appliedStrategy.value === "周期调度" ? "TASK" : "RULE";
     const result = await fetchBehaviorSchedules(getListBehaviorSchedulingInterface, () => requestId === scheduleListRequest, params);

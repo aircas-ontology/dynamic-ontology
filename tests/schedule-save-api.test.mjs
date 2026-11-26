@@ -270,9 +270,9 @@ test("RULE create ignores stale responses after space switch and disposal", asyn
 
 test("schedule list API sends only paging parameters through the shared service", async () => {
   const { api, calls } = createApiHarness("https://ontology.example.test");
-  await api.getListBehaviorSchedulingInterface({ pageNum: 2, pageSize: 1000, spaceId: 1, spaceId: 1 });
+  await api.getListBehaviorSchedulingInterface({ pageNum: 2, pageSize: 1000, ontologySpaceId: 1 });
   assert.deepEqual(calls, [
-    { url: "https://ontology.example.test/ontology/action/scheduling/list", method: "get", params: { pageNum: 2, pageSize: 1000, spaceId: 1, spaceId: 1 } },
+    { url: "https://ontology.example.test/ontology/action/scheduling/list", method: "get", params: { pageNum: 2, pageSize: 1000, ontologySpaceId: 1 } },
   ]);
 });
 
@@ -552,20 +552,20 @@ test("schedule filters and pagination send applied conditions and reset page", a
     async (params) => ({ code: 200, data: { records: [listRecord], total: 55, size: params.pageSize, current: params.pageNum } }),
   );
   await settleSchedulePage();
-  assert.deepEqual(h.listCalls[0], { pageNum: 1, pageSize: 10, spaceId: 1 });
+  assert.deepEqual(h.listCalls[0], { pageNum: 1, pageSize: 10, ontologySpaceId: 1 });
   h.page.keyword.value = "  test  ";
   h.page.strategy.value = "周期调度";
   h.page.applyFilters();
   await settleSchedulePage();
-  assert.deepEqual(h.listCalls.at(-1), { pageNum: 1, pageSize: 10, spaceId: 1, name: "test", type: "TASK" });
+  assert.deepEqual(h.listCalls.at(-1), { pageNum: 1, pageSize: 10, ontologySpaceId: 1, name: "test", type: "TASK" });
   assert.equal(h.page.filteredSchedules.value.length, 1);
   h.page.keyword.value = "unapplied";
   h.page.changeSchedulePage(3);
   await settleSchedulePage();
-  assert.deepEqual(h.listCalls.at(-1), { pageNum: 3, pageSize: 10, spaceId: 1, name: "test", type: "TASK" });
+  assert.deepEqual(h.listCalls.at(-1), { pageNum: 3, pageSize: 10, ontologySpaceId: 1, name: "test", type: "TASK" });
   h.page.changeSchedulePageSize(20);
   await settleSchedulePage();
-  assert.deepEqual(h.listCalls.at(-1), { pageNum: 1, pageSize: 20, spaceId: 1, name: "test", type: "TASK" });
+  assert.deepEqual(h.listCalls.at(-1), { pageNum: 1, pageSize: 20, ontologySpaceId: 1, name: "test", type: "TASK" });
   assert.equal(h.page.scheduleTotal.value, 55);
   h.page.strategy.value = "规则调度";
   h.page.applyFilters();
@@ -573,7 +573,7 @@ test("schedule filters and pagination send applied conditions and reset page", a
   assert.equal(h.listCalls.at(-1).type, "RULE");
   h.page.resetFilters();
   await settleSchedulePage();
-  assert.deepEqual(h.listCalls.at(-1), { pageNum: 1, pageSize: 20, spaceId: 1 });
+  assert.deepEqual(h.listCalls.at(-1), { pageNum: 1, pageSize: 20, ontologySpaceId: 1 });
   h.scope.stop();
 });
 
