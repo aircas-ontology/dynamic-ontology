@@ -66,7 +66,7 @@ function restoreValue(value: unknown): RuleValueNode {
  */
 function readFlowMonitorType(value: unknown): RuleConditionMonitorType | undefined {
   if (value === undefined || value === null || value === "") return undefined;
-  if (value === "insert" || value === "delete") return value;
+  if (value === "insert" || value === "update" || value === "delete") return value;
   throw new Error("画布监测事件类型无效");
 }
 

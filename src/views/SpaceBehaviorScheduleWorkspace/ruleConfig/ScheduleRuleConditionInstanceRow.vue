@@ -5,7 +5,7 @@
       <span>{{ label }}</span>
     </div>
     <div v-if="readonly" class="condition-instance-row__fields">
-      <span>实例：{{ value.instanceNames?.join("、") || value.instanceIds.join("、") || "未配置" }}</span>
+      <span v-if="requiresInstance">实例：{{ value.instanceNames?.join("、") || value.instanceIds.join("、") || "未配置" }}</span>
       <span v-if="requiresDataRow"
         >数据行：{{
           value.dataPrimaryKeyLabel || (value.dataPrimaryKey != null && value.dataPrimaryKey !== "" ? String(value.dataPrimaryKey) : "未配置")
@@ -13,7 +13,7 @@
       >
     </div>
     <div v-else class="condition-instance-row__fields">
-      <div class="condition-instance-row__field">
+      <div v-if="requiresInstance" class="condition-instance-row__field">
         <span class="condition-instance-row__field-label">实例</span>
         <el-select
           :model-value="value.instanceIds[0] || ''"
@@ -72,10 +72,16 @@
 <script setup lang="ts">
 import { computed, watch } from "vue";
 import { useRoute } from "vue-router";
-import type { RuleVariableValue } from "@/types";
-import { needsRuleVariableDataRow, useRuleVariablePicker } from "../composables/useRuleVariablePicker";
+import type { RuleConditionMonitorType, RuleVariableValue } from "@/types";
+import { useRuleVariablePicker } from "../composables/useRuleVariablePicker";
+import { readRuleVariableBindingRequirement } from "../utils/needsRuleVariableDataRow";
 
-const props = defineProps<{ value: RuleVariableValue; label: string; readonly?: boolean }>();
+const props = defineProps<{
+  value: RuleVariableValue;
+  label: string;
+  readonly?: boolean;
+  monitorType?: RuleConditionMonitorType | null;
+}>();
 const emit = defineEmits<{ validity: [ready: boolean] }>();
 const route = useRoute();
 const {
@@ -90,7 +96,9 @@ const {
   clearVariableDataRows,
   cancelVariableQueries,
 } = useRuleVariablePicker(() => String(route.params.spaceId ?? ""));
-const requiresDataRow = computed(() => needsRuleVariableDataRow(props.value.storageGroup));
+const bindingRequirement = computed(() => readRuleVariableBindingRequirement(props.value.storageGroup, props.monitorType));
+const requiresInstance = computed(() => bindingRequirement.value.requiresInstance);
+const requiresDataRow = computed(() => bindingRequirement.value.requiresDataRow);
 const hasAvailableInstance = computed(() => props.value.instanceIds.length === 1 && instances.value.some((item) => item.id === props.value.instanceIds[0]));
 const selectedDataRowId = computed(
   () => dataRows.value.find((item) => JSON.stringify(item.dataPrimaryKey) === JSON.stringify(props.value.dataPrimaryKey))?.id || "",
@@ -98,20 +106,19 @@ const selectedDataRowId = computed(
 const ready = computed(
   () =>
     !!props.readonly ||
-    (!instanceLoading.value &&
-      !instanceError.value &&
-      hasAvailableInstance.value &&
+    ((!requiresInstance.value || (!instanceLoading.value && !instanceError.value && hasAvailableInstance.value)) &&
       (!requiresDataRow.value || (!!selectedDataRowId.value && !dataRowLoading.value && !dataRowError.value))),
 );
 watch(ready, (valid) => emit("validity", valid), { immediate: true });
 
 /** @description 重新查询当前字段的实例，保留草稿选择用于失效提示。 @returns 查询结束。 */
 async function refreshConditionInstances(): Promise<void> {
+  if (!requiresInstance.value) return;
   await fetchVariableInstances(props.value.objectId);
 }
 /** @description 加载当前实例对应的子表数据行。 @returns 查询结束。 */
 async function refreshConditionDataRows(): Promise<void> {
-  if (!requiresDataRow.value || !hasAvailableInstance.value) return;
+  if (!requiresDataRow.value || !requiresInstance.value || !hasAvailableInstance.value) return;
   await fetchVariableDataRows(props.value.objectId, props.value.instanceIds[0] || "", props.value.storageGroup || "");
 }
 /** @description 切换实例时同步共享草稿并清空旧数据行。 @param selected 实例标识。 */
@@ -135,20 +142,20 @@ function changeConditionDataRow(selected: unknown): void {
   }
 }
 watch(
-  () => [route.params.spaceId, props.value.objectId, props.readonly],
+  () => [route.params.spaceId, props.value.objectId, props.readonly, requiresInstance.value],
   async () => {
     cancelVariableQueries();
     clearVariableDataRows();
-    if (props.readonly) return;
+    if (props.readonly || !requiresInstance.value) return;
     await refreshConditionInstances();
   },
   { immediate: true },
 );
 watch(
-  () => [props.value.instanceIds[0], props.value.storageGroup, hasAvailableInstance.value],
+  () => [props.value.instanceIds[0], props.value.storageGroup, hasAvailableInstance.value, requiresDataRow.value],
   () => {
     clearVariableDataRows();
-    if (!props.readonly) void refreshConditionDataRows();
+    if (!props.readonly && requiresDataRow.value) void refreshConditionDataRows();
   },
   { immediate: true },
 );

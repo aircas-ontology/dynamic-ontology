@@ -76,7 +76,7 @@
 import { ArrowDown, ArrowRight } from "@element-plus/icons-vue";
 import { ref } from "vue";
 
-import type { OntologyFunctionScriptTestInputRow } from "@/utils/mapOntologyFunctionTest";
+import { isOntologyFunctionScriptTestListType, type OntologyFunctionScriptTestInputRow } from "@/utils/mapOntologyFunctionTest";
 
 defineProps<{
   rows: OntologyFunctionScriptTestInputRow[];
@@ -149,13 +149,12 @@ function toggleScriptTestListItemCollapse(itemKey: string): void {
 }
 
 /**
- * @description 判断入参行是否为可多组编辑的 LIST/ARRAY。
+ * @description 判断入参行是否为可多组编辑的列表类型。
  * @param row 入参行。
  * @returns 是否展示多组编辑。
  */
 function isScriptTestListRow(row: OntologyFunctionScriptTestInputRow): boolean {
-  const normalized = row.paramType.trim().toUpperCase();
-  return (normalized === "LIST" || normalized === "ARRAY") && Array.isArray(row.listItems);
+  return isOntologyFunctionScriptTestListType(row.paramType) && Array.isArray(row.listItems);
 }
 
 /**

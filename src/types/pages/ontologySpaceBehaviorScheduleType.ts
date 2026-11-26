@@ -201,8 +201,8 @@ export interface RuleLeafCondition {
   right: RuleValueNode;
 }
 
-/** 画布监测事件类型（对应接口 insert / delete）。 */
-export type RuleConditionMonitorType = "insert" | "delete";
+/** 画布监测事件类型（对应接口 insert / update / delete）。 */
+export type RuleConditionMonitorType = "insert" | "update" | "delete";
 
 /** 监测叶子：仅对象与存储分组。 */
 export interface RuleMonitorLeafCondition {

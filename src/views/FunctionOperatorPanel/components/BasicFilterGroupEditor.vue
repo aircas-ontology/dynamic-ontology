@@ -44,7 +44,17 @@
             <el-select :model-value="child.filter.op" class="basic-filter-row__op" @update:model-value="(value) => updateFilterOp(index, value)">
               <el-option v-for="item in BASIC_FILTER_OP_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
-            <div class="basic-filter-row__values">
+            <el-select
+              :model-value="readFilterSource(child.filter)"
+              class="basic-filter-row__source"
+              @update:model-value="(value) => updateFilterSource(index, value)"
+            >
+              <el-option v-for="item in BASIC_FILTER_SOURCE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+            <div v-if="readFilterSource(child.filter) === 'EXTERNAL'" class="basic-filter-row__values">
+              <span class="basic-filter-row__value-placeholder">无需填写</span>
+            </div>
+            <div v-else class="basic-filter-row__values">
               <template v-if="opNeedsRange(child.filter.op)">
                 <template v-if="showValueTypeSelect && child.filter.valueType === 'number'">
                   <el-input-number
@@ -133,10 +143,12 @@
 import {
   BASIC_FILTER_LOGIC_OPTIONS,
   BASIC_FILTER_OP_OPTIONS,
+  BASIC_FILTER_SOURCE_OPTIONS,
   BASIC_FILTER_VALUE_TYPE_OPTIONS,
   type BasicFilterDocument,
   type BasicFilterLogic,
   type BasicFilterOp,
+  type BasicFilterSource,
   type BasicFilterValue,
   type BasicFilterValueType,
 } from "@/types";
@@ -220,6 +232,34 @@ function coerceToType(value: unknown, valueType: BasicFilterValueType): BasicFil
     return Number.isFinite(parsed) ? parsed : 0;
   }
   return value === undefined || value === null ? "" : String(value);
+}
+
+/**
+ * @description 读取条件的取值来源；未设置时默认 FIXED。
+ * @param filter 当前条件。
+ * @returns 取值来源。
+ */
+function readFilterSource(filter: { source?: BasicFilterSource } | undefined): BasicFilterSource {
+  return filter?.source === "EXTERNAL" ? "EXTERNAL" : "FIXED";
+}
+
+/**
+ * @description 切换条件的取值来源（FIXED ↔ EXTERNAL），并清理另一端数据。
+ * @param index 条件下标。
+ * @param value 目标取值来源。
+ */
+function updateFilterSource(index: number, value: string | number | boolean | undefined): void {
+  if (value !== "FIXED" && value !== "EXTERNAL") return;
+  const next = cloneGroup();
+  const child = next.children[index];
+  if (!child?.filter) return;
+  const targetSource = value as BasicFilterSource;
+  child.filter.source = targetSource;
+  if (targetSource === "EXTERNAL") {
+    delete child.filter.value;
+    delete child.filter.values;
+  }
+  publish(next);
 }
 
 function updateFilterProperty(index: number, value: string | number): void {
@@ -386,6 +426,11 @@ function updateNestedGroup(index: number, group: BasicFilterDocument): void {
 .basic-filter-row__op {
   flex: 0 0 150px;
   width: 150px;
+}
+
+.basic-filter-row__source {
+  flex: 0 0 110px;
+  width: 110px;
 }
 
 .basic-filter-row__values {

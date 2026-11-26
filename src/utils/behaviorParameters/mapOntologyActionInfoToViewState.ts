@@ -104,6 +104,15 @@ function resolveMappingCategory(item: GetOntologyActionInfoMappingIn, functionPa
 }
 
 /**
+ * @description 读取 mapping 行的属性展示名，优先 propertyDisplayName。
+ * @param item mapping 行。
+ * @returns 展示名。
+ */
+function readMappingPropertyDisplayName(item: GetOntologyActionInfoMappingIn): string {
+  return (item.propertyDisplayName ?? item.displayName ?? "").trim();
+}
+
+/**
  * @description 组装入出参绑定摘要。
  * @param item mapping 行。
  * @param category 入出参类别。
@@ -112,19 +121,22 @@ function resolveMappingCategory(item: GetOntologyActionInfoMappingIn, functionPa
 function buildBindSummary(item: GetOntologyActionInfoMappingIn, category: "INPUT" | "OUTPUT"): string {
   if (category === "OUTPUT") {
     const outputMode = (item.outputMode ?? "").trim().toUpperCase();
-    const expression = (item.functionParamExpression ?? "").trim();
     const propertyId = (item.propertyUniqueIdentifier ?? "").trim();
+    const propertyDisplayName = readMappingPropertyDisplayName(item);
     if (outputMode === "WRITE_PROPERTY" || propertyId) {
-      const parts = [expression || "写回属性", propertyId ? `属性 ${propertyId}` : ""].filter(Boolean);
-      return parts.join(" → ") || "写回属性";
+      const name = propertyDisplayName || propertyId;
+      return name ? `写回属性 ${name}` : "写回属性";
     }
-    if (expression) return `仅返回 ${expression}`;
     return "仅返回结果";
   }
   const sourceType = (item.sourceType ?? "").trim().toUpperCase();
   const sourceConfig = (item.sourceConfig ?? "").trim();
   const propertyId = (item.propertyUniqueIdentifier ?? "").trim();
-  if (sourceType === "PROPERTY") return propertyId ? `对象属性 ${propertyId}` : "对象属性";
+  const propertyDisplayName = readMappingPropertyDisplayName(item);
+  if (sourceType === "PROPERTY") {
+    if (propertyDisplayName) return `对象属性 ${propertyDisplayName}`;
+    return propertyId ? `对象属性 ${propertyId}` : "对象属性";
+  }
   if (sourceType === "FIXED") return sourceConfig ? `固定值 ${sourceConfig}` : "固定值";
   if (sourceType === "EXTERNAL") return "外部输入";
   if (sourceType === "OBJECT") return propertyId ? `对象 ${propertyId}` : "对象";
@@ -150,7 +162,7 @@ function mapMappingToViewRow(
 ): SpaceBehaviorActionInfoViewParamRow {
   const paramName = (item.parameterName ?? "").trim() || (functionParam?.paramName ?? "").trim() || "—";
   const paramPath = (item.paramPath ?? "").trim();
-  const propertyDisplayName = (item.displayName ?? "").trim();
+  const propertyDisplayName = readMappingPropertyDisplayName(item);
   const propertyType = (item.propertyType ?? "").trim();
   const mappingParamType = (item.paramType ?? "").trim();
   const functionParamId = item.functionParamId;

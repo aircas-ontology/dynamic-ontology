@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
+import { ModuleKind, transpileModule } from "typescript";
 import { createDefaultScheduleRuleFlow } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/scheduleRuleFlowFactory.ts";
 
 /**
@@ -107,6 +108,8 @@ test("rule canvas uses X6 resetCells, dispose, and Dagre layout", () => {
   assert.match(sessionSource, /\.dispose\(\)/);
   assert.match(sessionSource, /DagreLayout/);
   assert.match(sessionSource, /import\("@antv\/layout"\)/);
+  assert.match(sessionSource, /setData\(cloneRuleFlowValue\(data\),\s*\{\s*overwrite:\s*true\s*\}\)/);
+  assert.match(sessionSource, /setData\(cloneRuleFlowValue\(source\.data\),\s*\{\s*overwrite:\s*true\s*\}\)/);
   assert.match(factorySource, /createDefaultScheduleRuleFlow/);
   assert.match(factorySource, /createBranchStep/);
   assert.match(factorySource, /createBranchStep\(undefined, \[actionStep\]\)/);
@@ -115,6 +118,65 @@ test("rule canvas uses X6 resetCells, dispose, and Dagre layout", () => {
   assert.match(typesIndex, /ScheduleRuleFlowDocument/);
   assert.match(workspaceSource, /ruleFlow/);
   assert.match(packageSource, /"@antv\/layout"/);
+});
+
+test("updateNodeData overwrites shortened condition children instead of deep-merging", () => {
+  const source = readSource("../src/views/SpaceBehaviorScheduleWorkspace/utils/scheduleRuleFlowGraphSession.ts");
+  const { outputText } = transpileModule(source, { compilerOptions: { module: ModuleKind.CommonJS } });
+  const previous = {
+    kind: "condition",
+    condition: {
+      id: "root",
+      type: "composite",
+      logic: "and",
+      children: [
+        { id: "keep", type: "leaf" },
+        { id: "gone", type: "leaf" },
+      ],
+    },
+  };
+  const next = {
+    kind: "condition",
+    condition: {
+      id: "root",
+      type: "composite",
+      logic: "and",
+      children: [{ id: "keep", type: "leaf" }],
+    },
+  };
+  let stored = structuredClone(previous);
+  let setOptions = null;
+  const node = {
+    isNode: () => true,
+    getData: () => stored,
+    setData: (data, options) => {
+      setOptions = options;
+      assert.equal(options?.overwrite, true);
+      stored = structuredClone(data);
+    },
+    attr: () => {},
+  };
+  const exports = {};
+  new Function("require", "exports", outputText)((id) => {
+    if (id.includes("scheduleRuleFlowFactory")) {
+      return {
+        cloneRuleFlowValue: (value) => structuredClone(value),
+        summarizeRuleCondition: () => "summary",
+        truncateRuleFlowText: (text) => text,
+      };
+    }
+    if (id.includes("scheduleRuleFlowGraphCells")) {
+      return { readGraphNodeData: (cell) => cell.getData() };
+    }
+    return {};
+  }, exports);
+  const session = new exports.ScheduleRuleFlowGraphSession({});
+  session.graph = { getCellById: () => node };
+  session.commitGraph = () => {};
+  session.updateNodeData("condition-1", next);
+  assert.deepEqual(setOptions, { overwrite: true });
+  assert.equal(stored.condition.children.length, 1);
+  assert.equal(stored.condition.children[0].id, "keep");
 });
 
 test("each rule-config Vue file stays at or under 500 lines", () => {

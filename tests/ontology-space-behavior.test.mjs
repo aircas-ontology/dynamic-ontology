@@ -851,8 +851,10 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.doesNotMatch(formSource, /handleBasicFunctionOperatorChange/);
   assert.doesNotMatch(formSource, /loadOperatorDetailBindings/);
   assert.doesNotMatch(formSource, /基础函数保存接口待更新/);
-  assert.match(formSource, /多对象时请选择聚合类型/);
+  assert.doesNotMatch(formSource, /多对象时请选择聚合类型/);
+  assert.match(formSource, /请选择聚合类型/);
   assert.match(formSource, /请选择展示字段/);
+  assert.match(formSource, /postOntologyActionBasicFunctionCommonPropertiesInterface/);
   assert.match(formSource, /basicFunctionParameterConfig/);
   assert.match(formSource, /:show-value-type-select="false"/);
   assert.match(formSource, /mapOntologyObjectsToCategoryOptions/);
@@ -877,6 +879,8 @@ test("space behavior crud dialogs follow prototype create view edit and delete s
   assert.match(formSource, /clearBasicFunctionTargetField/);
   assert.match(formSource, /basicFunctionSingleResultMode/);
   assert.match(formSource, /showBasicFunctionSingleResultModeToggle/);
+  assert.match(formSource, /basicFunctionOntologyIds\.value\.length >= 1/);
+  assert.doesNotMatch(formSource, /showBasicFunctionSingleResultModeToggle = computed\(\(\) => showBasicFunctionOperatorSection\.value && basicFunctionOntologyIds\.value\.length === 1\)/);
   assert.match(formSource, /showBasicFunctionSelectFields/);
   assert.match(formSource, /showBasicFunctionAggregateFields/);
   assert.match(formSource, /handleBasicFunctionSingleResultModeChange/);
@@ -1868,6 +1872,7 @@ test("space behavior maps action info detail into view drawer state", () => {
         sourceType: "PROPERTY",
         paramPath: "lng",
         propertyUniqueIdentifier: "prop-lng",
+        propertyDisplayName: "经度",
         ontologyUniqueIdentifier: "onto-1",
       },
       {
@@ -1881,6 +1886,14 @@ test("space behavior maps action info detail into view drawer state", () => {
         parameterName: "sum",
         functionParamExpression: "$.data.sum",
         outputMode: "RESULT_ONLY",
+      },
+      {
+        functionParamId: 2301,
+        parameterName: "longitude",
+        functionParamExpression: "$.data.result.data.longitude",
+        outputMode: "WRITE_PROPERTY",
+        propertyUniqueIdentifier: "prop-lon-id",
+        propertyDisplayName: "经度",
       },
     ],
     functionParams: [
@@ -1900,17 +1913,29 @@ test("space behavior maps action info detail into view drawer state", () => {
         paramOrder: 2,
         description: "lng+lat 之和",
       },
+      {
+        paramId: 2301,
+        paramName: "longitude",
+        paramType: "DOUBLE",
+        category: "OUTPUT",
+        paramOrder: 3,
+        description: "经度",
+      },
     ],
   });
   assert.equal(applicationView.status, "draft");
   assert.equal(applicationView.actionKindLabel, "应用行为");
   assert.equal(applicationView.linkRelationId, "link-1");
   assert.equal(applicationView.inputRows.length, 2);
-  assert.equal(applicationView.outputRows.length, 1);
+  assert.equal(applicationView.outputRows.length, 2);
   assert.equal(applicationView.inputRows[0]?.paramPath, "lng");
   assert.equal(applicationView.inputRows[0]?.paramType, "OBJECT");
-  assert.match(applicationView.inputRows[0]?.bindSummary ?? "", /对象属性/);
-  assert.match(applicationView.outputRows[0]?.bindSummary ?? "", /仅返回/);
+  assert.equal(applicationView.inputRows[0]?.propertyDisplayName, "经度");
+  assert.equal(applicationView.inputRows[0]?.bindSummary, "对象属性 经度");
+  assert.doesNotMatch(applicationView.inputRows[0]?.bindSummary ?? "", /prop-lng/);
+  assert.equal(applicationView.outputRows[0]?.bindSummary, "仅返回结果");
+  assert.equal(applicationView.outputRows[1]?.bindSummary, "写回属性 经度");
+  assert.doesNotMatch(applicationView.outputRows[1]?.bindSummary ?? "", /\$\.data/);
 
   const treeView = mapOntologyActionInfoToViewState({
     id: 11,
@@ -1968,6 +1993,7 @@ test("space behavior maps action info detail into view drawer state", () => {
         outputMode: "WRITE_PROPERTY",
         functionParamExpression: "$.data.x",
         propertyUniqueIdentifier: "out-prop",
+        propertyDisplayName: "写出属性",
       },
       { category: "OUTPUT" },
     ],
@@ -1987,7 +2013,8 @@ test("space behavior maps action info detail into view drawer state", () => {
   assert.match(edgeView.inputRows[5]?.bindSummary ?? "", /属性 only-prop/);
   assert.equal(edgeView.inputRows[6]?.bindSummary, "raw-config");
   assert.equal(edgeView.inputRows[7]?.bindSummary, "—");
-  assert.match(edgeView.outputRows[0]?.bindSummary ?? "", /\$\.data\.x/);
+  assert.equal(edgeView.outputRows[0]?.bindSummary, "写回属性 写出属性");
+  assert.doesNotMatch(edgeView.outputRows[0]?.bindSummary ?? "", /\$\.data\.x/);
   assert.equal(edgeView.outputRows[1]?.bindSummary, "仅返回结果");
 });
 
@@ -3208,9 +3235,24 @@ test("space behavior builds basic-function createAction params for aggregate and
         ...baseDraft,
         ontologyIdentifiers: ["a", "b"],
         basicFunctionAggFunc: "",
+        basicFunctionSelectFields: [],
       }),
     true,
   );
+  const multiQuery = buildBasicOperatorCreateActionParams({
+    ...baseDraft,
+    ontologyIdentifiers: ["a", "b"],
+    basicFunctionAggFunc: "",
+    basicFunctionTargetField: "",
+    basicFunctionSelectFields: ["name", "speed"],
+    basicFunctionParameterConfig: "",
+  });
+  assert.equal("error" in multiQuery, false);
+  if (!("error" in multiQuery)) {
+    assert.equal(multiQuery.basicFunction.mode, "QUERY");
+    assert.deepEqual(multiQuery.basicFunction.ontologyIdentifiers, ["a", "b"]);
+    assert.deepEqual(multiQuery.basicFunction.selectFields, ["name", "speed"]);
+  }
   assert.equal("error" in buildBasicOperatorCreateActionParams({ ...baseDraft, basicFunctionTargetField: "" }), true);
   assert.equal(
     "error" in

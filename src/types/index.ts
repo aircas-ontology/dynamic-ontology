@@ -308,6 +308,11 @@ export type {
   ParseOntologyFunctionParamsData,
   ParseOntologyFunctionParamsParams,
 } from "./apis/parseOntologyFunctionParamsType";
+export type {
+  PostOntologyActionBasicFunctionCommonPropertiesData,
+  PostOntologyActionBasicFunctionCommonPropertiesParams,
+  PostOntologyActionBasicFunctionCommonProperty,
+} from "./apis/postOntologyActionBasicFunctionCommonPropertiesType";
 export type { BehaviorTreeNodeExecuteData, PostOntologyActionTreeTestData, PostOntologyActionTreeTestParams } from "./apis/postOntologyActionTreeTestType";
 export type {
   PostOntologyEntityAllLinkData,
@@ -559,7 +564,12 @@ export type {
   ConceptualModelSelection,
 } from "./pages/ontologyConceptualModelCreateType";
 
-export { BASIC_FILTER_LOGIC_OPTIONS, BASIC_FILTER_OP_OPTIONS, BASIC_FILTER_VALUE_TYPE_OPTIONS } from "./pages/ontologyFunctionOperatorBasicFilterType";
+export {
+  BASIC_FILTER_LOGIC_OPTIONS,
+  BASIC_FILTER_OP_OPTIONS,
+  BASIC_FILTER_SOURCE_OPTIONS,
+  BASIC_FILTER_VALUE_TYPE_OPTIONS,
+} from "./pages/ontologyFunctionOperatorBasicFilterType";
 
 export type {
   BasicFilterCondition,
@@ -568,6 +578,7 @@ export type {
   BasicFilterLogic,
   BasicFilterNode,
   BasicFilterOp,
+  BasicFilterSource,
   BasicFilterValue,
   BasicFilterValueType,
 } from "./pages/ontologyFunctionOperatorBasicFilterType";

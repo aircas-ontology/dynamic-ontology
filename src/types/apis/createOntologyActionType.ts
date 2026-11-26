@@ -11,6 +11,8 @@ export type CreateOntologyActionBasicFunctionMode = "AGGREGATE" | "QUERY";
 export interface CreateOntologyActionBasicFunctionFilterCondition {
   propertyApiName: string;
   op: string;
+  /** 取值来源：FIXED 固定值（默认）/ EXTERNAL 外部输入。 */
+  source?: string;
   value?: string | number | boolean;
   values?: Array<string | number | boolean>;
 }
@@ -56,6 +58,10 @@ export interface CreateOntologyActionBasicFunction {
   aggFunc?: string;
   targetField?: string;
   selectFields?: string[];
+  /** QUERY 模式分页号；默认 1。 */
+  pageNum?: number;
+  /** QUERY 模式每页条数；默认 10。 */
+  pageSize?: number;
   filters?: CreateOntologyActionBasicFunctionFilters;
   /** 结果回写；无回写时不传。 */
   writeBack?: CreateOntologyActionBasicFunctionWriteBack;

@@ -94,6 +94,10 @@ export interface SpaceBehaviorActionInfoFormState {
   basicFunctionAggFunc: string;
   basicFunctionTargetField: string;
   basicFunctionSelectFields: string[];
+  /** 基础函数 QUERY 模式分页号；默认 1。 */
+  basicFunctionPageNum: number;
+  /** 基础函数 QUERY 模式每页条数；默认 10。 */
+  basicFunctionPageSize: number;
   /** 写入字段表单状态；接口未返回前回填为空对象。 */
   basicFunctionWriteFields: Record<string, SpaceBehaviorBasicFunctionWriteFieldBinding>;
   /** 多对象写入字段；接口未返回前回填为空绑定。 */
@@ -253,6 +257,10 @@ export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData
     subjectType === "BASIC_FUNCTION" && Array.isArray(basicFunction?.selectFields)
       ? basicFunction.selectFields.map((item) => String(item ?? "").trim()).filter(Boolean)
       : [];
+  const basicFunctionPageNum =
+    subjectType === "BASIC_FUNCTION" && typeof basicFunction?.pageNum === "number" && basicFunction.pageNum > 0 ? basicFunction.pageNum : 1;
+  const basicFunctionPageSize =
+    subjectType === "BASIC_FUNCTION" && typeof basicFunction?.pageSize === "number" && basicFunction.pageSize > 0 ? basicFunction.pageSize : 10;
   const mappedWriteBack =
     subjectType === "BASIC_FUNCTION"
       ? mapBasicFunctionWriteBackToFormState(basicFunction?.writeBack, basicFunctionSelectFields)
@@ -292,6 +300,8 @@ export function mapOntologyActionInfoToFormState(data: GetOntologyActionInfoData
     basicFunctionAggFunc,
     basicFunctionTargetField,
     basicFunctionSelectFields,
+    basicFunctionPageNum,
+    basicFunctionPageSize,
     basicFunctionWriteFields: mappedWriteBack.basicFunctionWriteFields,
     basicFunctionMultiWriteField: mappedWriteBack.basicFunctionMultiWriteField,
     basicFunctionParameterConfig,

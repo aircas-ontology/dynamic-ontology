@@ -215,6 +215,47 @@
                 </template>
               </el-select>
             </template>
+
+            <template v-if="showBasicFunctionExternalFilterInputs">
+              <h4 class="behavior-test-dialog__section-title">外部输入条件</h4>
+              <div
+                v-for="item in basicFunctionExternalFilterParams.filter((row) => row.valueKind !== 'none')"
+                :key="item.propertyApiName"
+                class="behavior-test-dialog__external-filter-row"
+              >
+                <p class="behavior-test-dialog__multi-entity-picker-label">
+                  {{ item.propertyApiName }} · {{ resolveBasicFunctionExternalFilterOpLabel(item.op) }}
+                </p>
+                <div v-if="item.valueKind === 'range'" class="behavior-test-dialog__external-filter-range">
+                  <el-input
+                    :model-value="readBasicFunctionExternalFilterDraft(item.propertyApiName).left ?? ''"
+                    placeholder="下界"
+                    clearable
+                    @update:model-value="(value) => updateBasicFunctionExternalFilterDraft(item.propertyApiName, { left: String(value ?? '') })"
+                  />
+                  <el-input
+                    :model-value="readBasicFunctionExternalFilterDraft(item.propertyApiName).right ?? ''"
+                    placeholder="上界"
+                    clearable
+                    @update:model-value="(value) => updateBasicFunctionExternalFilterDraft(item.propertyApiName, { right: String(value ?? '') })"
+                  />
+                </div>
+                <el-input
+                  v-else-if="item.valueKind === 'list'"
+                  :model-value="readBasicFunctionExternalFilterDraft(item.propertyApiName).list ?? ''"
+                  placeholder="多个值用英文逗号分隔"
+                  clearable
+                  @update:model-value="(value) => updateBasicFunctionExternalFilterDraft(item.propertyApiName, { list: String(value ?? '') })"
+                />
+                <el-input
+                  v-else
+                  :model-value="readBasicFunctionExternalFilterDraft(item.propertyApiName).single ?? ''"
+                  :placeholder="`请输入 ${item.propertyApiName}`"
+                  clearable
+                  @update:model-value="(value) => updateBasicFunctionExternalFilterDraft(item.propertyApiName, { single: String(value ?? '') })"
+                />
+              </div>
+            </template>
           </template>
         </section>
 
@@ -378,6 +419,7 @@ import { getOntologyFunctionDetailInterface, getOntologyFunctionVersionsInterfac
 import { mergeBehaviorTestEntityRows } from "@/utils/behaviorParameters/createBehaviorTestInitialEntity";
 import { mapOntologyFunctionDetailToOperator } from "@/utils/mapOntologyFunctionDetail";
 import {
+  BASIC_FILTER_OP_OPTIONS,
   FUNCTION_OPERATOR_TYPE_LABELS,
   SPACE_BEHAVIOR_BASIC_ACTION_LABELS,
   SPACE_BEHAVIOR_KIND_LABELS,
@@ -407,6 +449,12 @@ interface BasicFunctionMultiEntityPickerState {
 }
 import BehaviorEntityLinkDataDialog from "./BehaviorEntityLinkDataDialog.vue";
 import BehaviorEntityRowDetailDialog from "./BehaviorEntityRowDetailDialog.vue";
+import {
+  buildBasicFunctionExternalFilterTestParams,
+  collectBasicFunctionExternalFilterParams,
+  type BasicFunctionExternalFilterDraft,
+  type BasicFunctionExternalFilterParam,
+} from "@/utils/behaviorParameters/collectBasicFunctionExternalFilterParams";
 import {
   mapOntologyEntityRowDetailPageToDataRows,
   mapOntologyEntityRowDetailPageToViewDetail,
@@ -529,6 +577,10 @@ let writeBackEntityLoadToken = 0;
 const basicFunctionDetailLoading = ref(false);
 const basicFunctionDetailError = ref("");
 let basicFunctionDetailLoadToken = 0;
+/** 基础函数 EXTERNAL 过滤条件（来自行为详情 filters）。 */
+const basicFunctionExternalFilterParams = ref<BasicFunctionExternalFilterParam[]>([]);
+/** 基础函数 EXTERNAL 条件草稿：propertyApiName → 输入值。 */
+const basicFunctionExternalFilterDrafts = ref<Record<string, BasicFunctionExternalFilterDraft>>({});
 /** 左栏挂载函数详情（摘要与只读抽屉共用）。 */
 const mountedFunctionOperator = ref<FunctionOperator | null>(null);
 const mountedFunctionLoading = ref(false);
@@ -655,6 +707,10 @@ const showBasicFunctionEntityPicker = computed(() => isBasicFunctionOperatorTest
 const showBasicFunctionMultiEntityPickers = computed(() => isBasicFunctionOperatorTest.value && basicFunctionOntologyIds.value.length > 1);
 /** 基础函数配置了 writeBack 时展示回写目标实例。 */
 const showBasicFunctionWriteBackEntityPicker = computed(() => isBasicFunctionOperatorTest.value && Boolean(basicFunctionWriteBackOntologyId.value.trim()));
+/** 基础函数存在需填写的 EXTERNAL 条件时展示输入区。 */
+const showBasicFunctionExternalFilterInputs = computed(
+  () => isBasicFunctionOperatorTest.value && basicFunctionExternalFilterParams.value.some((item) => item.valueKind !== "none"),
+);
 const selectedWriteBackEntityRow = computed(() => {
   const onPage = writeBackEntityRows.value.find((item) => item.rowKey === selectedWriteBackEntityRowKey.value) ?? null;
   if (onPage) return onPage;
@@ -929,10 +985,48 @@ function clearBasicFunctionTestContext(): void {
   basicFunctionOntologyNameById.value = {};
   basicFunctionTestOntologyId.value = "";
   basicFunctionWriteBackOntologyId.value = "";
+  basicFunctionExternalFilterParams.value = [];
+  basicFunctionExternalFilterDrafts.value = {};
   clearBasicFunctionMultiEntityPickers();
   clearBasicFunctionWriteBackEntityState();
   basicFunctionDetailLoading.value = false;
   basicFunctionDetailError.value = "";
+}
+
+/**
+ * @description 解析过滤算子展示文案。
+ * @param op 算子。
+ * @returns 展示文案。
+ */
+function resolveBasicFunctionExternalFilterOpLabel(op: string): string {
+  const matched = BASIC_FILTER_OP_OPTIONS.find((item) => item.value === op);
+  return matched?.label ?? op;
+}
+
+/**
+ * @description 读取 EXTERNAL 条件草稿；缺失时返回空对象。
+ * @param propertyApiName 属性 apiName。
+ * @returns 草稿。
+ */
+function readBasicFunctionExternalFilterDraft(propertyApiName: string): BasicFunctionExternalFilterDraft {
+  return basicFunctionExternalFilterDrafts.value[propertyApiName] ?? {};
+}
+
+/**
+ * @description 更新 EXTERNAL 条件草稿字段。
+ * @param propertyApiName 属性 apiName。
+ * @param patch 局部草稿。
+ */
+function updateBasicFunctionExternalFilterDraft(propertyApiName: string, patch: BasicFunctionExternalFilterDraft): void {
+  const key = propertyApiName.trim();
+  if (!key) return;
+  basicFunctionExternalFilterDrafts.value = {
+    ...basicFunctionExternalFilterDrafts.value,
+    [key]: {
+      ...readBasicFunctionExternalFilterDraft(key),
+      ...patch,
+    },
+  };
 }
 
 /**
@@ -1325,6 +1419,13 @@ function buildBasicFunctionTestRequestParams(): TestOntologyActionParams | { err
     }
     request.writeBackEntityPrimaryKey = writeBackPrimaryKey;
   }
+  const externalParams = buildBasicFunctionExternalFilterTestParams(basicFunctionExternalFilterParams.value, basicFunctionExternalFilterDrafts.value);
+  if ("error" in externalParams) {
+    return { error: externalParams.error };
+  }
+  if (Object.keys(externalParams.params).length > 0) {
+    request.params = externalParams.params;
+  }
   return request;
 }
 
@@ -1371,6 +1472,8 @@ async function loadBasicFunctionTestContext(): Promise<void> {
     if (requestToken !== basicFunctionDetailLoadToken) return;
     if (response.code !== 200 || !response.data) throw new Error(response.message || "行为详情加载失败");
     applyActionInfoViewState(response.data, actionApi);
+    basicFunctionExternalFilterParams.value = collectBasicFunctionExternalFilterParams(response.data.basicFunction?.filters);
+    basicFunctionExternalFilterDrafts.value = {};
     const ontologyIds = normalizeBasicFunctionOntologyIds(response.data.basicFunction?.ontologyIdentifiers);
     basicFunctionOntologyIds.value = ontologyIds;
     const ontologyNameById = buildBasicFunctionOntologyNameMap(ontologyIds, response.data.basicFunction?.ontologyNames);
@@ -1405,6 +1508,8 @@ async function loadBasicFunctionTestContext(): Promise<void> {
     basicFunctionTestOntologyId.value = "";
     actionInfoViewState.value = null;
     basicFunctionWriteBackOntologyId.value = "";
+    basicFunctionExternalFilterParams.value = [];
+    basicFunctionExternalFilterDrafts.value = {};
     clearBasicFunctionMultiEntityPickers();
     clearBasicFunctionWriteBackEntityState();
     basicFunctionDetailError.value = error instanceof Error ? error.message : "行为详情加载失败";
@@ -2336,6 +2441,20 @@ watch(
   font-size: 12px;
   line-height: 1.4;
 }
+
+.behavior-test-dialog__external-filter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.behavior-test-dialog__external-filter-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .behavior-test-dialog__entity-select {
   width: 100%;
 }

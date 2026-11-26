@@ -35,24 +35,41 @@ function actions(value = 55) {
 }
 
 /**
- * @description 构造监测叶子条件。
+ * @description 构造属性比较叶子。
+ * @param {string} left 左固定值。
+ * @param {string} right 右固定值。
+ * @param {string} [operator] 比较符。
+ * @returns {object} 比较叶子。
+ */
+function compareLeaf(left, right, operator = "lt") {
+  return {
+    id: `leaf-${left}-${right}`,
+    type: "leaf",
+    left: { kind: "input", text: left },
+    right: { kind: "input", text: right },
+    operator,
+  };
+}
+
+/**
+ * @description 构造旧监测叶子（仅对象+分组，兼容回显）。
  * @param {string} objectId 对象标识。
  * @param {string} storageGroup 存储分组。
  * @param {string} [objectName] 对象名。
- * @param {"insert"|"delete"} [monitorType] 监测事件。
+ * @param {"insert"|"update"|"delete"} [monitorType] 监测事件。
  * @returns {object} 监测叶子。
  */
 function monitorLeaf(objectId, storageGroup, objectName = objectId, monitorType = "insert") {
   return { id: `m-${objectId}-${storageGroup}`, type: "monitor", monitorType, objectId, objectName, storageGroup };
 }
 
-test("insert monitor branch submits group monitorType and object/storageGroup only", () => {
+test("insert monitor branch submits group monitorType with compare-shaped judgeParams", () => {
   const condition = {
     id: "root",
     type: "composite",
-    logic: "or",
+    logic: "and",
     monitorType: "insert",
-    children: [monitorLeaf("ship-id", "orbit", "船舶"), monitorLeaf("ship-id", "cargo", "船舶")],
+    children: [compareLeaf("30", "battery"), compareLeaf("危险", "status", "eq")],
   };
   const result = buildRuleScheduleCreateParams(
     { name: "monitor", description: "", ruleFlow: { steps: [{ kind: "branch", id: "b1", condition, then: [actions()], otherwise: null }] } },
@@ -65,23 +82,106 @@ test("insert monitor branch submits group monitorType and object/storageGroup on
   assert.equal(group.condition, false);
   assert.deepEqual(group.judgeParams, [
     {
-      leftOperate: { type: "dynamic", OntologyId: "ship-id", storageGroup: "orbit" },
-      linkFlag: "OR",
+      leftOperate: { type: "fixed", fixValue: "30" },
+      rightOperate: { type: "fixed", fixValue: "battery" },
+      condition: "LT",
+      linkFlag: "AND",
     },
     {
-      leftOperate: { type: "dynamic", OntologyId: "ship-id", storageGroup: "cargo" },
+      leftOperate: { type: "fixed", fixValue: "危险" },
+      rightOperate: { type: "fixed", fixValue: "status" },
+      condition: "EQ",
     },
   ]);
-  assert.equal("condition" in group.judgeParams[0], false);
-  assert.equal("rightOperate" in group.judgeParams[0], false);
 });
 
-test("delete monitor otherwise path flips only group condition on single-level branch", () => {
+test("insert monitor dynamic operands omit main entityId and subtable dataPrimaryKey", () => {
+  const mainLeft = {
+    kind: "variable",
+    objectId: "plane",
+    objectName: "飞机",
+    objectKind: "object",
+    propertyId: "id1",
+    propertyName: "标识1",
+    instanceIds: [],
+    storageGroup: "main",
+  };
+  const subLeft = {
+    kind: "variable",
+    objectId: "plane",
+    objectName: "飞机",
+    objectKind: "object",
+    propertyId: "range",
+    propertyName: "武器射程",
+    instanceIds: ["qxh-test"],
+    storageGroup: "weapons",
+    dataPrimaryKey: "should-not-pass",
+  };
   const condition = {
     id: "root",
     type: "composite",
     logic: "and",
-    children: [monitorLeaf("ship-id", "main", "ship-id", "delete"), monitorLeaf("ship-id", "sensor", "ship-id", "delete")],
+    monitorType: "insert",
+    children: [
+      { id: "one", type: "leaf", left: mainLeft, operator: "eq", right: { kind: "input", text: "1" } },
+      { id: "two", type: "leaf", left: subLeft, operator: "eq", right: { kind: "input", text: "2" } },
+    ],
+  };
+  const result = buildRuleScheduleCreateParams(
+    { name: "monitor-bind", description: "", ruleFlow: { steps: [{ kind: "branch", id: "b1", condition, then: [actions()], otherwise: null }] } },
+    options,
+    "156",
+  );
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.request.rule.judgeRules[0].judgeParams[0].leftOperate, {
+    type: "dynamic",
+    OntologyId: "plane",
+    propertyId: "id1",
+  });
+  assert.deepEqual(result.request.rule.judgeRules[0].judgeParams[1].leftOperate, {
+    type: "dynamic",
+    OntologyId: "plane",
+    entityId: "qxh-test",
+    propertyId: "range",
+  });
+});
+
+test("update and delete only change monitorType with identical judgeParams shape", () => {
+  const children = [compareLeaf("1", "2", "eq")];
+  for (const monitorType of ["update", "delete"]) {
+    const result = buildRuleScheduleCreateParams(
+      {
+        name: monitorType,
+        description: "",
+        ruleFlow: {
+          steps: [
+            { kind: "branch", id: "b1", condition: { id: "root", type: "composite", logic: "and", monitorType, children }, then: [actions()], otherwise: null },
+          ],
+        },
+      },
+      options,
+      "156",
+    );
+    assert.equal(result.ok, true);
+    const group = result.request.rule.judgeRules[0];
+    assert.equal(group.monitorType, monitorType);
+    assert.deepEqual(group.judgeParams, [
+      {
+        leftOperate: { type: "fixed", fixValue: "1" },
+        rightOperate: { type: "fixed", fixValue: "2" },
+        condition: "EQ",
+      },
+    ]);
+  }
+});
+
+test("delete monitor otherwise path flips group condition on single-level branch", () => {
+  const condition = {
+    id: "root",
+    type: "composite",
+    logic: "and",
+    monitorType: "delete",
+    children: [compareLeaf("a", "b", "eq"), compareLeaf("c", "d", "eq")],
   };
   const result = buildRuleScheduleCreateParams(
     {
@@ -101,21 +201,9 @@ test("delete monitor otherwise path flips only group condition on single-level b
   assert.equal(thenRule.condition, false);
   assert.equal(elseRule.condition, true);
   assert.deepEqual(thenRule.judgeParams, elseRule.judgeParams);
-  assert.deepEqual(
-    thenRule.judgeParams.map((item) => item.linkFlag),
-    ["AND", undefined],
-  );
-  assert.ok(elseRule.judgeParams.every((item) => item.condition === undefined && item.rightOperate === undefined));
 });
 
 test("mixing property compare and monitor in one path is rejected", () => {
-  const compareLeaf = {
-    id: "leaf",
-    type: "leaf",
-    left: { kind: "input", text: "1" },
-    right: { kind: "input", text: "2" },
-    operator: "eq",
-  };
   const result = buildRuleScheduleCreateParams(
     {
       name: "mixed",
@@ -125,7 +213,7 @@ test("mixing property compare and monitor in one path is rejected", () => {
           {
             kind: "branch",
             id: "outer",
-            condition: { id: "c1", type: "composite", logic: "and", children: [compareLeaf] },
+            condition: { id: "c1", type: "composite", logic: "and", children: [compareLeaf("1", "2", "eq")] },
             then: [
               {
                 kind: "branch",
@@ -135,7 +223,7 @@ test("mixing property compare and monitor in one path is rejected", () => {
                   type: "composite",
                   logic: "and",
                   monitorType: "insert",
-                  children: [monitorLeaf("ship-id", "main")],
+                  children: [compareLeaf("3", "4", "eq")],
                 },
                 then: [actions()],
                 otherwise: null,
@@ -153,26 +241,56 @@ test("mixing property compare and monitor in one path is rejected", () => {
   assert.match(result.error, /混合|属性比较|监测/);
 });
 
-test("restoreRuleScheduleDetail rebuilds monitor leaves from judgeRules", () => {
+test("legacy monitor nodes are rejected on save", () => {
+  const result = buildRuleScheduleCreateParams(
+    {
+      name: "legacy",
+      description: "",
+      ruleFlow: {
+        steps: [
+          {
+            kind: "branch",
+            id: "b1",
+            condition: {
+              id: "root",
+              type: "composite",
+              logic: "and",
+              monitorType: "insert",
+              children: [monitorLeaf("ship-id", "main")],
+            },
+            then: [actions()],
+            otherwise: null,
+          },
+        ],
+      },
+    },
+    options,
+    "156",
+  );
+  assert.equal(result.ok, false);
+  assert.match(result.error, /属性比较表单/);
+});
+
+test("restoreRuleScheduleDetail rebuilds compare leaves for isomorphic monitor payload", () => {
   const restored = restoreRuleScheduleDetail(
     {
       judgeRules: [
         {
-          monitorType: "insert",
+          monitorType: "update",
           condition: false,
           judgeParams: [
             {
-              leftOperate: { type: "dynamic", OntologyId: "ship-id", storageGroup: "orbit" },
+              leftOperate: { type: "dynamic", OntologyId: "ship-id", entityId: "3", propertyName: "battery" },
+              rightOperate: { type: "fixed", fixValue: "30" },
+              condition: "LT",
               isLeft: 1,
               linkFlag: "AND",
             },
             {
-              leftOperate: { type: "dynamic", OntologyId: "ship-id", storageGroup: "sensor" },
+              leftOperate: { type: "dynamic", OntologyId: "ship-id", entityId: "3", propertyName: "status" },
+              rightOperate: { type: "fixed", fixValue: "危险" },
+              condition: "EQ",
               isRight: 1,
-              linkFlag: "OR",
-            },
-            {
-              leftOperate: { type: "dynamic", OntologyId: "ship-id", storageGroup: "cargo" },
             },
           ],
           actionParam: {
@@ -188,20 +306,52 @@ test("restoreRuleScheduleDetail rebuilds monitor leaves from judgeRules", () => 
   assert.equal(restored.ok, true);
   const branch = restored.groups[0].flow.steps[0];
   assert.equal(branch.kind, "branch");
-  assert.equal(branch.condition.monitorType, "insert");
-  assert.equal(branch.condition.type, "composite");
+  assert.equal(branch.condition.monitorType, "update");
+  assert.equal(branch.condition.children[0].type, "leaf");
+  assert.equal(branch.condition.children[0].operator, "lt");
+  assert.equal(branch.condition.children[1].type, "leaf");
+});
+
+test("restoreRuleScheduleDetail still rebuilds legacy monitor leaves", () => {
+  const restored = restoreRuleScheduleDetail(
+    {
+      judgeRules: [
+        {
+          monitorType: "insert",
+          condition: false,
+          judgeParams: [
+            {
+              leftOperate: { type: "dynamic", OntologyId: "ship-id", storageGroup: "orbit" },
+              isLeft: 1,
+              linkFlag: "AND",
+            },
+            {
+              leftOperate: { type: "dynamic", OntologyId: "ship-id", storageGroup: "cargo" },
+              isRight: 1,
+            },
+          ],
+          actionParam: {
+            action_api: "app",
+            ontology_identifier: "ship",
+            entity_json: '{"ontologySpaceId":156,"actionApi":"app","params":{}}',
+          },
+        },
+      ],
+    },
+    options,
+  );
+  assert.equal(restored.ok, true);
   const leaves = [];
   /** @description 收集监测叶子。 @param {object} node 条件节点。 */
   function walk(node) {
     if (node.type === "monitor") leaves.push(node);
     if (node.type === "composite") node.children.forEach(walk);
   }
-  walk(branch.condition);
+  walk(restored.groups[0].flow.steps[0].condition);
   assert.deepEqual(
     leaves.map((item) => ({ objectId: item.objectId, storageGroup: item.storageGroup })),
     [
       { objectId: "ship-id", storageGroup: "orbit" },
-      { objectId: "ship-id", storageGroup: "sensor" },
       { objectId: "ship-id", storageGroup: "cargo" },
     ],
   );
@@ -252,6 +402,7 @@ test("restoreRuleFlowDocument keeps monitorType and monitor leaves", () => {
 
 test("summarizeRuleCondition describes monitor leaves", () => {
   assert.equal(summarizeRuleCondition(monitorLeaf("ship-id", "orbit", "船舶")), "新增 · 船舶 / orbit");
+  assert.equal(summarizeRuleCondition(monitorLeaf("ship-id", "orbit", "船舶", "update")), "更新 · 船舶 / orbit");
   assert.match(
     summarizeRuleCondition({
       id: "root",
@@ -271,7 +422,7 @@ test("factory creates empty monitor leaf with main storage group", () => {
   assert.equal(leaf.objectId, "");
 });
 
-test("nested monitor path flips link flags when combining inverted ancestors", () => {
+test("nested isomorphic monitor path inverts compare operators for otherwise", () => {
   const result = buildRuleScheduleCreateParams(
     {
       name: "nested-monitor",
@@ -286,7 +437,7 @@ test("nested monitor path flips link flags when combining inverted ancestors", (
               type: "composite",
               logic: "and",
               monitorType: "insert",
-              children: [monitorLeaf("ship-id", "orbit"), monitorLeaf("ship-id", "sensor")],
+              children: [compareLeaf("1", "2", "eq"), compareLeaf("3", "4", "eq")],
             },
             then: [
               {
@@ -297,7 +448,7 @@ test("nested monitor path flips link flags when combining inverted ancestors", (
                   type: "composite",
                   logic: "or",
                   monitorType: "insert",
-                  children: [monitorLeaf("ship-id", "cargo")],
+                  children: [compareLeaf("5", "6", "eq")],
                 },
                 then: [actions(1)],
                 otherwise: [actions(2)],
@@ -315,23 +466,20 @@ test("nested monitor path flips link flags when combining inverted ancestors", (
   const elseRule = result.request.rule.judgeRules[1];
   assert.equal(elseRule.condition, false);
   assert.equal(elseRule.monitorType, "insert");
-  assert.ok(elseRule.judgeParams.some((item) => item.linkFlag === "AND"));
-  assert.ok(elseRule.judgeParams.every((item) => item.condition === undefined));
+  assert.ok(elseRule.judgeParams.some((item) => item.condition === "NE"));
 });
 
-test("validateMonitorCondition and unsupported value checks cover monitor leaves", () => {
-  assert.equal(validateMonitorCondition(monitorLeaf("ship-id", "main", "船舶")), "");
-  assert.equal(validateMonitorCondition({ ...monitorLeaf("", "main"), objectName: "" }), "请选择监测对象");
-  assert.equal(validateMonitorCondition({ ...monitorLeaf("ship-id", "   "), objectName: "船舶" }), "请选择存储分组");
+test("validateMonitorCondition blocks legacy monitor leaves before save", () => {
+  assert.equal(validateMonitorCondition(monitorLeaf("ship-id", "main", "船舶")), "请将监测条件改为属性比较表单后再保存");
   assert.equal(
     validateMonitorCondition({
       id: "root",
       type: "composite",
       logic: "and",
       monitorType: "insert",
-      children: [monitorLeaf("ship-id", "")],
+      children: [compareLeaf("1", "2", "eq")],
     }),
-    "请选择存储分组",
+    "",
   );
   assert.equal(hasUnsupportedConditionValue(monitorLeaf("ship-id", "main")), false);
   assert.equal(
@@ -346,19 +494,29 @@ test("validateMonitorCondition and unsupported value checks cover monitor leaves
   );
 });
 
-test("condition editor surfaces expose change type inside each condition row", () => {
+test("condition editor exposes change type on the root composite card", () => {
   const dialog = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleConditionEditorDialog.vue", import.meta.url), "utf8");
   const editor = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleConditionEditor.vue", import.meta.url), "utf8");
-  const monitorEditor = readFileSync(
-    new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleMonitorLeafEditor.vue", import.meta.url),
-    "utf8",
-  );
+  const surface = readFileSync(new URL("../src/views/SpaceBehaviorScheduleWorkspace/ruleConfig/ScheduleRuleConditionWireSurface.vue", import.meta.url), "utf8");
   assert.doesNotMatch(dialog, /rule-condition-editor__mode/);
+  assert.match(dialog, /width="1180px"/);
+  assert.match(dialog, /overflow-x:\s*hidden/);
+  assert.match(dialog, /:before-close="handleConditionDialogBeforeClose"/);
+  assert.match(dialog, /emit\("confirm"\)/);
+  assert.match(dialog, /closeConditionDialogWithoutConfirm/);
+  assert.match(editor, /v-if="isRoot"/);
   assert.match(editor, /ariaLabel="变更类型"/);
-  assert.match(editor, /属性比较/);
+  assert.doesNotMatch(editor, /el-option label="属性比较"/);
   assert.match(editor, /新增实例或子表行/);
+  assert.match(editor, /更新实例或子表行/);
   assert.match(editor, /删除实例或子表行/);
-  assert.match(editor, /ScheduleRuleMonitorLeafEditor/);
-  assert.match(editor, /applyChangeType|@replace/);
-  assert.match(monitorEditor, /storageGroup/);
+  assert.match(editor, /rule-condition-card__change-type/);
+  assert.match(editor, /@remove="removeConditionChild\(child\.id\)"/);
+  assert.match(editor, /function removeConditionChild/);
+  assert.match(editor, /rule-condition-card__remove/);
+  assert.match(editor, /width:\s*max-content/);
+  assert.match(editor, /rule-condition-card__body[\s\S]*rule-condition-card__remove[\s\S]*<\/div>/);
+  assert.doesNotMatch(editor, /@remove="node\.children\.splice\(index,\s*1\)"/);
+  assert.match(surface, /ruleConditionRootKey/);
+  assert.match(surface, /provide/);
 });

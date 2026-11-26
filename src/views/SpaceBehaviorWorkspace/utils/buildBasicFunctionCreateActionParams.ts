@@ -169,10 +169,6 @@ export function buildBasicFunctionCreateActionParams(draft: SpaceBehaviorDraft):
     return { error: filterError };
   }
 
-  if (ontologyIdentifiers.length > 1 && !aggFunc) {
-    return { error: "多对象时请选择聚合类型" };
-  }
-
   let basicFunction: CreateOntologyActionBasicFunction;
   let writeBackResult: CreateOntologyActionBasicFunctionWriteBack | null | { error: string };
   if (aggFunc) {
@@ -195,6 +191,14 @@ export function buildBasicFunctionCreateActionParams(draft: SpaceBehaviorDraft):
       mode: "QUERY",
       selectFields,
     };
+    const pageNum = Number(draft.basicFunctionPageNum);
+    const pageSize = Number(draft.basicFunctionPageSize);
+    if (Number.isInteger(pageNum) && pageNum > 0 && pageNum !== 1) {
+      basicFunction.pageNum = pageNum;
+    }
+    if (Number.isInteger(pageSize) && pageSize > 0 && pageSize !== 10) {
+      basicFunction.pageSize = pageSize;
+    }
     writeBackResult = buildQueryWriteBack(selectFields, draft.basicFunctionWriteFields ?? {});
   }
 

@@ -12,9 +12,9 @@ export function hasUnsupportedConditionValue(condition: RuleConditionNode): bool
 }
 
 /**
- * @description 校验监测叶子已选择对象与分组。
+ * @description 拦截仍为旧监测叶子（仅对象+分组）的条件树，提示改为比较同构表单后再保存。
  * @param condition 当前条件。
- * @returns 首个错误文案。
+ * @returns 首个错误文案；无问题为空串。
  */
 export function validateMonitorCondition(condition: RuleConditionNode): string {
   if (condition.type === "composite") {
@@ -24,8 +24,6 @@ export function validateMonitorCondition(condition: RuleConditionNode): string {
     }
     return "";
   }
-  if (condition.type !== "monitor") return "";
-  if (!condition.objectId.trim()) return "请选择监测对象";
-  if (!condition.storageGroup.trim()) return "请选择存储分组";
+  if (condition.type === "monitor") return "请将监测条件改为属性比较表单后再保存";
   return "";
 }

@@ -45,7 +45,11 @@ export interface TestOntologyActionParams {
   linkEntityPrimaryKey?: string | number | boolean | Record<string, unknown>;
   /** 基础函数回写目标实例主键；创建时配置了 writeBack 时传。 */
   writeBackEntityPrimaryKey?: string | number | boolean | Record<string, unknown>;
-  /** 外部输入参数取值（参数名 -> 值）。 */
+  /**
+   * 外部输入取值。
+   * - 应用行为：参数名 → 值；
+   * - 基础函数：过滤条件 `propertyApiName` → 值（`IN`/`NOT_IN` 为数组，`BETWEEN`/`NOT_BETWEEN` 为长度 2 的数组）。
+   */
   params?: Record<string, unknown>;
 }
 

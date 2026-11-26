@@ -2,11 +2,11 @@
   <ul class="function-operator-script-param-tree" :aria-label="ariaLabel">
     <li v-for="(item, index) in nodes" :key="buildParameterKey(item, index)" class="function-operator-script-param-tree__item">
       <div class="function-operator-script-param-tree__row">
-        <div class="function-operator-script-param-tree__main">
+        <div class="function-operator-script-param-tree__title">
           <span class="function-operator-script-param-tree__name">{{ item.paramName }}</span>
-          <span v-if="item.description" class="function-operator-script-param-tree__description">{{ item.description }}</span>
+          <span class="function-operator-script-param-tree__type">{{ item.paramType }}</span>
         </div>
-        <span class="function-operator-script-param-tree__type">{{ item.paramType }}</span>
+        <span v-if="item.description" class="function-operator-script-param-tree__description">{{ item.description }}</span>
       </div>
       <FunctionOperatorScriptParamTree v-if="item.fields && item.fields.length > 0" :nodes="item.fields" />
     </li>
@@ -53,26 +53,32 @@ function buildParameterKey(item: ParseOntologyFunctionParamItem, index: number):
 .function-operator-script-param-tree__row {
   display: flex;
   min-width: 0;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
   padding: 8px 10px;
   border: 1px solid var(--aircas-color-border);
   border-radius: 6px;
   background: var(--aircas-color-panel-background-deep);
 }
 
-.function-operator-script-param-tree__main {
+.function-operator-script-param-tree__title {
   display: flex;
   min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .function-operator-script-param-tree__name {
   min-width: 0;
   color: var(--aircas-color-text-primary);
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.function-operator-script-param-tree__type {
+  min-width: 0;
+  color: var(--aircas-color-text-secondary);
   font-size: 12px;
   word-break: break-word;
 }
@@ -83,11 +89,5 @@ function buildParameterKey(item: ParseOntologyFunctionParamItem, index: number):
   font-size: 12px;
   line-height: 1.4;
   word-break: break-word;
-}
-
-.function-operator-script-param-tree__type {
-  flex-shrink: 0;
-  color: var(--aircas-color-text-secondary);
-  font-size: 12px;
 }
 </style>

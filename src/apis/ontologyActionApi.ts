@@ -22,6 +22,8 @@ import type {
   ListBehaviorSchedulingParams,
   ListOntologyActionData,
   ListOntologyActionParams,
+  PostOntologyActionBasicFunctionCommonPropertiesData,
+  PostOntologyActionBasicFunctionCommonPropertiesParams,
   PublishOntologyActionData,
   PublishOntologyActionParams,
   TestOntologyActionData,
@@ -125,6 +127,26 @@ export function deleteOntologyActionInterface(params: DeleteOntologyActionParams
     url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action",
     method: "delete",
     params,
+  });
+}
+
+/**
+ * @description 查询基础函数所选对象的公共字段；单对象传一个 id 时返回该对象全部可用字段。
+ *
+ * 请求方式：POST `/ontology/action/basic-function/common-properties`
+ *
+ * @param params 请求体。
+ * @param params.ontologySpaceId 对象空间 id；可选，传入时校验对象属于该空间。
+ * @param params.ontologyIdentifiers 对象唯一标识列表，至少一个。
+ * @returns 标准 API 响应，data 含公共 properties 及对象名称。
+ */
+export function postOntologyActionBasicFunctionCommonPropertiesInterface(
+  params: PostOntologyActionBasicFunctionCommonPropertiesParams,
+): Promise<ApiResponse<PostOntologyActionBasicFunctionCommonPropertiesData>> {
+  return request<PostOntologyActionBasicFunctionCommonPropertiesData>({
+    url: DOMAIN_CONFIG.ONTOLOGYMANAGE_URL + "/ontology/action/basic-function/common-properties",
+    method: "post",
+    data: params,
   });
 }
 

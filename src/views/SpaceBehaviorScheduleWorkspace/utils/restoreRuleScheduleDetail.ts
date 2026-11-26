@@ -50,13 +50,12 @@ function readBracketCount(value: unknown): number {
 }
 
 /**
- * @description 读取监测事件类型，仅支持前端已暴露的 insert / delete。
+ * @description 读取监测事件类型：insert / update / delete。
  * @param value 外部值。
  * @returns 监测类型或空。
  */
 function readConditionMonitorType(value: unknown): RuleConditionMonitorType | undefined {
-  if (value === "insert" || value === "delete") return value;
-  if (value === "update") throw new Error("暂不支持 update 监测条件回显");
+  if (value === "insert" || value === "update" || value === "delete") return value;
   if (value === undefined || value === null || value === "") return undefined;
   throw new Error("规则监测事件类型无效");
 }
@@ -130,11 +129,12 @@ function restoreCondition(value: unknown, nextId: () => string, monitorType?: Ru
     if (!isRecord(item)) throw new Error("规则条件项无效");
     const itemMonitorType = readConditionMonitorType(item.monitorType);
     const effectiveMonitorType = monitorType ?? itemMonitorType;
-    const isMonitorItem = Boolean(effectiveMonitorType) || (item.condition === undefined && item.rightOperate === undefined);
+    if (monitorType && itemMonitorType && itemMonitorType !== monitorType) throw new Error("规则组监测事件类型不一致");
+    /** 旧监测载荷无比较符与右操作数；新同构监测带完整比较项。 */
+    const isLegacyMonitorItem = item.condition === undefined && item.rightOperate === undefined;
     for (let count = readBracketCount(item.isLeft); count > 0; count--) tokens.push({ kind: "left" });
-    if (isMonitorItem) {
+    if (isLegacyMonitorItem) {
       if (!effectiveMonitorType) throw new Error("监测条件缺少事件类型");
-      if (monitorType && itemMonitorType && itemMonitorType !== monitorType) throw new Error("规则组监测事件类型不一致");
       tokens.push({ kind: "condition", value: restoreMonitorLeaf(item.leftOperate, nextId, effectiveMonitorType) });
     } else {
       if (typeof item.condition !== "string" || !Object.hasOwn(operators, item.condition)) throw new Error("规则比较操作符不支持");

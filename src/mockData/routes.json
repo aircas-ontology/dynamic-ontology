@@ -6,6 +6,11 @@
   },
   {
     "method": "POST",
+    "path": "/ontology/action/basic-function/common-properties",
+    "file": "fixtures/ontology/action.basicFunction.commonProperties.post.json"
+  },
+  {
+    "method": "POST",
     "path": "/ontology/action",
     "file": "fixtures/ontology/action.post.json"
   },

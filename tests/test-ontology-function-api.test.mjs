@@ -371,6 +371,92 @@ test("nested LIST inside OBJECT supports add remove and typed leaf coercion edge
   assert.equal(invalidRequest.parameters?.[2]?.paramValue, "[1,");
 });
 
+test("List generic Point and nested List initialize listItems and serialize groups", () => {
+  const rows = buildOntologyFunctionScriptTestInputRows([
+    {
+      paramName: "points",
+      paramType: "List<Point>",
+      category: "INPUT",
+      paramOrder: 1,
+      fields: [
+        { paramName: "latitude", paramType: "DOUBLE", category: "INPUT", paramOrder: 1 },
+        { paramName: "longitude", paramType: "DOUBLE", category: "INPUT", paramOrder: 2 },
+      ],
+    },
+    {
+      paramName: "tracks",
+      paramType: "List<List<Point>>",
+      category: "INPUT",
+      paramOrder: 2,
+      fields: [
+        {
+          paramName: "segment",
+          paramType: "List<Point>",
+          category: "INPUT",
+          paramOrder: 1,
+          fields: [
+            { paramName: "latitude", paramType: "DOUBLE", category: "INPUT", paramOrder: 1 },
+            { paramName: "longitude", paramType: "DOUBLE", category: "INPUT", paramOrder: 2 },
+          ],
+        },
+      ],
+    },
+  ]);
+  assert.equal(rows[0]?.listItems?.length, 1);
+  assert.equal(rows[1]?.listItems?.length, 1);
+  assert.equal(rows[1]?.listItems?.[0]?.[0]?.listItems?.length, 1);
+
+  const withOuter = addOntologyFunctionScriptTestListItem(rows, [0]);
+  assert.equal(withOuter[0]?.listItems?.length, 2);
+  const written = writeOntologyFunctionScriptTestParamValue(writeOntologyFunctionScriptTestParamValue(withOuter, [0, 0, 0], "1.1"), [0, 0, 1], "2.2");
+  const withInner = addOntologyFunctionScriptTestListItem(written, [1, 0, 0]);
+  assert.equal(withInner[1]?.listItems?.[0]?.[0]?.listItems?.length, 2);
+  const filledInner = writeOntologyFunctionScriptTestParamValue(
+    writeOntologyFunctionScriptTestParamValue(withInner, [1, 0, 0, 0, 0], "3.3"),
+    [1, 0, 0, 0, 1],
+    "4.4",
+  );
+  const removedOuter = removeOntologyFunctionScriptTestListItem(filledInner, [0], 1);
+  assert.equal(removedOuter[0]?.listItems?.length, 1);
+
+  const request = buildOntologyFunctionScriptTestRequest({
+    functionApi: "geo.points",
+    version: "1.0.0",
+    ontologySpaceId: 5,
+    rows: removedOuter,
+  });
+  assert.deepEqual(request.parameters?.[0], {
+    paramName: "points",
+    paramType: "List<Point>",
+    paramValue: [{ latitude: 1.1, longitude: 2.2 }],
+  });
+  assert.deepEqual(request.parameters?.[1]?.paramValue, [
+    {
+      segment: [
+        { latitude: 3.3, longitude: 4.4 },
+        { latitude: "", longitude: "" },
+      ],
+    },
+  ]);
+});
+
+test("List Double without fields builds scalar listItems and serializes number array", () => {
+  const rows = buildOntologyFunctionScriptTestInputRows([{ paramName: "scores", paramType: "List<Double>", category: "INPUT", paramOrder: 1 }]);
+  assert.equal(rows[0]?.listItems?.length, 1);
+  assert.deepEqual(rows[0]?.fields, [{ paramName: "value", paramType: "Double", paramValue: "" }]);
+  assert.deepEqual(rows[0]?.listItems?.[0], [{ paramName: "value", paramType: "Double", paramValue: "" }]);
+
+  const withTwo = addOntologyFunctionScriptTestListItem(rows, [0]);
+  const filled = writeOntologyFunctionScriptTestParamValue(writeOntologyFunctionScriptTestParamValue(withTwo, [0, 0, 0], "1.2"), [0, 1, 0], "3.4");
+  const request = buildOntologyFunctionScriptTestRequest({
+    functionApi: "stats.scores",
+    version: "1.0.0",
+    ontologySpaceId: 2,
+    rows: filled,
+  });
+  assert.deepEqual(request.parameters, [{ paramName: "scores", paramType: "List<Double>", paramValue: [1.2, 3.4] }]);
+});
+
 test("LIST nested under another LIST item can add and remove groups", () => {
   const rows = buildOntologyFunctionScriptTestInputRows([
     {
@@ -484,6 +570,7 @@ test("script test param tree supports list item add and remove events", () => {
   assert.match(treeSource, /remove-list-item/);
   assert.match(treeSource, /listItems/);
   assert.match(treeSource, /添加一组/);
+  assert.match(treeSource, /isOntologyFunctionScriptTestListType/);
   assert.match(treeSource, /toggleScriptTestListItemCollapse/);
   assert.match(treeSource, /ArrowDown/);
   assert.match(treeSource, /ArrowRight/);

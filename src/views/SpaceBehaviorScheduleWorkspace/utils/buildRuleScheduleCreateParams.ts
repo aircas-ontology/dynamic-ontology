@@ -15,7 +15,7 @@ import type {
   ScheduleRuleJudgeItem,
   ScheduleRuleOperand,
 } from "@/types";
-import { needsRuleVariableDataRow } from "./needsRuleVariableDataRow.ts";
+import { readRuleVariableBindingRequirement } from "./needsRuleVariableDataRow.ts";
 
 const compareOperators: Partial<Record<RuleCompareOperator, ScheduleRuleCompareOperator>> = {
   eq: "EQ",
@@ -28,101 +28,78 @@ const compareOperators: Partial<Record<RuleCompareOperator, ScheduleRuleCompareO
   notContains: "NOT_CONTAINS",
 };
 
-/** @description 将固定值和单实例变量转换为接口操作数，不推测函数及表达式协议。 @param value 画布值。 @returns 操作数。 */
-function buildRuleOperand(value: RuleValueNode): ScheduleRuleOperand {
+/**
+ * @description 将固定值和变量转换为接口操作数；按监测事件决定是否附带实例与数据行。
+ * @param value 画布值。
+ * @param monitorType 组级监测事件。
+ * @returns 操作数。
+ */
+function buildRuleOperand(value: RuleValueNode, monitorType?: RuleConditionMonitorType): ScheduleRuleOperand {
   if (value.kind === "input") {
     if (!value.text.trim()) throw new Error("请填写条件固定值");
     return { type: "fixed", fixValue: value.text };
   }
   if (value.kind !== "variable") throw new Error("当前接口尚未约定函数或表达式的传参方式");
-  if (!value.objectId || !value.propertyId || value.instanceIds.length !== 1 || !value.instanceIds[0]?.trim())
-    throw new Error("条件变量必须选择对象、属性和一个具体实例");
-  if (needsRuleVariableDataRow(value.storageGroup)) {
-    if (value.dataPrimaryKey === undefined || value.dataPrimaryKey === null || value.dataPrimaryKey === "") throw new Error("条件变量的子表属性必须选择数据行");
-    return {
-      type: "dynamic",
-      OntologyId: value.objectId,
-      entityId: value.instanceIds[0],
-      propertyId: value.propertyId,
-      dataPrimaryKey: value.dataPrimaryKey,
-    };
+  if (!value.objectId || !value.propertyId) throw new Error("条件变量必须选择对象和属性");
+  const requirement = readRuleVariableBindingRequirement(value.storageGroup, monitorType);
+  const operand: Extract<ScheduleRuleOperand, { type: "dynamic" }> = {
+    type: "dynamic",
+    OntologyId: value.objectId,
+    propertyId: value.propertyId,
+  };
+  if (requirement.requiresInstance) {
+    if (value.instanceIds.length !== 1 || !value.instanceIds[0]?.trim()) throw new Error("条件变量必须选择一个具体实例");
+    operand.entityId = value.instanceIds[0];
   }
-  return { type: "dynamic", OntologyId: value.objectId, entityId: value.instanceIds[0], propertyId: value.propertyId };
+  if (requirement.requiresDataRow) {
+    if (value.dataPrimaryKey === undefined || value.dataPrimaryKey === null || value.dataPrimaryKey === "") throw new Error("条件变量的子表属性必须选择数据行");
+    operand.dataPrimaryKey = value.dataPrimaryKey;
+  }
+  return operand;
 }
 
 /**
- * @description 判断条件项是否为监测形态（无比较符与右操作数）。
+ * @description 判断条件项是否为旧监测形态（无比较符与右操作数）。
  * @param item 条件项。
- * @returns 是否为监测项。
+ * @returns 是否为旧监测项。
  */
-function isMonitorJudgeItem(item: ScheduleRuleJudgeItem): boolean {
+function isLegacyMonitorJudgeItem(item: ScheduleRuleJudgeItem): boolean {
   return item.condition === undefined && item.rightOperate === undefined;
 }
 
 /**
- * @description 收集条件树中的属性比较与监测事件类型。
+ * @description 拒绝仍为旧监测叶子的条件树，须改为比较同构表单。
  * @param condition 条件节点。
- * @param fallback 祖先组级监测类型。
- * @returns 是否含比较及监测类型集合。
  */
-function collectConditionKinds(
-  condition: RuleCompositeCondition["children"][number] | RuleCompositeCondition,
-  fallback?: RuleConditionMonitorType,
-): { hasCompare: boolean; monitorTypes: Set<RuleConditionMonitorType> } {
-  if (condition.type === "composite") {
-    const monitorTypes = new Set<RuleConditionMonitorType>();
-    let hasCompare = false;
-    const nextFallback = condition.monitorType ?? fallback;
-    for (const child of condition.children) {
-      const part = collectConditionKinds(child, nextFallback);
-      hasCompare = hasCompare || part.hasCompare;
-      part.monitorTypes.forEach((item) => monitorTypes.add(item));
-    }
-    return { hasCompare, monitorTypes };
-  }
-  if (condition.type === "monitor") {
-    const monitorType = condition.monitorType ?? fallback;
-    if (!monitorType) throw new Error("请选择条件变更类型");
-    return { hasCompare: false, monitorTypes: new Set([monitorType]) };
-  }
-  return { hasCompare: true, monitorTypes: new Set() };
+function assertNoLegacyMonitorNodes(condition: RuleCompositeCondition["children"][number] | RuleCompositeCondition): void {
+  if (condition.type === "monitor") throw new Error("请将监测条件改为属性比较表单后再保存");
+  if (condition.type === "composite") condition.children.forEach(assertNoLegacyMonitorNodes);
 }
 
 /**
- * @description 递归展开条件组合；监测形态只输出对象与存储分组。
+ * @description 递归展开条件组合为属性比较同构判断项。
  * @param condition 条件组合。
  * @param nested 是否为子分组。
- * @param writeItemMonitorType 是否在条件项上写 monitorType。
- * @param fallback 祖先组级监测类型。
+ * @param monitorType 组级监测事件。
  * @returns 判断项。
  */
-function buildRuleJudgeItems(
-  condition: RuleCompositeCondition,
-  nested = false,
-  writeItemMonitorType = false,
-  fallback?: RuleConditionMonitorType,
-): ScheduleRuleJudgeItem[] {
+function buildRuleJudgeItems(condition: RuleCompositeCondition, nested = false, monitorType?: RuleConditionMonitorType): ScheduleRuleJudgeItem[] {
   if (!condition.children.length) throw new Error("请至少配置一个判断条件");
   const items: ScheduleRuleJudgeItem[] = [];
-  const nextFallback = condition.monitorType ?? fallback;
   for (const child of condition.children) {
     let childItems: ScheduleRuleJudgeItem[];
-    if (child.type === "composite") childItems = buildRuleJudgeItems(child, true, writeItemMonitorType, nextFallback);
-    else if (child.type === "monitor") {
-      const monitorType = child.monitorType ?? nextFallback;
-      if (!monitorType) throw new Error("请选择条件变更类型");
-      if (!child.objectId.trim()) throw new Error("请选择监测对象");
-      const storageGroup = child.storageGroup.trim() || "main";
-      childItems = [
-        {
-          leftOperate: { type: "dynamic", OntologyId: child.objectId.trim(), storageGroup },
-          ...(writeItemMonitorType ? { monitorType } : {}),
-        },
-      ];
-    } else {
+    if (child.type === "composite") childItems = buildRuleJudgeItems(child, true, monitorType);
+    else if (child.type === "monitor") throw new Error("请将监测条件改为属性比较表单后再保存");
+    else {
       const operator = compareOperators[child.operator];
       if (!operator) throw new Error("前置包含操作符已移除，请重新选择条件操作符");
-      childItems = [{ leftOperate: buildRuleOperand(child.left), rightOperate: buildRuleOperand(child.right), condition: operator }];
+      childItems = [
+        {
+          leftOperate: buildRuleOperand(child.left, monitorType),
+          rightOperate: buildRuleOperand(child.right, monitorType),
+          condition: operator,
+        },
+      ];
     }
     const previous = items.at(-1);
     if (previous) previous.linkFlag = condition.logic === "and" ? "AND" : "OR";
@@ -140,7 +117,7 @@ function buildRuleJudgeItems(
 }
 
 /**
- * @description 按条件树解析组级监测类型并生成判断项。
+ * @description 生成比较同构判断项，并读取组级 monitorType。
  * @param condition 根组合条件。
  * @returns 判断项与可选组级监测类型。
  */
@@ -149,17 +126,11 @@ function buildBranchJudgeParams(condition: RuleCompositeCondition): {
   monitorType?: RuleConditionMonitorType;
   isMonitor: boolean;
 } {
-  const kinds = collectConditionKinds(condition, condition.monitorType);
-  if (kinds.hasCompare && kinds.monitorTypes.size) throw new Error("同一规则组不能混合属性比较与新增/删除监测条件");
-  if (!kinds.hasCompare && !kinds.monitorTypes.size) throw new Error("请至少配置一个判断条件");
-  if (kinds.hasCompare) return { items: buildRuleJudgeItems(condition, false, false), isMonitor: false };
-  const uniform = kinds.monitorTypes.size === 1 ? [...kinds.monitorTypes][0] : undefined;
-  const writeItemMonitorType = !uniform;
-  return {
-    items: buildRuleJudgeItems(condition, false, writeItemMonitorType, condition.monitorType),
-    monitorType: uniform,
-    isMonitor: true,
-  };
+  assertNoLegacyMonitorNodes(condition);
+  const monitorType = condition.monitorType;
+  const items = buildRuleJudgeItems(condition, false, monitorType);
+  if (!items.length) throw new Error("请至少配置一个判断条件");
+  return { items, monitorType, isMonitor: Boolean(monitorType) };
 }
 
 /** 路径中的一层判断，inverted 表示进入该分支的不成立路径。 */
@@ -182,7 +153,7 @@ const inverseOperators: Record<ScheduleRuleCompareOperator, ScheduleRuleCompareO
 };
 
 /**
- * @description 合并路径约束；监测项取反只翻转连接符，属性比较按德摩根下推操作符。
+ * @description 合并路径约束；比较项按德摩根下推操作符，旧监测项取反只翻转连接符。
  * @param path 从根到行为的约束。
  * @returns 接口判断条件与组级监测类型。
  */
@@ -195,7 +166,7 @@ function buildPathJudgeParams(path: RulePathPredicate[]): {
   if (!single) throw new Error("规则画布需要配置条件分支或 switch 分支");
   const hasMonitor = path.some((item) => item.isMonitor);
   const hasCompare = path.some((item) => !item.isMonitor);
-  if (hasMonitor && hasCompare) throw new Error("同一规则路径不能混合属性比较与新增/删除监测条件");
+  if (hasMonitor && hasCompare) throw new Error("同一规则路径不能混合属性比较与监测条件");
   const monitorTypes = [...new Set(path.map((item) => item.monitorType).filter((item): item is RuleConditionMonitorType => Boolean(item)))];
   const monitorType =
     hasMonitor && monitorTypes.length === 1 && path.every((item) => !item.isMonitor || item.monitorType === monitorTypes[0]) ? monitorTypes[0] : undefined;
@@ -203,7 +174,7 @@ function buildPathJudgeParams(path: RulePathPredicate[]): {
   const judgeParams: ScheduleRuleJudgeItem[] = [];
   for (const predicate of path) {
     const items = predicate.items.map((item): ScheduleRuleJudgeItem => {
-      if (isMonitorJudgeItem(item)) {
+      if (isLegacyMonitorJudgeItem(item)) {
         return {
           ...item,
           ...(item.linkFlag ? { linkFlag: predicate.inverted ? (item.linkFlag === "AND" ? "OR" : "AND") : item.linkFlag } : {}),

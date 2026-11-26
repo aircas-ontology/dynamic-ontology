@@ -37,10 +37,19 @@ export type BasicFilterValueType = (typeof BASIC_FILTER_VALUE_TYPE_OPTIONS)[numb
 
 export type BasicFilterValue = string | number | boolean;
 
+export const BASIC_FILTER_SOURCE_OPTIONS = [
+  { value: "FIXED", label: "固定值" },
+  { value: "EXTERNAL", label: "外部输入" },
+] as const;
+
+export type BasicFilterSource = (typeof BASIC_FILTER_SOURCE_OPTIONS)[number]["value"];
+
 export interface BasicFilterCondition {
   op: BasicFilterOp;
   propertyApiName: string;
   valueType: BasicFilterValueType;
+  /** 取值来源：FIXED 固定值（默认）/ EXTERNAL 外部输入。 */
+  source?: BasicFilterSource;
   value?: BasicFilterValue;
   values?: BasicFilterValue[];
 }

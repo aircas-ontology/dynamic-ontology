@@ -7,9 +7,9 @@ import {
 } from "@/apis";
 import type { ApiResponse, OntologyCategoryTreeNode, RuleVariableCatalogObject } from "@/types";
 import { mapOntologyEntityRowDetailPageToDataRows } from "@/utils/behaviorParameters/mapOntologyEntityRowDetailToDataRows";
-import { needsRuleVariableDataRow } from "../utils/needsRuleVariableDataRow.ts";
+import { needsRuleVariableDataRow, readRuleVariableBindingRequirement } from "../utils/needsRuleVariableDataRow.ts";
 
-export { needsRuleVariableDataRow };
+export { needsRuleVariableDataRow, readRuleVariableBindingRequirement };
 
 /** 变量选择器中的子表数据行选项。 */
 export interface RuleVariableDataRowOption {

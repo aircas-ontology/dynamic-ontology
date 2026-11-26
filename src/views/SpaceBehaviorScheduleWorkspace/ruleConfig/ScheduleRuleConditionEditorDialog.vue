@@ -2,7 +2,7 @@
   <el-dialog
     :model-value="modelValue"
     title="配置条件"
-    width="880px"
+    width="1180px"
     append-to-body
     destroy-on-close
     draggable
@@ -11,7 +11,7 @@
     modal-penetrable
     :z-index="5100"
     :close-on-click-modal="false"
-    @update:model-value="emit('update:modelValue', $event)"
+    :before-close="handleConditionDialogBeforeClose"
   >
     <div ref="editorRef" class="rule-condition-editor">
       <el-form v-if="condition" :disabled="readonly">
@@ -19,7 +19,7 @@
       </el-form>
     </div>
     <template #footer>
-      <el-button @click="emit('update:modelValue', false)">{{ readonly ? "关闭" : "取消" }}</el-button>
+      <el-button @click="closeConditionDialogWithoutConfirm">{{ readonly ? "关闭" : "取消" }}</el-button>
       <el-button v-if="!readonly" type="primary" @click="emit('confirm')">确定</el-button>
     </template>
   </el-dialog>
@@ -30,7 +30,7 @@ import { ref } from "vue";
 import type { RuleCompositeCondition } from "@/types";
 import ScheduleRuleConditionWireSurface from "./ScheduleRuleConditionWireSurface.vue";
 
-defineProps<{
+const props = defineProps<{
   modelValue: boolean;
   condition: RuleCompositeCondition | null;
   readonly?: boolean;
@@ -43,6 +43,26 @@ const emit = defineEmits<{
 
 const editorRef = ref<HTMLElement | null>(null);
 
+/**
+ * @description 取消或只读关闭：不写回条件草稿。
+ */
+function closeConditionDialogWithoutConfirm(): void {
+  emit("update:modelValue", false);
+}
+
+/**
+ * @description 标题栏关闭与确定一致：可编辑时触发确认写回；校验失败时不关闭。
+ * @param done 关闭完成回调。
+ */
+function handleConditionDialogBeforeClose(done: (cancel?: boolean) => void): void {
+  if (props.readonly) {
+    emit("update:modelValue", false);
+    done();
+    return;
+  }
+  emit("confirm");
+}
+
 defineExpose({ editorRef });
 </script>
 
@@ -51,6 +71,7 @@ defineExpose({ editorRef });
   min-height: 240px;
   max-height: 62vh;
   padding: 4px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 </style>

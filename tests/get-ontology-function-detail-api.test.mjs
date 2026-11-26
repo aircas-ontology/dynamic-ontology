@@ -521,8 +521,15 @@ test("function operator openDetail fetches detail for drawer", () => {
   assert.match(drawer, /FunctionOperatorScriptParamTree/);
   assert.match(drawer, /mapOperatorParametersToScriptParamTree/);
   const paramTree = readSource("../src/components/FunctionOperatorDetailDrawer/FunctionOperatorScriptParamTree.vue");
+  assert.match(paramTree, /function-operator-script-param-tree__title/);
+  assert.match(
+    paramTree,
+    /function-operator-script-param-tree__title[\s\S]*function-operator-script-param-tree__name[\s\S]*function-operator-script-param-tree__type/,
+  );
   assert.match(paramTree, /item\.description/);
   assert.match(paramTree, /function-operator-script-param-tree__description/);
+  assert.doesNotMatch(paramTree, /function-operator-script-param-tree__main/);
+  assert.match(paramTree, /\.function-operator-script-param-tree__title\s*\{[\s\S]*display:\s*flex/);
   const parseType = readSource("../src/types/apis/parseOntologyFunctionParamsType.ts");
   assert.match(parseType, /description\?: string/);
   assert.doesNotMatch(drawer, /el-table/);

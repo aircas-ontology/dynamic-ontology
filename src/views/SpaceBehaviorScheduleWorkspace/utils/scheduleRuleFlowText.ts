@@ -188,7 +188,14 @@ function serializeCondition(node: RuleConditionNode, level: number): string[] {
   const pad = indent(level);
   if (node.type === "composite") {
     const logic = node.logic === "and" ? "AND" : "OR";
-    const monitor = node.monitorType === "insert" ? " MONITOR INSERT" : node.monitorType === "delete" ? " MONITOR DELETE" : "";
+    const monitor =
+      node.monitorType === "insert"
+        ? " MONITOR INSERT"
+        : node.monitorType === "update"
+          ? " MONITOR UPDATE"
+          : node.monitorType === "delete"
+            ? " MONITOR DELETE"
+            : "";
     const lines = [`${pad}${logic}${monitor}`];
     if (!node.children.length) {
       lines.push(`${indent(level + 1)}(empty)`);

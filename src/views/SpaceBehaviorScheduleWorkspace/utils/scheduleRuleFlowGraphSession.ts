@@ -239,13 +239,13 @@ export class ScheduleRuleFlowGraphSession {
       updated.add(source.nodeId);
       const node = this.graph?.getCellById(source.nodeId);
       if (!node?.isNode()) continue;
-      node.setData(cloneRuleFlowValue(source.data));
+      node.setData(cloneRuleFlowValue(source.data), { overwrite: true });
       if (source.data.condition) node.attr("summary/text", truncateRuleFlowText(summarizeRuleCondition(source.data.condition), 28));
     }
     this.updateNodeData(nodeId, data);
   }
 
-  /** @description 更新节点数据并刷新摘要。 @param nodeId 节点 id。 @param data 节点数据。 */
+  /** @description 更新节点数据并刷新摘要；整对象覆盖写入，避免深合并残留已删条件 children。 @param nodeId 节点 id。 @param data 节点数据。 */
   updateNodeData(nodeId: string, data: ScheduleRuleGraphNodeData): void {
     const node = this.graph?.getCellById(nodeId);
     if (!node?.isNode()) return;
@@ -260,7 +260,7 @@ export class ScheduleRuleFlowGraphSession {
       this.commitGraph();
       return;
     }
-    node.setData(cloneRuleFlowValue(data));
+    node.setData(cloneRuleFlowValue(data), { overwrite: true });
     if (data.kind === "condition" && data.condition)
       node.attr("summary/text", truncateRuleFlowText(summarizeRuleCondition(data.condition) || "未配置条件", 28));
     if (data.kind === "action" && data.action) {

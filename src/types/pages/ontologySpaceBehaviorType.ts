@@ -174,6 +174,10 @@ export interface SpaceBehaviorDraft {
   basicFunctionTargetField: string;
   /** 基础函数：展示字段 apiName 列表（QUERY）。 */
   basicFunctionSelectFields: string[];
+  /** 基础函数：QUERY 模式分页号；默认 1。 */
+  basicFunctionPageNum: number;
+  /** 基础函数：QUERY 模式每页条数；默认 10。 */
+  basicFunctionPageSize: number;
   /** 基础函数：展示字段 apiName → 写入字段绑定；本轮仅表单，创建接口后续接入。 */
   basicFunctionWriteFields: Record<string, SpaceBehaviorBasicFunctionWriteFieldBinding>;
   /** 基础函数：多对象写入字段（单行）；本轮仅表单，创建接口后续接入。 */

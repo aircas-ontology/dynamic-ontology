@@ -93,7 +93,7 @@ export function createEmptyLeafCondition(): RuleLeafCondition {
  * @param monitorType 监测事件类型。
  * @returns 未选对象的监测叶子。
  */
-export function createEmptyMonitorLeafCondition(monitorType: "insert" | "delete" = "insert"): RuleMonitorLeafCondition {
+export function createEmptyMonitorLeafCondition(monitorType: "insert" | "update" | "delete" = "insert"): RuleMonitorLeafCondition {
   return {
     id: createRuleNodeId("monitor"),
     type: "monitor",
@@ -114,6 +114,8 @@ export function createEmptyCompositeCondition(withChild = true): RuleCompositeCo
     id: createRuleNodeId("comp"),
     type: "composite",
     logic: "and",
+    /** 与「更新实例或子表行」同构；新建条件默认 update。 */
+    monitorType: "update",
     children: withChild ? [createEmptyLeafCondition()] : [],
   };
 }
@@ -269,7 +271,7 @@ export function summarizeRuleCondition(node: RuleConditionNode): string {
   if (node.type === "monitor") {
     const objectLabel = node.objectName.trim() || node.objectId.trim() || "未选对象";
     const groupLabel = node.storageGroup.trim() || "main";
-    const prefix = node.monitorType === "delete" ? "删除" : "新增";
+    const prefix = node.monitorType === "delete" ? "删除" : node.monitorType === "update" ? "更新" : "新增";
     return `${prefix} · ${objectLabel} / ${groupLabel}`;
   }
   const joiner = node.logic === "and" ? " 且 " : " 或 ";

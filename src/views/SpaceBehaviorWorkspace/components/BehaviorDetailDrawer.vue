@@ -40,13 +40,13 @@
       <section class="behavior-detail-drawer__section">
         <h4>输入参数</h4>
         <el-table v-if="viewState.inputRows.length" :data="viewState.inputRows" row-key="rowKey" class="aircas-table--accent-header" size="small">
-          <el-table-column label="参数" min-width="140" show-overflow-tooltip>
+          <el-table-column label="参数" min-width="110" show-overflow-tooltip>
             <template #default="{ row }">{{ formatParamLabel(asParamRow(row)) }}</template>
           </el-table-column>
-          <el-table-column prop="paramType" label="类型" width="100" show-overflow-tooltip />
-          <el-table-column prop="sourceType" label="来源" width="110" show-overflow-tooltip />
-          <el-table-column prop="bindSummary" label="绑定" min-width="200" show-overflow-tooltip />
-          <el-table-column prop="description" label="描述" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="paramType" label="类型" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="sourceType" label="来源" width="90" show-overflow-tooltip />
+          <el-table-column prop="bindSummary" label="绑定" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="description" label="描述" min-width="120" show-overflow-tooltip />
         </el-table>
         <p v-else class="behavior-detail-drawer__empty">暂无输入参数</p>
       </section>
@@ -54,11 +54,11 @@
       <section class="behavior-detail-drawer__section">
         <h4>输出参数</h4>
         <el-table v-if="viewState.outputRows.length" :data="viewState.outputRows" row-key="rowKey" class="aircas-table--accent-header" size="small">
-          <el-table-column label="参数" min-width="140" show-overflow-tooltip>
+          <el-table-column label="参数" min-width="110" show-overflow-tooltip>
             <template #default="{ row }">{{ formatParamLabel(asParamRow(row)) }}</template>
           </el-table-column>
-          <el-table-column prop="paramType" label="类型" width="100" show-overflow-tooltip />
-          <el-table-column prop="outputMode" label="输出方式" width="140" show-overflow-tooltip>
+          <el-table-column prop="paramType" label="类型" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="outputMode" label="输出方式" width="110" show-overflow-tooltip>
             <template #default="{ row }">{{ asParamRow(row).outputMode || "—" }}</template>
           </el-table-column>
           <el-table-column prop="bindSummary" label="绑定" min-width="200" show-overflow-tooltip />

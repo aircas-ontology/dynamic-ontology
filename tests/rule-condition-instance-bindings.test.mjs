@@ -9,8 +9,10 @@ import { buildRuleScheduleCreateParams } from "../src/views/SpaceBehaviorSchedul
 import {
   collectActionConditionPaths,
   collectConditionVariableRows,
+  filterConfigurableConditionVariableRows,
   validateConditionBindings,
 } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/ruleConditionInstanceBindings.ts";
+import { readRuleVariableBindingRequirement } from "../src/views/SpaceBehaviorScheduleWorkspace/utils/needsRuleVariableDataRow.ts";
 
 /** @description 创建变量引用。 @param {string} objectId 对象标识。 @returns {object} 变量。 */
 function createVariable(objectId = "plane") {
@@ -139,6 +141,48 @@ test("binding validation requires one instance and a subtable row, accepting zer
   value.dataPrimaryKey = false;
   assert.equal(validateConditionBindings(rows), "");
   assert.equal(validateConditionBindings([]), "");
+});
+
+test("insert or delete bindings skip main instance and subtable data rows", () => {
+  assert.deepEqual(readRuleVariableBindingRequirement("main", "insert"), { requiresInstance: false, requiresDataRow: false });
+  assert.deepEqual(readRuleVariableBindingRequirement("weapons", "delete"), { requiresInstance: true, requiresDataRow: false });
+  assert.deepEqual(readRuleVariableBindingRequirement("weapons", "update"), { requiresInstance: true, requiresDataRow: true });
+
+  const main = createVariable();
+  main.storageGroup = "main";
+  const sub = createVariable("plane");
+  sub.propertyId = "range";
+  sub.propertyName = "射程";
+  sub.storageGroup = "weapons";
+  const rows = [
+    { key: "main", label: "条件1 左侧", value: main },
+    { key: "sub", label: "条件2 左侧", value: sub },
+  ];
+  assert.deepEqual(
+    filterConfigurableConditionVariableRows(rows, "insert").map((row) => row.key),
+    ["sub"],
+  );
+  assert.equal(validateConditionBindings([{ key: "main", label: "条件1 左侧", value: main }], "insert"), "");
+  assert.match(validateConditionBindings([{ key: "sub", label: "条件2 左侧", value: sub }], "insert"), /实例/);
+  sub.instanceIds = ["plane-1"];
+  assert.equal(validateConditionBindings([{ key: "sub", label: "条件2 左侧", value: sub }], "insert"), "");
+
+  const insertCondition = {
+    id: "root",
+    type: "composite",
+    logic: "and",
+    monitorType: "insert",
+    children: [
+      { id: "one", type: "leaf", left: main, operator: "eq", right: { kind: "input", text: "1" } },
+      { id: "two", type: "leaf", left: sub, operator: "eq", right: { kind: "input", text: "2" } },
+    ],
+  };
+  const graph = createGraph({ root: { kind: "condition", condition: insertCondition }, action: { kind: "action" } }, [["root", "action", "true"]]);
+  const pathRows = collectActionConditionPaths(graph, "action")[0][0].rows;
+  assert.deepEqual(
+    pathRows.map((row) => row.value.propertyId),
+    ["range"],
+  );
 });
 
 test("confirm through real graph session synchronizes sibling actions, keeps inner scope and current request format", () => {

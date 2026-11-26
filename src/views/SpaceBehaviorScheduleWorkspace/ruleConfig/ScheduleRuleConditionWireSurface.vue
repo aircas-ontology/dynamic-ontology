@@ -9,12 +9,14 @@
   </div>
 </template>
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, provide, reactive, ref, toRef, watch } from "vue";
 import type { RuleCompositeCondition, RuleConditionNode } from "@/types";
 import ScheduleRuleConditionEditor from "./ScheduleRuleConditionEditor.vue";
+import { RULE_CONDITION_ROOT_KEY } from "./ruleConditionRootKey";
 const props = withDefaults(defineProps<{ condition: RuleCompositeCondition; readonly?: boolean }>(), {
   readonly: false,
 });
+provide(RULE_CONDITION_ROOT_KEY, toRef(props, "condition"));
 const surfaceRef = ref<HTMLElement | null>(null);
 const size = reactive({ width: 1, height: 1 });
 const paths = ref<string[]>([]);
@@ -80,7 +82,8 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .rule-condition-wire-surface {
   min-width: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 .rule-condition-wire-surface__surface {
   position: relative;

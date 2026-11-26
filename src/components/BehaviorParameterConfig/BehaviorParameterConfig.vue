@@ -8,13 +8,13 @@
         <p v-if="detailLoading" class="behavior-test-dialog__state" role="status">正在加载行为参数…</p>
         <p v-else-if="detailError" class="behavior-test-dialog__state" role="alert">{{ detailError }}</p>
         <el-table v-else-if="applicationInputRows.length" class="behavior-test-dialog__table" :data="applicationInputRows" row-key="rowKey" size="small">
-          <el-table-column prop="paramName" label="参数名" min-width="120" show-overflow-tooltip />
-          <el-table-column prop="propertyDisplayName" label="展示名称" min-width="120" show-overflow-tooltip />
-          <el-table-column label="来源" width="100" show-overflow-tooltip>
+          <el-table-column prop="paramName" label="参数名" width="96" show-overflow-tooltip />
+          <el-table-column prop="propertyDisplayName" label="展示名称" width="110" show-overflow-tooltip />
+          <el-table-column label="来源" width="80" show-overflow-tooltip>
             <template #default="{ row }">{{ formatApplicationInputSourceTypeLabel(asApplicationInputRow(row).sourceType) }}</template>
           </el-table-column>
-          <el-table-column prop="paramType" label="类型" width="100" show-overflow-tooltip />
-          <el-table-column label="参数值" min-width="260">
+          <el-table-column prop="paramType" label="类型" min-width="180" show-overflow-tooltip />
+          <el-table-column label="参数值" min-width="220">
             <template #default="{ row }">
               <el-input
                 v-if="normalizeApplicationSourceType(asApplicationInputRow(row).sourceType) === 'EXTERNAL'"

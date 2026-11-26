@@ -4,6 +4,7 @@ import type {
   BasicFilterLogic,
   BasicFilterNode,
   BasicFilterOp,
+  BasicFilterSource,
   BasicFilterValue,
   BasicFilterValueType,
   CreateOntologyActionBasicFunctionFilterCondition,
@@ -16,6 +17,8 @@ import type {
   CreateOntologyFunctionFilters,
   CreateOntologyFunctionQueryConfig,
 } from "@/types";
+
+const SOURCE_SET = new Set<string>(["FIXED", "EXTERNAL"]);
 
 const OP_SET = new Set<string>([
   "EQ",
@@ -45,6 +48,7 @@ export function createEmptyBasicFilterCondition(): BasicFilterCondition {
     op: "EQ",
     propertyApiName: "",
     valueType: "string",
+    source: "FIXED",
     value: "",
   };
 }
@@ -138,7 +142,11 @@ function normalizeCondition(raw: unknown): BasicFilterCondition {
   const op = isOp(record.op) ? record.op : "EQ";
   const propertyApiName = typeof record.propertyApiName === "string" ? record.propertyApiName : "";
   const valueType = isValueType(record.valueType) ? record.valueType : "string";
-  const condition: BasicFilterCondition = { op, propertyApiName, valueType };
+  const source: BasicFilterSource = typeof record.source === "string" && SOURCE_SET.has(record.source) ? (record.source as BasicFilterSource) : "FIXED";
+  const condition: BasicFilterCondition = { op, propertyApiName, valueType, source };
+  if (source === "EXTERNAL") {
+    return condition;
+  }
   if (opNeedsRange(op)) {
     const values = Array.isArray(record.values) ? record.values.map((item) => coerceValue(item, valueType)).slice(0, 2) : [];
     condition.values = [values[0] ?? defaultValueForType(valueType), values[1] ?? defaultValueForType(valueType)];
@@ -209,11 +217,16 @@ export function parseBasicFilterConfig(raw: string): BasicFilterDocument {
 }
 
 function serializeCondition(condition: BasicFilterCondition): BasicFilterCondition {
+  const source: BasicFilterSource = condition.source === "EXTERNAL" ? "EXTERNAL" : "FIXED";
   const next: BasicFilterCondition = {
     op: condition.op,
     propertyApiName: condition.propertyApiName.trim(),
     valueType: condition.valueType || "string",
+    source,
   };
+  if (source === "EXTERNAL") {
+    return next;
+  }
   if (opNeedsRange(condition.op)) {
     const values = condition.values ?? [defaultValueForType(next.valueType), defaultValueForType(next.valueType)];
     next.values = [coerceValue(values[0], next.valueType), coerceValue(values[1], next.valueType)];
@@ -272,6 +285,10 @@ function isBlankFilterStringValue(value: unknown): boolean {
 function validateBasicFilterCondition(condition: BasicFilterCondition): string | null {
   if (!condition.propertyApiName.trim()) {
     return "请填写过滤条件的变量名";
+  }
+  const source: BasicFilterSource = condition.source === "EXTERNAL" ? "EXTERNAL" : "FIXED";
+  if (source === "EXTERNAL") {
+    return null;
   }
   if (opNeedsValue(condition.op)) {
     if (condition.valueType === "string" && isBlankFilterStringValue(condition.value)) {
@@ -557,10 +574,15 @@ export function mapOntologyFunctionQueryConfigToBasicFilter(queryConfig: CreateO
  * @returns 行为过滤条件。
  */
 function mapConditionToActionFilter(condition: BasicFilterCondition): CreateOntologyActionBasicFunctionFilterCondition {
+  const source = condition.source === "EXTERNAL" ? "EXTERNAL" : "FIXED";
   const next: CreateOntologyActionBasicFunctionFilterCondition = {
     propertyApiName: condition.propertyApiName.trim(),
     op: condition.op,
   };
+  if (source === "EXTERNAL") {
+    next.source = "EXTERNAL";
+    return next;
+  }
   if (opNeedsRange(condition.op) || opNeedsList(condition.op)) {
     next.values = [...(condition.values ?? [])];
   } else if (opNeedsValue(condition.op)) {
@@ -605,13 +627,21 @@ function mapGroupToActionFilters(group: BasicFilterDocument): CreateOntologyActi
  * @returns 表单过滤条件。
  */
 function mapActionFilterToCondition(filter: CreateOntologyActionBasicFunctionFilterCondition): BasicFilterCondition {
-  return mapApiFilterToCondition({
+  const isExternal = filter.source === "EXTERNAL";
+  const base = mapApiFilterToCondition({
     propertyApiName: filter.propertyApiName,
     op: filter.op,
     dataType: "STRING",
     value: filter.value,
     values: filter.values,
   });
+  const source: BasicFilterSource = isExternal ? "EXTERNAL" : "FIXED";
+  const condition: BasicFilterCondition = { ...base, source };
+  if (isExternal) {
+    delete condition.value;
+    delete condition.values;
+  }
+  return condition;
 }
 
 /**

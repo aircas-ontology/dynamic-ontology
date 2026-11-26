@@ -100,13 +100,43 @@ export function buildOntologyFunctionTestBindingParamIds(params: GetOntologyFunc
 }
 
 /**
- * @description 判断参数类型是否为列表。
+ * @description 判断参数类型是否为列表（含 `LIST`/`ARRAY` 及 `List<...>`/`Array<...>` 泛型）。
  * @param paramType 参数类型。
- * @returns 是否为 LIST/ARRAY。
+ * @returns 是否为列表类型。
  */
-function isOntologyFunctionScriptTestListType(paramType: string): boolean {
+export function isOntologyFunctionScriptTestListType(paramType: string): boolean {
   const normalized = paramType.trim().toUpperCase();
-  return normalized === "LIST" || normalized === "ARRAY";
+  return normalized === "LIST" || normalized === "ARRAY" || normalized.startsWith("LIST<") || normalized.startsWith("ARRAY<");
+}
+
+/**
+ * @description 判断参数类型是否为带泛型参数的列表（如 `List<Double>`、`Array<Point>`）。
+ * @param paramType 参数类型。
+ * @returns 是否为泛型列表。
+ */
+function isOntologyFunctionScriptTestGenericListType(paramType: string): boolean {
+  const normalized = paramType.trim().toUpperCase();
+  return normalized.startsWith("LIST<") || normalized.startsWith("ARRAY<");
+}
+
+/**
+ * @description 从 `List<T>` / `Array<T>` 解析元素类型；无法解析时回退 STRING。
+ * @param paramType 列表参数类型。
+ * @returns 元素类型字符串。
+ */
+function readOntologyFunctionScriptTestListElementType(paramType: string): string {
+  const matched = paramType.trim().match(/^(?:List|Array)\s*<\s*([\s\S]+)\s*>$/i);
+  const elementType = matched?.[1]?.trim() ?? "";
+  return elementType || "STRING";
+}
+
+/**
+ * @description 为无 fields 的标量列表生成单叶子元素模板。
+ * @param paramType 列表参数类型。
+ * @returns 元素字段模板。
+ */
+function createOntologyFunctionScriptTestScalarListTemplate(paramType: string): OntologyFunctionScriptTestInputRow[] {
+  return [{ paramName: "value", paramType: readOntologyFunctionScriptTestListElementType(paramType), paramValue: "" }];
 }
 
 /**
@@ -172,18 +202,25 @@ function mapDetailItemsToScriptTestRows(items: OntologyFunctionScriptTestParamSo
     const paramType = typeof item.paramType === "string" ? item.paramType.trim() : "";
     const paramOrder = typeof item.paramOrder === "number" && Number.isFinite(item.paramOrder) ? item.paramOrder : Number.MAX_SAFE_INTEGER;
     const fields = mapDetailItemsToScriptTestRows(Array.isArray(item.fields) ? item.fields : [], false);
-    if (fields.length > 0) {
-      if (isOntologyFunctionScriptTestListType(paramType)) {
-        sortable.push({
-          paramName,
-          paramType,
-          fields,
-          listItems: [createEmptyOntologyFunctionScriptTestListItem(fields)],
-          paramOrder,
-        });
-      } else {
-        sortable.push({ paramName, paramType, fields, paramOrder });
-      }
+    if (isOntologyFunctionScriptTestListType(paramType) && fields.length > 0) {
+      sortable.push({
+        paramName,
+        paramType,
+        fields,
+        listItems: [createEmptyOntologyFunctionScriptTestListItem(fields)],
+        paramOrder,
+      });
+    } else if (isOntologyFunctionScriptTestGenericListType(paramType) && fields.length === 0) {
+      const template = createOntologyFunctionScriptTestScalarListTemplate(paramType);
+      sortable.push({
+        paramName,
+        paramType,
+        fields: template,
+        listItems: [createEmptyOntologyFunctionScriptTestListItem(template)],
+        paramOrder,
+      });
+    } else if (fields.length > 0) {
+      sortable.push({ paramName, paramType, fields, paramOrder });
     } else {
       sortable.push({ paramName, paramType, paramValue: "", paramOrder });
     }
@@ -400,13 +437,28 @@ function mapScriptTestRowsToPlainObject(rows: OntologyFunctionScriptTestInputRow
 }
 
 /**
+ * @description 将一组 LIST 元素字段转为普通值：单叶子组输出标量，多字段组输出对象。
+ * @param item 一组元素字段。
+ * @returns 普通 JSON 值。
+ */
+function mapScriptTestListItemToPlainValue(item: OntologyFunctionScriptTestInputRow[]): unknown {
+  if (item.length === 1) {
+    const only = item[0];
+    if (only && !(only.fields && only.fields.length > 0) && !only.listItems) {
+      return coerceOntologyFunctionScriptTestScalarValue(only.paramType, only.paramValue ?? "");
+    }
+  }
+  return mapScriptTestRowsToPlainObject(item);
+}
+
+/**
  * @description 将单行测试入参转为普通 JSON 值。
  * @param row 入参行。
  * @returns 普通 JSON 值。
  */
 function mapScriptTestRowToPlainValue(row: OntologyFunctionScriptTestInputRow): unknown {
   if (row.listItems) {
-    return row.listItems.map((item) => mapScriptTestRowsToPlainObject(item));
+    return row.listItems.map((item) => mapScriptTestListItemToPlainValue(item));
   }
   if (row.fields && row.fields.length > 0) {
     return mapScriptTestRowsToPlainObject(row.fields);

@@ -14,10 +14,11 @@
             :value="row.value"
             :label="row.label"
             :readonly="readonly"
+            :monitor-type="readSourceMonitorType(source)"
             @validity="setBindingValidity(source.nodeId, row.key, $event)"
           />
         </div>
-        <p v-if="!source.rows.length">固定值条件，无需选择实例</p>
+        <p v-if="!source.rows.length">当前条件无需配置实例或数据行</p>
       </el-collapse-item>
     </el-collapse>
   </section>
@@ -25,6 +26,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from "vue";
 import type { CollapseModelValue } from "element-plus";
+import type { RuleConditionMonitorType } from "@/types";
 import type { ActionConditionSource } from "../utils/ruleConditionInstanceBindings";
 import { validateConditionBindings } from "../utils/ruleConditionInstanceBindings";
 import { summarizeRuleCondition } from "../utils/scheduleRuleFlowFactory";
@@ -53,6 +55,16 @@ function formatSourceTitle(source: ActionConditionSource): string {
   return `条件${sources.value.findIndex((item) => item.nodeId === source.nodeId) + 1} · ${source.label}`;
 }
 
+/**
+ * @description 读取条件来源的组级监测事件类型。
+ * @param source 条件来源。
+ * @returns 监测类型或空。
+ */
+function readSourceMonitorType(source: ActionConditionSource): RuleConditionMonitorType | null {
+  const monitorType = source.data.condition?.monitorType;
+  return monitorType === "insert" || monitorType === "update" || monitorType === "delete" ? monitorType : null;
+}
+
 /** @description 记录每个独立变量查询及选项有效状态。 @param nodeId 源条件标识。 @param rowKey 变量引用键。 @param valid 是否可确认。 */
 function setBindingValidity(nodeId: string, rowKey: string, valid: boolean): void {
   bindingValidity[JSON.stringify([nodeId, rowKey])] = valid;
@@ -65,10 +77,11 @@ function summarizeSourceCondition(source: ActionConditionSource): string {
 /** @description 验证全部路径共享变量及异步选项，防止未加载或失效数据提交。 @returns 用户可读错误或空字符串。 */
 function validateInstances(): string {
   for (const source of sources.value) {
-    const error = validateConditionBindings(source.rows);
+    const monitorType = readSourceMonitorType(source);
+    const error = validateConditionBindings(source.rows, monitorType);
     if (error) return error;
     const invalid = source.rows.find((row) => !bindingValidity[JSON.stringify([source.nodeId, row.key])]);
-    if (invalid) return `请完成「${invalid.value.objectName} · ${invalid.value.propertyName}」的实例和数据行选择，或等待加载完成`;
+    if (invalid) return `请完成「${invalid.value.objectName} · ${invalid.value.propertyName}」的实例或数据行选择，或等待加载完成`;
   }
   return "";
 }
